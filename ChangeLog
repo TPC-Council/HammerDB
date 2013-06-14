@@ -1,0 +1,638 @@
+HammerDB change history
+
+Version 1.0, July  2003
+
+First general release
+
+---------------------------------------------------------------------
+
+Version 1.01 August 2003
+
+Added TPC-C stored procedures and driver script
+
+Reduce size of License window that was too long for some screens
+
+Added option to pause between user logins for a longer ramp-up time
+
+---------------------------------------------------------------------
+
+Version 1.02 August 2003
+
+Bug fix where Iterations picked up Repeat Delay in Virtual User options
+
+Bug fix in TPC-C Stock level procedure and driver script
+
+---------------------------------------------------------------------
+
+Version 1.03 August 2003
+
+Added Splash screen
+
+Broken script down into components for modular development
+
+---------------------------------------------------------------------
+
+Version 1.04 August 2003
+
+Bug Fixes
+
+[ 791801 ] doublequoted SQL not escaped when parsed
+[ 791802 ] bind variable incorrectly parsed
+[ 791808 ] Startup error if run from different directory
+
+---------------------------------------------------------------------
+
+Version 1.05 August 2003
+
+Modifications to hora_vu.tcl component for improved thread independence.
+
+---------------------------------------------------------------------
+
+Version 1.06 August 2003
+
+Update to Transaction Counter
+
+---------------------------------------------------------------------
+
+Version 1.07 September 2003
+
+Bug Fix
+
+[ 803038 ] New order updates order_id from every item
+
+Modified ROWID to UROWID in the delivery_sp.sql to allow flexibility in configuring data objects.
+
+---------------------------------------------------------------------
+
+Version 1.10 October 2003
+
+Bug Fix 
+
+[ 812038 ] Fetch from incorrect cursor number
+
+Modified TPC-C New Order procedure to use DBMS_RANDOM package for efficiency.
+
+Added tkcon based console.
+
+---------------------------------------------------------------------
+
+Version 1.10-1 November 2003
+
+Bug Fix
+
+[ 816539 ] new orders rollback
+
+---------------------------------------------------------------------
+
+Version 1.11 February 2004
+
+Added networking functionality and operating modes as a base for remote distribution of files and remote control of multiple clients.
+
+Added Master Distribution functionality to distribute files between clients.
+
+Tablelist package incorporated into code to reduce external pacakage requirements
+
+Tested with TCL 8.4.5 and TK 8.4.5
+
+Tested with Oracle 10g on Linux
+
+---------------------------------------------------------------------
+
+Version 1.11-1 March 2004
+
+Updated networking and operating modes for full functionality
+
+---------------------------------------------------------------------
+
+Version 1.12 May 2004
+
+Tested with TCL 8.4.6 and TK 8.4.6
+
+Added TPC-C Schema Creation
+
+Implemented thinking and keying time in TPC-C Driver
+
+---------------------------------------------------------------------
+
+Version 1.14 June 2004
+
+Bug Fixes
+
+[ 965810 ] title bar fails to update on mode change 
+[ 965792 ] scrollbars obscured on windows 
+[ 965790 ] file load and save fails on windows  
+[ 965789 ] Remote distribution fails with some hostnames 
+[ 965780 ] splash screen obscured
+[ 965779 ] tablelist obscured on windows
+
+
+---------------------------------------------------------------------
+
+Version 1.15 August 2004
+
+Tested with TCL 8.4.7 and TK 8.4.7
+
+Modified Threading approach so all Tk and file acces within 
+the worker threads are passed to the master thread
+
+Improved recognition of puts command in threads
+
+Improved Test TCL code feature
+
+Added text based logging in addition to window output
+
+Implemented remote commands to be called before local commands
+
+Bug Fixes
+
+[ 1002809 ] Loader Progress Meter Max set to incorrect value
+[ 1002258 ] #2.5.1.1 Payment procedure infinite loop
+[ 1002804 ] Setting non blocking on /dev/null errors on MAC OS
+[ 785408  ] Some quotes need escaping
+
+---------------------------------------------------------------------
+
+Version 1.15-1 August 2004
+
+[ 1019356 ] ora-01000 maximum open cursors exceeded on tpcc creation
+
+---------------------------------------------------------------------
+
+Version 1.15-2 August 2004
+
+[ 1019360 ] Some conversion fails when cursor number re-used
+
+---------------------------------------------------------------------
+
+Version 1.16 October 2004
+
+Modified Output Logging with selected logfile reported in message box
+
+TPC-C driver keying and thinking items applied consistently
+
+Improved error handling in TPC-C driver script
+
+Grouped mathematical expressions in TPC-C driver script for efficiency
+
+Improved performance of TPC-C schema creation and loading script
+
+Bug Fixes
+
+[ 1053384 ] image id not populated in item table
+[ 1053732 ] delivery transaction errors after long running TPC-C tests
+
+---------------------------------------------------------------------
+
+Version 1.17 November 2004
+
+User output modified from multiple windows to a single window
+ 
+Unwinding threads set to default when threads are closed
+
+Check added to prevent threads being started while previous threads running
+ 
+Transaction counter modified to work in a thread
+ 
+Changed Oracle SID to Oracle Service Name in Schema creation options
+
+Checks for correct TCL version and packages added on startup
+
+Bug Fixes
+
+[ 1066896 ] Threads don't exit if not unwound   
+[ 1063380 ] Seg Fault results from displaying user output
+
+---------------------------------------------------------------------
+
+Version 1.20 November 2004
+
+Oracle 10g instant client compatible executable installer released
+
+---------------------------------------------------------------------
+
+Version 1.20-1 December 2004
+
+Bug Fix
+
+[ 1087250 ] lib directory at wrong level
+
+---------------------------------------------------------------------
+                                                                                
+Version 1.21 February 2005
+
+Updated Binaries to 
+
+tcl8.4.9, tk8.4.9, thread2.6.1, oratcl41 (compiled against 10.1.0.3)
+
+Bug Fix
+
+[ 1114811 ] Loader looks for 10.1.0.2 instant client
+[ 1114815 ] DBMS_RANDOM seed can be same for 2 users
+[ 1116785 ] RAC transactions not recorded
+
+---------------------------------------------------------------------
+
+Version 1.21-1 February 2005
+
+[ 1144395 ] DBMS_RAMDOM.initialize overflow	 
+[ 1144337 ] Virtual user output misaligned
+
+---------------------------------------------------------------------
+
+Version 1.22 April 2005
+
+Updated Binaries to 
+
+tcl8.4.9, tk8.4.9, thread2.6.1, oratcl43 (compiled against 10.1.0.3)
+
+Bug Fix
+
+[ 1185363 ] can't read "rac" no such variable
+[ 1184277 ] TPC-C schema creation slow due to MakealphaString
+[ 1186876 ] no data found in new order transaction
+
+---------------------------------------------------------------------
+
+Version 1.23 May 2005
+
+Modified Transaction counter and user output for visibility
+Removed Menu from console
+
+Bug Fix
+
+[ 1193392 ]	GUI stalls when virtual users created
+
+---------------------------------------------------------------------
+
+Version 1.24 July 2005
+
+Updates to trace file conversion procedure for error checking
+Added PL/SQL version of the TPC-C loader program
+
+Bug Fix
+
+[ 1235901 ] $ symbol in SQL incorrectly detected as TCL variable
+[ 1222747 ] date formats incorrectly parsed as bind variables
+
+---------------------------------------------------------------------
+
+Version 1.25 July 2005
+
+Literal NULL values in TPC-C Driver script replaced with valid NULLs
+
+Bug Fix
+
+[ 1244016 ] ORA-06502 generated by literal NULL's
+
+---------------------------------------------------------------------
+
+Version 1.26 August 2005
+
+Updated Binaries to 
+
+tcl8.4.11, tk8.4.11, thread2.6.2, oratcl43 
+
+Bug Fix
+
+[ 1222747 ] date formats incorrectly parsed as bind variables - REOPENED
+
+---------------------------------------------------------------------
+                                                                                
+Version 1.30 June 2006
+
+Option added to transaction counter to autorange data points or anchor y axis to zero
+
+Updated Binaries to 
+
+tcl8.4.13, tk8.4.13, thread2.6.3, oratcl44 
+
+Bug Fix
+
+[ 785404 ] TCL threads error in SMP kernel - REOPENED
+[ 1478591 ] Trace file format changed in Oracle 10.2
+
+---------------------------------------------------------------------
+                                                                                
+Version 1.31 February 2007
+
+Added TPC-H schema creation, driver script and query counter
+
+Added XML Configuration file
+
+Added TclCurl libraries and reduced minimum user and repeat delay to Zero
+
+---------------------------------------------------------------------
+                                                                                
+Version 2.0 July 2007
+
+Brand new interface and graphics using Tile
+
+Bug Fix
+
+[1737907] autorange data points does not get picked up from config.xml 
+[1737904] tval error when measuring RAC transactions
+[1737901] Memory Leak running workloads
+[1689433] Scale Factor for TPC-H driver missing from config.xml
+
+---------------------------------------------------------------------
+
+Version 2.1 February 2008
+
+Full TCL port of TPC-H schema creation and driver script without requiring dbgen or qgen binaries
+
+Updated Binaries to 
+
+tcl8.5.0, tk8.5.0, thread2.6.5
+
+Tested with Oracle 11g
+
+Bug Fix
+
+[1810359] Transaction Counter Freeze in Hammerora v2.0
+[1810352] Master/Slave Mode "couldn't open socket: connection refused"
+
+---------------------------------------------------------------------
+
+Version 2.2 October 2008
+
+Added support for the MySQL Database/InnoDB Storage Engine including TPC-C schema creation and driver script and MySQL transaction counter, Added rdbms tag to config.xml – Oracle or MySQL, Updated editor to Benchmark Options to include RDBMS selection
+
+Added support for tclwebtest web application testing and tested with recorded scripts from TwTR, removed TCLCurl support
+
+Added thread shared variable (tsv::get application abort) to enable termination of running scripts
+
+Changed warehouse slider in TPC-C schema from 100 to 500
+
+Updated headers in scripts from 8.4 to 8.5
+
+Consolidated Mode Options into 1 dialog box
+
+Corrected redefinition of puts in threads to work more effectively with channels and only redirect stdout and stderr. 
+
+Corrected on Windows “yesno” Dialog Box Header shows title bar “Error”
+
+Corrected Virtual Users in display start from user 1 not 0
+
+Remove Unwind Threads Checkbox, unwind and exit threads deprecated, replaced with thread release
+
+Remove session serialize in TPC-H driver scrip as serialization prevents parallel query on more than 1 node in RAC
+
+Improved Transaction Counter start and stop times
+
+Bug Fix
+
+[ 1967810 ] error: package "tile" isn't loaded statically
+
+---------------------------------------------------------------------
+
+Version 2.3 May 2009
+
+Tuned and added Multithreaded TPC-C Schema Build for Oracle and MySQL
+
+Added new random procedure to TPC-C/H Driver Scripts
+
+Updated standsql proc in TPC-C/H Driver to preset fetch value
+
+Consolidated TPC-C menus into Options for build and Driver
+
+Added TPC-C script with AWR snapshots for Oracle
+
+Added force parallel query to TPC-H Driver
+
+Added more meaningful error message when attempt is made to run an empty script
+
+---------------------------------------------------------------------
+
+Version 2.4 July 2010
+
+Updated Binaries to:
+
+tcl8.5.8, tk8.5.8, thread2.6.5, oratcl4.5, mysqltcl 3.05 (compiled against MySQL 5.1)
+
+Bug Fixes
+
+[ 3006379 ] TPCC-C Schema does not create properly
+[ 2882092 ] Fix AWR snapshot selection statement
+
+Fixed data too long for column os_ol_delivery_d_array at row 15
+
+Added Autopilot Feature to permit repeat testing against a sequence of virtual users
+
+Updated Console code to permit execution against non exact TCL version
+
+Improved performance of Oracle TPC-C data load with Oratcl 4.5 and increase number of Warehouses on slider to 5000
+
+Modified MySQL TPC-C Schema for performance and improved concurrency with prepared statement updates and modified indexing
+
+Updated MySQL prepared statements to commit at same rate as Oracle tests
+
+Added MySQL Timed Test Script Option
+
+Added TPC-C NOPM (New Order per Minute) count to both Oracle and MySQL tests to provide a fair comparison between Oracle and MySQL tests
+
+Updated graph to permit higher transaction numbers generated by MySQL
+
+---------------------------------------------------------------------
+
+Version 2.4.1 November 2010
+
+Bug Fixes
+
+[ 3037027 ] can't read "apmode": no such variable
+[ 3063387 | 3066703 | 3110299 ] TPC-C script needs to be run with fixed NLS_LANG setting
+[ 3105537 ] Cursor Performance in MySQL Delivery Procedure
+[ 3109512 ] Error in NURand Function
+
+---------------------------------------------------------------------
+
+Version 2.5 December 2010
+
+Bug Fixes
+
+[ 3139122 ] Incorrect Primary Key Order in MySQL NEW_ORDER Table
+[ 3132726 ] hammerora-2.4.1-Linux-x86-64 cannot be installed 64-bit only
+[ 3138744 ] MySQL TPC-C Driver Script Connects Twice per User
+
+Added Storage Engine Option to MySQL TPC-C Schema build
+
+Changed "Number of Threads" to "Virtual Users to Build Schema" in Schema builds for clarity
+
+Added Number of Virtual Users to result of TPC-C timed driver workloads 
+
+Mulithreaded and tuned Oracle TPC-H Schema build
+
+Added NLS Settings to TPC-H build and driver scripts
+
+Altered Oracle TPC-H driver script so timing does not overrun buffer for long queries
+
+Fixed Colours on Windows Menus
+
+---------------------------------------------------------------------
+
+Version 2.6 April 2011
+
+Added TPC-H multi-threaded schema creation, driver script and query counter for MySQL
+
+Updated Oracle TPC-H schema to add same constraints as MySQL TPC-H schema. Modified Oracle TPC-H refresh function to adhere to constraints
+
+Added partitioning option to order_line table of Oracle TPC-C workload for scalability on high-performance servers
+
+---------------------------------------------------------------------
+
+Version 2.7 June 2011
+
+Updated Binaries to:
+
+tcl8.5.9, tk8.5.9, thread2.6.6, oratcl4.5, mysqltcl3.05 tclodbc2.5.1
+
+for Linux x86 and x86-64 and Windows x86 and x86-64
+
+Significant performance and scalability improvements with Windows binaries to eqivalence of Linux platform
+
+Bug Fixes
+
+[ 3286502 ] Double Connections on MySQL Schema Creation
+[ 3286500 ] Suboptimal Partitioning Key for Oracle Schema
+[ 3306467 ] Setting mysqldriver to "timed" in xml is not registered
+[ 3306468 ] MySQL rampup and duration not picked up from XML
+[ 3316980 ] Repeat tests cause first user to complete too early
+
+Added support for Microsoft SQL Server including TPC-C Workload
+
+Default Theme set to xpnative on Windows. Fixed Menu backgrounds and colours for consistency on both Windows and Linux
+
+Moved checking of all database package loading into the driver scripts outside of the main application so MySQL and SQL Server support does not check for Oracle libraries and vice versa
+
+Added partitioning option to order_line table of MySQL TPC-C workload for scalability on high-performance servers
+
+Modified Oracle TPC-C workload to open a cursor and parse each statement once, instead of doing each time the statement is called. Modification made to provide a similar workflow to new SQL Server TPC-C workload
+
+In Oracle TPC-C workload completion of timed workload will cause workers to complete irrespective of whether checkpoint when complete option has been selected
+
+---------------------------------------------------------------------
+
+Version 2.8 December 2011
+
+Bug Fixes
+
+[ 3415476 ] Trace File Conversion fails to pick up some bind variables
+
+GUI Enhancements to make creating and running tests a more logical step by step process on feedback whilst removing external references to thread IDs 
+
+---------------------------------------------------------------------
+
+Version 2.9 February 2012
+
+Added support for Microsoft SQL Server TPC-H workload
+
+Removed optimizer_index_cost_adj parameter setting from Oracle TPC-H workload
+
+Changed Colours in TPC-H Query Counter to default database colours
+
+Updated TPC-H workloads to create view REVENUE(STREAMID) for Query 15
+
+Updated Oracle and MySQL TPC-H workloads to drop view created by Query 15
+
+Added Timings for TPC-H Refresh Procedure for all workloads
+
+Updated SQL Server TPC-C build to reduce row counts for batch inserts to improve performance
+
+Altered SQL Server TPC-C Driver Script to remove incorrect reference to Oracle
+
+---------------------------------------------------------------------
+
+Version 2.10 March 2012
+
+Added Binaries :
+
+pgtcl2.0.0
+
+Bug Fixes
+
+[ 3493335 ] TPC-H does not log all completion times
+
+Feature Request
+
+[ 3295774 ] Add system username (TPC-C Oracle)
+[ 3495048 ] Create Database - option
+
+Added support for PostgreSQL TPC-C workload
+
+Moved logo image data out of source code into separate file
+
+---------------------------------------------------------------------
+
+Version 2.11 July 2012
+
+Bug Fixes
+
+[ 3539029 ] MySQL TPCH currency values truncated
+[ 3538644 ] TPCH Queries do not run in correct ordered set sequence
+[ 3538643 ] L_DISCOUNT AND L_TAX value is incorrect in Linetem table
+[ 3538640 ] MySQL TPC-H schema creation may fail due to thread count
+[ 3535830 ] problems with case-sensitive MS SQL in v2.10 for Win x64
+[ 3521766 ] SQL Server Query 1 reports arithmetic overflow error convert
+[ 3521765 ] SQL Server TPC-H Queries 10,18,20 don't have parallel option
+
+Added support for PostgreSQL TPC-H workload with Greenplum compatibility
+
+---------------------------------------------------------------------
+
+Version 2.12 December 2012
+
+Bug Fixes
+
+[ 3591389 ] Oracle and SQL TPC-H Driver doesn't display verbose output
+[ 3521766 ] SQL Server Query 1 reports arithmetic overflow error convert
+
+Changed Application name from Hammerora to HammerDB
+
+Updated Splash Screen with new HammerDB logo to reflect name change
+
+Added HammerDB icon to be displayed when minmised and in corner of Windows version
+
+Added support for TimesTen database with TPC-C workload
+
+Added support for Redis NoSQL database with TPC-C workload
+
+Added new Redis interface package to lib directory
+
+Moved setting of variable d_id up by one line in MySQL delivery procedure in TPC-C workload
+
+Changed default file filter from *.trc to *.tcl
+
+Updated default SQL Server client to version 11 for SQL Server 2012 in config.xml
+
+---------------------------------------------------------------------
+
+Version 2.13 December 2012
+
+Bug Fixes
+
+[ #92 ] O_C_ID has incorrect value in TPC-C schema
+
+---------------------------------------------------------------------
+
+Version 2.14 June 2013
+
+Updated Binaries to:
+
+tcl8.6, tk8.6, thread2.7.0 (included with tcl8.6), oratcl4.5, mysqltcl3.052 pgtcl2.0.0 tclodbc2.5.1
+
+for Linux x86 and x86-64 and Windows x86 and x86-64
+
+Bug Fixes
+
+[ #93 ] Oracle PL/SQL Schema Build Fails on Index Build
+[ #94 ] SQL Server Transaction Counter reports Negative Number then Zero 
+[ #95 ] pgsqlXXX is not a valid postgresql connection
+
+Removed tclodbc builds on Linux releases and greyed out SQL Server benchmark option to make tclodbc and SQL Server Windows only options
+
+Added Order Line Tablespace option to Oracle Database TPC-C schema to enable partitioned Order Line table to be placed in a separate cache with a different block size from the standard cache.
+
+Implemented TimesTen TPC-C Partitioning Option
+
+Implemented TimesTen TPC-H Workload
+
+Added SQL Server TPC-C workload from schema and Stored Procedures provided by Thomas Kejser under "updated" option. Regular schema remains available under "original" option
