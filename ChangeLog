@@ -636,3 +636,18 @@ Implemented TimesTen TPC-C Partitioning Option
 Implemented TimesTen TPC-H Workload
 
 Added SQL Server TPC-C workload from schema and Stored Procedures provided by Thomas Kejser under "updated" option. Regular schema remains available under "original" option
+
+---------------------------------------------------------------------
+
+Version 2.15 December 2013
+
+Bug Fixes
+
+[ #96 ] Trace conversion fails to detect bind variable when field name and bind variable reversed 
+[ #97 ] TPC-C driver script experiences mutex contention checking for abort button press at very high transaction rates
+[ #98 ] Creating separate order line tablespace for oracle fails as quota not granted during build 
+[ #99 ] Transaction Counter Stopping error given when virtual user reuses thread id previously used by the Transaction Counter
+
+Added option to cancel running virtual users when attempting to restart virtual users and existing ones are already running in the background. Ability to cancel threads first enabled in TCL Threads 2.7.0 with TCL 8.6
+
+Added contribution by Roberto Dyke to improve 3D Ribbon perspective on transaction counter

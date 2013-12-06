@@ -2790,7 +2790,7 @@ if {$opmode != "Slave" } {
          set id [.mode.f1.e1 get]
          set hostname [.mode.f1.e2 get]
 	 catch "destroy .mode"
-       if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else { if {[ tk_messageBox -title "Confirm Mode" -message "Switch from $oldmode\nto $opmode mode?" -type yesno ] == yes} { set opmode [ switch_mode $opmode $hostname $id $masterlist ] }  else { set opmode $oldmode } } 
+       if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else { if {[ tk_messageBox -icon question -title "Confirm Mode" -message "Switch from $oldmode\nto $opmode mode?" -type yesno ] == yes} { set opmode [ switch_mode $opmode $hostname $id $masterlist ] }  else { set opmode $oldmode } } 
         } -text {OK}     
    pack $Name -anchor w -side right -padx 3 -pady 3
    wm geometry .mode +50+50

@@ -39,7 +39,7 @@
         set P($i) [lrange $pxy [expr {2*$i}] [expr {2*$i + 1}]]
         if {$i == -1}   { set P(-1)   [::Ribbon::VAdd [lrange $pxy 0 1] {0 -100}] }
         if {$i == $CNT} { set P($CNT) [::Ribbon::VAdd [lrange $pxy end-1 end] {0 100}] }
-        set Q($i) [::Ribbon::VAdd $P($i) $offsetXY $scaler]
+        set Q($i) [::Ribbon::VAdd2 $P($i) $offsetXY $scaler]
     }
 
     # 2nd pass fixes up any offset point which are "inside"
@@ -89,6 +89,18 @@
     foreach {x1 y1} $v1 {x2 y2} $v2 break
     return [list [expr {$x1 + $scaler*$x2}] [expr {$y1 + $scaler*$y2}]]
  }
+
+ proc ::Ribbon::VAdd2 {v1 v2 {scaler 1}} {
+    foreach {x1 y1} $v1 {x2 y2} $v2 break
+    set origin [list -400 -100]
+    set ox1 -400
+    set oy1 -100
+    set vx1 [expr {$x1 - $ox1}]
+    set vy1 [expr {$y1 - $oy1}]
+    return [list [expr {$x1 - $vx1 * 0.03}] [expr {$y1 - $vy1 * 0.05}]]
+    # return [list [expr {$x1 * 0.9}] [expr {$y1 * 0.9}]]
+ }
+
  proc ::Ribbon::VSub {v1 v2} { return [::Ribbon::VAdd $v1 $v2 -1] }
  ##+##########################################################################
  #
@@ -201,7 +213,7 @@ set emu_graph(datadefault) {
     -labels          { } \
     -points          0 \
     -lines           1\
-    -colour          red \
+    -colour          white \
     -trackcolumn     0 \
     -redraw          1
 }
@@ -465,7 +477,8 @@ proc auto_range {graph} {
 
 proc generate_colors {} {
 
-    set values {"EE" "88" "11"}
+    set values {"00" "FF" "00"}
+    # set values {"EE" "88" "11"}
     foreach r $values {
 	foreach g $values {
 	    foreach b $values {
@@ -934,7 +947,7 @@ proc nicenum {x floor} {
 #
 # put a vertical or horizontal mark on the graph 
 #
-proc vmark {graph x tag {color red}} {
+proc vmark {graph x tag {color white}} {
     variable emu_graph
     if { $x >= $emu_graph($graph,xmin) && $x <= $emu_graph($graph,xmax) } {
 	set tags [list graph$graph vmark $tag]
@@ -948,7 +961,7 @@ proc vmark {graph x tag {color red}} {
     }
 }
 
-proc hmark {graph y tag {color red}} {
+proc hmark {graph y tag {color white}} {
     variable emu_graph
     if { $y >= $emu_graph($graph,ymin) && $y <= $emu_graph($graph,ymax) } {
 	# if there's already an item with this tag then delete it

@@ -20,7 +20,7 @@ set install_message "Ready to create a $count_ware Warehouse TimesTen TPC-C sche
 	} else {
 set install_message "Ready to create a $count_ware Warehouse Oracle TPC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
 	}
-if {[ tk_messageBox -title "Create Schema" -message $install_message -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message $install_message -type yesno ] == yes} { 
 if { $num_threads eq 1 || $count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -868,13 +868,20 @@ oraclose $curn1
 return
 }
 
-proc CreateUser { lda tpcc_user tpcc_pass tpcc_def_tab tpcc_def_temp} {
+proc CreateUser { lda tpcc_user tpcc_pass tpcc_def_tab tpcc_def_temp tpcc_ol_tab partition} {
 puts "CREATING USER $tpcc_user"
+set stmt_cnt 3
 set curn1 [ oraopen $lda ]
 set sql(1) "create user $tpcc_user identified by $tpcc_pass default tablespace $tpcc_def_tab temporary tablespace $tpcc_def_temp\n"
 set sql(2) "grant connect,resource to $tpcc_user\n"
 set sql(3) "alter user $tpcc_user quota unlimited on $tpcc_def_tab\n"
-for { set i 1 } { $i <= 3 } { incr i } {
+if { $partition eq "true" } {
+if { $tpcc_def_tab != $tpcc_ol_tab } { 
+set stmt_cnt 4
+set sql(4) "alter user $tpcc_user quota unlimited on $tpcc_ol_tab\n"
+	}
+  }
+for { set i 1 } { $i <= $stmt_cnt } { incr i } {
 if {[ catch {orasql $curn1 $sql($i)} message ] } {
 puts "$message $sql($i)"
 puts [ oramsg $curn1 all ]
@@ -2800,7 +2807,7 @@ puts "TimesTen expects the Database [ string toupper $instance ] and User [ stri
 set connect $system_user/$system_password@$instance
 set lda [ oralogon $connect ]
 SetNLS $lda
-CreateUser $lda $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_def_temp
+CreateUser $lda $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_def_temp $tpcc_ol_tab $partition
 if { $plsql eq 1 } { CreateDirectory $lda $directory $tpcc_user }
 oralogoff $lda
 	}
@@ -2922,7 +2929,7 @@ return
 	}
     }
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 2887.0 ]
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 2894.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $plsql $directory $partition $tpcc_tt_compat $num_threads"
 update
 run_virtual
@@ -3183,8 +3190,9 @@ if {[catch {oraplexec $curn1 $sql3} message]} {
 error "Failed to initialise DBMS_RANDOM $message have you run catoctk.sql as sys?" }
 oraclose $curn1
 puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
@@ -3630,8 +3638,9 @@ if {[catch {oraplexec $curn1 $sql3} message]} {
 error "Failed to initialise DBMS_RANDOM $message have you run catoctk.sql as sys?" }
 oraclose $curn1
 puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }
@@ -3679,7 +3688,7 @@ if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 if {  ![ info exists mssqls_dbase ] } { set mssqls_dbase "tpcc" }
 if {  ![ info exists mssqls_schema ] } { set mssqls_schema "updated" }
 if {  ![ info exists mssqls_num_threads ] } { set mssqls_num_threads "1" }
-if {[ tk_messageBox -title "Create Schema" -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server TPC-C schema\nin host [string toupper $mssqls_server:$mssqls_port] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server TPC-C schema\nin host [string toupper $mssqls_server:$mssqls_port] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
 if { $mssqls_num_threads eq 1 || $mssqls_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -5738,8 +5747,10 @@ set w_id_input [ odbc  "select max(w_id) from WAREHOUSE" ]
 set w_id  [ RandomNumber 1 $w_id_input ]  
 set d_id_input [ odbc "select max(d_id) from DISTRICT" ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
@@ -6150,9 +6161,10 @@ set w_id_input [ odbc  "select max(w_id) from WAREHOUSE" ]
 set w_id  [ RandomNumber 1 $w_id_input ]  
 set d_id_input [ odbc "select max(d_id) from DISTRICT" ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
-puts "Processing $total_iterations transactions without output suppressed..."
+puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }
@@ -6199,7 +6211,7 @@ if {  ![ info exists mysql_dbase ] } { set mysql_dbase "tpcc" }
 if {  ![ info exists storage_engine ] } { set storage_engine "innodb" }
 if {  ![ info exists mysql_partition ] } { set mysql_partition "false" }
 if {  ![ info exists mysql_num_threads ] } { set mysql_num_threads "1" }
-if {[ tk_messageBox -title "Create Schema" -message "Ready to create a $my_count_ware Warehouse MySQL TPC-C schema\nin host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $storage_engine ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $my_count_ware Warehouse MySQL TPC-C schema\nin host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $storage_engine ]?" -type yesno ] == yes} { 
 if { $mysql_num_threads eq 1 || $my_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -7466,8 +7478,10 @@ set w_id_input [ list [ mysql::sel $mysql_handler "select max(w_id) from warehou
 set w_id  [ RandomNumber 1 $w_id_input ]  
 set d_id_input [ list [ mysql::sel $mysql_handler "select max(d_id) from district" -list ] ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
@@ -7792,8 +7806,9 @@ set w_id  [ RandomNumber 1 $w_id_input ]
 set d_id_input [ list [ mysql::sel $mysql_handler "select max(d_id) from district" -list ] ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
 puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }
@@ -7836,7 +7851,7 @@ if {  ![ info exists pg_pass ] } { set pg_pass "tpcc" }
 if {  ![ info exists pg_dbase ] } { set pg_dbase "tpcc" }
 if {  ![ info exists pg_oracompat ] } { set pg_oracompat "false" }
 if {  ![ info exists pg_num_threads ] } { set pg_num_threads "1" }
-if {[ tk_messageBox -title "Create Schema" -message "Ready to create a $pg_count_ware Warehouse PostgreSQL TPC-C schema\nin host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_user ] in database [ string toupper $pg_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $pg_count_ware Warehouse PostgreSQL TPC-C schema\nin host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_user ] in database [ string toupper $pg_dbase ]?" -type yesno ] == yes} { 
 if { $pg_num_threads eq 1 || $pg_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -9609,8 +9624,9 @@ set d_id_input $d_id_input_arr(max)
 }
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
 puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
@@ -10047,9 +10063,10 @@ pg_select $lda "select max(d_id) from district" d_id_input_arr {
 set d_id_input $d_id_input_arr(max)
 }
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
-puts "Processing $total_iterations transactions with output suppressed..."
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }
@@ -10087,7 +10104,7 @@ if {  ![ info exists redis_port ] } { set redis_port "6379" }
 if {  ![ info exists redis_namespace ] } { set redis_namespace "1" }
 if {  ![ info exists redis_count_ware ] } { set redis_count_ware "1" }
 if {  ![ info exists redis_num_threads ] } { set redis_num_threads "1" }
-if {[ tk_messageBox -title "Create Schema" -message "Ready to create a $redis_count_ware Warehouse Redis TPC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $redis_count_ware Warehouse Redis TPC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
 if { $redis_num_threads eq 1 || $redis_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -10838,8 +10855,10 @@ set w_id_input [ $redis GET COUNT_WARE ]
 set w_id  [ RandomNumber 1 $w_id_input ]  
 set d_id_input [ $redis GET DIST_PER_WARE ]
 set stock_level_d_id [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
@@ -11282,9 +11301,10 @@ set w_id_input [ $redis GET COUNT_WARE ]
 set w_id  [ RandomNumber 1 $w_id_input ]  
 set d_id_input [ $redis GET DIST_PER_WARE ]
 set stock_level_d_id [ RandomNumber 1 $d_id_input ]  
-puts "Processing $total_iterations transactions without output suppressed..."
+puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
-if {  [ tsv::get application abort ]  } { break }
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }

@@ -96,9 +96,17 @@ set thlen [ llength $thlist ]
 if { $thlen > 1 } {
 set thlen [ expr { $thlen - 1 } ]
 set thlist [ join [lreplace $thlist $thlen $thlen ] ]
-tk_messageBox -icon error -message "Virtual Users still active in background" 
-return 1
+set answer [tk_messageBox -type yesno -icon question -message "Virtual Users still active in background\nWait for Virtual Users to finish?" -detail "Yes to remain active, No to terminate"] 
+switch $answer {
+yes { ; }
+no { 
+foreach ij $thlist {
+catch {thread::cancel $ij}
+      }
+   }
 }
+return 1
+} else { ;#Only the Master thread is running }
 ed_stop_vuser 
 tsv::set application abort 0
 if { [ info exists maxvuser ] } { ; } else { set maxvuser 1 }

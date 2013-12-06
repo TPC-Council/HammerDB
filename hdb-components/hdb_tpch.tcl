@@ -14,7 +14,7 @@ set install_message "Ready to create a Scale Factor $scale_fact TimesTen TPC-H s
 	} else {
 set install_message "Ready to create a Scale Factor $scale_fact TPC-H schema in database [string toupper $instance]\n under user [ string toupper $tpch_user ] in tablespace [ string toupper $tpch_def_tab]?"
 	}
-if {[ tk_messageBox -title "Create Schema" -message $install_message -type yesno
+if {[ tk_messageBox -title "Create Schema" -icon question -message $install_message -type yesno
  ] == yes} {
 if { $num_tpch_threads eq 1 } {
 set maxvuser 1
@@ -1203,7 +1203,7 @@ if {  ![ info exists mysql_tpch_pass ] } { set mysql_tpch_pass "mysql" }
 if {  ![ info exists mysql_tpch_dbase ] } { set mysql_tpch_dbase "tpch" }
 if {  ![ info exists mysql_num_tpch_threads ] } { set mysql_num_tpch_threads "1" }
 if {  ![ info exists mysql_tpch_storage_engine ] } { set mysql_tpch_storage_engine "myisam" }
-if {[ tk_messageBox -message "Ready to create a Scale Factor $mysql_scale_fact TPC-H schema\n in host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPC-H schema\n in host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
 if { $mysql_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -2046,7 +2046,7 @@ if {  ![ info exists mssqls_uid ] } { set mssqls_uid "sa" }
 if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 if {  ![ info exists mssqls_tpch_dbase ] } { set mssqls_tpch_dbase "tpch" }
 if {  ![ info exists mssqls_num_tpch_threads ] } { set mssqls_num_tpch_threads "1" }
-if {[ tk_messageBox -title "Create Schema" -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPC-H schema\nin host [string toupper $mssqls_server:$mssqls_port] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPC-H schema\nin host [string toupper $mssqls_server:$mssqls_port] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
 if { $mssqls_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -2888,7 +2888,7 @@ if {  ![ info exists pg_tpch_dbase ] } { set pg_tpch_dbase "tpch" }
 if {  ![ info exists pg_tpch_gpcompat ] } { set pg_tpch_gpcompat "false" }
 if {  ![ info exists pg_tpch_gpcompress ] } { set pg_tpch_gpcompress "false" }
 if {  ![ info exists pg_num_tpch_threads ] } { set pg_num_tpch_threads "1" }
-if {[ tk_messageBox -message "Ready to create a Scale Factor $pg_scale_fact TPC-H schema\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $pg_scale_fact TPC-H schema\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
 if { $pg_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {

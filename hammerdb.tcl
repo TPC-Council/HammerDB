@@ -50,7 +50,7 @@ exit
 #hdb_go.tcl 	- Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.14"
+set hdb_version "v2.15"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 namespace eval LoadingProgressMeter {

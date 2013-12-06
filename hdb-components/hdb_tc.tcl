@@ -63,7 +63,7 @@ set tclist [ thread::names ]
 if { [ info exists tc_threadID ] } {
 set idx [ lsearch $tclist $tc_threadID ]
 if { $idx != -1 } {
-tk_messageBox -icon error -message "Transaction Counter Stopping"
+tk_messageBox -icon warning -message "Transaction Counter Stopping"
 return 1
 	}
 }
@@ -342,7 +342,8 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 }
 if { [ tsv::get application timeout ] } { break }
 }
-#catch [ subst {thread::send -async $MASTER { puts "Transaction Counter Stopped" }} ]
+#catch [ subst {thread::send -async $MASTER { puts "Oracle Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
 thread::wait 
@@ -498,7 +499,8 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 }
 if { [ tsv::get application timeout ] } { break }
 }
-#catch [ subst {thread::send -async $MASTER { puts "Transaction Counter Stopped" }} ]
+#catch [ subst {thread::send -async $MASTER { puts "MySQL Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
 thread::wait 
@@ -668,7 +670,8 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 }
 if { [ tsv::get application timeout ] } { break }
 }
-#catch [ subst {thread::send -async $MASTER { puts "Transaction Counter Stopped" }} ]
+#catch [ subst {thread::send -async $MASTER { puts "SQL Server Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
 thread::wait 
@@ -822,7 +825,8 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 }
 if { [ tsv::get application timeout ] } { break }
 }
-#catch [ subst {thread::send -async $MASTER { puts "Transaction Counter Stopped" }} ]
+#catch [ subst {thread::send -async $MASTER { puts "PostgreSQL Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
 thread::wait 
@@ -971,7 +975,8 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 }
 if { [ tsv::get application timeout ] } { break }
 }
-#catch [ subst {thread::send -async $MASTER { puts "Transaction Counter Stopped" }} ]
+#catch [ subst {thread::send -async $MASTER { puts "Redis Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
 thread::wait 
@@ -1020,3 +1025,10 @@ destroy .ed_mainFrame.tc.g ;
 .ed_mainFrame.notebook tab .ed_mainFrame.tc -state disabled
 ed_status_message -finish "Transaction Counter Stopped"
 }
+
+proc post_kill_transcount_cleanup {} {
+global tc_threadID
+unset -nocomplain tc_threadID
+tsv::set application timeout 2
+ }
+

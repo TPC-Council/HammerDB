@@ -70,20 +70,25 @@ foreach line $filelist {
 		   }
 	}
     }
-
-    if {[string match {PARSE*dep=0*} $line] && ![string match {*ERROR*} $line]} {
-	regexp {PARSE\ \#([0-9]+)\:} $line all cursor
+  if {[string match {PARSE*dep=0*} $line] && ![string match {*ERROR*} $line]} {
+      regexp {PARSE\ \#([0-9]+)\:} $line all cursor
 	if {  [ set ix [ lsearch $depzerobind $cursor ]] == -1 } {
 	lappend depzerobind $cursor
         }
-		unset -nocomplain exectype($cursor) bindvarlist($cursor) bindvarlist2 bindvarlength bindmatch plsql($cursor) preapp($cursor) errinexec($cursor)
+      unset -nocomplain exectype($cursor) bindvarlist($cursor) bindvarlist2 bindvarlength bindmatch plsql($cursor) preapp($cursor) errinexec($cursor)
       set text($cur2hash($cursor)) [remspace $text($cur2hash($cursor))]
       set bindmatch [ check_date_formats $text($cur2hash($cursor)) ]
-if {[regexp {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch) match]} {
-	    set bindvarlist($cursor) [split [regexp -inline -all --\
-	      {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch ]]
-	    set bindvarlength [llength $bindvarlist($cursor)]
-	    set count 0
+if {[regexp {:\"?([[:alnum:]_]+)(?!\=)\"?|(?!\=)\"?:\"?([[:alnum:]_]+)} $bindmatch) match]} {
+## BB: 7/25/13 - based on order of projection filtering in SQL , ie :1=ColumnName versus ColumnName=:1, handle bind variable setting...
+      if {[regexp {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch) match]} {
+      set bindvarlist($cursor) [split [regexp -inline -all --\
+       {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch ]]
+         } else {
+      set bindvarlist($cursor) [split [regexp -inline -all --\
+       {(?!\=)\"?:\"?([[:alnum:]_]+)} $bindmatch ]]
+          }
+      set bindvarlength [llength $bindvarlist($cursor)]
+      set count 0
 	    while {$count < $bindvarlength} {
 		if {[expr fmod($count,2)] == 1.0} {
 		    lappend bindvarlist2 [lindex $bindvarlist($cursor) $count]
