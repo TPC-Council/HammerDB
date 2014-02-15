@@ -291,4 +291,5 @@ set _ED(package) $ora
    set _ED(blockflag) 0
 if { [ info exists c ] } { set _ED(packagekeyname) $c }
    ed_edit
+   applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 }

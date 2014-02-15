@@ -243,4 +243,7 @@
             <id>0</id>
         </slave_options>
     </mode>
+  <code_highlight>
+  	<highlight>true</highlight>
+  </code_highlight>
 </hammerdb>

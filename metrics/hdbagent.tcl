@@ -1,0 +1,237 @@
+#!/bin/sh
+########################################################################
+# \
+export LD_LIBRARY_PATH=.././lib:.././lib64:$LD_LIBRARY_PATH
+# \
+export PATH=.././bin:$PATH
+# \
+exec .././bin/tclsh8.6 $0 ${1+"$@"}
+# \
+exit
+########################################################################
+# HammerDB Metrics
+#
+# Adpated from http://wiki.tcl.tk/37820
+# mpstatPlot -- visual display of mpstat idle value for all processors
+# by Keith Vetter
+#
+# Copyright (C) 2003-2014 Steve Shaw
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA  02111-1307, USA.
+#
+# Author contact information: smshaw@users.sourceforge.net
+######################################################################   
+#load files
+set UserDefaultDir [ file dirname [ info script ] ]
+append loadlist { hdb_comm.tcl }
+for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
+    set f [lindex $loadlist $loadcount]
+	if [catch {source [ file join $UserDefaultDir ../hdb-components $f ]}] {
+                puts stderr "While loading component file\
+                        \"$f\"...\n$errorInfo"
+        }
+    }
+global agentlist S iswin
+set iswin "false"
+set version 2.16
+
+if {$tcl_platform(platform) == "windows"} { 
+	package require twapi 
+	set iswin "true"
+	} 
+
+proc SendOneLine {line} {
+#Sending one line to remote display connection
+global agentlist
+Agent send [ lindex $agentlist 0 ] [lindex $agentlist 1 ] StatsOneLine [list $line ]
+}
+
+proc lremove { list item {all ""} } {
+  set index [lsearch -exact $list $item]
+  if {$index == -1} { return $list }
+  if {$all == ""} {
+    return [lreplace $list $index $index]
+  } else {
+    while {$index != -1} {
+      set list [lreplace $list $index $index]
+      set index [lsearch -exact $list $item]
+    }
+    return $list
+}} 
+
+proc HowManyProcessorsWindows {} {
+global S cpu_model
+set cpu_model [lindex [twapi::get_processor_info 0 -processorname] 1]
+set ::S(cpus) [twapi::get_processor_count]
+set proc_groups [ twapi::get_processor_group_config ]
+set max_groups [ dict get $proc_groups -maxgroupcount ] 
+set active_groups [ dict size [ dict get $proc_groups -activegroups ] ]
+if { $active_groups > 1 } {
+puts "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+puts "Windows system with multiple processors groups\nMaximum groups on this system $max_groups active groups $active_groups"
+for {set i 0} {$i < $active_groups} {incr i} {
+dict set proc_group_map $i [ dict get [ dict get $proc_groups -activegroups ] $i -activeprocessorcount ] 
+puts -nonewline "Group $i has "
+puts -nonewline [ dict get $proc_group_map $i ]
+puts " active processors"
+		}
+set numa_nodes [ twapi::get_numa_config ]
+set numa_node_count [ dict size $numa_nodes ]
+set cpus_per_node [ expr $::S(cpus) / $numa_node_count ]
+puts "System has $numa_node_count NUMA nodes and $cpus_per_node CPUs per node"
+for {set i 0} {$i < $numa_node_count} {incr i} {
+dict set numa_group_map $i [ dict get $numa_nodes $i -group ] 
+puts -nonewline "NUMA node $i is in processor group "
+puts [ dict get $numa_group_map $i ]
+	}
+puts "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+    }
+}
+
+proc HowManyProcessorsLinux {} {
+global cpu_model
+    set fin [open /proc/cpuinfo r]
+    set data [read $fin]; list
+    close $fin
+    set ::S(cpus) [llength [regexp -all -inline processor $data]]
+    set ::S(cpus,list) {}
+    for {set i 0} {$i < $::S(cpus)} {incr i} {
+        lappend ::S(cpus,list) $i
+    }
+    foreach line [ split $data "\n" ] {
+    if {[string match {model name*} $line]} {
+    regexp {(.*):\ (.*)} $line all header cpu_model
+    break
+	}
+    }
+}
+
+proc ConfigureNetworkAgent { } {
+global agentlist S
+set chanlist [ lindex [ ::comm channels ] end ]
+if { $chanlist eq "::Slave" } {
+puts "Closing $chanlist connection"
+if { [catch { $chanlist destroy } b] } {
+puts "Error $b"
+	}
+}
+if { [catch {::comm new Agent -listen 1 -local 0 -port {}} b] } {
+puts "Creation Failed : $b" } else {
+puts "HammerDB Metric Agent active @ id [ Agent self ] hostname [ info hostname ] (Ctrl-C to Exit)"
+Agent hook incoming {
+puts "Received a new display request from host $addr"
+}
+Agent hook lost {
+global agentlist S
+set todel [ lsearch $agentlist $id ]
+if { $todel != -1 } {
+puts "Connection to display $id lost: $reason"
+puts "Reinitializing HammerDB Metric Agent"
+set agentlist [ lreplace $agentlist $todel $todel ]
+set ::DONE 2
+	}
+}
+Agent hook eval {
+global agentlist S
+if {[regexp {\"([0-9]+)\W([[:alnum:],[:punct:]]+)\"} $buffer all id host]} {
+lappend agentlist "$id $host"
+puts "New display accepted @ $id $host"
+#Start Gathering and Sending Metrics
+StartMetrics
+} else {
+if {[regexp {\"Slave ([0-9]+)\W([[:alnum:],[:punct:]]+) disconnected\"} $buffer all id host]} {
+set todel [ lsearch -exact $agentlist "$id $host" ]
+if { $todel != -1 } {
+set agentlist [ lreplace $agentlist $todel $todel ]
+					}
+				}
+			}
+		}
+	}
+}
+
+proc isReadable {fin} {
+    set status [catch { gets $fin line } result]
+    if { $status != 0 } {
+if { [catch { puts "error reading $fin: $result" } b] } { 
+        #Error on the channel
+	}
+        set ::DONE 2
+    } elseif { $result >= 0 } {
+        #Successfully read the channel
+        if {![string match {[0-9]*} $line]} return
+if { [catch { SendOneLine $line } b] } { 
+	#Error Sending
+	}
+    } elseif { [eof $fin] } {
+        set ::DONE 1
+    } elseif { [fblocked $fin] } {
+        # Read blocked.  Just return
+    } else {
+        # Something else
+        puts "can't happen"
+        set ::DONE 3
+    }
+}
+
+proc StartMetrics {} {
+global agentlist S cpu_model iswin
+puts "Prepared CPU metrics for $cpu_model"
+foreach f $agentlist {
+puts -nonewline "Sending CPU metrics to $f ..."
+if { [catch {
+Agent send $f DoDisplay $S(cpus) [ list $cpu_model] agent
+Agent send $f update
+	} b] } {
+puts "Failed $b"
+} else {
+puts "connection established"
+                }
+}
+if $iswin {
+    set fin [open "| mpstat.bat" r]
+    } else {
+    set fin [open "|mpstat -P [join $::S(cpus,list) ,] 1" r]
+	}
+    fconfigure $fin -blocking false
+    fileevent $fin readable [list isReadable $fin] 
+    vwait ::DONE
+    close $fin
+}
+
+set agentlist ""
+
+if $iswin { 
+set maxcpus [ HowManyProcessorsWindows ]
+	} else {	
+if {! [file exists /proc/cpuinfo] || [auto_execok mpstat] eq ""} {
+    puts "Linux mpstat error : check that mpstat command in sysstat package is installed"
+    puts "HammerDB Metric Agent Terminated"
+    return
+	}
+HowManyProcessorsLinux
+  }
+
+puts "Initializing HammerDB Metric Agent $version"
+ConfigureNetworkAgent 
+vwait ::DONE
+while 1 {	
+#Lost connection, reinitialize agent
+::Agent destroy
+unset -nocomplain ::DONE
+ConfigureNetworkAgent 
+vwait ::DONE
+	}

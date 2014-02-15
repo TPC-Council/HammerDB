@@ -53,9 +53,10 @@ proc ed_start_gui {} {
      {{command}  {Turn Word Wrap On} {-command "wrap_on" -underline 0}}
    {{separator} {} {}}
    {{command}  {Choose Font} {-command {catch {.ed_mainFrame.mainwin.textFrame.left.text configure -font "[choose_font "Arial 10"]"}} -underline 0}}
+     {{command}  {Turn Highlighting Off} {-command "highlight_off_with_message" -underline 0}}
    {{separator} {} {}}
      {{command } {Test} {-command "ed_run_package" -underline 0}}
-     }
+	}
 proc wrap_on {} {
                   .ed_mainFrame.mainwin.textFrame.left.text configure -wrap word
                      .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -label "Turn Word Wrap Off"
@@ -65,6 +66,34 @@ proc wrap_off {} {
                  .ed_mainFrame.mainwin.textFrame.left.text configure -wrap none
                      .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -label "Turn Word Wrap On"
                      .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -command "wrap_on"
+}
+proc highlight_on {} {
+#only called on startup
+global highlight
+set highlight "true"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting Off"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_off_with_message"
+}
+proc highlight_off {} {
+#only called on startup
+global highlight
+set highlight "false"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting On"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_on_with_message"
+}
+proc highlight_on_with_message {} {
+global highlight
+set highlight "true"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting Off"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_off_with_message"
+tk_messageBox -title Highlight -message "Highlighting of keywords and program control will be enabled at next script editor load"
+}
+proc highlight_off_with_message {} {
+global highlight
+set highlight "false"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting On"
+                     .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_on_with_message"
+tk_messageBox -title Highlight -message "Highlighting of keywords and program control will be disabled at next script editor load"
 }
 
    construct_menu $Name Edit $Menu_string($Name)
@@ -445,7 +474,7 @@ $Name state !disabled
 			}
 
 proc disable_bm_menu {} {
-global rdbms bm tcl_platform
+global rdbms bm tcl_platform highlight
 if {$tcl_platform(platform) != "windows" && $rdbms == "MSSQLServer" } { 
 	set rdbms "Oracle" 
 	}
@@ -465,6 +494,11 @@ if {$rdbms == "Oracle"} {
 .ed_mainFrame.buttons.console configure -state disabled
        }
 disable_tree
+if { $highlight eq "true" } {
+highlight_on
+	} else {
+highlight_off
+	}
 }
 
 proc loadtpcc {} {
@@ -521,6 +555,7 @@ loadoraawrtpcc
      		} 
 	}
     }
+applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 }
 
 proc loadtpch {} {
@@ -545,6 +580,7 @@ default {
 loadoratpch
 	}
    }
+applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 }
 
 proc construct_button {Name data file cmd helpmsg} {
@@ -586,6 +622,7 @@ proc ed_file_load {} {
  
     ed_edit
     ed_status_message -perm
+    applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
     update
     set _ED(blockflag) 0
 }
@@ -1083,14 +1120,50 @@ proc ed_edit_copy {} {
 
 
 proc ed_edit_paste {} {
-  
 	tk_textPaste  .ed_mainFrame.mainwin.textFrame.left.text
-
 }
+
+proc tlines {text} {
+return [expr [lindex [split [$text index end] .] 0] -1]
+}
+
+proc applyctexthighlight {w} {
+global highlight
+if { $highlight eq "true" } {
+#force cursor change for windows
+.ed_mainFrame conf -cursor watch
+tk busy .ed_mainFrame
+$w highlight 1.0 [ tlines $w ].0
+tk busy forget .ed_mainFrame
+.ed_mainFrame conf -cursor {}
+ed_status_message -temp "Highlighting Complete"
+update
+	} else {
+#Don't highlight
+	;
+		}
+	}
+
+proc setctexthighlight {w} {
+         set colour(vars) green
+         set colour(cmds) blue
+         set colour(functions) magenta
+         set colour(brackets) gray50
+         set colour(comments) black
+         set colour(strings) red
+        ctext::addHighlightClassWithOnlyCharStart $w vars $colour(vars) "\$"
+        ctext::addHighlightClass $w cmds $colour(cmds) [ list mysqlconnect oralogon tell socket subst open eof oraplexec pwd mysqlquery oraopen glob list mysqlnext pid exec oraexec auto_load_index time unknown eval lassign lrange fblocked lsearch oracols auto_import gets mysqlmap case lappend proc throw mysqlbaseinfo mysqlresult break mysqlseek variable llength orabind auto_execok return pkg_mkIndex linsert mysqlsel error oracommit catch mysqlping clock info split orainfo redis array if fconfigure coroutine concat join lreplace mysqlreceive source fcopy global orastmlist switch auto_qualify update mysqlcol tclPkgUnknown close orabreak cd for auto_load file append lreverse oramsg format lmap mysqlchangeuser mysqlendquery unload read package set namespace binary scan apply mysqlstate oralob oraldalist oralogoff trace oraconfig seek oradesc zlib while chan flush after mysqlexec mysqluse vwait orafetch dict uplevel continue try mysqlinsertid oraclose foreach lset rename oralong oraautocom fileevent yieldto regexp mysqlclose orabindexec lrepeat tclPkgSetup upvar tailcall mysqlescape encoding expr unset load regsub mysqlinfo orasql history interp exit oraroll puts incr lindex lsort oraparse tclLog string yield tsv::get tsv::set pg_backend_pid pg_blocking pg_cancelrequest pg_conndefaults pg_connect pg_disconnect pg_escape_bytea pg_escape_string pg_exec pg_exec_params pg_exec_prepared pg_execute pg_getresult pg_isbusy pg_listen pg_lo_close pg_lo_creat pg_lo_export pg_lo_import pg_lo_lseek pg_lo_open pg_lo_read pg_lo_tell pg_lo_unlink pg_lo_write pg_notice_handler pg_on_connection_loss pg_parameter_status pg_quote pg_result pg_result_callback pg_select pg_sendquery pg_sendquery_params pg_sendquery_prepared pg_server_version pg_transaction_status pg_unescape_bytea database ]
+
+ 	ctext::addHighlightClass $w functions $colour(functions) [ list abs acos asin atan atan2 bool ceil cos cosh double entier exp floor fmod hypot int isqrt log log10 max min pow rand round sin sinh sqrt srand tan tanh wide ]
+         ctext::addHighlightClassForSpecialChars $w brackets $colour(brackets) {\{\}\[\]}
+         ctext::addHighlightClassForRegexp $w comments $colour(comments) {\#[^\n\r]*} 
+         ctext::addHighlightClassForRegexp $w strings $colour(strings) {"(\\"|[^"])*"} 
+ }
 
 proc ed_edit {} {
    global _ED defaultBackground
    global Menu_string
+   global highlight
 
    catch "destroy .ed_mainFrame.mainwin.buttons"
    catch "destroy .ed_mainFrame.mainwin.f1"
@@ -1124,16 +1197,31 @@ proc ed_edit {} {
          -padx 0 -pady 0 -side right
 
    set Name $Parent.textFrame.left.text
-   text $Name -background white  -borderwidth 2 -foreground black \
+if { $highlight eq "true" } {
+   ctext $Name -background white  -borderwidth 2 -foreground black \
+	-highlight 1 \
          -highlightbackground LightGray -insertbackground black \
          -selectbackground $defaultBackground -selectforeground black \
          -wrap none \
          -font basic \
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
-         -yscrollcommand "$Parent.textFrame.left.horizScrollbar set"
-   $Name insert end {
-   }
-
+         -yscrollcommand "$Parent.textFrame.left.horizScrollbar set" \
+         -linemap 1 \
+	 -linemap_markable 0
+   setctexthighlight $Name
+	} else {
+   ctext $Name -background white  -borderwidth 2 -foreground black \
+	-highlight 0 \
+         -highlightbackground LightGray -insertbackground black \
+         -selectbackground $defaultBackground -selectforeground black \
+         -wrap none \
+         -font basic \
+         -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
+         -yscrollcommand "$Parent.textFrame.left.horizScrollbar set" \
+         -linemap 0 \
+	 -linemap_markable 0
+	}
+   $Name fastinsert end { }
    pack $Name -anchor center -expand 1 -fill both -ipadx 0 -ipady 0 \
          -padx 0 -pady 0 -side top
    bind $Parent.textFrame.left.text <Any-ButtonRelease> \
@@ -1981,13 +2069,13 @@ if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh 
 proc about { } {
 global hdb_version
 tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2013
+Copyright (C) 2003-2014
 Steve Shaw\n" 
 }
 
 proc license { } {
 tk_messageBox -title License -message "
-Copyright (C) 2003-2013
+Copyright (C) 2003-2014
 Steve Shaw
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 This copyright notice must be included in all distributions.
@@ -2930,6 +3018,10 @@ default {
 if { $bm == "TPC-C" } { check_oratpcc } else { check_oratpch }
 	}
     }
+.ed_mainFrame.notebook select .ed_mainFrame.mainwin
+applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
+.ed_mainFrame.notebook select .ed_mainFrame.tw
+run_virtual
 }
 
 proc configtpcc { option } {

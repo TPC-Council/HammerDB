@@ -35,7 +35,7 @@ puts "Failed to create thread(s) for schema creation: $message"
 	return 1
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act { #!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act { #!/usr/local/bin/tclsh8.6
 if [catch {package require Oratcl} ] { error "Failed to load Oratcl - Oracle OCI Library Error" }
 proc CreateStoredProcs { lda timesten num_part } {
 puts "CREATING TPCC STORED PROCEDURES"
@@ -2930,9 +2930,7 @@ return
     }
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 2894.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $plsql $directory $partition $tpcc_tt_compat $num_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $plsql $directory $partition $tpcc_tt_compat $num_threads"
 	} else { return }
 }
 
@@ -2948,7 +2946,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Oratcl} \] { error \"Failed to load Oratcl - Oracle OCI Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $total_iterations ;# Number of transactions before logging off
@@ -2956,11 +2954,11 @@ set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
 set KEYANDTHINK \"$keyandthink\" ;# Time for user thinking and keying (true or false)
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 7.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 9.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#RANDOM NUMBER
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#RANDOM NUMBER
 proc RandomNumber {m M} {return [expr {int($m+rand()*($M+1-$m))}]}
 #STANDARD SQL
 proc standsql { curn sql } {
@@ -3227,8 +3225,7 @@ oraclose $curn_dl
 oraclose $curn_sl
 oraclose $curn_os
 oralogoff $lda
-}
-update
+	}
 }
 
 proc loadoraawrtpcc { } {
@@ -3250,7 +3247,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C AWR"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Oratcl} \] { error \"Failed to load Oratcl - Oracle OCI Library Error\" }
 #AWR SNAPSHOT DRIVER SCRIPT#######################################
 #THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
@@ -3265,12 +3262,12 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set timesten \"$tpcc_tt_compat\" ;# Database is TimesTen
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 14.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "set systemconnect $system_user/$system_password@$instance ;# Oracle connect string for system user
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "set systemconnect $system_user/$system_password@$instance ;# Oracle connect string for system user
 set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 17.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#CHECK THREAD STATUS
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#CHECK THREAD STATUS
 proc chk_thread {} {
 	set chk [package provide Thread]
 	if {[string length $chk]} {
@@ -3671,9 +3668,8 @@ oraclose $curn_sl
 oraclose $curn_os
 oralogoff $lda
 	}
-    }
-} 
-update
+     }
+  } 
 }
 
 proc check_mssqltpcc {} {
@@ -3703,7 +3699,7 @@ puts "Failed to created thread for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require tclodbc 2.5.1} ] { error "Failed to load tclodbc - ODBC Library Error" }
 proc CreateStoredProcs { odbc schema } {
 if { $schema != "updated" } {
@@ -5486,9 +5482,7 @@ return
 	}
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1788.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_count_ware $mssqls_dbase $mssqls_schema $mssqls_num_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_count_ware $mssqls_dbase $mssqls_schema $mssqls_num_threads"
         } else { return }
 }
 
@@ -5509,7 +5503,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require tclodbc 2.5.1} \] { error \"Failed to load tclodbc - ODBC Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
@@ -5525,7 +5519,7 @@ set database \"$mssqls_dbase\";# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 16.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {proc connect_string { server port odbc_driver authentication uid pwd } {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc connect_string { server port odbc_driver authentication uid pwd } {
 if {[ string toupper $authentication ] eq "WINDOWS" } { 
 if {[ string match -nocase {*native*} $odbc_driver ] } { 
 set connection "DRIVER=$odbc_driver;SERVER=$server;PORT=$port;TRUSTED_CONNECTION=YES"
@@ -5810,7 +5804,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require tclodbc 2.5.1} \] { error \"Failed to load tclodbc - ODBC Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
@@ -5830,7 +5824,7 @@ set database \"$mssqls_dbase\";# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 19.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#CHECK THREAD STATUS
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#CHECK THREAD STATUS
 proc chk_thread {} {
 	set chk [package provide Thread]
 	if {[string length $chk]} {
@@ -6226,7 +6220,7 @@ puts "Failed to created thread for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require mysqltcl} ] { error "Failed to load mysqltcl - MySQL Library Error" }
 proc CreateStoredProcs { mysql_handler } {
 puts "CREATING TPCC STORED PROCEDURES"
@@ -7278,9 +7272,7 @@ return
 }
 
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1070.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc $mysql_host $mysql_port $my_count_ware $mysql_user $mysql_pass $mysql_dbase $storage_engine $mysql_partition $mysql_num_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $mysql_host $mysql_port $my_count_ware $mysql_user $mysql_pass $mysql_dbase $storage_engine $mysql_partition $mysql_num_threads"
 	} else { return }
 }
 
@@ -7298,7 +7290,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require mysqltcl} \] { error \"Failed to load mysqltcl - MySQL Library Error\" }
 global mysqlstatus
 #EDITABLE OPTIONS##################################################
@@ -7313,7 +7305,7 @@ set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 14.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#RANDOM NUMBER
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#RANDOM NUMBER
 proc RandomNumber {m M} {return [expr {int($m+rand()*($M+1-$m))}]}
 #NURand function
 proc NURand { iConst x y C } {return [ expr {((([RandomNumber 0 $iConst] | [RandomNumber $x $y]) + $C) % ($y - $x + 1)) + $x }]}
@@ -7512,7 +7504,6 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 mysqlclose $mysql_handler
 	}
-update
 }
 
 proc loadtimedmytpcc { } {
@@ -7532,7 +7523,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C Timed Test"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[ catch {package require mysqltcl} \] { error \"Failed to load mysqltcl - MySQL Library Error\" }
 global mysqlstatus
 #EDITABLE OPTIONS##################################################
@@ -7550,7 +7541,7 @@ set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 17.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#CHECK THREAD STATUS
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#CHECK THREAD STATUS
 proc chk_thread {} {
 	set chk [package provide Thread]
 	if {[string length $chk]} {
@@ -7866,7 +7857,7 @@ puts "Failed to created thread for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require Pgtcl} ] { error "Failed to load Pgtcl - Postgres Library Error" }
 proc CreateStoredProcs { lda ora_compatible } {
 puts "CREATING TPCC STORED PROCEDURES"
@@ -9376,9 +9367,7 @@ return
     }
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1510.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_num_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_num_threads"
 	} else { return }
 }
 
@@ -9397,7 +9386,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Pgtcl} \] { error \"Failed to load Pgtcl - Postgres Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
@@ -9412,7 +9401,7 @@ set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 14.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#RANDOM NUMBER
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#RANDOM NUMBER
 proc RandomNumber {m M} {return [expr {int($m+rand()*($M+1-$m))}]}
 #NURand function
 proc NURand { iConst x y C } {return [ expr {((([RandomNumber 0 $iConst] | [RandomNumber $x $y]) + $C) % ($y - $x + 1)) + $x }]}
@@ -9656,8 +9645,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
 pg_disconnect $lda
-}
-update
+	}
 }
 
 proc loadtimedpgtpcc { } {
@@ -9683,7 +9671,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Pgtcl} \] { error \"Failed to load Pgtcl - Postgres Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
@@ -9706,7 +9694,7 @@ set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 22.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#CHECK THREAD STATUS
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#CHECK THREAD STATUS
 proc chk_thread {} {
 	set chk [package provide Thread]
 	if {[string length $chk]} {
@@ -10093,8 +10081,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 pg_disconnect $lda
 		}
 	}
-}
-update
+    }
 }
 
 proc check_redistpcc { } {
@@ -10119,7 +10106,7 @@ puts "Failed to created thread for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require redis} ] { error "Failed to load Redis - Redis Package Error" }
 proc chk_thread {} {
         set chk [package provide Thread]
@@ -10546,9 +10533,7 @@ return
 	}
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 429.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpcc $redis_host $redis_port $redis_namespace $redis_count_ware $redis_num_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $redis_host $redis_port $redis_namespace $redis_count_ware $redis_num_threads"
 	} else { return }
 }
 
@@ -10565,7 +10550,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require redis} \] { error \"Failed to load Redis - Redis Package Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
@@ -10577,7 +10562,7 @@ set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 11.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#RANDOM NUMBER
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#RANDOM NUMBER
 proc RandomNumber {m M} {return [expr {int($m+rand()*($M+1-$m))}]}
 #NURand function
 proc NURand { iConst x y C } {return [ expr {((([RandomNumber 0 $iConst] | [RandomNumber $x $y]) + $C) % ($y - $x + 1)) + $x }]}
@@ -10889,7 +10874,6 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 $redis QUIT
 	}
-update
 }
 
 proc loadtimedredistpcc {} {
@@ -10908,7 +10892,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require redis} \] { error \"Failed to load Redis - Redis Package Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
@@ -10923,7 +10907,7 @@ set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 14.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {proc chk_thread {} {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc chk_thread {} {
 	set chk [package provide Thread]
 	if {[string length $chk]} {
 	    return "TRUE"
@@ -11332,5 +11316,4 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 $redis QUIT
 	}
-update
 }

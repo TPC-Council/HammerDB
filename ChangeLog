@@ -651,3 +651,13 @@ Bug Fixes
 Added option to cancel running virtual users when attempting to restart virtual users and existing ones are already running in the background. Ability to cancel threads first enabled in TCL Threads 2.7.0 with TCL 8.6
 
 Added contribution by Roberto Dyke to improve 3D Ribbon perspective on transaction counter
+
+---------------------------------------------------------------------
+
+Version 2.16 February 2014
+
+Added TCL aware Script Editor Window with keyword and control highlighting
+
+Added gradient tint to end of transaction counter graph
+
+Added metrics agent and display to monitor CPU utilisation

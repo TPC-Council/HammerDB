@@ -30,7 +30,7 @@ puts "Failed to create threads for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require Oratcl} ] { error "Failed to load Oratcl - Oracle OCI Library Error" }
 proc GatherStatistics { lda tpch_user timesten } {
 puts "GATHERING SCHEMA STATISTICS"
@@ -1187,9 +1187,7 @@ return
 	}
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1156.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpch $system_password $instance  $scale_fact $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch $system_password $instance  $scale_fact $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
 	} else { return }
 }
 
@@ -1218,7 +1216,7 @@ puts "Failed to create threads for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require mysqltcl} ] { error "Failed to load mysqltcl - MySQL Library Error" }
 
 proc GatherStatistics { mysql_handler } {
@@ -2028,9 +2026,7 @@ return
 	}
   }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 831.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpch $mysql_host $mysql_port $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch $mysql_host $mysql_port $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
 	} else { return }
 }
 
@@ -2061,7 +2057,7 @@ puts "Failed to create threads for schema creation: $message"
 	return
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require tclodbc 2.5.1} ] { error "Failed to load tclodbc - ODBC Library Error" }
 proc UpdateStatistics { odbc db } {
 puts "UPDATING SCHEMA STATISTICS"
@@ -2868,9 +2864,7 @@ return
 	}
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 806.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tpch_dbase $mssqls_maxdop $mssqls_num_tpch_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tpch_dbase $mssqls_maxdop $mssqls_num_tpch_threads"
 	} else { return }
 }
 
@@ -2903,7 +2897,7 @@ puts "Failed to create threads for schema creation: $message"
         return
         }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require Pgtcl} ] { error "Failed to load Pgtcl - Postgres Library Error" }
 proc GatherStatistics { lda } {
 puts "GATHERING SCHEMA STATISTICS"
@@ -3838,9 +3832,7 @@ return
 	}
 }
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 934.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
-update
-run_virtual
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
 	} else { return }
 }
 
@@ -3863,7 +3855,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "Oracle TPC-H"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Oratcl} \] { error \"Failed to load Oratcl - Oracle OCI Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_querysets $total_querysets ;# Number of query sets before logging off
@@ -3872,17 +3864,17 @@ set VERBOSE \"$verbose\" ;# Show query text and output
 set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 8.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "set scale_factor $scale_fact ;#Scale factor of the tpc-h schema\nset timesten \"$tpch_tt_compat\" ;# Database is TimesTen\nset connect $tpch_user/$tpch_pass@$instance ;# Oracle connect string for tpc-h user
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "set scale_factor $scale_fact ;#Scale factor of the tpc-h schema\nset timesten \"$tpch_tt_compat\" ;# Database is TimesTen\nset connect $tpch_user/$tpch_pass@$instance ;# Oracle connect string for tpc-h user
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 11.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "set refresh_on \"$refresh_on\" ;#First User does refresh function
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "set refresh_on \"$refresh_on\" ;#First User does refresh function
 set update_sets $update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$refresh_verbose\" ;#report refresh function activity
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 17.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {proc standsql { curn sql RAISEERROR } {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc standsql { curn sql RAISEERROR } {
 set ftch ""
 if {[catch {orasql $curn $sql} message]} {
 if { $RAISEERROR } {
@@ -4236,13 +4228,11 @@ puts [ oramsg $curn2 all ]
   }
 if { ![ expr {$i % 1000} ] } {     
 	  oracommit $lda
-        update
    }
 }
 oracommit $lda
 oraclose $curn1
 oraclose $curn2
-update
 }
 
 proc del_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -4285,13 +4275,11 @@ puts "Refresh Delete Orderkey $okey..."
 	}
 if { ![ expr {$i % 1000} ] } {     
 	  oracommit $lda
-        update
    }
 }
 oracommit $lda
 oraclose $curn1
 oraclose $curn2
-update
 }
 
 proc do_refresh { connect scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET timesten } {
@@ -4752,7 +4740,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "MySQL TPC-H"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[ catch {package require mysqltcl} \] { error \"Failed to load mysqltcl - MySQL Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_querysets $mysql_total_querysets ;# Number of query sets before logging off
@@ -4771,7 +4759,7 @@ set REFRESH_VERBOSE \"$mysql_refresh_verbose\" ;#report refresh function activit
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 18.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {proc standsql { mysql_handler sql RAISEERROR } {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc standsql { mysql_handler sql RAISEERROR } {
 global mysqlstatus
 catch { set oput [ join [ mysql::sel $mysql_handler "$sql" -list ] ] }
 if { $mysqlstatus(code)  } {
@@ -5570,7 +5558,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "SQL Server TPC-H"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require tclodbc 2.5.1} \] { error \"Failed to load tclodbc - ODBC Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_querysets $mssqls_total_querysets ;# Number of query sets before logging off
@@ -5592,7 +5580,7 @@ set REFRESH_VERBOSE \"$mssqls_refresh_verbose\" ;#report refresh function activi
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 21.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act {proc connect_string { server port odbc_driver authentication uid pwd } {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc connect_string { server port odbc_driver authentication uid pwd } {
 if {[ string toupper $authentication ] eq "WINDOWS" } { 
 if {[ string match -nocase {*native*} $odbc_driver ] } { 
 set connection "DRIVER=$odbc_driver;SERVER=$server;PORT=$port;TRUSTED_CONNECTION=YES"
@@ -5929,11 +5917,9 @@ odbc "INSERT INTO LINEITEM (L_SHIPDATE, L_ORDERKEY, L_DISCOUNT, L_EXTENDEDPRICE,
   }
 if { ![ expr {$i % 1000} ] } {     
 odbc commit
-        update
    }
 }
 odbc commit
-update
 }
 
 proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -5960,11 +5946,9 @@ puts "Refresh Delete Orderkey $okey..."
 	}
 if { ![ expr {$i % 1000} ] } {     
 odbc commit
-        update
    }
 }
 odbc commit
-update
 }
 
 proc do_refresh { server port scale_factor odbc_driver authentication uid pwd database update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
@@ -6407,7 +6391,7 @@ ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "PostgreSQL TPC-H"
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act "#!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
 if \[catch {package require Pgtcl} \] { error \"Failed to load Pgtcl - Postgres Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_querysets $pg_total_querysets ;# Number of query sets before logging off
@@ -6426,7 +6410,7 @@ set REFRESH_VERBOSE \"$pg_refresh_verbose\" ;#report refresh function activity
 #EDITABLE OPTIONS##################################################
 "
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 18.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text insert $act { proc standsql { lda sql RAISEERROR VERBOSE } {
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act { proc standsql { lda sql RAISEERROR VERBOSE } {
 if {[catch { pg_select $lda $sql var { if { $VERBOSE } { 
 foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
 if { $RAISEERROR } {

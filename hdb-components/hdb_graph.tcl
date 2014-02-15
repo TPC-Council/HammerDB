@@ -247,6 +247,7 @@ proc emu_graph args {
 	error "Usage: emu_graph graph \[options\] ($restargs)"
     }
     set emu_graph($graph,datasets) {}
+    set emu_graph($graph,gradsets) {}
     
     # define the widget command
     namespace eval :: \
@@ -511,6 +512,31 @@ proc assign_colors {graph dataset} {
 	}
     }
 }
+    proc rgb_to_hex {rgb} {
+        lassign $rgb r g b
+        set r [format %02x [expr {$r/256}]]
+        set g [format %02x [expr {$g/256}]]
+        set b [format %02x [expr {$b/256}]]
+        return #$r$g$b
+    }
+
+    proc get_colour {rgb1 rgb2 length index} {
+        if { $index < 0  ||  $index >= $length } {
+            error "index $index is out of bounds for length $length"
+        }
+        lassign $rgb1 r1 g1 b1
+        lassign $rgb2 r2 g2 b2
+        set r_ratio [expr { 1.00*($r2-$r1+1)/$length }]
+        set g_ratio [expr { 1.00*($g2-$g1+1)/$length }]
+        set b_ratio [expr { 1.00*($b2-$b1+1)/$length }]
+        set r [expr { int($r_ratio*$index+$r1) }]
+        set g [expr { int($g_ratio*$index+$g1) }]
+        set b [expr { int($b_ratio*$index+$b1) }]
+        if { $index == [expr {$length-1}] } {
+            lassign $rgb2 r g b
+        }
+        return [rgb_to_hex [list $r $g $b]]
+    }
 
 proc plot_data {graph} {
 
@@ -521,6 +547,10 @@ proc plot_data {graph} {
     }
 
     set canvas $emu_graph($graph,canvas)
+    foreach tag $emu_graph($graph,gradsets) {
+        $canvas delete -withtag $tag 
+    }
+    set emu_graph($graph,gradsets) {}
 
     foreach tag $emu_graph($graph,datasets) {
         # plot the points, first delete any old ones
@@ -563,12 +593,43 @@ proc plot_data {graph} {
 	    set labelcolors 0
 	}
 
-
 	if { $emu_graph($graph,$tag,lines) } {
+	set colour1 $emu_graph($graph,$tag,colour)
+	#Fix colour 2 to always grade to white
+	set colour2 white
+        if { [catch {winfo rgb . $colour1} rgb1] } {
+            error "invalid color: $colour1"
+        }
+        if { [catch {winfo rgb . $colour2} rgb2] } {
+            error "invalid color: $colour2"
+        }
 	    ## create the line as a single line item
-	    eval "$canvas create poly [concat 75 180 $coords 475 180] -fill $emu_graph($graph,$tag,colour) -tag {$tag}"
+	    ## add start and end points
+	set ribcoords $coords
+	set coords [concat 75 180 $coords 475 180]
+	    #grab last 6 points for gradient poly
+	set lastsixcoords [ lrange $coords end-5 end ]
+            #complete grad coordinates by adding pair at bottom of line in line with last point
+        set gradcoords [ concat [ lindex $lastsixcoords 0 ] [ lindex $lastsixcoords end ] $lastsixcoords ]
+            #delete last 6 points
+        set coordscopy [ lreplace $coords end-5 end ]
+            #complete coords by adding same pair
+        lappend coordscopy [ expr [ lindex $lastsixcoords 0 ] + 2 ] [ lindex $lastsixcoords 1 ] [ expr [ lindex $lastsixcoords 0 ] + 2 ] [ lindex $lastsixcoords end ] 
+	set x1 [ lindex $gradcoords 0 ]
+	set x2 [ lindex $gradcoords end-1 ]
+	set z1 [ lindex $gradcoords 3 ]
+	set z2 [ lindex $gradcoords 4 ]
+	set z3 [ lindex $gradcoords 5 ]
+	set width [expr {$x2-$x1}]
+	eval "$canvas create poly $coordscopy -fill $colour1 -tag {$tag}"
+    	::Ribbon::Draw $canvas $ribcoords l 18
 	$canvas lower $tag
-    ::Ribbon::Draw $canvas $coords l 18
+	#create gradient poly as a number of polys from colour to white
+	for {set x 1} {$x < $width} {incr x} {
+	set gradcolour [ get_colour $rgb1 $rgb2 $width $x ]
+	eval "$canvas create poly [expr $x1+$x] $z1 $z2 $z3 [expr $x1+$x+1] [ lindex $gradcoords end ] -fill $gradcolour -tag {$tag-g-$x}" 
+        lappend emu_graph($graph,gradsets) $tag-g-$x
+	}
 	}
 
         for {set i 0} {$i < [llength $coords]-1} {incr i 2} {

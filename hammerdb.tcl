@@ -11,7 +11,7 @@ exit
 ########################################################################
 # HammerDB
 #
-# Copyright (C) 2003-2013 Steve Shaw
+# Copyright (C) 2003-2014 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -33,6 +33,7 @@ exit
 #This loader program loads the following components in order:
 #hdb_logo.tcl	- HammerDB Logo image
 #hdb_pckg.tcl 	- Required TCL packages 
+#hdb_ctext.tcl  - TCL keyword enhanced text editor
 #hdb_tkcon.tcl  - tkcon console
 #hdb_vu.tcl 	- Virtual user TCL threads
 #hdb_tpcc.tcl	- TPC-C schema creation and driver
@@ -50,7 +51,7 @@ exit
 #hdb_go.tcl 	- Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.15"
+set hdb_version "v2.16"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 namespace eval LoadingProgressMeter {
@@ -150,7 +151,7 @@ if [info exist env(Load_List)] {
     }
 }
 
-append loadlist { hdb_pckg.tcl hdb_tkcon.tcl hdb_tablist.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_comm.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_graph.tcl hdb_tc.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
+append loadlist { hdb_pckg.tcl hdb_ctext.tcl hdb_tkcon.tcl hdb_tablist.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_comm.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_graph.tcl hdb_tc.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
 
 set loadtext "Loading hammerdb components"
 
