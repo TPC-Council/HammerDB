@@ -11,7 +11,7 @@ exit
 ########################################################################
 # HammerDB
 #
-# Copyright (C) 2003-2014 Steve Shaw
+# Copyright (C) 2003-2015 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -51,9 +51,29 @@ exit
 #hdb_go.tcl 	- Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.16"
+set hdb_version "v2.17"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
+
+namespace eval autostart {
+    set autostartap "false"
+    if {$argc == 0} { ; } else {
+    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+puts {Usage: hammerdb.tcl [ auto [ script_to_autoload.tcl  ] ]}
+exit
+	} else {
+        set autostartap "true"
+        set autoloadscript [lindex $argv 1]
+if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
+;# autostart selected and tcl file exists
+	     } else {
+puts {Usage: hammerdb.tcl [ auto [ script_to_autoload.tcl  ] ]}
+exit
+		}
+        } 
+   }
+}
+
 namespace eval LoadingProgressMeter {
     set max 14
 
@@ -169,5 +189,9 @@ after 2200
 wm withdraw .
 wm deiconify .ed_mainFrame
 ed_edit
+if { $autostart::autostartap == "true" } {
+    ed_file_load
+    start_autopilot
+	}
 tkwait window .ed_mainFrame
 exit

@@ -84,7 +84,7 @@ catch {puts $flog [ join "Vuser\ [expr $threadsbytid($id) + 1]:$msg" ] }
 }
 
 proc load_virtual {}  {
-global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser winterps suppo optlog table Parent ntimes tids tc_threadID
+global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser winterps suppo optlog table Parent ntimes tids tc_threadID opmode
 set thlist [ thread::names ]
 if { [ info exists tc_threadID ] } {
 set idx [ lsearch $thlist $tc_threadID ]
@@ -93,6 +93,7 @@ set thlist [ lreplace $thlist $idx $idx ]
 	}
 }
 set thlen [ llength $thlist ] 
+if { $opmode != "Slave" } {
 if { $thlen > 1 } {
 set thlen [ expr { $thlen - 1 } ]
 set thlist [ join [lreplace $thlist $thlen $thlen ] ]
@@ -107,6 +108,36 @@ catch {thread::cancel $ij}
 }
 return 1
 } else { ;#Only the Master thread is running }
+} else {
+#Running in slave mode so attempt to terminate virtual users and continue
+if { $thlen > 1 } {
+set thlen [ expr { $thlen - 1 } ]
+set thlist [ join [lreplace $thlist $thlen $thlen ] ]
+set termcheck "fail"
+for { set termincnt 1 } {$termincnt < 4 } {incr termincnt } {
+puts "Virtual Users still active in background in slave mode - attempting to terminate and continue - attempt $termincnt"
+foreach ij $thlist {
+catch {thread::cancel $ij}
+	}
+after 1000
+set thlist [ thread::names ]
+set thlen [ llength $thlist ] 
+if { $thlen <= 1 } { 
+puts "Success Virtual Users terminated"
+set termcheck "success"
+break 
+		}
+after 1000
+	}
+if { $termcheck eq "fail" } { 
+puts "Failed to terminate running Virtual Users"
+return 1 
+	} else {
+#running in slave mode virtual users terminated so continue
+puts "Continuing"
+	} 
+    }
+}
 ed_stop_vuser 
 tsv::set application abort 0
 if { [ info exists maxvuser ] } { ; } else { set maxvuser 1 }

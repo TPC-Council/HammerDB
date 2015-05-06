@@ -222,6 +222,36 @@
         </driver>
     </tpcc>
 </redis>
+<trafodion>
+    <connection>
+        <trafodion_dsn>Default_DataSource</trafodion_dsn>
+        <trafodion_odbc_driver>Trafodion</trafodion_odbc_driver>
+        <trafodion_server>sandbox</trafodion_server>
+        <trafodion_port>37800</trafodion_port>
+        <trafodion_userid>trafodion</trafodion_userid>
+        <trafodion_password>traf123</trafodion_password>
+        <trafodion_schema>tpcc</trafodion_schema>
+    </connection>
+	<tpcc>
+        <schema>
+            <trafodion_count_ware>1</trafodion_count_ware>
+            <trafodion_num_threads>1</trafodion_num_threads>
+            <trafodion_load_type>upsert</trafodion_load_type>
+            <trafodion_load_data>true</trafodion_load_data>
+            <trafodion_build_jsps>true</trafodion_build_jsps>
+            <trafodion_copy_remote>false</trafodion_copy_remote>
+            <trafodion_node_list>sandbox</trafodion_node_list>
+        </schema>
+        <driver>
+            <trafodion_total_iterations>1000000</trafodion_total_iterations>
+            <trafodion_raiseerror>false</trafodion_raiseerror>
+            <trafodion_keyandthink>false</trafodion_keyandthink>
+            <trafodion_driver>standard</trafodion_driver>
+	    <trafodion_rampup>2</trafodion_rampup>
+            <trafodion_duration>5</trafodion_duration>
+        </driver>
+    </tpcc>
+</trafodion>
   <virtual_user_options>
         <virtual_users>1</virtual_users>
         <user_delay>500</user_delay>

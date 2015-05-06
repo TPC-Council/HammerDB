@@ -34,7 +34,7 @@ exit
 #
 # Author contact information: smshaw@users.sourceforge.net
 ######################################################################   
-set version 2.16
+set version 2.17
 if {$tcl_platform(platform) == "windows"} { 
 ttk::setTheme xpnative 
 } else {

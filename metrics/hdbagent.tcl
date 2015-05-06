@@ -44,13 +44,18 @@ for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } 
                         \"$f\"...\n$errorInfo"
         }
     }
+#Enable report for more than 122 CPUs
+interp recursionlimit {} 1500
 global agentlist S iswin
 set iswin "false"
-set version 2.16
+set version 2.17
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 
 	set iswin "true"
+	} else {
+#Remove AMPM from mpstat output
+set env(LANG) "POSIX"
 	} 
 
 proc SendOneLine {line} {
@@ -164,6 +169,7 @@ set agentlist [ lreplace $agentlist $todel $todel ]
 }
 
 proc isReadable {fin} {
+global S iswin
     set status [catch { gets $fin line } result]
     if { $status != 0 } {
 if { [catch { puts "error reading $fin: $result" } b] } { 
@@ -172,9 +178,13 @@ if { [catch { puts "error reading $fin: $result" } b] } {
         set ::DONE 2
     } elseif { $result >= 0 } {
         #Successfully read the channel
-        if {![string match {[0-9]*} $line]} return
+if {![string match {[0-9]*} $line]} return
+if  { $iswin eq "false" && $::S(gnice) eq "true" } {
+	#rPrune gnice data
+set line [ lreplace $line 10 10 ]
+	}
 if { [catch { SendOneLine $line } b] } { 
-	#Error Sending
+puts "Error Sending Data: $b"
 	}
     } elseif { [eof $fin] } {
         set ::DONE 1
@@ -221,6 +231,14 @@ if {! [file exists /proc/cpuinfo] || [auto_execok mpstat] eq ""} {
     puts "Linux mpstat error : check that mpstat command in sysstat package is installed"
     puts "HammerDB Metric Agent Terminated"
     return
+	}
+#sysstat from 10.1.2 includes additional column
+set mpvgnice "10.1.2"
+set mpversion  [ split [ exec mpstat -V ] ]
+set mpv [ lindex $mpversion 2 ] 
+set mpvcomp [ string compare $mpv $mpvgnice ]
+if { $mpvcomp >= 0 } {
+set ::S(gnice) true
 	}
 HowManyProcessorsLinux
   }

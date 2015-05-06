@@ -661,3 +661,22 @@ Added TCL aware Script Editor Window with keyword and control highlighting
 Added gradient tint to end of transaction counter graph
 
 Added metrics agent and display to monitor CPU utilisation
+
+---------------------------------------------------------------------
+
+Version 2.17 May 2015
+
+Bug Fixes
+
+[ #102 ] SQL Server 1TB Schema Build Fails
+[ #103 ] CPU Metrics fails on Linux with sysstat 10.1.2 and higher and/or more than 122 CPUs
+[ #104 ] HammerDB shows interactive dialog to terminate virtual users in slave mode 
+[ #105 ] Oracle AWR driver script only reports TPM from the first instance when running against RAC 
+
+Increased permitted virtual user sequence from 30 to 60 virtual users in autopilot
+
+Updated PostgreSQL FILLFACTOR values as advised by PostgreSQL architects
+
+Added support for running autopilot mode from the command line contributed by Wes Vaske
+
+Added support for Trafodion SQL on Hadoop database with TPC-C workload

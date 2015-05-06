@@ -164,8 +164,11 @@ if {[winfo exists $Name]} {
 $Name.a.t insert end  "Autopilot Sequence ended at [clock format [clock seconds] -format %T_%D]\n"
 .ed_mainFrame.ap.canv.a.t see end
 			}
+if { $autostart::autostartap == "true" } {
+    ed_kill_autopilot
+}
 return
-		}
+}
 	} else {
 after 1000 every $time0 $apduration [ list $apseqcp ]
 	}
@@ -227,6 +230,10 @@ $Name configure -state normal
 set Name .ed_mainFrame.treeframe.treeview  
 $Name state !disabled
 ed_status_message -finish "Autopilot Stopped"
+if { $autostart::autostartap == "true" } {
+        puts "Closing HammerDB in Autostart mode"
+        destroy .ed_mainFrame
+    }
 }
 
 proc switch_mode { opmode hostname id masterlist } {

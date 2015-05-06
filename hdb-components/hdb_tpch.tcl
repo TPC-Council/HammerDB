@@ -2090,15 +2090,15 @@ odbc "create database $db"
 }
 
 proc CreateTables { odbc } {
-puts "CREATING TPCC TABLES"
-set sql(1) "create table dbo.customer (c_custkey int not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal money null, c_comment varchar(118) null)" 
-set sql(2) "create table dbo.lineitem (l_shipdate date null, l_orderkey int not null, l_discount money not null, l_extendedprice money not null, l_suppkey int not null, l_quantity int not null, l_returnflag char(1) null, l_partkey int not null, l_linestatus char(1) null, l_tax money not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber int not null, l_shipinstruct char(25) null, l_comment varchar(44) null)" 
+puts "CREATING TPCH TABLES"
+set sql(1) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal money null, c_comment varchar(118) null)" 
+set sql(2) "create table dbo.lineitem (l_shipdate date null, l_orderkey bigint not null, l_discount money not null, l_extendedprice money not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax money not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)" 
 set sql(3) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null)" 
-set sql(4) "create table dbo.part( p_partkey int not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice money null, p_comment varchar(23) null)" 
-set sql(5) "create table dbo.partsupp( ps_partkey int not null, ps_suppkey int not null, ps_supplycost money not null, ps_availqty int null, ps_comment varchar(199) null)" 
+set sql(4) "create table dbo.part( p_partkey bigint not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice money null, p_comment varchar(23) null)" 
+set sql(5) "create table dbo.partsupp( ps_partkey bigint not null, ps_suppkey int not null, ps_supplycost money not null, ps_availqty int null, ps_comment varchar(199) null)" 
 set sql(6) "create table dbo.region(r_regionkey int not null, r_name char(25) null, r_comment varchar(152) null)"
 set sql(7) "create table dbo.supplier( s_suppkey int not null, s_nationkey int null, s_comment varchar(102) null, s_name char(25) null, s_address varchar(40) null, s_phone char(15) null, s_acctbal money null)" 
-set sql(8) "create table dbo.orders( o_orderdate date null, o_orderkey int not null, o_custkey int not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice money null, o_comment varchar(79) null)"
+set sql(8) "create table dbo.orders( o_orderdate date null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice money null, o_comment varchar(79) null)"
 for { set i 1 } { $i <= 8 } { incr i } {
 odbc  $sql($i)
 		}
@@ -2457,16 +2457,15 @@ set comment [ string replace $comment $st $fi $BBB_COMMEND ]
 	}
 }
 append supp_val_list ('$suppkey', '$nation_code', '$comment', '$name', '$address', '$phone', '$acctbal')
-if { $bld_cnt<= 1 } { 
-append supp_val_list ,
-}
 incr bld_cnt
 if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
 odbc "INSERT INTO SUPPLIER (S_SUPPKEY, S_NATIONKEY, S_COMMENT, S_NAME, S_ADDRESS, S_PHONE, S_ACCTBAL) VALUES $supp_val_list"
 	odbc commit
 	set bld_cnt 1
 	unset supp_val_list
-	}
+	} else {
+	append supp_val_list ,
+        }
 if { ![ expr {$i % 10000} ] } {
 	puts "Loading SUPPLIER...$i"
 	}
@@ -2488,16 +2487,15 @@ set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])
 set mktsegment [ pick_str msegmnt ]
 set comment [ TEXT 73 ]
 append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment') 
-if { $bld_cnt<= 1 } { 
-append cust_val_list ,
-}
 incr bld_cnt
 if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
 odbc "INSERT INTO CUSTOMER (C_CUSTKEY, C_MKTSEGMENT, C_NATIONKEY, C_NAME, C_ADDRESS, C_PHONE, C_ACCTBAL, C_COMMENT) values $cust_val_list"
 	odbc commit
 	set bld_cnt 1
 	unset cust_val_list
-   }
+   	} else {
+	append cust_val_list ,
+        }
 if { ![ expr {$i % 10000} ] } {
 	puts "Loading CUSTOMER...$i"
 	}
@@ -2525,9 +2523,6 @@ set container [ pick_str p_cntr ]
 set price [ rpb_routine $i ]
 set comment [ TEXT 14 ]
 append part_val_list ('$partkey', '$type', '$size', '$brand', '$name', '$container', '$mfgr', '$price', '$comment')
-if { $bld_cnt<= 1 } { 
-append part_val_list ,
-}
 #Part Supp Loop
 for {set k 0} {$k < 4 } {incr k } {
 set psupp_pkey $partkey
@@ -2540,9 +2535,6 @@ if { $k<=2 } {
 append psupp_val_list ,
 	}
 }
-if { $bld_cnt<= 1 } { 
-append psupp_val_list ,
-}
 incr bld_cnt
 # end of psupp loop
 if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
@@ -2552,7 +2544,10 @@ odbc "INSERT INTO PARTSUPP (PS_PARTKEY, PS_SUPPKEY, PS_SUPPLYCOST, PS_AVAILQTY, 
 	set bld_cnt 1
 	unset part_val_list
 	unset psupp_val_list
-}
+	} else {
+	append psupp_val_list ,
+	append part_val_list ,
+	}
 if { ![ expr {$i % 10000} ] } {
 	puts "Loading PART/PARTSUPP...$i"
 	}
@@ -2633,18 +2628,11 @@ set lstatus "F"
 append lineit_val_list ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment') 
 if { $l < [ expr $lcnt - 1 ] } { 
 append lineit_val_list ,
-	} else {
-if { $bld_cnt<= 1 } { 
-append lineit_val_list ,
-		}
-	}
+	} 
   }
 if { $ocnt > 0} { set orderstatus "P" }
 if { $ocnt == $lcnt } { set orderstatus "F" }
 append order_val_list ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
-if { $bld_cnt<= 1 } { 
-append order_val_list ,
-}
 incr bld_cnt
 if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
 odbc "INSERT INTO LINEITEM (L_SHIPDATE, L_ORDERKEY, L_DISCOUNT, L_EXTENDEDPRICE, L_SUPPKEY, L_QUANTITY, L_RETURNFLAG, L_PARTKEY, L_LINESTATUS, L_TAX, L_COMMITDATE, L_RECEIPTDATE, L_SHIPMODE, L_LINENUMBER, L_SHIPINSTRUCT, L_COMMENT) VALUES $lineit_val_list"
@@ -2653,7 +2641,10 @@ odbc "INSERT INTO ORDERS (O_ORDERDATE, O_ORDERKEY, O_CUSTKEY, O_ORDERPRIORITY, O
 	set bld_cnt 1
 	unset lineit_val_list
 	unset order_val_list
-   }
+   	} else {
+	append order_val_list ,
+	append lineit_val_list ,
+	}
 if { ![ expr {$i % 10000} ] } {
 	puts "Loading ORDERS/LINEITEM...$i"
 	}
@@ -2863,7 +2854,7 @@ return
 		}
 	}
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 806.0 ]
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 797.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tpch_dbase $mssqls_maxdop $mssqls_num_tpch_threads"
 	} else { return }
 }
