@@ -15,7 +15,7 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2014 Steve Shaw
+# Copyright (C) 2003-2015 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -36,19 +36,14 @@ exit
 ######################################################################   
 #load files
 set UserDefaultDir [ file dirname [ info script ] ]
-append loadlist { hdb_comm.tcl }
-for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
-    set f [lindex $loadlist $loadcount]
-	if [catch {source [ file join $UserDefaultDir ../hdb-components $f ]}] {
-                puts stderr "While loading component file\
-                        \"$f\"...\n$errorInfo"
-        }
-    }
+::tcl::tm::path add "../$UserDefaultDir/hdb-modules"
+package require comm
+namespace import comm::*
 #Enable report for more than 122 CPUs
 interp recursionlimit {} 1500
 global agentlist S iswin
 set iswin "false"
-set version 2.17
+set version 2.18
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 
@@ -125,7 +120,7 @@ global cpu_model
 }
 
 proc ConfigureNetworkAgent { } {
-global agentlist S
+global agentlist S connectestablished
 set chanlist [ lindex [ ::comm channels ] end ]
 if { $chanlist eq "::Slave" } {
 puts "Closing $chanlist connection"
@@ -133,17 +128,22 @@ if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
 	}
 }
-if { [catch {::comm new Agent -listen 1 -local 0 -port {}} b] } {
+if { [catch {::comm new Agent -listen 1 -local 0 -silent "TRUE" -port {}} b] } {
 puts "Creation Failed : $b" } else {
 puts "HammerDB Metric Agent active @ id [ Agent self ] hostname [ info hostname ] (Ctrl-C to Exit)"
 Agent hook incoming {
+global connectestablished
+if { ![ info exists connectestablished ] } {
 puts "Received a new display request from host $addr"
+set connectestablished 1
+	}
 }
 Agent hook lost {
-global agentlist S
+global agentlist S connectestablished
 set todel [ lsearch $agentlist $id ]
 if { $todel != -1 } {
 puts "Connection to display $id lost: $reason"
+unset -nocomplain connectestablished
 puts "Reinitializing HammerDB Metric Agent"
 set agentlist [ lreplace $agentlist $todel $todel ]
 set ::DONE 2

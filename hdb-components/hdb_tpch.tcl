@@ -1989,6 +1989,7 @@ return
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
+mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
 }
 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
 if { [ expr $num_threads + 1 ] > $max_threads } { set num_threads $max_threads }

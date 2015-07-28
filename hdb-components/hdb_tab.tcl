@@ -55,14 +55,21 @@ set top $w
 		  0 "Status"} \
 	-yscrollcommand [list $vsb set] \
 	-height 10 -width 87 -stretch all \
-	-background white
+	-background white \
+	-borderwidth 0
     ttk::scrollbar $vsb -orient vertical -command [list $tbl yview]
     grid $tbl -row 0 -column 0 -sticky news
     grid $vsb -row 0 -column 1 -sticky ns
     grid rowconfigure    $tf 0 -weight 1
     grid columnconfigure $tf 0 -weight 1
     pack $tf -side top -expand yes -fill both
+	if { $ttk::currentTheme eq "black" } {
+	$tbl configure -labelforeground white
+	$tbl configure -selectbackground #929292
+	$tbl configure -stripebackground #828282
+	} else {
 	$tbl configure -stripebackground #dcdad5
+	}
 	$tbl columnconfigure 0 -align center
 	$tbl columnconfigure 1 -align center
 	$tbl columnconfigure 2 -align center

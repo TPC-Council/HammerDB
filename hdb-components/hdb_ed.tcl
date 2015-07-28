@@ -12,7 +12,7 @@ foreach tkcmd $tkcmdlist {
 }
 
 proc ed_start_gui {} {
-    global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes autopilot apmode defaultBackground rdbms
+    global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes autopilot apmode dashboard windock winundock defaultBackground defaultForeground rdbms
 
    set opmode "Local"
    ttk::toplevel .ed_mainFrame
@@ -106,6 +106,7 @@ tk_messageBox -title Highlight -message "Highlighting of keywords and program co
       {{command}  {Virtual User} {-command "vuser_options" -underline 1}}
 	{{command}  {Autopilot} {-command "autopilot_options" -underline 0}}
 	{{command}  {Transaction Counter} {-command "countopts" -underline 0}}
+      {{command}  {Metrics} {-command "metricsopts" -underline 0}}
       {{command}  {Mode} {-command "select_mode" -underline 0}}
       {{tearoff}  {no} {}}
       }
@@ -188,6 +189,8 @@ construct_button $Parent.buttons.boxes $boxes boxes.ppm "check_which_bm" "Create
 
 construct_button $Parent.buttons.pencil $pencil pencil.ppm "transcount" "Transaction Counter" 
 
+construct_button $Parent.buttons.dashboard $dashboard dashboard.ppm "metrics" "Metrics" 
+
 set Name $Parent.buttons.l15b
 ttk::label $Name -text " " 
 pack $Name -anchor nw -side left -expand 0  -fill x 
@@ -205,16 +208,24 @@ set run [image create photo -data $running -gamma 1 -height 16 -width 16 -palett
 set clo [image create photo -data $clock -gamma 1 -height 16 -width 16 -palette 5/5/4]
 
    set Name $Parent.panedwin
-   if { $ttk::currentTheme eq "clam" } {
-   panedwindow $Name -orient vertical -handlesize 8 -background $ttk::theme::clam::colors(-frame)} else {
+   if { $ttk::currentTheme eq "clam" || $ttk::currentTheme eq "black" } {
+switch $ttk::currentTheme {
+	clam { set pbckg $ttk::theme::clam::colors(-frame) }
+	black { set pbckg $ttk::theme::black::colors(-frame) }
+	}
+   panedwindow $Name -orient vertical -handlesize 8 -background $pbckg } else {
    panedwindow $Name -orient vertical -showhandle true
 	}
    pack $Name -expand yes -fill both
 
 ttk::style configure Heading -font TkDefaultFont
 set Name $Parent.panedwin.subpanedwin
-   if { $ttk::currentTheme eq "clam" } {
-   panedwindow $Name -orient horizontal -handlesize 8 -background $ttk::theme::clam::colors(-frame)} else {
+   if { $ttk::currentTheme eq "clam" || $ttk::currentTheme eq "black" } {
+switch $ttk::currentTheme {
+	clam { set pbckg $ttk::theme::clam::colors(-frame) }
+	black { set pbckg $ttk::theme::black::colors(-frame) }
+	}
+   panedwindow $Name -orient horizontal -handlesize 8 -background $pbckg } else {
    panedwindow $Name -orient horizontal -showhandle true
 	}
    pack $Name -expand yes -fill both
@@ -223,16 +234,16 @@ set Name $Parent.treeframe
 ttk::frame $Name
 pack $Name -anchor sw -expand 1 -fill both -side bottom
 $Parent.panedwin.subpanedwin add $Name
-#ttk::scrollbar $Parent.treeframe.hbar -orient horizontal -command "$Parent.treeframe.treeview xview"
-#pack $Parent.treeframe.hbar -anchor center -expand 0 -fill x -ipadx 0 -ipady 0 -padx "0 16" \
-#         -pady 0 -side bottom
 ttk::scrollbar $Parent.treeframe.vbar -orient vertical -command "$Parent.treeframe.treeview yview"
  pack $Parent.treeframe.vbar -anchor center -expand 0 -fill y -ipadx 0 -ipady 0 \
          -padx 0 -pady 0 -side right
 set Name $Parent.treeframe.treeview
+   if { $ttk::currentTheme eq "black" } {
+ttk::style configure Treeview -background $defaultBackground
+ttk::style configure Treeview -fieldbackground $defaultBackground
+ttk::style map Treeview -background [ list selected #828282 ]
+	}
 ttk::treeview $Name -yscrollcommand "$Parent.treeframe.vbar set"
-#ttk::treeview $Name -xscrollcommand "$Parent.treeframe.hbar set" -yscrollcommand "$Parent.treeframe.vbar set"
-#ttk::treeview $Name 
 $Name column #0 -stretch 1 -minwidth 1 -width 161
 $Name heading #0 -text "Benchmark"
 $Name configure -padding {0 0 0 0}
@@ -269,14 +280,100 @@ $Name item Trafodion -tags {trafopt trafopt2}
 $Name tag bind trafopt <Double-ButtonPress-1>  { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if { $rdbms != "Trafodion" } { select_rdbms "Trafodion" } } }  
 $Name tag bind trafopt2 <Double-ButtonPress-3>  { if { !([ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] || [ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled hover" ]) } { if { $rdbms eq "Trafodion" } { .ed_mainFrame.treeframe.treeview selection set Trafodion
 select_rdbms "Trafodion" } } }
+proc Press {w x y} {
+    set e [$w identify $x $y]
+    if {[string match "*detach" $e]} {
+        $w state pressed
+    } else {
+        upvar #0 [namespace current]::$w state
+        set state(drag) 1
+        set state(drag_index) [$w index @$x,$y]
+        set state(drag_from_x) $x
+        set state(draw_from_y) $y
+    }
+}
+proc Release {w x y rootX rootY} {
+    $w state !pressed
+    set e [$w identify $x $y]
+    set index [$w index @$x,$y]
+    if {[string match "*detach" $e]} {
+        Detach $w $index
+    } else {
+        upvar #0 [namespace current]::$w state
+        if {[info exists state(drag)] && $state(drag)} {
+            set dropwin [winfo containing $rootX $rootY]
+            if {$dropwin eq {}} {
+                Detach $w $state(drag_index)
+            } 
+            unset state
+        }
+    }
+}
+# Turn a tab into a toplevel (must be a tk::frame)
+proc Detach {notebook index} { 
+    set tabindex [lindex [$notebook tabs] $index]
+    set tabname [ lindex [ split [ $notebook select ] "." ] end ]
+if [ string match "*-state normal*" [ $notebook tab $index ] ] {  set tabactive "true" } else { set tabactive "false" }
+if { $tabname eq "tc" || $tabname eq "me" } {
+if { $tabactive } {
+    set title [$notebook tab $index -text]
+    $notebook forget $index
+    wm manage $tabindex
+    wm title $tabindex $title
+    wm geometry $tabindex 640x320+30+30
+    wm minsize $tabindex 640 320
+if { $tabname eq "tc" } {
+    wm maxsize $tabindex 640 320
+	} else {
+    wm resizable $tabindex true true
+	}
+    wm protocol $tabindex WM_DELETE_WINDOW \
+        [namespace code [list Attach $notebook $tabindex $index]]
+    event generate $tabindex <<DetachedTab>>
+	} else {
+#Only Transaction Counter tc and Metrics me can be Detached
+	}
+   }
+}
+# Attach a toplevel to the notebook
+proc Attach {notebook tab {index end}} {
+global windock winundock
+set tabcount [ llength [ $notebook tabs ] ]
+set tabname [ lindex [ split $tab "." ] end ]
+#metrics window always goes one in from end
+if { $tabname eq "me" } { set index [ expr $tabcount - 1 ] }
+image create photo ::img::dock -data $windock 
+image create photo ::img::undock -data $winundock
+    set title [wm title $tab]
+    wm forget $tab
+    if {[catch {
+        if {[catch {$notebook insert $index $tab -text $title -compound right -image [list ::img::dock \
+                     {active pressed focus !disabled} ::img::dock \
+                     {active !disabled} ::img::undock]
+	} err]} {
+            $notebook add $tab -text $title
+        }
+        $notebook select $tab
+    } err]} {
+        wm manage $w
+        wm title $w $title
+    }
+}
+image create photo ::img::dock -data $windock 
+image create photo ::img::undock -data $winundock 
 set Name $Parent.notebook
-ttk::notebook $Name 
-
-   $Name add [ ttk::frame $Parent.mainwin ] -text "Script Editor"
-   $Name add [ ttk::frame $Parent.tw ] -text "Virtual User Output" -state disabled
-   $Name add [ ttk::frame $Parent.tc ] -text "Transaction Counter" -state disabled
-   $Name add [ ttk::frame $Parent.ap ] -text "Autopilot" -state disabled
-
+ttk::notebook $Name
+    bind TNotebook <ButtonPress-1> {+Press %W %x %y}
+    bind TNotebook <ButtonRelease-1> {+Release %W %x %y %X %Y}
+   $Name add [ tk::frame $Parent.mainwin ] -text "Script Editor"
+   $Name add [ tk::frame $Parent.tw ] -text "Virtual User Output" -state disabled
+   $Name add [ tk::frame $Parent.tc ] -text "Transaction Counter" -state disabled -compound right -image [list ::img::dock \
+                     {active pressed focus !disabled} ::img::dock \
+                     {active !disabled} ::img::undock]
+   $Name add [ tk::frame $Parent.me ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
+                     {active pressed focus !disabled} ::img::dock \
+                     {active !disabled} ::img::undock]
+   $Name add [ tk::frame $Parent.ap ] -text "Autopilot" -state disabled
    ttk::notebook::enableTraversal $Name
    $Parent.panedwin.subpanedwin add $Name -minsize 5i
    $Parent.panedwin add $Parent.panedwin.subpanedwin  -minsize 3i
@@ -296,13 +393,22 @@ ttk::notebook $Name
    pack $Name -anchor ne -side right -expand 0  -fill x 
 
  set Name $Parent.buttons.statusframe
+if { $ttk::currentTheme eq "black" } {
+   frame $Name  -background white -borderwidth 2 -relief flat 
+	} else {
    frame $Name  -background LightYellow -borderwidth 2 -relief raised 
+	}
    pack $Name -anchor e -fill both -expand 1
 
    set Name $Parent.buttons.statusframe.currentstatus
    set _ED(status_widget) $Name
+if { $ttk::currentTheme eq "black" } {
+   ttk::label $Name  -background white -foreground black \
+         -justify left -textvariable _ED(status) -relief flat 
+	} else {
    ttk::label $Name  -background LightYellow -foreground black \
          -justify left -textvariable _ED(status) -relief flat 
+	}
    pack $Name -anchor center
 
 foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-H MySQL TPC-C MySQL TPC-H PostgreSQL TPC-C PostgreSQL TPC-H Redis TPC-C Trafodion TPC-C } {
@@ -316,7 +422,7 @@ foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-
 }
 
 proc populate_tree {rdbms bm} {
-global boxes runworld option lvuser autopilot pencil mode driveroptim driveroptlo vuseroptim
+global boxes runworld option lvuser autopilot pencil dashboard mode driveroptim driveroptlo vuseroptim
 set Name .ed_mainFrame.treeframe.treeview
 bind .ed_mainFrame.treeframe.treeview <Leave> { ed_status_message -perm }
 $Name insert $rdbms end -id $rdbms.$bm -text  $bm
@@ -347,18 +453,36 @@ $Name tag bind vuseopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainF
 $Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.load -text "Create" -image [image create photo -data $lvuser] 
 $Name item $rdbms.$bm.vusers.load -tags vuseload
 $Name tag bind vuseload <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.lvuser invoke } }
+$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.run -text "Run" -image [image create photo -data $runworld] 
+$Name item $rdbms.$bm.vusers.run -tags vuserun
+$Name tag bind vuserun <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.runworld invoke } }
 $Name insert $rdbms.$bm end -id $rdbms.$bm.autopilot -text "Autopilot" -image [image create photo -data $autopilot ]
 $Name item $rdbms.$bm.autopilot -tags {autohlp}
 $Name tag bind autohlp <Motion> { ed_status_message -help "Configure Automated Tests" } 
 $Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.options -text "Options" -image [image create photo -data $option] 
 $Name item $rdbms.$bm.autopilot.options -tags autoopt
 $Name tag bind autoopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {autopilot_options } }
+$Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.start -text "Autopilot" -image [image create photo -data $autopilot] 
+$Name item $rdbms.$bm.autopilot.start -tags autostart
+$Name tag bind autostart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { start_autopilot } }
 $Name insert $rdbms.$bm end -id $rdbms.$bm.txcounter -text "Transactions" -image [image create photo -data $pencil ]
 $Name item $rdbms.$bm.txcounter -tags {txhlp}
 $Name tag bind txhlp <Motion> { ed_status_message -help "Configure Transaction Counter" } 
 $Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.options -text "Options" -image [image create photo -data $option] 
 $Name item $rdbms.$bm.txcounter.options -tags txopt
 $Name tag bind txopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { countopts } }
+$Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.start -text "Counter" -image [image create photo -data $pencil] 
+$Name item $rdbms.$bm.txcounter.start -tags txstart
+$Name tag bind txstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.pencil invoke } }
+$Name insert $rdbms.$bm end -id $rdbms.$bm.metrics -text "Metrics" -image [image create photo -data $dashboard ]
+$Name item $rdbms.$bm.metrics -tags {methlp}
+$Name tag bind methlp <Motion> { ed_status_message -help "Configure Metrics" } 
+$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.options -text "Options" -image [image create photo -data $option] 
+$Name item $rdbms.$bm.metrics.options -tags metopt
+$Name tag bind metopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { metricsopts } }
+$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.start -text "Display" -image [image create photo -data $dashboard ] 
+$Name item $rdbms.$bm.metrics.start -tags metstart
+$Name tag bind metstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.dashboard invoke } }
 $Name insert $rdbms.$bm end -id $rdbms.$bm.mode -text "Mode" -image [image create photo -data $mode ]
 $Name item $rdbms.$bm.mode -tags {modehlp}
 $Name tag bind modehlp <Motion> { ed_status_message -help "Configure Connections" } 
@@ -373,7 +497,7 @@ proc ed_stop_gui {} {
 }
 
 proc construct_menu {Name label cmd_list} {
-   global _ED defaultBackground
+   global _ED defaultBackground defaultForeground
 
    ttk::menubutton $Name -text $label  -underline 0 -width [ string length $label ]
    incr _ED(menuCount);
@@ -387,7 +511,11 @@ proc construct_menu {Name label cmd_list} {
 
    eval [list add_items_to_menu $newmenu $cmd_list]
 
+if { $ttk::currentTheme eq "black" } {
+ 	$newmenu configure -background $defaultBackground -foreground $defaultForeground -activebackground #828282 -activeforeground $defaultForeground
+	} else {
    $newmenu configure -background $defaultBackground
+	}
 
 pack $Name -anchor nw -expand 0 -ipadx 4 -ipady 0 -padx 0 \
          -pady 0 -side left
@@ -395,7 +523,7 @@ pack $Name -anchor nw -expand 0 -ipadx 4 -ipady 0 -padx 0 \
   }
 
 proc add_items_to_menu {menubutton cmdList} {
-  global _ED defaultBackground
+  global _ED defaultBackground defaultForeground
 
   foreach cmd $cmdList {
     switch [lindex $cmd 0] {
@@ -425,6 +553,10 @@ proc add_items_to_menu {menubutton cmdList} {
 	   -menu $newmenu"
 	 eval $doit 
 	 menu $newmenu
+if { $ttk::currentTheme eq "black" } {
+        $newmenu configure -background $defaultBackground -foreground $defaultForeground \
+	-activebackground #828282 -activeforeground $defaultForeground
+        }
 	 add_items_to_menu $newmenu [lindex $cmd 2]
          }
       }
@@ -452,15 +584,16 @@ proc disable_enable_options_menu { disoren } {
 global rdbms bm
 set Name .ed_mainFrame.menuframe.tpcc.m3
 if { $disoren eq "disable" } {
-for { set entry 0 } {$entry < 8 } {incr entry} {
-	if { $entry != 6 } {
+for { set entry 0 } {$entry < 6 } {incr entry} {
+#8 entries in menu leave last 3 always enabled
 $Name entryconfigure $entry -state disabled
-				}
 			}
+set Name .ed_mainFrame.buttons.boxes
+$Name configure -state disabled
 set Name .ed_mainFrame.treeframe.treeview
 $Name state disabled
 	} else {
-for { set entry 0 } {$entry < 8 } {incr entry} {
+for { set entry 0 } {$entry < 6 } {incr entry} {
 $Name entryconfigure $entry -state normal
 				}
 if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
@@ -473,6 +606,8 @@ $Name entryconfigure 3 -state disabled
 $Name entryconfigure 3 -state normal
 $Name entryconfigure 2 -state disabled
 		}
+set Name .ed_mainFrame.buttons.boxes
+$Name configure -state normal
 set Name .ed_mainFrame.treeframe.treeview
 $Name state !disabled
 	}
@@ -967,9 +1102,7 @@ proc ed_loadsavemergepaths {patha pathb} {
 }
    
 proc gui_error {message} {
-   catch "destroy .xxx"
-   bell
-        tk_dialog .xxx "Error" "$message" warning 0 Close
+   tk_messageBox -icon error -message $message
 }
 
 if {[info procs bgerror] == ""} {
@@ -1180,7 +1313,7 @@ proc setctexthighlight {w} {
  }
 
 proc ed_edit {} {
-   global _ED defaultBackground
+   global _ED defaultBackground defaultForeground
    global Menu_string
    global highlight
 
@@ -1216,11 +1349,18 @@ proc ed_edit {} {
          -padx 0 -pady 0 -side right
 
    set Name $Parent.textFrame.left.text
+if { $ttk::currentTheme eq "black" } { 
+	set bwidth 0 
+	set hbgrd LightGray
+	} else { 
+	set bwidth 2 
+	set hbgrd $defaultBackground
+	} 
 if { $highlight eq "true" } {
-   ctext $Name -background white  -borderwidth 2 -foreground black \
+   ctext $Name -background white  -borderwidth $bwidth -foreground black \
 	-highlight 1 \
          -highlightbackground LightGray -insertbackground black \
-         -selectbackground $defaultBackground -selectforeground black \
+         -selectbackground $hbgrd -selectforeground black \
          -wrap none \
          -font basic \
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
@@ -1228,11 +1368,12 @@ if { $highlight eq "true" } {
          -linemap 1 \
 	 -linemap_markable 0
    setctexthighlight $Name
+   easyCtextCommenting $Name
 	} else {
-   ctext $Name -background white  -borderwidth 2 -foreground black \
+   ctext $Name -background white  -borderwidth $bwidth -foreground black \
 	-highlight 0 \
          -highlightbackground LightGray -insertbackground black \
-         -selectbackground $defaultBackground -selectforeground black \
+         -selectbackground $hbgrd -selectforeground black \
          -wrap none \
          -font basic \
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
@@ -1294,6 +1435,15 @@ bind .ed_mainFrame.buttons.pencil <Enter> {ed_status_message -help \
 		 "Transaction Counter"}
 }
 
+proc ed_metrics_button {} {
+global _ED dashboard tcl_version
+set Name .ed_mainFrame.buttons.dashboard
+set im [image create photo -data $dashboard -gamma 1 -height 16 -width 16 -palette 5/5/4]
+$Name config -image $im -command "metrics"
+bind .ed_mainFrame.buttons.dashboard <Enter> {ed_status_message -help \
+		 "Metrics"}
+}
+
 proc ed_test_button {} {
 global _ED test tcl_version
 set Name .ed_mainFrame.buttons.test
@@ -1332,6 +1482,15 @@ bind .ed_mainFrame.buttons.autopilot <Enter> {ed_status_message -help \
 		 "Start Autopilot"}
 }
 
+proc ed_stop_metrics {} {
+global _ED stop tcl_version
+set Name .ed_mainFrame.buttons.dashboard
+    set im [image create photo -data $stop -gamma 1 -height 16 -width 16 -palette 5/5/4]
+$Name config -image $im -command "ed_kill_metrics" 
+bind .ed_mainFrame.buttons.dashboard <Enter> {ed_status_message -help \
+		 "Stop Metrics"}   
+}
+
 proc ed_run_package {} {
 global _ED maxvuser suppo ntimes
 set maxvuser 1
@@ -1350,7 +1509,7 @@ set ntimes 1
     ed_kill_apps
     ed_edit_commit
 if { [catch {load_virtual} message]} {
-puts "Failed to created thread for schema creation: $message"
+puts "Failed to create virtaul user: $message"
         } else {
 if { [catch {run_virtual} message]} {
 puts "Failed to run TCL Code Test: $message"
@@ -1387,6 +1546,7 @@ proc vuser_options {} {
    global lvuser
    global unique_log_name
    global no_log_buffer
+   global threadscreated
 
 if {  [ info exists maxvuser ] } { ; } else { set maxvuser 1 }
 if {  [ info exists delayms ] } { ; } else { set delayms 500 }
@@ -1396,8 +1556,12 @@ if {  [ info exists suppo ] } { ; } else { set suppo 0 }
 if {  [ info exists optlog ] } { ; } else { set optlog 0 }
 if {  [ info exists unique_log_name ] } { ; } else { set unique_log_name 0 }
 if {  [ info exists no_log_buffer ] } { ; } else { set no_log_buffer 0 }
-
+#If window already exists then destroy
    catch "destroy .vuserop"
+if { [ info exists threadscreated ] } { 
+tk_messageBox -icon error -message "Virtual Users already created, destroy Virtual Users before changing Virtual User options"
+return
+	}
    ttk::toplevel .vuserop
    wm withdraw .vuserop
    wm title .vuserop {Virtual User Options}
@@ -2104,9 +2268,15 @@ proc license { } {
 tk_messageBox -title License -message "
 Copyright (C) 2003-2015
 Steve Shaw
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
-This copyright notice must be included in all distributions.
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details."
+This program is free software; 
+you can redistribute it and/or modify it under the terms of the GNU General Public License 
+as published by the Free Software Foundation; either version 2 of the License, 
+or (at your option) any later version.\n
+This copyright notice must be included in all distributions.\n
+This program is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU General Public License for more details."
 }
 
 proc ed_status_message {option {message ""}} {
@@ -2139,7 +2309,6 @@ if { [ info exists inrun ] } {
             set _ED(status) "$_ED(permstatus)"
         }
         -alert {
-            bell; bell
             set _ED(status) "$message"
             catch "$_ED(status_widget) configure -foreground red"
             update
@@ -2181,15 +2350,7 @@ proc ed_wait_if_blocked {} {
 }
 
 proc ed_error {message} {
-      bell
-      bell
-
-      after 100 {
-         grab -global .xxx
-         }
-
-   tk_dialog .xxx "Alert" "$message" warning 0 Cancel
-   grab release .xxx
+      tk_messageBox -icon warning -message $message
 }
 
 if {[info exists tcl_version] == 0 || $tcl_version < 7.5} {
@@ -2277,7 +2438,7 @@ proc window.font { {init_font "Arial 10"} } {
     	-command "font_view_update" -variable dxf(choose_font_c_underline)
 
     ttk::label $w.l2 -text "Preview:"
-    text $w.view  -font "[get_cur_font]" -width 20 -height 1
+    text $w.view  -font "[get_cur_font]" -width 20 -height 1 -highlightthickness 0 -bd 0
 
     ttk::frame $w.f
     ttk::button $w.f.cancel -text "Cancel" -command "set dxf(tmp) \"\"; destroy $w"	
@@ -2385,7 +2546,7 @@ proc incr_font { object incr_val } {
 proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15} args} {
     global tcl_platform tkPriv
     set tkPriv(relief) raised
-    set result [frame $window -relief sunken -bd 1 -highlightthickness 2]
+    set result [frame $window -relief sunken -bd 0 -highlightthickness 0]
     rename $window _$window
     if {$result != {}} {
 	if {[info comm down_bm] == {}} {
@@ -2836,6 +2997,57 @@ if { $apmode eq "enabled" } {
    update
 }
 
+proc metricsopts {} {
+global agent_hostname agent_id
+if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
+if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
+set old_agent $agent_hostname
+set old_id $agent_id
+   catch "destroy .metric"
+   ttk::toplevel .metric
+   wm withdraw .metric
+   wm title .metric {Connect to Agent Options}
+   set Parent .metric
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5                              
+                                             
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Agent ID and Hostname"
+grid $Prompt -column 1 -row 0 -sticky w
+
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "Agent ID :"
+   ttk::entry $Name -width 30 -textvariable agent_id
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "Agent Hostname :"
+   ttk::entry $Name -width 30 -textvariable agent_hostname
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5
+   set Name $Parent.b4
+   ttk::button $Name -command { destroy .metric } -text Cancel
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   set Name $Parent.b5
+   ttk::button $Name -command {
+         set agent_id [.metric.f1.e1 get]
+         set agent_hostname [.metric.f1.e2 get]
+	 catch "destroy .metric"
+if { ![string is integer -strict $agent_id] } { 
+tk_messageBox -message "Agent id must be an integer" 
+set agent_id 0
+	  } 
+        } -text {OK}     
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   wm geometry .metric +50+50
+   wm deiconify .metric
+   raise .metric
+   update
+}
+
 proc select_mode {} {
 global opmode hostname id masterlist apmode mode
 upvar 1 oldmode oldmode
@@ -3034,9 +3246,16 @@ set rdbms $oldrdbms
 }
 
 proc check_which_bm {} {
-global bm rdbms
+global _ED bm rdbms threadscreated
 if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
 if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
+#Clear the Script Editor first to make sure a genuine schema build is run
+ed_edit_clear
+if { [ info exists threadscreated ] } {
+tk_messageBox -icon error -message "Cannot build schema with Virtual Users active, destroy Virtual Users first"
+#clear script editor so cannot be re-run with incorrect v user count
+return 1
+        }
 switch $rdbms {
 Oracle {
 if { $bm == "TPC-C" } { check_oratpcc } else { check_oratpch }
@@ -3063,7 +3282,15 @@ if { $bm == "TPC-C" } { check_oratpcc } else { check_oratpch }
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 .ed_mainFrame.notebook select .ed_mainFrame.tw
+#Commit to update values in script editor
+ed_edit_commit
+if { [ string length $_ED(package)] eq 1 } {
+#No was pressed at schema creation and editor is empty do not run
+return
+	} else {
+#Yes was pressed at schema creation run
 run_virtual
+	}
 }
 
 proc configtpcc { option } {
@@ -3117,7 +3344,7 @@ configoratpch $option
 }
 
 proc configoratpcc {option} {
-global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition tpcc_tt_compat num_threads boxes driveroptlo total_iterations raiseerror keyandthink oradriver checkpoint rampup duration defaultBackground
+global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition tpcc_tt_compat num_threads boxes driveroptlo total_iterations raiseerror keyandthink oradriver checkpoint rampup duration defaultBackground defaultForeground
 if {  ![ info exists system_user ] } { set system_user "system" }
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
@@ -3301,7 +3528,7 @@ if { $partition eq "false" && $count_ware >= 200 && $tpcc_tt_compat eq "false" }
 set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e10
-	scale $Name -orient horizontal -variable count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground 
 bind .tpc.f1.e10 <Any-ButtonRelease> {
 if {$num_threads > $count_ware} {
 set num_threads $count_ware
@@ -3326,7 +3553,7 @@ set partition "false"
 set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e11
-	scale $Name -orient horizontal -variable num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground 
 bind .tpc.f1.e11 <Any-ButtonRelease> {
 if {$num_threads > $count_ware} {
 set num_threads $count_ware
@@ -3472,7 +3699,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmytpcc {option} {
-global mysql_host mysql_port my_count_ware mysql_user mysql_pass mysql_dbase storage_engine mysql_partition mysql_num_threads my_total_iterations my_raiseerror my_keyandthink boxes driveroptlo mysqldriver my_rampup my_duration storage_engine defaultBackground
+global mysql_host mysql_port my_count_ware mysql_user mysql_pass mysql_dbase storage_engine mysql_partition mysql_num_threads my_total_iterations my_raiseerror my_keyandthink boxes driveroptlo mysqldriver my_rampup my_duration storage_engine defaultBackground defaultForeground
 
 if {  ![ info exists mysql_host ] } { set mysql_host "127.0.0.1" }
 if {  ![ info exists mysql_port ] } { set mysql_port "3306" }
@@ -3557,7 +3784,7 @@ set Name $Parent.f1.e6
 set Prompt $Parent.f1.p8
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e8
-	scale $Name -orient horizontal -variable my_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable my_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e8 <Any-ButtonRelease> {
 if {$mysql_num_threads > $my_count_ware} {
 set mysql_num_threads $my_count_ware
@@ -3574,7 +3801,7 @@ set mysql_partition "false"
 set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e9
-        scale $Name -orient horizontal -variable mysql_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground
+        scale $Name -orient horizontal -variable mysql_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e9 <Any-ButtonRelease> {
 if {$mysql_num_threads > $my_count_ware} {
 set mysql_num_threads $my_count_ware
@@ -3683,7 +3910,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmssqlstpcc {option} {
-global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_schema mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_checkpoint boxes driveroptlo defaultBackground
+global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_schema mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_checkpoint boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_count_ware ] } { set mssqls_count_ware "1" }
@@ -3801,7 +4028,7 @@ grid $Name -column 1 -row 10 -sticky w
 set Prompt $Parent.f1.p7
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e7
-	scale $Name -orient horizontal -variable mssqls_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable mssqls_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e7 <Any-ButtonRelease> {
 if {$mssqls_num_threads > $mssqls_count_ware} {
 set mssqls_num_threads $mssqls_count_ware
@@ -3812,7 +4039,7 @@ set mssqls_num_threads $mssqls_count_ware
 set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e10
-        scale $Name -orient horizontal -variable mssqls_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground
+        scale $Name -orient horizontal -variable mssqls_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e10 <Any-ButtonRelease> {
 if {$mssqls_num_threads > $mssqls_count_ware} {
 set mssqls_num_threads $mssqls_count_ware
@@ -3922,7 +4149,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configpgtpcc {option} {
-global pg_host pg_port pg_count_ware pg_superuser pg_superuserpass pg_defaultdbase pg_user pg_pass pg_dbase pg_vacuum pg_dritasnap pg_oracompat pg_num_threads pg_total_iterations pg_raiseerror pg_keyandthink pg_driver pg_rampup pg_duration boxes driveroptlo defaultBackground
+global pg_host pg_port pg_count_ware pg_superuser pg_superuserpass pg_defaultdbase pg_user pg_pass pg_dbase pg_vacuum pg_dritasnap pg_oracompat pg_num_threads pg_total_iterations pg_raiseerror pg_keyandthink pg_driver pg_rampup pg_duration boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists pg_host ] } { set pg_host "localhost" }
 if {  ![ info exists pg_port ] } { set pg_port "5432" }
 if {  ![ info exists pg_count_ware ] } { set pg_count_ware "1" }
@@ -4048,7 +4275,7 @@ if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e10
-	scale $Name -orient horizontal -variable pg_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable pg_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e10 <Any-ButtonRelease> {
 if {$pg_num_threads > $pg_count_ware} {
 set pg_num_threads $pg_count_ware
@@ -4059,7 +4286,7 @@ set pg_num_threads $pg_count_ware
 set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e11
-        scale $Name -orient horizontal -variable pg_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground
+        scale $Name -orient horizontal -variable pg_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e11 <Any-ButtonRelease> {
 if {$pg_num_threads > $pg_count_ware} {
 set pg_num_threads $pg_count_ware
@@ -4183,7 +4410,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configredistpcc { option } {
-global redis_host redis_port redis_namespace redis_count_ware redis_num_threads redis_total_iterations redis_raiseerror redis_keyandthink redis_driver redis_rampup redis_duration boxes driveroptlo defaultBackground
+global redis_host redis_port redis_namespace redis_count_ware redis_num_threads redis_total_iterations redis_raiseerror redis_keyandthink redis_driver redis_rampup redis_duration boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists redis_host ] } { set redis_host "127.0.0.1" }
 if {  ![ info exists redis_port ] } { set redis_port "6379" }
 if {  ![ info exists redis_namespace ] } { set redis_namespace "1" }
@@ -4245,7 +4472,7 @@ if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.p4
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e4
-	scale $Name -orient horizontal -variable redis_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable redis_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e4 <Any-ButtonRelease> {
 if {$redis_num_threads > $redis_count_ware} {
 set redis_num_threads $redis_count_ware
@@ -4256,7 +4483,7 @@ set redis_num_threads $redis_count_ware
 set Prompt $Parent.f1.p5
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e5
-        scale $Name -orient horizontal -variable redis_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground
+        scale $Name -orient horizontal -variable redis_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e5 <Any-ButtonRelease> {
 if {$redis_num_threads > $redis_count_ware} {
 set redis_num_threads $redis_count_ware
@@ -4351,7 +4578,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configtraftpcc { option } {
-global trafodion_dsn trafodion_odbc_driver trafodion_server trafodion_port trafodion_userid trafodion_password trafodion_schema trafodion_count_ware trafodion_num_threads trafodion_load_type trafodion_load_data trafodion_node_list trafodion_copy_remote trafodion_build_jsps trafodion_total_iterations trafodion_raiseerror trafodion_keyandthink trafodion_driver trafodion_rampup trafodion_duration boxes driveroptlo defaultBackground
+global trafodion_dsn trafodion_odbc_driver trafodion_server trafodion_port trafodion_userid trafodion_password trafodion_schema trafodion_count_ware trafodion_num_threads trafodion_load_type trafodion_load_data trafodion_node_list trafodion_copy_remote trafodion_build_jsps trafodion_total_iterations trafodion_raiseerror trafodion_keyandthink trafodion_driver trafodion_rampup trafodion_duration boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists trafodion_dsn ] } { set trafodion_dsn "Default_DataSource" }
 if {  ![ info exists trafodion_odbc_driver ] } { set trafodion_odbc_driver "Trafodion" }
 if {  ![ info exists trafodion_server ] } { set trafodion_server "sandbox" }
@@ -4481,7 +4708,7 @@ set trafodion_count_ware 1
 set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e11
-	scale $Name -orient horizontal -variable trafodion_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable trafodion_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e11 <Any-ButtonRelease> {
 if {$trafodion_num_threads > $trafodion_count_ware} {
 set trafodion_num_threads $trafodion_count_ware
@@ -4496,7 +4723,7 @@ set trafodion_count_ware 1
 set Prompt $Parent.f1.p12
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e12
-        scale $Name -orient horizontal -variable trafodion_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground
+        scale $Name -orient horizontal -variable trafodion_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 bind .tpc.f1.e12 <Any-ButtonRelease> {
 if {$trafodion_num_threads > $trafodion_count_ware} {
 set trafodion_num_threads $trafodion_count_ware
@@ -4649,7 +4876,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configoratpch {option} {
-global instance system_password scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp tpch_tt_compat boxes driveroptlo num_tpch_threads refresh_on total_querysets raise_query_error verbose degree_of_parallel refresh_on update_sets trickle_refresh refresh_verbose defaultBackground
+global instance system_password scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp tpch_tt_compat boxes driveroptlo num_tpch_threads refresh_on total_querysets raise_query_error verbose degree_of_parallel refresh_on update_sets trickle_refresh refresh_verbose defaultBackground defaultForeground
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
 if {  ![ info exists scale_fact ] } { set scale_fact "1" }
@@ -4789,7 +5016,7 @@ set Name $Parent.f1.e8
 set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e9
-	scale $Name -orient horizontal -variable num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 	grid $Prompt -column 0 -row 9 -sticky e
 	grid $Name -column 1 -row 9 -sticky ew
 	}
@@ -4907,7 +5134,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmytpch {option} {
-global mysql_host mysql_port mysql_scale_fact mysql_tpch_user mysql_tpch_pass mysql_tpch_dbase mysql_num_tpch_threads boxes driveroptlo mysql_tpch_storage_engine mysql_refresh_on mysql_total_querysets mysql_raise_query_error mysql_verbose mysql_update_sets mysql_trickle_refresh mysql_refresh_verbose defaultBackground
+global mysql_host mysql_port mysql_scale_fact mysql_tpch_user mysql_tpch_pass mysql_tpch_dbase mysql_num_tpch_threads boxes driveroptlo mysql_tpch_storage_engine mysql_refresh_on mysql_total_querysets mysql_raise_query_error mysql_verbose mysql_update_sets mysql_trickle_refresh mysql_refresh_verbose defaultBackground defaultForeground
 if {  ![ info exists mysql_host ] } { set mysql_host "127.0.0.1" }
 if {  ![ info exists mysql_port ] } { set mysql_port "3306" }
 if {  ![ info exists mysql_scale_fact ] } { set mysql_scale_fact "1" }
@@ -5027,7 +5254,7 @@ set Name $Parent.f1.e7
 set Prompt $Parent.f1.p8
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e8
-	scale $Name -orient horizontal -variable mysql_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable mysql_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 	grid $Prompt -column 0 -row 8 -sticky e
 	grid $Name -column 1 -row 8 -sticky ew
 	}
@@ -5133,7 +5360,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmssqlstpch {option} {
-global mssqls_server mssqls_port mssqls_scale_fact mssqls_maxdop mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tpch_dbase mssqls_num_tpch_threads mssqls_refresh_on mssqls_total_querysets mssqls_raise_query_error mssqls_verbose mssqls_update_sets mssqls_trickle_refresh mssqls_refresh_verbose boxes driveroptlo defaultBackground
+global mssqls_server mssqls_port mssqls_scale_fact mssqls_maxdop mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tpch_dbase mssqls_num_tpch_threads mssqls_refresh_on mssqls_total_querysets mssqls_raise_query_error mssqls_verbose mssqls_update_sets mssqls_trickle_refresh mssqls_refresh_verbose boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_scale_fact ] } { set mssqls_scale_fact "1" }
@@ -5283,7 +5510,7 @@ set Name $Parent.f1.e7
 set Prompt $Parent.f1.p8
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e8
-	scale $Name -orient horizontal -variable mssqls_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable mssqls_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 	grid $Prompt -column 0 -row 11 -sticky e
 	grid $Name -column 1 -row 11 -sticky ew
 	}
@@ -5388,7 +5615,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configpgtpch {option} {
-global pg_host pg_port pg_scale_fact pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase pg_tpch_user pg_tpch_pass pg_tpch_dbase pg_tpch_gpcompat pg_tpch_gpcompress pg_num_tpch_threads pg_total_querysets pg_raise_query_error pg_verbose pg_refresh_on pg_update_sets pg_trickle_refresh pg_refresh_verbose boxes driveroptlo defaultBackground
+global pg_host pg_port pg_scale_fact pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase pg_tpch_user pg_tpch_pass pg_tpch_dbase pg_tpch_gpcompat pg_tpch_gpcompress pg_num_tpch_threads pg_total_querysets pg_raise_query_error pg_verbose pg_refresh_on pg_update_sets pg_trickle_refresh pg_refresh_verbose boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists pg_host ] } { set pg_host "localhost" }
 if {  ![ info exists pg_port ] } { set pg_port "5432" }
 if {  ![ info exists pg_scale_fact ] } { set pg_scale_fact "1" }
@@ -5548,7 +5775,7 @@ set Name $Parent.f1.e11
 set Prompt $Parent.f1.p12
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e12
-	scale $Name -orient horizontal -variable pg_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground 
+	scale $Name -orient horizontal -variable pg_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
 	grid $Prompt -column 0 -row 12 -sticky e
 	grid $Name -column 1 -row 12 -sticky ew
 	}

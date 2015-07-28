@@ -3,7 +3,6 @@
 #
 # Copyright (c) 2000-2007  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
-
 namespace eval ::tablelist {
     #
     # Public variables:
@@ -36,7 +35,6 @@ namespace eval ::tablelist {
 }
 
 package provide tablelist::common $::tablelist::version
-
 #
 # The following procedure, invoked in "tablelist.tcl" and "tablelist_tile.tcl",
 # sets the variable ::tablelist::usingTile to the given value and sets a trace
@@ -10317,6 +10315,7 @@ proc tablelist::getCurrentTheme {} {
 #------------------------------------------------------------------------------
 proc tablelist::setThemeDefaults {} {
     set currentTheme [getCurrentTheme]
+if { $currentTheme eq "vista" } { set currentTheme "xpnative" }
     if {[catch {${currentTheme}Theme}] != 0} {
 	return -code error "theme \"$currentTheme\" not supported"
     }
@@ -20004,4 +20003,3 @@ proc tablelist::listVarTrace {win varName index op} {
 #
 # Copyright (c) 2000-2007  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
-package ifneeded Tablelist_tile    4.6 { package require tablelist_tile }
