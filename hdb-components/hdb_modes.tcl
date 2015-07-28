@@ -10,7 +10,7 @@ return 0
 }
 
 proc start_autopilot {} {
-global apduration apsequence maxvuser aptime
+global apduration apsequence maxvuser aptime apmode
 if { [ check_ap_threads ] } { 
 tk_messageBox -icon error -message "Cannot Enable Autopilot with Virtual Users or Transaction Counter still active" 
 return 1
@@ -18,7 +18,11 @@ return 1
 if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }
 if {  [ info exists apduration ] } { ; } else { set apduration 10 }
 if {  [ info exists apsequence ] } { ; } else { set apsequence "2 3 5 9 13 17 21 25" }
-foreach btn {menuframe.tpcc buttons.boxes buttons.pencil buttons.lvuser} {
+if { $apmode == "disabled" } { 
+tk_messageBox -icon error -message "Configure and Enable Autopilot at Options before Running" 
+return 1
+	}
+foreach btn {menuframe.tpcc buttons.boxes buttons.pencil buttons.lvuser buttons.dashboard} {
 set Name .ed_mainFrame.$btn
 $Name configure -state disabled
 }
@@ -35,6 +39,11 @@ label  $Name.b.time -textvar aptime -width 12 -bg white -fg black -font {Helveti
 pack $Name.b.time -side right -fill y -padx 10
 set lenp [ llength $apsequence ]
 ttk::progressbar $Name.b.p -orient horizontal -mode determinate -maximum $lenp
+if { $ttk::currentTheme eq "black" } {
+global defaultBackground defaultForeground
+ttk::style configure TProgressbar -background $defaultBackground
+ttk::style configure TProgressbar -troughcolor $defaultForeground
+	}
 pack $Name.b.p -side left -fill x -expand 1 -padx 10
 pack $Name.b -side top -fill both -expand 1 -pady 5 -padx 5 -anchor e
 frame $Name.a -background white
@@ -223,7 +232,7 @@ destroy .ed_mainFrame.ap.canv;
 	}
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 .ed_mainFrame.notebook tab .ed_mainFrame.ap -state disabled
-foreach btn {menuframe.tpcc buttons.boxes buttons.pencil buttons.lvuser} {
+foreach btn {menuframe.tpcc buttons.boxes buttons.pencil buttons.lvuser buttons.dashboard} {
 set Name .ed_mainFrame.$btn
 $Name configure -state normal
 }
@@ -235,6 +244,8 @@ if { $autostart::autostartap == "true" } {
         destroy .ed_mainFrame
     }
 }
+
+namespace import comm::*
 
 proc switch_mode { opmode hostname id masterlist } {
 set Name .ed_mainFrame.buttons.distribute

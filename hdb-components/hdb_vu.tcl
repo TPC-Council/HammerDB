@@ -1,3 +1,25 @@
+set masterthread [thread::names]
+proc myerrorproc { id info } {
+global threadsbytid
+if { ![string match {*index*} $info] } {
+if { [ string length $info ] == 0 } {
+puts "Warning: a running Virtual User was terminated, any pending output has been discarded"
+} else {
+if { [ info exists threadsbytid($id) ] } {
+puts "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
+	}  else {
+    if {[string match {*.tc*} $info]} {
+puts "Warning: Transaction Counter stopped, connection message not displayed"
+	} else {
+		;
+#Background Error from Virtual User suppressed
+				}
+			}
+		}
+     	}
+}
+thread::errorproc myerrorproc
+
 proc findtempdir {} {
         set result "."       ;
         if {[string match windows $::tcl_platform(platform)]} {
@@ -84,7 +106,8 @@ catch {puts $flog [ join "Vuser\ [expr $threadsbytid($id) + 1]:$msg" ] }
 }
 
 proc load_virtual {}  {
-global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser winterps suppo optlog table Parent ntimes tids tc_threadID opmode
+global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser winterps suppo optlog table Parent ntimes tids tc_threadID opmode vuser_create_ok
+set vuser_create_ok true
 set thlist [ thread::names ]
 if { [ info exists tc_threadID ] } {
 set idx [ lsearch $thlist $tc_threadID ]
@@ -97,6 +120,7 @@ if { $opmode != "Slave" } {
 if { $thlen > 1 } {
 set thlen [ expr { $thlen - 1 } ]
 set thlist [ join [lreplace $thlist $thlen $thlen ] ]
+set vuser_create_ok "false"
 set answer [tk_messageBox -type yesno -icon question -message "Virtual Users still active in background\nWait for Virtual Users to finish?" -detail "Yes to remain active, No to terminate"] 
 switch $answer {
 yes { ; }
@@ -144,7 +168,8 @@ if { [ info exists maxvuser ] } { ; } else { set maxvuser 1 }
 if { [ info exists suppo ] } { ; } else { set suppo 0 }
 if { [ info exists optlog ] } { ; } else { set optlog 0 }
 if { [ info exists ntimes ] && $ntimes > 1 } { ; } else { set ntimes 1 }
-disable_enable_options_menu disable
+#Moved to running of virtual users
+#disable_enable_options_menu disable
 set Name .ed_mainFrame.buttons.test 
 $Name configure -state disabled
 for { set vuser 0 } {$vuser < $maxvuser } {incr vuser} {
@@ -240,12 +265,16 @@ set xval [ expr {($x * 100)*2}]
 set yval [ expr {($y * 100)*2}]
 set scrxarea [ expr {$xval + 100}]
 set scryarea [ expr {$yval + 100}]
-set cnv [ canvas $trdwin.cv -background white -scrollregion \
+set cnv [ canvas $trdwin.cv -background white -highlightthickness 0 -scrollregion \
         "100 100 $scrxarea $scryarea" -yscrollcommand \
         "$trdwin.cv.cv2.scrollY set" -xscrollcommand "$trdwin.cv.scrollX set" \
         -xscrollincrement 50 -yscrollincrement 25 ]
 pack $cnv -fill both -expand 1
-set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -background #dcdad5 ]
+ if { $ttk::currentTheme eq "black" } {
+set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -highlightthickness 0 -background #424242 ]
+	} else {
+set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -highlightthickness 0 -background #dcdad5 ]
+	}
 pack $cnv2 -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
 set scr1 [ ttk::scrollbar $trdwin.cv.cv2.scrollY -orient vertical -command "$cnv yview" ]
 set scr2 [ ttk::scrollbar $trdwin.cv.scrollX -orient horizontal -command "$cnv xview" ]
@@ -315,18 +344,37 @@ puts "Could not create Logfile"
 }
 
 proc run_virtual {} {
-global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid maxvuser delayms conpause ntimes masterthread totcount table
+global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid maxvuser delayms conpause ntimes masterthread totcount table vuser_create_ok
 set Name .ed_mainFrame.buttons.runworld
 $Name configure -state disabled
+disable_enable_options_menu disable
+set vuser_create_ok false
 tsv::set application abort 0
 ed_edit_commit
 set totcount 0
-if { [ info exists threadscreated ] } { 
+#Trying to run so check if any script in editor to run
 if { [ string length $_ED(package)] eq 1 } {
 tk_messageBox -icon error -message "There is no workload to run because the Script Editor window is empty" 
-set Name .ed_mainFrame.buttons.runworld
 $Name configure -state normal
+disable_enable_options_menu enable
+return
 } else {
+#Script Editor Loaded with workload, Check if virtual users already created
+if { ![ info exists threadscreated ] } { 
+#Trying to Run Virtual Users before Creation, try to create then run
+set vuser_create_ok "false"
+if { [catch {load_virtual} message]} {
+puts "Failed to create and run virtual users: $message"
+tk_messageBox -icon error -message "Failed to create and run Virtual Users" 
+$Name configure -state normal
+return
+        } 
+       } else {
+#Virtual Users already created before pressing run button
+set vuser_create_ok "true"
+	} 
+if { $vuser_create_ok eq "true" } {
+#Virtual Users exist, run the workload
 $table delete 0 end 
 configtable
 if { [ info exists maxvuser ] } { ; } else { set maxvuser 1 }
@@ -344,14 +392,11 @@ after $conpause { set cp 1 }
 vwait cp
 	}
 .ed_mainFrame configure -cursor {}
-	}
-} else {
-tk_messageBox -icon error -message "You must configure and create the Virtual Users before trying to run them" 
-set Name .ed_mainFrame.buttons.runworld
+	} else {
 $Name configure -state normal
 	}
+   }
 }
-
 proc ed_kill_vusers {args} {
     global _ED ed_mainf maxvuser threadscreated threadsbytid table suppo inrun flog
     ed_status_message -show "... closing down active Vusers ..."

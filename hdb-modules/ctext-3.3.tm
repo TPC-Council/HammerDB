@@ -25,7 +25,11 @@ proc ctext {win args} {
     set ar(-fg) [$tmp cget -foreground]
     set ar(-bg) [$tmp cget -background]
     set ar(-font) [$tmp cget -font]
+if { $ttk::currentTheme eq "black" } {
+    set ar(-relief) flat
+	} else {
     set ar(-relief) [$tmp cget -relief]
+	}
     destroy $tmp
     set ar(-yscrollcommand) ""
     set ar(-linemap) 1
@@ -1112,4 +1116,39 @@ proc ctext::modified {win value} {
     set ar(modified) $value
     event generate $win <<Modified>>
     return $value
+}
+
+proc easyCtextCommenting {wid {sensButton 3}} {
+  set ::oLS 0
+  set ::lineSelected -1
+  bind $wid.l <ButtonPress-$sensButton> {
+      set markChar [%W index @0,%y]
+      set ::lineSelected [lindex [split $markChar .] 0]
+      set ::lineSelected [%W get $lineSelected.0 $lineSelected.end]
+      set ::oLs -1
+      [file rootname %W] configure -autoseparators false
+  }
+
+  bind $wid.l <ButtonRelease-$sensButton> {
+    set ::lineSelected -1
+    [file rootname %W] configure -autoseparators true
+  }
+
+  bind $wid.l <Motion> {
+    if {$::lineSelected >=0} {
+      catch {
+        set markChar [%W index @0,%y]
+        set ::lineSelected [lindex [split $markChar .] 0]
+        set ::lineSelected [%W get $lineSelected.0 $lineSelected.end]
+        if {$::oLs != $::lineSelected} {
+          set ::oLs $::lineSelected
+          if {[[file rootname %W] get $::oLs.0 $::oLs.1] != "#"} {
+            [file rootname %W] insert $::oLs.0 #
+          } else {
+            [file rootname %W] delete $::oLs.0 $::oLs.1
+          }
+        }
+      }
+    }
+  }
 }

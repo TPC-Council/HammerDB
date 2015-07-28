@@ -1022,6 +1022,10 @@ destroy .ed_mainFrame.tc.buff2 ;
 destroy .ed_mainFrame.tc.g ;
 	}
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
+if ![ string match "*.ed_mainFrame.tc*" [ .ed_mainFrame.notebook tabs ]] {
+#transaction counter has been detached so reattach before disabling
+Attach .ed_mainFrame.notebook .ed_mainFrame.tc 2
+}
 .ed_mainFrame.notebook tab .ed_mainFrame.tc -state disabled
 ed_status_message -finish "Transaction Counter Stopped"
 }

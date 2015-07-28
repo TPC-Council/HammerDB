@@ -680,3 +680,25 @@ Updated PostgreSQL FILLFACTOR values as advised by PostgreSQL architects
 Added support for running autopilot mode from the command line contributed by Wes Vaske
 
 Added support for Trafodion SQL on Hadoop database with TPC-C workload
+
+---------------------------------------------------------------------
+
+Version 2.18 July 2015
+
+Bug Fixes
+
+[ #106 ] MySQL foreign key constraint fails with InnoDB on TPCH schema build 
+
+Added alternative graphical interface theme based on ttk black theme, selectable as modern in config.xml
+
+Moved external metrics interface into main HammerDB application, removed metrics directory and changed to agent
+
+Made Transaction Counter and Metrics tabs detachable to enable viewing performance of both during runs
+
+Added option to run virtual users, autopilot, transaction counter and metrics from treeview. Treeview now only greyed out when virtual users running rather than created.with only virtual user options disabled at creation
+
+Virtual users can now be run before virtual user creation with virtual user creation taking place beforehand automatically
+
+Added commenting to script editor by click with button-3, drag along the line numbers to toggle hash character
+
+Some code modularisation to ease process of adding support for new databases, hdb-modules directory created and code suitable for package creation moved into modules

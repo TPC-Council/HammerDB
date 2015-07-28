@@ -31,29 +31,26 @@ exit
 # Author contact information: smshaw@users.sourceforge.net
 ######################################################################   
 #This loader program loads the following components in order:
-#hdb_logo.tcl	- HammerDB Logo image
-#hdb_pckg.tcl 	- Required TCL packages 
-#hdb_ctext.tcl  - TCL keyword enhanced text editor
-#hdb_tkcon.tcl  - tkcon console
-#hdb_vu.tcl 	- Virtual user TCL threads
-#hdb_tpcc.tcl	- TPC-C schema creation and driver
-#hdb_tpch.tcl	- TPC-H schema creation and driver
-#hdb_comm.tcl   - Master and Slave Sockets
-#hdb_modes.tcl  - Remote Modes and Autopilot
-#hdb_tab.tcl 	- Virtual user display tablelist
-#hdb_tablist.tcl- Tablelist
-#hdb_cnv.tcl 	- Tracefile to oratcl conversion
-#hdb_graph.tcl  - Modified EMU graphing script
-#hdb_tc.tcl 	- Transaction counter
-#hdb_im.tcl 	- Image data
-#hdb_ed.tcl 	- Editor
-#hdb_xml.tcl	- XML Parser
-#hdb_go.tcl 	- Run HammerDB
+#hdb_logo.tcl	 - HammerDB Logo image
+#hdb_theme.tcl	 - GUI Themes
+#hdb_vu.tcl 	 - Virtual user TCL threads
+#hdb_tpcc.tcl	 - TPC-C schema creation and driver
+#hdb_tpch.tcl	 - TPC-H schema creation and driver
+#hdb_modes.tcl   - Remote Modes and Autopilot
+#hdb_tab.tcl 	 - Virtual user display tablelist
+#hdb_cnv.tcl 	 - Tracefile to oratcl conversion
+#hdb_tc.tcl 	 - Transaction counter
+#hdb_im.tcl 	 - Image data
+#hdb_ed.tcl 	 - Editor
+#hdb_xml.tcl	 - XML Configuration
+#hdb_metrics.tcl - Metrics
+#hdb_go.tcl 	 - Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.17"
+set hdb_version "v2.18"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
+::tcl::tm::path add "$UserDefaultDir/hdb-modules"
 
 namespace eval autostart {
     set autostartap "false"
@@ -171,10 +168,24 @@ if [info exist env(Load_List)] {
     }
 }
 
-append loadlist { hdb_pckg.tcl hdb_ctext.tcl hdb_tkcon.tcl hdb_tablist.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_comm.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_graph.tcl hdb_tc.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
+append modulelist { Thread msgcat tablelist_tile tkcon xml ctext comm emu_graph socktest ttk_theme_black }
+
+set loadtext "Loading hammerdb modules"
+after 100
+for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
+    set m [lindex $modulelist $modcount]
+		set loadtext $m
+	if [catch { package require $m }] {
+                puts stderr "While loading module\
+                        \"$m\"...\n$errorInfo"
+                exit 1
+        }
+    }
+
+append loadlist { hdb_theme.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_tc.tcl hdb_metrics.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
 
 set loadtext "Loading hammerdb components"
-
+after 100
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
 		set loadtext $f
@@ -184,8 +195,11 @@ for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } 
                 exit 1
         }
     }
+after 100
+set loadtext "Starting HammerDB"
+update
 #pause to display splash screen
-after 2200 
+after 2000 
 wm withdraw .
 wm deiconify .ed_mainFrame
 ed_edit

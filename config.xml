@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <hammerdb>
-    <rdbms>Oracle</rdbms>
-    <bm>TPC-C</bm>
+<look_and_feel>
+<ttk_theme>
+	<theme>modern</theme>
+</ttk_theme>
+<code_highlight>
+	<highlight>true</highlight>
+</code_highlight>
+</look_and_feel>
+<benchmark>
+	<rdbms>Oracle</rdbms>
+	<bm>TPC-C</bm>
+</benchmark>
 <oracle>
     <service>
         <system_user>system</system_user>
@@ -273,7 +283,10 @@
             <id>0</id>
         </slave_options>
     </mode>
-  <code_highlight>
-  	<highlight>true</highlight>
-  </code_highlight>
+    <metrics>
+    	<metric_options>
+    	    <agent_hostname>localhost</agent_hostname>
+    	    <agent_id>0</agent_id>
+    	</metric_options>
+    </metrics>
 </hammerdb>

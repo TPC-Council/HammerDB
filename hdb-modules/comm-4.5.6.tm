@@ -23,10 +23,7 @@
 #	See the manual page comm.n for further details on this package.
 #
 # RCS: @(#) $Id: comm.tcl,v 1.30 2007/08/15 21:33:37 andreas_kupries Exp $
-
-package require Tcl 8.3
-#package require snit ; # comm::future objects.
-
+package provide comm 4.5.6
 namespace eval ::comm {
     namespace export comm comm_send
 
@@ -1594,6 +1591,3 @@ if {![info exists ::comm::comm(comm,port)]} {
 }
 
 #eof
-package provide comm 4.5.6
-package require comm
-namespace import comm::*
