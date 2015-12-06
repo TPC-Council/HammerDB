@@ -260,6 +260,12 @@ $Name tag bind mssqlopt <Double-ButtonPress-1> { if { ![ string match [ .ed_main
 $Name tag bind mssqlopt2 <Double-ButtonPress-3>  { if { !([ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] || [ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled hover" ]) } { if { $rdbms eq "MSSQLServer" } {
 .ed_mainFrame.treeframe.treeview selection set MSSQLServer
 select_rdbms "MSSQLServer" } } }
+$Name insert {} end -id "DB2" -text "DB2" 
+$Name item DB2 -tags {db2opt db2opt2}
+$Name tag bind db2opt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if { $rdbms != "DB2" } { select_rdbms "DB2" } } }
+$Name tag bind db2opt2 <Double-ButtonPress-3>  { if { !([ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] || [ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled hover" ]) } { if { $rdbms eq "DB2" } {
+.ed_mainFrame.treeframe.treeview selection set DB2
+select_rdbms "DB2" } } }
 $Name insert {} end -id "MySQL" -text "MySQL" 
 $Name item MySQL -tags {mysqlopt mysqlopt2}
 $Name tag bind mysqlopt <Double-ButtonPress-1>  { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if { $rdbms != "MySQL" } { select_rdbms "MySQL" } } }  
@@ -411,7 +417,7 @@ if { $ttk::currentTheme eq "black" } {
 	}
    pack $Name -anchor center
 
-foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-H MySQL TPC-C MySQL TPC-H PostgreSQL TPC-C PostgreSQL TPC-H Redis TPC-C Trafodion TPC-C } {
+foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-H DB2 TPC-C MySQL TPC-C MySQL TPC-H PostgreSQL TPC-C PostgreSQL TPC-H Redis TPC-C Trafodion TPC-C } {
         populate_tree $db $bn 
         }
 
@@ -619,7 +625,7 @@ if {$tcl_platform(platform) != "windows" && $rdbms == "MSSQLServer" } {
 	set rdbms "Oracle" 
 	}
 if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
-if { $rdbms eq "Redis" || $rdbms eq "Trafodion" } { set bm "TPC-C" }
+if { $rdbms eq "Redis" || $rdbms eq "Trafodion" || $rdbms eq "DB2" } { set bm "TPC-C" }
 if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
 if { $bm eq "TPC-C" } {
 .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state normal
@@ -642,13 +648,14 @@ highlight_off
 }
 
 proc loadtpcc {} {
-global _ED rdbms oradriver mysqldriver mssqlsdriver pg_driver redis_driver trafodion_driver
+global _ED rdbms oradriver mysqldriver mssqlsdriver db2driver pg_driver redis_driver trafodion_driver
 set _ED(packagekeyname) "TPC-C"
 ed_status_message -show "TPC-C Driver Script"
 if { [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
 if { ![ info exists oradriver ] } { set oradriver "standard" }
 if { ![ info exists mysqldriver ] } { set mysqldriver "standard" }
 if { ![ info exists mssqlsdriver ] } { set mssqlsdriver "standard" }
+if { ![ info exists db2driver ] } { set db2driver "standard" }
 if { ![ info exists pg_driver ] } { set pg_driver "standard" }
 if { ![ info exists redis_driver ] } { set redis_driver "standard" }
 if { ![ info exists trafodion_driver ] } { set trafodion_driver "standard" }
@@ -672,6 +679,13 @@ if {$mssqlsdriver == "standard"} {
 loadmssqlstpcc
      } else {
 loadtimedmssqlstpcc
+     }
+}
+DB2 {
+if {$db2driver == "standard"} {
+loaddb2tpcc
+     } else {
+loadtimeddb2tpcc
      }
 }
 PostgreSQL {
@@ -1734,6 +1748,9 @@ countpgopts
 MSSQLServer {
 countmssqlopts
 }
+DB2 {
+countdb2opts
+}
 Redis {
 countredisopts
 }
@@ -2052,6 +2069,88 @@ ttk::checkbutton $Name -text "Autorange Data Points" -variable autor -onvalue 1 
 	 set mssqls_uid [.countopt.f1.e4 get]
    	 set mssqls_pass [.countopt.f1.e5 get]
          set interval [.countopt.f1.e6 get]
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
+	set interval 10 }
+         destroy .countopt
+	   catch "destroy .tc"
+            } -text {OK}
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+
+   wm geometry .countopt +50+50
+   wm deiconify .countopt
+   raise .countopt
+   update
+}
+
+proc countdb2opts {} {
+global _ED interval afval autor db2_user db2_pass db2_dbase pencil
+if { [ info exists afval ] } {
+	after cancel $afval
+	unset afval
+}
+if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
+if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
+if {  ![ info exists db2_dbase ] } { set db2_dbase "tpcc" }
+   catch "destroy .countopt"
+   ttk::toplevel .countopt
+   wm withdraw .countopt
+   wm title .countopt {DB2 TX Counter Options}
+   set Parent .countopt
+   set Name $Parent.f1
+   ttk::frame $Name 
+   pack $Name -anchor nw -fill x -side top -padx 5
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data $pencil]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Transaction Counter Options"
+grid $Prompt -column 1 -row 0 -sticky w
+set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "DB2 User :"
+   ttk::entry $Name -width 30 -textvariable db2_user
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "DB2 User Password :"   
+   ttk::entry $Name  -width 30 -textvariable db2_pass
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "DB2 Database :"
+   ttk::entry $Name  -width 30 -textvariable db2_dbase
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+   set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "Refresh Rate(secs) :"
+   ttk::entry $Name -width 30 -textvariable interval
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+set Name $Parent.f1.e5
+ttk::checkbutton $Name -text "Autorange Data Points" -variable autor -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 5 -sticky w
+
+   bind .countopt.f1.e1 <Delete> {
+      if [%W selection present] {
+         %W delete sel.first sel.last
+      } else {
+         %W delete insert
+      }
+   }
+
+ set Name $Parent.b2
+ ttk::button $Name  -command {destroy .countopt} -text Cancel
+ pack $Name -anchor nw -side right -padx 3 -pady 3
+
+ set Name $Parent.b1
+   ttk::button $Name -command {
+         set db2_user [.countopt.f1.e1 get]
+         set db2_pass [.countopt.f1.e2 get]
+         set db2_dbase [.countopt.f1.e3 get]
+         set interval   [.countopt.f1.e4 get]
 if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
 	set interval 10 }
          destroy .countopt
@@ -3143,6 +3242,7 @@ if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
 		  set rdbms MSSQLServer 
 		} 
 	     }
+	"DB2" { set rdbms DB2 }
 	"MySQL" { set rdbms MySQL }
 	"PostgreSQL" { set rdbms PostgreSQL }
 	"Redis" { set rdbms Redis }
@@ -3173,7 +3273,7 @@ ttk::radiobutton $Name -text "Oracle" -variable rdbms -value "Oracle" -command {
 ttk::radiobutton $Name -text "MySQL" -variable rdbms -value "MySQL" -command { if { $oldrdbms != $rdbms } { set rdbms "MySQL" } 
 .rdbms.f1.b4 configure -state enabled
 }
- grid $Name -column 1 -row 3 -sticky w 
+ grid $Name -column 1 -row 4 -sticky w 
 
    set Name $Parent.f1.b2a
 ttk::radiobutton $Name -text "MSSQL Server" -variable rdbms -value "MSSQLServer" -command { if { $oldrdbms != $rdbms } { set rdbms "MSSQLServer" } 
@@ -3181,23 +3281,30 @@ ttk::radiobutton $Name -text "MSSQL Server" -variable rdbms -value "MSSQLServer"
 }
  grid $Name -column 1 -row 2 -sticky w 
 
+   set Name $Parent.f1.b2e
+ttk::radiobutton $Name -text "DB2" -variable rdbms -value "DB2" -command { if { $oldrdbms != $rdbms } { set rdbms "DB2" } 
+.rdbms.f1.b4 configure -state disabled
+set bm "TPC-C"
+}
+ grid $Name -column 1 -row 3 -sticky w 
+
    set Name $Parent.f1.b2b
 ttk::radiobutton $Name -text "PostgreSQL" -variable rdbms -value "PostgreSQL" -command { if { $oldrdbms != $rdbms } { set rdbms "PostgreSQL" } 
 .rdbms.f1.b4 configure -state enabled
 }
- grid $Name -column 1 -row 4 -sticky w 
+ grid $Name -column 1 -row 5 -sticky w 
    set Name $Parent.f1.b2c
 ttk::radiobutton $Name -text "Redis" -variable rdbms -value "Redis" -command { if { $oldrdbms != $rdbms } { set rdbms "Redis" } 
 .rdbms.f1.b4 configure -state disabled
 set bm "TPC-C"
 }
- grid $Name -column 1 -row 5 -sticky w 
+ grid $Name -column 1 -row 6 -sticky w 
    set Name $Parent.f1.b2d
 ttk::radiobutton $Name -text "Trafodion" -variable rdbms -value "Trafodion" -command { if { $oldrdbms != $rdbms } { set rdbms "Trafodion" } 
 .rdbms.f1.b4 configure -state disabled
 set bm "TPC-C"
 }
- grid $Name -column 1 -row 6 -sticky w 
+ grid $Name -column 1 -row 7 -sticky w 
 
    set Name $Parent.f1.b3
 ttk::radiobutton $Name -text "TPC-C" -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
@@ -3207,7 +3314,7 @@ ttk::radiobutton $Name -text "TPC-C" -variable bm -value "TPC-C" -command { if {
 ttk::radiobutton $Name -text "TPC-H" -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
 }
  grid $Name -column 2 -row 2 -sticky w
- if { $rdbms eq "Redis" || $rdbms eq "Trafodion" } { $Name configure -state disabled ; set bm "TPC-C" }
+ if { $rdbms eq "Redis" || $rdbms eq "Trafodion" || $rdbms eq "DB2" } { $Name configure -state disabled ; set bm "TPC-C" }
    set Name $Parent.f1.ok
    ttk::button $Name -command { 
 catch "destroy .rdbms"
@@ -3227,7 +3334,7 @@ remote_command [ concat vuser_bench_ops $rdbms $bm ]
 remote_command disable_bm_menu
 	}
 } -text OK
-   grid $Parent.f1.ok -column 2 -row 7 -padx 3 -pady 3 -sticky w
+   grid $Parent.f1.ok -column 2 -row 8 -padx 3 -pady 3 -sticky w
   
    set Name $Parent.f1.cancel
    ttk::button $Name -command {
@@ -3235,7 +3342,7 @@ catch "destroy .rdbms"
 set bm $oldbm
 set rdbms $oldrdbms
 } -text Cancel
-   grid $Parent.f1.cancel -column 3 -row 7 -padx 3 -pady 3 -sticky w
+   grid $Parent.f1.cancel -column 3 -row 8 -padx 3 -pady 3 -sticky w
    if {$tcl_platform(platform) != "windows" } { 
        .rdbms.f1.b2a configure -state disabled	
       }
@@ -3260,11 +3367,14 @@ switch $rdbms {
 Oracle {
 if { $bm == "TPC-C" } { check_oratpcc } else { check_oratpch }
 }
-MySQL {
-if { $bm == "TPC-C" } { check_mytpcc } else { check_mytpch }
-}
 MSSQLServer {
 if { $bm == "TPC-C" } { check_mssqltpcc } else { check_mssqltpch }
+}
+DB2 {
+ 	check_db2tpcc 
+}
+MySQL {
+if { $bm == "TPC-C" } { check_mytpcc } else { check_mytpch }
 }
 PostgreSQL {
 if { $bm == "TPC-C" } { check_pgtpcc } else { check_pgtpch }
@@ -3300,11 +3410,14 @@ switch $rdbms {
 Oracle {
 configoratpcc $option
 	}
-MySQL {
-configmytpcc $option
-	}
 MSSQLServer {
 configmssqlstpcc $option
+	}
+DB2 {
+configdb2tpcc $option
+	}
+MySQL {
+configmytpcc $option
 	}
 PostgreSQL {
 configpgtpcc $option
@@ -4139,6 +4252,233 @@ if { $option eq "all" || $option eq "drive" } {
 	 set mssqls_rampup [.tpc.f1.e18 get]
 	 set mssqls_duration [.tpc.f1.e19 get]
  	 }
+         destroy .tpc 
+        } -text {OK}
+   pack $Name -anchor nw -side right -padx 3 -pady 3   
+   wm geometry .tpc +50+50
+   wm deiconify .tpc
+   raise .tpc
+   update
+}
+
+proc configdb2tpcc {option} {
+global db2_count_ware db2_num_threads db2_user db2_pass db2_dbase db2_def_tab  db2_tab_list db2_partition db2_total_iterations db2_raiseerror db2_keyandthink db2driver db2_rampup db2_duration db2_monreport boxes driveroptlo defaultBackground defaultForeground
+if {  ![ info exists db2_count_ware ] } { set db2_count_ware "1" }
+if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
+if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
+if {  ![ info exists db2_dbase ] } { set db2_dbase "tpcc" }
+if {  ![ info exists db2_def_tab ] } { set db2_def_tab "userspace1" }
+if {  ![ info exists db2_tab_list ] } { set db2_tab_list {C "" D "" H "" I "" W "" S "" NO "" OR "" OL ""}}
+if {  ![ info exists db2_partition ] } { set db2_partition "false" }
+if {  ![ info exists db2_num_threads ] } { set db2_num_threads "1" }
+if {  ![ info exists db2_total_iterations ] } { set db2_total_iterations 1000000 }
+if {  ![ info exists db2_raiseerror ] } { set db2_raiseerror "false" }
+if {  ![ info exists db2_keyandthink ] } { set db2_keyandthink "false" }
+if {  ![ info exists db2driver ] } { set db2driver "standard" }
+if {  ![ info exists db2_rampup ] } { set db2_rampup "2" }
+if {  ![ info exists db2_duration ] } { set db2_duration "5" }
+if {  ![ info exists db2_monreport ] } { set db2_monreport "0" }
+global _ED
+   catch "destroy .tpc"
+   ttk::toplevel .tpc
+   wm withdraw .tpc
+switch $option {
+"all" { wm title .tpc {DB2 TPC-C Schema Options} }
+"build" { wm title .tpc {DB2 TPC-C Build Options} }
+"drive" {  wm title .tpc {DB2 TPC-C Driver Options} }
+	}
+   set Parent .tpc
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+if { $option eq "all" || $option eq "build" } {
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data $boxes]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Build Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	} else {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data $driveroptlo]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	}
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "DB2 User :"
+   ttk::entry $Name -width 30 -textvariable db2_user
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "DB2 User Password :"   
+   ttk::entry $Name  -width 30 -textvariable db2_pass
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "DB2 Database :"
+   ttk::entry $Name  -width 30 -textvariable db2_dbase
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "DB2 Default Tablespace :"
+   ttk::entry $Name -width 30 -textvariable db2_def_tab
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "DB2 Tablespace List (Space Separated Values) :"
+   ttk::entry $Name -width 30 -textvariable db2_tab_list
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
+set Prompt $Parent.f1.p8
+ttk::label $Prompt -text "Number of Warehouses :"
+set Name $Parent.f1.e8
+	scale $Name -orient horizontal -variable db2_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
+bind .tpc.f1.e8 <Any-ButtonRelease> {
+if {$db2_num_threads > $db2_count_ware} {
+set db2_num_threads $db2_count_ware
+		}
+if {$db2_count_ware < 10} {
+.tpc.f1.e10 configure -state disabled
+set db2_partition "false"
+        } else {
+.tpc.f1.e10 configure -state enabled
+        }
+}
+	grid $Prompt -column 0 -row 8 -sticky e
+	grid $Name -column 1 -row 8 -sticky ew
+set Prompt $Parent.f1.p9
+ttk::label $Prompt -text "Virtual Users to Build Schema :"
+set Name $Parent.f1.e9
+        scale $Name -orient horizontal -variable db2_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
+bind .tpc.f1.e9 <Any-ButtonRelease> {
+if {$db2_num_threads > $db2_count_ware} {
+set db2_num_threads $db2_count_ware
+                }
+        }
+grid $Prompt -column 0 -row 9 -sticky e
+grid $Name -column 1 -row 9 -sticky ew
+set Prompt $Parent.f1.p10
+ttk::label $Prompt -text "Partition Tables :"
+set Name $Parent.f1.e10
+ttk::checkbutton $Name -text "" -variable db2_partition -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
+if {$db2_count_ware <= 10 } {
+        $Name configure -state disabled
+        }
+}
+if { $option eq "all" || $option eq "drive" } {
+if { $option eq "all" } {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data $driveroptlo]
+grid $Prompt -column 0 -row 11 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 11 -sticky w
+	}
+set Prompt $Parent.f1.p12
+ttk::label $Prompt -text "TPC-C Driver Script :"
+grid $Prompt -column 0 -row 12 -sticky e
+set Name $Parent.f1.r1
+ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable db2driver
+grid $Name -column 1 -row 12 -sticky w
+bind .tpc.f1.r1 <ButtonPress-1> {
+.tpc.f1.e17 configure -state disabled
+.tpc.f1.e18 configure -state disabled
+.tpc.f1.e19 configure -state disabled
+if {$db2_monreport >= $db2_duration} {
+set db2_monreport 0
+                }
+}
+set Name $Parent.f1.r2
+ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable db2driver
+grid $Name -column 1 -row 13 -sticky w
+bind .tpc.f1.r2 <ButtonPress-1> {
+.tpc.f1.e17 configure -state normal
+.tpc.f1.e18 configure -state normal
+.tpc.f1.e19 configure -state normal
+if {$db2_monreport >= $db2_duration} {
+set db2_monreport 0
+                }
+}
+set Name $Parent.f1.e14
+   set Prompt $Parent.f1.p14
+   ttk::label $Prompt -text "Total Transactions per User :"
+   ttk::entry $Name -width 30 -textvariable db2_total_iterations
+   grid $Prompt -column 0 -row 14 -sticky e
+   grid $Name -column 1 -row 14 -sticky ew
+ set Prompt $Parent.f1.p15
+ttk::label $Prompt -text "Exit on DB2 Error :"
+  set Name $Parent.f1.e15
+ttk::checkbutton $Name -text "" -variable db2_raiseerror -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15 -sticky w
+ set Prompt $Parent.f1.p16
+ttk::label $Prompt -text "Keying and Thinking Time :"
+  set Name $Parent.f1.e16
+ttk::checkbutton $Name -text "" -variable db2_keyandthink -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 16 -sticky e
+   grid $Name -column 1 -row 16 -sticky w
+set Name $Parent.f1.e17
+   set Prompt $Parent.f1.p17
+   ttk::label $Prompt -text "Minutes of Rampup Time :"
+   ttk::entry $Name -width 30 -textvariable db2_rampup
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky ew
+if {$db2driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e18
+   set Prompt $Parent.f1.p18
+   ttk::label $Prompt -text "Minutes for Test Duration :"
+   ttk::entry $Name -width 30 -textvariable db2_duration
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
+if {$db2driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e19
+   set Prompt $Parent.f1.p19
+   ttk::label $Prompt -text "Minutes for MONREPORT :"
+   ttk::entry $Name -width 30 -textvariable db2_monreport
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
+if {$db2driver == "standard" } {
+	$Name configure -state disabled
+	}
+if {$db2_monreport >= $db2_duration} {
+set db2_monreport 0
+                }
+}
+set Name $Parent.b2
+   ttk::button $Name -command {destroy .tpc} -text Cancel
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+set Name $Parent.b1
+   ttk::button $Name -command {
+         set db2_user [.tpc.f1.e1 get]
+         set db2_pass [.tpc.f1.e2 get]
+	 set db2_dbase [.tpc.f1.e3 get]
+if { $option eq "all" || $option eq "build" } {
+	 set db2_def_tab [.tpc.f1.e4 get]
+   	 set db2_tab_list [.tpc.f1.e5 get]
+ }
+if { $option eq "all" || $option eq "drive" } {
+	 set db2_total_iterations [ .tpc.f1.e14 get]
+	 set db2_rampup [ .tpc.f1.e17 get]
+	 set db2_duration [ .tpc.f1.e18 get]
+	 set db2_monreport [ .tpc.f1.e19 get]
+if {$db2_monreport >= $db2_duration} {
+set db2_monreport 0
+                }
+ }
          destroy .tpc 
         } -text {OK}
    pack $Name -anchor nw -side right -padx 3 -pady 3   

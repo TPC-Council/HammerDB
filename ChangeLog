@@ -702,3 +702,9 @@ Virtual users can now be run before virtual user creation with virtual user crea
 Added commenting to script editor by click with button-3, drag along the line numbers to toggle hash character
 
 Some code modularisation to ease process of adding support for new databases, hdb-modules directory created and code suitable for package creation moved into modules
+
+---------------------------------------------------------------------
+
+Version 2.19 December 2015
+
+Added support for IBM DB2 with TPC-C workload

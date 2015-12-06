@@ -43,7 +43,7 @@ namespace import comm::*
 interp recursionlimit {} 1500
 global agentlist S iswin
 set iswin "false"
-set version 2.18
+set version 2.19
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 

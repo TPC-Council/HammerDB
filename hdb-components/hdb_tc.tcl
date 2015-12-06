@@ -57,7 +57,7 @@ proc showLCD {number {width 24} {colours {black black white white}}} {
 }
 
 proc transcount { } {
-global tcl_platform interval ttag tcdata timedata masterthread tc_threadID rac bm rdbms afval autor connectstr tpcc_tt_compat tpch_tt_compat mysql_host mysql_port mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass pg_host pg_port pg_superuser pg_superuserpass pg_defaultdbase redis_host redis_port
+global tcl_platform interval ttag tcdata timedata masterthread tc_threadID rac bm rdbms afval autor connectstr tpcc_tt_compat tpch_tt_compat mysql_host mysql_port mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass pg_host pg_port pg_superuser pg_superuserpass pg_defaultdbase redis_host redis_port db2_user db2_pass db2_dbase
 
 set tclist [ thread::names ]
 if { [ info exists tc_threadID ] } {
@@ -95,6 +95,11 @@ if {  ![ info exists mysql_tpch_pass ] } { set mysql_tpch_pass "mysql" }
 if { [ info exists interval ] } { ; } else { set interval 10 }
 if { [ info exists autor ] } { ; } else { set autor 1 }
 }
+DB2 {
+if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
+if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
+if {  ![ info exists db2_dbase ] } { set db2_dbase "tpcc" }
+}
 MSSQLServer {
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
@@ -130,7 +135,6 @@ if { [ info exists rac ] } { ; } else { set rac 0 }
 if { [ info exists autor ] } { ; } else { set autor 1 }
         }
     }
-
 ed_stop_transcount
 .ed_mainFrame.notebook tab .ed_mainFrame.tc  -state normal
 .ed_mainFrame.notebook select .ed_mainFrame.tc 
@@ -500,6 +504,173 @@ if { [ tsv::get application timeout ] } { break } else { after 1000 }
 if { [ tsv::get application timeout ] } { break }
 }
 #catch [ subst {thread::send -async $MASTER { puts "MySQL Transaction Counter Stopped" }} ]
+eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
+thread::release
+}
+thread::wait 
+}]
+}
+DB2 {
+set tc_threadID [thread::create {
+package require db2tcl
+
+proc downshift { list } {
+set temp "null"
+set n [ expr [llength $list] - 1 ]
+while {$n > 0} {
+set temp1 [lindex $list $n]
+set list [ lreplace $list $n $n $temp ]
+set temp $temp1
+incr n -2
+        }
+set list [ lreplace $list  [ expr [llength $list] - 2 ] end ]
+return $list
+}
+
+proc zeroes { list } {
+set total 0
+set n [ expr [llength $list] - 1 ]
+while {$n > 0} {
+set interim [lindex $list $n]
+set total [ expr $total + $interim ]
+incr n -2
+}
+if { $total eq 0 } {
+        return 0
+} else {
+        return 1
+        	}
+	}
+
+proc isdiff { list } {
+set diff 0
+set n [ expr [llength $list] - 1 ]
+set firstval [lindex $list $n]
+while {$n > 0} {
+set interim [lindex $list $n]
+if { $interim != $firstval } { set diff 1 }
+incr n -2
+}
+if { $diff eq 0 } {
+        return 0
+} else {
+        return 1
+        	}
+	}
+
+proc read_more { MASTER db2_user db2_pass db2_dbase interval old gcanv tce ttag bm } {
+set logged_on 0
+set timeout 0
+while { $timeout eq 0 } {
+set timeout [ tsv::get application timeout ]
+if { $bm eq "TPC-C" } {
+set sqc "select total_app_commits + total_app_rollbacks from sysibmadm.mon_db_summary" 
+set tmp_db2_user $db2_user
+set tmp_db2_pass $db2_pass
+set tval 60
+	} else {
+#TPC-H for DB2 not yet enabled
+#set sqc "" 
+#set tmp_db2_user $db2_tpch_user
+#set tmp_db2_pass $db2_tpch_pass
+#set tval 3600
+	}
+if { $interval <= 0 } { set interval 10 } 
+set mplier [ expr {$tval / $interval} ]
+if { $logged_on eq 0 } {
+if {[catch {set db_handle [db2_connect $db2_dbase $db2_user $db2_pass]} message]} {
+if { $timeout eq 0 } {
+eval [subst {thread::send -async $MASTER {::myerrorproc "Transaction Counter" "Connection Failed" }}]
+eval [subst {thread::send -async $MASTER { $gcanv delete $ttag }}]
+eval [subst {thread::send -async $MASTER { .ed_mainFrame.tc.g create text 270 100 -text "LOGON FAILED" -fill black -font {Helvetica 18} }}]
+}
+break
+	} else {
+set logged_on 1
+	}
+}	
+if {[catch { set stmnt_handle1 [ db2_select_direct $db_handle $sqc ]}]} {
+if { $timeout eq 0 } {
+eval [subst {thread::send -async $MASTER {::myerrorproc "Transaction Counter" "Transaction Count SQL Execute Failed" }}]
+eval [subst {thread::send -async $MASTER { $gcanv delete $ttag }}]
+eval [subst {thread::send -async $MASTER { .ed_mainFrame.tc.g create text 270 100 -text "SQL EXECUTE FAILED" -fill black -font {Helvetica 18} }}]
+}
+catch { db2_disconnect $db_handle }
+break
+} 
+if {[catch {set outc [ db2_fetchrow $stmnt_handle1 ]}]} {
+if { $timeout eq 0 } {
+eval [subst {thread::send -async $MASTER {::myerrorproc "Transaction Counter" "Transaction Count SQL Fetch Failed" }}]
+eval [subst {thread::send -async $MASTER { $gcanv delete $ttag }}]
+eval [subst {thread::send -async $MASTER { .ed_mainFrame.tc.g create text 270 100 -text "SQL FETCH FAILED" -fill black -font {Helvetica 18} }}]
+}
+catch { db2_disconnect $db_handle }
+break
+}
+if {[catch {db2_finish $stmnt_handle1}]} {
+if { $timeout eq 0 } {
+eval [subst {thread::send -async $MASTER {::myerrorproc "Transaction Counter" "Transaction Count Handle Close Failed" }}]
+eval [subst {thread::send -async $MASTER { $gcanv delete $ttag }}]
+eval [subst {thread::send -async $MASTER { .ed_mainFrame.tc.g create text 270 100 -text "HANDLE CLOSE FAILED" -fill black -font {Helvetica 18} }}]
+}
+catch { db2_disconnect $db_handle }
+break
+}
+set new $outc
+if { ![ info exists tcdata ] } { set tcdata {} }
+if { ![ info exists timedata ] } { set timedata {} }
+set tstamp [ clock format [ clock seconds ] -format %H:%M:%S ]
+set tcsize [ llength $tcdata ]
+if { $tcsize eq 0 } { 
+set newtick 1 
+lappend tcdata $newtick 0
+lappend timedata $newtick $tstamp
+if { $timeout eq 0 } {
+if { [ catch {thread::send -async $MASTER {::showLCD 0 }}] } { break }} 
+	} else { 
+if { $tcsize >= 40 } {
+set tcdata [ downshift $tcdata ]
+set timedata [ downshift $timedata ]
+set newtick 20
+} else {
+set newtick [ expr {$tcsize / 2 + 1} ] 
+if { $newtick eq 2 } {
+set tcdata [ lreplace $tcdata 0 1 1 [expr {[expr {abs($new - $old)}] * $mplier}] ]
+	}
+}
+lappend tcdata $newtick [expr {[expr {abs($new - $old)}] * $mplier}]
+lappend timedata $newtick $tstamp
+if { ![ isdiff $tcdata ] } {
+set tcdata [ lreplace $tcdata 1 1 0 ]
+}
+set transval [expr {[expr {abs($new - $old)}] * $mplier}]
+if { $timeout eq 0 } {
+if { [ catch [ subst {thread::send -async $MASTER {::showLCD $transval }} ] ] } { break }} 
+}
+if { $tcsize >= 4 } { 
+if { $tcsize eq 4 } {
+if { $timeout eq 0 } {
+if { [ catch [ subst {thread::send -async $MASTER { $gcanv delete $ttag }} ] ] } { break }} 
+}
+if { [ zeroes $tcdata ] eq 0 } {
+set tcdata {}
+set timedata {}
+if { $timeout eq 0 } {
+if { [ catch {thread::send -async $MASTER { tce destroy }}]} { break }} 
+} else {
+if { $bm eq "TPC-C" } { set gcol "green" } else { set gcol "green" }
+if { $timeout eq 0 } {
+if { [ catch [ subst {thread::send -async $MASTER { tce data d1 -colour $gcol -points 0 -lines 1 -coords {$tcdata} -time {$timedata} }} ] ] } { break }} 
+		}
+}
+set old $new
+set pauseval [ expr $interval * 1000 ]
+for {set pausecount 0} {$pausecount <= $pauseval} {incr pausecount 1000} {
+if { [ tsv::get application timeout ] } { break } else { after 1000 }
+}
+if { [ tsv::get application timeout ] } { break }
+}
+#catch [ subst {thread::send -async $MASTER { puts "DB2 Transaction Counter Stopped" }} ]
 eval  [ subst {thread::send -async $MASTER { post_kill_transcount_cleanup }} ]
 thread::release
 }
@@ -992,6 +1163,9 @@ eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $connec
 }
 MySQL {
 eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $mysql_host $mysql_port $mysql_user $mysql_pass $mysql_tpch_user $mysql_tpch_pass $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]
+}
+DB2 {
+eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $db2_user $db2_pass $db2_dbase $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]
 }
 MSSQLServer {
 eval [ subst {thread::send -async $tc_threadID { read_more $masterthread {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid $mssqls_pass $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]

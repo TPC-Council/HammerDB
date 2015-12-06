@@ -2,7 +2,7 @@
 <hammerdb>
 <look_and_feel>
 <ttk_theme>
-	<theme>modern</theme>
+	<theme>classic</theme>
 </ttk_theme>
 <code_highlight>
 	<highlight>true</highlight>
@@ -262,6 +262,29 @@
         </driver>
     </tpcc>
 </trafodion>
+<db2>
+     <tpcc>
+        <schema>
+            <db2_count_ware>1</db2_count_ware>
+            <db2_num_threads>1</db2_num_threads>
+            <db2_user>db2inst1</db2_user>
+            <db2_pass>ibmdb2</db2_pass>
+            <db2_dbase>tpcc</db2_dbase>
+	    <db2_def_tab>USERSPACE1</db2_def_tab> 
+	    <db2_tab_list>C "" D "" H "" I "" W "" S "" NO "" OR "" OL ""</db2_tab_list>
+	    <db2_partition>false</db2_partition>
+        </schema>
+        <driver>
+            <db2_total_iterations>1000000</db2_total_iterations>
+            <db2_raiseerror>false</db2_raiseerror>
+            <db2_keyandthink>false</db2_keyandthink>
+            <db2driver>standard</db2driver>
+	    <db2_rampup>2</db2_rampup>
+            <db2_duration>5</db2_duration>
+	    <db2_monreport>0</db2_monreport>
+        </driver>
+    </tpcc>
+</db2>
   <virtual_user_options>
         <virtual_users>1</virtual_users>
         <user_delay>500</user_delay>
