@@ -57,7 +57,7 @@ proc showLCD {number {width 24} {colours {black black white white}}} {
 }
 
 proc transcount { } {
-global tcl_platform interval ttag tcdata timedata masterthread tc_threadID rac bm rdbms afval autor connectstr tpcc_tt_compat tpch_tt_compat mysql_host mysql_port mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass pg_host pg_port pg_superuser pg_superuserpass pg_defaultdbase redis_host redis_port db2_user db2_pass db2_dbase
+global tcl_platform interval ttag tcdata timedata masterthread tc_threadID rac bm rdbms afval autor connectstr tpcc_tt_compat tpch_tt_compat mysql_host mysql_port mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass pg_host pg_port pg_superuser pg_superuserpass pg_defaultdbase redis_host redis_port db2_user db2_pass db2_dbase db2_tpch_user db2_tpch_pass db2_tpch_dbase 
 
 set tclist [ thread::names ]
 if { [ info exists tc_threadID ] } {
@@ -99,6 +99,9 @@ DB2 {
 if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
 if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
 if {  ![ info exists db2_dbase ] } { set db2_dbase "tpcc" }
+if {  ![ info exists db2_tpch_user ] } { set db2_tpch_user "db2inst1" }
+if {  ![ info exists db2_tpch_pass ] } { set db2_tpch_pass "ibmdb2" }
+if {  ![ info exists db2_tpch_dbase ] } { set db2_tpch_dbase "tpch" }
 }
 MSSQLServer {
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
@@ -558,7 +561,7 @@ if { $diff eq 0 } {
         	}
 	}
 
-proc read_more { MASTER db2_user db2_pass db2_dbase interval old gcanv tce ttag bm } {
+proc read_more { MASTER db2_user db2_pass db2_dbase db2_tpch_user db2_tpch_pass db2_tpch_dbase interval old gcanv tce ttag bm } {
 set logged_on 0
 set timeout 0
 while { $timeout eq 0 } {
@@ -567,18 +570,19 @@ if { $bm eq "TPC-C" } {
 set sqc "select total_app_commits + total_app_rollbacks from sysibmadm.mon_db_summary" 
 set tmp_db2_user $db2_user
 set tmp_db2_pass $db2_pass
+set tmp_db2_dbase $db2_dbase
 set tval 60
 	} else {
-#TPC-H for DB2 not yet enabled
-#set sqc "" 
-#set tmp_db2_user $db2_tpch_user
-#set tmp_db2_pass $db2_tpch_pass
-#set tval 3600
+set sqc "select act_completed_total from sysibmadm.mon_db_summary" 
+set tmp_db2_user $db2_tpch_user
+set tmp_db2_pass $db2_tpch_pass
+set tmp_db2_dbase $db2_tpch_dbase
+set tval 3600
 	}
 if { $interval <= 0 } { set interval 10 } 
 set mplier [ expr {$tval / $interval} ]
 if { $logged_on eq 0 } {
-if {[catch {set db_handle [db2_connect $db2_dbase $db2_user $db2_pass]} message]} {
+if {[catch {set db_handle [db2_connect $tmp_db2_dbase $tmp_db2_user $tmp_db2_pass]} message]} {
 if { $timeout eq 0 } {
 eval [subst {thread::send -async $MASTER {::myerrorproc "Transaction Counter" "Connection Failed" }}]
 eval [subst {thread::send -async $MASTER { $gcanv delete $ttag }}]
@@ -1165,7 +1169,7 @@ MySQL {
 eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $mysql_host $mysql_port $mysql_user $mysql_pass $mysql_tpch_user $mysql_tpch_pass $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]
 }
 DB2 {
-eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $db2_user $db2_pass $db2_dbase $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]
+eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $db2_user $db2_pass $db2_dbase $db2_tpch_user $db2_tpch_pass $db2_tpch_dbase $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]
 }
 MSSQLServer {
 eval [ subst {thread::send -async $tc_threadID { read_more $masterthread {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid $mssqls_pass $interval $old .ed_mainFrame.tc.g tce $ttag $bm }}]

@@ -708,3 +708,17 @@ Some code modularisation to ease process of adding support for new databases, hd
 Version 2.19 December 2015
 
 Added support for IBM DB2 with TPC-C workload
+
+---------------------------------------------------------------------
+
+Version 2.20 May 2016
+
+Bug fixes 
+
+[ #107 ] MySQl 5.7.3 breaks compatibility with PRIMARY KEY must be NOT NULL 
+[ #108 ] Monitoring Virtual User disconnects during DB2 TPCC schema build
+
+In DB2 TPC-C workload CREATE PROCEDURE NEWORD replaced with CREATE OR REPLACE PROCEDURE NEWORD so that the statement does not fail if the procedure already exists. 
+
+Added support for IBM DB2 TPC-H workload
+Added scaling factor for physical units to pixels on different displays

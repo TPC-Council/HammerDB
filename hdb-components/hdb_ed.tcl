@@ -12,9 +12,24 @@ foreach tkcmd $tkcmdlist {
 }
 
 proc ed_start_gui {} {
-    global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes autopilot apmode dashboard windock winundock defaultBackground defaultForeground rdbms
+global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes autopilot apmode dashboard windock winundock defaultBackground defaultForeground rdbms tabix tabiy
 
    set opmode "Local"
+   #Scaling factor for physical units to pixels with design default of 1.3333333
+   set scale_fact 1.333333
+   tk scaling $scale_fact
+   #Scale fonts
+   foreach font [ font names ] {
+   font configure $font -size [font configure $font -size ]
+        }
+   set tabix [ expr {round(481.2 * $scale_fact)} ]
+   set tabiy [ expr {round(240.6 * $scale_fact)} ]
+   set mainx [ expr {round(606 * $scale_fact)} ]
+   set mainy [ expr {round(482.7 * $scale_fact)} ]
+   set mainminx [ expr {round(248.1 * $scale_fact)} ]
+   set mainminy [ expr {round(240.6 * $scale_fact)} ]
+   set mainmaxx [ expr {round(744.3 * $scale_fact)} ]
+   set mainmaxy [ expr {round(556.4 * $scale_fact)} ]
    ttk::toplevel .ed_mainFrame
    wm withdraw .ed_mainFrame
    wm title .ed_mainFrame "HammerDB"
@@ -317,6 +332,7 @@ proc Release {w x y rootX rootY} {
 }
 # Turn a tab into a toplevel (must be a tk::frame)
 proc Detach {notebook index} { 
+global tabix tabiy
     set tabindex [lindex [$notebook tabs] $index]
     set tabname [ lindex [ split [ $notebook select ] "." ] end ]
 if [ string match "*-state normal*" [ $notebook tab $index ] ] {  set tabactive "true" } else { set tabactive "false" }
@@ -326,10 +342,10 @@ if { $tabactive } {
     $notebook forget $index
     wm manage $tabindex
     wm title $tabindex $title
-    wm geometry $tabindex 640x320+30+30
-    wm minsize $tabindex 640 320
+    wm geometry $tabindex ${tabix}x${tabiy}+30+30
+    wm minsize $tabindex $tabix $tabiy
 if { $tabname eq "tc" } {
-    wm maxsize $tabindex 640 320
+    wm maxsize $tabindex $tabix $tabiy
 	} else {
     wm resizable $tabindex true true
 	}
@@ -417,14 +433,14 @@ if { $ttk::currentTheme eq "black" } {
 	}
    pack $Name -anchor center
 
-foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-H DB2 TPC-C MySQL TPC-C MySQL TPC-H PostgreSQL TPC-C PostgreSQL TPC-H Redis TPC-C Trafodion TPC-C } {
+foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-H DB2 TPC-C DB2 TPC-H MySQL TPC-C MySQL TPC-H PostgreSQL TPC-C PostgreSQL TPC-H Redis TPC-C Trafodion TPC-C } {
         populate_tree $db $bn 
         }
 
-   wm geometry .ed_mainFrame 806x642+30+30
+   wm geometry .ed_mainFrame ${mainx}x${mainy}+30+30
    if {$tcl_platform(platform) == "windows"} {set y 0}
-   wm minsize .ed_mainFrame 330 320
-   wm maxsize .ed_mainFrame 990 740
+   wm minsize .ed_mainFrame $mainminx $mainminy
+   wm maxsize .ed_mainFrame $mainmaxx $mainmaxy
 }
 
 proc populate_tree {rdbms bm} {
@@ -625,7 +641,7 @@ if {$tcl_platform(platform) != "windows" && $rdbms == "MSSQLServer" } {
 	set rdbms "Oracle" 
 	}
 if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
-if { $rdbms eq "Redis" || $rdbms eq "Trafodion" || $rdbms eq "DB2" } { set bm "TPC-C" }
+if { $rdbms eq "Redis" || $rdbms eq "Trafodion" } { set bm "TPC-C" }
 if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
 if { $bm eq "TPC-C" } {
 .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state normal
@@ -731,6 +747,9 @@ loadoratpch
 } 
 MySQL {
 loadmytpch
+}
+DB2 {
+loaddb2tpch
 }
 MSSQLServer {
 loadmssqlstpch
@@ -2083,7 +2102,7 @@ if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh 
 }
 
 proc countdb2opts {} {
-global _ED interval afval autor db2_user db2_pass db2_dbase pencil
+global _ED interval afval autor bm db2_user db2_pass db2_dbase db2_tpch_user db2_tpch_pass db2_tpch_dbase pencil
 if { [ info exists afval ] } {
 	after cancel $afval
 	unset afval
@@ -2091,6 +2110,19 @@ if { [ info exists afval ] } {
 if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
 if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
 if {  ![ info exists db2_dbase ] } { set db2_dbase "tpcc" }
+if {  ![ info exists db2_tpch_user ] } { set db2_tpch_user "db2inst1" }
+if {  ![ info exists db2_tpch_pass ] } { set db2_tpch_pass "ibmdb2" }
+if {  ![ info exists db2_tpch_dbase ] } { set db2_tpch_dbase "tpch" }
+if { $bm eq "TPC-C" } {
+set tmp_db2_user db2_user
+set tmp_db2_pass db2_pass
+set tmp_db2_dbase db2_dbase
+set tval 60
+        } else {
+set tmp_db2_user db2_tpch_user
+set tmp_db2_pass db2_tpch_pass
+set tmp_db2_dbase db2_tpch_dbase
+        }
    catch "destroy .countopt"
    ttk::toplevel .countopt
    wm withdraw .countopt
@@ -2108,19 +2140,19 @@ grid $Prompt -column 1 -row 0 -sticky w
 set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
    ttk::label $Prompt -text "DB2 User :"
-   ttk::entry $Name -width 30 -textvariable db2_user
+   ttk::entry $Name -width 30 -textvariable $tmp_db2_user
    grid $Prompt -column 0 -row 1 -sticky e
    grid $Name -column 1 -row 1 -sticky ew
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
    ttk::label $Prompt -text "DB2 User Password :"   
-   ttk::entry $Name  -width 30 -textvariable db2_pass
+   ttk::entry $Name  -width 30 -textvariable $tmp_db2_pass
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
    ttk::label $Prompt -text "DB2 Database :"
-   ttk::entry $Name  -width 30 -textvariable db2_dbase
+   ttk::entry $Name  -width 30 -textvariable $tmp_db2_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
    set Name $Parent.f1.e4
@@ -2147,9 +2179,15 @@ ttk::checkbutton $Name -text "Autorange Data Points" -variable autor -onvalue 1 
 
  set Name $Parent.b1
    ttk::button $Name -command {
+if { $bm eq "TPC-C" } {
          set db2_user [.countopt.f1.e1 get]
          set db2_pass [.countopt.f1.e2 get]
          set db2_dbase [.countopt.f1.e3 get]
+	} else {
+         set db2_tpch_user [.countopt.f1.e1 get]
+         set db2_tpch_pass [.countopt.f1.e2 get]
+         set db2_tpch_dbase [.countopt.f1.e3 get]
+	}
          set interval   [.countopt.f1.e4 get]
 if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
 	set interval 10 }
@@ -2359,13 +2397,13 @@ tk_messageBox -title "No Statistics" -message "Trafodion does not have transacti
 proc about { } {
 global hdb_version
 tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2015
+Copyright (C) 2003-2016
 Steve Shaw\n" 
 }
 
 proc license { } {
 tk_messageBox -title License -message "
-Copyright (C) 2003-2015
+Copyright (C) 2003-2016
 Steve Shaw
 This program is free software; 
 you can redistribute it and/or modify it under the terms of the GNU General Public License 
@@ -3283,8 +3321,7 @@ ttk::radiobutton $Name -text "MSSQL Server" -variable rdbms -value "MSSQLServer"
 
    set Name $Parent.f1.b2e
 ttk::radiobutton $Name -text "DB2" -variable rdbms -value "DB2" -command { if { $oldrdbms != $rdbms } { set rdbms "DB2" } 
-.rdbms.f1.b4 configure -state disabled
-set bm "TPC-C"
+.rdbms.f1.b4 configure -state enabled
 }
  grid $Name -column 1 -row 3 -sticky w 
 
@@ -3314,7 +3351,7 @@ ttk::radiobutton $Name -text "TPC-C" -variable bm -value "TPC-C" -command { if {
 ttk::radiobutton $Name -text "TPC-H" -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
 }
  grid $Name -column 2 -row 2 -sticky w
- if { $rdbms eq "Redis" || $rdbms eq "Trafodion" || $rdbms eq "DB2" } { $Name configure -state disabled ; set bm "TPC-C" }
+ if { $rdbms eq "Redis" || $rdbms eq "Trafodion" } { $Name configure -state disabled ; set bm "TPC-C" }
    set Name $Parent.f1.ok
    ttk::button $Name -command { 
 catch "destroy .rdbms"
@@ -3371,7 +3408,7 @@ MSSQLServer {
 if { $bm == "TPC-C" } { check_mssqltpcc } else { check_mssqltpch }
 }
 DB2 {
- 	check_db2tpcc 
+if { $bm == "TPC-C" } { check_db2tpcc } else { check_db2tpch }
 }
 MySQL {
 if { $bm == "TPC-C" } { check_mytpcc } else { check_mytpch }
@@ -3443,6 +3480,9 @@ configoratpch $option
 	}
 MySQL {
 configmytpch $option
+	}
+DB2 {
+configdb2tpch $option
 	}
 MSSQLServer {
 configmssqlstpch $option
@@ -5224,7 +5264,7 @@ if {  ![ info exists num_tpch_threads ] } { set num_tpch_threads "1" }
 if {  ![ info exists tpch_user ] } { set tpch_user "tpch" }
 if {  ![ info exists tpch_pass ] } { set tpch_pass "tpch" }
 if {  ![ info exists tpch_def_tab ] } { set tpch_def_tab "tpchtab" }
-if {  ![ info exists tpch-def_temp ] } { set tpch_def_temp "temp" }
+if {  ![ info exists tpch_def_temp ] } { set tpch_def_temp "temp" }
 if {  ![ info exists tpch_tt_compat ] } { set tpch_tt_compat "false" }
 global _ED
    catch "destroy .tpch"
@@ -6218,6 +6258,238 @@ if { $option eq "all" || $option eq "drive" } {
    wm geometry .pgtpch +50+50
    wm deiconify .pgtpch
    raise .pgtpch
+   update
+}
+
+proc configdb2tpch {option} {
+global db2_scale_fact db2_tpch_user db2_tpch_pass db2_tpch_dbase db2_tpch_def_tab db2_num_tpch_threads db2_tpch_organizeby db2_total_querysets db2_raise_query_error db2_verbose db2_degree_of_parallel db2_refresh_on db2_update_sets db2_trickle_refresh db2_refresh_verbose boxes driveroptlo defaultBackground defaultForeground
+if {  ![ info exists db2_scale_fact ] } { set db2_scale_fact "1" }
+if {  ![ info exists db2_tpch_user ] } { set db2_tpch_user "db2inst1" }
+if {  ![ info exists db2_tpch_pass ] } { set db2_tpch_pass "ibmdb2" }
+if {  ![ info exists db2_tpch_dbase ] } { set db2_tpch_dbase "tpch" }
+if {  ![ info exists db2_tpch_def_tab ] } { set db2_tpch_def_tab "tpch" }
+if {  ![ info exists db2_num_tpch_threads ] } { set db2_num_tpch_threads "1" }
+if {  ![ info exists db2_tpch_organizeby ] } { set db2_tpch_organizeby "NONE" }
+if {  ![ info exists db2_refresh_on ] } { set  db2_refresh_on "false" }
+if {  ![ info exists db2_total_querysets ] } { set db2_total_querysets "1" }
+if {  ![ info exists db2_raise_query_error ] } { set db2_raise_query_error "false" }
+if {  ![ info exists db2_verbose ] } { set db2_verbose "false" }
+if {  ![ info exists db2_degree_of_parallel ] } { set db2_degree_of_parallel "1" }
+if {  ![ info exists db2_update_sets ] } { set db2_update_sets "1" }
+if {  ![ info exists db2_trickle_refresh ] } { set db2_trickle_refresh "1000" }
+if {  ![ info exists db2_refresh_verbose ] } { set db2_refresh_verbose "false" }
+global _ED
+   catch "destroy .db2tpch"
+   ttk::toplevel .db2tpch
+   wm withdraw .db2tpch
+switch $option {
+"all" { wm title .db2tpch {DB2 TPC-H Schema Options} }
+"build" { wm title .db2tpch {DB2 TPC-H Build Options} }
+"drive" {  wm title .db2tpch {DB2 TPC-H Driver Options} }
+	}
+   set Parent .db2tpch
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+if { $option eq "all" || $option eq "build" } {
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data $boxes]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Build Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	} else {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data $driveroptlo]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	}
+ set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "DB2 User :"
+   ttk::entry $Name -width 30 -textvariable db2_tpch_user
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "DB2 User Password :"
+   ttk::entry $Name  -width 30 -textvariable db2_tpch_pass
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "DB2 Database :"
+   ttk::entry $Name  -width 30 -textvariable db2_tpch_dbase
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "DB2 Default Tablespace :"
+   ttk::entry $Name  -width 30 -textvariable db2_tpch_def_tab
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "DB2 Organize By :"
+   grid $Prompt -column 0 -row 5 -sticky e
+   set Name $Parent.f1.f1
+   ttk::frame $Name -width 30
+   grid $Name -column 1 -row 5 -sticky ew
+        set rcnt 1
+        foreach item {NONE ROW COL DATE} {
+        set Name $Parent.f1.f1.r$rcnt
+	ttk::radiobutton $Name -variable db2_tpch_organizeby -text $item -value $item -width 6
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+set Name $Parent.f1.e6
+   set Prompt $Parent.f1.p6
+   ttk::label $Prompt -text "Scale Factor :"
+   grid $Prompt -column 0 -row 6 -sticky e
+   set Name $Parent.f1.f2
+   ttk::frame $Name -width 30
+   grid $Name -column 1 -row 6 -sticky ew
+	set rcnt 1
+	foreach item {1} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width 1
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 2
+	foreach item {10 30} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width 2
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 4
+	foreach item {100 300} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width 3
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 6
+	foreach item {1000} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width 4
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+set Prompt $Parent.f1.p7
+ttk::label $Prompt -text "Virtual Users to Build Schema :"
+set Name $Parent.f1.e7
+	scale $Name -orient horizontal -variable db2_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
+	grid $Prompt -column 0 -row 7 -sticky e
+	grid $Name -column 1 -row 7 -sticky ew
+	}
+if { $option eq "all" || $option eq "drive" } {
+if { $option eq "all" } {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data $driveroptlo]
+grid $Prompt -column 0 -row 8 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 8 -sticky w
+	}
+   set Name $Parent.f1.e9
+   set Prompt $Parent.f1.p9
+   ttk::label $Prompt -text "Total Query Sets per User :"
+   ttk::entry $Name -width 30 -textvariable db2_total_querysets
+   grid $Prompt -column 0 -row 9 -sticky e
+   grid $Name -column 1 -row 9  -columnspan 4 -sticky ew
+ set Prompt $Parent.f1.p10
+ttk::label $Prompt -text "Exit on DB2 Error :"
+  set Name $Parent.f1.e10
+ttk::checkbutton $Name -text "" -variable db2_raise_query_error -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
+ set Prompt $Parent.f1.p11
+ttk::label $Prompt -text "Verbose Output :"
+  set Name $Parent.f1.e11
+ttk::checkbutton $Name -text "" -variable db2_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Name -column 1 -row 11 -sticky w
+set Name $Parent.f1.e12
+   set Prompt $Parent.f1.p12
+   ttk::label $Prompt -text "Degree of Parallelism :"
+   ttk::entry $Name  -width 30 -textvariable db2_degree_of_parallel
+   grid $Prompt -column 0 -row 12 -sticky e
+   grid $Name -column 1 -row 12 -sticky ew
+ set Prompt $Parent.f1.p13
+ttk::label $Prompt -text "Refresh Function :"
+  set Name $Parent.f1.e13
+ttk::checkbutton $Name -text "" -variable db2_refresh_on -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 13 -sticky e
+   grid $Name -column 1 -row 13 -sticky w
+bind $Parent.f1.e13 <Button> {
+if {$db2_refresh_on eq "true"} { 
+set db2_refresh_verbose "false"
+foreach field {e14 e15 e16} {
+.db2tpch.f1.$field configure -state disabled 
+		}
+} else {
+foreach field {e14 e15 e16} {
+.db2tpch.f1.$field configure -state normal
+                        }
+                }
+	}
+   set Name $Parent.f1.e14
+   set Prompt $Parent.f1.p14
+   ttk::label $Prompt -text "Number of Update Sets :"
+   ttk::entry $Name -width 30 -textvariable db2_update_sets
+   grid $Prompt -column 0 -row 14 -sticky e
+   grid $Name -column 1 -row 14  -columnspan 4 -sticky ew
+if {$db2_refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+   set Name $Parent.f1.e15
+   set Prompt $Parent.f1.p15
+   ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
+   ttk::entry $Name -width 30 -textvariable db2_trickle_refresh
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15  -columnspan 4 -sticky ew
+if {$db2_refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+ set Prompt $Parent.f1.p16
+ttk::label $Prompt -text "Refresh Verbose :"
+  set Name $Parent.f1.e16
+ttk::checkbutton $Name -text "" -variable db2_refresh_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 16 -sticky e
+   grid $Name -column 1 -row 16 -sticky w
+if {$db2_refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+}
+   set Name $Parent.b2
+   ttk::button $Name -command {destroy .db2tpch} -text Cancel
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+   set Name $Parent.b1
+   ttk::button $Name -command {
+         set db2_tpch_user [.db2tpch.f1.e1 get]
+         set db2_tpch_pass [.db2tpch.f1.e2 get]
+ 	 set db2_tpch_dbase [.db2tpch.f1.e3 get]
+if { $option eq "all" || $option eq "build" } {
+ 	 set db2_tpch_def_tab [.db2tpch.f1.e4 get]
+ 	 set db2_tpch_organizeby [.db2tpch.f1.e5 get]
+   }
+if { $option eq "all" || $option eq "drive" } {
+   	 set db2_total_querysets [.db2tpch.f1.e9 get]
+   	 set db2_degree_of_parallel [.db2tpch.f1.e12 get]
+   	 set db2_update_sets [.db2tpch.f1.e14 get]
+   	 set db2_trickle_refresh [.db2tpch.f1.e15 get]
+     }	
+         destroy .db2tpch 
+        } -text {OK}
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+   wm geometry .db2tpch +50+50
+   wm deiconify .db2tpch
+   raise .db2tpch
    update
 }
 
