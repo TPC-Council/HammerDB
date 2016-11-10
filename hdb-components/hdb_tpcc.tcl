@@ -3414,7 +3414,8 @@ set activinst [ standsql $curn1 $sql7 ]
 for { set a 1 } { $a <= $activinst } { incr a } {
 set firstsnap [ lreplace $firstsnap 0 0 $a ]
 set endsnap [ lreplace $endsnap 0 0 $a ]
-set ractpm [ expr $ractpm + [ standsql $curn1 $sql3 ]]
+set sqlrac "select round((sum(tps)*60)) as TPM from (select e.stat_name, (e.value - b.value) / (select avg( extract( day from (e1.end_interval_time-b1.end_interval_time) )*24*60*60+ extract( hour from (e1.end_interval_time-b1.end_interval_time) )*60*60+ extract( minute from (e1.end_interval_time-b1.end_interval_time) )*60+ extract( second from (e1.end_interval_time-b1.end_interval_time)) ) from dba_hist_snapshot b1, dba_hist_snapshot e1 where b1.snap_id = [ lindex $firstsnap 4 ] and e1.snap_id = [ lindex $endsnap 4 ] and b1.dbid = [lindex $firstsnap 3] and e1.dbid = [lindex $endsnap 3] and b1.instance_number = [lindex $firstsnap 0] and e1.instance_number = [lindex $endsnap 0] and b1.startup_time = e1.startup_time and b1.end_interval_time < e1.end_interval_time) as tps from dba_hist_sysstat b, dba_hist_sysstat e where b.snap_id = [ lindex $firstsnap 4 ] and e.snap_id = [ lindex $endsnap 4 ] and b.dbid = [lindex $firstsnap 3] and e.dbid = [lindex $endsnap 3] and b.instance_number = [lindex $firstsnap 0] and e.instance_number = [lindex $endsnap 0] and b.stat_id = e.stat_id and b.stat_name in ('user commits','user rollbacks') and e.stat_name in ('user commits','user rollbacks') order by 1 asc)"
+set ractpm [ expr $ractpm + [ standsql $curn1 $sqlrac ]]
                 }
 set tpm $ractpm
         }
@@ -3423,6 +3424,7 @@ puts "TEST RESULT : System achieved $tpm Oracle TPM at $nopm NOPM"
 	}
 }
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if { $timesten } {
@@ -5823,7 +5825,7 @@ set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
 if \[catch {package require tclodbc 2.5.1} \] { error \"Failed to load tclodbc - ODBC Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
-set RAISEERROR \"$mssqls_raiseerror\" ;# Exit script on Oracle error (true or false)
+set RAISEERROR \"$mssqls_raiseerror\" ;# Exit script on SQL Server error (true or false)
 set KEYANDTHINK \"$mssqls_keyandthink\" ;# Time for user thinking and keying (true or false)
 set CHECKPOINT \"$mssqls_checkpoint\" ;# Perform SQL Server checkpoint when complete (true or false)
 set rampup $mssqls_rampup;  # Rampup time in minutes before first Transaction Count is taken
@@ -5949,6 +5951,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "$totalvirtualusers Virtual Users configured"
 puts "TEST RESULT : System achieved $tpm SQL Server TPM at $nopm NOPM"
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if  [catch {odbc "checkpoint"} message ]  {
@@ -6238,7 +6241,7 @@ set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
 if [catch {package require db2tcl} ] { error "Failed to load db2tcl - DB2 Library Error" }
 proc CreateStoredProcs { db_handle } {
 puts "CREATING TPCC STORED PROCEDURES"
-set sql(1) { CREATE PROCEDURE NEWORD (
+set sql(1) { CREATE OR REPLACE PROCEDURE NEWORD (
 no_w_id		INTEGER,
 no_max_w_id	INTEGER,
 no_d_id		INTEGER,
@@ -7205,6 +7208,9 @@ tsv::lreplace common thrdlst $myposition $myposition done
 	}
 }
 if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+#108 Monitoring Virtual User disconnects during DB2 TPCC schema build
+catch {db2_disconnect $db_handle}
+set db_handle [ ConnectToDB2 $dbname $user $password ]
 CreateIndexes $db_handle $num_part
 CreateStoredProcs $db_handle 
 CreateDB2GlobalVars $db_handle 
@@ -7215,7 +7221,7 @@ return
 	}
     }
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 981.0 ]
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 984.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $db2_dbase $db2_user $db2_pass $db2_count_ware $db2_partition $db2_num_threads $db2_def_tab \{$db2_tab_list\}"
 	} else { return }
 }
@@ -7663,6 +7669,7 @@ puts "---MONREPORT OUTPUT---"
 puts $monreport
 	}
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 db2_disconnect $db_handle
                } else {
 puts "Operating in Slave Mode, No Snapshots taken..."
@@ -8395,9 +8402,9 @@ return
 proc CreateTables { mysql_handler storage_engine num_part } {
 puts "CREATING TPCC TABLES"
 set sql(1) "CREATE TABLE `customer` (
-  `c_id` INT(5) NULL,
-  `c_d_id` INT(2) NULL,
-  `c_w_id` INT(4) NULL,
+  `c_id` INT(5) NOT NULL,
+  `c_d_id` INT(2) NOT NULL,
+  `c_w_id` INT(4) NOT NULL,
   `c_first` VARCHAR(16) BINARY NULL,
   `c_middle` CHAR(2) BINARY NULL,
   `c_last` VARCHAR(16) BINARY NULL,
@@ -8421,8 +8428,8 @@ KEY c_w_id (`c_w_id`,`c_d_id`,`c_last`(16),`c_first`(16))
 )
 ENGINE = $storage_engine"
 set sql(2) "CREATE TABLE `district` (
-  `d_id` INT(2) NULL,
-  `d_w_id` INT(4) NULL,
+  `d_id` INT(2) NOT NULL,
+  `d_w_id` INT(4) NOT NULL,
   `d_ytd` DECIMAL(12, 2) NULL,
   `d_tax` DECIMAL(4, 4) NULL,
   `d_next_o_id` INT NULL,
@@ -8447,7 +8454,7 @@ set sql(3) "CREATE TABLE `history` (
 )
 ENGINE = $storage_engine"
 set sql(4) "CREATE TABLE `item` (
-  `i_id` INT(6) NULL,
+  `i_id` INT(6) NOT NULL,
   `i_im_id` INT NULL,
   `i_name` VARCHAR(24) BINARY NULL,
   `i_price` DECIMAL(5, 2) NULL,
@@ -8463,9 +8470,9 @@ PRIMARY KEY (`no_w_id`, `no_d_id`, `no_o_id`)
 )
 ENGINE = $storage_engine"
 set sql(6) "CREATE TABLE `orders` (
-  `o_id` INT NULL,
-  `o_w_id` INT NULL,
-  `o_d_id` INT NULL,
+  `o_id` INT NOT NULL,
+  `o_w_id` INT NOT NULL,
+  `o_d_id` INT NOT NULL,
   `o_c_id` INT NULL,
   `o_carrier_id` INT NULL,
   `o_ol_cnt` INT NULL,
@@ -8509,8 +8516,8 @@ PARTITION BY HASH (`ol_w_id`)
 PARTITIONS $num_part"
 	}
 set sql(8) "CREATE TABLE `stock` (
-  `s_i_id` INT(6) NULL,
-  `s_w_id` INT(4) NULL,
+  `s_i_id` INT(6) NOT NULL,
+  `s_w_id` INT(4) NOT NULL,
   `s_quantity` INT(6) NULL,
   `s_dist_01` CHAR(24) BINARY NULL,
   `s_dist_02` CHAR(24) BINARY NULL,
@@ -8530,7 +8537,7 @@ PRIMARY KEY (`s_w_id`,`s_i_id`)
 )
 ENGINE = $storage_engine"
 set sql(9) "CREATE TABLE `warehouse` (
-  `w_id` INT(4) NULL,
+  `w_id` INT(4) NOT NULL,
   `w_ytd` DECIMAL(12, 2) NULL,
   `w_tax` DECIMAL(4, 4) NULL,
   `w_name` VARCHAR(10) BINARY NULL,
@@ -8919,8 +8926,8 @@ set num_threads 1
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $db ] SCHEMA"
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 CreateDatabase $mysql_handler $db
 mysqluse $mysql_handler $db
@@ -8973,8 +8980,8 @@ return
 after 5000
 }
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -9207,8 +9214,8 @@ puts "$w_id $stock_level_d_id $threshold"
 }
 #RUN TPC-C
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -9315,8 +9322,8 @@ switch $myposition {
 1 { 
 if { $mode eq "Local" || $mode eq "Master" } {
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 1
@@ -9373,6 +9380,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "$totalvirtualusers Virtual Users configured"
 puts "TEST RESULT : System achieved $tpm MySQL TPM at $nopm NOPM"
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 catch { mysqlclose $mysql_handler }
 		} else {
 puts "Operating in Slave Mode, No Snapshots taken..."
@@ -9533,8 +9541,8 @@ error "Stock Level : $mysqlstatus(message)"
 }
 #RUN TPC-C
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -10479,9 +10487,9 @@ return
 
 proc ConnectToPostgres { host port user password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]}]} {
-puts stderr "Error, the database connection to $host could not be established"
-set lda "Failed"
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+set lda "Failed" ; puts $message
+error $message
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
@@ -11178,9 +11186,9 @@ return
 #POSTGRES CONNECTION
 proc ConnectToPostgres { host port user password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]}]} {
-puts stderr "Error, the database connection to $host could not be established"
-set lda "Failed"
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+set lda "Failed" ; puts $message
+error $message
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
@@ -11457,9 +11465,9 @@ error "PostgreSQL Timed Test Script must be run in Thread Enabled Interpreter"
 
 proc ConnectToPostgres { host port user password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]}]} {
-puts stderr "Error, the database connection to $host could not be established"
-set lda "Failed"
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+set lda "Failed" ; puts $message
+error $message
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
@@ -11577,6 +11585,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "$totalvirtualusers Virtual Users configured"
 puts "TEST RESULT : System achieved $tpm PostgreSQL TPM at $nopm NOPM"
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $VACUUM } {
 	set RAISEERROR "true"
 puts "Checkpoint and Vacuum"
@@ -12749,7 +12758,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "$totalvirtualusers Virtual Users configured"
 puts "TEST RESULT : System achieved $tpm Redis TPM at $nopm NOPM"
 tsv::set application abort 1
-catch { mysqlclose $mysql_handler }
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 		} else {
 puts "Operating in Slave Mode, No Snapshots taken..."
 		}
@@ -15398,6 +15407,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "$totalvirtualusers Virtual Users configured"
 puts "TEST RESULT : System achieved $tpm Trafodion TPM at $nopm NOPM"
 tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 odbc close
 		} else {
 puts "Operating in Slave Mode, No Snapshots taken..."

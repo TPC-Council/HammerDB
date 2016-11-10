@@ -1927,8 +1927,8 @@ set num_threads 1
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $user ] SCHEMA"
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 CreateDatabase $mysql_handler $db
 mysqluse $mysql_handler $db
@@ -1984,8 +1984,8 @@ return
 after 5000
 }
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -2914,9 +2914,9 @@ return
 
 proc ConnectToPostgres { host port user password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]}]} {
-puts stderr "Error, the database connection to $host could not be established"
-set lda "Failed"
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+set lda "Failed" ; puts $message
+error $message
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
@@ -5994,8 +5994,8 @@ mysql::commit $mysql_handler
 
 proc do_refresh { host port user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -6300,8 +6300,8 @@ global mysqlstatus
 #Query 18 is long running on MySQL
 set SKIP_QUERY_18 "false" 
 if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-return
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
  } else {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -7303,9 +7303,9 @@ puts "Query Failed : $sql : $message"
 
 proc ConnectToPostgres { host port user password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]}]} {
-puts stderr "Error, the database connection to $host could not be established"
-set lda "Failed"
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+set lda "Failed" ; puts $message
+error $message
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
@@ -8120,7 +8120,7 @@ set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
 if \[catch {package require db2tcl} \] { error \"Failed to load db2tcl - DB2 Library Error\" }
 #EDITABLE OPTIONS##################################################
 set total_querysets $db2_total_querysets ;# Number of query sets before logging off
-set RAISEERROR \"$db2_raise_query_error\" ;# Exit script on Oracle query error (true or false)
+set RAISEERROR \"$db2_raise_query_error\" ;# Exit script on DB2 query error (true or false)
 set VERBOSE \"$db2_verbose\" ;# Show query text and output
 set degree_of_parallel \"$db2_degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $db2_scale_fact ;#Scale factor of the tpc-h schema
@@ -8911,4 +8911,415 @@ do_tpch $dbname $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_pa
 do_tpch $dbname $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
 		}
         }
+}
+
+proc loadoracloud {} {
+global instance tpch_user tpch_pass raise_query_error verbose degree_of_parallel _ED
+if {  ![ info exists instance ] } { set instance "oracle" }
+if {  ![ info exists tpch_user ] } { set tpch_user "tpch" }
+if {  ![ info exists tpch_pass ] } { set tpch_pass "tpch" }
+if {  ![ info exists raise_query_error ] } { set raise_query_error "false" }
+if {  ![ info exists verbose ] } { set verbose "false" }
+ed_edit_clear
+.ed_mainFrame.notebook select .ed_mainFrame.mainwin
+set _ED(packagekeyname) "Oracle TPC-H"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
+if \[catch {package require Oratcl} \] { error \"Failed to load Oratcl - Oracle OCI Library Error\" }
+#EDITABLE OPTIONS##################################################
+set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
+set VERBOSE \"$verbose\" ;# Show query text and output
+set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
+set connect $tpch_user/$tpch_pass@$instance ;# Oracle connect string for tpc-h user
+#EDITABLE OPTIONS##################################################
+"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 9.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc standsql { curn sql RAISEERROR } {
+set ftch ""
+if {[catch {orasql $curn $sql} message]} {
+if { $RAISEERROR } {
+error "Query Error : $message [ oramsg $curn all ]"
+	} else {
+puts "Query Failed: $sql : $message"
+	}
+} else {
+orafetch  $curn -datavariable output
+while { [ oramsg  $curn ] == 0 } {
+lappend ftch $output
+orafetch  $curn -datavariable output
+		}
+return $ftch
+   } 
+}
+
+
+proc gmean L {
+    expr pow([join $L *],1./[llength $L])
+}
+
+proc printlist { inlist } {
+    foreach item $inlist {
+    if { [llength $item] > 1 } {  printlist $item  } else { puts $item }
+    }
+}
+
+proc SetNLS { lda } {
+set curn_nls [oraopen $lda ]
+set nls(1) "alter session set NLS_LANGUAGE = AMERICAN"
+set nls(2) "alter session set NLS_TERRITORY = AMERICA"
+for { set i 1 } { $i <= 2 } { incr i } {
+if {[ catch {orasql $curn_nls $nls($i)} message ] } {
+puts "$message $nls($i)"
+puts [ oramsg $curn_nls all ]
+			}
+	}
+oraclose $curn_nls
+}
+#########################
+#CLOUD ANALYTIC TPCH QUERY GENERATION
+proc set_query { } {
+global sql
+set sql(1) "SELECT * FROM ( SELECT p_brand , SUM (l_extendedprice * ( 1 - l_discount)) AS revenue FROM lineitem , part WHERE l_partkey = p_partkey AND l_shipdate >= To_date ( '1997 - 01 - 01' , 'YYYY - MM - DD') AND l_shipdate < Add_months ( To_date ( '1997 - 01 - 01' , 'YYYY - MM - DD') , 24) GROUP BY p_brand ORDER BY revenue DESC) WHERE ROWNUM <= 10"
+set sql(2) "SELECT Median (o_totalprice) FROM orders , customer , nation WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY'"
+set sql(3) "SELECT Percentile_cont ( 0.75) within GROUP ( ORDER BY o_totalprice) FROM orders , customer , nation WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY'"
+set sql(4) "SELECT Median (l_discount) FROM orders , customer , lineitem , nation WHERE c_custkey = o_custkey AND o_orderkey = l_orderkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY' AND o_orderdate BETWEEN To_date ( '1995 - 01 - 01' , 'YYYY - MM - DD') AND To_date ( '1995 - 12 - 31' , 'YYYY - MM - DD')"
+set sql(5) "SELECT SUM (l_quantity) AS sum_qty , SUM (l_extendedprice) AS sum_base_price , SUM (l_extendedprice * ( 1 - l_discount)) AS sum_disc_price , SUM (l_extendedprice * ( 1 - l_discount) * ( 1 + l_tax)) AS sum_charge , Avg (l_quantity) AS avg_qty , Avg (l_extendedprice) AS avg_price , Avg (l_discount) AS avg_disc , Count ( *) AS count_order FROM lineitem WHERE l_orderkey IN ( SELECT o_orderkey FROM orders WHERE o_orderdate >= To_date ( '1995 - 01 - 01' , 'YYYY - MM - DD') AND o_orderdate < To_date ( '1995 - 01 - 01' , 'YYYY - MM - DD') + 6 AND o_clerk = 'Clerk#007373565')"
+set sql(6) "SELECT * FROM ( SELECT c_name , Count ( *) ocount FROM orders , customer WHERE o_custkey = c_custkey AND o_orderstatus = 'F' AND ( EXISTS ( SELECT 1 FROM lineitem , part WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_size < 5) OR EXISTS ( SELECT 1 FROM lineitem , part WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_type = 'STANDARD PLATED TIN')) GROUP BY c_name ORDER BY 1 , 2) WHERE ROWNUM <= 100"
+set sql(7) "SELECT * FROM ( SELECT p_partkey , Count ( *) ocount FROM lineitem , supplier , orders , part WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND l_suppkey = s_suppkey AND l_discount < 0.02 AND p_size < 41 GROUP BY p_partkey ORDER BY 1 , 2) WHERE ROWNUM <= 100"
+set sql(8) "SELECT * FROM ( SELECT p_name , p_mfgr , p_brand , p_type , p_size , p_container , p_retailprice , p_comment , qty , qty * p_retailprice FROM ( SELECT l_partkey partkey , SUM (l_quantity) qty FROM lineitem WHERE l_orderkey IN ( SELECT o_orderkey FROM orders WHERE o_orderdate = To_date ( '1996 - 04 - 30' , 'YYYY - MM - DD') AND o_orderpriority = '1 - URGENT' AND o_totalprice > 480000) GROUP BY l_partkey) PartiallyFullfiledOrders , part WHERE p_partkey = PartiallyFullfiledOrders .  partkey ORDER BY qty * p_retailprice) WHERE ROWNUM <= 10"
+set sql(9) "SELECT l.l_shipdate , l.l_discount , l.l_extendedprice , l.l_quantity , l.l_returnflag , l.l_linestatus , l.l_tax , l.l_commitdate , l.l_receiptdate , l.l_shipmode , l.l_linenumber , l.l_shipinstruct , l.l_comment , s.s_comment , s.s_name , s.s_address , s.s_phone , s.s_acctbal FROM ( SELECT l_orderkey , l_suppkey , SUM (l_quantity) sqty , SUM (ps_availqty) aqty FROM lineitem , partsupp WHERE l_orderkey IN ( SELECT o_orderkey FROM orders WHERE o_orderdate BETWEEN To_date ( '1996 - 04 - 01' , 'YYYY - MM - DD') AND Add_months ( To_date ( '1996 - 04 - 01' , 'YYYY - MM - DD') , 1) AND o_orderpriority = '4 - NOT SPECIFIED' AND o_totalprice < 850) AND l_partkey = ps_partkey GROUP BY l_orderkey , l_suppkey) t , lineitem l , supplier s WHERE t.l_orderkey = l.l_orderkey AND t.l_suppkey = s .  s_suppkey AND sqty < aqty"
+set sql(10) "SELECT * FROM ( SELECT p_partkey , Count ( *) ocount FROM lineitem , part WHERE l_partkey = p_partkey AND NOT EXISTS ( SELECT o_orderkey FROM orders WHERE o_orderkey = l_orderkey) AND NOT EXISTS ( SELECT 1 FROM supplier WHERE l_suppkey = s_suppkey) AND l_discount < 1.1 AND p_size < 45 GROUP BY p_partkey ORDER BY 1 , 2)"
+set sql(11) "SELECT * FROM ( SELECT p_partkey , Count ( *) ocount FROM lineitem , part WHERE l_orderkey NOT IN ( SELECT o_orderkey FROM orders) AND l_partkey = p_partkey AND l_suppkey NOT IN ( SELECT s_suppkey FROM supplier) AND l_discount < 0.5 AND p_size < 41 GROUP BY p_partkey ORDER BY 1, 2) WHERE ROWNUM < 100"
+set sql(12) "SELECT * FROM (SELECT o_orderkey, o_custkey, o_orderdate, o_orderstatus, o_totalprice, o_orderpriority FROM orders WHERE o_totalprice < 50005 AND o_orderdate >= To_date ('1995-01-01','YYYY-MM-DD') AND o_orderdate < Add_months(To_date('1995-01-01','YYYY-MM-DD'),12) AND (o_orderkey, Add_months(o_orderdate,- 1)) NOT IN(SELECT CASE WHEN l_orderkey > 5 THEN l_orderkey ELSE NULL END, l_commitdate FROM lineitem WHERE l_extendedprice < 1001 AND l_shipdate >= To_date('1995-01-01','YYYY-MM-DD') AND l_shipdate < Add_months(To_date ('1995-01-01','YYYY-MM-DD'),12)) ORDER BY 1,2,3,4,5) WHERE ROWNUM <= 100"
+set sql(13) "SELECT p_brand , p_type , p_size , Approx_count_distinct (ps_suppkey) AS supplier_cnt FROM partsupp , part WHERE p_partkey = ps_partkey AND p_brand <> 'Brand#15' AND p_type NOT LIKE 'LARGE PLATED%' AND p_size IN ( 21) AND ps_suppkey NOT IN ( SELECT s_suppkey FROM supplier WHERE s_comment LIKE '%Customer%Complaints%') GROUP BY p_brand , p_type , p_size ORDER BY supplier_cnt DESC , p_brand , p_type , p_size"
+}
+
+proc get_query { query_no } {
+global sql
+if { ![ array exists sql ] } { set_query }
+return $sql($query_no)
+}
+#########################
+#CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
+proc do_cloud { connect RAISEERROR VERBOSE degree_of_parallel } {
+set lda [ oralogon $connect ]
+SetNLS $lda
+set curn1 [ oraopen $lda ]
+set sql(1) "alter session force parallel dml parallel (degree $degree_of_parallel)"
+set sql(2) "alter session force parallel ddl parallel (degree $degree_of_parallel)"
+set sql(3) "alter session force parallel query parallel (degree $degree_of_parallel)"
+for { set i 1 } { $i <= 3 } { incr i } {
+if {[ catch {orasql $curn1 $sql($i)} message ] } {
+puts "$message $sql($i)"
+puts [ oramsg $curn1 all ]
+			}
+		}
+unset -nocomplain qlist
+set start [ clock seconds ]
+for { set q 1 } { $q <= 13 } { incr q } {
+if {  [ tsv::get application abort ]  } { break }
+unset -nocomplain query
+set query [ get_query $q ]
+puts "Executing Query ($q of 13)"
+if {$VERBOSE} { puts $query }
+set t0 [clock clicks -millisec]
+set oput [ standsql $curn1 $query $RAISEERROR ]
+set t1 [clock clicks -millisec]
+set value [expr {double($t1-$t0)/1000}]
+set rowcount [ oramsg $curn1 rows ]
+puts "$rowcount rows returned in $value seconds"
+if {$VERBOSE} { printlist $oput }
+if { $rowcount > 0 } { lappend qlist $value }
+	      } 
+set end [ clock seconds ]
+set wall [ expr $end - $start ]
+puts "Completed query set in $wall seconds"
+puts "Geometric mean of query times returning rows is [ format \"%.5f\" [ gmean $qlist ]]"
+oralogoff $lda
+ }
+#########################
+#RUN CLOUD ANALYTIC TPC-H
+do_cloud $connect $RAISEERROR $VERBOSE $degree_of_parallel}
+}
+
+proc loadpgcloud {} {
+global pg_host pg_port pg_tpch_user pg_tpch_pass pg_tpch_dbase pg_raise_query_error pg_verbose pg_rs_compat _ED
+if {  ![ info exists pg_host ] } { set pg_host "localhost" }
+if {  ![ info exists pg_port ] } { set pg_port "5432" }
+if {  ![ info exists pg_tpch_user ] } { set pg_tpch_user "tpch" }
+if {  ![ info exists pg_tpch_pass ] } { set pg_tpch_pass "tpch" }
+if {  ![ info exists pg_tpch_dbase ] } { set pg_tpch_dbase "tpch" }
+if {  ![ info exists pg_raise_query_error ] } { set pg_raise_query_error "false" }
+if {  ![ info exists pg_verbose ] } { set pg_verbose "false" }
+if {  ![ info exists pg_rs_compat ] } { set pg_rs_compat "false" }
+ed_edit_clear
+.ed_mainFrame.notebook select .ed_mainFrame.mainwin
+set _ED(packagekeyname) "PostgreSQL TPC-H"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
+if \[catch {package require Pgtcl} \] { error \"Failed to load Pgtcl - Postgres Library Error\" }
+#EDITABLE OPTIONS##################################################
+set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
+set VERBOSE \"$pg_verbose\" ;# Show query text and output
+set redshift_compat \"$pg_rs_compat\" ;# Queries to run against redshift (true or false)
+set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
+set port \"$pg_port\" ;# Port of the PostgreSQL Server
+set user \"$pg_tpch_user\" ;# PostgreSQL user
+set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
+set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
+#EDITABLE OPTIONS##################################################
+"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 13.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc standsql { lda sql RAISEERROR VERBOSE } {
+set rowcount 0
+if {[catch { pg_select $lda $sql var { 
+set rowcount [ expr $var(.tupno) + 1 ]
+if { $VERBOSE } { 
+foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
+if { $RAISEERROR } {
+error "Query Error : $message"
+	} else {
+puts "Query Failed : $sql : $message"
+	}
+   } 
+return [ expr $rowcount ]
+}
+
+proc gmean L {
+    expr pow([join $L *],1./[llength $L])
+}
+
+proc printlist { inlist } {
+    foreach item $inlist {
+    if { [llength $item] > 1 } {  printlist $item  } else { puts $item }
+    }
+}
+
+proc ConnectToPostgres { host port user password dbname } {
+global tcl_platform
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+puts $message
+error $message
+ } else {
+if {$tcl_platform(platform) == "windows"} {
+#Workaround for Bug #95 where first connection fails on Windows
+catch {pg_disconnect $lda}
+set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+        }
+pg_notice_handler $lda puts
+set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+pg_result $result -clear
+        }
+return $lda
+}
+
+proc create_median_and_percentile { lda } {
+#create median and percentile with pg prefix as median or percentile exists in some versions but not all
+set sql(1) { CREATE OR REPLACE FUNCTION _final_pgmedian(anyarray) RETURNS float8 AS $$ WITH q AS ( SELECT val FROM unnest($1) val WHERE VAL IS NOT NULL ORDER BY 1), cnt AS ( SELECT COUNT(*) AS c FROM q) SELECT AVG(val)::float8 FROM ( SELECT val FROM q LIMIT  2 - MOD((SELECT c FROM cnt), 2) OFFSET GREATEST(CEIL((SELECT c FROM cnt) / 2.0) - 1,0)  ) q2;
+$$ LANGUAGE SQL IMMUTABLE; }
+set sql(2) { DROP AGGREGATE IF EXISTS pgmedian(anyelement) }
+set sql(3) { CREATE AGGREGATE pgmedian(anyelement) ( SFUNC=array_append, STYPE=anyarray, FINALFUNC=_final_pgmedian, INITCOND='{}'); }
+set sql(4) { CREATE OR REPLACE FUNCTION pgarray_sort (ANYARRAY) RETURNS ANYARRAY LANGUAGE SQL AS $$ SELECT ARRAY( SELECT $1[s.i] AS "ast" FROM generate_series(array_lower($1,1), array_upper($1,1)) AS s(i) ORDER BY ast); $$; }
+set sql(5) { CREATE OR REPLACE FUNCTION pgpercentile_cont(myarray real[], percentile real) RETURNS real AS $$ DECLARE ary_cnt INTEGER; row_num real; crn real; frn real; calc_result real; new_array real[]; BEGIN ary_cnt = array_length(myarray,1); row_num = 1 + ( percentile * ( ary_cnt - 1 )); new_array = pgarray_sort(myarray); crn = ceiling(row_num); frn = floor(row_num); if crn = frn and frn = row_num then calc_result = new_array[row_num]; else calc_result = (crn - row_num) * new_array[frn] + (row_num - frn) * new_array[crn]; end if; RETURN calc_result; END; $$ LANGUAGE 'plpgsql' IMMUTABLE; }
+for { set i 1 } { $i <= 5 } { incr i } {
+set result [ pg_exec $lda $sql($i) ]
+if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+error "[pg_result $result -error]"
+	}  else {
+	pg_result $result -clear
+	}
+    }
+return
+ }
+#########################
+#CLOUD ANALYTIC TPCH QUERY GENERATION
+proc set_query { VERSION } {
+global sql
+set sql(1) "SELECT * FROM (SELECT p_brand , SUM(l_extendedprice * ( 1 - l_discount)) AS revenue FROM LINEITEM , PART WHERE l_partkey = p_partkey AND l_shipdate >= date '1997-01-01' AND l_shipdate < date '1997-01-01'  + interval '1' year GROUP BY p_brand ORDER BY revenue DESC) AS SUBQ LIMIT 10"
+if { $VERSION eq "postgres" } {
+#No Median or Percentile functions in some versions of PostgreSQL
+set sql(2) "SELECT pgmedian(o_totalprice) FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY'"
+set sql(3) "SELECT pgpercentile_cont(array_agg(o_totalprice), 0.75) as percentile from (SELECT o_totalprice FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY') AS SUBQ"
+set sql(4) "SELECT pgmedian(l_discount) FROM ORDERS , CUSTOMER , LINEITEM , NATION WHERE c_custkey = o_custkey AND o_orderkey = l_orderkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY' AND o_orderdate BETWEEN date '1995-01-01' AND date '1995-12-31'"
+	} else {
+#Redshift
+set sql(2) "SELECT min(median) from (SELECT median(o_totalprice) over() FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY')"
+set sql(3) "select min(percentile) from (SELECT percentile_cont(0.75) within GROUP (ORDER BY o_totalprice) over() as percentile from (SELECT o_totalprice FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY') AS SUBQ)"
+set sql(4) "SELECT min(median) from (select median(l_discount) over() FROM ORDERS , CUSTOMER , LINEITEM , NATION WHERE c_custkey = o_custkey AND o_orderkey = l_orderkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY' AND o_orderdate BETWEEN date '1995-01-01' AND date '1995-12-31')"
+	}
+set sql(5) "SELECT SUM(l_quantity) AS sum_qty , SUM(l_extendedprice) AS sum_base_price , SUM(l_extendedprice * ( 1 - l_discount)) AS sum_disc_price , SUM(l_extendedprice * ( 1 - l_discount) * ( 1 + l_tax)) AS sum_charge , Avg(l_quantity) AS avg_qty , Avg(l_extendedprice) AS avg_price , Avg(l_discount) AS avg_disc , Count(*) AS count_order FROM LINEITEM WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate >= date '1995-01-01' AND o_orderdate < date '1995-01-01' + interval '6' day AND o_clerk = 'Clerk#007373565')"
+set sql(6) "SELECT * FROM (SELECT c_name , Count(*) ocount FROM ORDERS , CUSTOMER WHERE o_custkey = c_custkey AND o_orderStatus = 'F' AND ( EXISTS ( SELECT 1 FROM LINEITEM , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_size < 5) OR EXISTS ( SELECT 1 FROM LINEITEM , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_type = 'STANDARD PLATED TIN' )) GROUP BY c_name ORDER BY 1 , 2) AS SUBQ LIMIT 100"
+set sql(7) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , SUPPLIER , ORDERS , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND l_suppkey = s_suppkey AND l_discount < 0.02 AND p_size < 41 GROUP BY p_partkey ORDER BY 1,2) AS SUBQ LIMIT 100"
+set sql(8) "SELECT * FROM (SELECT p_name , p_mfgr , p_brand , p_type , p_size , p_container , p_retailprice , p_comment , qty , qty * p_retailprice FROM ( SELECT l_partkey PARTkey , SUM(l_quantity) qty FROM LINEITEM WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate = date '1996-04-30' AND o_orderpriority = '1 - URGENT' AND o_totalprice > 480000) GROUP BY l_partkey) PartiallyFullfiledOrders , PART WHERE p_partkey = PartiallyFullfiledOrders .  PARTkey ORDER BY qty * p_retailprice) AS SUBQ LIMIT 10"
+set sql(9) "SELECT l.l_shipdate , l.l_discount , l.l_extendedprice , l.l_quantity , l.l_returnflag , l.l_linestatus , l.l_tax , l.l_commitdate , l.l_receiptdate , l.l_shipmode , l.l_linenumber , l.l_shipinstruct , l.l_comment , s.s_comment , s.s_name , s.s_address , s.s_phone , s.s_acctbal FROM (SELECT l_orderkey , l_suppkey , SUM(l_quantity) sqty , SUM(ps_availqty) aqty FROM LINEITEM, PARTSUPP WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate BETWEEN date '1996-04-01' AND date '1996-04-01' + interval '1' month AND o_orderpriority = '4 - NOT SPECIFIED' AND o_totalprice < 850) AND l_partkey = ps_partkey GROUP BY l_orderkey , l_suppkey) t , LINEITEM l , SUPPLIER s WHERE t.l_orderkey = l.l_orderkey AND t.l_suppkey = s .  s_suppkey AND sqty < aqty"
+set sql(10) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , PART WHERE l_partkey = p_partkey AND NOT EXISTS (SELECT o_orderkey FROM ORDERS WHERE o_orderkey = l_orderkey) AND NOT EXISTS ( SELECT 1 FROM SUPPLIER WHERE l_suppkey = s_suppkey) AND l_discount < 1.1 AND p_size < 45 GROUP BY p_partkey ORDER BY 1 , 2) AS SUBQ"
+set sql(11) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , PART WHERE l_orderkey NOT IN ( SELECT o_orderkey FROM ORDERS) AND l_partkey = p_partkey AND l_suppkey NOT IN ( SELECT s_suppkey FROM SUPPLIER) AND l_discount < 0.5 AND p_size < 41 GROUP BY p_partkey ORDER BY 1, 2) AS SUBQ LIMIT 100"
+set sql(12) "SELECT * FROM (SELECT o_orderkey, o_custkey, o_orderdate, o_orderstatus, o_totalprice, o_orderpriority FROM ORDERS WHERE o_totalprice < 50005 AND o_orderdate >= date '1995-01-01' AND o_orderdate < date '1995-01-01' + interval '12' month AND (o_orderkey, (o_orderdate - interval '1' month)) NOT IN(SELECT CASE WHEN l_orderkey > 5 THEN l_orderkey ELSE NULL END, l_commitdate FROM LINEITEM WHERE l_extendedprice < 1001 AND l_shipdate >= date '1995-01-01' AND l_shipdate < date '1995-01-01' + interval '12' month) ORDER BY 1,2,3,4,5) AS SUBQ LIMIT 100"
+if { $VERSION eq "postgres" } {
+#No HyperLogLog Approx_count_distinct function in PostgreSQL replaced with count(distinct)
+set sql(13) "SELECT p_brand , p_type , p_size , count(distinct ps_suppkey) AS supplier_cnt FROM PARTSUPP , PART WHERE p_partkey = ps_partkey AND p_brand <> 'Brand#15' AND p_type NOT LIKE 'LARGE PLATED%' AND p_size IN ( 21) AND ps_suppkey NOT IN ( SELECT s_suppkey FROM SUPPLIER WHERE s_comment LIKE '%Customer%Complaints%') GROUP BY p_brand , p_type , p_size ORDER BY supplier_cnt DESC , p_brand , p_type , p_size"
+	} else {
+set sql(13) "SELECT p_brand , p_type , p_size , approximate count(distinct ps_suppkey) AS supplier_cnt FROM PARTSUPP , PART WHERE p_partkey = ps_partkey AND p_brand <> 'Brand#15' AND p_type NOT LIKE 'LARGE PLATED%' AND p_size IN ( 21) AND ps_suppkey NOT IN ( SELECT s_suppkey FROM SUPPLIER WHERE s_comment LIKE '%Customer%Complaints%') GROUP BY p_brand , p_type , p_size ORDER BY supplier_cnt DESC , p_brand , p_type , p_size"
+	}
+}
+
+proc get_query { query_no VERSION } {
+global sql
+if { ![ array exists sql ] } { set_query $VERSION }
+return $sql($query_no)
+}
+#########################
+#CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
+proc do_cloud { host port user password db RAISEERROR VERBOSE redshift_compat } {
+if { $redshift_compat } {
+set VERSION "redshift"	
+	} else {
+set VERSION "postgres"	
+	}
+set lda [ ConnectToPostgres $host $port $user $password $db ]
+if { $VERSION eq "postgres" } {
+create_median_and_percentile $lda
+	}
+unset -nocomplain qlist
+set start [ clock seconds ]
+for { set q 1 } { $q <= 13 } { incr q } {
+if {  [ tsv::get application abort ]  } { break }
+unset -nocomplain query
+set query [ get_query $q $VERSION ]
+puts "Executing Query ($q of 13)"
+if {$VERBOSE} { puts $query }
+set t0 [clock clicks -millisec]
+set oput [ standsql $lda $query $RAISEERROR $VERBOSE ]
+set t1 [clock clicks -millisec]
+set value [expr {double($t1-$t0)/1000}]
+set rowcount $oput
+puts "$rowcount rows returned in $value seconds"
+if {$VERBOSE} { printlist $oput }
+if { $rowcount > 0 } { lappend qlist $value }
+	      } 
+set end [ clock seconds ]
+set wall [ expr $end - $start ]
+puts "Completed query set in $wall seconds"
+puts "Geometric mean of query times returning rows is [ format \"%.5f\" [ gmean $qlist ]]"
+pg_disconnect $lda
+ }
+#########################
+#RUN CLOUD ANALYTIC TPC-H
+do_cloud $host $port $user $password $db $RAISEERROR $VERBOSE $redshift_compat}
+}
+
+proc loadmycloud {} {
+global mysql_host mysql_port mysql_tpch_user mysql_tpch_pass mysql_tpch_dbase mysql_raise_query_error mysql_verbose _ED
+if {  ![ info exists mysql_host ] } { set mysql_host "127.0.0.1" }
+if {  ![ info exists mysql_port ] } { set mysql_port "3306" }
+if {  ![ info exists mysql_tpch_user ] } { set mysql_tpch_user "root" }
+if {  ![ info exists mysql_tpch_pass ] } { set mysql_tpch_pass "mysql" }
+if {  ![ info exists mysql_tpch_dbase ] } { set mysql_tpch_dbase "tpch" }
+if {  ![ info exists mysql_raise_query_error ] } { set mysql_raise_query_error "false" }
+if {  ![ info exists mysql_verbose ] } { set mysql_verbose "false" }
+ed_edit_clear
+.ed_mainFrame.notebook select .ed_mainFrame.mainwin
+set _ED(packagekeyname) "MySQL TPC-H"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "#!/usr/local/bin/tclsh8.6
+if \[ catch {package require mysqltcl} \] { error \"Failed to load mysqltcl - MySQL Library Error\" }
+#EDITABLE OPTIONS##################################################
+set RAISEERROR \"$mysql_raise_query_error\" ;# Exit script on MySQL query error (true or false)
+set VERBOSE \"$mysql_verbose\" ;# Show query text and output
+set host \"$mysql_host\" ;# Address of the server hosting MySQL 
+set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set user \"$mysql_tpch_user\" ;# MySQL user
+set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
+set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
+#EDITABLE OPTIONS##################################################
+"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 12.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {proc standsql { mysql_handler sql RAISEERROR } {
+global mysqlstatus
+catch { set oput [ mysql::sel $mysql_handler "$sql" -list ] }
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "Query Error : $mysqlstatus(message)"
+         } else { puts $mysqlstatus(message)
+      }
+   } else {
+return $oput
+	}
+}
+
+proc gmean L {
+    expr pow([join $L *],1./[llength $L])
+}
+
+proc printlist { inlist } {
+    foreach item $inlist {
+    if { [llength $item] > 1 } {  printlist $item  } else { puts $item }
+    }
+}
+
+#########################
+#CLOUD ANALYTIC TPCH QUERY GENERATION
+proc set_query { } {
+global sql
+set sql(1) "SELECT * FROM ( SELECT p_brand , SUM(l_extendedprice * ( 1 - l_discount)) AS revenue FROM LINEITEM , PART WHERE l_partkey = p_partkey AND l_shipdate >= date '1997-01-01' AND l_shipdate < date '1997-01-01'  + interval '1' year GROUP BY p_brand ORDER BY revenue DESC) AS SUBQ LIMIT 10"
+#No Median or Percentile functions in MySQL
+set sql(2) "SELECT CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(o_totalprice ORDER BY o_totalprice SEPARATOR ','),',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL(10,2)) AS `Median o_totalprice` from (SELECT o_totalprice FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY') AS SUBQ"
+set sql(3) "SELECT CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(o_totalprice ORDER BY o_totalprice SEPARATOR ','),',', 75/100 * COUNT(*) + 1), ',', -1) AS DECIMAL(10,2)) AS `75th Percentile o_totalprice` from (SELECT o_totalprice FROM ORDERS , CUSTOMER , NATION WHERE c_custkey = o_custkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY') AS SUBQ"
+set sql(4) "SELECT CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(l_discount ORDER BY l_discount SEPARATOR ','),',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL(10,2)) AS `Median l_discount` from (SELECT l_discount FROM ORDERS , CUSTOMER , LINEITEM , NATION WHERE c_custkey = o_custkey AND o_orderkey = l_orderkey AND c_nationkey = n_nationkey AND n_name = 'GERMANY' AND o_orderdate BETWEEN date '1995-01-01' AND date '1995-12-31') AS SUBQ"
+set sql(5) "SELECT SUM(l_quantity) AS sum_qty , SUM(l_extendedprice) AS sum_base_price , SUM(l_extendedprice * ( 1 - l_discount)) AS sum_disc_price , SUM(l_extendedprice * ( 1 - l_discount) * ( 1 + l_tax)) AS sum_charge , Avg(l_quantity) AS avg_qty , Avg(l_extendedprice) AS avg_price , Avg(l_discount) AS avg_disc , Count(*) AS count_order FROM LINEITEM WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate >= date '1995-01-01' AND o_orderdate < date '1995-01-01' + interval '6' day AND o_clerk = 'Clerk#007373565')"
+set sql(6) "SELECT * FROM ( SELECT c_name , Count(*) ocount FROM ORDERS , CUSTOMER WHERE o_custkey = c_custkey AND o_orderStatus = 'F' AND ( EXISTS ( SELECT 1 FROM LINEITEM , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_size < 5) OR EXISTS ( SELECT 1 FROM LINEITEM , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND p_type = 'STANDARD PLATED TIN' )) GROUP BY c_name ORDER BY 1 , 2) AS SUBQ LIMIT 100"
+set sql(7) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , SUPPLIER , ORDERS , PART WHERE l_orderkey = o_orderkey AND l_partkey = p_partkey AND l_suppkey = s_suppkey AND l_discount < 0.02 AND p_size < 41 GROUP BY p_partkey ORDER BY 1,2) AS SUBQ LIMIT 100"
+set sql(8) "SELECT * FROM (SELECT p_name , p_mfgr , p_brand , p_type , p_size , p_container , p_retailprice , p_comment , qty , qty * p_retailprice FROM ( SELECT l_partkey PARTkey , SUM(l_quantity) qty FROM LINEITEM WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate = date '1996-04-30' AND o_orderpriority = '1 - URGENT' AND o_totalprice > 480000) GROUP BY l_partkey) PartiallyFullfiledOrders , PART WHERE p_partkey = PartiallyFullfiledOrders .  PARTkey ORDER BY qty * p_retailprice) AS SUBQ LIMIT 10"
+set sql(9) "SELECT l.l_shipdate , l.l_discount , l.l_extendedprice , l.l_quantity , l.l_returnflag , l.l_linestatus , l.l_tax , l.l_commitdate , l.l_receiptdate , l.l_shipmode , l.l_linenumber , l.l_shipinstruct , l.l_comment , s.s_comment , s.s_name , s.s_address , s.s_phone , s.s_acctbal FROM (SELECT l_orderkey , l_suppkey , SUM(l_quantity) sqty , SUM(ps_availqty) aqty FROM LINEITEM, PARTSUPP WHERE l_orderkey IN (SELECT o_orderkey FROM ORDERS WHERE o_orderdate BETWEEN date '1996-04-01' AND date '1996-04-01' + interval '1' month AND o_orderpriority = '4 - NOT SPECIFIED' AND o_totalprice < 850) AND l_partkey = ps_partkey GROUP BY l_orderkey , l_suppkey) t , LINEITEM l , SUPPLIER s WHERE t.l_orderkey = l.l_orderkey AND t.l_suppkey = s .  s_suppkey AND sqty < aqty"
+set sql(10) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , PART WHERE l_partkey = p_partkey AND NOT EXISTS (SELECT o_orderkey FROM ORDERS WHERE o_orderkey = l_orderkey) AND NOT EXISTS ( SELECT 1 FROM SUPPLIER WHERE l_suppkey = s_suppkey) AND l_discount < 1.1 AND p_size < 45 GROUP BY p_partkey ORDER BY 1 , 2) AS SUBQ"
+set sql(11) "SELECT * FROM (SELECT p_partkey , Count(*) ocount FROM LINEITEM , PART WHERE l_orderkey NOT IN ( SELECT o_orderkey FROM ORDERS) AND l_partkey = p_partkey AND l_suppkey NOT IN ( SELECT s_suppkey FROM SUPPLIER) AND l_discount < 0.5 AND p_size < 41 GROUP BY p_partkey ORDER BY 1, 2) AS SUBQ LIMIT 100"
+set sql(12) "SELECT * FROM (SELECT o_orderkey, o_custkey, o_orderdate, o_orderstatus, o_totalprice, o_orderpriority FROM ORDERS WHERE o_totalprice < 50005 AND o_orderdate >= date '1995-01-01' AND o_orderdate < date '1995-01-01' + interval '12' month AND (o_orderkey, (o_orderdate - interval '1' month)) NOT IN(SELECT CASE WHEN l_orderkey > 5 THEN l_orderkey ELSE NULL END, l_commitdate FROM LINEITEM WHERE l_extendedprice < 1001 AND l_shipdate >= date '1995-01-01' AND l_shipdate < date '1995-01-01' + interval '12' month) ORDER BY 1,2,3,4,5) AS SUBQ LIMIT 100"
+#No HyperLogLog Approx_count_distinct function in MySQL replaced with count(distinct)
+set sql(13) "SELECT p_brand , p_type , p_size , count(distinct ps_suppkey) AS supplier_cnt FROM PARTSUPP , PART WHERE p_partkey = ps_partkey AND p_brand <> 'Brand#15' AND p_type NOT LIKE 'LARGE PLATED%' AND p_size IN ( 21) AND ps_suppkey NOT IN ( SELECT s_suppkey FROM SUPPLIER WHERE s_comment LIKE '%Customer%Complaints%') GROUP BY p_brand , p_type , p_size ORDER BY supplier_cnt DESC , p_brand , p_type , p_size"
+}
+
+proc get_query { query_no } {
+global sql
+if { ![ array exists sql ] } { set_query }
+return $sql($query_no)
+}
+#########################
+#CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
+proc do_cloud { host port user password db RAISEERROR VERBOSE } {
+global mysqlstatus
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts stderr "error, the database connection to $host could not be established"
+puts stderr $mysqlstatus(message)
+return
+ } else {
+ mysqluse $mysql_handler $db
+ mysql::autocommit $mysql_handler 0
+ mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
+ }
+unset -nocomplain qlist
+set start [ clock seconds ]
+for { set q 1 } { $q <= 13 } { incr q } {
+if {  [ tsv::get application abort ]  } { break }
+unset -nocomplain query
+set query [ get_query $q ]
+puts "Executing Query ($q of 13)"
+if {$VERBOSE} { puts $query }
+set t0 [clock clicks -millisec]
+set oput [ standsql $mysql_handler $query $RAISEERROR ]
+set t1 [clock clicks -millisec]
+set value [expr {double($t1-$t0)/1000}]
+set rowcount [ llength $oput ]
+puts "$rowcount rows returned in $value seconds"
+if {$VERBOSE} { printlist $oput }
+if { $rowcount > 0 } { lappend qlist $value }
+	      } 
+set end [ clock seconds ]
+set wall [ expr $end - $start ]
+puts "Completed query set in $wall seconds"
+puts "Geometric mean of query times returning rows is [ format \"%.5f\" [ gmean $qlist ]]"
+mysqlclose $mysql_handler
+ }
+#########################
+#RUN CLOUD ANALYTIC TPC-H
+do_cloud $host $port $user $password $db $RAISEERROR $VERBOSE}
 }

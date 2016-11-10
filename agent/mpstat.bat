@@ -16,7 +16,7 @@ tclsh86t %0 %*
 #
 #Simulation of Linux mpstat program for Windows using Twapi
 #
-# Copyright (C) 2003-2014 Steve Shaw
+# Copyright (C) 2003-2016 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -61,7 +61,7 @@ puts "[clock format [clock seconds] -format "%I:%M:%S %p"]\t$cpu_number\t[format
 incr cpu_number
 		}
 	}
-after 1000
+after 2000
 unset -nocomplain $perf_data
 	}
     }

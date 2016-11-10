@@ -170,6 +170,10 @@ if { [ info exists optlog ] } { ; } else { set optlog 0 }
 if { [ info exists ntimes ] && $ntimes > 1 } { ; } else { set ntimes 1 }
 #Moved to running of virtual users
 #disable_enable_options_menu disable
+set Name .ed_mainFrame.buttons.datagen 
+$Name configure -state disabled
+set Name .ed_mainFrame.buttons.boxes 
+$Name configure -state disabled
 set Name .ed_mainFrame.buttons.test 
 $Name configure -state disabled
 for { set vuser 0 } {$vuser < $maxvuser } {incr vuser} {
@@ -416,6 +420,10 @@ $table delete 0 end
 set Name .ed_mainFrame.buttons.runworld
 $Name configure -state normal
 disable_enable_options_menu enable
+set Name .ed_mainFrame.buttons.datagen 
+$Name configure -state normal
+set Name .ed_mainFrame.buttons.boxes 
+$Name configure -state normal
 set Name .ed_mainFrame.buttons.test 
 $Name configure -state normal
 if { [ info exists inrun ] } {

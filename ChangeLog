@@ -722,3 +722,21 @@ In DB2 TPC-C workload CREATE PROCEDURE NEWORD replaced with CREATE OR REPLACE PR
 
 Added support for IBM DB2 TPC-H workload
 Added scaling factor for physical units to pixels on different displays
+
+---------------------------------------------------------------------
+
+Version 2.21 Nov 2016
+
+Bug fixes 
+
+[#109] Exit on Oracle Errror not applied when set in config.xml
+[#110] Running autopilot from master only kills virtual users in local instance
+[#111] Oracle AWR Driver script reports double TPM when running against RAC
+[#112] Metrics: too many nested evaluations (infinite loop?) 
+
+Added option to run cloud analytic query test on Oracle,MySQL(Aurora),PostgreSQL(Redshift)
+Added flat file schema data generation for larger datasets
+Added improved error reporting for PostgreSQL connections
+Added improved error reporting for MySQL connections
+Duplicate count_ware variable removed from XML
+Corrected typos in driver scripts referring to incorrect databases

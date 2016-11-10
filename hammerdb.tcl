@@ -11,7 +11,7 @@ exit
 ########################################################################
 # HammerDB
 #
-# Copyright (C) 2003-2015 Steve Shaw
+# Copyright (C) 2003-2016 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -36,6 +36,7 @@ exit
 #hdb_vu.tcl 	 - Virtual user TCL threads
 #hdb_tpcc.tcl	 - TPC-C schema creation and driver
 #hdb_tpch.tcl	 - TPC-H schema creation and driver
+#hdb_gen.tcl	 - Flat File Data Generation
 #hdb_modes.tcl   - Remote Modes and Autopilot
 #hdb_tab.tcl 	 - Virtual user display tablelist
 #hdb_cnv.tcl 	 - Tracefile to oratcl conversion
@@ -47,7 +48,7 @@ exit
 #hdb_go.tcl 	 - Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.18"
+set hdb_version "v2.21"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/hdb-modules"
@@ -182,7 +183,7 @@ for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
         }
     }
 
-append loadlist { hdb_theme.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_tc.tcl hdb_metrics.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
+append loadlist { hdb_theme.tcl hdb_vu.tcl hdb_tpcc.tcl hdb_tpch.tcl hdb_gen.tcl hdb_modes.tcl hdb_tab.tcl hdb_cnv.tcl hdb_tc.tcl hdb_metrics.tcl hdb_im.tcl hdb_ed.tcl hdb_xml.tcl hdb_go.tcl }
 
 set loadtext "Loading hammerdb components"
 after 100

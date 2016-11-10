@@ -40,10 +40,10 @@ set UserDefaultDir [ file dirname [ info script ] ]
 package require comm
 namespace import comm::*
 #Enable report for more than 122 CPUs
-interp recursionlimit {} 1500
+interp recursionlimit {} 3000
 global agentlist S iswin
 set iswin "false"
-set version 2.20
+set version 2.21
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 
@@ -214,7 +214,7 @@ puts "connection established"
 if $iswin {
     set fin [open "| mpstat.bat" r]
     } else {
-    set fin [open "|mpstat -P [join $::S(cpus,list) ,] 1" r]
+    set fin [open "|mpstat -P [join $::S(cpus,list) ,] 2" r]
 	}
     fconfigure $fin -blocking false
     fileevent $fin readable [list isReadable $fin] 

@@ -12,7 +12,7 @@ foreach tkcmd $tkcmdlist {
 }
 
 proc ed_start_gui {} {
-global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes autopilot apmode dashboard windock winundock defaultBackground defaultForeground rdbms tabix tabiy
+global _ED ed_mainf tcl_platform new open save copy cut paste search test ctext lvuser runworld succ fail vus run tick cross oneuser running clock clo masterthread table opmode masterlist pencil distribute boxes datagen autopilot apmode dashboard windock winundock datagen defaultBackground defaultForeground rdbms tabix tabiy
 
    set opmode "Local"
    #Scaling factor for physical units to pixels with design default of 1.3333333
@@ -123,6 +123,7 @@ tk_messageBox -title Highlight -message "Highlighting of keywords and program co
 	{{command}  {Transaction Counter} {-command "countopts" -underline 0}}
       {{command}  {Metrics} {-command "metricsopts" -underline 0}}
       {{command}  {Mode} {-command "select_mode" -underline 0}}
+      {{command}  {Datagen} {-command "dgopts" -underline 0}}
       {{tearoff}  {no} {}}
       }
 construct_menu $Name Options\  $Menu_string($Name) 
@@ -162,7 +163,7 @@ construct_menu $Name Options\  $Menu_string($Name)
       "Clear the screen"
 
    construct_button $Parent.buttons.load $open open.ppm "ed_file_load" \
-       "Open an existing file"
+       "Open existing file"
 
    construct_button $Parent.buttons.save $save save.ppm "ed_file_save" \
        "Save current file"
@@ -172,16 +173,16 @@ construct_menu $Name Options\  $Menu_string($Name)
    pack $Name -anchor nw -side left -expand 0  -fill x 
 
    construct_button $Parent.buttons.copy $copy copy.ppm "ed_edit_copy"\
-      "Copy selected object or text"
+      "Copy selected text"
 
    construct_button $Parent.buttons.cut $cut cut.ppm "ed_edit_cut"\
-       "Cut selected object or text"
+       "Cut selected text"
 
    construct_button $Parent.buttons.paste $paste paste.ppm "ed_edit_paste" \
-       "Paste selected object or text"
+       "Paste selected text"
 
    construct_button $Parent.buttons.search $search search.ppm "ed_edit_searchf"\
-       "Search for string in text"
+       "Search in text"
 
    set Name $Parent.buttons.l15
    ttk::label $Name -text " " 
@@ -201,6 +202,8 @@ construct_button $Parent.buttons.runworld $runworld world.ppm "remote_command ru
    pack $Name -anchor nw -side left -expand 0  -fill x 
 
 construct_button $Parent.buttons.boxes $boxes boxes.ppm "check_which_bm" "Create TPC Schema" 
+
+construct_button $Parent.buttons.datagen $datagen datagen.ppm "run_datagen" "Generate TPC Data" 
 
 construct_button $Parent.buttons.pencil $pencil pencil.ppm "transcount" "Transaction Counter" 
 
@@ -444,7 +447,7 @@ foreach { db bn } { Oracle TPC-C Oracle TPC-H MSSQLServer TPC-C MSSQLServer TPC-
 }
 
 proc populate_tree {rdbms bm} {
-global boxes runworld option lvuser autopilot pencil dashboard mode driveroptim driveroptlo vuseroptim
+global boxes runworld option lvuser autopilot pencil dashboard mode datagen driveroptim driveroptlo vuseroptim
 set Name .ed_mainFrame.treeframe.treeview
 bind .ed_mainFrame.treeframe.treeview <Leave> { ed_status_message -perm }
 $Name insert $rdbms end -id $rdbms.$bm -text  $bm
@@ -511,6 +514,15 @@ $Name tag bind modehlp <Motion> { ed_status_message -help "Configure Connections
 $Name insert $rdbms.$bm.mode end -id $rdbms.$bm.mode.options -text "Options" -image [image create photo -data $option] 
 $Name item $rdbms.$bm.mode.options -tags modeopt
 $Name tag bind modeopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {select_mode } }
+$Name insert $rdbms.$bm end -id $rdbms.$bm.datagen -text "Datagen" -image [image create photo -data $datagen]
+$Name item $rdbms.$bm.datagen -tags {dghlp}
+$Name tag bind dghlp <Motion> { ed_status_message -help "Configure Data Generate" } 
+$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.options -text "Options" -image [image create photo -data $option] 
+$Name item $rdbms.$bm.datagen.options -tags dgopt
+$Name tag bind dgopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { dgopts } }
+$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.start -text "Generate" -image [image create photo -data $datagen ] 
+$Name item $rdbms.$bm.datagen.start -tags dgstart
+$Name tag bind dgstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.datagen invoke } }
 }
 
 proc ed_stop_gui {} {
@@ -737,16 +749,27 @@ applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 }
 
 proc loadtpch {} {
-global _ED rdbms
+global _ED rdbms cloud_query mysql_cloud_query pg_cloud_query
 set _ED(packagekeyname) "TPC-H"
 ed_status_message -show "TPC-H Driver Script"
 if { [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
+if { [ info exists cloud_query ] } { ; } else { set cloud_query "false" }
+if { [ info exists mysql_cloud_query ] } { ; } else { set mysql_cloud_query "false" }
+if { [ info exists pg_cloud_query ] } { ; } else { set pg_cloud_query "false" }
 switch $rdbms {
 Oracle {
+if { $cloud_query } {
+loadoracloud
+	} else {
 loadoratpch
+	}
 } 
 MySQL {
+if { $mysql_cloud_query } {
+loadmycloud
+        } else {
 loadmytpch
+	}
 }
 DB2 {
 loaddb2tpch
@@ -755,8 +778,12 @@ MSSQLServer {
 loadmssqlstpch
     	}
 PostgreSQL {
+if { $pg_cloud_query } {
+loadpgcloud
+        } else {
 loadpgtpch
 	}
+}
 default {
 loadoratpch
 	}
@@ -3185,6 +3212,122 @@ set agent_id 0
    update
 }
 
+proc dgopts {} {
+global datagen bm gen_count_ware gen_scale_fact gen_directory gen_num_threads defaultBackground defaultForeground
+if {  ![ info exists gen_count_ware ] } { set gen_count_ware "1" }
+if {  ![ info exists gen_scale_fact ] } { set gen_scale_fact "1" }
+if {  ![ info exists gen_directory ] } { set gen_directory [ findtempdir ] }
+if {  ![ info exists gen_num_threads ] } { set gen_num_threads "1" }
+if {  ![ info exists bm ] } { set bm "TPC-C" }
+ catch "destroy .dgopt"
+   ttk::toplevel .dgopt
+   wm withdraw .dgopt
+   wm title .dgopt "$bm Data Generation Options"
+   set Parent .dgopt
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data $datagen]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "$bm Data Generation Options"
+grid $Prompt -column 1 -row 0 -sticky w
+if { $bm eq "TPC-C" } {
+set Prompt $Parent.f1.p1
+ttk::label $Prompt -text "Number of Warehouses :"
+set Name $Parent.f1.e1
+scale $Name -orient horizontal -variable gen_count_ware -from 1 -to 30000 -length 300 -resolution 1 -bigincrement 100 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
+        grid $Prompt -column 0 -row 1 -sticky e
+        grid $Name -column 1 -row 1 -sticky ew
+#Display Count Ware or Scale Factor
+	} else {
+set Name $Parent.f1.p1
+   set Prompt $Parent.f1.p1 
+   ttk::label $Prompt -text "Scale Factor :"
+   grid $Prompt -column 0 -row 1 -sticky e
+   set Name $Parent.f1.f2
+   ttk::frame $Name -width 30
+   grid $Name -column 1 -row 1 -sticky ew
+	set rcnt 1
+	foreach item {1} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 4
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 2
+	foreach item {10 30} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 3
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 4
+	foreach item {100 300 1000} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 5
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 2
+	foreach item {3000 10000} {
+	set Name $Parent.f1.f2.ra$rcnt
+	ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 6
+   	grid $Name -column $rcnt -row 1 
+	incr rcnt
+	}
+	set rcnt 4
+	foreach item {30000 100000} {
+	set Name $Parent.f1.f2.ra$rcnt
+	ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 7
+   	grid $Name -column $rcnt -row 1 
+	incr rcnt
+	}
+	}
+set Name $Parent.f1.e3
+set Prompt $Parent.f1.p3
+ttk::label $Prompt -text "Directory for File Generation :"
+ttk::entry $Name -width 30 -textvariable gen_directory
+grid $Prompt -column 0 -row 3 -sticky e
+grid $Name -column 1 -row 3 -sticky ew
+set Prompt $Parent.f1.p4
+ttk::label $Prompt -text "Virtual Users to Generate Data :"
+set Name $Parent.f1.e4
+        scale $Name -orient horizontal -variable gen_num_threads -from 1 -to 1024 -length 300 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
+bind .dgopt.f1.e4 <Any-ButtonRelease> {
+if { $bm eq "TPC-C" } {
+if {$gen_num_threads > $gen_count_ware} {
+set gen_num_threads $gen_count_ware
+                }
+  } else {
+if {($gen_num_threads > 32 && $gen_scale_fact eq 1)||($gen_num_threads > 64 && $gen_scale_fact eq 10)} { 
+switch $gen_scale_fact {
+1 { set gen_num_threads 32 }
+10 { set gen_num_threads 64 }
+			}
+		}
+         }
+}
+grid $Prompt -column 0 -row 4 -sticky e
+grid $Name -column 1 -row 4 -sticky ew
+   set Name $Parent.b5
+   ttk::button $Name -command {destroy .dgopt} -text Cancel
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   set Name $Parent.b6
+   ttk::button $Name -command {
+         set gen_directory [.dgopt.f1.e3 get]
+	 catch "destroy .dgopt"
+      if {![file writable $gen_directory]} {
+tk_messageBox -title "Directory Warning" -icon warning -message "Files cannot be written to chosen directory you must create $gen_directory before generating data" 
+	}
+        } -text {OK}     
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   wm geometry .dgopt +50+50
+   wm deiconify .dgopt
+   update
+}
+
 proc select_mode {} {
 global opmode hostname id masterlist apmode mode
 upvar 1 oldmode oldmode
@@ -3433,6 +3576,36 @@ applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 ed_edit_commit
 if { [ string length $_ED(package)] eq 1 } {
 #No was pressed at schema creation and editor is empty do not run
+return
+	} else {
+#Yes was pressed at schema creation run
+run_virtual
+	}
+}
+
+proc run_datagen {} {
+global _ED bm rdbms threadscreated
+if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
+if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
+#Clear the Script Editor first to make sure a genuine schema build is run
+ed_edit_clear
+if { [ info exists threadscreated ] } {
+tk_messageBox -icon error -message "Cannot generate data with Virtual Users active, destroy Virtual Users first"
+#clear script editor so cannot be re-run with incorrect v user count
+return 1
+        }
+if { $bm == "TPC-C" } { 
+gendata_tpcc 
+} else { 
+gendata_tpch 
+}
+.ed_mainFrame.notebook select .ed_mainFrame.mainwin
+applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
+.ed_mainFrame.notebook select .ed_mainFrame.tw
+#Commit to update values in script editor
+ed_edit_commit
+if { [ string length $_ED(package)] eq 1 } {
+#No was pressed at data generation and editor is empty do not run
 return
 	} else {
 #Yes was pressed at schema creation run
@@ -5256,7 +5429,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configoratpch {option} {
-global instance system_password scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp tpch_tt_compat boxes driveroptlo num_tpch_threads refresh_on total_querysets raise_query_error verbose degree_of_parallel refresh_on update_sets trickle_refresh refresh_verbose defaultBackground defaultForeground
+global instance system_password scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp tpch_tt_compat boxes driveroptlo num_tpch_threads refresh_on total_querysets raise_query_error verbose degree_of_parallel refresh_on update_sets trickle_refresh refresh_verbose cloud_query defaultBackground defaultForeground
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
 if {  ![ info exists scale_fact ] } { set scale_fact "1" }
@@ -5266,6 +5439,7 @@ if {  ![ info exists tpch_pass ] } { set tpch_pass "tpch" }
 if {  ![ info exists tpch_def_tab ] } { set tpch_def_tab "tpchtab" }
 if {  ![ info exists tpch_def_temp ] } { set tpch_def_temp "temp" }
 if {  ![ info exists tpch_tt_compat ] } { set tpch_tt_compat "false" }
+if {  ![ info exists cloud_query ] } { set cloud_query "false" }
 global _ED
    catch "destroy .tpch"
    ttk::toplevel .tpch
@@ -5483,6 +5657,12 @@ ttk::checkbutton $Name -text "" -variable refresh_verbose -onvalue "true" -offva
 if {$refresh_on == "false" } {
 	$Name configure -state disabled
 	}
+set Prompt $Parent.f1.p18
+ttk::label $Prompt -text "Cloud Analytic Queries :"
+  set Name $Parent.f1.e18
+ttk::checkbutton $Name -text "" -variable cloud_query -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
 }
    set Name $Parent.b2
    ttk::button $Name -command {destroy .tpch} -text Cancel
@@ -5514,7 +5694,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmytpch {option} {
-global mysql_host mysql_port mysql_scale_fact mysql_tpch_user mysql_tpch_pass mysql_tpch_dbase mysql_num_tpch_threads boxes driveroptlo mysql_tpch_storage_engine mysql_refresh_on mysql_total_querysets mysql_raise_query_error mysql_verbose mysql_update_sets mysql_trickle_refresh mysql_refresh_verbose defaultBackground defaultForeground
+global mysql_host mysql_port mysql_scale_fact mysql_tpch_user mysql_tpch_pass mysql_tpch_dbase mysql_num_tpch_threads boxes driveroptlo mysql_tpch_storage_engine mysql_refresh_on mysql_total_querysets mysql_raise_query_error mysql_verbose mysql_update_sets mysql_trickle_refresh mysql_refresh_verbose mysql_cloud_query defaultBackground defaultForeground
 if {  ![ info exists mysql_host ] } { set mysql_host "127.0.0.1" }
 if {  ![ info exists mysql_port ] } { set mysql_port "3306" }
 if {  ![ info exists mysql_scale_fact ] } { set mysql_scale_fact "1" }
@@ -5529,8 +5709,8 @@ if {  ![ info exists mysql_raise_query_error ] } { set mysql_raise_query_error "
 if {  ![ info exists mysql_verbose ] } { set mysql_verbose "false" }
 if {  ![ info exists mysql_update_sets ] } { set mysql_update_sets "1" }
 if {  ![ info exists mysql_trickle_refresh ] } { set mysql_trickle_refresh "1000" }
-if {  ![ info exists mysql_refresh_verbose ] } { set mysql_refresh_verbose "fals
-e" }
+if {  ![ info exists mysql_refresh_verbose ] } { set mysql_refresh_verbose "false" }
+if {  ![ info exists mysql_cloud_query ] } { set mysql_cloud_query "false" }
 global _ED
    catch "destroy .mytpch"
    ttk::toplevel .mytpch
@@ -5710,6 +5890,12 @@ ttk::checkbutton $Name -text "" -variable mysql_refresh_verbose -onvalue "true" 
 if {$mysql_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
+set Prompt $Parent.f1.p16
+ttk::label $Prompt -text "Cloud Analytic Queries :"
+  set Name $Parent.f1.e16
+ttk::checkbutton $Name -text "" -variable mysql_cloud_query -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky w
 }
    set Name $Parent.b2
    ttk::button $Name -command {destroy .mytpch} -text Cancel
@@ -5995,7 +6181,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configpgtpch {option} {
-global pg_host pg_port pg_scale_fact pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase pg_tpch_user pg_tpch_pass pg_tpch_dbase pg_tpch_gpcompat pg_tpch_gpcompress pg_num_tpch_threads pg_total_querysets pg_raise_query_error pg_verbose pg_refresh_on pg_update_sets pg_trickle_refresh pg_refresh_verbose boxes driveroptlo defaultBackground defaultForeground
+global pg_host pg_port pg_scale_fact pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase pg_tpch_user pg_tpch_pass pg_tpch_dbase pg_tpch_gpcompat pg_tpch_gpcompress pg_num_tpch_threads pg_total_querysets pg_raise_query_error pg_verbose pg_refresh_on pg_update_sets pg_trickle_refresh pg_refresh_verbose pg_cloud_query pg_rs_compat boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists pg_host ] } { set pg_host "localhost" }
 if {  ![ info exists pg_port ] } { set pg_port "5432" }
 if {  ![ info exists pg_scale_fact ] } { set pg_scale_fact "1" }
@@ -6015,6 +6201,8 @@ if {  ![ info exists pg_verbose ] } { set pg_verbose "false" }
 if {  ![ info exists pg_update_sets ] } { set pg_update_sets "1" }
 if {  ![ info exists pg_trickle_refresh ] } { set pg_trickle_refresh "1000" }
 if {  ![ info exists pg_refresh_verbose ] } { set pg_refresh_verbose "false" }
+if {  ![ info exists pg_cloud_query ] } { set pg_cloud_query "false" }
+if {  ![ info exists pg_rs_compat ] } { set pg_rs_compat "false" }
 global _ED
    catch "destroy .pgtpch"
    ttk::toplevel .pgtpch
@@ -6231,6 +6419,29 @@ ttk::checkbutton $Name -text "" -variable pg_refresh_verbose -onvalue "true" -of
 if {$pg_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
+set Prompt $Parent.f1.p21
+ttk::label $Prompt -text "Cloud Analytic Queries :"
+  set Name $Parent.f1.e21
+ttk::checkbutton $Name -text "" -variable pg_cloud_query -onvalue "true" -offvalue "false"
+bind $Parent.f1.e21 <Button> {
+if {$pg_cloud_query eq "true"} { 
+.pgtpch.f1.e22 configure -state disabled 
+set pg_rs_compat "false"
+} else {
+.pgtpch.f1.e22 configure -state normal
+                }
+	}
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
+set Prompt $Parent.f1.p22
+ttk::label $Prompt -text "Redshift Compatible :"
+set Name $Parent.f1.e22
+ttk::checkbutton $Name -text "" -variable pg_rs_compat -onvalue "true" -offvalue "false"
+if {$pg_cloud_query == "false" } {
+	$Name configure -state disabled
+	}
+grid $Prompt -column 0 -row 22 -sticky e
+grid $Name -column 1 -row 22 -sticky w
 }
    set Name $Parent.b2
    ttk::button $Name -command {destroy .pgtpch} -text Cancel

@@ -62,6 +62,7 @@
 	    <update_sets>1</update_sets> 
 	    <trickle_refresh>1000</trickle_refresh> 
 	    <refresh_verbose>false</refresh_verbose> 
+	    <cloud_query>false</cloud_query>
         </driver>
     </tpch>
     <transaction_counter>
@@ -83,7 +84,7 @@
     <tpcc>
         <schema>
             <mssqls_count_ware>1</mssqls_count_ware>
-            <mssqls_schema>original</mssqls_schema>
+            <mssqls_schema>updated</mssqls_schema>
             <mssqls_num_threads>1</mssqls_num_threads>
             <mssqls_dbase>tpcc</mssqls_dbase>
         </schema>
@@ -156,6 +157,7 @@
             <mysql_update_sets>1</mysql_update_sets>
             <mysql_trickle_refresh>1000</mysql_trickle_refresh>
             <mysql_refresh_verbose>false</mysql_refresh_verbose>
+	    <mysql_cloud_query>false</mysql_cloud_query>
         </driver>
     </tpch>
 </mysql>
@@ -208,6 +210,8 @@
             <pg_update_sets>1</pg_update_sets>
             <pg_trickle_refresh>1000</pg_trickle_refresh>
             <pg_refresh_verbose>false</pg_refresh_verbose>
+	    <pg_cloud_query>false</pg_cloud_query>
+	    <pg_rs_compat>false</pg_rs_compat>
         </driver>
     </tpch>
 </postgresql>
@@ -306,6 +310,13 @@
         </driver>
     </tpch>
 </db2>
+<datageneration>
+            <gen_count_ware>1</gen_count_ware>
+            <gen_scale_fact>1</gen_scale_fact>
+            <gen_num_threads>1</gen_num_threads>
+            <gen_directory>
+	    </gen_directory>
+</datageneration>
   <virtual_user_options>
         <virtual_users>1</virtual_users>
         <user_delay>500</user_delay>
