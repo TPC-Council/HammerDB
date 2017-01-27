@@ -15,7 +15,7 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2016 Steve Shaw
+# Copyright (C) 2003-2017 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -43,7 +43,7 @@ namespace import comm::*
 interp recursionlimit {} 3000
 global agentlist S iswin
 set iswin "false"
-set version 2.21
+set version 2.22
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 

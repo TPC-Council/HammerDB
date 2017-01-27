@@ -11,7 +11,7 @@ exit
 ########################################################################
 # HammerDB
 #
-# Copyright (C) 2003-2016 Steve Shaw
+# Copyright (C) 2003-2017 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
@@ -48,7 +48,7 @@ exit
 #hdb_go.tcl 	 - Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.21"
+set hdb_version "v2.22"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/hdb-modules"

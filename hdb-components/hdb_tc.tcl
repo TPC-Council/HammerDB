@@ -107,7 +107,7 @@ MSSQLServer {
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_authentication ] } { set mssqls_authentication "windows" }
-if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 10.0" }
+if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 11.0" }
 if {  ![ info exists mssqls_uid ] } { set mssqls_uid "sa" }
 if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 if { [ info exists interval ] } { ; } else { set interval 10 }

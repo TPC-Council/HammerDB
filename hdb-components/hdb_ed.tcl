@@ -649,9 +649,6 @@ $Name state !disabled
 
 proc disable_bm_menu {} {
 global rdbms bm tcl_platform highlight
-if {$tcl_platform(platform) != "windows" && $rdbms == "MSSQLServer" } { 
-	set rdbms "Oracle" 
-	}
 if {  [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
 if { $rdbms eq "Redis" || $rdbms eq "Trafodion" } { set bm "TPC-C" }
 if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
@@ -2014,7 +2011,7 @@ if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_authentication ] } { set mssqls_authentication "wind
 ows" }
 if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server
- Native Client 10.0" }
+ Native Client 11.0" }
 if {  ![ info exists mssqls_uid ] } { set mssqls_uid "sa" }
 if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 
@@ -2424,13 +2421,13 @@ tk_messageBox -title "No Statistics" -message "Trafodion does not have transacti
 proc about { } {
 global hdb_version
 tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2016
+Copyright (C) 2003-2017
 Steve Shaw\n" 
 }
 
 proc license { } {
 tk_messageBox -title License -message "
-Copyright (C) 2003-2016
+Copyright (C) 2003-2017
 Steve Shaw
 This program is free software; 
 you can redistribute it and/or modify it under the terms of the GNU General Public License 
@@ -3416,13 +3413,7 @@ if {  [ info exists bm ] } { ; } else { set bm "TPC-C" }
    set oldbm $bm
 	switch $preselect {
 	"Oracle" { set rdbms Oracle }
-	"MSSQLServer" { 
-	if {$tcl_platform(platform) != "windows" } { 
-		  set rdbms $oldrdbms 
-		} else {
-		  set rdbms MSSQLServer 
-		} 
-	     }
+	"MSSQLServer" { set rdbms MSSQLServer }
 	"DB2" { set rdbms DB2 }
 	"MySQL" { set rdbms MySQL }
 	"PostgreSQL" { set rdbms PostgreSQL }
@@ -3523,9 +3514,6 @@ set bm $oldbm
 set rdbms $oldrdbms
 } -text Cancel
    grid $Parent.f1.cancel -column 3 -row 8 -padx 3 -pady 3 -sticky w
-   if {$tcl_platform(platform) != "windows" } { 
-       .rdbms.f1.b2a configure -state disabled	
-      }
    wm geometry .rdbms +50+50
    wm deiconify .rdbms
    raise .rdbms
@@ -4236,16 +4224,18 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmssqlstpcc {option} {
-global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_schema mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_checkpoint boxes driveroptlo defaultBackground defaultForeground
+global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_imdb mssqls_bucket mssqls_durability mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_checkpoint boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_count_ware ] } { set mssqls_count_ware "1" }
 if {  ![ info exists mssqls_authentication ] } { set mssqls_authentication "windows" }
-if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 10.0" }
+if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 11.0" }
 if {  ![ info exists mssqls_uid ] } { set mssqls_uid "sa" }
 if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 if {  ![ info exists mssqls_dbase ] } { set mssqls_dbase "tpcc" }
-if {  ![ info exists mssqls_schema ] } { set mssqls_schema "updated" }
+if {  ![ info exists mssqls_imdb ] } { set mssqls_imdb "false" }
+if {  ![ info exists mssqls_bucket ] } { set mssqls_bucket "1" }
+if {  ![ info exists mssqls_durability ] } { set mssqls_durability "SCHEMA_AND_DATA" }
 if {  ![ info exists mssqls_num_threads ] } { set mssqls_num_threads "1" }
 if {  ![ info exists mssqls_total_iterations ] } { set mssqls_total_iterations 1000000 }
 if {  ![ info exists mssqls_raiseerror ] } { set mssqls_raiseerror "false" }
@@ -4342,53 +4332,88 @@ set Name $Parent.f1.e6
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
 if { $option eq "all" || $option eq "build" } {
-set Prompt $Parent.f1.pb
-ttk::label $Prompt -text "Schema :"
-grid $Prompt -column 0 -row 9 -sticky e
-set Name $Parent.f1.r5
-ttk::radiobutton $Name -value "original" -text "Original" -variable mssqls_schema
-grid $Name -column 1 -row 9 -sticky w
-set Name $Parent.f1.r6
-ttk::radiobutton $Name -value "updated" -text "Updated" -variable mssqls_schema
-grid $Name -column 1 -row 10 -sticky w
 set Prompt $Parent.f1.p7
+ttk::label $Prompt -text "In-Memory OLTP :"
+   set Name $Parent.f1.e7
+ttk::checkbutton $Name -text "" -variable mssqls_imdb -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 9 -sticky e
+   grid $Name -column 1 -row 9 -sticky w
+bind .tpc.f1.e7 <ButtonPress-1> {
+if { $mssqls_imdb eq "false" } {
+foreach field {r5 r6 e8} {
+catch {.tpc.f1.$field configure -state normal}
+	}
+    } else {
+foreach field {r5 r6 e8} {
+catch {.tpc.f1.$field configure -state disabled}
+set mssqls_bucket 1
+	}
+    }
+}
+set Name $Parent.f1.e8
+set Prompt $Parent.f1.p8
+ttk::label $Prompt -text "In-Memory Hash Bucket Multiplier :"   
+ttk::entry $Name  -width 30 -textvariable mssqls_bucket
+grid $Prompt -column 0 -row 10 -sticky e
+grid $Name -column 1 -row 10 -sticky ew
+set Name $Parent.f1.e9
+set Prompt $Parent.f1.p9
+ttk::label $Prompt -text "In-Memory Durability :"
+grid $Prompt -column 0 -row 11 -sticky e
+set Name $Parent.f1.r5
+ttk::radiobutton $Name -value "SCHEMA_AND_DATA" -text "SCHEMA_AND_DATA" -variable mssqls_durability
+grid $Name -column 1 -row 11 -sticky w
+set Name $Parent.f1.r6
+ttk::radiobutton $Name -value "SCHEMA_ONLY" -text "SCHEMA_ONLY" -variable mssqls_durability
+grid $Name -column 1 -row 12 -sticky w
+if { $mssqls_imdb eq "true" } {
+foreach field {r5 r6 e8} {
+catch {.tpc.f1.$field configure -state normal}
+        }
+        } else {
+foreach field {r5 r6 e8} {
+catch {.tpc.f1.$field configure -state disabled}
+set mssqls_bucket 1
+        }
+        }
+set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Number of Warehouses :"
-set Name $Parent.f1.e7
+set Name $Parent.f1.e10
 	scale $Name -orient horizontal -variable mssqls_count_ware -from 1 -to 5000 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
-bind .tpc.f1.e7 <Any-ButtonRelease> {
+bind .tpc.f1.e10 <Any-ButtonRelease> {
 if {$mssqls_num_threads > $mssqls_count_ware} {
 set mssqls_num_threads $mssqls_count_ware
 		}
 }
-	grid $Prompt -column 0 -row 11 -sticky e
-	grid $Name -column 1 -row 11 -sticky ew
-set Prompt $Parent.f1.p10
+	grid $Prompt -column 0 -row 13 -sticky e
+	grid $Name -column 1 -row 13 -sticky ew
+set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
-set Name $Parent.f1.e10
+set Name $Parent.f1.e11
         scale $Name -orient horizontal -variable mssqls_num_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
-bind .tpc.f1.e10 <Any-ButtonRelease> {
+bind .tpc.f1.e11 <Any-ButtonRelease> {
 if {$mssqls_num_threads > $mssqls_count_ware} {
 set mssqls_num_threads $mssqls_count_ware
                 }
         }
-grid $Prompt -column 0 -row 12 -sticky e
-grid $Name -column 1 -row 12 -sticky ew
+grid $Prompt -column 0 -row 14 -sticky e
+grid $Name -column 1 -row 14 -sticky ew
 	}
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
 ttk::label $Prompt -image [image create photo -data $driveroptlo]
-grid $Prompt -column 0 -row 13 -sticky e
+grid $Prompt -column 0 -row 15 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
-grid $Prompt -column 1 -row 13 -sticky w
+grid $Prompt -column 1 -row 15 -sticky w
 	}
 set Prompt $Parent.f1.p12
 ttk::label $Prompt -text "TPC-C Driver Script :"
-grid $Prompt -column 0 -row 14 -sticky e
+grid $Prompt -column 0 -row 16 -sticky e
 set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable mssqlsdriver
-grid $Name -column 1 -row 14 -sticky w
+grid $Name -column 1 -row 16 -sticky w
 bind .tpc.f1.r3 <ButtonPress-1> {
 set mssqls_checkpoint "false"
 .tpc.f1.e17 configure -state disabled
@@ -4397,7 +4422,7 @@ set mssqls_checkpoint "false"
 }
 set Name $Parent.f1.r4
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable mssqlsdriver
-grid $Name -column 1 -row 15 -sticky w
+grid $Name -column 1 -row 17 -sticky w
 bind .tpc.f1.r4 <ButtonPress-1> {
 .tpc.f1.e17 configure -state normal
 .tpc.f1.e18 configure -state normal
@@ -4407,26 +4432,26 @@ set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
    ttk::label $Prompt -text "Total Transactions per User :"
    ttk::entry $Name -width 30 -textvariable mssqls_total_iterations
-   grid $Prompt -column 0 -row 16 -sticky e
-   grid $Name -column 1 -row 16 -sticky ew
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
  set Prompt $Parent.f1.p15
 ttk::label $Prompt -text "Exit on SQL Server Error :"
   set Name $Parent.f1.e15
 ttk::checkbutton $Name -text "" -variable mssqls_raiseerror -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 17 -sticky e
-   grid $Name -column 1 -row 17 -sticky w
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky w
  set Prompt $Parent.f1.p16
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e16
 ttk::checkbutton $Name -text "" -variable mssqls_keyandthink -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky w
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
 set Prompt $Parent.f1.p17
 ttk::label $Prompt -text "Checkpoint when complete :"
   set Name $Parent.f1.e17
 ttk::checkbutton $Name -text "" -variable mssqls_checkpoint -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky w
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
 if {$mssqlsdriver == "standard" } {
         $Name configure -state disabled
         }
@@ -4434,8 +4459,8 @@ set Name $Parent.f1.e18
    set Prompt $Parent.f1.p18
    ttk::label $Prompt -text "Minutes of Rampup Time :"
    ttk::entry $Name -width 30 -textvariable mssqls_rampup
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20 -sticky ew
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
 if {$mssqlsdriver == "standard" } {
 	$Name configure -state disabled
 	}
@@ -4443,8 +4468,8 @@ set Name $Parent.f1.e19
    set Prompt $Parent.f1.p19
    ttk::label $Prompt -text "Minutes for Test Duration :"
    ttk::entry $Name -width 30 -textvariable mssqls_duration
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky ew
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
 if {$mssqlsdriver == "standard" } {
 	$Name configure -state disabled
 	}
@@ -4460,11 +4485,14 @@ set Name $Parent.b1
 	 set mssqls_uid [.tpc.f1.e4 get]
    	 set mssqls_pass [.tpc.f1.e5 get]
    	 set mssqls_dbase [.tpc.f1.e6 get]
+if { $option eq "all" || $option eq "build" } {
+   	 set mssqls_bucket [.tpc.f1.e8 get]
+	}
 if { $option eq "all" || $option eq "drive" } {
 	 set mssqls_total_iterations [.tpc.f1.e14 get]
 	 set mssqls_rampup [.tpc.f1.e18 get]
 	 set mssqls_duration [.tpc.f1.e19 get]
- 	 }
+}
          destroy .tpc 
         } -text {OK}
    pack $Name -anchor nw -side right -padx 3 -pady 3   
@@ -5926,13 +5954,13 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmssqlstpch {option} {
-global mssqls_server mssqls_port mssqls_scale_fact mssqls_maxdop mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tpch_dbase mssqls_num_tpch_threads mssqls_refresh_on mssqls_total_querysets mssqls_raise_query_error mssqls_verbose mssqls_update_sets mssqls_trickle_refresh mssqls_refresh_verbose boxes driveroptlo defaultBackground defaultForeground
+global mssqls_server mssqls_port mssqls_scale_fact mssqls_maxdop mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tpch_dbase mssqls_num_tpch_threads mssqls_refresh_on mssqls_total_querysets mssqls_raise_query_error mssqls_verbose mssqls_update_sets mssqls_trickle_refresh mssqls_refresh_verbose mssqls_colstore boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_scale_fact ] } { set mssqls_scale_fact "1" }
 if {  ![ info exists mssqls_maxdop ] } { set mssqls_maxdop "2" }
 if {  ![ info exists mssqls_authentication ] } { set mssqls_authentication "windows" }
-if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 10.0" }
+if {  ![ info exists mssqls_odbc_driver ] } { set mssqls_odbc_driver "SQL Server Native Client 11.0" }
 if {  ![ info exists mssqls_uid ] } { set mssqls_uid "sa" }
 if {  ![ info exists mssqls_pass ] } { set mssqls_pass "admin" }
 if {  ![ info exists mssqls_tpch_dbase ] } { set mssqls_tpch_dbase "tpch" }
@@ -5944,6 +5972,7 @@ if {  ![ info exists mssqls_verbose ] } { set mssqls_verbose "false" }
 if {  ![ info exists mssqls_update_sets ] } { set mssqls_update_sets "1" }
 if {  ![ info exists mssqls_trickle_refresh ] } { set mssqls_trickle_refresh "1000" }
 if {  ![ info exists mssqls_refresh_verbose ] } { set mssqls_refresh_verbose "false" }
+if {  ![ info exists mssqls_colstore ] } { set mssqls_colstore "false" }
 global _ED
    catch "destroy .mssqlstpch"
    ttk::toplevel .mssqlstpch
@@ -6038,13 +6067,19 @@ set Name $Parent.f1.e6
    grid $Prompt -column 0 -row 9 -sticky e
    grid $Name -column 1 -row 9  -columnspan 4 -sticky ew
 if { $option eq "all" || $option eq "build" } {
-set Name $Parent.f1.e7
-   set Prompt $Parent.f1.p7 
-   ttk::label $Prompt -text "Scale Factor :"
+set Prompt $Parent.f1.p7
+ttk::label $Prompt -text "Clustered Columnstore :"
+   set Name $Parent.f1.e7
+ttk::checkbutton $Name -text "" -variable mssqls_colstore -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
+set Name $Parent.f1.e8
+   set Prompt $Parent.f1.p8 
+   ttk::label $Prompt -text "Scale Factor :"
+   grid $Prompt -column 0 -row 11 -sticky e
    set Name $Parent.f1.f2
    ttk::frame $Name -width 30
-   grid $Name -column 1 -row 10 -sticky ew
+   grid $Name -column 1 -row 11 -sticky ew
 	set rcnt 1
 	foreach item {1} {
 	set Name $Parent.f1.f2.r$rcnt
@@ -6073,82 +6108,82 @@ set Name $Parent.f1.e7
    	grid $Name -column $rcnt -row 0 
 	incr rcnt
 	}
-set Prompt $Parent.f1.p8
+set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
-set Name $Parent.f1.e8
+set Name $Parent.f1.e9
 	scale $Name -orient horizontal -variable mssqls_num_tpch_threads -from 1 -to 256 -length 190 -highlightbackground $defaultBackground -background $defaultBackground -foreground $defaultForeground
-	grid $Prompt -column 0 -row 11 -sticky e
-	grid $Name -column 1 -row 11 -sticky ew
+	grid $Prompt -column 0 -row 12 -sticky e
+	grid $Name -column 1 -row 12 -sticky ew
 	}
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
 ttk::label $Prompt -image [image create photo -data $driveroptlo]
-grid $Prompt -column 0 -row 12 -sticky e
+grid $Prompt -column 0 -row 13 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
-grid $Prompt -column 1 -row 12 -sticky w
+grid $Prompt -column 1 -row 13 -sticky w
 	}
-   set Name $Parent.f1.e9
-   set Prompt $Parent.f1.p9
+   set Name $Parent.f1.e10
+   set Prompt $Parent.f1.p10
    ttk::label $Prompt -text "Total Query Sets per User :"
    ttk::entry $Name -width 30 -textvariable mssqls_total_querysets
-   grid $Prompt -column 0 -row 13 -sticky e
-   grid $Name -column 1 -row 13  -columnspan 4 -sticky ew
- set Prompt $Parent.f1.p10
-ttk::label $Prompt -text "Exit on SQL Server Error :"
-  set Name $Parent.f1.e10
-ttk::checkbutton $Name -text "" -variable mssqls_raise_query_error -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 14 -sticky e
-   grid $Name -column 1 -row 14 -sticky w
+   grid $Name -column 1 -row 14  -columnspan 4 -sticky ew
  set Prompt $Parent.f1.p11
-ttk::label $Prompt -text "Verbose Output :"
+ttk::label $Prompt -text "Exit on SQL Server Error :"
   set Name $Parent.f1.e11
-ttk::checkbutton $Name -text "" -variable mssqls_verbose -onvalue "true" -offvalue "false"
+ttk::checkbutton $Name -text "" -variable mssqls_raise_query_error -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 15 -sticky e
    grid $Name -column 1 -row 15 -sticky w
  set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "Refresh Function :"
+ttk::label $Prompt -text "Verbose Output :"
   set Name $Parent.f1.e12
-ttk::checkbutton $Name -text "" -variable mssqls_refresh_on -onvalue "true" -offvalue "false"
+ttk::checkbutton $Name -text "" -variable mssqls_verbose -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 16 -sticky e
    grid $Name -column 1 -row 16 -sticky w
-bind $Parent.f1.e12 <Button> {
+ set Prompt $Parent.f1.p13
+ttk::label $Prompt -text "Refresh Function :"
+  set Name $Parent.f1.e13
+ttk::checkbutton $Name -text "" -variable mssqls_refresh_on -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky w
+bind $Parent.f1.e13 <Button> {
 if {$mssqls_refresh_on eq "true"} { 
 set mssqls_refresh_verbose "false"
-foreach field {e13 e14 e15} {
+foreach field {e14 e15 e16} {
 .mssqlstpch.f1.$field configure -state disabled 
 		}
 } else {
-foreach field {e13 e14 e15} {
+foreach field {e14 e15 e16} {
 .mssqlstpch.f1.$field configure -state normal
                         }
                 }
 	}
-   set Name $Parent.f1.e13
-   set Prompt $Parent.f1.p13
-   ttk::label $Prompt -text "Number of Update Sets :"
-   ttk::entry $Name -width 30 -textvariable mssqls_update_sets
-   grid $Prompt -column 0 -row 17 -sticky e
-   grid $Name -column 1 -row 17  -columnspan 4 -sticky ew
-if {$mssqls_refresh_on == "false" } {
-	$Name configure -state disabled
-	}
    set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
-   ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
-   ttk::entry $Name -width 30 -textvariable mssqls_trickle_refresh
+   ttk::label $Prompt -text "Number of Update Sets :"
+   ttk::entry $Name -width 30 -textvariable mssqls_update_sets
    grid $Prompt -column 0 -row 18 -sticky e
    grid $Name -column 1 -row 18  -columnspan 4 -sticky ew
 if {$mssqls_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
- set Prompt $Parent.f1.p15
-ttk::label $Prompt -text "Refresh Verbose :"
-  set Name $Parent.f1.e15
-ttk::checkbutton $Name -text "" -variable mssqls_refresh_verbose -onvalue "true" -offvalue "false"
+   set Name $Parent.f1.e15
+   set Prompt $Parent.f1.p15
+   ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
+   ttk::entry $Name -width 30 -textvariable mssqls_trickle_refresh
    grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky w
+   grid $Name -column 1 -row 19  -columnspan 4 -sticky ew
+if {$mssqls_refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+ set Prompt $Parent.f1.p16
+ttk::label $Prompt -text "Refresh Verbose :"
+  set Name $Parent.f1.e16
+ttk::checkbutton $Name -text "" -variable mssqls_refresh_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
 if {$mssqls_refresh_on == "false" } {
 	$Name configure -state disabled
 	}

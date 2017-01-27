@@ -735,8 +735,49 @@ Bug fixes
 [#112] Metrics: too many nested evaluations (infinite loop?) 
 
 Added option to run cloud analytic query test on Oracle,MySQL(Aurora),PostgreSQL(Redshift)
+
 Added flat file schema data generation for larger datasets
+
 Added improved error reporting for PostgreSQL connections
+
 Added improved error reporting for MySQL connections
+
 Duplicate count_ware variable removed from XML
+
 Corrected typos in driver scripts referring to incorrect databases
+
+---------------------------------------------------------------------
+
+Version 2.22 Jan 2017
+
+Updated Redshift Cloud Analytic queries with the ones published by Oracle later than the original Oracle only ones were published
+
+Added TclODBC package for SQL Server on Linux
+
+Updated GUI to enable SQL Server on Linux option
+
+Removed mssqls_schema XML config parameter
+
+Added mssqls_linux_server,mssqls_linux_athent,mssqls_linux_odbc to configuration for Linux default
+
+Deprecated original SQL Server TPC-C schema as imcompatible with bulk load 
+
+Thomas Kejser SQL Server TPC-C schema set as default for all platforms
+
+Corrected setting of no_d_next_o_id in SQL Server TPC-C Neword stored proc
+
+Added SQL Server TPC-C In-Memory OLTP (Hekaton) Schema
+
+Added identity column to SQL Server TPC-C History for Primary Key
+
+Added mssqls_imdb mssqls_bucket mssqls_durability in-memory options
+
+Set autocommit to on for SQL Server Timed TPC-C to view change in NOPM values for In-memory
+
+Modified SQL Server TPC-C schema to all lower case for binary collation use
+
+Modified SQL Server TPC-H schema to all lower case for binary collation use
+
+Modified SQL Server TPC-H queries to replace count() with count_big()
+
+Added option to create TPC-H schema as clustered colunmstore
