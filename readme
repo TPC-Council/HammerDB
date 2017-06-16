@@ -1,4 +1,4 @@
-HammerDB v2.22 for Linux/Windows 32bit/64-bit x86/x86-64
+HammerDB v2.23 for Linux 64-bit x86-64
 
 If running from the installer executable package at a minimum only the Oracle Instant Client is required for Oracle functionality, SQL Server ODBC libraries for Microsoft SQL Server, DB2 CLI client for DB2, MySQL Client libraries for MySQL and Aurora, PostgreSQL client libraries for PostgreSQL, Greenplum and Redshift, TimesTen client libraries for TimesTen and Trafodion ODBC client libraries for Trafodion. Redis client interface is included. 
 On both Linux and Windows the libraries must correspond to the same 32 or 64-bit version as the HammerDB release and the host operating system.

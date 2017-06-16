@@ -48,7 +48,7 @@ exit
 #hdb_go.tcl 	 - Run HammerDB
 ######################################################################
 global hdb_version
-set hdb_version "v2.22"
+set hdb_version "v2.23"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/hdb-modules"

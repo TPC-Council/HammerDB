@@ -31,6 +31,7 @@
             <directory>
             </directory>
 	    <partition>false</partition>
+	    <hash_clusters>false</hash_clusters>
 	    <tpcc_tt_compat>false</tpcc_tt_compat>
         </schema>
         <driver>
@@ -41,6 +42,8 @@
             <oradriver>standard</oradriver>
             <rampup>2</rampup>
             <duration>5</duration>
+            <allwarehouse>false</allwarehouse>
+            <timeprofile>false</timeprofile>
         </driver>
     </tpcc>
     <tpch>
@@ -101,6 +104,8 @@
             <mssqlsdriver>standard</mssqlsdriver>
 	    <mssqls_rampup>2</mssqls_rampup>
             <mssqls_duration>5</mssqls_duration>
+            <mssqls_allwarehouse>false</mssqls_allwarehouse>
+            <mssqls_timeprofile>false</mssqls_timeprofile>
         </driver>
     </tpcc>
     <tpch>
@@ -144,6 +149,8 @@
             <mysqldriver>standard</mysqldriver>
 	    <my_rampup>2</my_rampup>
             <my_duration>5</my_duration>
+            <my_allwarehouse>false</my_allwarehouse>
+            <my_timeprofile>false</my_timeprofile>
         </driver>
     </tpcc>
     <tpch>
@@ -193,6 +200,8 @@
             <pg_driver>standard</pg_driver>
 	    <pg_rampup>2</pg_rampup>
             <pg_duration>5</pg_duration>
+            <pg_allwarehouse>false</pg_allwarehouse>
+            <pg_timeprofile>false</pg_timeprofile>
         </driver>
     </tpcc>
     <tpch>
@@ -239,6 +248,8 @@
             <redis_driver>standard</redis_driver>
 	    <redis_rampup>2</redis_rampup>
             <redis_duration>5</redis_duration>
+            <redis_allwarehouse>false</redis_allwarehouse>
+            <redis_timeprofile>false</redis_timeprofile>
         </driver>
     </tpcc>
 </redis>
@@ -269,6 +280,8 @@
             <trafodion_driver>standard</trafodion_driver>
 	    <trafodion_rampup>2</trafodion_rampup>
             <trafodion_duration>5</trafodion_duration>
+            <trafodion_allwarehouse>false</trafodion_allwarehouse>
+            <trafodion_timeprofile>false</trafodion_timeprofile>
         </driver>
     </tpcc>
 </trafodion>
@@ -292,6 +305,8 @@
 	    <db2_rampup>2</db2_rampup>
             <db2_duration>5</db2_duration>
 	    <db2_monreport>0</db2_monreport>
+            <db2_allwarehouse>false</db2_allwarehouse>
+            <db2_timeprofile>false</db2_timeprofile>
         </driver>
     </tpcc>
     <tpch>

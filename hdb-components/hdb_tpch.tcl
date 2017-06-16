@@ -2979,17 +2979,18 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db user password } {
-puts "CREATING DATABASE $db under OWNER $user"  
+proc CreateUserDatabase { lda db superuser user password } {
+puts "CREATING DATABASE $db under OWNER $user"
 set sql(1) "CREATE USER $user PASSWORD '$password'"
-set sql(2) "CREATE DATABASE $db OWNER $user"
-for { set i 1 } { $i <= 2 } { incr i } {
+set sql(2) "GRANT $user to $superuser"
+set sql(3) "CREATE DATABASE $db OWNER $user"
+for { set i 1 } { $i <= 3 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
-	} else {
+        } else {
 pg_result $result -clear
-	}
+        }
     }
 return
 }
@@ -3768,7 +3769,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $user $password
+CreateUserDatabase $lda $db $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -3872,7 +3873,7 @@ return
 		}
 	}
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 934.0 ]
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 935.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
 	} else { return }
 }
@@ -5646,8 +5647,7 @@ do_tpch $connect $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_q
  }
 } else {
 do_tpch $connect $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $timesten $myposition
-		}
-	}
+		}}
 }
 
 proc loadmytpch { } { 
@@ -6461,8 +6461,7 @@ do_tpch $host $port $user $password $db $scale_factor $RAISEERROR $VERBOSE $tota
   }
 } else {
 do_tpch $host $port $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
-		}
-	}
+		}}
 }
 
 proc loadmssqlstpch {} {
@@ -7292,8 +7291,7 @@ do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $data
  }
 } else {
 do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $database $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition
-		}
-	}
+		}}
 }
 
 proc loadpgtpch {} {
@@ -8143,8 +8141,7 @@ do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $tota
  }
 } else {
 do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition 
-	}
-   }
+	}}
 }
 
 proc loaddb2tpch {} {
@@ -8958,8 +8955,7 @@ do_tpch $dbname $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_pa
  }
 } else {
 do_tpch $dbname $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
-		}
-        }
+		}}
 }
 
 proc loadoracloud {} {

@@ -673,7 +673,7 @@ highlight_off
 }
 
 proc loadtpcc {} {
-global _ED rdbms oradriver mysqldriver mssqlsdriver db2driver pg_driver redis_driver trafodion_driver
+global _ED rdbms oradriver mysqldriver mssqlsdriver db2driver pg_driver redis_driver trafodion_driver allwarehouse my_allwarehouse mssqls_allwarehouse db2_allwarehouse pg_allwarehouse redis_allwarehouse trafodion_allwarehouse timeprofile mssqls_timeprofile my_timeprofile pg_timeprofile redis_timeprofile trafodion_timeprofile db2_timeprofile
 set _ED(packagekeyname) "TPC-C"
 ed_status_message -show "TPC-C Driver Script"
 if { [ info exists rdbms ] } { ; } else { set rdbms "Oracle" }
@@ -684,12 +684,28 @@ if { ![ info exists db2driver ] } { set db2driver "standard" }
 if { ![ info exists pg_driver ] } { set pg_driver "standard" }
 if { ![ info exists redis_driver ] } { set redis_driver "standard" }
 if { ![ info exists trafodion_driver ] } { set trafodion_driver "standard" }
+if {  ![ info exists allwarehouse ] } { set allwarehouse "false" }
+if {  ![ info exists my_allwarehouse ] } { set my_allwarehouse "false" }
+if {  ![ info exists mssqls_allwarehouse ] } { set mssqls_allwarehouse "false" }
+if {  ![ info exists db2_allwarehouse ] } { set db2_allwarehouse "false" }
+if {  ![ info exists pg_allwarehouse ] } { set pg_allwarehouse "false" }
+if {  ![ info exists redis_allwarehouse ] } { set redis_allwarehouse "false" }
+if {  ![ info exists trafodion_allwarehouse ] } { set trafodion_allwarehouse "false" }
+if {  ![ info exists timeprofile ] } { set timeprofile "false" }
+if {  ![ info exists my_timeprofile ] } { set my_timeprofile "false" }
+if {  ![ info exists mssqls_timeprofile ] } { set mssqls_timeprofile "false" }
+if {  ![ info exists db2_timeprofile ] } { set db2_timeprofile "false" }
+if {  ![ info exists pg_timeprofile ] } { set pg_timeprofile "false" }
+if {  ![ info exists redis_timeprofile ] } { set redis_timeprofile "false" }
+if {  ![ info exists trafodion_timeprofile ] } { set trafodion_timeprofile "false" }
 switch $rdbms {
 Oracle {
 if {$oradriver == "standard"} {
 loadoratpcc
 	} else {
 loadoraawrtpcc
+if { $allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $timeprofile } { shared_tpcc_functions "timeprofile" }
      } 
 }
 MySQL {
@@ -697,6 +713,8 @@ if {$mysqldriver == "standard"} {
 loadmytpcc
      } else {
 loadtimedmytpcc
+if { $my_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $my_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 MSSQLServer {
@@ -704,6 +722,8 @@ if {$mssqlsdriver == "standard"} {
 loadmssqlstpcc
      } else {
 loadtimedmssqlstpcc
+if { $mssqls_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $mssqls_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 DB2 {
@@ -711,6 +731,8 @@ if {$db2driver == "standard"} {
 loaddb2tpcc
      } else {
 loadtimeddb2tpcc
+if { $db2_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $db2_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 PostgreSQL {
@@ -718,6 +740,8 @@ if {$pg_driver == "standard"} {
 loadpgtpcc
      } else {
 loadtimedpgtpcc
+if { $pg_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $pg_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 Redis {
@@ -725,6 +749,8 @@ if {$redis_driver == "standard"} {
 loadredistpcc
      } else {
 loadtimedredistpcc
+if { $redis_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $redis_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 Trafodion {
@@ -732,6 +758,8 @@ if {$trafodion_driver == "standard"} {
 loadtraftpcc
      } else {
 loadtimedtraftpcc
+if { $trafodion_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $trafodion_timeprofile } { shared_tpcc_functions "timeprofile" }
      }
 }
 default {
@@ -739,6 +767,8 @@ if {$oradriver == "standard"} {
 loadoratpcc
 	} else {
 loadoraawrtpcc
+if { $allwarehouse } { shared_tpcc_functions "allwarehouse" }
+if { $timeprofile } { shared_tpcc_functions "timeprofile" }
      		} 
 	}
     }
@@ -3658,7 +3688,7 @@ configoratpch $option
 }
 
 proc configoratpcc {option} {
-global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition tpcc_tt_compat num_threads boxes driveroptlo total_iterations raiseerror keyandthink oradriver checkpoint rampup duration defaultBackground defaultForeground
+global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition hash_clusters tpcc_tt_compat num_threads boxes driveroptlo total_iterations raiseerror keyandthink oradriver checkpoint rampup duration allwarehouse timeprofile defaultBackground defaultForeground
 if {  ![ info exists system_user ] } { set system_user "system" }
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
@@ -3671,6 +3701,7 @@ if {  ![ info exists tpcc_def_temp ] } { set tpcc_def_temp "temp" }
 if {  ![ info exists plsql ] } { set plsql 0 }
 if {  ![ info exists directory ] } { set directory [ findtempdir ] }
 if {  ![ info exists partition ] } { set partition "false" }
+if {  ![ info exists hash_clusters ] } { set hash_clusters "false" }
 if {  ![ info exists tpcc_tt_compat ] } { set tpcc_tt_compat "false" }
 if {  ![ info exists num_threads ] } { set num_threads 1 }
 if {  ![ info exists total_iterations ] } { set total_iterations 1000000 }
@@ -3680,6 +3711,8 @@ if {  ![ info exists checkpoint ] } { set checkpoint "false" }
 if {  ![ info exists oradriver ] } { set oradriver "standard" }
 if {  ![ info exists rampup ] } { set rampup "2" }
 if {  ![ info exists duration ] } { set duration "5" }
+if {  ![ info exists allwarehouse ] } { set allwarehouse "false" }
+if {  ![ info exists timeprofile ] } { set timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -3767,12 +3800,14 @@ ttk::checkbutton $Name -text "" -variable tpcc_tt_compat -onvalue "true" -offval
 if { $tpcc_tt_compat eq "false" } {
 foreach field {e2 e3 e6 e7} {
 catch {.tpc.f1.$field configure -state normal}
-if { $partition eq "true" } {
-catch {.tpc.f1.6a configure -state normal}
 		}
+if { $partition eq "true" } {
+catch {.tpc.f1.e6a configure -state normal}
+catch {.tpc.f1.e9a configure -state normal}
 	}
    } else {
 set plsql 0
+set hash clusters "false"
 foreach field {e2 e3 e6 e6a e7} {
 catch {.tpc.f1.$field configure -state disabled}
 	}
@@ -3784,39 +3819,59 @@ catch {.tpc.f1.$field configure -state normal}
 	}
 if { $partition eq "true" } {
 catch {.tpc.f1.e6a configure -state normal}
+.tpc.f1.e9a configure -state normal
+	} else {
+catch {.tpc.f1.e9a configure -state disabled}
+set hash_clusters "false"
 	}
 if {$count_ware < 200 } {
 catch {.tpc.f1.e9 configure -state disabled}
-catch {.tpc.f1.6a configure -state disabled}
+catch {.tpc.f1.e6a configure -state disabled}
+catch {.tpc.f1.e9a configure -state disabled}
 set partition "false"
+set hash_clusters "false"
 	}
 if {$num_threads eq 1 } {
 catch {.tpc.f1.e12 configure -state normal}
 	}
 	} else {
 set plsql 0
-foreach field {e2 e3 e6 e6a e7 e12 e13} {
+set hash_clusters "false"
+foreach field {e2 e3 e6 e6a e7 e9a e12 e13} {
 catch {.tpc.f1.$field configure -state disabled}
    	}
+if {$count_ware >= 200 } {
 catch {.tpc.f1.e9 configure -state normal}
 	}
+    }   
 }
 if { $option eq "all" || $option eq "build" } {
+ set Prompt $Parent.f1.p9a
+ttk::label $Prompt -text "Use Hash Clusters :"
+  set Name $Parent.f1.e9a
+ttk::checkbutton $Name -text "" -variable hash_clusters -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
  set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "Partition Order Line Table :"
   set Name $Parent.f1.e9
 ttk::checkbutton $Name -text "" -variable partition -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 10 -sticky e
-   grid $Name -column 1 -row 10 -sticky w
+   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Name -column 1 -row 11 -sticky w
 if {$count_ware < 200 && $tpcc_tt_compat eq "false" } {
 	set partition false
 	$Name configure -state disabled
 	.tpc.f1.e6a configure -state disabled
+	.tpc.f1.e9a configure -state disabled
 	}
 if { $partition eq "false" } {
+	set hash_clusters false
 	.tpc.f1.e6a configure -state disabled
+	.tpc.f1.e9a configure -state disabled
 	}
 bind .tpc.f1.e9 <Any-ButtonRelease> {
+set hash_clusters false
+.tpc.f1.e9a configure -state disabled
 if { $partition eq "true" && $plsql eq "false" } {
 set plsql 0
 .tpc.f1.e13 configure -state disabled
@@ -3833,9 +3888,11 @@ if { $partition eq "true" && $num_threads eq 1 && $tpcc_tt_compat eq "false" } {
 		} 
 if { $partition eq "true" && $tpcc_tt_compat eq "false" } {
 .tpc.f1.e6a configure -state disabled
+.tpc.f1.e9a configure -state disabled
 			} else {
 if { $partition eq "false" && $count_ware >= 200 && $tpcc_tt_compat eq "false" } {
 .tpc.f1.e6a configure -state normal
+.tpc.f1.e9a configure -state normal
 			}
 			}
 	}
@@ -3856,14 +3913,16 @@ set plsql 0
 	}
 if {$count_ware < 200 && $tpcc_tt_compat eq "false" } {
 .tpc.f1.e9 configure -state disabled
+.tpc.f1.e9a configure -state disabled
 .tpc.f1.e6a configure -state disabled
 set partition "false"
+set hash_clusters "false"
 	} else {
 .tpc.f1.e9 configure -state enabled
 	}
 }
-	grid $Prompt -column 0 -row 11 -sticky e
-	grid $Name -column 1 -row 11 -sticky ew
+	grid $Prompt -column 0 -row 12 -sticky e
+	grid $Name -column 1 -row 12 -sticky ew
 set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e11
@@ -3880,14 +3939,14 @@ if {$num_threads eq 1 && $partition eq "false" && $tpcc_tt_compat eq "false"} {
 set plsql 0
 	}
 }
-	grid $Prompt -column 0 -row 12 -sticky e
-	grid $Name -column 1 -row 12 -sticky ew
+	grid $Prompt -column 0 -row 13 -sticky e
+	grid $Name -column 1 -row 13 -sticky ew
 set Prompt $Parent.f1.p12
 ttk::label $Prompt -text "Use PL/SQL Server Side Load :"
 set Name $Parent.f1.e12
 ttk::checkbutton $Name -text "" -variable plsql -onvalue 1 -offvalue 0
-   grid $Prompt -column 0 -row 13 -sticky e
-   grid $Name -column 1 -row 13 -sticky w
+   grid $Prompt -column 0 -row 14 -sticky e
+   grid $Name -column 1 -row 14 -sticky w
 if { $num_threads eq 1 && $tpcc_tt_compat eq "false" } { 
 .tpc.f1.e12 configure -state normal } else { .tpc.f1.e12 configure -state disabled }
 bind .tpc.f1.e12 <Any-ButtonRelease> {
@@ -3901,8 +3960,8 @@ set partition "false"
    set Prompt $Parent.f1.p13
    ttk::label $Prompt -text "Server Side Log Directory :"
    ttk::entry $Name -width 30 -textvariable directory
-   grid $Prompt -column 0 -row 14 -sticky e
-   grid $Name -column 1 -row 14 -sticky ew
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15 -sticky ew
 if {$plsql == 0} {
 	$Name configure -state disabled
 	}
@@ -3911,55 +3970,61 @@ if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
 ttk::label $Prompt -image [image create photo -data $driveroptlo]
-grid $Prompt -column 0 -row 15 -sticky e
+grid $Prompt -column 0 -row 16 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
-grid $Prompt -column 1 -row 15 -sticky w
+grid $Prompt -column 1 -row 16 -sticky w
 	}
 set Prompt $Parent.f1.p15
 ttk::label $Prompt -text "TPC-C Driver Script :"
-grid $Prompt -column 0 -row 16 -sticky e
+grid $Prompt -column 0 -row 17 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable oradriver
-grid $Name -column 1 -row 16 -sticky w
+grid $Name -column 1 -row 17 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set checkpoint "false"
+set allwarehouse "false"
+set timeprofile "false"
 .tpc.f1.e20 configure -state disabled
 .tpc.f1.e21 configure -state disabled
 .tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "awr" -text "AWR Snapshot Driver Script" -variable oradriver
-grid $Name -column 1 -row 17 -sticky w
+grid $Name -column 1 -row 18 -sticky w
 bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e20 configure -state normal
 .tpc.f1.e21 configure -state normal
 .tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
 }
 set Name $Parent.f1.e17
    set Prompt $Parent.f1.p17
    ttk::label $Prompt -text "Total Transactions per User :"
    ttk::entry $Name -width 30 -textvariable total_iterations
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky ew
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
  set Prompt $Parent.f1.p18
 ttk::label $Prompt -text "Exit on Oracle Error :"
   set Name $Parent.f1.e18
 ttk::checkbutton $Name -text "" -variable raiseerror -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky w
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
  set Prompt $Parent.f1.p19
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e19
 ttk::checkbutton $Name -text "" -variable keyandthink -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20 -sticky w
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
  set Prompt $Parent.f1.p20
 ttk::label $Prompt -text "Checkpoint when complete :"
   set Name $Parent.f1.e20
 ttk::checkbutton $Name -text "" -variable checkpoint -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky w
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky w
 if {$oradriver == "standard" } {
 	$Name configure -state disabled
 	}
@@ -3967,8 +4032,8 @@ set Name $Parent.f1.e21
    set Prompt $Parent.f1.p21
    ttk::label $Prompt -text "Minutes of Rampup Time :"
    ttk::entry $Name -width 30 -textvariable rampup
-   grid $Prompt -column 0 -row 22 -sticky e
-   grid $Name -column 1 -row 22 -sticky ew
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
 if {$oradriver == "standard" } {
 	$Name configure -state disabled
 	}
@@ -3976,8 +4041,26 @@ set Name $Parent.f1.e22
    set Prompt $Parent.f1.p22
    ttk::label $Prompt -text "Minutes for Test Duration :"
    ttk::entry $Name -width 30 -textvariable duration
-   grid $Prompt -column 0 -row 23 -sticky e
-   grid $Name -column 1 -row 23 -sticky ew
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$oradriver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e23
+   set Prompt $Parent.f1.p23
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
+if {$oradriver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 26 -sticky e
+   grid $Name -column 1 -row 26 -sticky ew
 if {$oradriver == "standard" } {
 	$Name configure -state disabled
 	}
@@ -4013,7 +4096,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmytpcc {option} {
-global mysql_host mysql_port my_count_ware mysql_user mysql_pass mysql_dbase storage_engine mysql_partition mysql_num_threads my_total_iterations my_raiseerror my_keyandthink boxes driveroptlo mysqldriver my_rampup my_duration storage_engine defaultBackground defaultForeground
+global mysql_host mysql_port my_count_ware mysql_user mysql_pass mysql_dbase storage_engine mysql_partition mysql_num_threads my_total_iterations my_raiseerror my_keyandthink boxes driveroptlo mysqldriver my_rampup my_duration my_allwarehouse my_timeprofile storage_engine defaultBackground defaultForeground
 
 if {  ![ info exists mysql_host ] } { set mysql_host "127.0.0.1" }
 if {  ![ info exists mysql_port ] } { set mysql_port "3306" }
@@ -4030,6 +4113,8 @@ if {  ![ info exists my_keyandthink ] } { set my_keyandthink "false" }
 if {  ![ info exists mysqldriver ] } { set mysqldriver "standard" }
 if {  ![ info exists my_rampup ] } { set my_rampup "2" }
 if {  ![ info exists my_duration ] } { set my_duration "5" }
+if {  ![ info exists my_allwarehouse ] } { set my_allwarehouse "false" }
+if {  ![ info exists my_timeprofile ] } { set my_timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -4149,8 +4234,12 @@ set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable mysqldriver
 grid $Name -column 1 -row 12 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
+set my_allwarehouse "false"
+set my_timeprofile "false"
 .tpc.f1.e17 configure -state disabled
 .tpc.f1.e18 configure -state disabled
+.tpc.f1.e19 configure -state disabled
+.tpc.f1.e20 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable mysqldriver
@@ -4158,6 +4247,8 @@ grid $Name -column 1 -row 13 -sticky w
 bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e17 configure -state normal
 .tpc.f1.e18 configure -state normal
+.tpc.f1.e19 configure -state normal
+.tpc.f1.e20 configure -state normal
 }
 set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
@@ -4195,6 +4286,24 @@ set Name $Parent.f1.e18
 if {$mysqldriver == "standard" } {
 	$Name configure -state disabled
 	}
+set Name $Parent.f1.e19
+   set Prompt $Parent.f1.p19
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable my_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
+if {$mysqldriver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e20
+   set Prompt $Parent.f1.p20
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable my_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky ew
+if {$mysqldriver == "standard" } {
+	$Name configure -state disabled
+	}
 }
 set Name $Parent.b2
    ttk::button $Name -command {destroy .tpc} -text Cancel
@@ -4224,7 +4333,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configmssqlstpcc {option} {
-global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_imdb mssqls_bucket mssqls_durability mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_checkpoint boxes driveroptlo defaultBackground defaultForeground
+global mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_count_ware mssqls_num_threads mssqls_uid mssqls_pass mssqls_dbase mssqls_imdb mssqls_bucket mssqls_durability mssqls_total_iterations mssqls_raiseerror mssqls_keyandthink mssqlsdriver mssqls_rampup mssqls_duration mssqls_allwarehouse mssqls_timeprofile mssqls_checkpoint boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists mssqls_server ] } { set mssqls_server "(local)" }
 if {  ![ info exists mssqls_port ] } { set mssqls_port "1433" }
 if {  ![ info exists mssqls_count_ware ] } { set mssqls_count_ware "1" }
@@ -4244,6 +4353,8 @@ if {  ![ info exists mssqlsdriver ] } { set mssqlsdriver "standard" }
 if {  ![ info exists mssqls_rampup ] } { set mssqls_rampup "2" }
 if {  ![ info exists mssqls_duration ] } { set mssqls_duration "5" }
 if {  ![ info exists mssqls_checkpoint ] } { set mssqls_checkpoint "false" }
+if {  ![ info exists mssqls_allwarehouse ] } { set mssqls_allwarehouse "false" }
+if {  ![ info exists mssqls_timeprofile ] } { set mssqls_timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -4416,9 +4527,13 @@ ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variabl
 grid $Name -column 1 -row 16 -sticky w
 bind .tpc.f1.r3 <ButtonPress-1> {
 set mssqls_checkpoint "false"
+set mssqls_allwarehouse "false"
+set mssqls_timeprofile "false"
 .tpc.f1.e17 configure -state disabled
 .tpc.f1.e18 configure -state disabled
 .tpc.f1.e19 configure -state disabled
+.tpc.f1.e20 configure -state disabled
+.tpc.f1.e21 configure -state disabled
 }
 set Name $Parent.f1.r4
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable mssqlsdriver
@@ -4427,6 +4542,8 @@ bind .tpc.f1.r4 <ButtonPress-1> {
 .tpc.f1.e17 configure -state normal
 .tpc.f1.e18 configure -state normal
 .tpc.f1.e19 configure -state normal
+.tpc.f1.e20 configure -state normal
+.tpc.f1.e21 configure -state normal
 }
 set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
@@ -4473,6 +4590,24 @@ set Name $Parent.f1.e19
 if {$mssqlsdriver == "standard" } {
 	$Name configure -state disabled
 	}
+set Name $Parent.f1.e20
+   set Prompt $Parent.f1.p20
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable mssqls_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$mssqlsdriver == "standard" } {
+        $Name configure -state disabled
+        }
+set Name $Parent.f1.e21
+   set Prompt $Parent.f1.p21
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable mssqls_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
+if {$mssqlsdriver == "standard" } {
+        $Name configure -state disabled
+        }
 }
 set Name $Parent.b2
    ttk::button $Name -command {destroy .tpc} -text Cancel
@@ -4503,7 +4638,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configdb2tpcc {option} {
-global db2_count_ware db2_num_threads db2_user db2_pass db2_dbase db2_def_tab  db2_tab_list db2_partition db2_total_iterations db2_raiseerror db2_keyandthink db2driver db2_rampup db2_duration db2_monreport boxes driveroptlo defaultBackground defaultForeground
+global db2_count_ware db2_num_threads db2_user db2_pass db2_dbase db2_def_tab  db2_tab_list db2_partition db2_total_iterations db2_raiseerror db2_keyandthink db2driver db2_rampup db2_duration db2_allwarehouse db2_timeprofile db2_monreport boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists db2_count_ware ] } { set db2_count_ware "1" }
 if {  ![ info exists db2_user ] } { set db2_user "db2inst1" }
 if {  ![ info exists db2_pass ] } { set db2_pass "ibmdb2" }
@@ -4519,6 +4654,8 @@ if {  ![ info exists db2driver ] } { set db2driver "standard" }
 if {  ![ info exists db2_rampup ] } { set db2_rampup "2" }
 if {  ![ info exists db2_duration ] } { set db2_duration "5" }
 if {  ![ info exists db2_monreport ] } { set db2_monreport "0" }
+if {  ![ info exists db2_allwarehouse ] } { set db2_allwarehouse "false" }
+if {  ![ info exists db2_timeprofile ] } { set db2_timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -4632,9 +4769,13 @@ set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable db2driver
 grid $Name -column 1 -row 12 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
+set db2_allwarehouse "false"
+set db2_timeprofile "false"
 .tpc.f1.e17 configure -state disabled
 .tpc.f1.e18 configure -state disabled
 .tpc.f1.e19 configure -state disabled
+.tpc.f1.e20 configure -state disabled
+.tpc.f1.e21 configure -state disabled
 if {$db2_monreport >= $db2_duration} {
 set db2_monreport 0
                 }
@@ -4645,7 +4786,8 @@ grid $Name -column 1 -row 13 -sticky w
 bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e17 configure -state normal
 .tpc.f1.e18 configure -state normal
-.tpc.f1.e19 configure -state normal
+.tpc.f1.e20 configure -state normal
+.tpc.f1.e21 configure -state normal
 if {$db2_monreport >= $db2_duration} {
 set db2_monreport 0
                 }
@@ -4698,6 +4840,24 @@ if {$db2driver == "standard" } {
 if {$db2_monreport >= $db2_duration} {
 set db2_monreport 0
                 }
+set Name $Parent.f1.e20
+   set Prompt $Parent.f1.p20
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable db2_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky ew
+if {$db2driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e21
+   set Prompt $Parent.f1.p21
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable db2_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky ew
+if {$db2driver == "standard" } {
+	$Name configure -state disabled
+	}
 }
 set Name $Parent.b2
    ttk::button $Name -command {destroy .tpc} -text Cancel
@@ -4730,7 +4890,7 @@ set db2_monreport 0
 }
 
 proc configpgtpcc {option} {
-global pg_host pg_port pg_count_ware pg_superuser pg_superuserpass pg_defaultdbase pg_user pg_pass pg_dbase pg_vacuum pg_dritasnap pg_oracompat pg_num_threads pg_total_iterations pg_raiseerror pg_keyandthink pg_driver pg_rampup pg_duration boxes driveroptlo defaultBackground defaultForeground
+global pg_host pg_port pg_count_ware pg_superuser pg_superuserpass pg_defaultdbase pg_user pg_pass pg_dbase pg_vacuum pg_dritasnap pg_oracompat pg_num_threads pg_total_iterations pg_raiseerror pg_keyandthink pg_driver pg_rampup pg_duration pg_allwarehouse pg_timeprofile boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists pg_host ] } { set pg_host "localhost" }
 if {  ![ info exists pg_port ] } { set pg_port "5432" }
 if {  ![ info exists pg_count_ware ] } { set pg_count_ware "1" }
@@ -4750,6 +4910,8 @@ if {  ![ info exists pg_keyandthink ] } { set pg_keyandthink "false" }
 if {  ![ info exists pg_driver ] } { set pg_driver "standard" }
 if {  ![ info exists pg_rampup ] } { set pg_rampup "2" }
 if {  ![ info exists pg_duration ] } { set pg_duration "5" }
+if {  ![ info exists pg_allwarehouse ] } { set pg_allwarehouse "false" }
+if {  ![ info exists pg_timeprofile ] } { set pg_timeprofile "false" }
 if { $pg_oracompat eq "true" } {
 if { $pg_port eq "5432" } { set pg_port "5444" }
 if { $pg_superuser eq "postgres" } { set pg_superuser "enterprisedb" }
@@ -4894,10 +5056,14 @@ grid $Name -column 1 -row 13 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set pg_vacuum "false"
 set pg_dritasnap "false"
+set pg_allwarehouse "false"
+set pg_timeprofile "false"
 .tpc.f1.e19 configure -state disabled
 .tpc.f1.e20 configure -state disabled
 .tpc.f1.e21 configure -state disabled
 .tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable pg_driver
@@ -4907,6 +5073,8 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e20 configure -state normal
 .tpc.f1.e21 configure -state normal
 .tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
 }
 set Name $Parent.f1.e15
    set Prompt $Parent.f1.p15
@@ -4962,6 +5130,24 @@ set Name $Parent.f1.e22
 if {$pg_driver == "standard" } {
 	$Name configure -state disabled
 	}
+set Name $Parent.f1.e23
+   set Prompt $Parent.f1.p23
+   ttk::label $Prompt -text "Use All Warehouses :"
+   ttk::checkbutton $Name -text "" -variable pg_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
+if {$pg_driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Time Profile :"
+   ttk::checkbutton $Name -text "" -variable pg_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$pg_driver == "standard" } {
+	$Name configure -state disabled
+	}
 }
 set Name $Parent.b2
    ttk::button $Name -command {destroy .tpc} -text Cancel
@@ -4991,7 +5177,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configredistpcc { option } {
-global redis_host redis_port redis_namespace redis_count_ware redis_num_threads redis_total_iterations redis_raiseerror redis_keyandthink redis_driver redis_rampup redis_duration boxes driveroptlo defaultBackground defaultForeground
+global redis_host redis_port redis_namespace redis_count_ware redis_num_threads redis_total_iterations redis_raiseerror redis_keyandthink redis_driver redis_rampup redis_duration redis_allwarehouse redis_timeprofile boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists redis_host ] } { set redis_host "127.0.0.1" }
 if {  ![ info exists redis_port ] } { set redis_port "6379" }
 if {  ![ info exists redis_namespace ] } { set redis_namespace "1" }
@@ -5003,6 +5189,8 @@ if {  ![ info exists redis_keyandthink ] } { set redis_keyandthink "false" }
 if {  ![ info exists redis_driver ] } { set redis_driver "standard" }
 if {  ![ info exists redis_rampup ] } { set redis_rampup "2" }
 if {  ![ info exists redis_duration ] } { set redis_duration "5" }
+if {  ![ info exists redis_allwarehouse ] } { set redis_allwarehouse "false" }
+if {  ![ info exists redis_timeprofile ] } { set redis_timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -5089,8 +5277,12 @@ set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable redis_driver
 grid $Name -column 1 -row 7 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
+set redis_allwarehouse "false"
+set redis_timeprofile "false"
 .tpc.f1.e11 configure -state disabled
 .tpc.f1.e12 configure -state disabled
+.tpc.f1.e13 configure -state disabled
+.tpc.f1.e14 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable redis_driver
@@ -5098,6 +5290,8 @@ grid $Name -column 1 -row 8 -sticky w
 bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e11 configure -state normal
 .tpc.f1.e12 configure -state normal
+.tpc.f1.e13 configure -state normal
+.tpc.f1.e14 configure -state normal
 }
 set Name $Parent.f1.e8
    set Prompt $Parent.f1.p8
@@ -5135,6 +5329,24 @@ set Name $Parent.f1.e12
 if {$redis_driver == "standard" } {
 	$Name configure -state disabled
 	}
+set Name $Parent.f1.e13
+   set Prompt $Parent.f1.p13
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable redis_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 14 -sticky e
+   grid $Name -column 1 -row 14 -sticky ew
+if {$redis_driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e14
+   set Prompt $Parent.f1.p14
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable redis_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15 -sticky ew
+if {$redis_driver == "standard" } {
+	$Name configure -state disabled
+	}
 }
 set Name $Parent.b2
    ttk::button $Name -command {destroy .tpc} -text Cancel
@@ -5159,7 +5371,7 @@ if { $option eq "all" || $option eq "drive" } {
 }
 
 proc configtraftpcc { option } {
-global trafodion_dsn trafodion_odbc_driver trafodion_server trafodion_port trafodion_userid trafodion_password trafodion_schema trafodion_count_ware trafodion_num_threads trafodion_load_type trafodion_load_data trafodion_node_list trafodion_copy_remote trafodion_build_jsps trafodion_total_iterations trafodion_raiseerror trafodion_keyandthink trafodion_driver trafodion_rampup trafodion_duration boxes driveroptlo defaultBackground defaultForeground
+global trafodion_dsn trafodion_odbc_driver trafodion_server trafodion_port trafodion_userid trafodion_password trafodion_schema trafodion_count_ware trafodion_num_threads trafodion_load_type trafodion_load_data trafodion_node_list trafodion_copy_remote trafodion_build_jsps trafodion_total_iterations trafodion_raiseerror trafodion_keyandthink trafodion_driver trafodion_rampup trafodion_duration trafodion_allwarehouse trafodion_timeprofile boxes driveroptlo defaultBackground defaultForeground
 if {  ![ info exists trafodion_dsn ] } { set trafodion_dsn "Default_DataSource" }
 if {  ![ info exists trafodion_odbc_driver ] } { set trafodion_odbc_driver "Trafodion" }
 if {  ![ info exists trafodion_server ] } { set trafodion_server "sandbox" }
@@ -5180,6 +5392,8 @@ if {  ![ info exists trafodion_keyandthink ] } { set trafodion_keyandthink "fals
 if {  ![ info exists trafodion_driver ] } { set trafodion_driver "standard" }
 if {  ![ info exists trafodion_rampup ] } { set trafodion_rampup "2" }
 if {  ![ info exists trafodion_duration ] } { set trafodion_duration "5" }
+if {  ![ info exists trafodion_allwarehouse ] } { set trafodion_allwarehouse "false" }
+if {  ![ info exists trafodion_timeprofile ] } { set trafodion_timeprofile "false" }
 global _ED
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -5380,8 +5594,12 @@ set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "standard" -text "Standard Driver Script" -variable trafodion_driver
 grid $Name -column 1 -row 17 -sticky w
 bind .tpc.f1.r3 <ButtonPress-1> {
+set trafodion_allwarehouse "false"
+set trafodion_timeprofile "false"
 .tpc.f1.e22 configure -state disabled
 .tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+.tpc.f1.e25 configure -state disabled
 }
 set Name $Parent.f1.r4
 ttk::radiobutton $Name -value "timed" -text "Timed Test Driver Script" -variable trafodion_driver
@@ -5389,6 +5607,8 @@ grid $Name -column 1 -row 18 -sticky w
 bind .tpc.f1.r4 <ButtonPress-1> {
 .tpc.f1.e22 configure -state normal
 .tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
+.tpc.f1.e25 configure -state normal
 }
 set Name $Parent.f1.e19
    set Prompt $Parent.f1.p19
@@ -5423,6 +5643,24 @@ set Name $Parent.f1.e23
    ttk::entry $Name -width 30 -textvariable trafodion_duration
    grid $Prompt -column 0 -row 23 -sticky e
    grid $Name -column 1 -row 23 -sticky ew
+if {$trafodion_driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable trafodion_allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$trafodion_driver == "standard" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e25
+   set Prompt $Parent.f1.p25
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable trafodion_timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
 if {$trafodion_driver == "standard" } {
 	$Name configure -state disabled
 	}

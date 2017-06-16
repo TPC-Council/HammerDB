@@ -1,5 +1,5 @@
 proc check_oratpcc {} {
-global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition tpcc_tt_compat num_threads maxvuser suppo ntimes threadscreated _ED
+global instance system_user system_password count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp count_ware plsql directory partition hash_clusters tpcc_tt_compat num_threads maxvuser suppo ntimes threadscreated _ED
 if {  ![ info exists system_user ] } { set system_user "system" }
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
@@ -13,6 +13,7 @@ if {  ![ info exists count_ware ] } { set count_ware 1 }
 if {  ![ info exists plsql ] } { set plsql 0 }
 if {  ![ info exists directory ] } { set directory [ findtempdir ] }
 if {  ![ info exists partition ] } { set partition "false" }
+if {  ![ info exists hash_clusters ] } { set hash_clusters "false" }
 if {  ![ info exists tpcc_tt_compat ] } { set tpcc_tt_compat "false" }
 if {  ![ info exists num_threads ] } { set num_threads "1" }
 if { $tpcc_tt_compat eq "true" } {
@@ -35,7 +36,7 @@ puts "Failed to create thread(s) for schema creation: $message"
 	return 1
 	}
 set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act { #!/usr/local/bin/tclsh8.6
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act {#!/usr/local/bin/tclsh8.6
 if [catch {package require Oratcl} ] { error "Failed to load Oratcl - Oracle OCI Library Error" }
 proc CreateStoredProcs { lda timesten num_part } {
 puts "CREATING TPCC STORED PROCEDURES"
@@ -891,7 +892,7 @@ oraclose $curn1
 return
 }
 
-proc CreateTables { lda num_part tpcc_ol_tab timesten } {
+proc CreateTables { lda num_part tpcc_ol_tab timesten hash_clusters count_ware } {
 puts "CREATING TPCC TABLES"
 set curn1 [ oraopen $lda ]
 if { $timesten } {
@@ -920,6 +921,30 @@ set sql(7$idx) "$sql(7$idx) SELECT * FROM ORDER_LINE_$p )"
 set sql(8) "create table TPCC.STOCK (S_I_ID TT_BIGINT, S_W_ID TT_INTEGER, S_QUANTITY TT_INTEGER, S_DIST_01 CHAR(24), S_DIST_02 CHAR(24), S_DIST_03 CHAR(24), S_DIST_04 CHAR(24), S_DIST_05 CHAR(24), S_DIST_06 CHAR(24), S_DIST_07 CHAR(24), S_DIST_08 CHAR(24), S_DIST_09 CHAR(24), S_DIST_10 CHAR(24), S_YTD TT_BIGINT, S_ORDER_CNT TT_INTEGER, S_REMOTE_CNT TT_INTEGER, S_DATA CHAR(50))"
 set sql(9) "create table TPCC.WAREHOUSE (W_ID TT_INTEGER, W_YTD BINARY_DOUBLE, W_TAX BINARY_DOUBLE, W_NAME CHAR(10), W_STREET_1 CHAR(20), W_STREET_2 CHAR(20), W_CITY CHAR(20), W_STATE CHAR(2), W_ZIP CHAR(9))"
 	} else {
+if  { $hash_clusters } {
+set blocksize 8000
+while 1 { if { ![ expr {$count_ware % 100} ] } { break } else { incr $count_ware } } 
+set ware_hkeys $count_ware
+set dist_hkeys [ expr {$ware_hkeys * 10} ]
+set cust_hkeys [ expr {$count_ware * 30000} ]
+set cust_mult [ expr {$cust_hkeys / 3000} ]
+set stock_hkeys [ expr {$count_ware * 100000} ]
+set stock_mult $count_ware
+set sqlclust(1) "CREATE CLUSTER CUSTCLUSTER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0)) SINGLE TABLE HASHKEYS $cust_hkeys hash is ((c_id * $cust_mult)+(c_w_id * 10) + c_d_id) size 650 INITRANS 4 PCTFREE 0"
+set sqlclust(2) "CREATE CLUSTER DISTCLUSTER (D_W_ID NUMBER(4, 0), D_ID NUMBER(2, 0)) SINGLE TABLE HASHKEYS $dist_hkeys hash is ((d_w_id) * 10 + d_id) size $blocksize INITRANS 4 PCTFREE 0"
+set sqlclust(3) "CREATE CLUSTER ITEMCLUSTER (I_ID NUMBER(6, 0)) SINGLE TABLE HASHKEYS 100000 hash is i_id size 120 INITRANS 4 PCTFREE 0"
+set sqlclust(4) "CREATE CLUSTER WARECLUSTER (W_ID NUMBER(4, 0)) SINGLE TABLE HASHKEYS $ware_hkeys hash is w_id size $blocksize INITRANS 4 PCTFREE 0"
+set sqlclust(5) "CREATE CLUSTER STOCKCLUSTER (S_I_ID NUMBER(6, 0), S_W_ID NUMBER(4, 0)) SINGLE TABLE HASHKEYS $stock_hkeys hash is (s_i_id * $stock_mult + s_w_id) size 350 INITRANS 4 PCTFREE 0"
+set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0), C_FIRST VARCHAR2(16), C_MIDDLE CHAR(2), C_LAST VARCHAR2(16), C_STREET_1 VARCHAR2(20), C_STREET_2 VARCHAR2(20), C_CITY VARCHAR2(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE DATE, C_CREDIT CHAR(2), C_CREDIT_LIM NUMBER(12, 2), C_DISCOUNT NUMBER(4, 4), C_BALANCE NUMBER(12, 2), C_YTD_PAYMENT NUMBER(12, 2), C_PAYMENT_CNT NUMBER(8, 0), C_DELIVERY_CNT NUMBER(8, 0), C_DATA VARCHAR2(500)) CLUSTER CUSTCLUSTER (C_ID, C_D_ID, C_W_ID)"
+set sql(2) "CREATE TABLE DISTRICT (D_ID NUMBER(2, 0), D_W_ID NUMBER(4, 0), D_YTD NUMBER(12, 2), D_TAX NUMBER(4, 4), D_NEXT_O_ID NUMBER, D_NAME VARCHAR2(10), D_STREET_1 VARCHAR2(20), D_STREET_2 VARCHAR2(20), D_CITY VARCHAR2(20), D_STATE CHAR(2), D_ZIP CHAR(9)) CLUSTER DISTCLUSTER (D_W_ID, D_ID)"
+set sql(3) "CREATE TABLE HISTORY (H_C_ID NUMBER, H_C_D_ID NUMBER, H_C_W_ID NUMBER, H_D_ID NUMBER, H_W_ID NUMBER, H_DATE DATE, H_AMOUNT NUMBER(6, 2), H_DATA VARCHAR2(24)) INITRANS 4 MAXTRANS 16 PCTFREE 10"
+set sql(4) "CREATE TABLE ITEM (I_ID NUMBER(6, 0), I_IM_ID NUMBER, I_NAME VARCHAR2(24), I_PRICE NUMBER(5, 2), I_DATA VARCHAR2(50)) CLUSTER ITEMCLUSTER(I_ID)"
+set sql(5) "CREATE TABLE WAREHOUSE (W_ID NUMBER(4, 0), W_YTD NUMBER(12, 2), W_TAX NUMBER(4, 4), W_NAME VARCHAR2(10), W_STREET_1 VARCHAR2(20), W_STREET_2 VARCHAR2(20), W_CITY VARCHAR2(20), W_STATE CHAR(2), W_ZIP CHAR(9)) CLUSTER WARECLUSTER(W_ID)"
+set sql(6) "CREATE TABLE STOCK (S_I_ID NUMBER(6, 0), S_W_ID NUMBER(4, 0), S_QUANTITY NUMBER(6, 0), S_DIST_01 CHAR(24), S_DIST_02 CHAR(24), S_DIST_03 CHAR(24), S_DIST_04 CHAR(24), S_DIST_05 CHAR(24), S_DIST_06 CHAR(24), S_DIST_07 CHAR(24), S_DIST_08 CHAR(24), S_DIST_09 CHAR(24), S_DIST_10 CHAR(24), S_YTD NUMBER(10, 0), S_ORDER_CNT NUMBER(6, 0), S_REMOTE_CNT NUMBER(6, 0), S_DATA VARCHAR2(50)) CLUSTER STOCKCLUSTER(S_I_ID, S_W_ID)"
+set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID NUMBER, NO_D_ID NUMBER, NO_O_ID NUMBER, CONSTRAINT INORD PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 MAXTRANS 16 PCTFREE 10"
+set sql(8) "CREATE TABLE ORDERS (O_ID NUMBER, O_W_ID NUMBER, O_D_ID NUMBER, O_C_ID NUMBER, O_CARRIER_ID NUMBER, O_OL_CNT NUMBER, O_ALL_LOCAL NUMBER, O_ENTRY_D DATE) INITRANS 4 MAXTRANS 16 PCTFREE 10" 
+set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24), CONSTRAINT IORDL PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 MAXTRANS 16 PCTFREE 10 PARTITION BY HASH(OL_W_ID) PARTITIONS $num_part TABLESPACE $tpcc_ol_tab"
+	} else {
 set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0), C_FIRST VARCHAR2(16), C_MIDDLE CHAR(2), C_LAST VARCHAR2(16), C_STREET_1 VARCHAR2(20), C_STREET_2 VARCHAR2(20), C_CITY VARCHAR2(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE DATE, C_CREDIT CHAR(2), C_CREDIT_LIM NUMBER(12, 2), C_DISCOUNT NUMBER(4, 4), C_BALANCE NUMBER(12, 2), C_YTD_PAYMENT NUMBER(12, 2), C_PAYMENT_CNT NUMBER(8, 0), C_DELIVERY_CNT NUMBER(8, 0), C_DATA VARCHAR2(500)) INITRANS 4 MAXTRANS 16 PCTFREE 10"
 set sql(2) "CREATE TABLE DISTRICT (D_ID NUMBER(2, 0), D_W_ID NUMBER(4, 0), D_YTD NUMBER(12, 2), D_TAX NUMBER(4, 4), D_NEXT_O_ID NUMBER, D_NAME VARCHAR2(10), D_STREET_1 VARCHAR2(20), D_STREET_2 VARCHAR2(20), D_CITY VARCHAR2(20), D_STATE CHAR(2), D_ZIP CHAR(9)) INITRANS 4 MAXTRANS 16 PCTFREE 99 PCTUSED 1"
 set sql(3) "CREATE TABLE HISTORY (H_C_ID NUMBER, H_C_D_ID NUMBER, H_C_W_ID NUMBER, H_D_ID NUMBER, H_W_ID NUMBER, H_DATE DATE, H_AMOUNT NUMBER(6, 2), H_DATA VARCHAR2(24)) INITRANS 4 MAXTRANS 16 PCTFREE 10"
@@ -933,8 +958,16 @@ set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUM
 	} else {
 set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24), CONSTRAINT IORDL PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 MAXTRANS 16 PCTFREE 10 PARTITION BY HASH(OL_W_ID) PARTITIONS $num_part TABLESPACE $tpcc_ol_tab"
 	}
-   }
-
+    }
+}   
+if { $hash_clusters } {
+for { set j 1 } { $j <= 5 } { incr j } {
+if {[ catch {orasql $curn1 $sqlclust($j)} message ] } {
+puts "$message $sql($j)"
+puts [ oramsg $curn1 all ]
+			}
+		}
+	}
 for { set i 1 } { $i <= 9 } { incr i } {
 if { $i eq 7 && $timesten && $num_part eq 10 } {
 set partidx [ list a b c d e f g h i j k ]
@@ -954,7 +987,7 @@ oraclose $curn1
 return
 }
 
-proc CreateIndexes { lda timesten num_part } {
+proc CreateIndexes { lda timesten num_part hash_clusters } {
 puts "CREATING TPCC INDEXES"
 set curn1 [ oraopen $lda ]
 set stmt_cnt 9
@@ -994,6 +1027,27 @@ set sql(18) "create unique index TPCC.CUSTOMER_I1 on TPCC.CUSTOMER (C_W_ID, C_D_
 set sql(19) "create unique index TPCC.CUSTOMER_I2 on TPCC.CUSTOMER (C_LAST, C_W_ID, C_D_ID, C_FIRST, C_ID)"
 	}
    } else {
+if { $hash_clusters } {
+set stmt_cnt 18
+set sql(1) "alter session set sort_area_size=5000000"
+set sql(2) "CREATE UNIQUE INDEX CUSTOMER_I1 ON CUSTOMER (C_W_ID, C_D_ID, C_ID) INITRANS 4 PCTFREE 1"
+set sql(3) "CREATE UNIQUE INDEX CUSTOMER_I2 ON CUSTOMER (C_LAST, C_D_ID, C_W_ID, C_FIRST) INITRANS 4 PCTFREE 1"
+set sql(4) "CREATE UNIQUE INDEX DISTRICT_I1 ON DISTRICT (D_W_ID, D_ID) INITRANS 4 PCTFREE 5"
+set sql(5) "CREATE UNIQUE INDEX ITEM_I1 ON ITEM (I_ID) INITRANS 4 PCTFREE 5"
+set sql(6) "CREATE UNIQUE INDEX ORDERS_I1 ON ORDERS (O_W_ID, O_D_ID, O_ID) INITRANS 4 PCTFREE 1"
+set sql(7) "CREATE UNIQUE INDEX ORDERS_I2 ON ORDERS (O_W_ID, O_D_ID, O_C_ID, O_ID) INITRANS 4 PCTFREE 25"
+set sql(8) "CREATE UNIQUE INDEX STOCK_I1 ON STOCK (S_I_ID, S_W_ID) INITRANS 4 PCTFREE 1"
+set sql(9) "CREATE UNIQUE INDEX WAREHOUSE_I1 ON WAREHOUSE (W_ID) INITRANS 4 PCTFREE 1"
+set sql(10) "ALTER TABLE WAREHOUSE DISABLE TABLE LOCK"
+set sql(11) "ALTER TABLE DISTRICT DISABLE TABLE LOCK"
+set sql(12) "ALTER TABLE CUSTOMER DISABLE TABLE LOCK"
+set sql(13) "ALTER TABLE ITEM DISABLE TABLE LOCK"
+set sql(14) "ALTER TABLE STOCK DISABLE TABLE LOCK"
+set sql(15) "ALTER TABLE ORDERS DISABLE TABLE LOCK"
+set sql(16) "ALTER TABLE NEW_ORDER DISABLE TABLE LOCK"
+set sql(17) "ALTER TABLE ORDER_LINE DISABLE TABLE LOCK"
+set sql(18) "ALTER TABLE HISTORY DISABLE TABLE LOCK"
+	} else {
 set sql(1) "alter session set sort_area_size=5000000"
 set sql(2) "CREATE UNIQUE INDEX CUSTOMER_I1 ON CUSTOMER ( C_W_ID, C_D_ID, C_ID) INITRANS 4 MAXTRANS 16 PCTFREE 10"
 set sql(3) "CREATE UNIQUE INDEX CUSTOMER_I2 ON CUSTOMER ( C_LAST, C_W_ID, C_D_ID, C_FIRST, C_ID) INITRANS 4 MAXTRANS 16 PCTFREE 10"
@@ -1003,6 +1057,7 @@ set sql(6) "CREATE UNIQUE INDEX ORDERS_I1 ON ORDERS (O_W_ID, O_D_ID, O_ID) INITR
 set sql(7) "CREATE UNIQUE INDEX ORDERS_I2 ON ORDERS (O_W_ID, O_D_ID, O_C_ID, O_ID) INITRANS 4 MAXTRANS 16 PCTFREE 10"
 set sql(8) "CREATE UNIQUE INDEX STOCK_I1 ON STOCK (S_I_ID, S_W_ID) INITRANS 4 MAXTRANS 16 PCTFREE 10"
 set sql(9) "CREATE UNIQUE INDEX WAREHOUSE_I1 ON WAREHOUSE (W_ID) INITRANS 4 MAXTRANS 16 PCTFREE 10"
+		}
 	}
 for { set i 1 } { $i <= $stmt_cnt } { incr i } {
 if {[ catch {orasql $curn1 $sql($i)} message ] } {
@@ -2760,7 +2815,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	return
 }
 
-proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp plsql directory partition timesten num_threads } {
+proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pass tpcc_def_tab tpcc_ol_tab tpcc_def_temp plsql directory partition timesten hash_clusters num_threads } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -2825,18 +2880,20 @@ SetNLS $lda
 if { $partition eq "true" } {
 if {$count_ware < 200} {
 set num_part 0
+set hash_clusters "false"
 	} else {
 set num_part [ expr round($count_ware/100) ]
 	}
 	} else {
 set num_part 0
+set hash_clusters "false"
 }}
-CreateTables $lda $num_part $tpcc_ol_tab $timesten
+CreateTables $lda $num_part $tpcc_ol_tab $timesten $hash_clusters $count_ware
 if { $plsql eq 1 } { 
 puts "DOING PL/SQL SERVER SIDE LOAD LOGGING TO $directory/tpcc_load.log"
 set timesten 0
 ServerSidePackage $lda $count_ware 
-CreateIndexes $lda $timesten $num_part
+CreateIndexes $lda $timesten $num_part $hash_clusters
 CreateStoredProcs $lda $timesten $num_part
 GatherStatistics $lda [ string toupper $tpcc_user ] $timesten $num_part
 puts "[ string toupper $tpcc_user ] SCHEMA COMPLETE"
@@ -2919,7 +2976,7 @@ tsv::lreplace common thrdlst $myposition $myposition done
 	}
 }
 if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-CreateIndexes $lda $timesten $num_part
+CreateIndexes $lda $timesten $num_part $hash_clusters
 if { $timesten } { TTPLSQLSettings $lda }
 CreateStoredProcs $lda $timesten $num_part
 GatherStatistics $lda [ string toupper $tpcc_user ] $timesten $num_part
@@ -2929,8 +2986,8 @@ return
 	}
     }
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 2894.0 ]
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $plsql $directory $partition $tpcc_tt_compat $num_threads"
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 2951.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $plsql $directory $partition $tpcc_tt_compat $hash_clusters $num_threads"
 	} else { return }
 }
 
@@ -3229,7 +3286,7 @@ oralogoff $lda
 }
 
 proc loadoraawrtpcc { } {
-global system_user system_password instance tpcc_user tpcc_pass total_iterations raiseerror keyandthink rampup duration opmode checkpoint tpcc_tt_compat _ED
+global system_user system_password instance tpcc_user tpcc_pass total_iterations raiseerror keyandthink rampup duration allwarehouse timeprofile opmode checkpoint tpcc_tt_compat _ED
 if {  ![ info exists system_user ] } { set system_user "system" }
 if {  ![ info exists system_password ] } { set system_password "manager" }
 if {  ![ info exists instance ] } { set instance "oracle" }
@@ -3243,6 +3300,8 @@ if {  ![ info exists duration ] } { set duration "5" }
 if {  ![ info exists opmode ] } { set opmode "Local" }
 if {  ![ info exists checkpoint ] } { set checkpoint "false" }
 if {  ![ info exists tpcc_tt_compat ] } { set tpcc_tt_compat "false" }
+if {  ![ info exists allwarehouse ] } { set allwarehouse "false" }
+if {  ![ info exists timeprofile ] } { set timeprofile "false" }
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "TPC-C AWR"
@@ -3685,8 +3744,7 @@ oraclose $curn_sl
 oraclose $curn_os
 oralogoff $lda
 	}
-     }
-  } 
+     }} 
 }
 
 proc check_mssqltpcc {} {
@@ -3940,7 +3998,6 @@ FROM dbo.new_order
 OUTPUT deleted.no_o_id INTO @d_out -- @d_no_o_id
 WHERE new_order.no_w_id = @d_w_id 
 AND new_order.no_d_id = @d_d_id 
-AND new_order.no_o_id =  @d_no_o_id
 
 SELECT @d_no_o_id = d_no_o_id FROM @d_out
  
@@ -4644,7 +4701,6 @@ FROM dbo.new_order
 OUTPUT deleted.no_o_id INTO @d_out -- @d_no_o_id
 WHERE new_order.no_w_id = @d_w_id 
 AND new_order.no_d_id = @d_d_id 
-AND new_order.no_o_id =  @d_no_o_id
 
 SELECT @d_no_o_id = d_no_o_id FROM @d_out
  
@@ -6451,8 +6507,7 @@ slev_st drop
 ostat_st drop
 odbc disconnect
 	}
-     }
-  }
+   }}
 }
 
 proc check_db2tpcc {} {
@@ -8188,8 +8243,7 @@ db2_finish $select_handle_no
 db2_finish $select_handle_dl
 db2_disconnect $db_handle
 	}
-}
-}
+   }}
 }
 
 proc check_mytpcc {} {
@@ -9824,8 +9878,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 mysqlclose $mysql_handler
 	}
-     }
-  }
+   }}
 }
 
 proc check_pgtpcc {} {
@@ -10746,11 +10799,12 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db user password } {
+proc CreateUserDatabase { lda db superuser user password } {
 puts "CREATING DATABASE $db under OWNER $user"  
 set sql(1) "CREATE USER $user PASSWORD '$password'"
-set sql(2) "CREATE DATABASE $db OWNER $user"
-for { set i 1 } { $i <= 2 } { incr i } {
+set sql(2) "GRANT $user to $superuser"
+set sql(3) "CREATE DATABASE $db OWNER $user"
+for { set i 1 } { $i <= 3 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
@@ -11265,12 +11319,12 @@ set threaded "SINGLE-THREADED"
 set num_threads 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-puts "CREATING [ string toupper $superuser ] SCHEMA"
+puts "CREATING [ string toupper $user ] SCHEMA"
 set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultdb ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $user $password
+CreateUserDatabase $lda $db $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -11365,7 +11419,7 @@ return
 	}
     }
 }
-set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1510.0 ]
+set act [ .ed_mainFrame.mainwin.textFrame.left.text index 1511.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $act "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_num_threads"
 	} else { return }
 }
@@ -12080,8 +12134,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 pg_disconnect $lda
 		}
-	}
-    }
+      }}
 }
 
 proc check_redistpcc { } {
@@ -13314,8 +13367,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 	}
     }
 }
-$redis QUIT
-	}
+$redis QUIT}
 }
 
 proc check_traftpcc { } {
@@ -15914,4 +15966,57 @@ if { $KEYANDTHINK } { thinktime 5 }
 odbc close
 }
 }}
+}
+
+proc shared_tpcc_functions { tpccfunc } {
+switch $tpccfunc {
+allwarehouse {
+#set additional text for all warehouses
+set allwt(1) {set allwarehouses "true";# Use all warehouses to increase I/O
+}
+set allwt(2) {#2.4.1.1 does not apply when allwarehouses is true 
+if { $allwarehouses == "true" } {
+set loadUserCount [expr $totalvirtualusers - 1]
+set myWarehouses {}
+lappend myWarehouses $myposition
+set addMore 1
+while {$addMore > 0} {
+set wh [expr $myposition + ($addMore * $loadUserCount)]
+if {$wh > $w_id_input || $wh eq 1} {
+set addMore 0
+} else {
+lappend myWarehouses $wh
+set addMore [expr $addMore + 1]
+}}
+set myWhCount [llength $myWarehouses]
+}
+}
+set allwt(3) {if { $allwarehouses == "true" } {
+set w_id [lindex $myWarehouses [expr [RandomNumber 1 $myWhCount] -1]]
+}
+}
+#search for insert points and insert functions
+set allwi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(1) $allwt(1)
+set allwi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#2.4.1.1" $allwi(1) ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(2) $allwt(2)
+set allwi(3) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set choice" $allwi(2) ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(3) $allwt(3)
+   }
+timeprofile {
+#set additional text for all warehouses
+set timept(1) {set timeprofile "true";# Output virtual user response times
+}
+set timept(2) {if {$timeprofile eq "true" && $myposition eq 2} {package require etprof}
+}
+set timept(3) {if {$timeprofile eq "true" && $myposition eq 2} {::etprof::printLiveInfo}
+}
+#search for insert points and insert functions
+set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(1) $timept(1)
+set timepi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "default \{" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(2)+1l $timept(2)
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end-2l $timept(3)
+  }
+ }
 }
