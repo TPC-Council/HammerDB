@@ -1,3 +1,3 @@
 @echo off
 set path=..\.\bin;%PATH%
-START tclsh86t .\hdbagent.tcl
+START tclsh86t .\agent

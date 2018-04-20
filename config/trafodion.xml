@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<trafodion>
+    <connection>
+        <trafodion_dsn>Default_DataSource</trafodion_dsn>
+        <trafodion_odbc_driver>Trafodion</trafodion_odbc_driver>
+        <trafodion_server>sandbox</trafodion_server>
+        <trafodion_port>37800</trafodion_port>
+        <trafodion_userid>trafodion</trafodion_userid>
+        <trafodion_password>traf123</trafodion_password>
+        <trafodion_schema>tpcc</trafodion_schema>
+    </connection>
+	<tpcc>
+        <schema>
+            <trafodion_count_ware>1</trafodion_count_ware>
+            <trafodion_num_vu>1</trafodion_num_vu>
+            <trafodion_load_type>upsert</trafodion_load_type>
+            <trafodion_load_data>true</trafodion_load_data>
+            <trafodion_build_jsps>true</trafodion_build_jsps>
+            <trafodion_copy_remote>false</trafodion_copy_remote>
+            <trafodion_node_list>sandbox</trafodion_node_list>
+        </schema>
+        <driver>
+            <trafodion_total_iterations>1000000</trafodion_total_iterations>
+            <trafodion_raiseerror>false</trafodion_raiseerror>
+            <trafodion_keyandthink>false</trafodion_keyandthink>
+            <traf_driver>test</traf_driver>
+	    <trafodion_rampup>2</trafodion_rampup>
+            <trafodion_duration>5</trafodion_duration>
+            <trafodion_allwarehouse>false</trafodion_allwarehouse>
+            <trafodion_timeprofile>false</trafodion_timeprofile>
+        </driver>
+    </tpcc>
+</trafodion>

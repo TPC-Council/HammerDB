@@ -15,12 +15,13 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2017 Steve Shaw
+# Copyright (C) 2003-2018 Steve Shaw
+# Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation; either
-# version 2 of the License, or (at your option) any later version.
+# version 3 of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -28,22 +29,18 @@ exit
 # General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public
-# License along with this program; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA  02111-1307, USA.
-#
-# Author contact information: smshaw@users.sourceforge.net
-######################################################################   
+# License along with this program; If not, see <https://www.gnu.org/licenses/>
+########################################################################
 #load files
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/hdb-modules"
+::tcl::tm::path add "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 #Enable report for more than 122 CPUs
 interp recursionlimit {} 3000
 global agentlist S iswin
 set iswin "false"
-set version 2.23
+set version 3.0
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 

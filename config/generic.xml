@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<hammerdb>
+   <code_highlight>
+	<highlight>true</highlight>
+   </code_highlight>
+   <benchmark>
+	<rdbms>Oracle</rdbms>
+	<bm>TPC-C</bm>
+   </benchmark>
+   <virtual_user_options>
+        <virtual_users>1</virtual_users>
+        <user_delay>500</user_delay>
+        <repeat_delay>500</repeat_delay>
+        <iterations>1</iterations>
+        <show_output>1</show_output>
+        <log_to_temp>0</log_to_temp>
+	<unique_log_name>0</unique_log_name>
+	<no_log_buffer>0</no_log_buffer>
+	<log_timestamps>0</log_timestamps>
+    </virtual_user_options>
+    <autopilot>
+	    <apmode>disabled</apmode>
+	    <autopilot_duration>10</autopilot_duration>
+	    <autopilot_sequence>1 2 4 8 12 16 20 24</autopilot_sequence>
+    </autopilot>
+    <mode>
+        <slave_options>
+            <hostname>localhost</hostname>
+            <id>0</id>
+        </slave_options>
+    </mode>
+    <transaction_counter>
+	<settings>
+        	<refresh_rate>10</refresh_rate>
+	</settings>
+    </transaction_counter>
+    <metrics>
+    	<metric_options>
+    	    <agent_hostname>localhost</agent_hostname>
+    	    <agent_id>0</agent_id>
+    	</metric_options>
+    </metrics>
+    <datageneration>
+            <gen_count_ware>1</gen_count_ware>
+            <gen_scale_fact>1</gen_scale_fact>
+            <gen_num_vu>1</gen_num_vu>
+            <gen_directory>
+	    </gen_directory>
+    </datageneration>
+</hammerdb>

@@ -781,3 +781,67 @@ Modified SQL Server TPC-H schema to all lower case for binary collation use
 Modified SQL Server TPC-H queries to replace count() with count_big()
 
 Added option to create TPC-H schema as clustered colunmstore
+
+---------------------------------------------------------------------
+
+Version 2.23 Jun 2017
+
+Bug fixes 
+
+[#113] SQL Server updated delivery stored procedure has incorrect predicate
+
+Added option to use Hash Clusters to Oracle TPC-C Schema
+
+Added Use All Warehouses option to timed driver scripts to increase I/O
+
+Added Time Profile option to timed driver scripts to report response times
+
+Modified PostgreSQL user and database creation to be compatible with AWS rds_superuser
+
+---------------------------------------------------------------------
+
+Version 3.0 Apr 2018
+
+Bug fixes 
+
+[#114] 	Metrics connection is lost on Windows server
+[#115] 	wrong # args error when selecting Times Ten compatability in Oracle
+[#116] 	Incorrect time displayed in long running autopilot
+[#117] 	Only Basic Fonts used on Linux
+[#118] 	Oracle Hash Clusters schema does not build when warehouses not divisible by 100
+[#119] 	DB2 Can edit multiple tablespaces without selecting partition first
+[#120] 	ODBC with SQL Server fails to connect to non-standard Port
+[#121] 	Oracle fails to connect to service name with dot notation
+[#122] 	DB2: SQL0304N A value cannot be assigned in Delivery Stored Procedure
+[#123] 	MySQL com_commit parameter better than handler_commit for TPM
+[#124]  MONREPORT option for Db2 always greyed out 
+
+Updated License to GPL v3
+
+Updated Binaries to:
+
+tcl8.6.8, tk8.6.8, thread2.8.2, oratcl4.6, mysqltcl3.052 pgtcl2.1.1
+tclodbc2.5.2, db2tcl2.0.0, redis 0.1
+
+for Linux x86-64 and Windows x64
+
+Refactoring to modularise interface
+
+Added Command Line Interface
+
+GUI Enhancements and updated interface and icons on Windows and Linux
+
+Standardised workloads to timed and test, adding monitor virtual user to timed
+
+Added option to included timestamps in log
+
+Set driver script to auto load after driver options are completed
+
+Added option to connect direct to Azure database for SQL Server
+
+Modified Oracle SLEV stored procedure to return Stock Count
+
+Updated transaction counter display and improved calibration of output data
+
+Deprecated Trafodion support can be uncommented in database.xml to enable
+unsupported

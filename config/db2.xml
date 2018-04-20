@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<db2>
+   <connection>
+	    <db2_def_user>db2inst1</db2_def_user>
+            <db2_def_pass>ibmdb2</db2_def_pass>
+            <db2_def_dbase>db2</db2_def_dbase>
+   </connection>
+     <tpcc>
+        <schema>
+            <db2_count_ware>1</db2_count_ware>
+            <db2_num_vu>1</db2_num_vu>
+            <db2_user>db2inst1</db2_user>
+            <db2_pass>ibmdb2</db2_pass>
+            <db2_dbase>tpcc</db2_dbase>
+	    <db2_def_tab>USERSPACE1</db2_def_tab> 
+	    <db2_tab_list>C "" D "" H "" I "" W "" S "" NO "" OR "" OL ""</db2_tab_list>
+	    <db2_partition>false</db2_partition>
+        </schema>
+        <driver>
+            <db2_total_iterations>1000000</db2_total_iterations>
+            <db2_raiseerror>false</db2_raiseerror>
+            <db2_keyandthink>false</db2_keyandthink>
+            <db2_driver>test</db2_driver>
+	    <db2_rampup>2</db2_rampup>
+            <db2_duration>5</db2_duration>
+	    <db2_monreport>0</db2_monreport>
+            <db2_allwarehouse>false</db2_allwarehouse>
+            <db2_timeprofile>false</db2_timeprofile>
+        </driver>
+    </tpcc>
+    <tpch>
+        <schema>
+            <db2_scale_fact>1</db2_scale_fact>
+            <db2_tpch_user>db2inst1</db2_tpch_user>
+            <db2_tpch_pass>ibmdb2</db2_tpch_pass>
+            <db2_tpch_dbase>tpch</db2_tpch_dbase>
+	    <db2_tpch_def_tab>USERSPACE1</db2_tpch_def_tab> 
+            <db2_num_tpch_threads>1</db2_num_tpch_threads>
+	    <db2_tpch_organizeby>NONE</db2_tpch_organizeby>
+        </schema>
+        <driver>
+            <db2_total_querysets>1</db2_total_querysets>
+            <db2_raise_query_error>false</db2_raise_query_error>
+            <db2_verbose>false</db2_verbose>
+            <db2_degree_of_parallel>2</db2_degree_of_parallel>
+            <db2_refresh_on>false</db2_refresh_on>
+            <db2_update_sets>1</db2_update_sets>
+            <db2_trickle_refresh>1000</db2_trickle_refresh>
+            <db2_refresh_verbose>false</db2_refresh_verbose>
+        </driver>
+    </tpch>
+</db2>

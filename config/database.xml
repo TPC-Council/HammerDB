@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--keywords listed under commands are passed to editor highlighting-->
+<database>
+<oracle>
+	<name>Oracle</name>
+	<description>Oracle</description>
+	<prefix>ora</prefix>
+	<library>Oratcl</library>
+	<workloads>TPC-C TPC-H</workloads>
+	<commands>oralogon oralogoff oracommit oraroll oraautocom orainfo oramsg oradesc oraldalist oraopen oraclose orasql oracols orabindexec oraplexec orastmlist oraconfig oraexec oralob oralong oramsg oraconfig oradesc orabreak oraparse orabind oraexec orafetch orasql</commands>
+</oracle>
+<mssqlserver>
+	<name>MSSQLServer</name>
+	<description>SQL Server</description>
+	<prefix>mssqls</prefix>
+	<library>tclodbc 2.5.2</library>
+	<workloads>TPC-C TPC-H</workloads>
+	<commands>database odbc</commands>
+</mssqlserver>
+<db2>
+	<name>Db2</name>
+	<description>Db2</description>
+	<prefix>db2</prefix>
+	<library>db2tcl</library>
+	<workloads>TPC-C TPC-H</workloads>
+	<commands>db2_connect db2_disconnect db2_exec_direct db2_exec_prepared db2_select_direct db2_select_prepared db2_prepare db2_bind_param db2_bind_exec db2_fetchrow db2_finish db2_getnumrows db2_begin_transaction db2_commit_transaction db2_rollback_transaction db2_test</commands>
+</db2>
+<mysql>
+	<name>MySQL</name>
+	<description>MySQL</description>
+	<prefix>mysql</prefix>
+	<library>mysqltcl</library>
+	<workloads>TPC-C TPC-H</workloads>
+	<commands>mysql::sel mysqluse mysqlescape mysqlsel mysqlnext mysqlseek mysqlmap mysqlexec mysqlclose mysqlinfo mysqlresult mysqlcol mysqlstate mysqlinsertid mysqlquery mysqlendquery mysqlbaseinfo mysqlping mysqlchangeuser mysqlreceive</commands>
+</mysql>
+<postgresql>
+	<name>PostgreSQL</name>
+	<description>PostgreSQL</description>
+	<prefix>pg</prefix>
+	<library>Pgtcl</library>
+	<workloads>TPC-C TPC-H</workloads>
+	<commands>pg_conndefaults pg_connect pg_disconnect pg_exec pg_select pg_result pg_execute pg_lo_open pg_lo_close pg_lo_read pg_lo_write pg_lo_lseek pg_lo_creat pg_lo_tell pg_lo_unlink pg_lo_import pg_lo_export pg_listen pg_sendquery pg_sendquery_prepared pg_sendquery_params pg_getresult pg_isbusy pg_blocking pg_cancelrequest pg_on_connection_loss pg_escape_string pg_quote pg_escape_bytea pg_unescape_bytea pg_transaction_status pg_parameter_status pg_exec_prepared pg_exec_params pg_notice_handler pg_result_callback pg_encrypt_password pg_lo_truncate pg_describe_cursor pg_describe_prepared pg_backend_pid pg_server_version</commands>
+</postgresql>
+<redis>
+	<name>Redis</name>
+	<description>Redis</description>
+	<prefix>redis</prefix>
+	<library>redis</library>
+	<workloads>TPC-C</workloads>
+	<commands>redis</commands>
+</redis>
+<!--Trafodion deprecated, uncomment to enable as unsupported
+<trafodion>
+	<name>Trafodion</name>
+	<description>Trafodion</description>
+	<prefix>traf</prefix>
+	<library>tdbc::odbc</library>
+	<workloads>TPC-C</workloads>
+	<commands>tdbc::odbc</commands>
+</trafodion>
+-->
+</database>

@@ -1,0 +1,746 @@
+#Configure transaction counter options
+proc countoraopts { bm } {
+upvar #0 icons icons
+upvar #0 configoracle configoracle
+upvar #0 genericdict genericdict
+
+global afval interval
+setlocaltcountvars $configoracle 1
+variable tpcc_tt_compat tpch_tt_compat
+if {[dict exists $configoracle tpcc tpcc_tt_compat ]} {
+set tpcc_tt_compat [ dict get $configoracle tpcc tpcc_tt_compat ]
+	} else { set tpcc_tt_compat "false" }
+if {[dict exists $configoracle tpch tpch_tt_compat ]} {
+set tpch_tt_compat [ dict get $configoracle tpch tpch_tt_compat ]
+	} else { set tpch_tt_compat "false" }
+if {[dict exists $genericdict settings refresh_rate]} {
+set interval [ dict get $genericdict settings refresh_rate ]
+	} else { set interval 10 }
+
+variable oraoptsfields
+if { $bm eq "TPC-C" } { 
+set bm_for_count "tpcc_tt_compat" 
+set oraoptsfields [ dict create connection {system_user {.countopt.f1.e2 get} system_password {.countopt.f1.e3 get} instance {.countopt.f1.e1 get} rac $rac} tpcc {tpcc_tt_compat $tpcc_tt_compat} ]
+} else { 
+set bm_for_count "tpch_tt_compat" 
+set oraoptsfields [ dict create connection {system_user {.countopt.f1.e2 get} system_password {.countopt.f1.e3 get} instance {.countopt.f1.e1 get} rac $rac} tpch {tpch_tt_compat $tpch_tt_compat} ]
+}
+
+if { [ info exists afval ] } {
+	after cancel $afval
+	unset afval
+}
+   catch "destroy .countopt"
+   ttk::toplevel .countopt
+   wm withdraw .countopt
+   wm title .countopt {Oracle TX Counter Options}
+
+   set Parent .countopt
+
+   set Name $Parent.f1
+   ttk::frame $Name 
+   pack $Name -anchor nw -fill x -side top -padx 5
+
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Transaction Counter Options"
+grid $Prompt -column 1 -row 0 -sticky w
+
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "Oracle Service Name :"
+   ttk::entry $Name -width 30 -textvariable instance
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "System User :"   
+   ttk::entry $Name  -width 30 -textvariable system_user
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "System User Password :"   
+   ttk::entry $Name  -width 30 -textvariable system_password
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+   set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "Refresh Rate(secs) :"
+   ttk::entry $Name -width 30 -textvariable interval
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4
+
+   set Name $Parent.f1.e5
+ttk::checkbutton $Name -text "TimesTen Database Compatible" -variable $bm_for_count -onvalue "true" -offvalue "false"
+   grid $Name -column 1 -row 5 -sticky w
+bind .countopt.f1.e5 <Any-ButtonRelease> {
+if { $bm eq "TPC-C" && $tpcc_tt_compat eq "false" || $bm eq "TPC-H" && $tpch_tt_compat eq "false" } {
+set rac 0
+.countopt.f1.e6 configure -state disabled
+		} else {
+.countopt.f1.e6 configure -state normal
+		}
+	}
+
+   set Name $Parent.f1.e6
+ttk::checkbutton $Name -text "RAC Global Transactions" -variable rac -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 6 -sticky w
+if { $bm eq "TPC-C" && $tpcc_tt_compat eq "true" || $bm eq "TPC-H" && $tpch_tt_compat eq "true" } {
+	$Name configure -state disabled
+	}
+
+   bind .countopt.f1.e1 <Delete> {
+      if [%W selection present] {
+         %W delete sel.first sel.last
+      } else {
+         %W delete insert
+      }
+   }
+
+ set Name $Parent.b2
+ ttk::button $Name  -command {
+unset oraoptsfields
+destroy .countopt
+} -text Cancel
+ pack $Name -anchor nw -side right -padx 3 -pady 3
+
+ set Name $Parent.b1
+   ttk::button $Name -command {
+if { $bm eq "TPC-C" } { 
+copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpcc
+} else { 
+	puts $oraoptsfields
+copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpch
+}
+unset oraoptsfields
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
+	set interval 10 } else {
+        dict set genericdict settings refresh_rate [.countopt.f1.e4 get]
+	}
+
+         destroy .countopt
+	   catch "destroy .tc"
+            } -text {OK}
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+
+   wm geometry .countopt +50+50
+   wm deiconify .countopt
+   raise .countopt
+   update
+}
+
+#Configure TPC-C Options
+proc configoratpcc {option} {
+upvar #0 icons icons
+upvar #0 configoracle configoracle
+#set variables to values in dict
+setlocaltpccvars $configoracle
+#set matching fields in dialog to temporary dict
+variable orafields
+set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse timeprofile $timeprofile}]
+set whlist [ get_warehouse_list_for_spinbox ]
+   catch "destroy .tpc"
+   ttk::toplevel .tpc
+   wm withdraw .tpc
+switch $option {
+"all" { wm title .tpc {Oracle TPC-C Schema Options} }
+"build" { wm title .tpc {Oracle TPC-C Build Options} }
+"drive" {  wm title .tpc {Oracle TPC-C Driver Options} }
+	}
+   set Parent .tpc
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5  
+if { $option eq "all" || $option eq "build" } {
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Build Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	} else {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	}
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "Oracle Service Name :"
+   ttk::entry $Name -width 30 -textvariable instance
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "System User :"   
+   ttk::entry $Name  -width 30 -textvariable system_user
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "System User Password :"   
+   ttk::entry $Name  -width 30 -textvariable system_password
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "TPC-C User :"
+   ttk::entry $Name  -width 30 -textvariable tpcc_user
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "TPC-C User Password :"   
+   ttk::entry $Name  -width 30 -textvariable tpcc_pass
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
+if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e6
+   set Prompt $Parent.f1.p6
+   ttk::label $Prompt -text "TPC-C Default Tablespace :"
+   ttk::entry $Name -width 30 -textvariable tpcc_def_tab
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky ew
+set Name $Parent.f1.e6a
+   set Prompt $Parent.f1.p6a
+   ttk::label $Prompt -text "Order Line Tablespace :"
+   ttk::entry $Name -width 30 -textvariable tpcc_ol_tab
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7 -sticky ew
+set Name $Parent.f1.e7
+   set Prompt $Parent.f1.p7
+   ttk::label $Prompt -text "TPC-C Temporary Tablespace :"    
+   ttk::entry $Name -width 30 -textvariable tpcc_def_temp
+   grid $Prompt -column 0 -row 8 -sticky e
+   grid $Name -column 1 -row 8 -sticky ew
+	}
+   set Prompt $Parent.f1.p8
+ttk::label $Prompt -text "TimesTen Database Compatible :"
+   set Name $Parent.f1.e8
+ttk::checkbutton $Name -text "" -variable tpcc_tt_compat -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 9 -sticky e
+   grid $Name -column 1 -row 9 -sticky w
+if { $tpcc_tt_compat eq "false" } {
+foreach field {e2 e3 e6 e7} {
+catch {.tpc.f1.$field configure -state normal}
+		}
+if { $partition eq "true" } {
+catch {.tpc.f1.e6a configure -state normal}
+catch {.tpc.f1.e9a configure -state normal}
+	}
+   } else {
+set hash_clusters "false"
+foreach field {e2 e3 e6 e6a e7} {
+catch {.tpc.f1.$field configure -state disabled}
+	}
+	}
+bind .tpc.f1.e8 <ButtonPress-1> {
+if { $tpcc_tt_compat eq "true" } {
+foreach field {e2 e3 e6 e7} {
+catch {.tpc.f1.$field configure -state normal}
+	}
+if { $partition eq "true" } {
+catch {.tpc.f1.e6a configure -state normal}
+.tpc.f1.e9a configure -state normal
+	} else {
+catch {.tpc.f1.e9a configure -state disabled}
+set hash_clusters "false"
+	}
+if {$count_ware < 200 } {
+catch {.tpc.f1.e9 configure -state disabled}
+catch {.tpc.f1.e6a configure -state disabled}
+catch {.tpc.f1.e9a configure -state disabled}
+set partition "false"
+set hash_clusters "false"
+	}
+	} else {
+set hash_clusters "false"
+foreach field {e2 e3 e6 e6a e7 e9a} {
+catch {.tpc.f1.$field configure -state disabled}
+   	}
+if {$count_ware >= 200 } {
+catch {.tpc.f1.e9 configure -state normal}
+	}
+    }   
+}
+if { $option eq "all" || $option eq "build" } {
+ set Prompt $Parent.f1.p9a
+ttk::label $Prompt -text "Use Hash Clusters :"
+  set Name $Parent.f1.e9a
+ttk::checkbutton $Name -text "" -variable hash_clusters -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
+ set Prompt $Parent.f1.p9
+ttk::label $Prompt -text "Partition Order Line Table :"
+  set Name $Parent.f1.e9
+ttk::checkbutton $Name -text "" -variable partition -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Name -column 1 -row 11 -sticky w
+if {$count_ware < 200 && $tpcc_tt_compat eq "false" } {
+	set partition false
+	$Name configure -state disabled
+	.tpc.f1.e6a configure -state disabled
+	.tpc.f1.e9a configure -state disabled
+	}
+if { $partition eq "false" } {
+	set hash_clusters false
+	.tpc.f1.e6a configure -state disabled
+	.tpc.f1.e9a configure -state disabled
+	}
+bind .tpc.f1.e9 <Any-ButtonRelease> {
+set hash_clusters false
+.tpc.f1.e9a configure -state disabled
+if { $partition eq "true" && $tpcc_tt_compat eq "false" } {
+.tpc.f1.e6a configure -state disabled
+.tpc.f1.e9a configure -state disabled
+			} else {
+if { $partition eq "false" && $count_ware >= 200 && $tpcc_tt_compat eq "false" } {
+.tpc.f1.e6a configure -state normal
+.tpc.f1.e9a configure -state normal
+			}
+			}
+	}
+set Prompt $Parent.f1.p10
+ttk::label $Prompt -text "Number of Warehouses :"
+set Name $Parent.f1.e10
+ttk::spinbox $Name -value $whlist -textvariable count_ware
+bind .tpc.f1.e10 <<Any-Button-Any-Key>> {
+if {$num_vu > $count_ware} {
+set num_vu $count_ware
+	}
+if {$count_ware < 200 && $tpcc_tt_compat eq "false" } {
+.tpc.f1.e9 configure -state disabled
+.tpc.f1.e9a configure -state disabled
+.tpc.f1.e6a configure -state disabled
+set partition "false"
+set hash_clusters "false"
+	} else {
+.tpc.f1.e9 configure -state enabled
+	}
+}
+	grid $Prompt -column 0 -row 12 -sticky e
+	grid $Name -column 1 -row 12 -sticky ew
+set Prompt $Parent.f1.p11
+ttk::label $Prompt -text "Virtual Users to Build Schema :"
+set Name $Parent.f1.e11
+ttk::spinbox $Name -from 1 -to 512 -textvariable num_vu
+bind .tpc.f1.e11 <<Any-Button-Any-Key>> {
+if {$num_vu > $count_ware} {
+set num_vu $count_ware
+		}
+	}
+event add <<Any-Button-Any-Key>> <Any-ButtonRelease>
+event add <<Any-Button-Any-Key>> <KeyRelease>
+grid $Prompt -column 0 -row 13 -sticky e
+grid $Name -column 1 -row 13 -sticky ew
+}
+if { $option eq "all" || $option eq "drive" } {
+if { $option eq "all" } {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+grid $Prompt -column 0 -row 16 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 16 -sticky w
+	}
+set Prompt $Parent.f1.p15
+ttk::label $Prompt -text "TPC-C Driver Script :"
+grid $Prompt -column 0 -row 17 -sticky e
+set Name $Parent.f1.r1
+ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable ora_driver
+grid $Name -column 1 -row 17 -sticky w
+bind .tpc.f1.r1 <ButtonPress-1> {
+set checkpoint "false"
+set allwarehouse "false"
+set timeprofile "false"
+.tpc.f1.e20 configure -state disabled
+.tpc.f1.e21 configure -state disabled
+.tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+}
+set Name $Parent.f1.r2
+ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable ora_driver
+grid $Name -column 1 -row 18 -sticky w
+bind .tpc.f1.r2 <ButtonPress-1> {
+.tpc.f1.e20 configure -state normal
+.tpc.f1.e21 configure -state normal
+.tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
+}
+set Name $Parent.f1.e17
+   set Prompt $Parent.f1.p17
+   ttk::label $Prompt -text "Total Transactions per User :"
+   ttk::entry $Name -width 30 -textvariable total_iterations
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
+ set Prompt $Parent.f1.p18
+ttk::label $Prompt -text "Exit on Oracle Error :"
+  set Name $Parent.f1.e18
+ttk::checkbutton $Name -text "" -variable raiseerror -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
+ set Prompt $Parent.f1.p19
+ttk::label $Prompt -text "Keying and Thinking Time :"
+  set Name $Parent.f1.e19
+ttk::checkbutton $Name -text "" -variable keyandthink -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
+ set Prompt $Parent.f1.p20
+ttk::label $Prompt -text "Checkpoint when complete :"
+  set Name $Parent.f1.e20
+ttk::checkbutton $Name -text "" -variable checkpoint -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky w
+if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e21
+   set Prompt $Parent.f1.p21
+   ttk::label $Prompt -text "Minutes of Rampup Time :"
+   ttk::entry $Name -width 30 -textvariable rampup
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
+if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e22
+   set Prompt $Parent.f1.p22
+   ttk::label $Prompt -text "Minutes for Test Duration :"
+   ttk::entry $Name -width 30 -textvariable duration
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e23
+   set Prompt $Parent.f1.p23
+   ttk::label $Prompt -text "Use All Warehouses :"
+ttk::checkbutton $Name -text "" -variable allwarehouse -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
+if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Time Profile :"
+ttk::checkbutton $Name -text "" -variable timeprofile -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 26 -sticky e
+   grid $Name -column 1 -row 26 -sticky ew
+if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+}
+#This is the Cancel button variables stay as before
+set Name $Parent.b2
+   ttk::button $Name -command {
+unset orafields
+destroy .tpc
+} -text Cancel
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+#This is the OK button all variables loaded back into config dict
+set Name $Parent.b1
+switch $option {
+"drive" {
+ttk::button $Name -command {
+copyfieldstoconfig configoracle [ subst $orafields ] tpcc
+unset orafields
+destroy .tpc
+loadtpcc
+} -text {OK}
+        }
+"default" {
+   ttk::button $Name -command {
+set count_ware [ verify_warehouse $count_ware 5000 ]
+set num_vu [ verify_build_threads $num_vu $count_ware 512 ]
+copyfieldstoconfig configoracle [ subst $orafields ] tpcc
+unset orafields
+destroy .tpc
+} -text {OK}
+        }
+   }
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+   
+   wm geometry .tpc +50+50
+   wm deiconify .tpc
+   raise .tpc
+   update
+}
+
+#Configure TPC-H Options
+proc configoratpch {option} {
+upvar #0 icons icons
+upvar #0 configoracle configoracle
+#set variables to values in dict
+setlocaltpchvars $configoracle
+variable orafields
+set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e21a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
+   catch "destroy .tpch"
+   ttk::toplevel .tpch
+   wm withdraw .tpch
+	switch $option {
+	"all" { wm title .tpch {Oracle TPC-H Schema Options} }
+	"build" { wm title .tpch {Oracle TPC-H Build Options} }
+	"drive" {  wm title .tpch {Oracle TPC-H Driver Options} }
+	}
+   set Parent .tpch
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+   if { $option eq "all" || $option eq "build" } {
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Build Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	} else {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 0 -sticky w
+	}
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "Oracle Service Name :"
+   ttk::entry $Name -width 30 -textvariable instance
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -columnspan 4 -sticky ew
+   set Name $Parent.f1.e1a
+   set Prompt $Parent.f1.p1a
+   ttk::label $Prompt -text "System User :"   
+   ttk::entry $Name  -width 30 -textvariable system_user
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "System User Password :"
+   ttk::entry $Name -width 30 -textvariable system_password
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -columnspan 4 -sticky ew
+set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "TPC-H User :"
+   ttk::entry $Name -width 30 -textvariable tpch_user
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -columnspan 4 -sticky ew
+set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "TPC-H User Password :"
+   ttk::entry $Name  -width 30 -textvariable tpch_pass
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -columnspan 4 -sticky ew
+   if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "TPC-H Default Tablespace :"
+   ttk::entry $Name -width 30 -textvariable tpch_def_tab
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -columnspan 4 -sticky ew
+set Name $Parent.f1.e6
+   set Prompt $Parent.f1.p6
+   ttk::label $Prompt -text "TPC-H Temporary Tablespace :"
+   ttk::entry $Name -width 30 -textvariable tpch_def_temp
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7 -columnspan 4 -sticky ew
+	}
+set Prompt $Parent.f1.p7
+ttk::label $Prompt -text "TimesTen Database Compatible :"
+   set Name $Parent.f1.e7
+ttk::checkbutton $Name -text "" -variable tpch_tt_compat -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 8 -sticky e
+   grid $Name -column 1 -row 8 -sticky w
+if { $tpch_tt_compat eq "false" } {
+foreach field {e2 e5 e6} {
+catch {.tpch.f1.$field configure -state normal}
+        }
+        } else {
+foreach field {e2 e5 e6} {
+catch {.tpch.f1.$field configure -state disabled}
+        }
+        }
+bind .tpch.f1.e7 <ButtonPress-1> {
+if { $tpch_tt_compat eq "true" } {
+foreach field {e2 e5 e6 e13} {
+catch {.tpch.f1.$field configure -state normal}
+        }
+    } else {
+foreach field {e2 e5 e6 e13} {
+catch {.tpch.f1.$field configure -state disabled}
+        } }
+}
+if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e8
+   set Prompt $Parent.f1.p8 
+   ttk::label $Prompt -text "Scale Factor :"
+   grid $Prompt -column 0 -row 9 -sticky e
+   set Name $Parent.f1.f2
+   ttk::frame $Name -width 30
+   grid $Name -column 1 -row 9 -sticky ew
+	set rcnt 1
+	foreach item {1} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable scale_fact -text $item -value $item -width 1
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 2
+	foreach item {10 30} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable scale_fact -text $item -value $item -width 2
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 4
+	foreach item {100 300} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable scale_fact -text $item -value $item -width 3
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+	set rcnt 6
+	foreach item {1000} {
+	set Name $Parent.f1.f2.r$rcnt
+	ttk::radiobutton $Name -variable scale_fact -text $item -value $item -width 4
+   	grid $Name -column $rcnt -row 0 
+	incr rcnt
+	}
+set Prompt $Parent.f1.p9
+ttk::label $Prompt -text "Virtual Users to Build Schema :"
+set Name $Parent.f1.e9
+ttk::spinbox $Name -from 1 -to 512 -textvariable num_tpch_threads
+	grid $Prompt -column 0 -row 10 -sticky e
+	grid $Name -column 1 -row 10 -sticky ew
+	}
+if { $option eq "all" || $option eq "drive" } {
+if { $option eq "all" } {
+set Prompt $Parent.f1.h3
+ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+grid $Prompt -column 0 -row 12 -sticky e
+set Prompt $Parent.f1.h4
+ttk::label $Prompt -text "Driver Options"
+grid $Prompt -column 1 -row 12 -sticky w
+	}
+   set Name $Parent.f1.e10
+   set Prompt $Parent.f1.p10
+   ttk::label $Prompt -text "Total Query Sets per User :"
+   ttk::entry $Name -width 30 -textvariable total_querysets
+   grid $Prompt -column 0 -row 13 -sticky e
+   grid $Name -column 1 -row 13  -columnspan 4 -sticky ew
+ set Prompt $Parent.f1.p11
+ttk::label $Prompt -text "Exit on Oracle Error :"
+  set Name $Parent.f1.e11
+ttk::checkbutton $Name -text "" -variable raise_query_error -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 14 -sticky e
+   grid $Name -column 1 -row 14 -sticky w
+ set Prompt $Parent.f1.p12
+ttk::label $Prompt -text "Verbose Output :"
+  set Name $Parent.f1.e12
+ttk::checkbutton $Name -text "" -variable verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15 -sticky w
+   set Name $Parent.f1.e13
+   set Prompt $Parent.f1.p13
+   ttk::label $Prompt -text "Degree of Parallelism :"
+   ttk::entry $Name -width 30 -textvariable degree_of_parallel
+   grid $Prompt -column 0 -row 16 -sticky e
+   grid $Name -column 1 -row 16  -columnspan 4 -sticky ew
+if { $tpch_tt_compat eq "false" } {
+catch {.tpch.f1.e13 configure -state normal}
+        } else {
+catch {.tpch.f1.e13 configure -state disabled}
+        }
+ set Prompt $Parent.f1.p14
+ttk::label $Prompt -text "Refresh Function :"
+  set Name $Parent.f1.e14
+ttk::checkbutton $Name -text "" -variable refresh_on -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky w
+bind $Parent.f1.e14 <Button> {
+if {$refresh_on eq "true"} { 
+set refresh_verbose "false"
+foreach field {e15 e16 e17} {
+.tpch.f1.$field configure -state disabled 
+		}
+} else {
+foreach field {e15 e16 e17} {
+.tpch.f1.$field configure -state normal
+                        }
+                }
+	}
+   set Name $Parent.f1.e15
+   set Prompt $Parent.f1.p15
+   ttk::label $Prompt -text "Number of Update Sets :"
+   ttk::entry $Name -width 30 -textvariable update_sets
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18  -columnspan 4 -sticky ew
+if {$refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+   set Name $Parent.f1.e16
+   set Prompt $Parent.f1.p16
+   ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
+   ttk::entry $Name -width 30 -textvariable trickle_refresh
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19  -columnspan 4 -sticky ew
+if {$refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+ set Prompt $Parent.f1.p17
+ttk::label $Prompt -text "Refresh Verbose :"
+  set Name $Parent.f1.e17
+ttk::checkbutton $Name -text "" -variable refresh_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
+if {$refresh_on == "false" } {
+	$Name configure -state disabled
+	}
+set Prompt $Parent.f1.p18
+ttk::label $Prompt -text "Cloud Analytic Queries :"
+  set Name $Parent.f1.e18
+ttk::checkbutton $Name -text "" -variable cloud_query -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
+}
+#This is the Cancel button variables stay as before
+   set Name $Parent.b2
+   ttk::button $Name -command {
+unset orafields
+destroy .tpch
+} -text Cancel
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+#This is the OK button all variables loaded back into config dict
+set Name $Parent.b1
+switch $option {
+"drive" {
+ttk::button $Name -command {
+copyfieldstoconfig configoracle [ subst $orafields ] tpch
+unset orafields
+destroy .tpch
+loadtpch
+} -text {OK}
+        }
+"default" {
+   ttk::button $Name -command {
+set num_tpch_threads [ verify_build_threads $num_tpch_threads 512 512 ]
+copyfieldstoconfig configoracle [ subst $orafields ] tpch
+unset orafields
+destroy .tpch
+} -text {OK}
+        }
+   }
+   pack $Name -anchor nw -side right -padx 3 -pady 3
+   wm geometry .tpch +50+50
+   wm deiconify .tpch
+   raise .tpch
+   update
+}

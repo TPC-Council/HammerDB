@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<redis>
+    <connection>
+        <redis_host>127.0.0.1</redis_host>
+        <redis_port>6379</redis_port>
+        <redis_namespace>1</redis_namespace>
+    </connection>
+	<tpcc>
+        <schema>
+            <redis_count_ware>1</redis_count_ware>
+            <redis_num_vu>1</redis_num_vu>
+        </schema>
+        <driver>
+            <redis_total_iterations>1000000</redis_total_iterations>
+            <redis_raiseerror>false</redis_raiseerror>
+            <redis_keyandthink>false</redis_keyandthink>
+            <redis_driver>test</redis_driver>
+	    <redis_rampup>2</redis_rampup>
+            <redis_duration>5</redis_duration>
+            <redis_allwarehouse>false</redis_allwarehouse>
+            <redis_timeprofile>false</redis_timeprofile>
+        </driver>
+    </tpcc>
+</redis>
