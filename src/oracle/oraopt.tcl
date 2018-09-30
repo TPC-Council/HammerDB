@@ -13,8 +13,8 @@ set tpcc_tt_compat [ dict get $configoracle tpcc tpcc_tt_compat ]
 if {[dict exists $configoracle tpch tpch_tt_compat ]} {
 set tpch_tt_compat [ dict get $configoracle tpch tpch_tt_compat ]
 	} else { set tpch_tt_compat "false" }
-if {[dict exists $genericdict settings refresh_rate]} {
-set interval [ dict get $genericdict settings refresh_rate ]
+if {[dict exists $genericdict transaction_counter refresh_rate]} {
+set interval [ dict get $genericdict transaction_counter refresh_rate ]
 	} else { set interval 10 }
 
 variable oraoptsfields
@@ -112,13 +112,12 @@ destroy .countopt
 if { $bm eq "TPC-C" } { 
 copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpcc
 } else { 
-	puts $oraoptsfields
 copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpch
 }
 unset oraoptsfields
 if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
 	set interval 10 } else {
-        dict set genericdict settings refresh_rate [.countopt.f1.e4 get]
+        dict set genericdict transaction_counter refresh_rate [.countopt.f1.e4 get]
 	}
 
          destroy .countopt
@@ -742,5 +741,86 @@ destroy .tpch
    wm geometry .tpch +50+50
    wm deiconify .tpch
    raise .tpch
+   update
+}
+#Configure Embedded Metrics Options
+proc metoraopts {} {
+global agent_hostname agent_id
+upvar #0 icons icons
+upvar #0 configoracle configoracle
+#use same parameters as transaction counter
+setlocaltcountvars $configoracle 1
+variable oraoptsfields
+set oraoptsfields [ dict create connection {system_user {.metric.f1.e4 get} system_password {.metric.f1.e5 get} instance {.metric.f1.e3 get}} ]
+if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
+if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
+set old_agent $agent_hostname
+set old_id $agent_id
+   catch "destroy .metric"
+   ttk::toplevel .metric
+   wm withdraw .metric
+   wm title .metric {Oracle Metrics Options}
+   set Parent .metric
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [image create photo -data [ dict get $icons dashboard ]]
+grid $Prompt -column 0 -row 0 -sticky e
+
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "Oracle and OS Agent"
+grid $Prompt -column 1 -row 0 -sticky w
+
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "Agent ID :"
+   ttk::entry $Name -width 30 -textvariable agent_id
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "Agent Hostname :"
+   ttk::entry $Name -width 30 -textvariable agent_hostname
+   grid $Prompt -column 0 -row 8 -sticky e
+   grid $Name -column 1 -row 8
+   set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "Oracle Service Name :"
+   ttk::entry $Name -width 30 -textvariable instance
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+   set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "System User :"
+   ttk::entry $Name  -width 30 -textvariable system_user
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
+   set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "System User Password :"
+   ttk::entry $Name  -width 30 -textvariable system_password
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky ew
+   set Name $Parent.b4
+   ttk::button $Name -command { destroy .metric } -text Cancel
+
+pack $Name -anchor w -side right -padx 3 -pady 3
+   set Name $Parent.b5
+   ttk::button $Name -command {
+         set agent_id [.metric.f1.e1 get]
+         set agent_hostname [.metric.f1.e2 get]
+copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpcc
+unset oraoptsfields
+         catch "destroy .metric"
+if { ![string is integer -strict $agent_id] } {
+tk_messageBox -message "Agent id must be an integer"
+set agent_id 0
+          }
+        } -text {OK}
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   wm geometry .metric +50+50
+   wm deiconify .metric
+   raise .metric
    update
 }

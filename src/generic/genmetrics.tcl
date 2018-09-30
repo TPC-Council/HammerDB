@@ -10,7 +10,7 @@ DisplayMetrics hook lost {
 if { [catch { DisplayMetrics destroy } b] } {
 puts "Agent Connection lost but Failed to close network port : $b" 
 		} else {
-ed_kill_metrics
+ed_kill_cpu_metrics
 puts "Metrics Connection closed"
 		}
     }
@@ -37,7 +37,7 @@ return
 }
 
 proc DoDisplay {maxcpu cpu_model caller} {
-global S CLR cputobars cputotxt cpucoords
+global S CLR cputobars cputotxt cpucoords metframe
 set CLR(bg) black
 set CLR(usr) green
 set CLR(sys) red
@@ -46,8 +46,8 @@ set S(bar,height) 87
 set S(col,padding) 24
 set S(padding) 3
 set S(border) 5
-set cnvpth .ed_mainFrame.me.f
-foreach wind ".ed_mainFrame.me.f .ed_mainFrame.me.sv $cnvpth.c" {
+set cnvpth $metframe.f
+foreach wind "$metframe.f $metframe.sv $cnvpth.c" {
 catch { destroy $wind }
 	}
 set S(cpus) $maxcpu
@@ -64,23 +64,23 @@ if { $maxcpu <= 16 } { set maxrows 1 }
     set width [expr {max($maxperrow * ($S(bar,width)+$S(padding)) + $S(padding),375)}]
     set height [ expr {($S(bar,height)+$S(col,padding))*$maxrows} ]
     set scrollheight [ expr {$height*2} ]
-    frame .ed_mainFrame.me.f -bd $S(border) -relief flat -bg $CLR(bg)
+    frame $metframe.f -bd $S(border) -relief flat -bg $CLR(bg)
 if { $ttk::currentTheme eq "black" } {
-	set cnv1 [ canvas .ed_mainFrame.me.sv -width 11 -highlightthickness 0 -background #424242 ]
+	set cnv1 [ canvas $metframe.sv -width 11 -highlightthickness 0 -background #424242 ]
         } else {
-	set cnv1 [ canvas .ed_mainFrame.me.sv -width 11 -highlightthickness 0 -background #dcdad5 ]
+	set cnv1 [ canvas $metframe.sv -width 11 -highlightthickness 0 -background #dcdad5 ]
         }
     pack $cnv1 -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
-    pack .ed_mainFrame.me.f -fill both -expand 1
+    pack $metframe.f -fill both -expand 1
 #Create fixed header
-    canvas .ed_mainFrame.me.f.header -highlightthickness 0 -bd 0 -width $width -height 25 -bg $CLR(bg)
-    .ed_mainFrame.me.f.header create text [ expr {$width/2 - 15} ]  12 -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {mydefaultfont} -tags "cpumodel"
-    pack .ed_mainFrame.me.f.header
+    canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height 25 -bg $CLR(bg)
+    $metframe.f.header create text [ expr {$width/2 - 15} ]  12 -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {mydefaultfont} -tags "cpumodel"
+    pack $metframe.f.header
 #Height for all objects is the height of the bar and text multiplied by all cpus add header
     set canvforbars $cnvpth.c 
-    canvas $canvforbars -highlightthickness 0 -bd 0 -width $width -height $height -bg $CLR(bg) -scrollregion "0 0 $width $scrollheight" -yscrollcommand ".ed_mainFrame.me.sv.scrollY set" -yscrollincrement 10
+    canvas $canvforbars -highlightthickness 0 -bd 0 -width $width -height $height -bg $CLR(bg) -scrollregion "0 0 $width $scrollheight" -yscrollcommand "$metframe.sv.scrollY set" -yscrollincrement 10
 #Add scrollbar but now can't scroll multiple canvases or a frame so have to put all ojects in one canvas to scroll
-    set scr1 [ ttk::scrollbar .ed_mainFrame.me.sv.scrollY -orient vertical -command "$canvforbars yview" ]
+    set scr1 [ ttk::scrollbar $metframe.sv.scrollY -orient vertical -command "$canvforbars yview" ]
     pack $canvforbars -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0
     pack $scr1 -expand 1 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
     set y1 $S(bar,height)
@@ -138,10 +138,10 @@ set cpu 0
 }
 
 proc AdjustBarHeight {cpu usr sys percent} {
-    global cputobars cputotxt CLR cpucoords
+    global cputobars cputotxt CLR cpucoords metframe
     set usrtag bar$cpu-usr
     set systag bar$cpu-sys
-    set canvforbars .ed_mainFrame.me.f.c
+    set canvforbars $metframe.f.c
 #Assign original coordinates for rectangle saved at first draw
     lassign $cpucoords($cpu) x0 y0 x1 y1
 #Set new bar height - y coords goes down the canvas 
@@ -156,7 +156,17 @@ proc AdjustBarHeight {cpu usr sys percent} {
 	}
 
 proc metrics {} {
-global agent_hostname agent_id
+global rdbms
+if { $rdbms eq "Oracle" } {
+orametrics
+        } else {
+genmetrics
+                }
+        }
+
+proc genmetrics {} {
+global agent_hostname agent_id metframe
+set metframe .ed_mainFrame.me
 catch {font create smallfont -family TkDefaultFont -size -8}
 catch {option add *font smallfont}
 catch {font create mydefaultfont -family TkDefaultFont -size 10}
@@ -176,8 +186,50 @@ after 0 {interp eval {metrics_interp} [ConfigureNetworkDisplay $agent_id $agent_
 return
 	}
 
+proc cpumetrics { previous } {
+global agent_hostname agent_id metframe 
+set metframe .ed_mainFrame.me.m.f.a.topdetails.output
+if { [ interp exists metrics_interp ] } {
+if { $previous eq "cpu" } {
+interp delete metrics_interp
+catch { DisplayMetrics destroy } 
+if { [ winfo exists $metframe.f ] } {
+catch {destroy $metframe.sv}
+catch {destroy $metframe.f} 
+return
+	} 
+} else {
+if { [ winfo exists $metframe.f ] } {
+pack $metframe.sv -anchor e -expand 0 -fill y -side right
+pack $metframe.f -fill both -expand 1 -anchor w
+return
+}}
+}
+if { [ winfo exists $metframe.f ] } {
+pack $metframe.sv -anchor e -expand 0 -fill y -side right
+pack $metframe.f -fill both -expand 1 -anchor w
+return
+	} else {
+catch {font create smallfont -family TkDefaultFont -size -8}
+catch {option add *font smallfont}
+catch {font create mydefaultfont -family TkDefaultFont -size 10}
+catch {option add *font mydefaultfont}
+if {  [ info exists hostname ] } { ; } else { set hostname "localhost" }
+if {  [ info exists id ] } { ; } else { set id 0 }
+DoDisplay 1 "Connecting to Agent to Display CPU Metrics" local
+if { [ interp exists metrics_interp ] } {
+interp delete metrics_interp
+	}
+interp create metrics_interp
+after 0 {interp eval {metrics_interp} [ConfigureNetworkDisplay $agent_id $agent_hostname]}
+#Agent runs the Display from here so additional threads not required
+return
+		}
+	}
+
 proc ed_kill_metrics {args} {
-   global _ED
+   global _ED rdbms 
+if { $rdbms == "Oracle" } { post_kill_dbmon_cleanup }
    ed_status_message -show "... Stopping Metrics ..."
    ed_metrics_button
 if { [ interp exists metrics_interp ] } {
@@ -191,4 +243,28 @@ Attach .ed_mainFrame.notebook .ed_mainFrame.me 3
 .ed_mainFrame.notebook tab .ed_mainFrame.me -state disabled
 ed_status_message -finish "Metrics Stopped"
    update
+}
+
+proc ed_kill_cpu_metrics {args} {
+   global _ED rdbms 
+if { $rdbms == "Oracle" } { 
+if { [ interp exists metrics_interp ] } {
+interp delete metrics_interp
+	}
+catch { DisplayMetrics destroy } 
+} else {
+   ed_status_message -show "... Stopping Metrics ..."
+   ed_metrics_button
+if { [ interp exists metrics_interp ] } {
+interp delete metrics_interp
+	}
+catch { DisplayMetrics destroy } 
+if ![ string match "*.ed_mainFrame.me*" [ .ed_mainFrame.notebook tabs ]] {
+#transaction counter has been detached so reattach before disabling
+Attach .ed_mainFrame.notebook .ed_mainFrame.me 3
+}
+.ed_mainFrame.notebook tab .ed_mainFrame.me -state disabled
+ed_status_message -finish "Metrics Stopped"
+   update
+	}
 }

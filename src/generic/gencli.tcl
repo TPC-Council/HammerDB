@@ -1035,7 +1035,7 @@ break
 
 proc help { args } {
 if {[ llength $args ] != 1} {
-  puts "HammerDB v3.0 CLI Help Index\n
+  puts "HammerDB v3.1 CLI Help Index\n
 Type \"help command\" for more details on specific commands below"
   puts {	
 	buildschema

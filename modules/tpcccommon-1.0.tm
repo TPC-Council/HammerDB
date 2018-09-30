@@ -91,6 +91,12 @@ set allthreads [ lreplace $allthreads $idx $idx ]
           }
        }
     }
+if {![catch {set monitorthread [ tsv::get application themonitor ]}]} {
+set idx [lsearch -exact $allthreads $monitorthread]
+if { $idx != -1 } {
+set allthreads [ lreplace $allthreads $idx $idx ]
+	}
+}
 set totalvirtualusers  [llength $allthreads]
 set myposition [ expr $totalvirtualusers - [lsearch -exact $allthreads $mythread]]
 return [ list $myposition $totalvirtualusers ]

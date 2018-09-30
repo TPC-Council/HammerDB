@@ -843,5 +843,20 @@ Modified Oracle SLEV stored procedure to return Stock Count
 
 Updated transaction counter display and improved calibration of output data
 
-Deprecated Trafodion support can be uncommented in database.xml to enable
-unsupported
+Deprecated Trafodion support can be uncommented in database.xml to enable unsupported
+
+---------------------------------------------------------------------
+
+Version 3.1 Oct 2018
+
+Bug fixes 
+
+[#125] Microsoft VCRUNTIME140.dll missing in HammerDB v3.0
+[#126] SQL Server reports TPM=0 as transaction count exceeds 32-bit integer
+[#127] Transaction Counter Refresh Value not detected from XML config
+[#128] PostgreSQL result handle leak in TPC-C from intentional 1% error
+[#129] User Delay and Repeat Delay Crossed in XML and GUI
+[#130] Unknown -under option in console
+[#131] Duplicate Files with incorrect prefix in MySQL and Redis Directories
+
+Added Oracle Database Metrics based on Ashmon by Kyle Hailey, used with permission to add as GPLv3

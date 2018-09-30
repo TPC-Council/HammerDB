@@ -1544,6 +1544,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "New Order Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 puts "New Order: $no_w_id $w_id_input $no_d_id $no_c_id $ol_cnt 0 [ pg_result $result -list ]"
 pg_result $result -clear
@@ -1597,6 +1598,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Payment Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 puts "Payment: $p_w_id $p_d_id $p_c_w_id $p_c_d_id $p_c_id $byname $p_h_amount $name 0 0 [ pg_result $result -list ]"
 pg_result $result -clear
@@ -1627,6 +1629,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Order Status Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 puts "Order Status: $w_id $d_id $c_id $byname $name [ pg_result $result -list ]"
 pg_result $result -clear
@@ -1647,6 +1650,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Delivery Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 puts "Delivery: $w_id $carrier_id [ pg_result $result -list ]"
 pg_result $result -clear
@@ -1666,6 +1670,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Stock Level Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 puts "Stock Level: $w_id $stock_level_d_id $threshold [ pg_result $result -list ]"
 pg_result $result -clear
@@ -1942,6 +1947,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "New Order Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 pg_result $result -clear
 	}
@@ -1994,6 +2000,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Payment Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 pg_result $result -clear
 	}
@@ -2023,6 +2030,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Order Status Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 pg_result $result -clear
 	}
@@ -2042,6 +2050,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Delivery Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 pg_result $result -clear
 	}
@@ -2060,6 +2069,7 @@ error "[pg_result $result -error]"
 		} else {
 puts "Stock Level Procedure Error set RAISEERROR for Details"
 		}
+pg_result $result -clear
 	} else {
 pg_result $result -clear
 	}

@@ -78,7 +78,7 @@ eval [subst {thread::send $MASTER show_tc_errmsg}]
 catch { pg_disconnect $tc_lda }
 break
 } else {
-if { [ string is integer -strict $pgcnt ] } {
+if { [ string is entier -strict $pgcnt ] } {
 set outc $pgcnt
         } else {
 set outc 0

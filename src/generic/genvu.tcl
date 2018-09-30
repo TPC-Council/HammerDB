@@ -12,8 +12,12 @@ puts "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
     if {[string match {*.tc*} $info]} {
 puts "Warning: Transaction Counter stopped, connection message not displayed"
 	} else {
-		;
-#Background Error from Virtual User suppressed
+#metrics thread
+    if {[string match {*canceled*} $info]} {
+#message was eval canceled
+					} else {
+puts "Metrics Thread Error: $info"
+					}
 				}
 			}
 		}
@@ -127,7 +131,7 @@ proc stacktrace {} {
 }
 
 proc load_virtual {}  {
-global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID opmode vuser_create_ok rdbms bm
+global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm
 set vuser_create_ok true
 set thlist [ thread::names ]
 if { [ info exists tc_threadID ] } {
@@ -135,6 +139,17 @@ set idx [ lsearch $thlist $tc_threadID ]
 if { $idx != -1 } {
 set thlist [ lreplace $thlist $idx $idx ]
 	}
+}
+#Additional thread for Database Metrics initially Oracle only
+if { $rdbms eq "Oracle" } {
+if { [ info exists dbmon_threadID ] } {
+if { [ thread::exists $dbmon_threadID ] || [ tsv::get application themonitor ] eq "NOWVUSER" } {
+set idx [ lsearch $thlist $dbmon_threadID ]
+if { $idx != -1 } {
+set thlist [ lreplace $thlist $idx $idx ]
+	}
+     }
+  }
 }
 set thlen [ llength $thlist ] 
 if { $opmode != "Slave" } {
@@ -271,6 +286,17 @@ if { $suppo == 1 } { eval [ subst {thread::send $threadscreated($vuser) { winset
 } else { eval [ subst {thread::send $threadscreated($vuser) { winsetup {-1} $optlog }}] }  }
 foreach {vuser threadID} [array get threadscreated] {
 set threadsbytid($threadID) $vuser
+#vusers thread has grabbed previous tc or monitor thread so remove variable
+##this thread is now a vuser
+if { [ info exists tc_threadID ] } { 
+if { $threadID eq $tc_threadID } { unset -nocomplain tc_threadID }
+		}
+if { $rdbms eq "Oracle" && [ info exists dbmon_threadID ] } { 
+if { $threadID eq $dbmon_threadID } { 
+tsv::set application themonitor "NOWVUSER"
+unset -nocomplain dbmon_threadID
+			 }
+		}
         }
 if { $suppo == 1 } {
 set trdwin ".ed_mainFrame.tw"
@@ -408,7 +434,10 @@ puts "Failed to create and run virtual users: $message"
 tk_messageBox -icon error -message "Failed to create and run Virtual Users" 
 $Name configure -state normal
 return
-        } 
+        } else {
+#virtual users created dynamically
+set vuser_create_ok "true"
+	} 
        } else {
 #Virtual Users already created before pressing run button
 set vuser_create_ok "true"
@@ -423,10 +452,15 @@ if { [ info exists conpause ] } { ; } else { set conpause 500 }
 if { [ info exists ntimes ] } { ; } else { set ntimes 1 }
 if { [ info exists suppo ] } { ; } else { set suppo 0 }
     ed_status_message -run "RUNNING - $_ED(packagekeyname)"
-    update
+    update idletasks
+ if {[catch {set script_to_send [list $_ED(package)]} message]} {
+puts "Failed to capture Editor Script: $message"
+tk_messageBox -icon error -message "Failed to capture Editor Script" 
+$Name configure -state normal
+return
+	}
 for { set vuser 0} {$vuser < $maxvuser} {incr vuser} {
-eval [ subst {thread::send -async $threadscreated($vuser) {runVuser $masterthread $threadscreated($vuser) $ntimes $delayms [list $_ED(package)]}}]
-update 
+eval [ subst {thread::send -async $threadscreated($vuser) {runVuser $masterthread $threadscreated($vuser) $ntimes $delayms $script_to_send}}]
 set cp 0
 after $conpause { set cp 1 }
 vwait cp

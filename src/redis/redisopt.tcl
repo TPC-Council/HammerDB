@@ -65,7 +65,7 @@ copyfieldstoconfig configredis [ subst $redoptsfields ] tpcc
 unset redoptsfields
 if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
         set interval 10 } else {
-        dict set genericdict settings refresh_rate [.countopt.f1.e3 get]
+        dict set genericdict transaction_counter refresh_rate [.countopt.f1.e3 get]
         }
          destroy .countopt
            catch "destroy .tc"

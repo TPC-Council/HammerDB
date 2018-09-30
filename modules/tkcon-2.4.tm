@@ -953,9 +953,9 @@ proc ::tkcon::EvalCmd {w cmd} {
 		    set tag [UniqueTag $w]
 		    $w insert output $res [list stderr $tag] \n stderr
 		    $w tag bind $tag <Enter> \
-			    [list $w tag configure $tag -under 1]
+			    [list $w tag configure $tag -underline 1]
 		    $w tag bind $tag <Leave> \
-			    [list $w tag configure $tag -under 0]
+			    [list $w tag configure $tag -underline 0]
 		    $w tag bind $tag <ButtonRelease-1> \
 			    "if {!\[info exists tkPriv(mouseMoved)\] || !\$tkPriv(mouseMoved)} \
 			    {[list $OPT(edit) -attach [Attach] -type error -- $PRIV(errorInfo)]}"
@@ -2830,8 +2830,8 @@ proc ::tkcon::ErrorHighlight w {
 	    set tag [UniqueTag $w]
 	    $w tag add $tag $start+${c0}c $start+1c+${c1}c
 	    $w tag configure $tag -foreground $COLOR(stdout)
-	    $w tag bind $tag <Enter> [list $w tag configure $tag -under 1]
-	    $w tag bind $tag <Leave> [list $w tag configure $tag -under 0]
+	    $w tag bind $tag <Enter> [list $w tag configure $tag -underline 1]
+	    $w tag bind $tag <Leave> [list $w tag configure $tag -underline 0]
 	    $w tag bind $tag <ButtonRelease-1> "if {!\$tkPriv(mouseMoved)} \
 		    {[list $OPT(edit) -attach $app -type proc -find $what -- $cmd]}"
 	}
@@ -2859,8 +2859,8 @@ proc ::tkcon::ErrorHighlight w {
 	    set tag [UniqueTag $w]
 	    $w tag add $tag $ix+1c $start
 	    $w tag configure $tag -foreground $COLOR(proc)
-	    $w tag bind $tag <Enter> [list $w tag configure $tag -under 1]
-	    $w tag bind $tag <Leave> [list $w tag configure $tag -under 0]
+	    $w tag bind $tag <Enter> [list $w tag configure $tag -underline 1]
+	    $w tag bind $tag <Leave> [list $w tag configure $tag -underline 0]
 	    $w tag bind $tag <ButtonRelease-1> "if {!\$tkPriv(mouseMoved)} \
 		    {[list $OPT(edit) -attach $app -type proc -- $cmd]}"
 	}
@@ -3656,14 +3656,14 @@ proc edit {args} {
 	##
 	set text $w.text
 	set m [menu [::tkcon::MenuButton $menu Edit edit]]
-	$m add command -label "Cut"   -under 2 \
+	$m add command -label "Cut"   -underline 2 \
 		-command [list tk_textCut $text]
-	$m add command -label "Copy"  -under 0 \
+	$m add command -label "Copy"  -underline 0 \
 		-command [list tk_textCopy $text]
-	$m add command -label "Paste" -under 0 \
+	$m add command -label "Paste" -underline 0 \
 		-command [list tk_textPaste $text]
 	$m add separator
-	$m add command -label "Find" -under 0 \
+	$m add command -label "Find" -underline 0 \
 		-command [list ::tkcon::FindBox $text]
 
 	## Send To Menu

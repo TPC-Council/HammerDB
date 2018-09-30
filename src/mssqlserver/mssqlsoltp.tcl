@@ -2394,7 +2394,7 @@ if {[catch {set end_trans [ odbc "select cntr_value from sys.dm_os_performance_c
 puts stderr {error, failed to query transaction statistics}
 return
 } 
-if { [ string is integer -strict $end_trans ] && [ string is integer -strict $start_trans ] } {
+if { [ string is entier -strict $end_trans ] && [ string is entier -strict $start_trans ] } {
 if { $start_trans < $end_trans }  {
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 	} else {

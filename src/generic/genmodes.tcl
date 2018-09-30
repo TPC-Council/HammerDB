@@ -12,7 +12,7 @@ return 0
 proc start_autopilot {} {
 global apduration apsequence virtual_users maxvuser lprefix aptime apmode
 if { [ check_ap_threads ] } { 
-tk_messageBox -icon error -message "Cannot Enable Autopilot with Virtual Users or Transaction Counter still active" 
+tk_messageBox -icon error -message "Cannot Enable Autopilot with Virtual Users, Transaction Counter or Database Metrics still active" 
 return 1
 	}
 if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }

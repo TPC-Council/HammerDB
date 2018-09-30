@@ -537,6 +537,13 @@ $Name tag bind dgstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainF
 
 proc ed_stop_gui {} {
     ed_wait_if_blocked
+#close outstanding threads
+set thlist [ thread::names ]
+foreach ij $thlist {
+	catch {thread::cancel $ij}
+#can only be used before final application exit
+	catch {thread::exit $ij}
+	      }
     exit
 }
 
@@ -1648,14 +1655,14 @@ grid $Prompt -column 1 -row 0 -sticky w
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
    ttk::label $Prompt -text "User Delay(ms) :"
-   ttk::entry $Name -width 30 -textvariable conpause
+   ttk::entry $Name -width 30 -textvariable delayms
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
 
    set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
    ttk::label $Prompt -text "Repeat Delay(ms) :"
-   ttk::entry $Name -width 30 -textvariable delayms
+   ttk::entry $Name -width 30 -textvariable conpause
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
 
@@ -1779,21 +1786,21 @@ set timedwkl "false"
         set maxvuser $virtual_users
         }
 }	
-         set conpause [.vuserop.f1.e2 get]
-if { ![string is integer -strict $conpause] } { 
-	tk_messageBox -message "Delay between users logons must be an integer" 
-	set conpause 0
-	}
-if { $conpause < 0 } { tk_messageBox -message "Delay between users logons must be at least 0 milliseconds" 
-	set conpause 0
-	}
-         set delayms  [.vuserop.f1.e3 get]
+         set delayms [.vuserop.f1.e2 get]
 if { ![string is integer -strict $delayms] } { 
-	tk_messageBox -message "Delay between iterations must be an integer" 
+	tk_messageBox -message "Delay between users logons must be an integer" 
 	set delayms 0
 	}
-if { $delayms < 0 } { tk_messageBox -message "Delay between iterations must be at least 0 milliseconds" 
+if { $delayms < 0 } { tk_messageBox -message "Delay between users logons must be at least 0 milliseconds" 
 	set delayms 0
+	}
+         set conpause [.vuserop.f1.e3 get]
+if { ![string is integer -strict $conpause] } { 
+	tk_messageBox -message "Delay between iterations must be an integer" 
+	set conpause 0
+	}
+if { $conpause < 0 } { tk_messageBox -message "Delay between iterations must be at least 0 milliseconds" 
+	set conpause 0
 	}
          set ntimes   [.vuserop.f1.e4 get]
 if { ![string is integer -strict $ntimes] } { 
@@ -2574,6 +2581,16 @@ if { $apmode eq "enabled" } {
 }
 
 proc metricsopts {} {
+#Introduced new option for Database metrics initially Oracle only
+global rdbms
+if { $rdbms eq "Oracle" } {
+metoraopts
+	} else {
+metgenopts
+		}
+	}
+
+proc metgenopts {} {
 global agent_hostname agent_id
 upvar #0 icons icons
 if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }

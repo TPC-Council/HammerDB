@@ -76,7 +76,7 @@ catch { tc_odbc disconnect }
 break
 } else {
 if { $bm eq "TPC-C" || $bm eq "TPC-H" } {
-if { [ string is integer -strict $tc_trans ] } {
+if { [ string is entier -strict $tc_trans ] } {
 set outc $tc_trans
         } else {
 #SQL Server returned invalid transcount data setting to 0
