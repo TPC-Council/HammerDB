@@ -860,3 +860,9 @@ Bug fixes
 [#131] Duplicate Files with incorrect prefix in MySQL and Redis Directories
 
 Added Oracle Database Metrics based on Ashmon by Kyle Hailey, used with permission to add as GPLv3
+
+---------------------------------------------------------------------
+
+Version 3.1a Jul 2019
+
+Add command line tool hammerdbrun to run command line scripts
