@@ -6,18 +6,24 @@ set allwt(1) {set allwarehouses "true";# Use all warehouses to increase I/O
 }
 set allwt(2) {#2.4.1.1 does not apply when allwarehouses is true 
 if { $allwarehouses == "true" } {
+set mypos [ expr $myposition -1 ]
+if { $mypos > $w_id_input  } { 
+set mymod [expr ($mypos % $w_id_input) ]
+if { $mymod eq 0 }  { set mymod $w_id_input } 
+lappend myWarehouses $mymod
+} else {
 set loadUserCount [expr $totalvirtualusers - 1]
 set myWarehouses {}
-lappend myWarehouses $myposition
+lappend myWarehouses [expr $myposition - 1]
 set addMore 1
 while {$addMore > 0} {
-set wh [expr $myposition + ($addMore * $loadUserCount)]
+set wh [expr ($myposition - 1) + ($addMore * $loadUserCount)]
 if {$wh > $w_id_input || $wh eq 1} {
 set addMore 0
 } else {
 lappend myWarehouses $wh
 set addMore [expr $addMore + 1]
-}}
+}}}
 set myWhCount [llength $myWarehouses]
 }
 }

@@ -206,7 +206,9 @@ if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 if { [ info exists suppo ] } { ; } else { set suppo 0 }
 if { [ info exists optlog ] } { ; } else { set optlog 0 }
 if { [ info exists ntimes ] && $ntimes > 1 } { ; } else { set ntimes 1 }
-if { [ lindex [ split [ join [ stacktrace ] ] ] end ] eq "build_schema" }  {
+#For web version build_schema is not at the end of the stacktrace, modified to find build anywhere in trace
+set result [ lsearch [ lindex [ split [ join [ stacktrace ] ] ] ] "build_schema" ]
+if { $result != -1 }  {
 set virtual_users $maxvuser
 	} else {
 #Find if workload test or timed set when script is loaded as lprefix
@@ -214,8 +216,7 @@ set maxvuser $virtual_users
       if { $lprefix eq "loadtimed" } {
         set maxvuser [expr {$virtual_users + 1}]
         set suppo 1
-        } else {
-	}        
+        } else { ; }        
    } 
 #Moved to running of virtual users
 #disable_enable_options_menu disable

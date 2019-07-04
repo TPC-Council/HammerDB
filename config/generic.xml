@@ -31,7 +31,7 @@
     </mode>
     <transaction_counter>
 	<settings>
-        	<refresh_rate>10</refresh_rate>
+            <refresh_rate>10</refresh_rate>
 	</settings>
     </transaction_counter>
     <metrics>
@@ -47,4 +47,8 @@
             <gen_directory>
 	    </gen_directory>
     </datageneration>
+    <webservice>
+	   <ws_port>8080</ws_port> 
+	   <sqlite_db>:memory:</sqlite_db> 
+    </webservice>
 </hammerdb>

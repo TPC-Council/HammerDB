@@ -410,7 +410,7 @@ puts "Connection Failed : $b"
 switch_mode "Local" $slavehost $slaveid $masterlist
 set opmode "Local"
 } else {
-puts "Connection suceeded"
+puts "Connection succeeded"
 if { [catch {::comm send "$id $hostname" "catch {Master connect \"$slaveid $slavehost\"} "} b] } {
 puts "Master connect back failed: $b\nCanonical hostname [ info hostname ] must be used"
 switch_mode "Local" $slavehost $slaveid $masterlist

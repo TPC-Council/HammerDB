@@ -860,3 +860,24 @@ Bug fixes
 [#131] Duplicate Files with incorrect prefix in MySQL and Redis Directories
 
 Added Oracle Database Metrics based on Ashmon by Kyle Hailey, used with permission to add as GPLv3
+
+---------------------------------------------------------------------
+
+Version 3.2 2019
+
+Bug fixes 
+
+[#132] Running buildschema in CLI for TPC-H has incorrect VU count
+[#133] Use all warehouses omits warehouse 1 and fails if more VUsers than warehouses
+[#134] Buildschema in CLI errors if 1 virtual user and more than 1 warehouse
+[GH#58] Bug when building TPC-C and TPC-H on Azure
+
+Updated time profiler to report percentile values at 10 second intervals
+
+Updated PostgreSQL Oracle SLEV Stored Procedure to return stock count
+
+Updated hammerdbcli to enable autostart with script
+
+Added PostgreSQL v11+ compatible Stored Procedures to use instead of Functions
+
+Added HTTP Web Service interface

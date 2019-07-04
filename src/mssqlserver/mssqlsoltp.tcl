@@ -1445,22 +1445,26 @@ return
 }
 
 
-proc UpdateStatistics { odbc db } {
+proc UpdateStatistics { odbc db azure } {
 puts "UPDATING SCHEMA STATISTICS"
+if {!$azure} {
+odbc "EXEC sp_updatestats"
+} else {
 set sql(1) "USE $db"
 set sql(2) "EXEC sp_updatestats"
 for { set i 1 } { $i <= 2 } { incr i } {
 odbc  $sql($i)
 		}
+	}
 return
 }
 
-proc CreateDatabase { odbc db imdb } {
+proc CreateDatabase { odbc db imdb azure } {
 set table_count 0
 puts "CHECKING IF DATABASE $db EXISTS"
 set db_exists [ odbc "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
 if { $db_exists } {
-odbc "use $db"
+if {!$azure} {odbc "use $db"}
 set table_count [ odbc "select COUNT(*) from sys.tables" ]
 if { $table_count == 0 } {
 puts "Empty database $db exists"
@@ -1908,8 +1912,8 @@ puts stderr "Error: the database connection to $connection could not be establis
 error $message
 return
  } else {
-CreateDatabase odbc $db $imdb 
-odbc "use $db"
+CreateDatabase odbc $db $imdb $azure 
+if {!$azure} {odbc "use $db"}
 CreateTables odbc $imdb $count_ware $bucket_factor $durability
 }
 if { $threaded eq "MULTI-THREADED" } {
@@ -1953,7 +1957,7 @@ puts stderr "error, the database connection to $connection could not be establis
 error $message
 return
  } else {
-odbc "use $db"
+if {!$azure} {odbc "use $db"}
 odbc set autocommit off 
 } 
 set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
@@ -1976,7 +1980,7 @@ tsv::lreplace common thrdlst $myposition $myposition done
 if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 CreateIndexes odbc $imdb 
 CreateStoredProcs odbc $imdb 
-UpdateStatistics odbc $db
+UpdateStatistics odbc $db $azure
 puts "[ string toupper $db ] SCHEMA COMPLETE"
 odbc disconnect
 return
@@ -2221,7 +2225,7 @@ error $message
 return
 } else {
 database connect odbc $connection
-odbc "use $database"
+if {!$azure} {odbc "use $database"}
 odbc set autocommit off
 }
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement odbc $st ] }
@@ -2350,7 +2354,7 @@ error $message
 return
 } else {
 database connect odbc $connection
-odbc "use $database"
+if {!$azure} {odbc "use $database"}
 odbc set autocommit on
 }
 set ramptime 0
@@ -2601,7 +2605,7 @@ error $message
 return
 } else {
 database connect odbc $connection
-odbc "use $database"
+if {!$azure} {odbc "use $database"}
 odbc set autocommit off
 }
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement odbc $st ] }

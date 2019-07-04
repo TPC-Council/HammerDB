@@ -799,24 +799,27 @@ puts "Schema creation cancelled"
 }
 
 proc buildschema {} {
-global virtual_users maxvuser rdbms threadscreated
+global virtual_users maxvuser rdbms bm threadscreated
 if { [ info exists threadscreated ] } {
 puts "Error: Cannot build schema with Virtual Users active, destroy Virtual Users first"
 return
         }
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
-set dictname config$key
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 	set dictname config$key
 	upvar #0 $dictname $dictname
+	break
+	}
+}
+if { $bm eq "TPC-C" } {
 	set cwkey [ lsearch [ join [ set $dictname ]] *count_ware ]
 	set buildcw [ lindex [ join [ set $dictname ]] [ expr $cwkey + 1]]
 	set vukey [ lsearch [ join [ set $dictname ]] *num_vu ]
 	set vuname [ lsearch -inline [ join [ set $dictname ]] *num_vu ]
 	set buildvu [ lindex [ join [ set $dictname ]] [ expr $vukey + 1]]
-if { ![string is integer -strict $buildvu ] || $buildvu < 1 } {
-	puts "Error: Number of virtual users to build schema must be an integer"
+if { ![string is integer -strict $buildvu ] || $buildvu < 1 || $buildvu > 1024 } {
+	puts "Error: Number of virtual users to build schema must be an integer less than 1024"
 	return
 	}
 	if { $buildvu > $buildcw } {
@@ -824,11 +827,11 @@ if { ![string is integer -strict $buildvu ] || $buildvu < 1 } {
 	puts "You have $buildvu virtual users building $buildcw warehouses"
 	return
 		} else {
-	if { $buildcw eq 1 } {
+	if { $buildvu eq 1 } {
 	set maxvuser 1
 	set virtual_users 1
 	clearscript
-	puts "Building 1 Warehouse with 1 Virtual User"
+	puts "Building $buildcw Warehouses(s) with 1 Virtual User"
 	if { [ catch {build_schema} message ] } {
 	puts "Error: $message"
 			}
@@ -840,10 +843,34 @@ if { ![string is integer -strict $buildvu ] || $buildvu < 1 } {
 	if { [ catch {build_schema} message ] } {
 	puts "Error: $message"
 			}
-		     }
-		  }
 	   }
-     }
+      }
+  } else {
+	set sfkey [ lsearch [ join [ set $dictname ]] *scale_fact ]
+	set buildsf [ lindex [ join [ set $dictname ]] [ expr $sfkey + 1]]
+	set vukey [ lsearch [ join [ set $dictname ]] *num_tpch_threads ]
+	set vuname [ lsearch -inline [ join [ set $dictname ]] *num_tpch_threads ]
+	set buildvu [ lindex [ join [ set $dictname ]] [ expr $vukey + 1]]
+if { ![string is integer -strict $buildvu ] || $buildvu < 1 || $buildvu > 1024 } {
+	puts "Error: Number of virtual users to build schema must be an integer less than 1024"
+	return
+	}
+set validvalues {1 10 30 100 300 1000 3000 10000 30000 100000}
+set ind [ lsearch $validvalues $buildsf ]
+if { $ind eq -1 } {
+	puts "Error: Scale Factor must be a value in $validvalues"
+return
+}
+if { $buildvu eq 1 } { set maxvuser 1 } else {
+	set maxvuser [ expr $buildvu + 1 ]
+	}
+	set virtual_users $maxvuser
+	clearscript
+	puts "Building Scale Factor $buildsf with $maxvuser Virtual Users, $buildvu active + 1 Monitor VU(dict value $vuname is set to $buildvu)"
+	if { [ catch {build_schema} message ] } {
+	puts "Error: $message"
+ 		     }
+              }
 }
 
 proc vurun {} {
@@ -947,7 +974,7 @@ return
 warehouse {
 set gen_count_ware $val
 if { ![string is integer -strict $gen_count_ware] } {
-        tk_messageBox -message "The umber of virtual users must be an integer"
+        tk_messageBox -message "The number of virtual users must be an integer"
 	puts -nonewline "setting to value: "
 	set gen_num_vu 1
         set virtual_users 1
@@ -1033,6 +1060,11 @@ break
   }
 }
 
+proc quit {} {
+puts "Shutting down HammerDB CLI"
+exit
+}
+
 proc help { args } {
 if {[ llength $args ] != 1} {
   puts "HammerDB v3.1 CLI Help Index\n
@@ -1048,6 +1080,7 @@ Type \"help command\" for more details on specific commands below"
 	librarycheck
        	loadscript
        	print 
+	quit
 	vucomplete
        	vucreate
        	vudestroy
@@ -1057,10 +1090,10 @@ Type \"help command\" for more details on specific commands below"
 	}
 } else {
 set option [ lindex [ split  $args ]  0 ]
-set ind [ lsearch {print librarycheck dbset diset buildschema vuset vucreate vurun vudestroy vustatus vucomplete loadscript clearscript customscript dgset datagenrun} $option ]
+set ind [ lsearch {print librarycheck dbset diset buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun} $option ]
 if { $ind eq -1 } {
 puts "Error: invalid option"
-puts {Usage: help [print|librarycheck|dbset|diset|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|loadscript|clearscript|customscript|dgset|datagenrun]}
+puts {Usage: help [print|librarycheck|dbset|diset|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun]}
 return
 } else {
 switch  $option {
@@ -1076,6 +1109,10 @@ vucreated: the number of virtual users created
 vustatus: the status of the virtual users
 datagen: the datagen configuration"
 }
+quit {
+puts "quit - Usage: quit"
+puts "Shuts down the HammerDB CLI."
+}
 librarycheck {
 puts "librarycheck - Usage: librarycheck"
 puts "Attempts to load the vendor provided 3rd party library for all databases and reports whether the attempt was successful."
@@ -1086,7 +1123,7 @@ puts "Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu
 }
 diset {
 puts "diset - Usage: diset dict key value"
-puts "Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use \"print dict\" to see what these variables area and diset to change:
+puts "Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use \"print dict\" to see what these variables are and diset to change:
 Example:
 hammerdb>diset tpcc count_ware 10
 Changed tpcc:count_ware from 1 to 10 for Oracle"

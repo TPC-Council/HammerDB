@@ -7,7 +7,15 @@
 #        at runtime.
 #
 # Copyright (C) 2004 Salvatore Sanfilippo
-package provide etprof 1.0
+#
+#etprof 1.0 posted at https://wiki.tcl-lang.org/page/etprof
+#https://wiki.tcl-lang.org/license
+#Tcl and extensions such as Tk, Expect, tcllib are distributed under the terms of this license, a BSD-type license, which is much less restrictive than the GPL.
+#It is safe to assume that any code posted on this Wiki (or that you post on this wiki) is, unless otherwise explicitly specified, under the same license.
+#
+# etprof 1.1 modifications from original Copyright (C) 2019 Steve Shaw under HammerDB License
+#
+package provide etprof 1.1
 
  namespace eval ::etprof {}
 
@@ -29,7 +37,9 @@ package provide etprof 1.0
  proc ::etprof::TraceHandler {name cmd args} {
      # We need to misure the elapsed time as early as possible.
      set enter_clicks [clock clicks]
+     set enter_secs [clock seconds]
      set elapsed [expr {$enter_clicks-$::etprof::timer}]
+     set seconds [expr {$enter_secs-$::etprof::timersecs}]
 
      #####################################################################
      # Starting from this point it's possible to do potentially slow
@@ -64,7 +74,20 @@ package provide etprof 1.0
                 set t [lpop ::etprof::cumulative_timers]
                 set cum_elapsed [expr {$enter_clicks-$t}]
                 incr ::etprof::cumulative($name) $cum_elapsed
-            }
+#intermediate percentile measurements
+	if {![string match {::tcl*} $name]} {
+#add to list of elapsed times per name for 10 seconds
+		lappend ::etprof::pctiles($name) $elapsed
+		if {[ expr $seconds % 10 ] eq 0 } {
+		if { $::etprof::iterations != $seconds } {
+		set ::etprof::iterations $seconds
+#calculate and print percentiles
+		::etprof::printPercentiles $seconds
+					}
+				} 
+			}
+#intermediate percentile measurements
+                }
             ::etprof::leaveHandler $name $elapsed
             incr ::etprof::depth($name) -1
         }
@@ -158,12 +181,15 @@ package provide etprof 1.0
      set ::etprof::exclusive($name) 0
      set ::etprof::cumulative($name) 0
      set ::etprof::depth($name) 0
+     set ::etprof::pctiles($name) 0
  }
 
  proc ::etprof::init {} {
      rename ::proc ::etprof::oldProc
      rename ::etprof::profProc ::proc
      set ::etprof::timer [clock clicks]
+     set ::etprof::timersecs [clock seconds]
+     set ::etprof::iterations 0
      set ::etprof::hits 0
      array set ::etprof::exclusive {}
      array set ::etprof::cumulative {}
@@ -191,10 +217,59 @@ set name2 [string trimleft $name "::" ]
      format "%.02f" $p
  }
 
+proc ::etprof::percentile {pvalues percent} {
+proc is_whole { float } {
+  return [expr abs($float - int($float)) > 0 ? 0 : 1]
+}
+set k [ expr [ llength $pvalues ] * $percent ]
+if { [ is_whole $k ] } {
+set kint [ expr int($k) ]
+set pctile [ expr ([lindex $pvalues [ expr $kint - 1 ]] + [lindex $pvalues $kint ]) / 2.0 ]
+if { [ is_whole $pctile ] } {
+set pctile [ expr int($pctile) ]
+		}
+	} else {
+set k [ expr round($k) ]
+set pctile [ lindex $pvalues [ expr $k - 1 ]]
+	}
+return $pctile
+}
+
+proc ::etprof::printPercentiles { seconds } {
+puts "|PERCENTILES [clock format [ expr $::etprof::timersecs + $seconds - 10 ] -format {%Y-%m-%d %H:%M:%S}] to [clock format [ expr $::etprof::timersecs + $seconds ] -format {%Y-%m-%d %H:%M:%S}]"
+     foreach {key val} [array get ::etprof::exclusive] {
+if {[string match {::tcl*} $key]||[string match {::msgcat*} $key]||[string match {::etprof*} $key]} {
+                ;
+        } else {
+        lappend info [list $key $val]
+	}
+     }
+     set info [lsort -decreasing -index 1 -integer $info]
+     foreach i $info {
+        foreach {name exclusiveTime} $i break
+unset -nocomplain sortedset
+set sortedset [ lsort -integer $::etprof::pctiles($name) ]
+set ::etprof::pctiles($name) 0
+set numvalues [ llength $sortedset ]
+if { $numvalues > 1 }  {
+set sortedset [ lreplace $sortedset 0 0 ]
+set minv [ lindex $sortedset 0 ]
+set maxv [ lindex $sortedset end ]
+set p99 [ ::etprof::percentile $sortedset 0.99 ]
+set p95 [ ::etprof::percentile $sortedset 0.95 ]
+set p50 [ ::etprof::percentile $sortedset 0.50 ]
+set name2 [string trimleft $name "::" ]
+puts "|$name2|MIN-$minv|P50%-$p50|P95%-$p95|P99%-$p99|MAX-$maxv|SAMPLES-$numvalues"
+		}
+set ::etprof::pctiles($name) 0
+	}
+     ::etprof::printInfoSeparator
+ }
+
  proc ::etprof::printLiveInfo {} {
      set info {}
      foreach {key val} [array get ::etprof::exclusive] {
-if {[string match {::tcl*} $key]||[string match {::msgcat*} $key]} {
+if {[string match {::tcl*} $key]||[string match {::msgcat*} $key]||[string match {::etprof*} $key]} {
                 ;
         } else {
         lappend info [list $key $val]

@@ -16,7 +16,7 @@ tclsh86t %0 %*
 #
 #Simulation of Linux mpstat program for Windows using Twapi
 #
-# Copyright (C) 2003-2018 Steve Shaw
+# Copyright (C) 2003-2019 Steve Shaw
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public

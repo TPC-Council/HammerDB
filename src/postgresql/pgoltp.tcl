@@ -29,7 +29,7 @@ set library $library
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
-proc CreateStoredProcs { lda ora_compatible } {
+proc CreateStoredProcs { lda ora_compatible pg_storedprocs } {
 puts "CREATING TPCC STORED PROCEDURES"
 if { $ora_compatible eq "true" } {
 set sql(1) { CREATE OR REPLACE FUNCTION DBMS_RANDOM (INTEGER, INTEGER) RETURNS INTEGER AS $$
@@ -432,10 +432,10 @@ END; }
 set sql(6) { CREATE OR REPLACE PROCEDURE SLEV (
 st_w_id			INTEGER,
 st_d_id			INTEGER,
-threshold		INTEGER )
+threshold		INTEGER,
+stock_count		OUT INTEGER )
 IS 
 st_o_id			NUMBER;	
-stock_count		INTEGER;
 BEGIN
 SELECT d_next_o_id INTO st_o_id
 FROM district
@@ -460,6 +460,438 @@ pg_result $result -clear
 	}
     }
 } else {
+if { $pg_storedprocs eq "true" } {
+set sql(1) { CREATE OR REPLACE FUNCTION DBMS_RANDOM (INTEGER, INTEGER) RETURNS INTEGER AS $$
+DECLARE
+    start_int ALIAS FOR $1;
+    end_int ALIAS FOR $2;
+BEGIN
+    RETURN trunc(random() * (end_int-start_int) + start_int);
+END;
+$$ LANGUAGE 'plpgsql' STRICT;
+}
+set sql(2) {CREATE OR REPLACE PROCEDURE NEWORD (
+no_w_id         IN INTEGER,
+no_max_w_id     IN INTEGER,
+no_d_id         IN INTEGER,
+no_c_id         IN INTEGER,
+no_o_ol_cnt             IN INTEGER,
+no_c_discount           INOUT NUMERIC,
+no_c_last               INOUT VARCHAR,
+no_c_credit             INOUT VARCHAR,
+no_d_tax                INOUT NUMERIC,
+no_w_tax                INOUT NUMERIC,
+no_d_next_o_id          INOUT INTEGER,
+tstamp          IN TIMESTAMP )
+AS $$
+DECLARE
+no_ol_supply_w_id       INTEGER;
+no_ol_i_id              NUMERIC;
+no_ol_quantity          NUMERIC;
+no_o_all_local          INTEGER;
+o_id                    INTEGER;
+no_i_name               VARCHAR(24);
+no_i_price              NUMERIC(5,2);
+no_i_data               VARCHAR(50);
+no_s_quantity           NUMERIC(6);
+no_ol_amount            NUMERIC(6,2);
+no_s_dist_01            CHAR(24);
+no_s_dist_02            CHAR(24);
+no_s_dist_03            CHAR(24);
+no_s_dist_04            CHAR(24);
+no_s_dist_05            CHAR(24);
+no_s_dist_06            CHAR(24);
+no_s_dist_07            CHAR(24);
+no_s_dist_08            CHAR(24);
+no_s_dist_09            CHAR(24);
+no_s_dist_10            CHAR(24);
+no_ol_dist_info         CHAR(24);
+no_s_data               VARCHAR(50);
+x                       NUMERIC;
+rbk                     NUMERIC;
+BEGIN
+--assignment below added due to error in appendix code
+no_o_all_local := 0;
+SELECT c_discount, c_last, c_credit, w_tax
+INTO no_c_discount, no_c_last, no_c_credit, no_w_tax
+FROM customer, warehouse
+WHERE warehouse.w_id = no_w_id AND customer.c_w_id = no_w_id AND
+customer.c_d_id = no_d_id AND customer.c_id = no_c_id;
+UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax;
+o_id := no_d_next_o_id;
+INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, current_timestamp, no_o_ol_cnt, no_o_all_local);
+INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
+--#2.4.1.4
+rbk := round(DBMS_RANDOM(1,100));
+--#2.4.1.5
+FOR loop_counter IN 1 .. no_o_ol_cnt
+LOOP
+IF ((loop_counter = no_o_ol_cnt) AND (rbk = 1))
+THEN
+no_ol_i_id := 100001;
+ELSE
+no_ol_i_id := round(DBMS_RANDOM(1,100000));
+END IF;
+--#2.4.1.5.2
+x := round(DBMS_RANDOM(1,100));
+IF ( x > 1 )
+THEN
+no_ol_supply_w_id := no_w_id;
+ELSE
+no_ol_supply_w_id := no_w_id;
+--no_all_local is actually used before this point so following not beneficial
+no_o_all_local := 0;
+WHILE ((no_ol_supply_w_id = no_w_id) AND (no_max_w_id != 1))
+LOOP
+no_ol_supply_w_id := round(DBMS_RANDOM(1,no_max_w_id));
+END LOOP;
+END IF;
+--#2.4.1.5.3
+no_ol_quantity := round(DBMS_RANDOM(1,10));
+SELECT i_price, i_name, i_data INTO no_i_price, no_i_name, no_i_data
+FROM item WHERE i_id = no_ol_i_id;
+SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
+INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10 FROM stock WHERE s_i_id = no_ol_i_id AND s_w_id = no_ol_supply_w_id;
+IF ( no_s_quantity > no_ol_quantity )
+THEN
+no_s_quantity := ( no_s_quantity - no_ol_quantity );
+ELSE
+no_s_quantity := ( no_s_quantity - no_ol_quantity + 91 );
+END IF;
+UPDATE stock SET s_quantity = no_s_quantity
+WHERE s_i_id = no_ol_i_id
+AND s_w_id = no_ol_supply_w_id;
+
+no_ol_amount := (  no_ol_quantity * no_i_price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) );
+
+IF no_d_id = 1
+THEN
+no_ol_dist_info := no_s_dist_01;
+
+ELSIF no_d_id = 2
+THEN
+no_ol_dist_info := no_s_dist_02;
+
+ELSIF no_d_id = 3
+THEN
+no_ol_dist_info := no_s_dist_03;
+
+ELSIF no_d_id = 4
+THEN
+no_ol_dist_info := no_s_dist_04;
+
+ELSIF no_d_id = 5
+THEN
+no_ol_dist_info := no_s_dist_05;
+
+ELSIF no_d_id = 6
+THEN
+no_ol_dist_info := no_s_dist_06;
+
+ELSIF no_d_id = 7
+THEN
+no_ol_dist_info := no_s_dist_07;
+
+ELSIF no_d_id = 8
+THEN
+no_ol_dist_info := no_s_dist_08;
+
+ELSIF no_d_id = 9
+THEN
+no_ol_dist_info := no_s_dist_09;
+
+ELSIF no_d_id = 10
+THEN
+no_ol_dist_info := no_s_dist_10;
+END IF;
+
+INSERT INTO order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)
+VALUES (o_id, no_d_id, no_w_id, loop_counter, no_ol_i_id, no_ol_supply_w_id, no_ol_quantity, no_ol_amount, no_ol_dist_info);
+
+END LOOP;
+EXCEPTION
+WHEN serialization_failure OR deadlock_detected OR no_data_found
+THEN ROLLBACK;
+--Cannot commit before exception handler
+COMMIT;
+END;
+$$
+LANGUAGE 'plpgsql';}
+set sql(3) {CREATE OR REPLACE PROCEDURE DELIVERY (
+d_w_id                IN INTEGER,
+d_o_carrier_id        IN  INTEGER,
+tstamp          IN TIMESTAMP )
+AS $$
+DECLARE
+d_no_o_id               INTEGER;
+d_d_id                  INTEGER;
+d_c_id                  NUMERIC;
+d_ol_total              NUMERIC;
+loop_counter            INTEGER;
+BEGIN
+FOR loop_counter IN 1 .. 10
+LOOP
+d_d_id := loop_counter;
+SELECT no_o_id INTO d_no_o_id FROM new_order WHERE no_w_id = d_w_id AND no_d_id = d_d_id ORDER BY no_o_id ASC LIMIT 1;
+DELETE FROM new_order WHERE no_w_id = d_w_id AND no_d_id = d_d_id AND no_o_id = d_no_o_id;
+SELECT o_c_id INTO d_c_id FROM orders
+WHERE o_id = d_no_o_id AND o_d_id = d_d_id AND
+o_w_id = d_w_id;
+ UPDATE orders SET o_carrier_id = d_o_carrier_id
+WHERE o_id = d_no_o_id AND o_d_id = d_d_id AND
+o_w_id = d_w_id;
+UPDATE order_line SET ol_delivery_d = current_timestamp
+WHERE ol_o_id = d_no_o_id AND ol_d_id = d_d_id AND
+ol_w_id = d_w_id;
+SELECT SUM(ol_amount) INTO d_ol_total
+FROM order_line
+WHERE ol_o_id = d_no_o_id AND ol_d_id = d_d_id
+AND ol_w_id = d_w_id;
+UPDATE customer SET c_balance = c_balance + d_ol_total
+WHERE c_id = d_c_id AND c_d_id = d_d_id AND
+c_w_id = d_w_id;
+RAISE NOTICE 'D: % O: % time %', d_d_id, d_no_o_id, tstamp;
+END LOOP;
+EXCEPTION
+WHEN serialization_failure OR deadlock_detected OR no_data_found
+THEN ROLLBACK;
+--Cannot commit before exception handler
+COMMIT;
+END; 
+$$
+LANGUAGE 'plpgsql';}
+set sql(4) {CREATE OR REPLACE PROCEDURE PAYMENT (
+p_w_id			IN INTEGER,
+p_d_id			IN INTEGER,	
+p_c_w_id		IN INTEGER,	
+p_c_d_id		IN INTEGER,	
+byname			IN INTEGER,
+p_h_amount		IN NUMERIC,
+p_c_credit              INOUT CHAR(2),
+p_c_last		INOUT VARCHAR(16),
+p_c_id			INOUT NUMERIC(5,0),
+p_w_street_1            INOUT VARCHAR(20),
+p_w_street_2            INOUT VARCHAR(20),
+p_w_city                INOUT VARCHAR(20),
+p_w_state               INOUT CHAR(2),
+p_w_zip                 INOUT CHAR(9),
+p_d_street_1            INOUT VARCHAR(20),
+p_d_street_2            INOUT VARCHAR(20),
+p_d_city                INOUT VARCHAR(20),
+p_d_state               INOUT CHAR(2),
+p_d_zip                 INOUT CHAR(9),
+p_c_first               INOUT VARCHAR(16),
+p_c_middle              INOUT CHAR(2),
+p_c_street_1            INOUT VARCHAR(20),
+p_c_street_2            INOUT VARCHAR(20),
+p_c_city                INOUT VARCHAR(20),
+p_c_state               INOUT CHAR(2),
+p_c_zip                 INOUT CHAR(9),
+p_c_phone               INOUT CHAR(16),
+p_c_since		INOUT TIMESTAMP,
+p_c_credit_lim          INOUT NUMERIC(12,2),
+p_c_discount            INOUT NUMERIC(4,4),
+p_c_balance             INOUT NUMERIC(12,2),
+p_c_data                INOUT VARCHAR(500),
+tstamp			IN TIMESTAMP)
+AS $$
+DECLARE
+namecnt			INTEGER;
+p_d_name		VARCHAR(11);
+p_w_name		VARCHAR(11);
+p_c_new_data		VARCHAR(500);
+h_data			VARCHAR(30);
+c_byname CURSOR FOR
+SELECT c_first, c_middle, c_id,
+c_street_1, c_street_2, c_city, c_state, c_zip,
+c_phone, c_credit, c_credit_lim,
+c_discount, c_balance, c_since
+FROM customer
+WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_last = p_c_last
+ORDER BY c_first;
+BEGIN
+UPDATE warehouse SET w_ytd = w_ytd + p_h_amount
+WHERE w_id = p_w_id;
+SELECT w_street_1, w_street_2, w_city, w_state, w_zip, w_name
+INTO p_w_street_1, p_w_street_2, p_w_city, p_w_state, p_w_zip, p_w_name
+FROM warehouse
+WHERE w_id = p_w_id;
+UPDATE district SET d_ytd = d_ytd + p_h_amount
+WHERE d_w_id = p_w_id AND d_id = p_d_id;
+SELECT d_street_1, d_street_2, d_city, d_state, d_zip, d_name
+INTO p_d_street_1, p_d_street_2, p_d_city, p_d_state, p_d_zip, p_d_name
+FROM district
+WHERE d_w_id = p_w_id AND d_id = p_d_id;
+IF ( byname = 1 )
+THEN
+SELECT count(c_id) INTO namecnt
+FROM customer
+WHERE c_last = p_c_last AND c_d_id = p_c_d_id AND c_w_id = p_c_w_id;
+OPEN c_byname;
+IF ( MOD (namecnt, 2) = 1 )
+THEN
+namecnt := (namecnt + 1);
+END IF;
+FOR loop_counter IN 0 .. cast((namecnt/2) AS INTEGER)
+LOOP
+FETCH c_byname
+INTO p_c_first, p_c_middle, p_c_id, p_c_street_1, p_c_street_2, p_c_city,
+p_c_state, p_c_zip, p_c_phone, p_c_credit, p_c_credit_lim, p_c_discount, p_c_balance, p_c_since;
+END LOOP;
+CLOSE c_byname;
+ELSE
+SELECT c_first, c_middle, c_last,
+c_street_1, c_street_2, c_city, c_state, c_zip,
+c_phone, c_credit, c_credit_lim,
+c_discount, c_balance, c_since
+INTO p_c_first, p_c_middle, p_c_last,
+p_c_street_1, p_c_street_2, p_c_city, p_c_state, p_c_zip,
+p_c_phone, p_c_credit, p_c_credit_lim,
+p_c_discount, p_c_balance, p_c_since
+FROM customer
+WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id;
+END IF;
+p_c_balance := ( p_c_balance + p_h_amount );
+IF p_c_credit = 'BC' 
+THEN
+ SELECT c_data INTO p_c_data
+FROM customer
+WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id;
+h_data := p_w_name || ' ' || p_d_name;
+p_c_new_data := (p_c_id || ' ' || p_c_d_id || ' ' || p_c_w_id || ' ' || p_d_id || ' ' || p_w_id || ' ' || TO_CHAR(p_h_amount,'9999.99') || TO_CHAR(tstamp,'YYYYMMDDHH24MISS') || h_data);
+p_c_new_data := substr(CONCAT(p_c_new_data,p_c_data),1,500-(LENGTH(p_c_new_data)));
+UPDATE customer
+SET c_balance = p_c_balance, c_data = p_c_new_data
+WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND
+c_id = p_c_id;
+ELSE
+UPDATE customer SET c_balance = p_c_balance
+WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND
+c_id = p_c_id;
+END IF;
+h_data := p_w_name || ' ' || p_d_name;
+INSERT INTO history (h_c_d_id, h_c_w_id, h_c_id, h_d_id,
+h_w_id, h_date, h_amount, h_data)
+VALUES (p_c_d_id, p_c_w_id, p_c_id, p_d_id,
+p_w_id, tstamp, p_h_amount, h_data);
+EXCEPTION
+WHEN serialization_failure OR deadlock_detected OR no_data_found
+THEN ROLLBACK;
+--Cannot commit before exception handler
+COMMIT;
+END; 
+$$
+LANGUAGE 'plpgsql';}
+set sql(5) {CREATE OR REPLACE PROCEDURE OSTAT (
+os_w_id			IN INTEGER,
+os_d_id			IN INTEGER,
+os_c_id			INOUT INTEGER,
+byname			IN INTEGER,
+os_c_last		INOUT VARCHAR,
+os_c_first		INOUT VARCHAR,
+os_c_middle		INOUT VARCHAR,
+os_c_balance		INOUT NUMERIC,
+os_o_id			INOUT INTEGER,
+os_entdate		INOUT TIMESTAMP,
+os_o_carrier_id		INOUT INTEGER, 
+os_c_line		INOUT TEXT DEFAULT '')
+AS $$
+DECLARE
+out_os_c_id	INTEGER;
+out_os_c_last	VARCHAR;
+os_c_first	VARCHAR;
+os_c_middle	VARCHAR;
+os_c_balance	NUMERIC;
+os_o_id		INTEGER;
+os_entdate	TIMESTAMP;
+os_o_carrier_id	INTEGER;
+os_ol		RECORD;
+namecnt		INTEGER;
+c_name CURSOR FOR
+SELECT c_balance, c_first, c_middle, c_id
+FROM customer
+WHERE c_last = os_c_last AND c_d_id = os_d_id AND c_w_id = os_w_id
+ORDER BY c_first;
+c_line CURSOR FOR
+SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d
+FROM order_line
+WHERE ol_o_id = os_o_id AND ol_d_id = os_d_id AND ol_w_id = os_w_id;
+BEGIN
+IF ( byname = 1 )
+THEN
+SELECT count(c_id) INTO namecnt
+FROM customer
+WHERE c_last = os_c_last AND c_d_id = os_d_id AND c_w_id = os_w_id;
+IF ( MOD (namecnt, 2) = 1 )
+THEN
+namecnt := (namecnt + 1);
+END IF;
+OPEN c_name;
+FOR loop_counter IN 0 .. cast((namecnt/2) AS INTEGER)
+LOOP
+FETCH c_name  
+INTO os_c_balance, os_c_first, os_c_middle, os_c_id;
+END LOOP;
+close c_name;
+ELSE
+SELECT c_balance, c_first, c_middle, c_last
+INTO os_c_balance, os_c_first, os_c_middle, os_c_last
+FROM customer
+WHERE c_id = os_c_id AND c_d_id = os_d_id AND c_w_id = os_w_id;
+END IF;
+SELECT o_id, o_carrier_id, o_entry_d 
+INTO os_o_id, os_o_carrier_id, os_entdate
+FROM
+(SELECT o_id, o_carrier_id, o_entry_d
+FROM orders where o_d_id = os_d_id AND o_w_id = os_w_id and o_c_id=os_c_id
+ORDER BY o_id DESC) AS SUBQUERY
+LIMIT 1;
+IF NOT FOUND THEN
+RAISE NOTICE 'No orders for customer';
+RETURN;
+END IF;
+OPEN c_line;
+LOOP
+FETCH c_line INTO os_ol;
+EXIT WHEN NOT FOUND;
+os_c_line := os_c_line || ',' || os_ol.ol_i_id || ',' || os_ol.ol_supply_w_id || ',' || os_ol.ol_quantity || ',' || os_ol.ol_amount || ',' || os_ol.ol_delivery_d;
+END LOOP;
+close c_line;
+EXCEPTION
+WHEN serialization_failure OR deadlock_detected OR no_data_found
+THEN ROLLBACK;
+--Cannot commit before exception handler
+COMMIT;
+END; 
+$$
+LANGUAGE 'plpgsql';}
+set sql(6) {CREATE OR REPLACE PROCEDURE SLEV (
+st_w_id			IN INTEGER,
+st_d_id			IN INTEGER,
+threshold		IN INTEGER,
+stock_count		INOUT INTEGER )
+AS $$
+DECLARE
+st_o_id			NUMERIC;	
+BEGIN
+SELECT d_next_o_id INTO st_o_id
+FROM district
+WHERE d_w_id=st_w_id AND d_id=st_d_id;
+SELECT COUNT(DISTINCT (s_i_id)) INTO stock_count
+FROM order_line, stock
+WHERE ol_w_id = st_w_id AND
+ol_d_id = st_d_id AND (ol_o_id < st_o_id) AND
+ol_o_id >= (st_o_id - 20) AND s_w_id = st_w_id AND
+s_i_id = ol_i_id AND s_quantity < threshold;
+EXCEPTION
+WHEN serialization_failure OR deadlock_detected OR no_data_found
+THEN ROLLBACK;
+--Cannot commit before exception handler
+COMMIT;
+END; 
+$$
+LANGUAGE 'plpgsql';}
+	} else {
 set sql(1) { CREATE OR REPLACE FUNCTION DBMS_RANDOM (INTEGER, INTEGER) RETURNS INTEGER AS $$
 DECLARE
     start_int ALIAS FOR $1;
@@ -873,6 +1305,7 @@ THEN ROLLBACK;
 END; 
 ' LANGUAGE 'plpgsql';
 	}
+    }
 for { set i 1 } { $i <= 6 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
@@ -880,7 +1313,7 @@ error "[pg_result $result -error]"
 	} else {
 pg_result $result -clear
 	}
-    }
+   }
 }
 return
 }
@@ -1348,7 +1781,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	pg_result $result -clear
 	return
 }
-proc do_tpcc { host port count_ware superuser superuser_password defaultdb db user password ora_compatible num_vu } {
+proc do_tpcc { host port count_ware superuser superuser_password defaultdb db user password ora_compatible pg_storedprocs num_vu } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -1457,15 +1890,15 @@ tsv::lreplace common thrdlst $myposition $myposition done
 }
 if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 CreateIndexes $lda
-CreateStoredProcs $lda $ora_compatible
+CreateStoredProcs $lda $ora_compatible $pg_storedprocs
 GatherStatistics $lda 
 puts "[ string toupper $user ] SCHEMA COMPLETE"
 pg_disconnect $lda
 return
-	}
-    }
+       }
+   }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_storedprocs $pg_num_vu"
 	} else { return }
 }
 
@@ -1488,6 +1921,7 @@ set total_iterations $pg_total_iterations ;# Number of transactions before loggi
 set RAISEERROR \"$pg_raiseerror\" ;# Exit script on PostgreSQL (true or false)
 set KEYANDTHINK \"$pg_keyandthink\" ;# Time for user thinking and keying (true or false)
 set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
+set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set user \"$pg_user\" ;# PostgreSQL user
@@ -1524,7 +1958,7 @@ pg_result $result -clear
 return $lda
 }
 #NEW ORDER
-proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible } {
+proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
 #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
 set no_d_id [ RandomNumber 1 10 ]
 #2.4.1.2 Customer id randomly selected where c_d_id = d_id and c_w_id = w_id
@@ -1536,7 +1970,11 @@ set date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0,TO_TIMESTAMP($date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0.0,'','',0.0,0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
+	} else {
 set result [pg_exec $lda "select neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0)" ]
+	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -1551,7 +1989,7 @@ pg_result $result -clear
 	}
 }
 #PAYMENT
-proc payment { lda p_w_id w_id_input RAISEERROR ora_compatible } {
+proc payment { lda p_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
 #2.5.1.1 The home warehouse id remains the same for each terminal
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
 set p_d_id [ RandomNumber 1 10 ]
@@ -1590,7 +2028,11 @@ set h_date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0,TO_TIMESTAMP($h_date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$byname,$p_h_amount,'0','$name',$p_c_id,'','','','','','','','','','','','','','','','','','',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone,0.0,0.0,0.0,'',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
+	} else {
 set result [pg_exec $lda "select payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0)" ]
+	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -1605,7 +2047,7 @@ pg_result $result -clear
 	}
 }
 #ORDER_STATUS
-proc ostat { lda w_id RAISEERROR ora_compatible } {
+proc ostat { lda w_id RAISEERROR ora_compatible pg_storedprocs } {
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
 set d_id [ RandomNumber 1 10 ]
 set nrnd [ NURand 255 0 999 123 ]
@@ -1621,7 +2063,12 @@ set name {}
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec ostat($w_id,$d_id,$c_id,$byname,'$name')" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set date [ gettimestamp ]
+set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ] 
+	} else {
 set result [pg_exec $lda "select * from ostat($w_id,$d_id,$c_id,$byname,'$name') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)" ]
+	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -1636,13 +2083,17 @@ pg_result $result -clear
 	}
 }
 #DELIVERY
-proc delivery { lda w_id RAISEERROR ora_compatible } {
+proc delivery { lda w_id RAISEERROR ora_compatible pg_storedprocs } {
 set carrier_id [ RandomNumber 1 10 ]
 set date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ] 
+	} else {
 set result [pg_exec $lda "select delivery($w_id,$carrier_id)" ]
+	}
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
 if { $RAISEERROR } {
@@ -1657,12 +2108,16 @@ pg_result $result -clear
 	}
 }
 #STOCK LEVEL
-proc slev { lda w_id stock_level_d_id RAISEERROR ora_compatible } {
+proc slev { lda w_id stock_level_d_id RAISEERROR ora_compatible pg_storedprocs } {
 set threshold [ RandomNumber 10 20 ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec slev($w_id,$stock_level_d_id,$threshold)" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call slev($w_id,$stock_level_d_id,$threshold,0)"]
+	} else {
 set result [pg_exec $lda "select slev($w_id,$stock_level_d_id,$threshold)" ]
+	}
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
 if { $RAISEERROR } {
@@ -1703,27 +2158,27 @@ set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 puts "new order"
 if { $KEYANDTHINK } { keytime 18 }
-neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible
+neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 12 }
 } elseif {$choice <= 20} {
 puts "payment"
 if { $KEYANDTHINK } { keytime 3 }
-payment $lda $w_id $w_id_input $RAISEERROR $ora_compatible
+payment $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 12 }
 } elseif {$choice <= 21} {
 puts "delivery"
 if { $KEYANDTHINK } { keytime 2 }
-delivery $lda $w_id $RAISEERROR $ora_compatible
+delivery $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 10 }
 } elseif {$choice <= 22} {
 puts "stock level"
 if { $KEYANDTHINK } { keytime 2 }
-slev $lda $w_id $stock_level_d_id $RAISEERROR $ora_compatible
+slev $lda $w_id $stock_level_d_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 5 }
 } elseif {$choice <= 23} {
 puts "order status"
 if { $KEYANDTHINK } { keytime 2 }
-ostat $lda $w_id $RAISEERROR $ora_compatible
+ostat $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
@@ -1755,6 +2210,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set VACUUM \"$pg_vacuum\" ;# Perform checkpoint and vacuuum when complete (true or false)
 set DRITA_SNAPSHOTS \"$pg_dritasnap\";#Take DRITA Snapshots
 set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
+set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
 set superuser \"$pg_superuser\" ;# Superuser privilege user
@@ -1927,7 +2383,7 @@ set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
 return $tstamp
 }
 #NEW ORDER
-proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible } {
+proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
 #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
 set no_d_id [ RandomNumber 1 10 ]
 #2.4.1.2 Customer id randomly selected where c_d_id = d_id and c_w_id = w_id
@@ -1939,7 +2395,11 @@ set date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0,TO_TIMESTAMP($date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0.0,'','',0.0,0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
+        } else {
 set result [pg_exec $lda "select neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0)" ]
+        }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -1953,7 +2413,7 @@ pg_result $result -clear
 	}
 }
 #PAYMENT
-proc payment { lda p_w_id w_id_input RAISEERROR ora_compatible } {
+proc payment { lda p_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
 #2.5.1.1 The home warehouse id remains the same for each terminal
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
 set p_d_id [ RandomNumber 1 10 ]
@@ -1992,7 +2452,11 @@ set h_date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0,TO_TIMESTAMP($h_date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$byname,$p_h_amount,'0','$name',$p_c_id,'','','','','','','','','','','','','','','','','','',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone,0.0,0.0,0.0,'',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
+        } else {
 set result [pg_exec $lda "select payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0)" ]
+        }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -2006,7 +2470,7 @@ pg_result $result -clear
 	}
 }
 #ORDER_STATUS
-proc ostat { lda w_id RAISEERROR ora_compatible } {
+proc ostat { lda w_id RAISEERROR ora_compatible pg_storedprocs } {
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
 set d_id [ RandomNumber 1 10 ]
 set nrnd [ NURand 255 0 999 123 ]
@@ -2022,7 +2486,12 @@ set name {}
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec ostat($w_id,$d_id,$c_id,$byname,'$name')" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set date [ gettimestamp ]
+set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ]
+        } else {
 set result [pg_exec $lda "select * from ostat($w_id,$d_id,$c_id,$byname,'$name') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)" ]
+        }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
 if { $RAISEERROR } {
@@ -2036,13 +2505,17 @@ pg_result $result -clear
 	}
 }
 #DELIVERY
-proc delivery { lda w_id RAISEERROR ora_compatible } {
+proc delivery { lda w_id RAISEERROR ora_compatible pg_storedprocs } {
 set carrier_id [ RandomNumber 1 10 ]
 set date [ gettimestamp ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YYYYMMDDHH24MISS'))" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
+        } else {
 set result [pg_exec $lda "select delivery($w_id,$carrier_id)" ]
+        }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
 if { $RAISEERROR } {
@@ -2056,12 +2529,16 @@ pg_result $result -clear
 	}
 }
 #STOCK LEVEL
-proc slev { lda w_id stock_level_d_id RAISEERROR ora_compatible } {
+proc slev { lda w_id stock_level_d_id RAISEERROR ora_compatible pg_storedprocs } {
 set threshold [ RandomNumber 10 20 ]
 if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec slev($w_id,$stock_level_d_id,$threshold)" ]
 } else {
+if { $pg_storedprocs eq "true" } {
+set result [pg_exec $lda "call slev($w_id,$stock_level_d_id,$threshold,0)"]
+        } else {
 set result [pg_exec $lda "select slev($w_id,$stock_level_d_id,$threshold)" ]
+        }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
 if { $RAISEERROR } {
@@ -2100,23 +2577,23 @@ if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application ab
 set choice [ RandomNumber 1 23 ]
 if {$choice <= 10} {
 if { $KEYANDTHINK } { keytime 18 }
-neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible
+neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 12 }
 } elseif {$choice <= 20} {
 if { $KEYANDTHINK } { keytime 3 }
-payment $lda $w_id $w_id_input $RAISEERROR $ora_compatible
+payment $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 12 }
 } elseif {$choice <= 21} {
 if { $KEYANDTHINK } { keytime 2 }
-delivery $lda $w_id $RAISEERROR $ora_compatible
+delivery $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 10 }
 } elseif {$choice <= 22} {
 if { $KEYANDTHINK } { keytime 2 }
-slev $lda $w_id $stock_level_d_id $RAISEERROR $ora_compatible
+slev $lda $w_id $stock_level_d_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 5 }
 } elseif {$choice <= 23} {
 if { $KEYANDTHINK } { keytime 2 }
-ostat $lda $w_id $RAISEERROR $ora_compatible
+ostat $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
 if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
