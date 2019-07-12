@@ -1898,7 +1898,7 @@ return
        }
    }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_user $pg_pass $pg_dbase $pg_oracompat $pg_storedprocs $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
 	} else { return }
 }
 
