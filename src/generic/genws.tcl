@@ -386,6 +386,7 @@ proc wapp-default {} {
     <pre><b>GET db</b>: Show the configured database.
 get http://localhost:8080/print?db / get http://localhost:8080/db
 {
+  \"current\": \"Oracle\",
   \"ora\": \"Oracle\",
   \"mssqls\": \"MSSQLServer\",
   \"db2\": \"Db2\",
@@ -644,7 +645,9 @@ proc wapp-page-env {} {
 }
 
 proc wapp-page-db {} {
+global rdbms
 upvar #0 dbdict dbdict
+dict append dbl "current" $rdbms
 dict for {database attributes} $dbdict {
 dict with attributes {
 dict append dbl $prefix $name
