@@ -1014,7 +1014,7 @@ global _ED
 upvar #0 dbdict dbdict
 if {[dict exists $dbdict mysql library ]} {
 set library [ dict get $dbdict mysql library ]
-} else { set library "mysql" }
+} else { set library "mysqltcl" }
 upvar #0 configmysql configmysql
 #set variables to values in dict
 setlocaltpccvars $configmysql
@@ -1222,7 +1222,7 @@ global opmode _ED
 upvar #0 dbdict dbdict
 if {[dict exists $dbdict mysql library ]} {
 set library [ dict get $dbdict mysql library ]
-} else { set library "mysql" }
+} else { set library "mysqltcl" }
 upvar #0 configmysql configmysql
 #set variables to values in dict
 setlocaltpccvars $configmysql
