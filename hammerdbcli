@@ -35,7 +35,7 @@ set UserDefaultDir [ file dirname [ info script ] ]
 namespace eval autostart {
     set autostartap "false"
     if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+    if {$argc < 2 || [lindex $argv 0] != "auto" } {
 puts {Usage: hammerdbcli [ auto [ script_to_autoload.tcl  ] ]}
 exit
 	} else {
