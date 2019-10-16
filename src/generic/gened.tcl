@@ -3079,16 +3079,22 @@ eval $command
 set allw [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *allwarehouse ]
 if { $allw != "" } {
 set db_allwarehouse [ dict get [ set $dictname ] tpcc $allw ]
-if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" }
+set asyscl [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *async_scale ]
+if { $asyscl != "" } {
+set db_async_scale [ dict get [ set $dictname ] tpcc $asyscl ]
+	} else {
+set db_async_scale "false"
+	}
+if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
 	}
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-if { $db_timeprofile } { shared_tpcc_functions "timeprofile" }
+if { $db_timeprofile } { shared_tpcc_functions "timeprofile" "false" }
 	}
 break
     }
- }
+  }
 applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 }
 

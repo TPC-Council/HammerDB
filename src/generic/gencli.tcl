@@ -1,7 +1,6 @@
 set opmode "Local"
 set table "notable"
 set suppo 1
-set optlog 0
 set _ED(package) ""
 set _ED(packagekeyname) ""
 namespace eval ttk {
@@ -1010,29 +1009,36 @@ proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 set _ED(packagekeyname) "TPC-C"
+ed_status_message -show "TPC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
-if { [ dict get $dbdict $key name ] eq $rdbms } { 
+if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
 upvar #0 $dictname $dictname
 set prefix [ dict get $dbdict $key prefix ]
 set drivername [ concat [subst {$prefix}]_driver ]
 set drivertype [ dict get [ set $dictname ] tpcc $drivername ]
-if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" } 
+if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" }
 set command [ concat [subst {$lprefix$prefix}]tpcc ]
 eval $command
 set allw [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *allwarehouse ]
 if { $allw != "" } {
 set db_allwarehouse [ dict get [ set $dictname ] tpcc $allw ]
-if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" }
-	}
+set asyscl [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *async_scale ]
+if { $asyscl != "" } {
+set db_async_scale [ dict get [ set $dictname ] tpcc $asyscl ]
+        } else {
+set db_async_scale "false"
+        }
+if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
+        }
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-if { $db_timeprofile } { shared_tpcc_functions "timeprofile" }
-	}
+if { $db_timeprofile } { shared_tpcc_functions "timeprofile" "false" }
+        }
 break
     }
- }
+  }
 }
 
 proc loadtpch {} {

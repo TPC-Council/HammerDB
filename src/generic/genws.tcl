@@ -293,29 +293,36 @@ proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 set _ED(packagekeyname) "TPC-C"
+ed_status_message -show "TPC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
-if { [ dict get $dbdict $key name ] eq $rdbms } { 
+if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
 upvar #0 $dictname $dictname
 set prefix [ dict get $dbdict $key prefix ]
 set drivername [ concat [subst {$prefix}]_driver ]
 set drivertype [ dict get [ set $dictname ] tpcc $drivername ]
-if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" } 
+if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" }
 set command [ concat [subst {$lprefix$prefix}]tpcc ]
 eval $command
 set allw [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *allwarehouse ]
 if { $allw != "" } {
 set db_allwarehouse [ dict get [ set $dictname ] tpcc $allw ]
-if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" }
-	}
+set asyscl [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *async_scale ]
+if { $asyscl != "" } {
+set db_async_scale [ dict get [ set $dictname ] tpcc $asyscl ]
+        } else {
+set db_async_scale "false"
+        }
+if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
+        }
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-if { $db_timeprofile } { shared_tpcc_functions "timeprofile" }
-	}
+if { $db_timeprofile } { shared_tpcc_functions "timeprofile" "false" }
+        }
 break
     }
- }
+  }
 }
 
 proc loadtpch {} {
@@ -433,7 +440,7 @@ get http://localhost:8080/print?dict /  http://localhost:8080/dict
 <br> 
 <b>GET script</b>: Show the loaded script.
 get http://localhost:8080/print?script / http://localhost:8080/script
-{\"script\": \"#!\/usr\/local\/bin\/tclsh8.6\n#TIMED AWR SNAPSHOT DRIVER SCRIPT##################################\n#THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED\n#EDITABLE OPTIONS##################################################\nset library Oratcl ;# Oracle OCI Library\nset total_iterations 1000000 ;# Number of transactions before logging off\nset RAISEERROR \\"false\\" ;# Exit script on Oracle error (true or false)\nset KEYANDTHINK \\"false\\" ;# Time for user thinking and keying (true or false)\nset CHECKPOINT \\"false\\" ;# Perform Oracle checkpoint when complete (true or false)\nset rampup 2;  # Rampup time in minutes before first snapshot is taken\nset duration 5;  # Duration in minutes before second AWR snapshot is taken\nset mode \\"Local\\" ;# HammerDB operational mode\nset timesten \\"false\\" ;# Database is TimesTen\nset systemconnect system\/manager@oracle ;# Oracle connect string for system user\nset connect tpcc\/new_password@oracle ;# Oracle connect string for tpc-c user\n#EDITABLE OPTIONS##################################################\n#LOAD LIBRARIES AND MODULES &#8230;. \n\"}
+{\"script\": \"#!\/usr\/local\/bin\/tclsh8.6\n#EDITABLE OPTIONS##################################################\nset library Oratcl ;# Oracle OCI Library\nset total_iterations 1000000 ;# Number of transactions before logging off\nset RAISEERROR \\"false\\" ;# Exit script on Oracle error (true or false)\nset KEYANDTHINK \\"false\\" ;# Time for user thinking and keying (true or false)\nset CHECKPOINT \\"false\\" ;# Perform Oracle checkpoint when complete (true or false)\nset rampup 2;  # Rampup time in minutes before first snapshot is taken\nset duration 5;  # Duration in minutes before second AWR snapshot is taken\nset mode \\"Local\\" ;# HammerDB operational mode\nset timesten \\"false\\" ;# Database is TimesTen\nset systemconnect system\/manager@oracle ;# Oracle connect string for system user\nset connect tpcc\/new_password@oracle ;# Oracle connect string for tpc-c user\n#EDITABLE OPTIONS##################################################\n#LOAD LIBRARIES AND MODULES &#8230;. \n\"}
 <br> 
 <b>GET vuconf</b>: Show the virtual user configuration.
 get http://localhost:8080/print?vuconf / http://localhost:8080/vuconf

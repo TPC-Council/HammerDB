@@ -13,9 +13,9 @@
 	<name>MSSQLServer</name>
 	<description>SQL Server</description>
 	<prefix>mssqls</prefix>
-	<library>tclodbc 2.5.2</library>
+	<library>tdbc::odbc 1.0.6</library>
 	<workloads>TPC-C TPC-H</workloads>
-	<commands>database odbc</commands>
+	<commands>odbc execute paramtype prepare connection allrows</commands>
 </mssqlserver>
 <db2>
 	<name>Db2</name>

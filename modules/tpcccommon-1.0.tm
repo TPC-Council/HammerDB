@@ -1,6 +1,6 @@
 package provide tpcccommon 1.0
 namespace eval tpcccommon {
-namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime
+namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime async_keytime async_thinktime async_time
 #gettimestamp not included as uses different formats per database
 #TPCC BUILD PROCEDURES
 proc chk_thread {} {
@@ -120,4 +120,31 @@ set thinkingtime [ expr {abs(round(log(rand()) * $thinking))} ]
 after [ expr {$thinkingtime * 1000} ]
 return
 }
+#ASYNCH TIME
+proc async_time { ast } {  
+promise::await [promise::ptimer $ast]
+	}
+#ASYNCH KEYING TIME
+proc async_keytime { keyt clientname callingproc async_verbose } {
+if { $async_verbose } { 
+set TIME_start [clock clicks -milliseconds]
+async_time [ expr $keyt * 1000 ]
+set TIME_taken [expr ([clock clicks -milliseconds] - $TIME_start) /1000 ]
+puts "keytime:$callingproc:$clientname:$TIME_taken secs" 
+	} else {
+async_time [ expr $keyt * 1000 ]
+	}
+}
+#ASYNCH THINK TIME
+proc async_thinktime { thkt clientname callingproc async_verbose } {
+set as_thkt [ expr {abs(round(log(rand()) * $thkt))} ]
+if { $async_verbose } { 
+set TIME_start [clock clicks -milliseconds]
+async_time [ expr $as_thkt * 1000 ]
+set TIME_taken [expr ([clock clicks -milliseconds] - $TIME_start) /1000 ]
+puts "thinktime:$callingproc:$clientname:$TIME_taken secs"
+	} else {
+async_time [ expr $as_keyt * 1000 ]
+        }
+    }
 }

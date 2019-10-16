@@ -123,7 +123,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 #set matching fields in dialog to temporary dict
 variable myfields
-set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile} ]
+set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose} ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -251,6 +251,10 @@ set mysql_timeprofile "false"
 .tpc.f1.e18 configure -state disabled
 .tpc.f1.e19 configure -state disabled
 .tpc.f1.e20 configure -state disabled
+.tpc.f1.e21 configure -state disabled
+.tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable mysql_driver
@@ -260,6 +264,10 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e18 configure -state normal
 .tpc.f1.e19 configure -state normal
 .tpc.f1.e20 configure -state normal
+.tpc.f1.e21 configure -state normal
+.tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
 }
 set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
@@ -277,6 +285,17 @@ ttk::checkbutton $Name -text "" -variable mysql_raiseerror -onvalue "true" -offv
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e16
 ttk::checkbutton $Name -text "" -variable mysql_keyandthink -onvalue "true" -offvalue "false"
+bind .tpc.f1.e16 <Any-ButtonRelease> {
+if { $mysql_driver eq "timed" } {
+if { $mysql_keyandthink eq "true" } {
+set mysql_async_scale "false"
+set mysql_async_verbose "false"
+.tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+        }
+    }
+}
    grid $Prompt -column 0 -row 16 -sticky e
    grid $Name -column 1 -row 16 -sticky w
 set Name $Parent.f1.e17
@@ -315,6 +334,59 @@ ttk::checkbutton $Name -text "" -variable mysql_timeprofile -onvalue "true" -off
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
+   set Name $Parent.f1.e21
+   set Prompt $Parent.f1.p21
+   ttk::label $Prompt -text "Asynchronous Scaling :"
+ttk::checkbutton $Name -text "" -variable mysql_async_scale -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky ew
+if {$mysql_driver == "test" } {
+        set mysql_async_scale "false"
+        $Name configure -state disabled
+        }
+bind .tpc.f1.e21 <Any-ButtonRelease> {
+if { $mysql_async_scale eq "true" } {
+set mysql_async_verbose "false"
+.tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+        } else {
+if { $mysql_driver eq "timed" } {
+set mysql_keyandthink "true"
+.tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
+                }
+        }
+}
+set Name $Parent.f1.e22
+   set Prompt $Parent.f1.p22
+   ttk::label $Prompt -text "Asynch Clients per Virtual User :"
+   ttk::entry $Name -width 30 -textvariable mysql_async_client
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
+if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+set Name $Parent.f1.e23
+   set Prompt $Parent.f1.p23
+   ttk::label $Prompt -text "Asynch Client Login Delay :"
+   ttk::entry $Name -width 30 -textvariable mysql_async_delay
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
+if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+   set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Asynchronous Verbose :"
+ttk::checkbutton $Name -text "" -variable mysql_async_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
+        set mysql_async_verbose "false"
+        $Name configure -state disabled
+        }
 }
 #This is the Cancel button variables stay as before
 set Name $Parent.b2

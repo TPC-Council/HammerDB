@@ -1247,8 +1247,9 @@ set db2_monreport 0
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "Db2 TPC-C Timed"
+if { !$db2_async_scale } {
+#REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
 ##EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
@@ -1563,7 +1564,7 @@ set w_id  [ RandomNumber 1 $w_id_input ]
 set stmnt_handle2 [ db2_select_direct $db_handle "select max(d_id) from district" ] 
 set d_id_input [ db2_fetchrow $stmnt_handle2 ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
-puts "Processing $total_iterations transactions without output suppressed..."
+puts "Processing $total_iterations transactions with output suppressed..."
 set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
 if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
@@ -1606,4 +1607,408 @@ db2_finish $select_handle_dl
 db2_disconnect $db_handle
 	}
    }}
+} else {
+#ASYNCHRONOUS TIMED SCRIPT
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+##EDITABLE OPTIONS##################################################
+set library $library ;# Db2 Library
+set total_iterations $db2_total_iterations ;# Number of transactions before logging off
+set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 (true or false)
+set KEYANDTHINK \"$db2_keyandthink\" ;# Time for user thinking and keying (true or false)
+set rampup $db2_rampup;  # Rampup time in minutes before first Transaction Count is taken
+set duration $db2_duration;  # Duration in minutes before second Transaction Count is taken
+set monreportinterval $db2_monreport; #Portion of duration to capture monreport
+set mode \"$opmode\" ;# HammerDB operational mode
+set user \"$db2_user\" ;# Db2 user
+set password \"$db2_pass\" ;# Password for the Db2 user
+set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
+set async_client $db2_async_client;# Number of asynchronous clients per Vuser
+set async_verbose $db2_async_verbose;# Report activity of asynchronous clients
+set async_delay $db2_async_delay;# Delay in ms between logins of asynchronous clients
+#EDITABLE OPTIONS##################################################
+"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
+
+if { [ chk_thread ] eq "FALSE" } {
+error "Db2 Timed Script must be run in Thread Enabled Interpreter"
+}
+
+#Db2 CONNECTION
+proc ConnectToDb2 { dbname user password } {
+puts "Connecting to database $dbname"
+if {[catch {set db_handle [db2_connect $dbname $user $password]} message]} {
+error $message
+ } else {
+puts "Connection established"
+return $db_handle
+}}
+set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
+switch $myposition {
+1 {
+if { $mode eq "Local" || $mode eq "Master" } {
+set db_handle [ ConnectToDb2 $dbname $user $password ]
+set ramptime 0
+puts "Beginning rampup time of $rampup minutes"
+set rampup [ expr $rampup*60000 ]
+while {$ramptime != $rampup} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set ramptime [ expr $ramptime+6000 ]
+if { ![ expr {$ramptime % 60000} ] } {
+puts "Rampup [ expr $ramptime / 60000 ] minutes complete ..."
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Rampup complete, Taking start Transaction Count."
+set stmnt_handle1 [ db2_select_direct $db_handle "select total_app_commits + total_app_rollbacks from sysibmadm.mon_db_summary" ]
+set start_trans [ db2_fetchrow $stmnt_handle1 ]
+db2_finish $stmnt_handle1
+set stmnt_handle2 [ db2_select_direct $db_handle "select sum(d_next_o_id) from district" ]
+set start_nopm [ db2_fetchrow $stmnt_handle2 ]
+db2_finish $stmnt_handle2
+set durmin $duration
+set testtime 0
+set doingmonreport "false"
+if { $monreportinterval > 0 } { 
+if { $monreportinterval >= $duration } { 
+set monreportinterval 0 
+puts "Timing test period of $duration in minutes"
+	} else {
+set doingmonreport "true"
+set monreportsecs [ expr $monreportinterval * 60 ] 
+set duration [ expr $duration - $monreportinterval ]
+puts "Capturing MONREPORT DBSUMMARY for $monreportsecs seconds (This Virtual User cannot be terminated while capturing report)"
+set monreport_handle [ db2_select_direct $db_handle "call monreport.dbsummary($monreportsecs)" ]
+while {[set line [db2_fetchrow $monreport_handle]] != ""} {
+append monreport [ join $line ] 
+append monreport "\\n"
+}
+db2_finish $monreport_handle
+puts "MONREPORT duration complete"
+puts "Timing remaining test period of $duration in minutes"
+}}
+set duration [ expr $duration*60000 ]
+while {$testtime != $duration} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set testtime [ expr $testtime+6000 ]
+if { ![ expr {$testtime % 60000} ] } {
+puts -nonewline  "[ expr $testtime / 60000 ]  ...,"
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Test complete, Taking end Transaction Count."
+set stmnt_handle3 [ db2_select_direct $db_handle "select total_app_commits + total_app_rollbacks from sysibmadm.mon_db_summary" ]
+set end_trans [ db2_fetchrow $stmnt_handle3 ]
+db2_finish $stmnt_handle3
+set stmnt_handle4 [ db2_select_direct $db_handle "select sum(d_next_o_id) from district" ]
+set end_nopm [ db2_fetchrow $stmnt_handle4 ]
+db2_finish $stmnt_handle4
+set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
+set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
+puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
+puts "TEST RESULT : System achieved $tpm Db2 TPM at $nopm NOPM"
+if { $doingmonreport eq "true" } {
+puts "---MONREPORT OUTPUT---"
+puts $monreport
+	}
+tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+db2_disconnect $db_handle
+               } else {
+puts "Operating in Slave Mode, No Snapshots taken..."
+                }
+	    }
+default {
+#TIMESTAMP
+proc gettimestamp { } {
+set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
+return $tstamp
+}
+#Db2 CONNECTION
+proc ConnectToDb2Asynch { dbname user password RAISEERROR clientname async_verbose } {
+puts "Connecting to database $dbname"
+if {[catch {set db_handle [db2_connect $dbname $user $password]} message]} {
+if { $RAISEERROR } {
+puts "$clientname:login failed:$message"
+return "$clientname:login failed:$message"
+	} 
+ } else {
+if { $async_verbose } { puts "Connected $clientname:$db_handle" }
+return $db_handle
+}}
+#NEW ORDER
+proc neword { set_handle_no stmnt_handle_no select_handle_no no_w_id w_id_input RAISEERROR clientname } {
+#2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
+set no_d_id [ RandomNumber 1 10 ]
+#2.4.1.2 Customer id randomly selected where c_d_id = d_id and c_w_id = w_id
+set no_c_id [ RandomNumber 1 3000 ]
+#2.4.1.3 Items in the order randomly selected from 5 to 15
+set ol_cnt [ RandomNumber 5 15 ]
+#2.4.1.6 order entry date O_ENTRY_D generated by SUT
+set date [ gettimestamp ]
+db2_exec_prepared $set_handle_no
+if {[ catch {db2_bind_exec $stmnt_handle_no "$no_w_id $w_id_input $no_d_id $no_c_id $ol_cnt $date"} message]} {
+if {$RAISEERROR} {
+error "New Order in $clientname : $message"
+        } else {
+puts "New Order in $clientname : $message"
+	  }
+        } else {
+set stmnt_fetch [ db2_select_prepared $select_handle_no ]
+	}
+}
+#PAYMENT
+proc payment { set_handle_py stmnt_handle_py select_handle_py p_w_id w_id_input RAISEERROR clientname } {
+#2.5.1.1 The home warehouse id remains the same for each terminal
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set p_d_id [ RandomNumber 1 10 ]
+#2.5.1.2 customer selected 60% of time by name and 40% of time by number
+set x [ RandomNumber 1 100 ]
+set y [ RandomNumber 1 100 ]
+if { $x <= 85 } {
+set p_c_d_id $p_d_id
+set p_c_w_id $p_w_id
+} else {
+#use a remote warehouse
+set p_c_d_id [ RandomNumber 1 10 ]
+set p_c_w_id [ RandomNumber 1 $w_id_input ]
+while { ($p_c_w_id == $p_w_id) && ($w_id_input != 1) } {
+set p_c_w_id [ RandomNumber 1  $w_id_input ]
+	}
+}
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set p_c_id [ RandomNumber 1 3000 ]
+if { $y <= 60 } {
+#use customer name
+#C_LAST is generated
+set byname 1
+ } else {
+#use customer number
+set byname 0
+set name NULL
+ }
+#2.5.1.3 random amount from 1 to 5000
+set p_h_amount [ RandomNumber 1 5000 ]
+#2.5.1.4 date selected from SUT
+set h_date [ gettimestamp ]
+#2.5.2.1 Payment Transaction
+#change following to correct values
+db2_bind_exec $set_handle_py "$p_c_id $name"
+if {[ catch {db2_bind_exec $stmnt_handle_py "$p_w_id $p_d_id $p_c_w_id $p_c_d_id $byname $p_h_amount $h_date"} message]} {
+if {$RAISEERROR} {
+error "Payment in $clientname : $message"
+        } else {
+puts "Payment in $clientname : $message"
+	  }
+        } else {
+set stmnt_fetch [ db2_select_prepared $select_handle_py ]
+	}
+}
+#ORDER_STATUS
+proc ostat { set_handle_os stmnt_handle_os select_handle_os w_id RAISEERROR clientname } {
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set d_id [ RandomNumber 1 10 ]
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set c_id [ RandomNumber 1 3000 ]
+set y [ RandomNumber 1 100 ]
+if { $y <= 60 } {
+set byname 1
+ } else {
+set byname 0
+set name NULL
+}
+db2_bind_exec $set_handle_os "$c_id $name"
+if {[ catch {db2_bind_exec $stmnt_handle_os "$w_id $d_id $byname"} message]} {
+	if {$RAISEERROR} {
+error "Order Status in $clientname : $message"
+        } else {
+puts "Order Status in $clientname : $message"
+	  }
+        } else {
+set stmnt_fetch [ db2_select_prepared $select_handle_os ]
+	}
+}
+#DELIVERY
+proc delivery { stmnt_handle_dl select_handle_dl w_id RAISEERROR clientname } {
+set carrier_id [ RandomNumber 1 10 ]
+set date [ gettimestamp ]
+if {[ catch {db2_bind_exec $stmnt_handle_dl "$w_id $carrier_id $date"} message]} {
+	if {$RAISEERROR} {
+error "Delivery in $clientname : $message"
+        } else {
+puts "Delivery in $clientname : $message"
+	  }
+        } else {
+set stmnt_fetch [ db2_select_prepared $select_handle_dl ]
+	}
+}
+#STOCK LEVEL
+proc slev { stmnt_handle_sl select_handle_sl w_id stock_level_d_id RAISEERROR clientname } {
+set threshold [ RandomNumber 10 20 ]
+if {[ catch {db2_bind_exec $stmnt_handle_sl "$w_id $stock_level_d_id $threshold"} message]} {
+	if {$RAISEERROR} {
+error "Stock Level in $clientname : $message"
+        } else {
+puts "Stock Level in $clientname : $message"
+	  }
+        } else {
+set stmnt_fetch [ db2_select_prepared $select_handle_sl ]
+	}
+}
+
+proc prep_statement { db_handle handle_st } {
+set dummy "SYSIBM.SYSDUMMY1"
+switch $handle_st {
+stmnt_handle_sl {
+set stmnt_handle_sl [ db2_prepare $db_handle "CALL SLEV(?,?,?,stock_count)" ]
+return $stmnt_handle_sl
+}
+stmnt_handle_dl {
+set stmnt_handle_dl [ db2_prepare $db_handle "CALL DELIVERY(?,?,TIMESTAMP_FORMAT(?,'YYYYMMDDHH24MISS'),deliv_data)" ]
+return $stmnt_handle_dl
+}
+stmnt_handle_os {
+set stmnt_handle_os [ db2_prepare $db_handle "CALL OSTAT (?,?,os_c_id,?,os_c_last,os_c_first,os_c_middle,os_c_balance,os_o_id,os_entdate,os_o_carrier_id)" ]
+return $stmnt_handle_os
+	}
+stmnt_handle_py {
+set stmnt_handle_py [ db2_prepare $db_handle "CALL PAYMENT (?,?,?,?,p_c_id,?,?,p_c_last,p_w_street_1,p_w_street_2,p_w_city,p_w_state,p_w_zip,p_d_street_1,p_d_street_2,p_d_city,p_d_state,p_d_zip,p_c_first,p_c_middle,p_c_street_1,p_c_street_2,p_c_city,p_c_state,p_c_zip,p_c_phone,p_c_since,p_c_credit,p_c_credit_lim,p_c_discount,p_c_balance,p_c_data,TIMESTAMP_FORMAT(?,'YYYYMMDDHH24MISS'))" ]
+return $stmnt_handle_py
+	}
+stmnt_handle_no {
+set stmnt_handle_no [ db2_prepare $db_handle "CALL NEWORD (?,?,?,?,?,no_c_discount,no_c_last,no_c_credit,no_d_tax,no_w_tax,no_d_next_o_id,TIMESTAMP_FORMAT(?,'YYYYMMDDHH24MISS'))" ]
+return $stmnt_handle_no
+	}
+    }
+}
+
+proc prep_select { db_handle handle_se } {
+set dummy "SYSIBM.SYSDUMMY1"
+switch $handle_se {
+select_handle_sl {
+set select_handle_sl [ db2_prepare $db_handle "select stock_count from $dummy" ]
+return $select_handle_sl
+	}
+select_handle_dl {
+set select_handle_dl [ db2_prepare $db_handle "select * from UNNEST(deliv_data)" ]
+return $select_handle_dl
+        }
+select_handle_os {
+set select_handle_os [ db2_prepare $db_handle "select os_c_id, os_c_last, os_c_first,os_c_middle,os_c_balance,os_o_id,VARCHAR_FORMAT(os_entdate, 'YYYY-MM-DD HH24:MI:SS'),os_o_carrier_id from $dummy" ]
+return $select_handle_os
+	}
+select_handle_py {
+set select_handle_py [ db2_prepare $db_handle "select p_c_id,p_c_last,p_w_street_1,p_w_street_2,p_w_city,p_w_state,p_w_zip,p_d_street_1,p_d_street_2,p_d_city,p_d_state,p_d_zip,p_c_first,p_c_middle,p_c_street_1,p_c_street_2,p_c_city,p_c_state,p_c_zip,p_c_phone,VARCHAR_FORMAT(p_c_since, 'YYYY-MM-DD HH24:MI:SS'),p_c_credit,p_c_credit_lim,p_c_discount,p_c_balance,p_c_data from $dummy" ]
+return $select_handle_py
+	}
+select_handle_no {
+set select_handle_no [ db2_prepare $db_handle "select no_c_discount, no_c_last, no_c_credit, no_d_tax, no_w_tax, no_d_next_o_id from $dummy" ]
+return $select_handle_no
+	}
+   }
+}
+
+proc prep_set_db2_global_var { db_handle handle_gv } {
+switch $handle_gv {
+set_handle_os {
+set set_handle_os [ db2_prepare $db_handle "SET (os_c_id,os_c_last)=(?,?)" ]
+return $set_handle_os
+}
+set_handle_py {
+set set_handle_py [ db2_prepare $db_handle "SET (p_c_id,p_c_last,p_c_credit,p_c_balance)=(?,?,'0',0.0)" ]
+return $set_handle_py
+}
+set_handle_no {
+set set_handle_no [ db2_prepare $db_handle "SET (no_d_next_o_id)=(0)" ]
+return $set_handle_no
+       }
+   }
+}
+
+#RUN TPC-C
+promise::async simulate_client { clientname total_iterations user password dbname RAISEERROR KEYANDTHINK async_verbose async_delay } {
+set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
+if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" } 
+async_time $acno
+if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
+if { $async_verbose } { puts "Logging in $clientname" }
+set db_handle [ ConnectToDb2Asynch $dbname $user $password $RAISEERROR $clientname $async_verbose ]
+foreach handle_gv {set_handle_os set_handle_py set_handle_no} {set $handle_gv [ prep_set_db2_global_var $db_handle $handle_gv ]}
+foreach handle_st {stmnt_handle_dl stmnt_handle_sl stmnt_handle_os stmnt_handle_py stmnt_handle_no} {set $handle_st [ prep_statement $db_handle $handle_st ]}
+foreach handle_se {select_handle_sl select_handle_dl select_handle_os select_handle_py select_handle_no} {set $handle_se [ prep_select $db_handle $handle_se ]}
+set stmnt_handle1 [ db2_select_direct $db_handle "select max(w_id) from warehouse" ] 
+set w_id_input [ db2_fetchrow $stmnt_handle1 ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set stmnt_handle2 [ db2_select_direct $db_handle "select max(d_id) from district" ] 
+set d_id_input [ db2_fetchrow $stmnt_handle2 ]
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+neword $set_handle_no $stmnt_handle_no $select_handle_no $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+payment $set_handle_py $stmnt_handle_py $select_handle_py $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+delivery $stmnt_handle_dl $select_handle_dl $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+slev $stmnt_handle_sl $select_handle_sl $w_id $stock_level_d_id $RAISEERROR $clientname 
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+ostat $set_handle_os $stmnt_handle_os $select_handle_os $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+	}
+  }
+db2_finish $set_handle_os
+db2_finish $set_handle_py
+db2_finish $set_handle_no
+db2_finish $stmnt_handle_sl
+db2_finish $stmnt_handle_dl
+db2_finish $stmnt_handle_os
+db2_finish $stmnt_handle_py
+db2_finish $stmnt_handle_no
+db2_finish $select_handle_sl
+db2_finish $select_handle_os
+db2_finish $select_handle_py
+db2_finish $select_handle_no
+db2_finish $select_handle_dl
+db2_disconnect $db_handle
+if { $async_verbose } { puts "$clientname:complete" }
+return $clientname:complete
+	  }
+for {set ac 1} {$ac <= $async_client} {incr ac} { 
+set clientdesc "vuser$myposition:ac$ac"
+lappend clientlist $clientdesc
+lappend clients [simulate_client $clientdesc $total_iterations $user $password $dbname $RAISEERROR $KEYANDTHINK $async_verbose $async_delay]
+		}
+puts "Started asynchronous clients:$clientlist"
+set acprom [ promise::eventloop [ promise::all $clients ] ] 
+puts "All asynchronous clients complete" 
+if { $async_verbose } {
+foreach client $acprom { puts $client }
+      }
+   }
+}}
+}
 }

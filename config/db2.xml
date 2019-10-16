@@ -26,6 +26,10 @@
 	    <db2_monreport>0</db2_monreport>
             <db2_allwarehouse>false</db2_allwarehouse>
             <db2_timeprofile>false</db2_timeprofile>
+	    <db2_async_scale>false</db2_async_scale>
+            <db2_async_client>10</db2_async_client>
+            <db2_async_verbose>false</db2_async_verbose>
+            <db2_async_delay>1000</db2_async_delay>
         </driver>
     </tpcc>
     <tpch>

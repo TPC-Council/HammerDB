@@ -3,7 +3,7 @@ global tc_threadID
 upvar #0 dbdict dbdict
 if {[dict exists $dbdict mssqlserver library ]} {
 	set library [ dict get $dbdict mssqlserver library ]
-} else { set library "tclodbc 2.5.2" }
+} else { set library "tdbc::odbc 1.0.6" }
 if { [ llength $library ] > 1 } { 
 set version [ lindex $library 1 ]
 set library [ lindex $library 0 ]
@@ -59,7 +59,7 @@ return
 namespace import tcountcommon::*
 }
 set connection [ connect_string $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $db ]
-if {[catch {database connect tc_odbc $connection} message ]} {
+if [catch {tdbc::odbc::connection create tc_odbc $connection} message ] {
 tsv::set application tc_errmsg "connection failed $message"
 eval [subst {thread::send $MASTER show_tc_errmsg}]
 thread::release
@@ -69,12 +69,13 @@ return
 while { $timeout eq 0 } {
 set timeout [ tsv::get application timeout ]
 if { $timeout != 0 } { break }
-if {[catch {set tc_trans [ tc_odbc "select cntr_value from sys.dm_os_performance_counters where counter_name = 'Batch Requests/sec'" ]} message]} {
+if {[catch {set rows [ tc_odbc allrows "select cntr_value from sys.dm_os_performance_counters where counter_name = 'Batch Requests/sec'" ]} message]} {
 tsv::set application tc_errmsg "sql failed $message"
 eval [subst {thread::send $MASTER show_tc_errmsg}]
-catch { tc_odbc disconnect }
+catch { tc_odbc close }
 break
 } else {
+set tc_trans [ lindex {*}$rows 1 ]
 if { $bm eq "TPC-C" || $bm eq "TPC-H" } {
 if { [ string is entier -strict $tc_trans ] } {
 set outc $tc_trans

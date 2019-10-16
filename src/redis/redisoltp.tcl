@@ -718,8 +718,9 @@ setlocaltpccvars $configredis
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "Redis TPC-C"
+if { !$redis_async_scale } {
+#REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
 #EDITABLE OPTIONS##################################################
 set library $library ;# Redis Library
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
@@ -1108,4 +1109,430 @@ if { $KEYANDTHINK } { thinktime 5 }
 	}
 $redis QUIT
      }
-}}}
+}}
+} else {
+#ASYNCHRONOUS TIMED SCRIPT
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#EDITABLE OPTIONS##################################################
+set library $library ;# Redis Library
+set total_iterations $redis_total_iterations ;# Number of transactions before logging off
+set RAISEERROR \"$redis_raiseerror\" ;# Exit script on Redis error (true or false)
+set KEYANDTHINK \"$redis_keyandthink\" ;# Time for user thinking and keying (true or false)
+set rampup $redis_rampup;  # Rampup time in minutes before first Transaction Count is taken
+set duration $redis_duration;  # Duration in minutes before second Transaction Count is taken
+set mode \"$opmode\" ;# HammerDB operational mode
+set host \"$redis_host\" ;# Address of the server hosting Redis 
+set port \"$redis_port\" ;# Port of the Redis Server, defaults to 6379
+set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
+set async_client $redis_async_client;# Number of asynchronous clients per Vuser
+set async_verbose $redis_async_verbose;# Report activity of asynchronous clients
+set async_delay $redis_async_delay;# Delay in ms between logins of asynchronous clients
+#EDITABLE OPTIONS##################################################
+"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
+
+if { [ chk_thread ] eq "FALSE" } {
+error "Redis Timed Script must be run in Thread Enabled Interpreter"
+}
+set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
+switch $myposition {
+1 { 
+if { $mode eq "Local" || $mode eq "Master" } {
+if {[catch {set redis [redis $host $port ]}]} {
+puts stderr "Error, the connection to $host:$port could not be established"
+return
+ } else {
+if {[ $redis ping ] eq "PONG" }  {
+puts "Connection made to Redis at $host:$port"
+if { [ string is integer -strict $namespace ]} {
+puts "Selecting Namespace $namespace"
+$redis SELECT $namespace
+	}
+	} else {
+puts stderr "Error, No response from redis server at $host:$port"
+	}
+    }
+set ramptime 0
+puts "Beginning rampup time of $rampup minutes"
+set rampup [ expr $rampup*60000 ]
+while {$ramptime != $rampup} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set ramptime [ expr $ramptime+6000 ]
+if { ![ expr {$ramptime % 60000} ] } {
+puts "Rampup [ expr $ramptime / 60000 ] minutes complete ..."
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Rampup complete, Taking start Transaction Count."
+set info_list [ split [ $redis info ] "\n" ] 
+foreach line $info_list { 
+    if {[string match {total_commands_processed:*} $line]} {
+regexp {\:([0-9]+)} $line all start_trans
+	}
+}
+set COUNT_WARE [ $redis GET COUNT_WARE ]
+set DIST_PER_WARE [ $redis GET DIST_PER_WARE ]
+set start_nopm 0
+for {set w_id 1} {$w_id <= $COUNT_WARE } {incr w_id } {
+for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+incr start_nopm [ $redis HMGET DISTRICT:$w_id:$d_id D_NEXT_O_ID ]
+	}
+}
+puts "Timing test period of $duration in minutes"
+set testtime 0
+set durmin $duration
+set duration [ expr $duration*60000 ]
+while {$testtime != $duration} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set testtime [ expr $testtime+6000 ]
+if { ![ expr {$testtime % 60000} ] } {
+puts -nonewline  "[ expr $testtime / 60000 ]  ...,"
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Test complete, Taking end Transaction Count."
+set info_list [ split [ $redis info ] "\n" ] 
+foreach line $info_list { 
+    if {[string match {total_commands_processed:*} $line]} {
+regexp {\:([0-9]+)} $line all end_trans
+	}
+}
+set end_nopm 0
+for {set w_id 1} {$w_id <= $COUNT_WARE } {incr w_id } {
+for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+incr end_nopm [ $redis HMGET DISTRICT:$w_id:$d_id D_NEXT_O_ID ]
+	}
+}
+set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
+set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
+puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
+puts "TEST RESULT : System achieved $tpm Redis TPM at $nopm NOPM"
+tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+		} else {
+puts "Operating in Slave Mode, No Snapshots taken..."
+		}
+$redis QUIT
+	}
+default {
+#TIMESTAMP
+proc gettimestamp { } {
+set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
+return $tstamp
+}
+#NEW ORDER
+proc neword { redis no_w_id w_id_input RAISEERROR clientname } {
+set no_d_id [ RandomNumber 1 10 ]
+set no_c_id [ RandomNumber 1 3000 ]
+set ol_cnt [ RandomNumber 5 15 ]
+set date [ gettimestamp ]
+set no_o_all_local 0
+foreach { no_c_discount no_c_last no_c_credit } [ $redis HMGET CUSTOMER:$no_w_id:$no_d_id:$no_c_id C_DISCOUNT C_LAST C_CREDIT ] {}
+set no_w_tax [ $redis HMGET WAREHOUSE:$no_w_id W_TAX ]
+set no_d_tax [ $redis HMGET DISTRICT:$no_w_id:$no_d_id D_TAX ]
+set d_next_o_id [ $redis HINCRBY DISTRICT:$no_w_id:$no_d_id D_NEXT_O_ID 1 ]
+set o_id $d_next_o_id
+$redis HMSET ORDERS:$no_w_id:$no_d_id:$o_id O_ID $o_id O_C_ID $no_c_id O_D_ID $no_d_id O_W_ID $no_w_id O_ENTRY_D $date O_CARRIER_ID "" O_OL_CNT $ol_cnt NO_ALL_LOCAL $no_o_all_local
+$redis LPUSH ORDERS_OSTAT_QUERY:$no_w_id:$no_d_id:$no_c_id $o_id
+$redis HMSET NEW_ORDER:$no_w_id:$no_d_id:$o_id NO_O_ID $o_id NO_D_ID $no_d_id NO_W_ID $no_w_id
+$redis LPUSH NEW_ORDER_IDS:$no_w_id:$no_d_id $o_id
+set rbk [ RandomNumber 1 100 ]  
+for {set loop_counter 1} {$loop_counter <= $ol_cnt} {incr loop_counter} {
+if { ($loop_counter eq $ol_cnt) && ($rbk eq 1) } {
+#No Rollback Support in Redis
+set no_ol_i_id 100001
+#puts "New Order:Invalid Item id:$no_ol_i_id (intentional error)" 
+return
+	     } else {
+set no_ol_i_id [ RandomNumber 1 100000 ]  
+		}
+set x [ RandomNumber 1 100 ]  
+if { $x > 1 } {
+set no_ol_supply_w_id $no_w_id
+	} else {
+set no_ol_supply_w_id $no_w_id
+set no_o_all_local 0
+while { ($no_ol_supply_w_id eq $no_w_id) && ($w_id_input != 1) } {
+set no_ol_supply_w_id [ RandomNumber 1 $w_id_input ]  
+		}
+	}
+set no_ol_quantity [ RandomNumber 1 10 ]  
+foreach { no_i_name no_i_price no_i_data } [ $redis HMGET ITEM:$no_ol_i_id I_NAME I_PRICE I_DATA ] {}
+foreach { no_s_quantity no_s_data no_s_dist_01 no_s_dist_02 no_s_dist_03 no_s_dist_04 no_s_dist_05 no_s_dist_06 no_s_dist_07 no_s_dist_08 no_s_dist_09 no_s_dist_10 } [ $redis HMGET STOCK:$no_ol_supply_w_id:$no_ol_i_id S_QUANTITY S_DATA S_DIST_01 S_DIST_02 S_DIST_03 S_DIST_04 S_DIST_05 S_DIST_06 S_DIST_07 S_DIST_08 S_DIST_09 S_DIST_10 ] {}
+if { $no_s_quantity > $no_ol_quantity } {
+set no_s_quantity [ expr $no_s_quantity - $no_ol_quantity ]
+	} else {
+set no_s_quantity [ expr ($no_s_quantity - $no_ol_quantity) + 91 ]
+	}
+$redis HMSET STOCK:$no_ol_supply_w_id:$no_ol_i_id  S_QUANTITY $no_s_quantity 
+set no_ol_amount [ expr $no_ol_quantity * $no_i_price * ( 1 + $no_w_tax + $no_d_tax ) * ( 1 - $no_c_discount ) ]
+switch $no_d_id {
+1 { set no_ol_dist_info $no_s_dist_01 }
+2 { set no_ol_dist_info $no_s_dist_02 }
+3 { set no_ol_dist_info $no_s_dist_03 }
+4 { set no_ol_dist_info $no_s_dist_04 }
+5 { set no_ol_dist_info $no_s_dist_05 }
+6 { set no_ol_dist_info $no_s_dist_06 }
+7 { set no_ol_dist_info $no_s_dist_07 }
+8 { set no_ol_dist_info $no_s_dist_08 }
+9 { set no_ol_dist_info $no_s_dist_09 }
+10 { set no_ol_dist_info $no_s_dist_10 }
+	     }
+$redis HMSET ORDER_LINE:$no_w_id:$no_d_id:$o_id:$loop_counter OL_O_ID $o_id OL_D_ID $no_d_id OL_W_ID $no_w_id OL_NUMBER $loop_counter OL_I_ID $no_ol_i_id OL_SUPPLY_W_ID $no_ol_supply_w_id OL_QUANTITY $no_ol_quantity OL_AMOUNT $no_ol_amount OL_DIST_INFO $no_ol_dist_info OL_DELIVERY_D ""
+$redis LPUSH ORDER_LINE_NUMBERS:$no_w_id:$no_d_id:$o_id $loop_counter 
+$redis ZADD ORDER_LINE_SLEV_QUERY:$no_w_id:$no_d_id $o_id $no_ol_i_id
+	}
+	;
+   }
+
+#PAYMENT
+proc payment { redis p_w_id w_id_input RAISEERROR clientname } {
+#2.5.1.1 The home warehouse id remains the same for each terminal
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set p_d_id [ RandomNumber 1 10 ]
+#2.5.1.2 customer selected 60% of time by name and 40% of time by number
+set x [ RandomNumber 1 100 ]
+set y [ RandomNumber 1 100 ]
+if { $x <= 85 } {
+set p_c_d_id $p_d_id
+set p_c_w_id $p_w_id
+} else {
+#use a remote warehouse
+set p_c_d_id [ RandomNumber 1 10 ]
+set p_c_w_id [ RandomNumber 1 $w_id_input ]
+while { ($p_c_w_id == $p_w_id) && ($w_id_input != 1) } {
+set p_c_w_id [ RandomNumber 1  $w_id_input ]
+	}
+}
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set p_c_id [ RandomNumber 1 3000 ]
+if { $y <= 60 } {
+#use customer name
+#C_LAST is generated
+set byname 1
+ } else {
+#use customer number
+set byname 0
+set name {}
+ }
+#2.5.1.3 random amount from 1 to 5000
+set p_h_amount [ RandomNumber 1 5000 ]
+#2.5.1.4 date selected from SUT
+set h_date [ gettimestamp ]
+#2.5.2.1 Payment Transaction
+#From Redis 2.6 can do the following
+#$redis HINCRBYFLOAT WAREHOUSE:$p_w_id W_YTD $p_h_amount
+$redis HMSET WAREHOUSE:$p_w_id W_YTD [ expr  [ $redis HMGET WAREHOUSE:$p_w_id W_YTD ] + $p_h_amount ]
+foreach { p_w_street_1 p_w_street_2 p_w_city p_w_state p_w_zip p_w_name } [ $redis HMGET WAREHOUSE:$p_w_id W_STREET_1 W_STREET_2 W_CITY W_STATE W_ZIP W_NAME ] {}
+#From Redis 2.6 can do the following
+#$redis HINCRBYFLOAT DISTRICT:$p_w_id:$p_d_id D_YTD $p_h_amount
+$redis HMSET DISTRICT:$p_w_id:$p_d_id D_YTD [ expr  [ $redis HMGET DISTRICT:$p_w_id:$p_d_id D_YTD ] + $p_h_amount ]
+foreach { p_d_street_1 p_d_street_2 p_d_city p_d_state p_d_zip p_d_name } [ $redis HMGET DISTRICT:$p_w_id:$p_d_id D_STREET_1 D_STREET_2 D_CITY D_STATE D_ZIP D_NAME ]  {}
+if { $byname eq 1 } {
+set namecnt [ $redis LLEN CUSTOMER_OSTAT_PMT_QUERY:$p_w_id:$p_d_id:$name ]
+set cust_last_list [ $redis LRANGE CUSTOMER_OSTAT_PMT_QUERY:$p_w_id:$p_d_id:$name 0 $namecnt ] 
+if { [ expr {$namecnt % 2} ] eq 1 } {
+incr namecnt
+	}
+foreach cust_id $cust_last_list {
+set first_name [ $redis HMGET CUSTOMER:$p_w_id:$p_d_id:$cust_id C_FIRST ]
+lappend cust_first_list $first_name
+set first_to_id($first_name) $cust_id
+	}
+set cust_first_list [ lsort $cust_first_list ]
+set id_to_query $first_to_id([ lindex $cust_first_list [ expr ($namecnt/2)-1 ] ])
+foreach { p_c_first p_c_middle p_c_id p_c_street_1 p_c_street_2 p_c_city p_c_state p_c_zip p_c_phone p_c_credit p_c_credit_lim p_c_discount p_c_balance p_c_since } [ $redis HMGET CUSTOMER:$p_c_w_id:$p_c_d_id:$id_to_query C_FIRST C_MIDDLE C_ID C_STREET_1 C_STREET_2 C_CITY C_STATE C_ZIP C_PHONE C_CREDIT C_CREDIT_LIM C_DISCOUNT C_BALANCE C_SINCE ] {}
+set p_c_last $name
+	} else {
+foreach { p_c_first p_c_middle p_c_last p_c_street_1 p_c_street_2 p_c_city p_c_state p_c_zip p_c_phone p_c_credit p_c_credit_lim p_c_discount p_c_balance p_c_since } [ $redis HMGET CUSTOMER:$p_c_w_id:$p_c_d_id:$p_c_id C_FIRST C_MIDDLE C_LAST C_STREET_1 C_STREET_2 C_CITY C_STATE C_ZIP C_PHONE C_CREDIT C_CREDIT_LIM C_DISCOUNT C_BALANCE C_SINCE ] {}
+	}
+set p_c_balance [ expr $p_c_balance + $p_h_amount ]
+set p_c_data [ $redis HMGET CUSTOMER:$p_c_w_id:$p_c_d_id:$p_c_id C_DATA ] 
+set tstamp [ gettimestamp ]
+if { $p_c_credit eq "BC" } {
+set h_data "$p_w_name $p_d_name"
+set p_c_new_data "$p_c_id $p_c_d_id $p_c_w_id $p_d_id $p_w_id $p_h_amount $tstamp $h_data"
+set p_c_new_data [ string range "$p_c_new_data $p_c_data" 0 [ expr 500 - [ string length $p_c_new_data ] ] ]
+$redis HMSET CUSTOMER:$p_c_w_id:$p_c_d_id:$p_c_id C_BALANCE $p_c_balance C_DATA $p_c_new_data
+	} else {
+$redis HMSET CUSTOMER:$p_c_w_id:$p_c_d_id:$p_c_id C_BALANCE $p_c_balance
+set h_data "$p_w_name $p_d_name"
+	}
+$redis HMSET HISTORY:$p_c_w_id:$p_c_d_id:$p_c_id:$tstamp H_C_ID $p_c_id H_C_D_ID $p_c_d_id H_C_W_ID $p_c_w_id H_W_ID $p_w_id H_D_ID $p_d_id H_DATE $tstamp H_AMOUNT $p_h_amount H_DATA $h_data
+	;
+	}
+
+#ORDER_STATUS
+proc ostat { redis w_id RAISEERROR clientname } {
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set d_id [ RandomNumber 1 10 ]
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set c_id [ RandomNumber 1 3000 ]
+set y [ RandomNumber 1 100 ]
+if { $y <= 60 } {
+set byname 1
+ } else {
+set byname 0
+set name {}
+}
+if { $byname eq 1 } {
+set namecnt [ $redis LLEN CUSTOMER_OSTAT_PMT_QUERY:$w_id:$d_id:$name ]
+set cust_last_list [ $redis LRANGE CUSTOMER_OSTAT_PMT_QUERY:$w_id:$d_id:$name 0 $namecnt ] 
+if { [ expr {$namecnt % 2} ] eq 1 } {
+incr namecnt
+	}
+foreach cust_id $cust_last_list {
+set first_name [ $redis HMGET CUSTOMER:$w_id:$d_id:$cust_id C_FIRST ]
+lappend cust_first_list $first_name
+set first_to_id($first_name) $cust_id
+	}
+set cust_first_list [ lsort $cust_first_list ]
+set id_to_query $first_to_id([ lindex $cust_first_list [ expr ($namecnt/2)-1 ] ])
+foreach { os_c_balance os_c_first os_c_middle os_c_id } [ $redis HMGET CUSTOMER:$w_id:$d_id:$id_to_query C_BALANCE C_FIRST C_MIDDLE C_ID ] {}
+set os_c_last $name
+	} else {
+foreach { os_c_balance os_c_first os_c_middle os_c_last } [ $redis HMGET CUSTOMER:$w_id:$d_id:$c_id C_BALANCE C_FIRST C_MIDDLE C_LAST ] {}
+set os_c_id $c_id
+	}
+set o_id_len [ $redis LLEN ORDERS_OSTAT_QUERY:$w_id:$d_id:$c_id ]
+if { $o_id_len eq 0 } {
+#puts "No orders for customer"
+	} else {
+set o_id_list [ lindex [ lsort [ $redis LRANGE ORDERS_OSTAT_QUERY:$w_id:$d_id:$c_id 0 $o_id_len ] ] end ]
+foreach { o_id o_carrier_id o_entry_d } [ $redis HMGET ORDERS:$w_id:$d_id:$o_id_list O_ID O_CARRIER_ID O_ENTRY_D ] {}
+set os_cline_len [ $redis LLEN ORDER_LINE_NUMBERS:$w_id:$d_id:$o_id ]
+set os_cline_list [ lsort -integer [ $redis LRANGE ORDER_LINE_NUMBERS:$w_id:$d_id:$o_id 0 $os_cline_len ] ]
+set i 0
+foreach ol [ split $os_cline_list ] { 
+foreach { ol_i_id ol_supply_w_id ol_quantity ol_amount ol_delivery_d } [ $redis HMGET ORDER_LINE:$w_id:$d_id:$o_id:$ol OL_I_ID OL_SUPPLY_W_ID OL_QUANTITY OL_AMOUNT OL_DELIVERY_D ] {}
+set os_ol_i_id($i) $ol_i_id
+set os_ol_supply_w_id($i) $ol_supply_w_id
+set os_ol_quantity($i) $ol_quantity
+set os_ol_amount($i) $ol_amount
+set os_ol_delivery_d($i) $ol_delivery_d
+incr i
+#puts "Item Status $i:$ol_i_id $ol_supply_w_id $ol_quantity $ol_amount $ol_delivery_d"
+	}
+	;
+  }
+}
+#DELIVERY
+proc delivery { redis w_id RAISEERROR clientname } {
+set carrier_id [ RandomNumber 1 10 ]
+set date [ gettimestamp ]
+for {set loop_counter 1} {$loop_counter <= 10} {incr loop_counter} {
+set d_d_id $loop_counter 
+set d_no_o_id [ $redis LPOP NEW_ORDER_IDS:$w_id:$d_d_id ]
+$redis DEL NEW_ORDER:$w_id:$d_d_id:$d_no_o_id
+set d_c_id [ $redis HMGET ORDERS:$w_id:$d_d_id:$d_no_o_id O_C_ID ]
+$redis HMSET ORDERS:$w_id:$d_d_id:$d_no_o_id O_CARRIER_ID $carrier_id
+set ol_deliv_len [ $redis LLEN ORDER_LINE_NUMBERS:$w_id:$d_d_id:$d_no_o_id ]
+set ol_deliv_list [ $redis LRANGE ORDER_LINE_NUMBERS:$w_id:$d_d_id:$d_no_o_id 0 $ol_deliv_len ] 
+set d_ol_total 0
+foreach ol [ split $ol_deliv_list ] { 
+set d_ol_total [expr $d_ol_total + [ $redis HMGET ORDER_LINE:$w_id:$d_d_id:$d_no_o_id:$ol OL_AMOUNT ]]
+$redis HMSET ORDER_LINE:$w_id:$d_d_id:$d_no_o_id:$ol OL_DELIVERY_D $date
+	}
+#From Redis 2.6 can do the following
+#$redis HINCRBYFLOAT CUSTOMER:$w_id:$d_d_id:$d_c_id C_BALANCE $d_ol_total 
+$redis HMSET CUSTOMER:$w_id:$d_d_id:$d_c_id C_BALANCE [ expr [ $redis HMGET CUSTOMER:$w_id:$d_d_id:$d_c_id C_BALANCE ] + $d_ol_total ]
+	}
+	;
+}
+#STOCK LEVEL
+proc slev { redis w_id stock_level_d_id RAISEERROR clientname } {
+set stock_level 0
+set threshold [ RandomNumber 10 20 ]
+set st_o_id [ $redis HMGET DISTRICT:$w_id:$stock_level_d_id D_NEXT_O_ID ]
+set item_id_list [ $redis ZRANGE ORDER_LINE_SLEV_QUERY:$w_id:$stock_level_d_id [ expr $st_o_id - 19 ] $st_o_id ]
+foreach item_id [ split [ lsort -unique $item_id_list ] ] { 
+	if { [ $redis HMGET STOCK:$w_id:$item_id S_QUANTITY ] < $threshold } { incr stock_level } }
+	;
+	}
+
+#RUN TPC-C
+promise::async simulate_client { clientname total_iterations host port namespace RAISEERROR KEYANDTHINK async_verbose async_delay } {
+set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
+if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
+async_time $acno
+if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
+if { $async_verbose } { puts "Logging in $clientname" }
+if {[catch {set redis [redis $host $port ]} message]} {
+if { $RAISEERROR } {
+puts "$clientname:login failed:$message"
+return "$clientname:login failed:$message"
+        }
+ } else {
+if {[ $redis ping ] eq "PONG" }  {
+if { $async_verbose } { puts "Connection made to Redis at $clientname:$host:$port" }
+if { [ string is integer -strict $namespace ]} {
+if { $async_verbose } { puts "Selecting Namespace $clientname:$namespace" }
+$redis SELECT $namespace
+	}
+	} else {
+puts "$clientname:No response from redis server at $host:$port"
+return "$clientname:No response from redis server at $host:$port"
+	}
+    }
+set w_id_input [ $redis GET COUNT_WARE ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set d_id_input [ $redis GET DIST_PER_WARE ]
+set stock_level_d_id [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+neword $redis $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+payment $redis $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+delivery $redis $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+slev $redis $w_id $stock_level_d_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+ostat $redis $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+        }
+  }
+$redis QUIT
+if { $async_verbose } { puts "$clientname:complete" }
+return $clientname:complete
+          }
+for {set ac 1} {$ac <= $async_client} {incr ac} {
+set clientdesc "vuser$myposition:ac$ac"
+lappend clientlist $clientdesc
+lappend clients [simulate_client $clientdesc $total_iterations $host $port $namespace $RAISEERROR $KEYANDTHINK $async_verbose $async_delay]
+                }
+puts "Started asynchronous clients:$clientlist"
+set acprom [ promise::eventloop [ promise::all $clients ] ]
+puts "All asynchronous clients complete"
+if { $async_verbose } {
+foreach client $acprom { puts $client }
+      }
+   }
+}}
+}
+}

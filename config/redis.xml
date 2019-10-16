@@ -19,6 +19,10 @@
             <redis_duration>5</redis_duration>
             <redis_allwarehouse>false</redis_allwarehouse>
             <redis_timeprofile>false</redis_timeprofile>
+	    <redis_async_scale>false</redis_async_scale>
+            <redis_async_client>10</redis_async_client>
+            <redis_async_verbose>false</redis_async_verbose>
+            <redis_async_delay>1000</redis_async_delay>
         </driver>
     </tpcc>
 </redis>

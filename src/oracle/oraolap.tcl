@@ -737,7 +737,7 @@ oraclose $curn1
 return
 }
 
-proc do_tpch { system_password instance scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp timesten num_vu } {
+proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pass tpch_def_tab tpch_def_temp timesten num_vu } {
 global dist_names dist_weights weights dists weights
 ###############################################
 #Generating following rows
@@ -792,7 +792,7 @@ puts "CREATING [ string toupper $tpch_user ] SCHEMA"
 if { $timesten } {
 puts "TimesTen expects the Database [ string toupper $instance ] and User [ string toupper $tpch_user ] to have been created by the instance administrator in advance and be granted create table, session, procedure (and admin for checkpoints) privileges"
         } else {
-set connect system/$system_password@$instance
+set connect $system_user/$system_password@$instance
 set lda [ oralogon $connect ]
 SetNLS $lda
 CreateUser $lda $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp
@@ -904,7 +904,7 @@ return
 		}
 	}
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $system_password $instance  $scale_fact $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $system_user $system_password $instance $scale_fact $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
 	} else { return }
 }
 

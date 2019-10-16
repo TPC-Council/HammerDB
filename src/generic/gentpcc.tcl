@@ -1,4 +1,4 @@
-proc shared_tpcc_functions { tpccfunc } {
+proc shared_tpcc_functions { tpccfunc db_async_scale } {
 switch $tpccfunc {
 allwarehouse {
 #set additional text for all warehouses
@@ -31,6 +31,8 @@ set allwt(3) {if { $allwarehouses == "true" } {
 set w_id [lindex $myWarehouses [expr [RandomNumber 1 $myWhCount] -1]]
 }
 }
+set allwt(4) {global allwarehouses myposition totalvirtualusers
+}
 #search for insert points and insert functions
 set allwi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ] 
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(1) $allwt(1)
@@ -38,6 +40,12 @@ set allwi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#2.4.1
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(2) $allwt(2)
 set allwi(3) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set choice" $allwi(2) ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(3) $allwt(3)
+if { $db_async_scale } {
+set allwi(4) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#EDITABLE OPTIONS##################################################" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(4)+1l $allwt(4)
+set allwi(5) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#DELAY LOGIN" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(5) $allwt(4)
+	}
    }
 timeprofile {
 #set additional text for all warehouses

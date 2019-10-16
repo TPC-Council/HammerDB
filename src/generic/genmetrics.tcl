@@ -46,6 +46,8 @@ set S(bar,height) 87
 set S(col,padding) 24
 set S(padding) 3
 set S(border) 5
+#Remove descriptive name from CPU so does not overrun buffer
+regsub -all {Platinum|Gold|Silver|Bronze} $cpu_model "" cpu_model
 set cnvpth $metframe.f
 foreach wind "$metframe.f $metframe.sv $cnvpth.c" {
 catch { destroy $wind }

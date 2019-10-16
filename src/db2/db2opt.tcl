@@ -120,7 +120,7 @@ upvar #0 configdb2 configdb2
 setlocaltpccvars $configdb2
 #set matching fields in dialog to temporary dict
 variable db2fields
-set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_dbase {}} tpcc {db2_user {.tpc.f1.e1 get} db2_pass {.tpc.f1.e2 get} db2_dbase {.tpc.f1.e3 get} db2_def_tab {.tpc.f1.e4 get} db2_tab_list {.tpc.f1.e5 get} db2_total_iterations {.tpc.f1.e14 get} db2_rampup {.tpc.f1.e17 get} db2_duration {.tpc.f1.e18 get} db2_monreport {.tpc.f1.e19 get} db2_count_ware $db2_count_ware db2_num_vu $db2_num_vu db2_partition $db2_partition db2_driver $db2_driver db2_raiseerror $db2_raiseerror db2_keyandthink $db2_keyandthink db2_allwarehouse $db2_allwarehouse db2_timeprofile $db2_timeprofile} ]
+set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_dbase {}} tpcc {db2_user {.tpc.f1.e1 get} db2_pass {.tpc.f1.e2 get} db2_dbase {.tpc.f1.e3 get} db2_def_tab {.tpc.f1.e4 get} db2_tab_list {.tpc.f1.e5 get} db2_total_iterations {.tpc.f1.e14 get} db2_rampup {.tpc.f1.e17 get} db2_duration {.tpc.f1.e18 get} db2_monreport {.tpc.f1.e19 get} db2_async_client {.tpc.f1.e23 get} db2_async_delay {.tpc.f1.e24 get} db2_count_ware $db2_count_ware db2_num_vu $db2_num_vu db2_partition $db2_partition db2_driver $db2_driver db2_raiseerror $db2_raiseerror db2_keyandthink $db2_keyandthink db2_allwarehouse $db2_allwarehouse db2_timeprofile $db2_timeprofile db2_async_scale $db2_async_scale db2_async_verbose $db2_async_verbose} ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -263,6 +263,10 @@ set db2_timeprofile "false"
 .tpc.f1.e19 configure -state disabled
 .tpc.f1.e20 configure -state disabled
 .tpc.f1.e21 configure -state disabled
+.tpc.f1.e22 configure -state disabled
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+.tpc.f1.e25 configure -state disabled
 if {$db2_monreport >= $db2_duration} {
 set db2_monreport 0
                 }
@@ -276,6 +280,10 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e19 configure -state normal
 .tpc.f1.e20 configure -state normal
 .tpc.f1.e21 configure -state normal
+.tpc.f1.e22 configure -state normal
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
+.tpc.f1.e25 configure -state normal
 if {$db2_monreport >= $db2_duration} {
 set db2_monreport 0
                 }
@@ -296,6 +304,17 @@ ttk::checkbutton $Name -text "" -variable db2_raiseerror -onvalue "true" -offval
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e16
 ttk::checkbutton $Name -text "" -variable db2_keyandthink -onvalue "true" -offvalue "false"
+bind .tpc.f1.e16 <Any-ButtonRelease> {
+if { $db2_driver eq "timed" } {
+if { $db2_keyandthink eq "true" } {
+set db2_async_scale "false"
+set db2_async_verbose "false"
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+.tpc.f1.e25 configure -state disabled
+        }
+    }
+}
    grid $Prompt -column 0 -row 16 -sticky e
    grid $Name -column 1 -row 16 -sticky w
 set Name $Parent.f1.e17
@@ -346,6 +365,59 @@ ttk::checkbutton $Name -text "" -variable db2_timeprofile -onvalue "true" -offva
 if {$db2_driver == "test" } {
 	$Name configure -state disabled
 	}
+  set Name $Parent.f1.e22
+   set Prompt $Parent.f1.p22
+   ttk::label $Prompt -text "Asynchronous Scaling :"
+ttk::checkbutton $Name -text "" -variable db2_async_scale -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
+if {$db2_driver == "test" } {
+        set db2_async_scale "false"
+        $Name configure -state disabled
+        }
+bind .tpc.f1.e22 <Any-ButtonRelease> {
+if { $db2_async_scale eq "true" } {
+set db2_async_verbose "false"
+.tpc.f1.e23 configure -state disabled
+.tpc.f1.e24 configure -state disabled
+.tpc.f1.e25 configure -state disabled
+        } else {
+if { $db2_driver eq "timed" } {
+set db2_keyandthink "true"
+.tpc.f1.e23 configure -state normal
+.tpc.f1.e24 configure -state normal
+.tpc.f1.e25 configure -state normal
+                }
+        }
+}
+set Name $Parent.f1.e23
+   set Prompt $Parent.f1.p23
+   ttk::label $Prompt -text "Asynch Clients per Virtual User :"
+   ttk::entry $Name -width 30 -textvariable db2_async_client
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
+if {$db2_driver == "test" || $db2_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+set Name $Parent.f1.e24
+   set Prompt $Parent.f1.p24
+   ttk::label $Prompt -text "Asynch Client Login Delay :"
+   ttk::entry $Name -width 30 -textvariable db2_async_delay
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
+if {$db2_driver == "test" || $db2_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+   set Name $Parent.f1.e25
+   set Prompt $Parent.f1.p25
+   ttk::label $Prompt -text "Asynchronous Verbose :"
+ttk::checkbutton $Name -text "" -variable db2_async_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
+if {$db2_driver == "test" || $db2_async_scale == "false" } {
+        set db2_async_verbose "false"
+        $Name configure -state disabled
+        }
 }
 #This is the Cancel button variables stay as before
 set Name $Parent.b2
