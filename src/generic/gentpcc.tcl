@@ -43,8 +43,8 @@ set allwi(3) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ch
 if { $db_async_scale } {
 set allwi(4) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#EDITABLE OPTIONS##################################################" end ] 
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(4)+1l $allwt(4)
-set allwi(5) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#DELAY LOGIN" end ] 
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(5) $allwt(4)
+set allwi(5) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "promise::async" end ] 
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(5)+1l $allwt(4)
 	}
    }
 timeprofile {
