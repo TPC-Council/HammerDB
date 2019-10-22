@@ -1250,7 +1250,7 @@ set _ED(packagekeyname) "Db2 TPC-C Timed"
 if { !$db2_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-##EDITABLE OPTIONS##################################################
+#EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 (true or false)
@@ -1610,7 +1610,7 @@ db2_disconnect $db_handle
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-##EDITABLE OPTIONS##################################################
+#EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 (true or false)
