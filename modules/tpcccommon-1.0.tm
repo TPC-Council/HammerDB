@@ -144,7 +144,7 @@ async_time [ expr $as_thkt * 1000 ]
 set TIME_taken [expr ([clock clicks -milliseconds] - $TIME_start) /1000 ]
 puts "thinktime:$callingproc:$clientname:$TIME_taken secs"
 	} else {
-async_time [ expr $as_keyt * 1000 ]
+async_time [ expr $as_thkt * 1000 ]
         }
     }
 }
