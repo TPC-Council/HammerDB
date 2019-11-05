@@ -1229,8 +1229,9 @@ setlocaltpccvars $configmysql
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
 set _ED(packagekeyname) "MySQL TPC-C Timed"
+if { !$mysql_async_scale } {
+#REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
 #EDITABLE OPTIONS##################################################
 set library $library ;# MySQL Library
 global mysqlstatus
@@ -1499,4 +1500,315 @@ if { $KEYANDTHINK } { thinktime 5 }
 mysqlclose $mysql_handler
 	}
    }}
+} else {
+#ASYNCHRONOUS TIMED SCRIPT
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#EDITABLE OPTIONS##################################################
+set library $library ;# MySQL Library
+global mysqlstatus
+set total_iterations $mysql_total_iterations ;# Number of transactions before logging off
+set RAISEERROR \"$mysql_raiseerror\" ;# Exit script on MySQL error (true or false)
+set KEYANDTHINK \"$mysql_keyandthink\" ;# Time for user thinking and keying (true or false)
+set rampup $mysql_rampup;  # Rampup time in minutes before first Transaction Count is taken
+set duration $mysql_duration;  # Duration in minutes before second Transaction Count is taken
+set mode \"$opmode\" ;# HammerDB operational mode
+set host \"$mysql_host\" ;# Address of the server hosting MySQL 
+set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set user \"$mysql_user\" ;# MySQL user
+set password \"$mysql_pass\" ;# Password for the MySQL user
+set db \"$mysql_dbase\" ;# Database containing the TPC Schema
+set async_client $mysql_async_client;# Number of asynchronous clients per Vuser
+set async_verbose $mysql_async_verbose;# Report activity of asynchronous clients
+set async_delay $mysql_async_delay;# Delay in ms between logins of asynchronous clients
+#EDITABLE OPTIONS##################################################
+"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
+
+if { [ chk_thread ] eq "FALSE" } {
+error "MYSQL Timed Script must be run in Thread Enabled Interpreter"
+}
+set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
+switch $myposition {
+1 { 
+if { $mode eq "Local" || $mode eq "Master" } {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the database connection to $host could not be established"
+error $mysqlstatus(message)
+ } else {
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 1
+}
+set ramptime 0
+puts "Beginning rampup time of $rampup minutes"
+set rampup [ expr $rampup*60000 ]
+while {$ramptime != $rampup} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set ramptime [ expr $ramptime+6000 ]
+if { ![ expr {$ramptime % 60000} ] } {
+puts "Rampup [ expr $ramptime / 60000 ] minutes complete ..."
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Rampup complete, Taking start Transaction Count."
+if {[catch {set handler_stat [ list [ mysql::sel $mysql_handler "show global status where Variable_name = 'Com_commit' or Variable_name =  'Com_rollback'" -list ] ]}]} {
+puts stderr {error, failed to query transaction statistics}
+return
+} else {
+regexp {\{\{Com_commit\ ([0-9]+)\}\ \{Com_rollback\ ([0-9]+)\}\}} $handler_stat all com_comm com_roll
+set start_trans [ expr $com_comm + $com_roll ]
+	}
+if {[catch {set start_nopm [ list [ mysql::sel $mysql_handler "select sum(d_next_o_id) from district" -list ] ]}]} {
+puts stderr {error, failed to query district table}
+return
+}
+puts "Timing test period of $duration in minutes"
+set testtime 0
+set durmin $duration
+set duration [ expr $duration*60000 ]
+while {$testtime != $duration} {
+if { [ tsv::get application abort ] } { break } else { after 6000 }
+set testtime [ expr $testtime+6000 ]
+if { ![ expr {$testtime % 60000} ] } {
+puts -nonewline  "[ expr $testtime / 60000 ]  ...,"
+	}
+}
+if { [ tsv::get application abort ] } { break }
+puts "Test complete, Taking end Transaction Count."
+if {[catch {set handler_stat [ list [ mysql::sel $mysql_handler "show global status where Variable_name = 'Com_commit' or Variable_name =  'Com_rollback'" -list ] ]}]} {
+puts stderr {error, failed to query transaction statistics}
+return
+} else {
+regexp {\{\{Com_commit\ ([0-9]+)\}\ \{Com_rollback\ ([0-9]+)\}\}} $handler_stat all com_comm com_roll
+set end_trans [ expr $com_comm + $com_roll ]
+	}
+if {[catch {set end_nopm [ list [ mysql::sel $mysql_handler "select sum(d_next_o_id) from district" -list ] ]}]} {
+puts stderr {error, failed to query district table}
+return
+}
+set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
+set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
+puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
+puts "TEST RESULT : System achieved $tpm MySQL TPM at $nopm NOPM"
+tsv::set application abort 1
+if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+catch { mysqlclose $mysql_handler }
+		} else {
+puts "Operating in Slave Mode, No Snapshots taken..."
+		}
+	}
+default {
+#TIMESTAMP
+proc gettimestamp { } {
+set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
+return $tstamp
+}
+#NEW ORDER
+proc neword { mysql_handler no_w_id w_id_input RAISEERROR clientname } {
+global mysqlstatus
+#open new order cursor
+#2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
+set no_d_id [ RandomNumber 1 10 ]
+#2.4.1.2 Customer id randomly selected where c_d_id = d_id and c_w_id = w_id
+set no_c_id [ RandomNumber 1 3000 ]
+#2.4.1.3 Items in the order randomly selected from 5 to 15
+set ol_cnt [ RandomNumber 5 15 ]
+#2.4.1.6 order entry date O_ENTRY_D generated by SUT
+set date [ gettimestamp ]
+mysqlexec $mysql_handler "set @next_o_id = 0"
+catch { mysqlexec $mysql_handler "CALL NEWORD($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,@disc,@last,@credit,@dtax,@wtax,@next_o_id,$date)" }
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "New Order in $clientname : $mysqlstatus(message)"
+	} else { 
+puts "New Order in $clientname : $mysqlstatus(message)" 
+      } 
+  } else {
+;
+   }
+}
+#PAYMENT
+proc payment { mysql_handler p_w_id w_id_input RAISEERROR clientname } {
+global mysqlstatus
+#2.5.1.1 The home warehouse id remains the same for each terminal
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set p_d_id [ RandomNumber 1 10 ]
+#2.5.1.2 customer selected 60% of time by name and 40% of time by number
+set x [ RandomNumber 1 100 ]
+set y [ RandomNumber 1 100 ]
+if { $x <= 85 } {
+set p_c_d_id $p_d_id
+set p_c_w_id $p_w_id
+} else {
+#use a remote warehouse
+set p_c_d_id [ RandomNumber 1 10 ]
+set p_c_w_id [ RandomNumber 1 $w_id_input ]
+while { ($p_c_w_id == $p_w_id) && ($w_id_input != 1) } {
+set p_c_w_id [ RandomNumber 1  $w_id_input ]
+	}
+}
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set p_c_id [ RandomNumber 1 3000 ]
+if { $y <= 60 } {
+#use customer name
+#C_LAST is generated
+set byname 1
+ } else {
+#use customer number
+set byname 0
+set name {}
+ }
+#2.5.1.3 random amount from 1 to 5000
+set p_h_amount [ RandomNumber 1 5000 ]
+#2.5.1.4 date selected from SUT
+set h_date [ gettimestamp ]
+#2.5.2.1 Payment Transaction
+mysqlexec $mysql_handler "set @p_c_id = $p_c_id, @p_c_last = '$name', @p_c_credit = 0, @p_c_balance = 0"
+catch { mysqlexec $mysql_handler "CALL PAYMENT($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,@p_c_id,$byname,$p_h_amount,@p_c_last,@p_w_street_1,@p_w_street_2,@p_w_city,@p_w_state,@p_w_zip,@p_d_street_1,@p_d_street_2,@p_d_city,@p_d_state,@p_d_zip,@p_c_first,@p_c_middle,@p_c_street_1,@p_c_street_2,@p_c_city,@p_c_state,@p_c_zip,@p_c_phone,@p_c_since,@p_c_credit,@p_c_credit_lim,@p_c_discount,@p_c_balance,@p_c_data,$h_date)"}
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "Payment in $clientname : $mysqlstatus(message)"
+	} else { 
+puts "Payment in $clientname : $mysqlstatus(message)"
+       } 
+  } else {
+;
+    }
+}
+#ORDER_STATUS
+proc ostat { mysql_handler w_id RAISEERROR clientname } {
+global mysqlstatus
+#2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
+set d_id [ RandomNumber 1 10 ]
+set nrnd [ NURand 255 0 999 123 ]
+set name [ randname $nrnd ]
+set c_id [ RandomNumber 1 3000 ]
+set y [ RandomNumber 1 100 ]
+if { $y <= 60 } {
+set byname 1
+ } else {
+set byname 0
+set name {}
+}
+mysqlexec $mysql_handler "set @os_c_id = $c_id, @os_c_last = '$name'"
+catch { mysqlexec $mysql_handler "CALL OSTAT($w_id,$d_id,@os_c_id,$byname,@os_c_last,@os_c_first,@os_c_middle,@os_c_balance,@os_o_id,@os_entdate,@os_o_carrier_id)"}
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "Order Status in $clientname : $mysqlstatus(message)"
+	} else { 
+puts "Order Status in $clientname : $mysqlstatus(message)"
+       } 
+  } else {
+;
+    }
+}
+#DELIVERY
+proc delivery { mysql_handler w_id RAISEERROR clientname } {
+global mysqlstatus
+set carrier_id [ RandomNumber 1 10 ]
+set date [ gettimestamp ]
+catch { mysqlexec $mysql_handler "CALL DELIVERY($w_id,$carrier_id,$date)"}
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "Delivery in $clientname : $mysqlstatus(message)"
+	} else { 
+puts "Delivery in $clientname : $mysqlstatus(message)"
+       } 
+  } else {
+;
+    }
+}
+#STOCK LEVEL
+proc slev { mysql_handler w_id stock_level_d_id RAISEERROR clientname } {
+global mysqlstatus
+set threshold [ RandomNumber 10 20 ]
+mysqlexec $mysql_handler "CALL SLEV($w_id,$stock_level_d_id,$threshold)"
+if { $mysqlstatus(code)  } {
+if { $RAISEERROR } {
+error "Stock Level in $clientname : $mysqlstatus(message)"
+	} else { 
+puts "Stock Level in $clientname : $mysqlstatus(message)"
+       } 
+  } else {
+;
+    }
+}
+
+#RUN TPC-C
+promise::async simulate_client { clientname total_iterations host port user password RAISEERROR KEYANDTHINK db async_verbose async_delay } {
+global mysqlstatus
+set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
+if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
+async_time $acno
+if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
+if { $async_verbose } { puts "Logging in $clientname" }
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+if { $RAISEERROR } {
+puts "$clientname:login failed:$mysqlstatus(message)"
+return "$clientname:login failed:$mysqlstatus(message)"
+        }
+   } else {
+if { $async_verbose } { puts "Connected $clientname:$mysql_handler" }
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 0
+   }
+set w_id_input [ list [ mysql::sel $mysql_handler "select max(w_id) from warehouse" -list ] ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set d_id_input [ list [ mysql::sel $mysql_handler "select max(d_id) from district" -list ] ]
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions with output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+neword $mysql_handler $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+payment $mysql_handler $w_id $w_id_input $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+delivery $mysql_handler $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+slev $mysql_handler $w_id $stock_level_d_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+ostat $mysql_handler $w_id $RAISEERROR $clientname
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+        }
+  }
+mysqlclose $mysql_handler
+if { $async_verbose } { puts "$clientname:complete" }
+return $clientname:complete
+          }
+for {set ac 1} {$ac <= $async_client} {incr ac} {
+set clientdesc "vuser$myposition:ac$ac"
+lappend clientlist $clientdesc
+lappend clients [simulate_client $clientdesc $total_iterations $host $port $user $password $RAISEERROR $KEYANDTHINK $db $async_verbose $async_delay]
+                }
+puts "Started asynchronous clients:$clientlist"
+set acprom [ promise::eventloop [ promise::all $clients ] ]
+puts "All asynchronous clients complete"
+if { $async_verbose } {
+foreach client $acprom { puts $client }
+      }
+   }
+}}
+}
 }

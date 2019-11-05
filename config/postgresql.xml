@@ -28,6 +28,10 @@
             <pg_duration>5</pg_duration>
             <pg_allwarehouse>false</pg_allwarehouse>
             <pg_timeprofile>false</pg_timeprofile>
+	    <pg_async_scale>false</pg_async_scale>
+            <pg_async_client>10</pg_async_client>
+            <pg_async_verbose>false</pg_async_verbose>
+            <pg_async_delay>1000</pg_async_delay>
         </driver>
     </tpcc>
     <tpch>

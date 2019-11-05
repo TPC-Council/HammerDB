@@ -29,6 +29,10 @@
             <duration>5</duration>
             <allwarehouse>false</allwarehouse>
             <timeprofile>false</timeprofile>
+	    <async_scale>false</async_scale>
+	    <async_client>10</async_client>
+	    <async_verbose>false</async_verbose>
+	    <async_delay>1000</async_delay>
         </driver>
     </tpcc>
     <tpch>

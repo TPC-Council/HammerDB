@@ -139,7 +139,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 #set matching fields in dialog to temporary dict
 variable orafields
-set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse timeprofile $timeprofile}]
+set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} async_client {.tpc.f1.e26 get} async_delay {.tpc.f1.e27 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse timeprofile $timeprofile async_scale $async_scale async_verbose $async_verbose}]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -357,11 +357,17 @@ bind .tpc.f1.r1 <ButtonPress-1> {
 set checkpoint "false"
 set allwarehouse "false"
 set timeprofile "false"
+set async_scale "false"
+set async_verbose "false"
 .tpc.f1.e20 configure -state disabled
 .tpc.f1.e21 configure -state disabled
 .tpc.f1.e22 configure -state disabled
 .tpc.f1.e23 configure -state disabled
 .tpc.f1.e24 configure -state disabled
+.tpc.f1.e25 configure -state disabled
+.tpc.f1.e26 configure -state disabled
+.tpc.f1.e27 configure -state disabled
+.tpc.f1.e28 configure -state disabled
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable ora_driver
@@ -372,6 +378,12 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e22 configure -state normal
 .tpc.f1.e23 configure -state normal
 .tpc.f1.e24 configure -state normal
+.tpc.f1.e25 configure -state normal
+if { $async_scale eq "true" } {
+.tpc.f1.e26 configure -state normal
+.tpc.f1.e27 configure -state normal
+.tpc.f1.e28 configure -state normal
+	}
 }
 set Name $Parent.f1.e17
    set Prompt $Parent.f1.p17
@@ -389,6 +401,17 @@ ttk::checkbutton $Name -text "" -variable raiseerror -onvalue "true" -offvalue "
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e19
 ttk::checkbutton $Name -text "" -variable keyandthink -onvalue "true" -offvalue "false"
+bind .tpc.f1.e19 <Any-ButtonRelease> {
+if { $ora_driver eq "timed" } {
+if { $keyandthink eq "true" } {
+set async_scale "false"
+set async_verbose "false"
+.tpc.f1.e26 configure -state disabled
+.tpc.f1.e27 configure -state disabled
+.tpc.f1.e28 configure -state disabled
+        } 
+    }
+}
    grid $Prompt -column 0 -row 21 -sticky e
    grid $Name -column 1 -row 21 -sticky w
  set Prompt $Parent.f1.p20
@@ -427,13 +450,66 @@ ttk::checkbutton $Name -text "" -variable allwarehouse -onvalue "true" -offvalue
 if {$ora_driver == "test" } {
 	$Name configure -state disabled
 	}
-set Name $Parent.f1.e24
+   set Name $Parent.f1.e24
    set Prompt $Parent.f1.p24
    ttk::label $Prompt -text "Time Profile :"
 ttk::checkbutton $Name -text "" -variable timeprofile -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 26 -sticky e
    grid $Name -column 1 -row 26 -sticky ew
 if {$ora_driver == "test" } {
+	$Name configure -state disabled
+	}
+   set Name $Parent.f1.e25
+   set Prompt $Parent.f1.p25
+   ttk::label $Prompt -text "Asynchronous Scaling :"
+ttk::checkbutton $Name -text "" -variable async_scale -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 27 -sticky e
+   grid $Name -column 1 -row 27 -sticky ew
+if {$ora_driver == "test" } {
+	set async_scale "false"
+	$Name configure -state disabled
+	}
+bind .tpc.f1.e25 <Any-ButtonRelease> {
+if { $async_scale eq "true" } {
+set async_verbose "false"
+.tpc.f1.e26 configure -state disabled
+.tpc.f1.e27 configure -state disabled
+.tpc.f1.e28 configure -state disabled
+	} else {
+if { $ora_driver eq "timed" } {
+set keyandthink "true"
+.tpc.f1.e26 configure -state normal
+.tpc.f1.e27 configure -state normal
+.tpc.f1.e28 configure -state normal
+		}
+	}
+}
+set Name $Parent.f1.e26
+   set Prompt $Parent.f1.p26
+   ttk::label $Prompt -text "Asynch Clients per Virtual User :"
+   ttk::entry $Name -width 30 -textvariable async_client
+   grid $Prompt -column 0 -row 28 -sticky e
+   grid $Name -column 1 -row 28 -sticky ew
+if {$ora_driver == "test" || $async_scale == "false" } {
+	$Name configure -state disabled
+	}
+set Name $Parent.f1.e27
+   set Prompt $Parent.f1.p27
+   ttk::label $Prompt -text "Asynch Client Login Delay :"
+   ttk::entry $Name -width 30 -textvariable async_delay
+   grid $Prompt -column 0 -row 29 -sticky e
+   grid $Name -column 1 -row 29 -sticky ew
+if {$ora_driver == "test" || $async_scale == "false" } {
+	$Name configure -state disabled
+	}
+   set Name $Parent.f1.e28
+   set Prompt $Parent.f1.p28
+   ttk::label $Prompt -text "Asynchronous Verbose :"
+ttk::checkbutton $Name -text "" -variable async_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 30 -sticky e
+   grid $Name -column 1 -row 30 -sticky ew
+if {$ora_driver == "test" || $async_scale == "false" } {
+	set async_verbose "false"
 	$Name configure -state disabled
 	}
 }
@@ -480,7 +556,7 @@ upvar #0 configoracle configoracle
 #set variables to values in dict
 setlocaltpchvars $configoracle
 variable orafields
-set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e21a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
+set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e1a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
    catch "destroy .tpch"
    ttk::toplevel .tpch
    wm withdraw .tpch

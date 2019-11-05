@@ -92,7 +92,7 @@ set $val [ dict get $attributes $val ]
 }}}}
 #set matching fields in dialog to temporary dict
 variable redfields
-set redfields [ dict create connection {redis_host {.tpc.f1.e1 get} redis_port {.tpc.f1.e2 get}} tpcc {redis_namespace {.tpc.f1.e3 get} redis_total_iterations {.tpc.f1.e8 get} redis_rampup {.tpc.f1.e11 get} redis_duration {.tpc.f1.e12 get} redis_count_ware $redis_count_ware redis_num_vu $redis_num_vu redis_total_iterations $redis_total_iterations redis_raiseerror $redis_raiseerror redis_keyandthink $redis_keyandthink redis_driver $redis_driver redis_rampup $redis_rampup redis_duration $redis_duration redis_allwarehouse $redis_allwarehouse redis_timeprofile $redis_timeprofile}]
+set redfields [ dict create connection {redis_host {.tpc.f1.e1 get} redis_port {.tpc.f1.e2 get}} tpcc {redis_namespace {.tpc.f1.e3 get} redis_total_iterations {.tpc.f1.e8 get} redis_rampup {.tpc.f1.e11 get} redis_duration {.tpc.f1.e12 get} redis_async_client {.tpc.f1.e16 get} redis_async_delay {.tpc.f1.e17 get}  redis_count_ware $redis_count_ware redis_num_vu $redis_num_vu redis_total_iterations $redis_total_iterations redis_raiseerror $redis_raiseerror redis_keyandthink $redis_keyandthink redis_driver $redis_driver redis_rampup $redis_rampup redis_duration $redis_duration redis_allwarehouse $redis_allwarehouse redis_timeprofile $redis_timeprofile redis_async_scale $redis_async_scale redis_async_verbose $redis_async_verbose}]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -187,6 +187,11 @@ set redis_timeprofile "false"
 .tpc.f1.e12 configure -state disabled
 .tpc.f1.e13 configure -state disabled
 .tpc.f1.e14 configure -state disabled
+.tpc.f1.e15 configure -state disabled
+.tpc.f1.e16 configure -state disabled
+.tpc.f1.e17 configure -state disabled
+.tpc.f1.e18 configure -state disabled
+
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable redis_driver
@@ -196,6 +201,10 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e12 configure -state normal
 .tpc.f1.e13 configure -state normal
 .tpc.f1.e14 configure -state normal
+.tpc.f1.e15 configure -state normal
+.tpc.f1.e16 configure -state normal
+.tpc.f1.e17 configure -state normal
+.tpc.f1.e18 configure -state normal
 }
 set Name $Parent.f1.e8
    set Prompt $Parent.f1.p8
@@ -213,6 +222,17 @@ ttk::checkbutton $Name -text "" -variable redis_raiseerror -onvalue "true" -offv
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e10
 ttk::checkbutton $Name -text "" -variable redis_keyandthink -onvalue "true" -offvalue "false"
+bind .tpc.f1.e10 <Any-ButtonRelease> {
+if { $redis_driver eq "timed" } {
+if { $redis_keyandthink eq "true" } {
+set redis_async_scale "false"
+set redis_async_verbose "false"
+.tpc.f1.e16 configure -state disabled
+.tpc.f1.e17 configure -state disabled
+.tpc.f1.e18 configure -state disabled
+        }
+    }
+}
    grid $Prompt -column 0 -row 11 -sticky e
    grid $Name -column 1 -row 11 -sticky w
 set Name $Parent.f1.e11
@@ -251,6 +271,59 @@ ttk::checkbutton $Name -text "" -variable redis_timeprofile -onvalue "true" -off
 if {$redis_driver == "test" } {
 	$Name configure -state disabled
 	}
+   set Name $Parent.f1.e15
+   set Prompt $Parent.f1.p15
+   ttk::label $Prompt -text "Asynchronous Scaling :"
+ttk::checkbutton $Name -text "" -variable redis_async_scale -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 16 -sticky e
+   grid $Name -column 1 -row 16 -sticky ew
+if {$redis_driver == "test" } {
+        set redis_async_scale "false"
+        $Name configure -state disabled
+        }
+bind .tpc.f1.e15 <Any-ButtonRelease> {
+if { $redis_async_scale eq "true" } {
+set redis_async_verbose "false"
+.tpc.f1.e16 configure -state disabled
+.tpc.f1.e17 configure -state disabled
+.tpc.f1.e18 configure -state disabled
+        } else {
+if { $redis_driver eq "timed" } {
+set redis_keyandthink "true"
+.tpc.f1.e16 configure -state normal
+.tpc.f1.e17 configure -state normal
+.tpc.f1.e18 configure -state normal
+                }
+        }
+}
+   set Name $Parent.f1.e16
+   set Prompt $Parent.f1.p16
+   ttk::label $Prompt -text "Asynch Clients per Virtual User :"
+   ttk::entry $Name -width 30 -textvariable redis_async_client
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky ew
+if {$redis_driver == "test" || $redis_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+set Name $Parent.f1.e17
+   set Prompt $Parent.f1.p17
+   ttk::label $Prompt -text "Asynch Client Login Delay :"
+   ttk::entry $Name -width 30 -textvariable redis_async_delay
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
+if {$redis_driver == "test" || $redis_async_scale == "false" } {
+        $Name configure -state disabled
+        }
+   set Name $Parent.f1.e18
+   set Prompt $Parent.f1.p18
+   ttk::label $Prompt -text "Asynchronous Verbose :"
+ttk::checkbutton $Name -text "" -variable redis_async_verbose -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
+if {$redis_driver == "test" || $redis_async_scale == "false" } {
+        set redis_async_verbose "false"
+        $Name configure -state disabled
+        }
 }
 set Name $Parent.b2
   ttk::button $Name -command {

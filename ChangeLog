@@ -863,14 +863,14 @@ Added Oracle Database Metrics based on Ashmon by Kyle Hailey, used with permissi
 
 ---------------------------------------------------------------------
 
-Version 3.2 2019
+Version 3.2 Jul 2019
 
 Bug fixes 
 
 [#132] Running buildschema in CLI for TPC-H has incorrect VU count
 [#133] Use all warehouses omits warehouse 1 and fails if more VUsers than warehouses
 [#134] Buildschema in CLI errors if 1 virtual user and more than 1 warehouse
-[GH#58] Bug when building TPC-C and TPC-H on Azure
+[TPC-Council#58] Bug when building TPC-C and TPC-H on Azure
 
 Updated time profiler to report percentile values at 10 second intervals
 
@@ -881,3 +881,18 @@ Updated hammerdbcli to enable autostart with script
 Added PostgreSQL v11+ compatible Stored Procedures to use instead of Functions
 
 Added HTTP Web Service interface
+
+---------------------------------------------------------------------
+
+Version 3.3 Oct 2019
+
+Updated Binaries to:
+
+tcl8.6.9, tk8.6.9, thread2.8.4, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.0.0, redis 0.1
+
+Issues
+
+TPC-Council#44 Event driven virtual user and connection scaling with promise package
+TPC-Council#72 HammerDb crashes in tclodbc - converted SQL Server TPC-C/TPC-H build and driver to tdbc::odbc
+TPC-Council#75 TPC-H cannot be executed for AWS RDS Oracle
+

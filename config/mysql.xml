@@ -23,6 +23,10 @@
             <mysql_duration>5</mysql_duration>
             <mysql_allwarehouse>false</mysql_allwarehouse>
             <mysql_timeprofile>false</mysql_timeprofile>
+	    <mysql_async_scale>false</mysql_async_scale>
+            <mysql_async_client>10</mysql_async_client>
+            <mysql_async_verbose>false</mysql_async_verbose>
+            <mysql_async_delay>1000</mysql_async_delay>
         </driver>
     </tpcc>
     <tpch>

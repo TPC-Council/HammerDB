@@ -3,7 +3,7 @@ global maxvuser suppo ntimes threadscreated _ED
 upvar #0 dbdict dbdict
 if {[dict exists $dbdict mssqlserver library ]} {
         set library [ dict get $dbdict mssqlserver library ]
-} else { set library "tclodbc 2.5.2" }
+} else { set library "tdbc::odbc 1.0.6" }
 if { [ llength $library ] > 1 } {
 set version [ lindex $library 1 ]
 set library [ lindex $library 0 ]
@@ -41,12 +41,12 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 proc UpdateStatistics { odbc db azure } {
 puts "UPDATING SCHEMA STATISTICS"
 if {!$azure} {
-odbc "EXEC sp_updatestats"
+$odbc evaldirect "EXEC sp_updatestats"
 } else {
 set sql(1) "USE $db"
 set sql(2) "EXEC sp_updatestats"
 for { set i 1 } { $i <= 2 } { incr i } {
-odbc  $sql($i)
+$odbc evaldirect $sql($i)
                 }
         }
 return
@@ -55,10 +55,12 @@ return
 proc CreateDatabase { odbc db azure } {
 set table_count 0
 puts "CHECKING IF DATABASE $db EXISTS"
-set db_exists [ odbc "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+set db_exists [ lindex {*}$rows 1 ]
 if { $db_exists } {
-if {!$azure} {odbc "use $db"}
-set table_count [ odbc "select COUNT(*) from sys.tables" ]
+if {!$azure} {$odbc evaldirect "use $db"}
+set rows [ odbc allrows "select COUNT(*) from sys.tables" ]
+set table_count [ lindex {*}$rows 1 ]
 if { $table_count == 0 } {
 puts "Empty database $db exists"
 puts "Using existing empty Database $db for Schema build"
@@ -68,7 +70,7 @@ error "Database $db exists but is not empty, specify a new or empty database nam
         }
 } else {
 puts "CREATING DATABASE $db"
-odbc "create database $db"
+$odbc evaldirect "create database $db"
         }
 }
 
@@ -94,7 +96,7 @@ set sql(7) "create table dbo.supplier( s_suppkey int not null, s_nationkey int n
 set sql(8) "create table dbo.orders( o_orderdate date null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice money null, o_comment varchar(79) null)"
 }
 for { set i 1 } { $i <= 8 } { incr i } {
-odbc  $sql($i)
+$odbc evaldirect $sql($i)
 		}
 return
 	}
@@ -173,7 +175,7 @@ set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
 set sql(34) "alter table dbo.orders check constraint order_customer_fk"
 	}
 for { set i 1 } { $i <= 34 } { incr i } {
-odbc  $sql($i)
+$odbc evaldirect $sql($i)
 		}
 return
 	}
@@ -183,9 +185,8 @@ for { set i 1 } { $i <= 5 } {incr i} {
 set code [ expr {$i - 1} ]
 set text [ lindex [ lindex [ get_dists regions ] [ expr {$i - 1} ] ] 0 ]
 set comment [ TEXT_1 72 ]
-odbc "INSERT INTO region (r_regionkey,r_name,r_comment) VALUES ('$code' , '$text' , '$comment')"
+$odbc evaldirect "INSERT INTO region (r_regionkey,r_name,r_comment) VALUES ('$code' , '$text' , '$comment')"
 	}
-odbc commit
  }
 
 proc mk_nation { odbc } {
@@ -201,9 +202,8 @@ switch $nind {
 10 - 11 - 13 - 20 { set join 4 }
 }
 set comment [ TEXT_1 72 ]
-odbc "INSERT INTO nation (n_nationkey, n_name, n_regionkey, n_comment) VALUES ('$code' , '$text' , '$join' , '$comment')"
+$odbc evaldirect "INSERT INTO nation (n_nationkey, n_name, n_regionkey, n_comment) VALUES ('$code' , '$text' , '$join' , '$comment')"
 	}
-odbc commit
 }
 
 proc mk_supp { odbc start_rows end_rows } {
@@ -235,8 +235,7 @@ set comment [ string replace $comment $st $fi $BBB_COMMEND ]
 append supp_val_list ('$suppkey', '$nation_code', '$comment', '$name', '$address', '$phone', '$acctbal')
 incr bld_cnt
 if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
-odbc "INSERT INTO supplier (s_suppkey, s_nationkey, s_comment, s_name, s_address, s_phone, s_acctbal) VALUES $supp_val_list"
-	odbc commit
+$odbc evaldirect "INSERT INTO supplier (s_suppkey, s_nationkey, s_comment, s_name, s_address, s_phone, s_acctbal) VALUES $supp_val_list"
 	set bld_cnt 1
 	unset supp_val_list
 	} else {
@@ -246,7 +245,6 @@ if { ![ expr {$i % 10000} ] } {
 	puts "Loading SUPPLIER...$i"
 	}
    }
-	odbc commit
 puts "SUPPLIER Done Rows $start_rows..$end_rows"
 return
 }
@@ -265,8 +263,7 @@ set comment [ TEXT_1 73 ]
 append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment') 
 incr bld_cnt
 if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
-odbc "INSERT INTO customer (c_custkey, c_mktsegment, c_nationkey, c_name, c_address, c_phone, c_acctbal, c_comment) values $cust_val_list"
-	odbc commit
+$odbc evaldirect "INSERT INTO customer (c_custkey, c_mktsegment, c_nationkey, c_name, c_address, c_phone, c_acctbal, c_comment) values $cust_val_list"
 	set bld_cnt 1
 	unset cust_val_list
    	} else {
@@ -276,12 +273,11 @@ if { ![ expr {$i % 10000} ] } {
 	puts "Loading CUSTOMER...$i"
 	}
 }
-odbc commit
 puts "CUSTOMER Done Rows $start_rows..$end_rows"
 return
 }
 
-proc mk_part { mysql_handler start_rows end_rows scale_factor } {
+proc mk_part { odbc start_rows end_rows scale_factor } {
 set bld_cnt 1
 for { set i $start_rows } { $i <= $end_rows } { incr i } {
 set partkey $i
@@ -314,9 +310,8 @@ append psupp_val_list ,
 incr bld_cnt
 # end of psupp loop
 if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
-odbc "INSERT INTO part (p_partkey, p_type, p_size, p_brand, p_name, p_container, p_mfgr, p_retailprice, p_comment) VALUES $part_val_list"
-odbc "INSERT INTO partsupp (ps_partkey, ps_suppkey, ps_supplycost, ps_availqty, ps_comment) VALUES $psupp_val_list"
-	odbc commit
+$odbc evaldirect "INSERT INTO part (p_partkey, p_type, p_size, p_brand, p_name, p_container, p_mfgr, p_retailprice, p_comment) VALUES $part_val_list"
+$odbc evaldirect "INSERT INTO partsupp (ps_partkey, ps_suppkey, ps_supplycost, ps_availqty, ps_comment) VALUES $psupp_val_list"
 	set bld_cnt 1
 	unset part_val_list
 	unset psupp_val_list
@@ -328,12 +323,11 @@ if { ![ expr {$i % 10000} ] } {
 	puts "Loading PART/PARTSUPP...$i"
 	}
 }
-odbc commit
 puts "PART and PARTSUPP Done Rows $start_rows..$end_rows"
 return
 }
 
-proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
+proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
 set bld_cnt 1
 set refresh 100
 set delta 1
@@ -411,9 +405,8 @@ if { $ocnt == $lcnt } { set orderstatus "F" }
 append order_val_list ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
 incr bld_cnt
 if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
-odbc "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES $lineit_val_list"
-odbc "INSERT INTO orders (o_orderdate, o_orderkey, o_custkey, o_orderpriority, o_shippriority, o_clerk, o_orderstatus, o_totalprice, o_comment) VALUES $order_val_list"
-	odbc commit
+$odbc evaldirect "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES $lineit_val_list"
+$odbc evaldirect "INSERT INTO orders (o_orderdate, o_orderkey, o_custkey, o_orderpriority, o_shippriority, o_clerk, o_orderstatus, o_totalprice, o_comment) VALUES $order_val_list"
 	set bld_cnt 1
 	unset lineit_val_list
 	unset order_val_list
@@ -425,7 +418,6 @@ if { ![ expr {$i % 10000} ] } {
 	puts "Loading ORDERS/LINEITEM...$i"
 	}
 }
-odbc commit
 puts "ORDERS and LINEITEM Done Rows $start_rows..$end_rows"
 return
 }
@@ -498,13 +490,11 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $db ] SCHEMA"
-if [catch {database connect odbc $connection} message ] {
-puts stderr "Error: the database connection to $connection could not be established"
-error $message
-return
+if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+error "Connection to $connection could not be established : $message"
  } else {
 CreateDatabase odbc $db $azure
-if {!$azure} {odbc "use $db"}
+if {!$azure} {odbc evaldirect "use $db"}
 CreateTables odbc $colstore
 }
 if { $threaded eq "MULTI-THREADED" } {
@@ -555,13 +545,11 @@ return
         }
 after 5000
 }
-if [catch {database connect odbc $connection} message ] {
-puts stderr "error, the database connection to $connection could not be established"
-error $message
-return
+if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+error "Connection to $connection could not be established : $message"
  } else {
-if {!$azure} {odbc "use $db"}
-odbc set autocommit off 
+if {!$azure} {odbc evaldirect "use $db"}
+odbc evaldirect "set implicit_transactions OFF"
 } 
 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
 if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
@@ -595,7 +583,7 @@ if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposit
 CreateIndexes odbc $maxdop $colstore
 UpdateStatistics odbc $db $azure
 puts "[ string toupper $db ] SCHEMA COMPLETE"
-odbc disconnect
+odbc close
 return
 		}
 	}
@@ -609,7 +597,7 @@ global _ED
 upvar #0 dbdict dbdict
 if {[dict exists $dbdict mssqlserver library ]} {
         set library [ dict get $dbdict mssqlserver library ]
-} else { set library "tclodbc 2.5.2" }
+} else { set library "tdbc::odbc 1.0.6" }
 if { [ llength $library ] > 1 } {
 set version [ lindex $library 1 ]
 set library [ lindex $library 0 ]
@@ -671,14 +659,14 @@ return $connection
 }
 
 proc standsql { odbc sql RAISEERROR } {
-if {[ catch {set sql_output [odbc $sql ]} message]} {
+if {[ catch {set rows [$odbc allrows $sql ]} message]} {
 if { $RAISEERROR } {
 error "Query Error :$message"
 	} else {
 puts "$message"
 	}
 } else {
-return $sql_output
+return $rows
 	}
 } 
 #########################
@@ -734,7 +722,7 @@ if { $ocnt == $lcnt } { set orderstatus "F" }
 if { $REFRESH_VERBOSE } {
 puts "Refresh Insert Orderkey $okey..."
 	}
-odbc "INSERT INTO orders (o_orderdate, o_orderkey, o_custkey, o_orderpriority, o_shippriority, o_clerk, o_orderstatus, o_totalprice, o_comment) VALUES ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')"
+$odbc evaldirect "INSERT INTO orders (o_orderdate, o_orderkey, o_custkey, o_orderpriority, o_shippriority, o_clerk, o_orderstatus, o_totalprice, o_comment) VALUES ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')"
 #Lineitem Loop
 for { set l 0 } { $l < $lcnt } {incr l} {
 set lokey $okey
@@ -767,13 +755,11 @@ if { [ julian $s_date ] <= 95168 } {
 incr ocnt
 set lstatus "F"
 } else { set lstatus "O" }
-odbc "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
+odbc evaldirect "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
   }
 if { ![ expr {$i % 1000} ] } {     
-odbc commit
    }
 }
-odbc commit
 }
 
 proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -793,28 +779,23 @@ set okey [ mk_sparse $i $upd_num ]
 } else {
 set okey [ mk_sparse $i [ expr {$upd_num / (10000 / $refresh)} ] ]
 }
-odbc "DELETE FROM lineitem WHERE l_orderkey = $okey"
-odbc "DELETE FROM orders WHERE o_orderkey = $okey"
+$odbc evaldirect "DELETE FROM lineitem WHERE l_orderkey = $okey"
+$odbc evaldirect "DELETE FROM orders WHERE o_orderkey = $okey"
 if { $REFRESH_VERBOSE } {
 puts "Refresh Delete Orderkey $okey..."
 	}
 if { ![ expr {$i % 1000} ] } {     
-odbc commit
    }
-}
-odbc commit
+ }
 }
 
 proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
-if [catch {database connect odbc $connection} message ] {
-puts stderr "Error: the database connection to $connection could not be established"
-error $message
-return
-} else {
-database connect odbc $connection
-if {!$azure} {odbc "use $database"}
-odbc set autocommit off
+if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+error "Connection to $connection could not be established : $message"
+ } else {
+if {!$azure} {odbc evaldirect "use $database"}
+odbc evaldirect "set implicit_transactions OFF"
 }
 set upd_num 1
 for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
@@ -842,8 +823,7 @@ puts "Completed update set(s) $set_counter in $rvaltot seconds"
 incr upd_num
         }
 puts "Completed $update_sets update set(s)"
-odbc commit
-odbc disconnect
+odbc close
 }
 #########################
 #TPCH QUERY GENERATION
@@ -1068,14 +1048,11 @@ return $q2sub
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db RAISEERROR VERBOSE maxdop total_querysets myposition } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
-if [catch {database connect odbc $connection} message ] {
-puts stderr "Error: the database connection to $connection could not be established"
-error $message
-return
-} else {
-database connect odbc $connection
-if {!$azure} {odbc "use $db"}
-odbc set autocommit off
+if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+error "Connection to $connection could not be established : $message"
+ } else {
+if {!$azure} {odbc evaldirect "use $db"}
+odbc evaldirect "set implicit_transactions OFF"
 }
 for {set it 0} {$it < $total_querysets} {incr it} {
 if {  [ tsv::get application abort ]  } { break }
@@ -1111,7 +1088,7 @@ puts "query $qos completed in $value seconds"
             set q15c 0
             while {$q15c <= [expr $q15length - 1] } {
 	if { $q15c != 1 } {
-if {[ catch {set sql_output [odbc $dssquery($qos,$q15c)]} message]} {
+if {[ catch {set sql_output [odbc evaldirect $dssquery($qos,$q15c)]} message]} {
 if { $RAISEERROR } {
 error "Query Error :$message"
 	} else {
@@ -1135,8 +1112,7 @@ set wall [ expr $end - $start ]
 set qsets [ expr $it + 1 ]
 puts "Completed $qsets query set(s) in $wall seconds"
 	}
-odbc commit
-odbc disconnect
+odbc close
  }
 #########################
 #RUN TPC-H
