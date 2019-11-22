@@ -15,7 +15,7 @@ set wh [expr ((($myposition - 2) + ($addMore * $loadUserCount))%$w_id_input)+1]
 if {$addMore >= $whRequiredCount} {
 set addMore -1
 } else {
-puts "VU $myposition : Assigning WID=$wh based on VU count $loadUserCount, Warehouses = $w_id_input ($addMore out of $whRequiredCount)"
+puts "VU $myposition : Assigning WID=$wh based on VU count $loadUserCount, Warehouses = $w_id_input ([expr $addMore + 1] out of [ expr int($whRequiredCount)])"
 lappend myWarehouses $wh
 set addMore [expr $addMore + 1]
 }
