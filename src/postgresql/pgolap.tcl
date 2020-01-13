@@ -720,14 +720,18 @@ if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules direct
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
-if {[catch { pg_select $lda $sql var { if { $VERBOSE } { 
+set rowcount 0
+if {[catch { pg_select $lda $sql var {
+set rowcount [ expr $var(.tupno) + 1 ]
+if { $VERBOSE } {
 foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
 if { $RAISEERROR } {
 error "Query Error : $message"
-	} else {
+        } else {
 puts "Query Failed : $sql : $message"
-	}
-      } 
+        }
+   }
+return [ expr $rowcount ]
 }
 
 proc ConnectToPostgres { host port user password dbname } {
@@ -1168,6 +1172,7 @@ if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
         }
 for {set it 0} {$it < $total_querysets} {incr it} {
 if {  [ tsv::get application abort ]  } { break }
+unset -nocomplain qlist
 set start [ clock seconds ]
 for { set q 1 } { $q <= 22 } { incr q } {
 set dssquery($q)  [sub_query $q $scale_factor $myposition ]
@@ -1194,9 +1199,10 @@ if {(($qos eq 17) || ($qos eq 20))  && $SKIP_QUERY_17_20 eq "true" } {
 puts "Long Running Queries 17 and 20 Not Executed"
 	} else {
 set t0 [clock clicks -millisec]
-standsql $lda $dssquery($qos) $RAISEERROR $VERBOSE
+set rowcount [ standsql $lda $dssquery($qos) $RAISEERROR $VERBOSE ]
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
+if { $rowcount > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 		}
 	      } else {
@@ -1215,8 +1221,11 @@ pg_result $result -clear
 	}
 	} else {
 set t0 [clock clicks -millisec]
-if {[catch { pg_select $lda $dssquery($qos,$q15c) var { if { $VERBOSE } { 
+if {[catch { pg_select $lda $dssquery($qos,$q15c) var { 
+set rowcount [ expr $var(.tupno) + 1 ]		
+if { $VERBOSE } { 
 foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
+set rowcount 0
 if { $RAISEERROR } {
 error "Query Error : $message"
 	} else {
@@ -1225,6 +1234,7 @@ puts "Query Failed : $dssquery($qos,$q15c) : $message"
       } 
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
+if { $rowcount > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 		}
             incr q15c
@@ -1235,6 +1245,7 @@ set end [ clock seconds ]
 set wall [ expr $end - $start ]
 set qsets [ expr $it + 1 ]
 puts "Completed $qsets query set(s) in $wall seconds"
+puts "Geometric mean of query times returning rows ([llength $qlist]) is [ format \"%.5f\" [ gmean $qlist ]]"
 	}
 pg_disconnect $lda
  }

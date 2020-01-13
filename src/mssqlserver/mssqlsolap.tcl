@@ -1056,6 +1056,7 @@ odbc evaldirect "set implicit_transactions OFF"
 }
 for {set it 0} {$it < $total_querysets} {incr it} {
 if {  [ tsv::get application abort ]  } { break }
+unset -nocomplain qlist
 set start [ clock seconds ]
 for { set q 1 } { $q <= 22 } { incr q } {
 set dssquery($q)  [sub_query $q $scale_factor $maxdop $myposition ]
@@ -1083,6 +1084,7 @@ set oput [ standsql odbc $dssquery($qos) $RAISEERROR ]
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 if {$VERBOSE} { printlist $oput }
+if { [ llength $oput ] > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 	      } else {
             set q15c 0
@@ -1101,6 +1103,7 @@ set oput [ standsql odbc $dssquery($qos,$q15c) $RAISEERROR ]
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 if {$VERBOSE} { printlist $oput }
+if { [ llength $oput ] > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 		}
             incr q15c
@@ -1111,6 +1114,7 @@ set end [ clock seconds ]
 set wall [ expr $end - $start ]
 set qsets [ expr $it + 1 ]
 puts "Completed $qsets query set(s) in $wall seconds"
+puts "Geometric mean of query times returning rows ([llength $qlist]) is [ format \"%.5f\" [ gmean $qlist ]]"
 	}
 odbc close
  }
