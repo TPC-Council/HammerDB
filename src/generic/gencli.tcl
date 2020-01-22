@@ -7,6 +7,10 @@ namespace eval ttk {
 variable currentTheme "black"
 proc scrollbar { args } { ; }
 	}
+proc putscli { output } {
+puts $output
+TclReadLine::print "\r"
+ }
 # Pure Tcl implementation of [string insert] command.
 proc ::tcl::string::insert {string index insertString} {
     # Convert end-relative and TIP 176 indexes to simple integers.
@@ -55,6 +59,9 @@ proc .ed_mainFrame.buttons.test { args } { ; }
 proc .ed_mainFrame.buttons.runworld { args } { ; }
 proc ed_lvuser_button { args } { ; }
 proc .ed_mainFrame.editbuttons.test { args } { ; }
+proc .ed_mainFrame.editbuttons.distribute { args } { ; }
+proc destroy { args } { ; }
+proc ed_edit { args } { ; }
 proc winfo { args } { return "false" }
 proc even x {expr {($x % 2) == 0}}
 proc odd  x {expr {($x % 2) != 0}}
@@ -76,7 +83,7 @@ puts -nonewline "Vuser [ expr $vuser + 1 ] created MONITOR"
  } else {
 puts -nonewline "Vuser [ expr $vuser + 1 ] created"
 }
-puts " - WAIT IDLE"
+putscli " - WAIT IDLE"
 dict set vustatus [ expr $vuser + 1 ] "WAIT IDLE"
 }}
 set totrun [ expr $maxvuser * $ntimes ]
@@ -85,33 +92,26 @@ set totrun [ expr $maxvuser * $ntimes ]
 proc runninguser { threadid } { 
 global table threadscreated thvnum inrun AVUC vustatus
 set AVUC "run"
-TclReadLine::gotocol 0
-catch {puts [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ] } 
+catch {putscli [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ] } 
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "RUNNING"
-TclReadLine::gotocol 10
  }
 
 proc printresult { result threadid } { 
 global vustatus table threadscreated thvnum succ fail totrun totcount inrun AVUC
 incr totcount
 if { $result == 0 } {
-TclReadLine::gotocol 0
-catch {puts [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ] } 
+catch {putscli [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ] } 
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH SUCCESS"
-TclReadLine::gotocol 10
 } else {
-TclReadLine::gotocol 0
-catch {puts [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ] } 
+catch {putscli [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ] } 
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH FAILED"
-TclReadLine::gotocol 10
 }
 if { $totrun == $totcount } {
 set AVUC "complete"
 if { [ info exists inrun ] } { unset inrun }
-TclReadLine::gotocol 0
-catch { puts "ALL VIRTUAL USERS COMPLETE" }
+catch { putscli "ALL VIRTUAL USERS COMPLETE" }
 refreshscript
-TclReadLine::prompt ""
+TclReadLine::prompt
     }
 }
 
@@ -122,23 +122,23 @@ set message "tk_messageBox with unknown message"
  } else {
 set message [ lindex $args [expr $messind + 1] ]
 }
-puts $message
+putscli $message
 set typeind [ lsearch $args yesno ]
 if { $typeind eq -1 } { set yesno "false" 
 	} else {
 	set yesno "true"
 	}
 if { $yesno eq "true" } {
-puts "Enter yes or no: replied yes"
+putscli "Enter yes or no: replied yes"
 return "yes"
-#puts "Enter yes or no: "
+#putscli "Enter yes or no: "
 #Delete 2 lines above for interactive response
 gets stdin reply
 set yntoup [ string toupper $reply ]
 if { [ string match NO $yntoup ] } { 
-puts "replied no"
+putscli "replied no"
 	return "no" } else { 
-puts "replied yes"
+putscli "replied yes"
 	return "yes" }
 	}
 return
@@ -149,19 +149,13 @@ proc myerrorproc { id info } {
 global threadsbytid
 if { ![string match {*index*} $info] } {
 if { [ string length $info ] == 0 } {
-TclReadLine::gotocol 0
-puts "Warning: a running Virtual User was terminated, any pending output has been discarded"
-TclReadLine::gotocol 10
+putscli "Warning: a running Virtual User was terminated, any pending output has been discarded"
 } else {
 if { [ info exists threadsbytid($id) ] } {
-TclReadLine::gotocol 0
-puts "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
-TclReadLine::gotocol 10
+putscli "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
         }  else {
     if {[string match {*.tc*} $info]} {
-TclReadLine::gotocol 0
-puts "Warning: Transaction Counter stopped, connection message not displayed"
-TclReadLine::gotocol 10
+putscli "Warning: Transaction Counter stopped, connection message not displayed"
         } else {
                 ;
 #Background Error from Virtual User suppressed
@@ -174,9 +168,7 @@ TclReadLine::gotocol 10
 rename Log _Log
 proc Log {id msg lastline} {
 global tids threadsbytid
-TclReadLine::gotocol 0
-catch {puts [ join " Vuser\ [expr $threadsbytid($id) + 1]:$lastline" ]} 
-TclReadLine::gotocol 10
+catch {putscli [ join " Vuser\ [expr $threadsbytid($id) + 1]:$lastline" ]} 
 }
 
 proc ed_edit_clear {} {
@@ -280,7 +272,7 @@ proc pdict {args} {
 }
 
 proc vuset { args } {
-global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps
+global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
 if {[ llength $args ] != 2} {
 puts {Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps] value}
 } else {
@@ -311,6 +303,7 @@ if { $virtual_users < 1 } { tk_messageBox -message "The number of virtual users 
 	return
         }
    }
+remote_command [ concat vuset vu $val ]
 }
 delay {
 set conpause $val
@@ -324,6 +317,7 @@ if { $conpause < 1 } { tk_messageBox -message "User Delay(ms) must be 1 or great
         set conpause 500
         }
    }
+remote_command [ concat vuset delay $val ]
 }
 repeat {
 set delayms $val
@@ -337,6 +331,7 @@ if { $delayms < 1 } { tk_messageBox -message "Repeat Delay(ms) must be 1 or grea
         set delayms 500
         }
    }
+remote_command [ concat vuset repeat $val ]
 }
 iterations {
 set ntimes $val
@@ -350,6 +345,7 @@ if { $ntimes < 1 } { tk_messageBox -message "Iterations must be 1 or greater"
         set ntimes 1
         }
    }
+remote_command [ concat vuset iterations $val ]
 }
 showoutput { 
 set suppo $val
@@ -363,6 +359,7 @@ if { $suppo > 1 } { tk_messageBox -message "Show Output must be 0 or 1"
         set suppo 1
         }
    }
+remote_command [ concat vuset showoutput $val ]
 }
 logtotemp { 
 set optlog $val
@@ -376,6 +373,7 @@ if { $optlog > 1 } { tk_messageBox -message "Log Output must be 0 or 1"
         set optlog 0
         }
    }
+remote_command [ concat vuset logtotemp $val ]
 }
 unique { 
 set unique_log_name $val
@@ -389,19 +387,21 @@ if { $unique_log_name > 1 } { tk_messageBox -message "Unique Log Name must be 0 
         set unique_log_name 0
         }
    }
+remote_command [ concat vuset unique $val ]
 }
 nobuff { 
-set nobuff $val
-if { ![string is integer -strict $nobuff] } {
+set no_log_buffer $val
+if { ![string is integer -strict $no_log_buffer] } {
         tk_messageBox -message "No Log Buffer must be 0 or 1"
-	puts -nonewline "setting to value: "
-        set nobuff 0
+	puts -nonewline "setting to value:0"
+        set no_log_buffer 0
         } else {
-if { $nobuff > 1 } { tk_messageBox -message "No Log Buffer must be 0 or 1"
-	puts -nonewline "setting to value: "
-        set nobuff 0
+if { $no_log_buffer > 1 } { tk_messageBox -message "No Log Buffer must be 0 or 1"
+	puts -nonewline "setting to value:0"
+        set no_log_buffer 0
         }
    }
+remote_command [ concat vuset nobuff $val ]
 }
 timestamps { 
 set log_timestamps $val
@@ -415,6 +415,7 @@ if { $log_timestamps > 1 } { tk_messageBox -message "Log timestamps must be 0 or
         set log_timestamps 0
         }
    }
+remote_command [ concat vuset timestamps $val ]
 }
 default {
 puts "Unknown vuset option"
@@ -423,10 +424,10 @@ puts {Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuf
 }}}
 
 proc diset { args } {
-global rdbms
+global rdbms opmode
 if {[ llength $args ] != 3} {
-	puts "Error: Invalid number of arguments\nUsage: diset dict key value"
-	puts "Type \"print dict\" for valid dictionaries and keys for $rdbms" 
+	putscli "Error: Invalid number of arguments\nUsage: diset dict key value"
+	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms" 
 } else {
 	set dct [ lindex [ split  $args ]  0 ]
 	set key2 [ lindex [ split  $args ]  1 ]
@@ -441,30 +442,31 @@ if { [ dict get $dbdict $key name ] eq $rdbms } {
 	if {[dict exists [ set $dictname ] $dct $key2 ]} {
 	set previous [ dict get [ set $dictname ] $dct $key2 ]
 	if { $previous eq $val } {
-	puts "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
+	putscli "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
 	} else {
 	if { [ string match *driver $key2 ] } {
-	puts "Clearing Script, reload script to activate new setting"
+	putscli "Clearing Script, reload script to activate new setting"
 	clearscript
 	if { $val != "test" && $val != "timed"  } {	
-	puts "Error: Driver script must be either \"test\" or \"timed\""
+	putscli "Error: Driver script must be either \"test\" or \"timed\""
 	return
 		}	
 	}
 	if { [catch {dict set $dictname $dct $key2 $val } message]} {
-	puts "Failed to set Dictionary value: $message"
+	putscli "Failed to set Dictionary value: $message"
 	} else {
-	puts "Changed $dct:$key2 from $previous to $val for $rdbms"
+	putscli "Changed $dct:$key2 from $previous to $val for $rdbms"
+	remote_command [ concat diset $dct $key2 $val ]
 	}}
 	} else {
-	puts {Usage: diset dict key value}
-	puts "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't"
-	puts "Type \"print dict\" for valid dictionaries and keys for $rdbms"
+	putscli {Usage: diset dict key value}
+	putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't"
+	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
 	}
 	} else {
-	puts {Usage: diset dict key value}
-	puts "Dictionary \"$dct\" for $rdbms does not exist"
-	puts "Type \"print dict\" for valid dictionaries and keys for $rdbms"
+	putscli {Usage: diset dict key value}
+	putscli "Dictionary \"$dct\" for $rdbms does not exist"
+	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
 	}
 }}}}
 
@@ -495,21 +497,20 @@ puts "Ensure that $db client libraries are installed and the location in the LD_
 	}
 } else {
 puts "Success ... loaded library $library for $db" 
-#package forget $library
-}
+		}
 	}
 }
 
 proc dbset { args } {
-global rdbms bm
+global rdbms bm opmode
 if {[ llength $args ] != 2} {
-puts {Usage: dbset [db|bm] value}
+putscli {Usage: dbset [db|bm] value}
 } else {
 set option [ lindex [ split  $args ]  0 ]
 set ind [ lsearch {db bm} $option ]
 if { $ind eq -1 } {
-puts "Error: invalid option"
-puts {Usage: dbset [db|bm] value}
+putscli "Error: invalid option"
+putscli {Usage: dbset [db|bm] value}
 return
 	}
 set val [ lindex [ split  $args ]  1 ]
@@ -524,10 +525,11 @@ lappend prefixl $prefix
 }
 set ind [ lsearch $prefixl $val ]
 if { $ind eq -1 } {
-puts "Unknown prefix $val, choose one from $prefixl"
+putscli "Unknown prefix $val, choose one from $prefixl"
 } else {
 set rdbms [ lindex $dbl $ind ]
-puts "Database set to $rdbms"
+remote_command [ concat dbset db $val ]
+putscli "Database set to $rdbms"
 	}
 }	
 bm {
@@ -541,19 +543,20 @@ set posswkl  [ split  [ dict get $dbdict $key workloads ]]
 if { $dashformat } {
 set ind [ lsearch $posswkl $toup ]
 if { $ind eq -1 } {
-puts "Unknown benchmark $toup, choose one from $posswkl"
+putscli "Unknown benchmark $toup, choose one from $posswkl"
 } else {
 set bm $toup
-puts "Benchmark set to $toup for $rdbms"
+remote_command [ concat dbset bm $toup ]
+putscli "Benchmark set to $toup for $rdbms"
 	}
       } else {
-puts "Unknown benchmark $toup, choose one from $posswkl"
+putscli "Unknown benchmark $toup, choose one from $posswkl"
 		}
 	}
 }}
 default {
-puts "Unknown dbset option"
-puts {Usage: dbset [db|bm|config] value}
+putscli "Unknown dbset option"
+putscli {Usage: dbset [db|bm|config] value}
 	}
       }
    }
@@ -645,39 +648,42 @@ puts "unknown print option"
 }
 
 proc ed_status_message { flag message } {
-	puts $message
+#Suppress GUI status messages in CLI
+#puts $message
 }
 
 proc vucreate {} {
-global _ED lprefix vustatus
+global _ED lprefix vustatus opmode
 if { [ string length $_ED(package) ] eq 0  } {
-puts "\nNo Script loaded: Load script before creating Virtual Users\n"
+putscli "No Script loaded: Load script before creating Virtual Users"
 } else {
 if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
-puts "Error: Virtual Users exist, destroy with vudestroy before creating"
+putscli "Error: Virtual Users exist, destroy with vudestroy before creating"
 return
 }
 unset -nocomplain vustatus
 set vustatus {}
+	remote_command [ concat vucreate ]
 	if { [catch {load_virtual} message]} {
-	puts "Failed to create virtual users: $message"
+	putscli "Failed to create virtual users: $message"
 	} else {
 if { $lprefix eq "loadtimed" } {
-puts "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created with Monitor VU"
+putscli "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created with Monitor VU"
 } else {
-puts "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created"
+putscli "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created"
 	    }
 	}
     }
 }
 
 proc vudestroy {} {
-	global threadscreated vustatus AVUC
+	global threadscreated threadsbytid vustatus AVUC opmode
 	if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
 	tsv::set application abort 1
 	if { [catch {ed_kill_vusers} message]} {
-	puts "Virtual Users remain running in background or shutting down, retry"
+	putscli "Virtual Users remain running in background or shutting down, retry"
 	} else {
+	remote_command [ concat vudestroy ]
 	set x 0
 	set checkstop 0
 	while {!$checkstop} {
@@ -686,18 +692,25 @@ proc vudestroy {} {
 	update
 	if {[expr [ llength [ thread::names ] ] - 1 ] eq 0} {
 	set checkstop 1
-	puts "vudestroy success"
+	putscli "vudestroy success"
 	unset -nocomplain AVUC
 	unset -nocomplain vustatus
 		} 
 	if { $x eq 20 } { 
 	set checkstop 1 
-	puts "\nVirtual Users remain running in background or shutting down, retry"
+	putscli "Virtual Users remain running in background or shutting down, retry"
 		}
 	    }
 	}	
     } else {
-	puts "No virtual users found to destroy"
+	if { $opmode eq "Slave" } {
+#In Master Slave Mode ed_kill_vusers may have already been called from Master so thread::names is 1
+	unset -nocomplain AVUC
+	unset -nocomplain vustatus
+	putscli "vudestroy from Master, Slave status clean up"
+	   } else {
+	putscli "No Virtual Users found to destroy"
+	}
     }
 }
 
@@ -727,27 +740,32 @@ return false
 }}
 
 proc loadscript {} {
-global bm _ED
+global bm _ED opmode
 if { $bm eq "TPC-H" } { loadtpch } else { loadtpcc }
 if { [ string length $_ED(package) ] > 0 } { 
-	puts "Script loaded, Type \"print script\" to view"
+	putscli "Script loaded, Type \"print script\" to view"
 } else {
-	puts "Error:script failed to load"
-}}
+	putscli "Error:script failed to load"
+	}
+remote_command [ concat loadscript ]
+}
 
 proc clearscript {} {
-global bm _ED
+global bm _ED opmode
 set _ED(package) ""
 if { [ string length $_ED(package) ] eq 0 } { 
-	puts "Script cleared"
+	putscli "Script cleared"
 } else {
-	puts "Error:script failed to clear"
-}}
+	putscli "Error:script failed to clear"
+}
+remote_command [ concat clearscript ]
+}
 
 proc refreshscript {} {
 global bm _ED
 set _ED(package) ""
 if { $bm eq "TPC-H" } { loadtpch } else { loadtpcc }
+remote_command [ concat refreshscript ]
 }
 
 proc customscript { customscript } {
@@ -769,6 +787,19 @@ if {[catch "open \"$_ED(file)\" r" fd]} {
     close $fd
 puts "Loaded $customscript"
 	}
+}
+
+proc distributescript {} {
+global opmode masterlist
+if { $opmode != "Master" } { 
+puts "Error: Cannot distribute script if not in Master mode"
+	} else {
+if { [ llength $masterlist ] eq 0 } {
+puts "Error: Master has no Slaves to distribute to"
+ 	} else {
+distribute
+	}
+    }
 }
 
 proc build_schema {} {
@@ -873,13 +904,14 @@ if { $buildvu eq 1 } { set maxvuser 1 } else {
 }
 
 proc vurun {} {
-	global _ED
+	global _ED opmode
 if { [ string length $_ED(package) ] > 0 } { 
+	remote_command [ concat vurun ]
 	if { [ catch {run_virtual} message ] } {
-	puts "Error: $message"
-	}
+	putscli "Error: $message"
+	  }
 	} else {
-puts "Error: There is no workload to run because the Script is empty"
+	putscli "Error: There is no workload to run because the Script is empty"
 	}
 }
 
@@ -1066,6 +1098,40 @@ break
   }
 }
 
+proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} args} {
+global opmode hostname id masterlist mode
+upvar 1 oldmode oldmode
+if {  [ info exists hostname ] } { ; } else { set hostname "localhost" }
+if {  [ info exists id ] } { ; } else { set id 0 }
+if {  [ info exists masterlist ] } { ; } else { set masterlist "" }
+set oldmode $opmode
+set modestring [ string tolower $assignmode ] 
+switch $modestring {
+	"current" {
+puts "Mode currently set to $opmode"
+return
+	}
+	"local" {
+set opmode "Local"
+	}
+	"master" {
+set opmode "Master"
+	}
+	"slave" {
+set opmode "Slave"
+set id $assignid
+set hostname $assignhost
+	}
+	default {
+	puts "Error:Mode to switch to must be one of Local, Master or Slave"
+	return
+	}
+}	
+ if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else { 
+if {[ tk_messageBox -icon question -title "Confirm Mode" -message "Switch from $oldmode\nto $opmode mode?" -type yesno ] == yes} { set opmode [ switch_mode $opmode $hostname $id $masterlist ] }  else { set opmode $oldmode } }
+return
+}
+
 proc quit {} {
 puts "Shutting down HammerDB CLI"
 exit
@@ -1084,10 +1150,12 @@ Type \"help command\" for more details on specific commands below"
        	dbset
        	dgset
        	diset 
+	distributescript
 	librarycheck
        	loadscript
        	print 
 	quit
+	switchmode
 	vucomplete
        	vucreate
        	vudestroy
@@ -1097,10 +1165,10 @@ Type \"help command\" for more details on specific commands below"
 	}
 } else {
 set option [ lindex [ split  $args ]  0 ]
-set ind [ lsearch {print librarycheck dbset diset buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun} $option ]
+set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun switchmode} $option ]
 if { $ind eq -1 } {
 puts "Error: invalid option"
-puts {Usage: help [print|librarycheck|dbset|diset|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun]}
+puts {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|switchmode]}
 return
 } else {
 switch  $option {
@@ -1134,6 +1202,14 @@ puts "Set the dictionary variables for the current database. Equivalent to the S
 Example:
 hammerdb>diset tpcc count_ware 10
 Changed tpcc:count_ware from 1 to 10 for Oracle"
+}
+distributescript {
+puts "distributescript"
+puts "In Master mode distributes the script loaded by Master to the connected Slaves." 
+}
+switchmode {
+puts "switchmode - Usage: switchmode \[mode\] ?MasterID? ?MasterHostname?"
+puts "Equivalent to the Mode option in the graphical interface. Mode to switch to must be one of Local, Master or Slave. If Mode is Slave then the ID and Hostname of the Master to connect to must be given."
 }
 buildschema {
 puts "buildschema - Usage: buildschema"

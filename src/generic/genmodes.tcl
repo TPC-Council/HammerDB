@@ -318,7 +318,7 @@ puts "Closed"
 unset masterlist; upvar 1 masterlist masterlist
 	}
 }
-puts "Closing $chanlist connection"
+puts "Closing [ string trim $chanlist : ] connection"
 if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
 }
@@ -329,7 +329,7 @@ update idletasks
 "Master" {
 set chanlist [ lindex [ ::comm channels ] end ]
 if { $chanlist eq "::Slave" } {
-puts "Closing $chanlist connection"
+puts "Closing [ string trim $chanlist : ] connection"
 if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
 	}
@@ -345,12 +345,14 @@ puts [ info hostname ]
 tk_messageBox -title "Master Mode Active" -message "Master Mode active at id : [ Master self ], hostname : [ info hostname ]"
 Master hook incoming {
 puts "Received a new slave connection from host $addr"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 }
 Master hook lost {
 global masterlist
 set todel [ lsearch $masterlist $id ]
 if { $todel != -1 } {
 puts "Lost connection to : $id because $reason"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 set masterlist [ lreplace $masterlist $todel $todel ]
 	}
 }
@@ -360,6 +362,7 @@ global masterlist
 if {[regexp {\"([0-9]+)\W([[:alnum:],[:punct:]]+)\"} $buffer all id host]} {
 lappend masterlist "$id $host"
 puts "New slave joined : $masterlist"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 } else {
 if {[regexp {\"Slave ([0-9]+)\W([[:alnum:],[:punct:]]+) disconnected\"} $buffer all id host]} {
 set todel [ lsearch -exact $masterlist "$id $host" ]
@@ -374,9 +377,11 @@ set masterlist [ lreplace $masterlist $todel $todel ]
 "Slave" {
 set chanlist [ lindex [ ::comm channels ] end ]
 if { $chanlist eq "::Master" } {
-puts "Closing $chanlist connection"
+puts "Closing [ string trim $chanlist : ] connection"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 	}
 }
 if { [catch {::comm new Slave -listen 1 -local 0 -port {}} b] } {
@@ -393,6 +398,7 @@ if { [catch { Slave destroy } b] } {
 ;
 } else {
 puts "slave lost connection : $reason"
+if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 set opmode "Local"
 ed_status_message -perm Local
 $Name configure -state disabled
