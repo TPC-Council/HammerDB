@@ -68,12 +68,15 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db superuser user password } {
+proc CreateUserDatabase { lda db tspace superuser user password } {
+set stmnt_count 3
+if { $tspace != "pg_default" } { incr stmnt_count }
 puts "CREATING DATABASE $db under OWNER $user"
 set sql(1) "CREATE USER $user PASSWORD '$password'"
 set sql(2) "GRANT $user to $superuser"
 set sql(3) "CREATE DATABASE $db OWNER $user"
-for { set i 1 } { $i <= 3 } { incr i } {
+set sql(4) "ALTER DATABASE $db SET TABLESPACE $tspace"
+for { set i 1 } { $i <= $stmnt_count } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
@@ -518,7 +521,7 @@ error "[pg_result $result -error]"
 return
 }
 
-proc do_tpch { host port scale_fact superuser superuser_password defaultdb db user password greenplum gpcompress num_vu } {
+proc do_tpch { host port scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
 global dist_names dist_weights weights dists weights
 ###############################################
 #Generating following rows
@@ -575,7 +578,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $superuser $user $password
+CreateUserDatabase $lda $db $tspace $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -679,7 +682,7 @@ return
 		}
 	}
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
 	} else { return }
 }
 

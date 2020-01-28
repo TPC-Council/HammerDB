@@ -14,6 +14,7 @@
             <pg_user>tpcc</pg_user>
             <pg_pass>tpcc</pg_pass>
             <pg_dbase>tpcc</pg_dbase>
+            <pg_tspace>pg_default</pg_tspace>
             <pg_vacuum>false</pg_vacuum>
             <pg_dritasnap>false</pg_dritasnap>
             <pg_oracompat>false</pg_oracompat>
@@ -43,6 +44,7 @@
             <pg_tpch_user>tpch</pg_tpch_user>
             <pg_tpch_pass>tpch</pg_tpch_pass>
             <pg_tpch_dbase>tpch</pg_tpch_dbase>
+            <pg_tpch_tspace>pg_default</pg_tpch_tspace>
 	    <pg_tpch_gpcompat>false</pg_tpch_gpcompat>
 	    <pg_tpch_gpcompress>false</pg_tpch_gpcompress>
             <pg_num_tpch_threads>1</pg_num_tpch_threads>

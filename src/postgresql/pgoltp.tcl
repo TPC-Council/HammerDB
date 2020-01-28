@@ -1350,18 +1350,21 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db superuser user password } {
-puts "CREATING DATABASE $db under OWNER $user"  
+proc CreateUserDatabase { lda db tspace superuser user password } {
+set stmnt_count 3
+if { $tspace != "pg_default" } { incr stmnt_count }
+puts "CREATING DATABASE $db under OWNER $user"
 set sql(1) "CREATE USER $user PASSWORD '$password'"
 set sql(2) "GRANT $user to $superuser"
 set sql(3) "CREATE DATABASE $db OWNER $user"
-for { set i 1 } { $i <= 3 } { incr i } {
+set sql(4) "ALTER DATABASE $db SET TABLESPACE $tspace"
+for { set i 1 } { $i <= $stmnt_count } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
-	} else {
+        } else {
 pg_result $result -clear
-	}
+        }
     }
 return
 }
@@ -1781,7 +1784,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	pg_result $result -clear
 	return
 }
-proc do_tpcc { host port count_ware superuser superuser_password defaultdb db user password ora_compatible pg_storedprocs num_vu } {
+proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs num_vu } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -1816,7 +1819,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $superuser $user $password
+CreateUserDatabase $lda $db $tspace $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -1898,7 +1901,7 @@ return
        }
    }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
 	} else { return }
 }
 
