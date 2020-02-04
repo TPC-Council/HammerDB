@@ -1571,18 +1571,21 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db superuser user password } {
+proc CreateUserDatabase { lda db tspace superuser user password } {
+set stmnt_count 3
+if { $tspace != "pg_default" } { incr stmnt_count }
 puts "CREATING DATABASE $db under OWNER $user"
 set sql(1) "CREATE USER $user PASSWORD '$password'"
 set sql(2) "GRANT $user to $superuser"
 set sql(3) "CREATE DATABASE $db OWNER $user"
-for { set i 1 } { $i <= 3 } { incr i } {
+set sql(4) "ALTER DATABASE $db SET TABLESPACE $tspace"
+for { set i 1 } { $i <= $stmnt_count } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
-	} else {
+        } else {
 pg_result $result -clear
-	}
+        }
     }
 return
 }
@@ -2002,7 +2005,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	pg_result $result -clear
 	return
 }
-proc do_tpcc { host port count_ware superuser superuser_password defaultdb db user password ora_compatible pg_storedprocs num_vu } {
+proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs num_vu } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -2037,7 +2040,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $superuser $user $password
+CreateUserDatabase $lda $db $tspace $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -2119,7 +2122,7 @@ return
        }
    }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
 	} else { return }
 }
 
@@ -2194,7 +2197,7 @@ set result [pg_exec $lda "exec neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0.0,'','',0.0,0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
 	} else {
-set result [pg_exec $lda "select neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0)" ]
+set result [ pg_exec_prepared $lda neword {} {} $no_w_id $w_id_input $no_d_id $no_c_id $ol_cnt ]
 	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2252,7 +2255,7 @@ set result [pg_exec $lda "exec payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$byname,$p_h_amount,'0','$name',$p_c_id,'','','','','','','','','','','','','','','','','','',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone,0.0,0.0,0.0,'',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
 	} else {
-set result [pg_exec $lda "select payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0)" ]
+set result [ pg_exec_prepared $lda payment {} {} $p_w_id $p_d_id $p_c_w_id $p_c_d_id $p_c_id $byname $p_h_amount $name ]
 	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2288,7 +2291,7 @@ if { $pg_storedprocs eq "true" } {
 set date [ gettimestamp ]
 set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ] 
 	} else {
-set result [pg_exec $lda "select * from ostat($w_id,$d_id,$c_id,$byname,'$name') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)" ]
+set result [ pg_exec_prepared $lda ostat {} {} $w_id $d_id $c_id $byname $name ]
 	}
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2313,7 +2316,7 @@ set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YY
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ] 
 	} else {
-set result [pg_exec $lda "select delivery($w_id,$carrier_id)" ]
+set result [ pg_exec_prepared $lda delivery {} {} $w_id $carrier_id ]
 	}
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -2337,7 +2340,7 @@ set result [pg_exec $lda "exec slev($w_id,$stock_level_d_id,$threshold)" ]
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call slev($w_id,$stock_level_d_id,$threshold,0)"]
 	} else {
-set result [pg_exec $lda "select slev($w_id,$stock_level_d_id,$threshold)" ]
+set result [ pg_exec_prepared $lda slev {} {} $w_id $stock_level_d_id $threshold ]
 	}
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -2352,6 +2355,22 @@ puts "Stock Level: $w_id $stock_level_d_id $threshold [ pg_result $result -list 
 pg_result $result -clear
 	}
 }
+
+proc fn_prep_statement { lda } {
+set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
+set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
+foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
+set result [ pg_exec $lda $prep_statement ]
+if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+error "[pg_result $result -error]"
+        } else {
+pg_result $result -clear
+        }
+    }
+}
 #RUN TPC-C
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
@@ -2360,7 +2379,11 @@ error "error, the database connection to $host could not be established"
 if { $ora_compatible eq "true" } {
 set result [ pg_exec $lda "exec dbms_output.disable" ]
 pg_result $result -clear
-	}
+	} elseif { $pg_storedprocs eq "true" } {
+        ;
+        } else {
+fn_prep_statement $lda
+        }
  }
 pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
@@ -2620,7 +2643,7 @@ set result [pg_exec $lda "exec neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0.0,'','',0.0,0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0)" ]
+set result [ pg_exec_prepared $lda neword {} {} $no_w_id $w_id_input $no_d_id $no_c_id $ol_cnt ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2677,7 +2700,7 @@ set result [pg_exec $lda "exec payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$byname,$p_h_amount,'0','$name',$p_c_id,'','','','','','','','','','','','','','','','','','',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone,0.0,0.0,0.0,'',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0)" ]
+set result [ pg_exec_prepared $lda payment {} {} $p_w_id $p_d_id $p_c_w_id $p_c_d_id $p_c_id $byname $p_h_amount $name ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2712,7 +2735,7 @@ if { $pg_storedprocs eq "true" } {
 set date [ gettimestamp ]
 set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ]
         } else {
-set result [pg_exec $lda "select * from ostat($w_id,$d_id,$c_id,$byname,'$name') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)" ]
+set result [ pg_exec_prepared $lda ostat {} {} $w_id $d_id $c_id $byname $name ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -2736,7 +2759,7 @@ set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YY
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select delivery($w_id,$carrier_id)" ]
+set result [ pg_exec_prepared $lda delivery {} {} $w_id $carrier_id ]
         }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -2759,7 +2782,7 @@ set result [pg_exec $lda "exec slev($w_id,$stock_level_d_id,$threshold)" ]
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call slev($w_id,$stock_level_d_id,$threshold,0)"]
         } else {
-set result [pg_exec $lda "select slev($w_id,$stock_level_d_id,$threshold)" ]
+set result [ pg_exec_prepared $lda slev {} {} $w_id $stock_level_d_id $threshold ]
         }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -2773,6 +2796,22 @@ pg_result $result -clear
 pg_result $result -clear
 	}
 }
+
+proc fn_prep_statement { lda } {
+set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
+set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
+foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
+set result [ pg_exec $lda $prep_statement ]
+if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+error "[pg_result $result -error]"
+        } else {
+pg_result $result -clear
+        }
+    }
+}
 #RUN TPC-C
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
@@ -2781,8 +2820,12 @@ error "error, the database connection to $host could not be established"
 if { $ora_compatible eq "true" } {
 set result [ pg_exec $lda "exec dbms_output.disable" ]
 pg_result $result -clear
-	}
- }
+	} elseif { $pg_storedprocs eq "true" } {
+        ;
+        } else {
+fn_prep_statement $lda
+        }
+}
 pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}
@@ -3056,7 +3099,7 @@ set result [pg_exec $lda "exec neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0.0,'','',0.0,0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select neword($no_w_id,$w_id_input,$no_d_id,$no_c_id,$ol_cnt,0)" ]
+set result [ pg_exec_prepared $lda neword {} {} $no_w_id $w_id_input $no_d_id $no_c_id $ol_cnt ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -3113,7 +3156,7 @@ set result [pg_exec $lda "exec payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$byname,$p_h_amount,'0','$name',$p_c_id,'','','','','','','','','','','','','','','','','','',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone,0.0,0.0,0.0,'',TO_TIMESTAMP('$h_date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select payment($p_w_id,$p_d_id,$p_c_w_id,$p_c_d_id,$p_c_id,$byname,$p_h_amount,'$name','0',0)" ]
+set result [ pg_exec_prepared $lda payment {} {} $p_w_id $p_d_id $p_c_w_id $p_c_d_id $p_c_id $byname $p_h_amount $name ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -3148,7 +3191,7 @@ if { $pg_storedprocs eq "true" } {
 set date [ gettimestamp ]
 set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ]
         } else {
-set result [pg_exec $lda "select * from ostat($w_id,$d_id,$c_id,$byname,'$name') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)" ]
+set result [ pg_exec_prepared $lda ostat {} {} $w_id $d_id $c_id $byname $name ]
         }
 }
 if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
@@ -3172,7 +3215,7 @@ set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YY
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
         } else {
-set result [pg_exec $lda "select delivery($w_id,$carrier_id)" ]
+set result [ pg_exec_prepared $lda delivery {} {} $w_id $carrier_id ]
         }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -3196,7 +3239,7 @@ set result [pg_exec $lda "exec slev($w_id,$stock_level_d_id,$threshold)" ]
 if { $pg_storedprocs eq "true" } {
 set result [pg_exec $lda "call slev($w_id,$stock_level_d_id,$threshold,0)"]
         } else {
-set result [pg_exec $lda "select slev($w_id,$stock_level_d_id,$threshold)" ]
+set result [ pg_exec_prepared $lda slev {} {} $w_id $stock_level_d_id $threshold ]
         }
 }
 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -3211,6 +3254,21 @@ pg_result $result -clear
 	}
 }
 
+proc fn_prep_statement { lda clientname } {
+set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
+set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
+foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
+set result [ pg_exec $lda $prep_statement ]
+if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+error "prepare error in $clientname : [pg_result $result -error]"
+        } else {
+pg_result $result -clear
+        }
+    }
+}
 #RUN TPC-C
 promise::async simulate_client { clientname total_iterations host port user password db ora_compatible pg_storedprocs RAISEERROR KEYANDTHINK async_verbose async_delay } {
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
@@ -3223,7 +3281,11 @@ set lda [ ConnectToPostgresAsynch $host $port $user $password $db $RAISEERROR $c
 if { $ora_compatible eq "true" } {
 set result [ pg_exec $lda "exec dbms_output.disable" ]
 pg_result $result -clear
-	}
+	} elseif { $pg_storedprocs eq "true" } {
+        ; 
+        } else {
+fn_prep_statement $lda $clientname
+        }
 pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}

@@ -151,7 +151,7 @@ upvar #0 configpostgresql configpostgresql
 setlocaltpccvars $configpostgresql
 #set matching fields in dialog to temporary dict
 variable pgfields
-set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get}} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_storedprocs $pg_storedprocs pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_async_verbose $pg_async_verbose}]
+set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get}} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_storedprocs $pg_storedprocs pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_async_verbose $pg_async_verbose}]
 set whlist [ get_warehouse_list_for_spinbox ]
 if { $pg_oracompat eq "true" } {
 if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -238,12 +238,20 @@ set Name $Parent.f1.e8
    ttk::entry $Name -width 30 -textvariable pg_dbase
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
+if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e8a
+   set Prompt $Parent.f1.p8a
+   ttk::label $Prompt -text "PostgreSQL Tablespace :"
+   ttk::entry $Name -width 30 -textvariable pg_tspace
+   grid $Prompt -column 0 -row 9 -sticky e
+   grid $Name -column 1 -row 9 -sticky ew
+   }
 set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "EnterpriseDB Oracle Compatible :"
 set Name $Parent.f1.e9
 ttk::checkbutton $Name -text "" -variable pg_oracompat -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 9 -sticky e
-   grid $Name -column 1 -row 9 -sticky w
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
 bind .tpc.f1.e9 <Button> { 
 if { $pg_oracompat != "true" } {
 if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -265,8 +273,8 @@ ttk::checkbutton $Name -text "" -variable pg_storedprocs -onvalue "true" -offval
 if {$pg_oracompat == "true" } {
 	$Name configure -state disabled
 	}
-   grid $Prompt -column 0 -row 10 -sticky e
-   grid $Name -column 1 -row 10 -sticky w
+   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Name -column 1 -row 11 -sticky w
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Number of Warehouses :"
@@ -277,8 +285,8 @@ if {$pg_num_vu > $pg_count_ware} {
 set pg_num_vu $pg_count_ware
 		}
 }
-	grid $Prompt -column 0 -row 11 -sticky e
-	grid $Name -column 1 -row 11 -sticky ew
+	grid $Prompt -column 0 -row 12 -sticky e
+	grid $Name -column 1 -row 12 -sticky ew
 set Prompt $Parent.f1.p11
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e11
@@ -290,24 +298,24 @@ set pg_num_vu $pg_count_ware
         }
 event add <<Any-Button-Any-Key>> <Any-ButtonRelease>
 event add <<Any-Button-Any-Key>> <KeyRelease>
-grid $Prompt -column 0 -row 12 -sticky e
-grid $Name -column 1 -row 12 -sticky ew
+grid $Prompt -column 0 -row 13 -sticky e
+grid $Name -column 1 -row 13 -sticky ew
 }
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
 ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
-grid $Prompt -column 0 -row 13 -sticky e
+grid $Prompt -column 0 -row 14 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
-grid $Prompt -column 1 -row 13 -sticky w
+grid $Prompt -column 1 -row 14 -sticky w
 	}
 set Prompt $Parent.f1.p14
 ttk::label $Prompt -text "TPC-C Driver Script :"
-grid $Prompt -column 0 -row 13 -sticky e
+grid $Prompt -column 0 -row 15 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable pg_driver
-grid $Name -column 1 -row 13 -sticky w
+grid $Name -column 1 -row 15 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set pg_vacuum "false"
 set pg_dritasnap "false"
@@ -326,7 +334,7 @@ set pg_timeprofile "false"
 }
 set Name $Parent.f1.r2
 ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable pg_driver
-grid $Name -column 1 -row 14 -sticky w
+grid $Name -column 1 -row 16 -sticky w
 bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e19 configure -state normal
 .tpc.f1.e20 configure -state normal
@@ -343,14 +351,14 @@ set Name $Parent.f1.e15
    set Prompt $Parent.f1.p15
    ttk::label $Prompt -text "Total Transactions per User :"
    ttk::entry $Name -width 30 -textvariable pg_total_iterations
-   grid $Prompt -column 0 -row 15 -sticky e
-   grid $Name -column 1 -row 15 -sticky ew
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky ew
  set Prompt $Parent.f1.p16
 ttk::label $Prompt -text "Exit on PostgreSQL Error :"
   set Name $Parent.f1.e16
 ttk::checkbutton $Name -text "" -variable pg_raiseerror -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 16 -sticky e
-   grid $Name -column 1 -row 16 -sticky w
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky w
  set Prompt $Parent.f1.p17
 ttk::label $Prompt -text "Keying and Thinking Time :"
   set Name $Parent.f1.e17
@@ -366,14 +374,14 @@ set pg_async_verbose "false"
         }
     }
 }
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky w
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky w
 set Prompt $Parent.f1.p19
 ttk::label $Prompt -text "Vacuum when complete :"
 set Name $Parent.f1.e19
 ttk::checkbutton $Name -text "" -variable pg_vacuum -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky w
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky w
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -381,8 +389,8 @@ set Prompt $Parent.f1.p20
 ttk::label $Prompt -text "EnterpriseDB DRITA Snapshots :"
 set Name $Parent.f1.e20
 ttk::checkbutton $Name -text "" -variable pg_dritasnap -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20 -sticky w
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky w
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -390,8 +398,8 @@ set Name $Parent.f1.e21
    set Prompt $Parent.f1.p21
    ttk::label $Prompt -text "Minutes of Rampup Time :"
    ttk::entry $Name -width 30 -textvariable pg_rampup
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky ew
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -399,8 +407,8 @@ set Name $Parent.f1.e22
    set Prompt $Parent.f1.p22
    ttk::label $Prompt -text "Minutes for Test Duration :"
    ttk::entry $Name -width 30 -textvariable pg_duration
-   grid $Prompt -column 0 -row 22 -sticky e
-   grid $Name -column 1 -row 22 -sticky ew
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -408,8 +416,8 @@ set Name $Parent.f1.e23
    set Prompt $Parent.f1.p23
    ttk::label $Prompt -text "Use All Warehouses :"
    ttk::checkbutton $Name -text "" -variable pg_allwarehouse -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 23 -sticky e
-   grid $Name -column 1 -row 23 -sticky ew
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -417,8 +425,8 @@ set Name $Parent.f1.e24
    set Prompt $Parent.f1.p24
    ttk::label $Prompt -text "Time Profile :"
    ttk::checkbutton $Name -text "" -variable pg_timeprofile -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 24 -sticky e
-   grid $Name -column 1 -row 24 -sticky ew
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
 if {$pg_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -426,8 +434,8 @@ if {$pg_driver == "test" } {
    set Prompt $Parent.f1.p25
    ttk::label $Prompt -text "Asynchronous Scaling :"
 ttk::checkbutton $Name -text "" -variable pg_async_scale -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 25 -sticky e
-   grid $Name -column 1 -row 25 -sticky ew
+   grid $Prompt -column 0 -row 26 -sticky e
+   grid $Name -column 1 -row 26 -sticky ew
 if {$pg_driver == "test" } {
         set pg_async_scale "false"
         $Name configure -state disabled
@@ -451,8 +459,8 @@ set Name $Parent.f1.e26
    set Prompt $Parent.f1.p26
    ttk::label $Prompt -text "Asynch Clients per Virtual User :"
    ttk::entry $Name -width 30 -textvariable pg_async_client
-   grid $Prompt -column 0 -row 26 -sticky e
-   grid $Name -column 1 -row 26 -sticky ew
+   grid $Prompt -column 0 -row 27 -sticky e
+   grid $Name -column 1 -row 27 -sticky ew
 if {$pg_driver == "test" || $pg_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -460,8 +468,8 @@ set Name $Parent.f1.e27
    set Prompt $Parent.f1.p27
    ttk::label $Prompt -text "Asynch Client Login Delay :"
    ttk::entry $Name -width 30 -textvariable pg_async_delay
-   grid $Prompt -column 0 -row 27 -sticky e
-   grid $Name -column 1 -row 27 -sticky ew
+   grid $Prompt -column 0 -row 28 -sticky e
+   grid $Name -column 1 -row 28 -sticky ew
 if {$pg_driver == "test" || $pg_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -469,8 +477,8 @@ if {$pg_driver == "test" || $pg_async_scale == "false" } {
    set Prompt $Parent.f1.p28
    ttk::label $Prompt -text "Asynchronous Verbose :"
 ttk::checkbutton $Name -text "" -variable pg_async_verbose -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 28 -sticky e
-   grid $Name -column 1 -row 28 -sticky ew
+   grid $Prompt -column 0 -row 29 -sticky e
+   grid $Name -column 1 -row 29 -sticky ew
 if {$pg_driver == "test" || $pg_async_scale == "false" } {
         set pg_async_verbose "false"
         $Name configure -state disabled
@@ -518,7 +526,7 @@ upvar #0 configpostgresql configpostgresql
 setlocaltpchvars $configpostgresql
 #set matching fields in dialog to temporary dict
 variable pgfields
-set pgfields [ dict create connection {pg_host {.pgtpch.f1.e1 get} pg_port {.pgtpch.f1.e2 get}} tpch {pg_tpch_superuser {.pgtpch.f1.e3 get} pg_tpch_superuserpass {.pgtpch.f1.e4 get} pg_tpch_defaultdbase {.pgtpch.f1.e5 get} pg_tpch_user {.pgtpch.f1.e6 get} pg_tpch_pass {.pgtpch.f1.e7 get} pg_tpch_dbase {.pgtpch.f1.e8 get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
+set pgfields [ dict create connection {pg_host {.pgtpch.f1.e1 get} pg_port {.pgtpch.f1.e2 get}} tpch {pg_tpch_superuser {.pgtpch.f1.e3 get} pg_tpch_superuserpass {.pgtpch.f1.e4 get} pg_tpch_defaultdbase {.pgtpch.f1.e5 get} pg_tpch_user {.pgtpch.f1.e6 get} pg_tpch_pass {.pgtpch.f1.e7 get} pg_tpch_dbase {.pgtpch.f1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
    catch "destroy .pgtpch"
    ttk::toplevel .pgtpch
    wm withdraw .pgtpch
@@ -597,6 +605,12 @@ set Name $Parent.f1.e8
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
 if { $option eq "all" || $option eq "build" } {
+set Name $Parent.f1.e8a
+   set Prompt $Parent.f1.p8a
+   ttk::label $Prompt -text "PostgreSQL Tablespace :"
+   ttk::entry $Name -width 30 -textvariable pg_tpch_tspace
+   grid $Prompt -column 0 -row 9 -sticky e
+   grid $Name -column 1 -row 9 -sticky ew
 set Prompt $Parent.f1.p9
 ttk::label $Prompt -text "Greenplum Database Compatible :"
 set Name $Parent.f1.e9
@@ -609,24 +623,24 @@ set pg_tpch_gpcompress "false"
 .pgtpch.f1.e10 configure -state normal
                 }
 	}
-   grid $Prompt -column 0 -row 9 -sticky e
-   grid $Name -column 1 -row 9 -sticky w
+   grid $Prompt -column 0 -row 10 -sticky e
+   grid $Name -column 1 -row 10 -sticky w
 set Prompt $Parent.f1.p10
 ttk::label $Prompt -text "Greenplum Compressed Columns :"
 set Name $Parent.f1.e10
 ttk::checkbutton $Name -text "" -variable pg_tpch_gpcompress -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 10 -sticky e
-   grid $Name -column 1 -row 10 -sticky w
+   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Name -column 1 -row 11 -sticky w
 if {$pg_tpch_gpcompat == "false" } {
 	$Name configure -state disabled
 	}
 set Name $Parent.f1.e11
    set Prompt $Parent.f1.p11
    ttk::label $Prompt -text "Scale Factor :"
-   grid $Prompt -column 0 -row 11 -sticky e
+   grid $Prompt -column 0 -row 12 -sticky e
    set Name $Parent.f1.f2
    ttk::frame $Name -width 30
-   grid $Name -column 1 -row 11 -sticky ew
+   grid $Name -column 1 -row 12 -sticky ew
 	set rcnt 1
 	foreach item {1} {
 	set Name $Parent.f1.f2.r$rcnt
@@ -659,48 +673,48 @@ set Prompt $Parent.f1.p12
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e12
 ttk::spinbox $Name -from 1 -to 512 -textvariable pg_num_tpch_threads
-	grid $Prompt -column 0 -row 12 -sticky e
-	grid $Name -column 1 -row 12 -sticky ew
+	grid $Prompt -column 0 -row 13 -sticky e
+	grid $Name -column 1 -row 13 -sticky ew
 	}
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
 ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
-grid $Prompt -column 0 -row 13 -sticky e
+grid $Prompt -column 0 -row 14 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
-grid $Prompt -column 1 -row 13 -sticky w
+grid $Prompt -column 1 -row 14 -sticky w
 	}
    set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
    ttk::label $Prompt -text "Total Query Sets per User :"
    ttk::entry $Name -width 30 -textvariable pg_total_querysets
-   grid $Prompt -column 0 -row 14 -sticky e
-   grid $Name -column 1 -row 14  -columnspan 4 -sticky ew
+   grid $Prompt -column 0 -row 15 -sticky e
+   grid $Name -column 1 -row 15  -columnspan 4 -sticky ew
  set Prompt $Parent.f1.p15
 ttk::label $Prompt -text "Exit on PostgreSQL Error :"
   set Name $Parent.f1.e15
 ttk::checkbutton $Name -text "" -variable pg_raise_query_error -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 15 -sticky e
-   grid $Name -column 1 -row 15 -sticky w
+   grid $Prompt -column 0 -row 16 -sticky e
+   grid $Name -column 1 -row 16 -sticky w
  set Prompt $Parent.f1.p16
 ttk::label $Prompt -text "Verbose Output :"
   set Name $Parent.f1.e16
 ttk::checkbutton $Name -text "" -variable pg_verbose -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 16 -sticky e
-   grid $Name -column 1 -row 16 -sticky w
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky w
 set Name $Parent.f1.e16a
    set Prompt $Parent.f1.p16a
    ttk::label $Prompt -text "Degree of Parallelism :"
    ttk::entry $Name  -width 30 -textvariable pg_degree_of_parallel
-   grid $Prompt -column 0 -row 17 -sticky e
-   grid $Name -column 1 -row 17 -sticky ew
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
  set Prompt $Parent.f1.p17
 ttk::label $Prompt -text "Refresh Function :"
   set Name $Parent.f1.e17
 ttk::checkbutton $Name -text "" -variable pg_refresh_on -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky w
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky w
 bind $Parent.f1.e17 <Button> {
 if {$pg_refresh_on eq "true"} { 
 set pg_refresh_verbose "false"
@@ -717,8 +731,8 @@ foreach field {e18 e19 e20} {
    set Prompt $Parent.f1.p18
    ttk::label $Prompt -text "Number of Update Sets :"
    ttk::entry $Name -width 30 -textvariable pg_update_sets
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19  -columnspan 4 -sticky ew
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20  -columnspan 4 -sticky ew
 if {$pg_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
@@ -726,8 +740,8 @@ if {$pg_refresh_on == "false" } {
    set Prompt $Parent.f1.p19
    ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
    ttk::entry $Name -width 30 -textvariable pg_trickle_refresh
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20  -columnspan 4 -sticky ew
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21  -columnspan 4 -sticky ew
 if {$pg_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
@@ -735,8 +749,8 @@ if {$pg_refresh_on == "false" } {
 ttk::label $Prompt -text "Refresh Verbose :"
   set Name $Parent.f1.e20
 ttk::checkbutton $Name -text "" -variable pg_refresh_verbose -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky w
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky w
 if {$pg_refresh_on == "false" } {
 	$Name configure -state disabled
 	}
@@ -752,8 +766,8 @@ set pg_rs_compat "false"
 .pgtpch.f1.e22 configure -state normal
                 }
 	}
-   grid $Prompt -column 0 -row 22 -sticky e
-   grid $Name -column 1 -row 22 -sticky w
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky w
 set Prompt $Parent.f1.p22
 ttk::label $Prompt -text "Redshift Compatible :"
 set Name $Parent.f1.e22
@@ -761,8 +775,8 @@ ttk::checkbutton $Name -text "" -variable pg_rs_compat -onvalue "true" -offvalue
 if {$pg_cloud_query == "false" } {
 	$Name configure -state disabled
 	}
-grid $Prompt -column 0 -row 23 -sticky e
-grid $Name -column 1 -row 23 -sticky w
+grid $Prompt -column 0 -row 24 -sticky e
+grid $Name -column 1 -row 24 -sticky w
 }
    set Name $Parent.b2
  ttk::button $Name -command {
