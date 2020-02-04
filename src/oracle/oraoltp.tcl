@@ -203,43 +203,22 @@ ROLLBACK;
 END; }
 } else {
 set sql(1) { CREATE OR REPLACE PROCEDURE NEWORD (
-no_w_id		INTEGER,
-no_max_w_id		INTEGER,
-no_d_id		INTEGER,
-no_c_id		INTEGER,
-no_o_ol_cnt		INTEGER,
-no_c_discount		OUT NUMBER,
+no_w_id		BINARY_INTEGER,
+no_max_w_id		BINARY_INTEGER,
+no_d_id		    BINARY_INTEGER,
+no_c_id		    BINARY_INTEGER,
+no_o_ol_cnt		BINARY_INTEGER,
+no_c_discount	OUT NUMBER,
 no_c_last		OUT VARCHAR2,
 no_c_credit		OUT VARCHAR2,
 no_d_tax		OUT NUMBER,
 no_w_tax		OUT NUMBER,
-no_d_next_o_id		IN OUT INTEGER,
+no_d_next_o_id	OUT BINARY_INTEGER,
 timestamp		IN DATE )
 IS
-no_ol_supply_w_id	INTEGER;
-no_ol_i_id		NUMBER;
-no_ol_quantity		NUMBER;
-no_o_all_local		INTEGER;
-o_id			INTEGER;
-no_i_name		VARCHAR2(24);
-no_i_price		NUMBER(5,2);
-no_i_data		VARCHAR2(50);
-no_s_quantity		NUMBER(6);
-no_ol_amount		NUMBER(6,2);
-no_s_dist_01		CHAR(24);
-no_s_dist_02		CHAR(24);
-no_s_dist_03		CHAR(24);
-no_s_dist_04		CHAR(24);
-no_s_dist_05		CHAR(24);
-no_s_dist_06		CHAR(24);
-no_s_dist_07		CHAR(24);
-no_s_dist_08		CHAR(24);
-no_s_dist_09		CHAR(24);
-no_s_dist_10		CHAR(24);
-no_ol_dist_info		CHAR(24);
-no_s_data		VARCHAR2(50);
-x			NUMBER;
-rbk			NUMBER;
+order_amount        NUMBER;
+no_o_all_local		BINARY_INTEGER;
+loop_counter        BINARY_INTEGER;
 not_serializable		EXCEPTION;
 PRAGMA EXCEPTION_INIT(not_serializable,-8177);
 deadlock			EXCEPTION;
@@ -248,114 +227,156 @@ snapshot_too_old		EXCEPTION;
 PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
 integrity_viol			EXCEPTION;
 PRAGMA EXCEPTION_INIT(integrity_viol,-1);
+TYPE intarray IS TABLE OF INTEGER index by binary_integer;
+TYPE numarray IS TABLE OF NUMBER index by binary_integer;
+TYPE distarray IS TABLE OF VARCHAR(24) index by binary_integer;
+o_id_array intarray;
+w_id_array intarray;
+o_quantity_array intarray;
+s_quantity_array intarray;
+ol_line_number_array intarray;
+amount_array numarray;
+district_info distarray;
 BEGIN
---assignment below added due to error in appendix code
-no_o_all_local := 0;
-SELECT c_discount, c_last, c_credit, w_tax
-INTO no_c_discount, no_c_last, no_c_credit, no_w_tax
-FROM customer, warehouse
-WHERE warehouse.w_id = no_w_id AND customer.c_w_id = no_w_id AND
-customer.c_d_id = no_d_id AND customer.c_id = no_c_id;
-UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax;
-o_id := no_d_next_o_id;
-INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
-INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
---#2.4.1.4
-rbk := round(DBMS_RANDOM.value(low => 1, high => 100));
---#2.4.1.5
-FOR loop_counter IN 1 .. no_o_ol_cnt
-LOOP
-IF ((loop_counter = no_o_ol_cnt) AND (rbk = 1))
-THEN
-no_ol_i_id := 100001;
-ELSE
-no_ol_i_id := round(DBMS_RANDOM.value(low => 1, high => 100000));
-END IF;
---#2.4.1.5.2
-x := round(DBMS_RANDOM.value(low => 1, high => 100));
-IF ( x > 1 )
-THEN
-no_ol_supply_w_id := no_w_id;
-ELSE
-no_ol_supply_w_id := no_w_id;
---no_all_local is actually used before this point so following not beneficial
-no_o_all_local := 0;
-WHILE ((no_ol_supply_w_id = no_w_id) AND (no_max_w_id != 1))
-LOOP
-no_ol_supply_w_id := round(DBMS_RANDOM.value(low => 1, high => no_max_w_id));
-END LOOP;
-END IF;
---#2.4.1.5.3
-no_ol_quantity := round(DBMS_RANDOM.value(low => 1, high => 10));
-SELECT i_price, i_name, i_data INTO no_i_price, no_i_name, no_i_data
-FROM item WHERE i_id = no_ol_i_id;
-SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
-INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10 FROM stock WHERE s_i_id = no_ol_i_id AND s_w_id = no_ol_supply_w_id;
-IF ( no_s_quantity > no_ol_quantity )
-THEN
-no_s_quantity := ( no_s_quantity - no_ol_quantity );
-ELSE
-no_s_quantity := ( no_s_quantity - no_ol_quantity + 91 );
-END IF;
-UPDATE stock SET s_quantity = no_s_quantity
-WHERE s_i_id = no_ol_i_id
-AND s_w_id = no_ol_supply_w_id;
+    SELECT c_discount, c_last, c_credit, w_tax
+      INTO no_c_discount, no_c_last, no_c_credit, no_w_tax
+      FROM customer, warehouse
+     WHERE warehouse.w_id = no_w_id AND customer.c_w_id = no_w_id AND customer.c_d_id = no_d_id AND customer.c_id = no_c_id;
 
-no_ol_amount := (  no_ol_quantity * no_i_price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) );
+    --#2.4.1.5
+    no_o_all_local := 1;
+    FOR loop_counter IN 1 .. no_o_ol_cnt
+    LOOP
+        o_id_array(loop_counter) := round(DBMS_RANDOM.value(low => 1, high => 100000));
 
-IF no_d_id = 1
-THEN 
-no_ol_dist_info := no_s_dist_01; 
+        --#2.4.1.5.2
+        IF ( DBMS_RANDOM.value >= 0.01 )
+        THEN
+            w_id_array(loop_counter) := no_w_id;
+        ELSE
+            no_o_all_local := 0;
+            w_id_array(loop_counter) := 1 + mod(no_w_id + round(DBMS_RANDOM.value(low => 0, high => no_max_w_id-1)),no_max_w_id);
+        END IF;
 
-ELSIF no_d_id = 2
-THEN
-no_ol_dist_info := no_s_dist_02;
+        --#2.4.1.5.3
+        o_quantity_array(loop_counter) := round(DBMS_RANDOM.value(low => 1, high => 10));
 
-ELSIF no_d_id = 3
-THEN
-no_ol_dist_info := no_s_dist_03;
+        -- Take advantage of the fact that I'm looping to populate the array used to record order lines at the end
+        ol_line_number_array(loop_counter) := loop_counter;
+    END LOOP;
 
-ELSIF no_d_id = 4
-THEN
-no_ol_dist_info := no_s_dist_04;
+    UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax;
 
-ELSIF no_d_id = 5
-THEN
-no_ol_dist_info := no_s_dist_05;
+    INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (no_d_next_o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
+    INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id) VALUES (no_d_next_o_id, no_d_id, no_w_id);
 
-ELSIF no_d_id = 6
-THEN
-no_ol_dist_info := no_s_dist_06;
+    -- The HammerDB implementation doesn't do the check for ORIGINAL (which should be done against i_data and s_data)
+    IF no_d_id = 1 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_01, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array, amount_array;
+    ELSIF no_d_id = 2 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_02, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 3 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_03, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 4 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_04, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 5 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_05, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 6 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_06, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 7 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_07, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 8 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_08, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 9 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_09, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    ELSIF no_d_id = 10 THEN
+        FORALL i IN 1 .. no_o_ol_cnt
+            UPDATE stock_item
+               SET s_quantity = (CASE WHEN s_quantity < ( o_quantity_array(i) + 10 ) THEN s_quantity + 91 ELSE s_quantity END) - o_quantity_array(i)
+             WHERE i_id = o_id_array(i)
+               AND s_w_id = w_id_array(i)
+               AND i_id = o_id_array(i)
+            RETURNING s_dist_10, s_quantity, i_price * o_quantity_array(i) BULK COLLECT INTO district_info, s_quantity_array,amount_array;
+    END IF;
 
-ELSIF no_d_id = 7
-THEN
-no_ol_dist_info := no_s_dist_07;
+    -- Oracle return the TAX information to the client, presumably to do the calculation there.  HammerDB doesn't return it at all so I'll just calculate it here and do nothing with it
+    order_amount := 0;
+    FOR loop_counter IN 1 .. no_o_ol_cnt
+    LOOP
+        order_amount := order_amount + ( amount_array(loop_counter) );
+    END LOOP;
+    order_amount := order_amount * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount );
 
-ELSIF no_d_id = 8
-THEN
-no_ol_dist_info := no_s_dist_08;
+    FORALL i IN 1 .. no_o_ol_cnt
+        INSERT INTO order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)
+        VALUES (no_d_next_o_id, no_d_id, no_w_id, ol_line_number_array(i), o_id_array(i), w_id_array(i), o_quantity_array(i), amount_array(i), district_info(i));
 
-ELSIF no_d_id = 9
-THEN
-no_ol_dist_info := no_s_dist_09;
+    -- Rollback 1% of transactions
+    IF DBMS_RANDOM.value < 0.01 THEN
+        dbms_output.put_line('Rolling back');
+        ROLLBACK;
+    ELSE
+        COMMIT;
+    END IF;
 
-ELSIF no_d_id = 10
-THEN
-no_ol_dist_info := no_s_dist_10;
-END IF;
-
-INSERT INTO order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)
-VALUES (o_id, no_d_id, no_w_id, loop_counter, no_ol_i_id, no_ol_supply_w_id, no_ol_quantity, no_ol_amount, no_ol_dist_info);
-
-END LOOP;
-
-COMMIT;
-
-EXCEPTION
-WHEN not_serializable OR deadlock OR snapshot_too_old OR integrity_viol OR no_data_found
-THEN
-ROLLBACK;
-
+    EXCEPTION
+    WHEN not_serializable OR deadlock OR snapshot_too_old OR integrity_viol --OR no_data_found
+    THEN
+    ROLLBACK;
 END; }
 }
 if { $timesten } {
@@ -465,320 +486,352 @@ END; }
   }
 } else {
 set sql(2) { CREATE OR REPLACE PROCEDURE DELIVERY (
-d_w_id			INTEGER,
-d_o_carrier_id		INTEGER,
-timestamp		IN DATE )
+    d_w_id			INTEGER,
+    d_o_carrier_id	INTEGER,
+    timestamp		DATE
+)
 IS
-d_no_o_id		INTEGER;
-d_d_id	           	INTEGER;
-d_c_id	           	NUMBER;
-d_ol_total		NUMBER;
-current_ROWID		UROWID;
---WHERE CURRENT OF CLAUSE IN SPECIFICATION GAVE VERY POOR PERFORMANCE
---USED ROWID AS GIVEN IN DOC CDOUG Tricks and Treats by Shahs Upadhye
-CURSOR c_no IS
-SELECT no_o_id,ROWID
-FROM new_order
-WHERE no_d_id = d_d_id AND no_w_id = d_w_id
-ORDER BY no_o_id ASC;
+    TYPE intarray IS TABLE OF INTEGER index by binary_integer;
+    dist_id_in_array    intarray;
+    dist_id_array       intarray;
+    o_id_array          intarray;
+    order_c_id          intarray;
+    sums                intarray;
+    ordcnt              INTEGER;
 
-not_serializable		EXCEPTION;
-PRAGMA EXCEPTION_INIT(not_serializable,-8177);
-deadlock			EXCEPTION;
-PRAGMA EXCEPTION_INIT(deadlock,-60);
-snapshot_too_old		EXCEPTION;
-PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
-
+    not_serializable		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(not_serializable,-8177);
+    deadlock			EXCEPTION;
+    PRAGMA EXCEPTION_INIT(deadlock,-60);
+    snapshot_too_old		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
 BEGIN
-FOR loop_counter IN 1 .. 10
-LOOP
-d_d_id := loop_counter;
-open c_no;
-FETCH c_no INTO d_no_o_id,current_ROWID;
-EXIT WHEN c_no%NOTFOUND;
-DELETE FROM new_order WHERE rowid = current_ROWID;
-close c_no;
-SELECT o_c_id INTO d_c_id FROM orders
-WHERE o_id = d_no_o_id AND o_d_id = d_d_id AND
-o_w_id = d_w_id;
- UPDATE orders SET o_carrier_id = d_o_carrier_id
-WHERE o_id = d_no_o_id AND o_d_id = d_d_id AND
-o_w_id = d_w_id;
-UPDATE order_line SET ol_delivery_d = timestamp
-WHERE ol_o_id = d_no_o_id AND ol_d_id = d_d_id AND
-ol_w_id = d_w_id;
-SELECT SUM(ol_amount) INTO d_ol_total
-FROM order_line
-WHERE ol_o_id = d_no_o_id AND ol_d_id = d_d_id
-AND ol_w_id = d_w_id;
-UPDATE customer SET c_balance = c_balance + d_ol_total
-WHERE c_id = d_c_id AND c_d_id = d_d_id AND
-c_w_id = d_w_id;
-COMMIT;
-DBMS_OUTPUT.PUT_LINE('D: ' || d_d_id || 'O: ' || d_no_o_id || 'time ' || timestamp);
-END LOOP;
-EXCEPTION
-WHEN not_serializable OR deadlock OR snapshot_too_old
-THEN
-ROLLBACK;
+    FOR i in 1 .. 10 LOOP
+        dist_id_in_array(i) := i;
+    END LOOP;
+
+    FORALL d IN 1..10
+        DELETE
+         FROM new_order
+        WHERE no_d_id = dist_id_in_array(d)
+          AND no_w_id = d_w_id
+          AND no_o_id = (select min (no_o_id)
+                           from new_order
+                          where no_d_id = dist_id_in_array(d)
+                            and no_w_id = d_w_id)
+        RETURNING no_d_id, no_o_id BULK COLLECT INTO dist_id_array, o_id_array;
+
+    ordcnt := SQL%ROWCOUNT;
+
+    FORALL o in 1.. ordcnt
+        UPDATE orders
+           SET o_carrier_id = d_o_carrier_id
+         WHERE o_id = o_id_array (o)
+          AND o_d_id = dist_id_array(o)
+          AND o_w_id = d_w_id
+        RETURNING o_c_id BULK COLLECT INTO order_c_id;
+
+    FORALL o in 1.. ordcnt
+        UPDATE order_line
+           SET ol_delivery_d = timestamp
+         WHERE ol_w_id = d_w_id
+          AND ol_d_id = dist_id_array(o)
+          AND ol_o_id = o_id_array (o)
+        RETURNING sum(ol_amount) BULK COLLECT INTO sums;
+
+    FORALL c IN 1.. ordcnt
+        UPDATE customer
+           SET c_balance = c_balance + sums(c)
+             -- Added this in for the refactor but it's not in the original (although it should be) so I've removed it, to be true to the original
+             --, c_delivery_cnt = c_delivery_cnt + 1
+         WHERE c_w_id = d_w_id
+           AND c_d_id = dist_id_array(c)
+           AND c_id = order_c_id(c);
+
+    COMMIT;
+
+    EXCEPTION
+        WHEN not_serializable OR deadlock OR snapshot_too_old THEN
+            ROLLBACK;
 END; }
  }
 set sql(3) { CREATE OR REPLACE PROCEDURE PAYMENT (
-p_w_id			INTEGER,
-p_d_id			INTEGER,
-p_c_w_id		INTEGER,
-p_c_d_id		INTEGER,
-p_c_id			IN OUT INTEGER,
-byname			INTEGER,
-p_h_amount		NUMBER,
-p_c_last		IN OUT VARCHAR2,
-p_w_street_1		OUT VARCHAR2,
-p_w_street_2		OUT VARCHAR2,
-p_w_city		OUT VARCHAR2,
-p_w_state		OUT VARCHAR2,
-p_w_zip			OUT VARCHAR2,
-p_d_street_1		OUT VARCHAR2,
-p_d_street_2		OUT VARCHAR2,
-p_d_city		OUT VARCHAR2,
-p_d_state		OUT VARCHAR2,
-p_d_zip			OUT VARCHAR2,
-p_c_first		OUT VARCHAR2,
-p_c_middle		OUT VARCHAR2,
-p_c_street_1		OUT VARCHAR2,
-p_c_street_2		OUT VARCHAR2,
-p_c_city		OUT VARCHAR2,
-p_c_state		OUT VARCHAR2,
-p_c_zip			OUT VARCHAR2,
-p_c_phone		OUT VARCHAR2,
-p_c_since		OUT DATE,
-p_c_credit		IN OUT VARCHAR2,
-p_c_credit_lim		OUT NUMBER,
-p_c_discount		OUT NUMBER,
-p_c_balance		IN OUT NUMBER,
-p_c_data		OUT VARCHAR2,
-timestamp		IN DATE )
+    p_w_id			INTEGER,
+    p_d_id			INTEGER,
+    p_c_w_id		INTEGER,
+    p_c_d_id		INTEGER,
+    p_c_id			IN OUT INTEGER,
+    byname			INTEGER,
+    p_h_amount		NUMBER,
+    p_c_last		IN OUT VARCHAR2,
+    p_w_street_1	OUT VARCHAR2,
+    p_w_street_2	OUT VARCHAR2,
+    p_w_city		OUT VARCHAR2,
+    p_w_state		OUT VARCHAR2,
+    p_w_zip			OUT VARCHAR2,
+    p_d_street_1	OUT VARCHAR2,
+    p_d_street_2	OUT VARCHAR2,
+    p_d_city		OUT VARCHAR2,
+    p_d_state		OUT VARCHAR2,
+    p_d_zip			OUT VARCHAR2,
+    p_c_first		OUT VARCHAR2,
+    p_c_middle		OUT VARCHAR2,
+    p_c_street_1	OUT VARCHAR2,
+    p_c_street_2	OUT VARCHAR2,
+    p_c_city		OUT VARCHAR2,
+    p_c_state		OUT VARCHAR2,
+    p_c_zip			OUT VARCHAR2,
+    p_c_phone		OUT VARCHAR2,
+    p_c_since		OUT DATE,
+    p_c_credit		IN OUT VARCHAR2,
+    p_c_credit_lim	OUT NUMBER,
+    p_c_discount	OUT NUMBER,
+    p_c_balance		IN OUT NUMBER,
+    p_c_data		OUT VARCHAR2,
+    timestamp		IN DATE
+)
 IS
-namecnt			INTEGER;
-p_d_name		VARCHAR2(11);
-p_w_name		VARCHAR2(11);
-p_c_new_data		VARCHAR2(500);
-h_data			VARCHAR2(30);
-CURSOR c_byname IS
-SELECT c_first, c_middle, c_id,
-c_street_1, c_street_2, c_city, c_state, c_zip,
-c_phone, c_credit, c_credit_lim,
-c_discount, c_balance, c_since
-FROM customer
-WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_last = p_c_last
-ORDER BY c_first;
-not_serializable		EXCEPTION;
-PRAGMA EXCEPTION_INIT(not_serializable,-8177);
-deadlock			EXCEPTION;
-PRAGMA EXCEPTION_INIT(deadlock,-60);
-snapshot_too_old		EXCEPTION;
-PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
+    p_d_name		VARCHAR2(11);
+    p_w_name		VARCHAR2(11);
+    p_c_new_data	VARCHAR2(500);
+    h_data			VARCHAR2(30);
+
+    TYPE rowidarray IS TABLE OF ROWID INDEX BY BINARY_INTEGER;
+    cust_rowid ROWID;
+    row_id rowidarray;
+    c_num BINARY_INTEGER;
+
+    CURSOR c_byname IS
+    SELECT rowid
+    FROM customer
+    WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_last = p_c_last
+    ORDER BY c_first;
+
+    not_serializable		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(not_serializable,-8177);
+    deadlock			EXCEPTION;
+    PRAGMA EXCEPTION_INIT(deadlock,-60);
+    snapshot_too_old		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
 
 BEGIN
-UPDATE warehouse SET w_ytd = w_ytd + p_h_amount
-WHERE w_id = p_w_id;
-SELECT w_street_1, w_street_2, w_city, w_state, w_zip, w_name
-INTO p_w_street_1, p_w_street_2, p_w_city, p_w_state, p_w_zip, p_w_name
-FROM warehouse
-WHERE w_id = p_w_id;
-UPDATE district SET d_ytd = d_ytd + p_h_amount
-WHERE d_w_id = p_w_id AND d_id = p_d_id;
-SELECT d_street_1, d_street_2, d_city, d_state, d_zip, d_name
-INTO p_d_street_1, p_d_street_2, p_d_city, p_d_state, p_d_zip, p_d_name
-FROM district
-WHERE d_w_id = p_w_id AND d_id = p_d_id;
-IF ( byname = 1 )
-THEN
-SELECT count(c_id) INTO namecnt
-FROM customer
-WHERE c_last = p_c_last AND c_d_id = p_c_d_id AND c_w_id = p_c_w_id;
-OPEN c_byname;
-IF ( MOD (namecnt, 2) = 1 )
-THEN
-namecnt := (namecnt + 1);
-END IF;
-FOR loop_counter IN 0 .. (namecnt/2)
-LOOP
-FETCH c_byname
-INTO p_c_first, p_c_middle, p_c_id, p_c_street_1, p_c_street_2, p_c_city,
-p_c_state, p_c_zip, p_c_phone, p_c_credit, p_c_credit_lim, p_c_discount, p_c_balance, p_c_since;
-END LOOP;
-CLOSE c_byname;
-ELSE
-SELECT c_first, c_middle, c_last,
-c_street_1, c_street_2, c_city, c_state, c_zip,
-c_phone, c_credit, c_credit_lim,
-c_discount, c_balance, c_since
-INTO p_c_first, p_c_middle, p_c_last,
-p_c_street_1, p_c_street_2, p_c_city, p_c_state, p_c_zip,
-p_c_phone, p_c_credit, p_c_credit_lim,
-p_c_discount, p_c_balance, p_c_since
-FROM customer
-WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id;
-END IF;
-p_c_balance := ( p_c_balance + p_h_amount );
-IF p_c_credit = 'BC' 
-THEN
- SELECT c_data INTO p_c_data
-FROM customer
-WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id;
--- The following statement in the TPC-C specification appendix is incorrect
--- copied setting of h_data from later on in the procedure to here as well
-h_data := ( p_w_name || ' ' || p_d_name );
-p_c_new_data := (TO_CHAR(p_c_id) || ' ' || TO_CHAR(p_c_d_id) || ' ' ||
-TO_CHAR(p_c_w_id) || ' ' || TO_CHAR(p_d_id) || ' ' || TO_CHAR(p_w_id) || ' ' || TO_CHAR(p_h_amount,'9999.99') || TO_CHAR(timestamp) || h_data);
-p_c_new_data := substr(CONCAT(p_c_new_data,p_c_data),1,500-(LENGTH(p_c_new_data)));
-UPDATE customer
-SET c_balance = p_c_balance, c_data = p_c_new_data
-WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND
-c_id = p_c_id;
-ELSE
-UPDATE customer SET c_balance = p_c_balance
-WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND
-c_id = p_c_id;
-END IF;
---setting of h_data is here in the TPC-C appendix
-h_data := ( p_w_name|| ' ' || p_d_name );
-INSERT INTO history (h_c_d_id, h_c_w_id, h_c_id, h_d_id,
-h_w_id, h_date, h_amount, h_data)
-VALUES (p_c_d_id, p_c_w_id, p_c_id, p_d_id,
-p_w_id, timestamp, p_h_amount, h_data);
-COMMIT;
+    IF ( byname = 1 )
+    THEN
+        c_num := 0;
+        FOR c_id_rec IN c_byname LOOP
+            c_num := c_num + 1;
+            row_id(c_num) := c_id_rec.rowid;
+        END LOOP;
+        cust_rowid := row_id ((c_num + 1) / 2);
+
+        UPDATE customer
+        SET c_balance = c_balance - p_h_amount
+            --c_ytd_payment = c_ytd_payment + hist_amount,
+            --c_payment_cnt = c_payment_cnt + 1
+        WHERE rowid = cust_rowid
+        RETURNING c_id, c_first, c_middle, c_last, c_street_1, c_street_2,
+                  c_city, c_state, c_zip, c_phone,
+                  c_since, c_credit, c_credit_lim,
+                  c_discount, c_balance
+        INTO p_c_id, p_c_first, p_c_middle, p_c_last, p_c_street_1, p_c_street_2,
+             p_c_city, p_c_state, p_c_zip, p_c_phone,
+             p_c_since, p_c_credit, p_c_credit_lim,
+             p_c_discount, p_c_balance;
+    ELSE
+        UPDATE customer
+           SET c_balance = c_balance - p_h_amount
+               --c_ytd_payment = c_ytd_payment + hist_amount,
+               --c_payment_cnt = c_payment_cnt + 1
+        WHERE c_id = p_c_id AND c_d_id = p_c_d_id AND c_w_id = p_c_w_id
+        RETURNING rowid, c_first, c_middle, c_last, c_street_1, c_street_2,
+                  c_city, c_state, c_zip, c_phone,
+                  c_since, c_credit, c_credit_lim,
+                  c_discount, c_balance
+        INTO cust_rowid, p_c_first, p_c_middle, p_c_last, p_c_street_1, p_c_street_2,
+             p_c_city, p_c_state, p_c_zip, p_c_phone,
+             p_c_since, p_c_credit, p_c_credit_lim,
+             p_c_discount, p_c_balance;
+    END IF;
+
+    IF p_c_credit = 'BC' THEN
+        UPDATE customer
+           SET c_data = substr ((to_char (p_c_id) || ' ' ||
+                                 to_char (p_c_d_id) || ' ' ||
+                                 to_char (p_c_w_id) || ' ' ||
+                                 to_char (p_d_id) || ' ' ||
+                                 to_char (p_w_id) || ' ' ||
+                                 to_char (p_h_amount, '9999.99') || ' | ') || c_data, 1, 500)
+         WHERE rowid = cust_rowid
+        RETURNING substr (c_data, 1, 200) INTO p_c_data;
+    ELSE
+        p_c_data := ' ';
+    END IF;
+
+    UPDATE district
+      SET d_ytd = d_ytd + p_h_amount
+     WHERE d_id = p_d_id
+       AND d_w_id = p_w_id
+    RETURNING d_name, d_street_1, d_street_2, d_city,d_state, d_zip
+    INTO p_d_name, p_d_street_1, p_d_street_2, p_d_city, p_d_state, p_d_zip;
+
+    UPDATE warehouse
+       SET w_ytd = w_ytd + p_h_amount
+     WHERE w_id = p_w_id
+    RETURNING w_name, w_street_1, w_street_2, w_city, w_state, w_zip
+    INTO p_w_name, p_w_street_1, p_w_street_2, p_w_city, p_w_state, p_w_zip;
+
+    INSERT INTO history
+    (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id, h_date,h_amount,h_data)
+    VALUES
+    (p_c_id, p_c_d_id, p_c_w_id, p_d_id, p_w_id, timestamp, p_h_amount, p_w_name || ' ' || p_d_name);
+
+    COMMIT;
+
 EXCEPTION
-WHEN not_serializable OR deadlock OR snapshot_too_old
-THEN
-ROLLBACK;
+    WHEN not_serializable OR deadlock OR snapshot_too_old
+    THEN
+        ROLLBACK;
 END; }
 set sql(4) { CREATE OR REPLACE PROCEDURE OSTAT (
-os_w_id			INTEGER,
-os_d_id			INTEGER,
-os_c_id			IN OUT INTEGER,
-byname			INTEGER,
-os_c_last		IN OUT VARCHAR2,
-os_c_first		OUT VARCHAR2,
-os_c_middle		OUT VARCHAR2,
-os_c_balance		OUT NUMBER,
-os_o_id			OUT INTEGER,
-os_entdate		OUT DATE,
-os_o_carrier_id		OUT INTEGER )
+    os_w_id			INTEGER,
+    os_d_id			INTEGER,
+    os_c_id			IN OUT INTEGER,
+    byname			INTEGER,
+    os_c_last		IN OUT VARCHAR2,
+    os_c_first		OUT VARCHAR2,
+    os_c_middle		OUT VARCHAR2,
+    os_c_balance		OUT NUMBER,
+    os_o_id			OUT INTEGER,
+    os_entdate		OUT DATE,
+    os_o_carrier_id		OUT INTEGER
+)
 IS
-TYPE numbertable IS TABLE OF NUMBER INDEX BY BINARY_INTEGER;
-os_ol_i_id numbertable;	
-os_ol_supply_w_id numbertable;	
-os_ol_quantity numbertable;	
-TYPE amounttable IS TABLE OF NUMBER(6,2) INDEX BY BINARY_INTEGER;
-os_ol_amount amounttable;
-TYPE datetable IS TABLE OF DATE INDEX BY BINARY_INTEGER;
-os_ol_delivery_d datetable;
-namecnt			INTEGER;
-i			BINARY_INTEGER;
-CURSOR c_name IS
-SELECT c_balance, c_first, c_middle, c_id
-FROM customer
-WHERE c_last = os_c_last AND c_d_id = os_d_id AND c_w_id = os_w_id
-ORDER BY c_first;
-CURSOR c_line IS
-SELECT ol_i_id, ol_supply_w_id, ol_quantity,
-ol_amount, ol_delivery_d
-FROM order_line
-WHERE ol_o_id = os_o_id AND ol_d_id = os_d_id AND ol_w_id = os_w_id;
-os_c_line c_line%ROWTYPE;
-not_serializable		EXCEPTION;
-PRAGMA EXCEPTION_INIT(not_serializable,-8177);
-deadlock			EXCEPTION;
-PRAGMA EXCEPTION_INIT(deadlock,-60);
-snapshot_too_old		EXCEPTION;
-PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
+    TYPE rowidarray IS TABLE OF ROWID INDEX BY BINARY_INTEGER;
+    cust_rowid ROWID;
+    row_id rowidarray;
+    c_num BINARY_INTEGER;
+
+    CURSOR c_byname
+    IS
+    SELECT rowid
+      FROM customer
+     WHERE c_w_id = os_w_id AND c_d_id = os_d_id AND c_last = os_c_last
+    ORDER BY c_first;
+
+    i			BINARY_INTEGER;
+    CURSOR c_line IS
+    SELECT ol_i_id, ol_supply_w_id, ol_quantity,
+           ol_amount, ol_delivery_d
+      FROM order_line
+     WHERE ol_o_id = os_o_id AND ol_d_id = os_d_id AND ol_w_id = os_w_id;
+
+
+    TYPE intarray IS TABLE OF INTEGER index by binary_integer;
+    os_ol_i_id intarray;
+    os_ol_supply_w_id intarray;
+    os_ol_quantity intarray;
+
+    TYPE datetable IS TABLE OF DATE INDEX BY BINARY_INTEGER;
+    os_ol_delivery_d datetable;
+
+    TYPE numarray IS TABLE OF NUMBER index by binary_integer;
+    os_ol_amount numarray;
+
+    not_serializable		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(not_serializable,-8177);
+    deadlock			EXCEPTION;
+    PRAGMA EXCEPTION_INIT(deadlock,-60);
+    snapshot_too_old		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
 BEGIN
-IF ( byname = 1 )
-THEN
-SELECT count(c_id) INTO namecnt
-FROM customer
-WHERE c_last = os_c_last AND c_d_id = os_d_id AND c_w_id = os_w_id;
-IF ( MOD (namecnt, 2) = 1 )
-THEN
-namecnt := (namecnt + 1);
-END IF;
-OPEN c_name;
-FOR loop_counter IN 0 .. (namecnt/2)
-LOOP
-FETCH c_name  
-INTO os_c_balance, os_c_first, os_c_middle, os_c_id;
-END LOOP;
-close c_name;
-ELSE
-SELECT c_balance, c_first, c_middle, c_last
-INTO os_c_balance, os_c_first, os_c_middle, os_c_last
-FROM customer
-WHERE c_id = os_c_id AND c_d_id = os_d_id AND c_w_id = os_w_id;
-END IF;
--- The following statement in the TPC-C specification appendix is incorrect
--- as it does not include the where clause and does not restrict the 
--- results set giving an ORA-01422.
--- The statement has been modified in accordance with the
--- descriptive specification as follows:
--- The row in the ORDER table with matching O_W_ID (equals C_W_ID),
--- O_D_ID (equals C_D_ID), O_C_ID (equals C_ID), and with the largest
--- existing O_ID, is selected. This is the most recent order placed by that
--- customer. O_ID, O_ENTRY_D, and O_CARRIER_ID are retrieved.
-BEGIN
-SELECT o_id, o_carrier_id, o_entry_d 
-INTO os_o_id, os_o_carrier_id, os_entdate
-FROM
-(SELECT o_id, o_carrier_id, o_entry_d
-FROM orders where o_d_id = os_d_id AND o_w_id = os_w_id and o_c_id=os_c_id
-ORDER BY o_id DESC)
-WHERE ROWNUM = 1;
-EXCEPTION
-WHEN NO_DATA_FOUND THEN
-dbms_output.put_line('No orders for customer');
-END;
-i := 0;
-FOR os_c_line IN c_line
-LOOP
-os_ol_i_id(i) := os_c_line.ol_i_id;
-os_ol_supply_w_id(i) := os_c_line.ol_supply_w_id;
-os_ol_quantity(i) := os_c_line.ol_quantity;
-os_ol_amount(i) := os_c_line.ol_amount;
-os_ol_delivery_d(i) := os_c_line.ol_delivery_d;
-i := i+1;
-END LOOP;
-EXCEPTION WHEN not_serializable OR deadlock OR snapshot_too_old THEN
-ROLLBACK;
+    IF ( byname = 1 )
+    THEN
+        c_num := 0;
+        FOR c_id_rec IN c_byname LOOP
+            c_num := c_num + 1;
+            row_id(c_num) := c_id_rec.rowid;
+        END LOOP;
+        cust_rowid := row_id ((c_num + 1) / 2);
+
+        SELECT c_balance, c_first, c_middle, c_last, c_id
+          INTO os_c_balance, os_c_first, os_c_middle, os_c_last, os_c_id
+         FROM customer
+        WHERE rowid = cust_rowid;
+    ELSE
+        SELECT c_balance, c_first, c_middle, c_last, rowid
+          INTO os_c_balance, os_c_first, os_c_middle, os_c_last, cust_rowid
+          FROM customer
+         WHERE c_id = os_c_id AND c_d_id = os_d_id AND c_w_id = os_w_id;
+    END IF;
+
+    -- The following statement in the TPC-C specification appendix is incorrect
+    -- as it does not include the where clause and does not restrict the
+    -- results set giving an ORA-01422.
+    -- The statement has been modified in accordance with the
+    -- descriptive specification as follows:
+    -- The row in the ORDER table with matching O_W_ID (equals C_W_ID),
+    -- O_D_ID (equals C_D_ID), O_C_ID (equals C_ID), and with the largest
+    -- existing O_ID, is selected. This is the most recent order placed by that
+    -- customer. O_ID, O_ENTRY_D, and O_CARRIER_ID are retrieved.
+    BEGIN
+        SELECT o_id, o_carrier_id, o_entry_d
+          INTO os_o_id, os_o_carrier_id, os_entdate
+          FROM (SELECT o_id, o_carrier_id, o_entry_d
+                  FROM orders
+                 WHERE o_d_id = os_d_id AND o_w_id = os_w_id and o_c_id=os_c_id
+                ORDER BY o_id DESC)
+        WHERE ROWNUM = 1;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            dbms_output.put_line('No orders for customer');
+    END;
+
+    i := 0;
+    FOR os_c_line IN c_line
+    LOOP
+        os_ol_i_id(i) := os_c_line.ol_i_id;
+        os_ol_supply_w_id(i) := os_c_line.ol_supply_w_id;
+        os_ol_quantity(i) := os_c_line.ol_quantity;
+        os_ol_amount(i) := os_c_line.ol_amount;
+        os_ol_delivery_d(i) := os_c_line.ol_delivery_d;
+        i := i + 1;
+    END LOOP;
+    COMMIT;
+
+    EXCEPTION WHEN not_serializable OR deadlock OR snapshot_too_old THEN
+        ROLLBACK;
 END; }
 set sql(5) { CREATE OR REPLACE PROCEDURE SLEV (
-st_w_id			INTEGER,
-st_d_id			INTEGER,
-threshold		INTEGER, 
-stock_count		OUT INTEGER )
-IS 
-st_o_id			NUMBER;	
-not_serializable		EXCEPTION;
-PRAGMA EXCEPTION_INIT(not_serializable,-8177);
-deadlock			EXCEPTION;
-PRAGMA EXCEPTION_INIT(deadlock,-60);
-snapshot_too_old		EXCEPTION;
-PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
+    st_w_id			INTEGER,
+    st_d_id			INTEGER,
+    threshold		INTEGER,
+    stock_count		OUT INTEGER
+)
+IS
+    st_o_id			NUMBER;
+    not_serializable		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(not_serializable,-8177);
+    deadlock			EXCEPTION;
+    PRAGMA EXCEPTION_INIT(deadlock,-60);
+    snapshot_too_old		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(snapshot_too_old,-1555);
 BEGIN
-SELECT d_next_o_id INTO st_o_id
-FROM district
-WHERE d_w_id=st_w_id AND d_id=st_d_id;
+    SELECT COUNT(DISTINCT (s_i_id))
+      INTO stock_count
+      FROM order_line, stock, district
+     WHERE d_id=st_d_id
+       AND d_w_id=st_w_id
+       AND d_id = ol_d_id
+       AND d_w_id = ol_w_id
+       AND ol_i_id = s_i_id
+       AND ol_w_id = s_w_id
+       AND s_quantity < threshold
+       AND ol_o_id BETWEEN (d_next_o_id - 20) AND (d_next_o_id - 1);
 
-SELECT COUNT(DISTINCT (s_i_id)) INTO stock_count
-FROM order_line, stock
-WHERE ol_w_id = st_w_id AND
-ol_d_id = st_d_id AND (ol_o_id < st_o_id) AND
-ol_o_id >= (st_o_id - 20) AND s_w_id = st_w_id AND
-s_i_id = ol_i_id AND s_quantity < threshold;
-COMMIT;
+    COMMIT;
 EXCEPTION
-WHEN not_serializable OR deadlock OR snapshot_too_old
-THEN
-ROLLBACK;
+    WHEN not_serializable OR deadlock OR snapshot_too_old THEN
+        ROLLBACK;
 END; }
 for { set i 1 } { $i <= 5 } { incr i } {
 if {[ catch {orasql $curn1 $sql($i)} message ] } {
@@ -868,7 +921,7 @@ puts "CREATING USER $tpcc_user"
 set stmt_cnt 3
 set curn1 [ oraopen $lda ]
 set sql(1) "create user $tpcc_user identified by $tpcc_pass default tablespace $tpcc_def_tab temporary tablespace $tpcc_def_temp\n"
-set sql(2) "grant connect,resource to $tpcc_user\n"
+set sql(2) "grant connect,resource,create view to $tpcc_user\n"
 set sql(3) "alter user $tpcc_user quota unlimited on $tpcc_def_tab\n"
 if { $partition eq "true" } {
 if { $tpcc_def_tab != $tpcc_ol_tab } { 
@@ -914,6 +967,7 @@ set sql(7$idx) "$sql(7$idx) SELECT * FROM ORDER_LINE_$p )"
 	}
 set sql(8) "create table TPCC.STOCK (S_I_ID TT_BIGINT, S_W_ID TT_INTEGER, S_QUANTITY TT_INTEGER, S_DIST_01 CHAR(24), S_DIST_02 CHAR(24), S_DIST_03 CHAR(24), S_DIST_04 CHAR(24), S_DIST_05 CHAR(24), S_DIST_06 CHAR(24), S_DIST_07 CHAR(24), S_DIST_08 CHAR(24), S_DIST_09 CHAR(24), S_DIST_10 CHAR(24), S_YTD TT_BIGINT, S_ORDER_CNT TT_INTEGER, S_REMOTE_CNT TT_INTEGER, S_DATA CHAR(50))"
 set sql(9) "create table TPCC.WAREHOUSE (W_ID TT_INTEGER, W_YTD BINARY_DOUBLE, W_TAX BINARY_DOUBLE, W_NAME CHAR(10), W_STREET_1 CHAR(20), W_STREET_2 CHAR(20), W_CITY CHAR(20), W_STATE CHAR(2), W_ZIP CHAR(9))"
+set sql(10) "create or replace view tpcc.stock_item (i_id, s_w_id, i_price, i_name, i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10) as select /*+ leading(s) use_nl(i) */ i.i_id, s_w_id, i.i_price, i.i_name, i.i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 from stock s, item i where i.i_id = s.s_i_id"
 	} else {
 if  { $hash_clusters } {
 set blocksize 8000
@@ -938,6 +992,7 @@ set sql(6) "CREATE TABLE STOCK (S_I_ID NUMBER(6, 0), S_W_ID NUMBER(4, 0), S_QUAN
 set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID NUMBER, NO_D_ID NUMBER, NO_O_ID NUMBER, CONSTRAINT INORD PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 PCTFREE 10"
 set sql(8) "CREATE TABLE ORDERS (O_ID NUMBER, O_W_ID NUMBER, O_D_ID NUMBER, O_C_ID NUMBER, O_CARRIER_ID NUMBER, O_OL_CNT NUMBER, O_ALL_LOCAL NUMBER, O_ENTRY_D DATE) INITRANS 4 PCTFREE 10" 
 set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24), CONSTRAINT IORDL PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 PCTFREE 10 PARTITION BY HASH(OL_W_ID) PARTITIONS $num_part TABLESPACE $tpcc_ol_tab"
+set sql(10) "create or replace view stock_item (i_id, s_w_id, i_price, i_name, i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10) as select /*+ leading(s) use_nl(i) */ i.i_id, s_w_id, i.i_price, i.i_name, i.i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 from stock s, item i where i.i_id = s.s_i_id"
 	} else {
 set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0), C_FIRST VARCHAR2(16), C_MIDDLE CHAR(2), C_LAST VARCHAR2(16), C_STREET_1 VARCHAR2(20), C_STREET_2 VARCHAR2(20), C_CITY VARCHAR2(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE DATE, C_CREDIT CHAR(2), C_CREDIT_LIM NUMBER(12, 2), C_DISCOUNT NUMBER(4, 4), C_BALANCE NUMBER(12, 2), C_YTD_PAYMENT NUMBER(12, 2), C_PAYMENT_CNT NUMBER(8, 0), C_DELIVERY_CNT NUMBER(8, 0), C_DATA VARCHAR2(500)) INITRANS 4 PCTFREE 10"
 set sql(2) "CREATE TABLE DISTRICT (D_ID NUMBER(2, 0), D_W_ID NUMBER(4, 0), D_YTD NUMBER(12, 2), D_TAX NUMBER(4, 4), D_NEXT_O_ID NUMBER, D_NAME VARCHAR2(10), D_STREET_1 VARCHAR2(20), D_STREET_2 VARCHAR2(20), D_CITY VARCHAR2(20), D_STATE CHAR(2), D_ZIP CHAR(9)) INITRANS 4 PCTFREE 99 PCTUSED 1"
@@ -952,6 +1007,7 @@ set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUM
 	} else {
 set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24), CONSTRAINT IORDL PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER) ENABLE) ORGANIZATION INDEX NOCOMPRESS INITRANS 4 PCTFREE 10 PARTITION BY HASH(OL_W_ID) PARTITIONS $num_part TABLESPACE $tpcc_ol_tab"
 	}
+set sql(10) "create or replace view stock_item (i_id, s_w_id, i_price, i_name, i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10) as select /*+ leading(s) use_nl(i) */ i.i_id, s_w_id, i.i_price, i.i_name, i.i_data, s_data, s_quantity, s_order_cnt, s_ytd, s_remote_cnt, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 from stock s, item i where i.i_id = s.s_i_id"
     }
 }   
 if { $hash_clusters } {
@@ -962,7 +1018,7 @@ puts [ oramsg $curn1 all ]
 			}
 		}
 	}
-for { set i 1 } { $i <= 9 } { incr i } {
+for { set i 1 } { $i <= 10 } { incr i } {
 if { $i eq 7 && $timesten && $num_part eq 10 } {
 set partidx [ list a b c d e f g h i j k ]
 for { set p 1 } { $p <= 11 } { incr p } {
