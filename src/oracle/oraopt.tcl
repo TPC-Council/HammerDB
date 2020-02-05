@@ -275,7 +275,7 @@ ttk::checkbutton $Name -text "" -variable hash_clusters -onvalue "true" -offvalu
    grid $Prompt -column 0 -row 10 -sticky e
    grid $Name -column 1 -row 10 -sticky w
  set Prompt $Parent.f1.p9
-ttk::label $Prompt -text "Partition Order Line Table :"
+ttk::label $Prompt -text "Partition Tables :"
   set Name $Parent.f1.e9
 ttk::checkbutton $Name -text "" -variable partition -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 11 -sticky e
