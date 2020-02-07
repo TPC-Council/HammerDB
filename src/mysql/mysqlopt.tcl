@@ -247,6 +247,8 @@ grid $Name -column 1 -row 12 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set mysql_allwarehouse "false"
 set mysql_timeprofile "false"
+set mysql_async_scale "false"
+set mysql_async_verbose "false"
 .tpc.f1.e17 configure -state disabled
 .tpc.f1.e18 configure -state disabled
 .tpc.f1.e19 configure -state disabled
@@ -265,9 +267,11 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e19 configure -state normal
 .tpc.f1.e20 configure -state normal
 .tpc.f1.e21 configure -state normal
+if { $mysql_async_scale eq "true" } {
 .tpc.f1.e22 configure -state normal
 .tpc.f1.e23 configure -state normal
 .tpc.f1.e24 configure -state normal
+	}
 }
 set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14

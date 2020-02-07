@@ -183,6 +183,8 @@ grid $Name -column 1 -row 7 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set redis_allwarehouse "false"
 set redis_timeprofile "false"
+set redis_async_scale "false"
+set redis_async_verbose "false"
 .tpc.f1.e11 configure -state disabled
 .tpc.f1.e12 configure -state disabled
 .tpc.f1.e13 configure -state disabled
@@ -202,9 +204,11 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e13 configure -state normal
 .tpc.f1.e14 configure -state normal
 .tpc.f1.e15 configure -state normal
+if { $redis_async_scale eq "true" } {
 .tpc.f1.e16 configure -state normal
 .tpc.f1.e17 configure -state normal
 .tpc.f1.e18 configure -state normal
+	}
 }
 set Name $Parent.f1.e8
    set Prompt $Parent.f1.p8
