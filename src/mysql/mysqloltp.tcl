@@ -7,7 +7,8 @@ if {[dict exists $dbdict mysql library ]} {
 upvar #0 configmysql configmysql
 #set variables to values in dict
 setlocaltpccvars $configmysql
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mysql_count_ware Warehouse MySQL TPC-C schema\nin host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $mysql_storage_engine ]?" -type yesno ] == yes} { 
+if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mysql_count_ware Warehouse MySQL TPC-C schema\nin host [string toupper $mysql_connector] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $mysql_storage_engine ]?" -type yesno ] == yes} { 
 if { $mysql_num_vu eq 1 || $mysql_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -885,7 +886,15 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	return
 }
 
-proc do_tpcc { host port count_ware user password db mysql_storage_engine partition num_vu } {
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
+}
+
+proc do_tpcc { host port socket count_ware user password db mysql_storage_engine partition num_vu } {
 global mysqlstatus
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
@@ -917,10 +926,22 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $db ] SCHEMA"
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+	} 
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+	} 
+}
+if {$connected} {
 CreateDatabase $mysql_handler $db
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
@@ -934,6 +955,9 @@ set num_part [ expr round($count_ware/100) ]
 set num_part 0
 }
 CreateTables $mysql_handler $mysql_storage_engine $num_part
+} else {
+error $mysqlstatus(message)
+return
 }
 if { $threaded eq "MULTI-THREADED" } {
 tsv::set application load "READY"
@@ -971,13 +995,28 @@ return
         }
 after 5000
 }
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
-} 
+} else {
+error $mysqlstatus(message)
+return
+}
 set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
 puts "Loading $chunk Warehouses start:$mystart end:$myend"
 tsv::lreplace common thrdlst $myposition $myposition active
@@ -1004,8 +1043,7 @@ return
 		}
 	}
 }
-
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_num_vu"
 	} else { return }
 }
 
@@ -1024,11 +1062,13 @@ set _ED(packagekeyname) "MySQL TPC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# MySQL Library
+global mysqlstatus
 set total_iterations $mysql_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$mysql_raiseerror\" ;# Exit script on MySQL error (true or false)
 set KEYANDTHINK \"$mysql_keyandthink\" ;# Time for user thinking and keying (true or false)
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -1042,6 +1082,13 @@ if [catch {package require tpcccommon} ] { error "Failed to load tpcc common fun
 proc gettimestamp { } {
 set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
 return $tstamp
+}
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
 }
 #NEW ORDER
 proc neword { mysql_handler no_w_id w_id_input RAISEERROR } {
@@ -1192,12 +1239,27 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
     }
 }
 #RUN TPC-C
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
+} else {
+error $mysqlstatus(message)
+return
 }
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
 set w_id_input [ list [ mysql::sel $mysql_handler "select max(w_id) from warehouse" -list ] ]
@@ -1266,6 +1328,7 @@ set duration $mysql_duration;  # Duration in minutes before second Transaction C
 set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -1279,16 +1342,38 @@ if [catch {package require tpcccommon} ] { error "Failed to load tpcc common fun
 if { [ chk_thread ] eq "FALSE" } {
 error "MYSQL Timed Script must be run in Thread Enabled Interpreter"
 }
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
+}
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
 if { $mode eq "Local" || $mode eq "Master" } {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 1
+} else {
+error $mysqlstatus(message)
+return
 }
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -1503,12 +1588,27 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
     }
 }
 #RUN TPC-C
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
+} else {
+error $mysqlstatus(message)
+return
 }
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
 set w_id_input [ list [ mysql::sel $mysql_handler "select max(w_id) from warehouse" -list ] ]
@@ -1560,6 +1660,7 @@ set duration $mysql_duration;  # Duration in minutes before second Transaction C
 set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -1577,16 +1678,38 @@ if [catch {package require promise } message] { error "Failed to load promise pa
 if { [ chk_thread ] eq "FALSE" } {
 error "MYSQL Timed Script must be run in Thread Enabled Interpreter"
 }
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
+}
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
 if { $mode eq "Local" || $mode eq "Master" } {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 1
+} else {
+error $mysqlstatus(message)
+return
 }
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -1653,7 +1776,7 @@ set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
 return $tstamp
 }
 #NEW ORDER
-proc neword { mysql_handler no_w_id w_id_input RAISEERROR } {
+proc neword { mysql_handler no_w_id w_id_input RAISEERROR clientname } {
 global mysqlstatus
 #open new order cursor
 #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
@@ -1668,15 +1791,16 @@ catch {mysqlexec $mysql_handler "set @no_w_id=$no_w_id,@w_id_input=$w_id_input,@
 catch {mysqlexec $mysql_handler "execute neword_st using @no_w_id,@w_id_input,@no_d_id,@no_c_id,@ol_cnt,@next_o_id,@date"}
 if { $mysqlstatus(code)  } {
 if { $RAISEERROR } {
-error "New Order : $mysqlstatus(message)"
-	} else { puts $mysqlstatus(message) 
-      } 
+error "New Order in $clientname : $mysqlstatus(message)"
+        } else {
+puts "New Order in $clientname : $mysqlstatus(message)"
+      }
   } else {
 catch {mysql::sel $mysql_handler "select @disc,@last,@credit,@dtax,@wtax,@next_o_id" -list}
    }
 }
 #PAYMENT
-proc payment { mysql_handler p_w_id w_id_input RAISEERROR } {
+proc payment { mysql_handler p_w_id w_id_input RAISEERROR clientname } {
 global mysqlstatus
 #2.5.1.1 The home warehouse id remains the same for each terminal
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
@@ -1716,15 +1840,16 @@ catch {mysqlexec $mysql_handler "set @p_w_id=$p_w_id,@p_d_id=$p_d_id,@p_c_w_id=$
 catch { mysqlexec $mysql_handler "execute payment_st using @p_w_id,@p_d_id,@p_c_w_id,@p_c_d_id,@p_c_id,@byname,@p_h_amount,@p_c_last,@p_c_credit,@p_c_balance,@h_date"}
 if { $mysqlstatus(code) } {
 if { $RAISEERROR } {
-error "Payment : $mysqlstatus(message)"
-	} else { puts $mysqlstatus(message) 
-       } 
+error "Payment in $clientname : $mysqlstatus(message)"
+        } else {
+puts "Payment in $clientname : $mysqlstatus(message)"
+       }
   } else {
 catch {mysql::sel $mysql_handler "select @p_c_id,@p_c_last,@p_w_street_1,@p_w_street_2,@p_w_city,@p_w_state,@p_w_zip,@p_d_street_1,@p_d_street_2,@p_d_city,@p_d_state,@p_d_zip,@p_c_first,@p_c_middle,@p_c_street_1,@p_c_street_2,@p_c_city,@p_c_state,@p_c_zip,@p_c_phone,@p_c_since,@p_c_credit,@p_c_credit_lim,@p_c_discount,@p_c_balance,@p_c_data" -list}
     }
 }
 #ORDER_STATUS
-proc ostat { mysql_handler w_id RAISEERROR } {
+proc ostat { mysql_handler w_id RAISEERROR clientname } {
 global mysqlstatus
 #2.5.1.1 select district id randomly from home warehouse where d_w_id = d_id
 set d_id [ RandomNumber 1 10 ]
@@ -1742,15 +1867,16 @@ catch {mysqlexec $mysql_handler "set @os_w_id=$w_id,@dos_d_id=$d_id,@os_c_id=$c_
 catch {mysqlexec $mysql_handler "execute ostat_st using @os_w_id,@dos_d_id,@os_c_id,@byname,@os_c_last"}
 if { $mysqlstatus(code) } {
 if { $RAISEERROR } {
-error "Order Status : $mysqlstatus(message)"
-	} else { puts $mysqlstatus(message) 
-       } 
+error "Order Status in $clientname : $mysqlstatus(message)"
+        } else {
+puts "Order Status in $clientname : $mysqlstatus(message)"
+       }
   } else {
 catch {mysql::sel $mysql_handler "select @os_c_id,@os_c_last,@os_c_first,@os_c_middle,@os_c_balance,@os_o_id,@os_entdate,@os_o_carrier_id" -list}
     }
 }
 #DELIVERY
-proc delivery { mysql_handler w_id RAISEERROR } {
+proc delivery { mysql_handler w_id RAISEERROR clientname } {
 global mysqlstatus
 set carrier_id [ RandomNumber 1 10 ]
 set date [ gettimestamp ]
@@ -1758,24 +1884,26 @@ catch {mysqlexec $mysql_handler "set @d_w_id=$w_id,@d_o_carrier_id=$carrier_id,@
 catch {mysqlexec $mysql_handler "execute delivery_st using @d_w_id,@d_o_carrier_id,@timestamp"}
 if { $mysqlstatus(code) } {
 if { $RAISEERROR } {
-error "Delivery : $mysqlstatus(message)"
-	} else { puts $mysqlstatus(message) 
-       } 
+error "Delivery in $clientname : $mysqlstatus(message)"
+        } else {
+puts "Delivery in $clientname : $mysqlstatus(message)"
+       }
   } else {
 	;
     }
 }
 #STOCK LEVEL
-proc slev { mysql_handler w_id stock_level_d_id RAISEERROR } {
+proc slev { mysql_handler w_id stock_level_d_id RAISEERROR clientname } {
 global mysqlstatus
 set threshold [ RandomNumber 10 20 ]
 catch {mysqlexec $mysql_handler "set @st_w_id=$w_id,@st_d_id=$stock_level_d_id,@threshold=$threshold"}
 catch {mysqlexec $mysql_handler "execute slev_st using @st_w_id,@st_d_id,@threshold"}
 if { $mysqlstatus(code) } {
 if { $RAISEERROR } {
-error "Stock Level : $mysqlstatus(message)"
-	} else { puts $mysqlstatus(message) 
-       } 
+error "Stock Level in $clientname : $mysqlstatus(message)"
+        } else {
+puts "Stock Level in $clientname : $mysqlstatus(message)"
+       }
   } else {
 catch {mysql::sel $mysql_handler "select @stock_count" -list}
     }
@@ -1801,23 +1929,39 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
     }
 }
 #RUN TPC-C
-promise::async simulate_client { clientname total_iterations host port user password RAISEERROR KEYANDTHINK db async_verbose async_delay } {
+promise::async simulate_client { clientname total_iterations host port socket user password RAISEERROR KEYANDTHINK db async_verbose async_delay } {
 global mysqlstatus
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+set connected "FALSE"
 if { $RAISEERROR } {
-puts "$clientname:login failed:$mysqlstatus(message)"
-return "$clientname:login failed:$mysqlstatus(message)"
+puts "$clientname:socket login failed:$mysqlstatus(message)"
+        }
+} else {
+set connected "TRUE"
+   }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+set connected "FALSE"
+if { $RAISEERROR } {
+puts "$clientname:tcp login failed:$mysqlstatus(message)"
         }
    } else {
+set connected "TRUE"
+   }
+}
+if {$connected} {
 if { $async_verbose } { puts "Connected $clientname:$mysql_handler" }
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
-   }
+} else {
+return "$clientname:login failed:$mysqlstatus(message)"
+}
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
 set w_id_input [ list [ mysql::sel $mysql_handler "select max(w_id) from warehouse" -list ] ]
 #2.4.1.1 set warehouse_id stays constant for a given terminal
@@ -1863,7 +2007,7 @@ return $clientname:complete
 for {set ac 1} {$ac <= $async_client} {incr ac} {
 set clientdesc "vuser$myposition:ac$ac"
 lappend clientlist $clientdesc
-lappend clients [simulate_client $clientdesc $total_iterations $host $port $user $password $RAISEERROR $KEYANDTHINK $db $async_verbose $async_delay]
+lappend clients [simulate_client $clientdesc $total_iterations $host $port $socket $user $password $RAISEERROR $KEYANDTHINK $db $async_verbose $async_delay]
                 }
 puts "Started asynchronous clients:$clientlist"
 set acprom [ promise::eventloop [ promise::all $clients ] ]

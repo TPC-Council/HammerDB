@@ -7,7 +7,8 @@ if {[dict exists $dbdict mysql library ]} {
 upvar #0 configmysql configmysql
 #set variables to values in dict
 setlocaltpchvars $configmysql
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPC-H schema\n in host [string toupper $mysql_host:$mysql_port] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
+if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
 if { $mysql_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -34,6 +35,14 @@ puts "GATHERING SCHEMA STATISTICS"
 set sql(1) "analyze table ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM"
 mysqlexec $mysql_handler $sql(1)
 return
+}
+
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
 }
 
 proc CreateDatabase { mysql_handler db } {
@@ -401,7 +410,7 @@ puts "ORDERS and LINEITEM Done Rows $start_rows..$end_rows"
 return
 }
 
-proc do_tpch { host port scale_fact user password db mysql_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket scale_fact user password db mysql_tpch_storage_engine num_vu } {
 global mysqlstatus
 global dist_names dist_weights weights dists weights
 ###############################################
@@ -453,15 +462,30 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $user ] SCHEMA"
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 CreateDatabase $mysql_handler $db
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
 CreateTables $mysql_handler $mysql_tpch_storage_engine
-	}
+} else {
+error $mysqlstatus(message)
+return
+}
 if { $threaded eq "MULTI-THREADED" } {
 tsv::set application load "READY"
 puts "Loading REGION..."
@@ -510,13 +534,28 @@ return
         }
 after 5000
 }
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
 mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
+} else {
+error $mysqlstatus(message)
+return
 }
 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
 if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
@@ -553,7 +592,7 @@ return
 		}
 	}
   }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
 	} else { return }
 }
 
@@ -578,6 +617,7 @@ set VERBOSE \"$mysql_verbose\" ;# Show query text and output
 set scale_factor $mysql_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
@@ -602,6 +642,14 @@ error "Query Error : $mysqlstatus(message)"
       }
    }
 return $oput
+}
+
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
 }
 #########################
 #TPCH REFRESH PROCEDURE
@@ -727,14 +775,29 @@ mysql::commit $mysql_handler
 mysql::commit $mysql_handler
 }
 
-proc do_refresh { host port user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+proc do_refresh { host port socket user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
-	}
+} else {
+error $mysqlstatus(message)
+return
+}
 set upd_num 1
 for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
 if {  [ tsv::get application abort ]  } { break }
@@ -984,18 +1047,32 @@ return $q2sub
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
+proc do_tpch { host port socket user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
 global mysqlstatus
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the database connection to $host could not be established"
-error $mysqlstatus(message)
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
 mysqluse $mysql_handler $db
 mysql::autocommit $mysql_handler 0
+} else {
+error $mysqlstatus(message)
+return
 }
 for {set it 0} {$it < $total_querysets} {incr it} {
 if {  [ tsv::get application abort ]  } { break }
-unset -nocomplain qlist
 set start [ clock seconds ]
 for { set q 1 } { $q <= 22 } { incr q } {
 set dssquery($q)  [sub_query $q $scale_factor $myposition ]
@@ -1023,7 +1100,6 @@ set oput [ standsql $mysql_handler $dssquery($qos) $RAISEERROR ]
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 if {$VERBOSE} { printlist $oput }
-if { [ llength $oput ] > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 	      } else {
             set q15c 0
@@ -1051,7 +1127,6 @@ error "Query Error : $mysqlstatus(message)"
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 if {$VERBOSE} { printlist $oput }
-if { [ llength $oput ] > 0 } { lappend qlist $value }
 puts "query $qos completed in $value seconds"
 		}
             incr q15c
@@ -1062,7 +1137,6 @@ set end [ clock seconds ]
 set wall [ expr $end - $start ]
 set qsets [ expr $it + 1 ]
 puts "Completed $qsets query set(s) in $wall seconds"
-puts "Geometric mean of query times returning rows ([llength $qlist]) is [ format \"%.5f\" [ gmean $qlist ]]"
 	}
 mysqlclose $mysql_handler
  }
@@ -1080,21 +1154,21 @@ if { $power_test } {
 set trickle_refresh 0
 set update_sets 1
 set REFRESH_VERBOSE "false"
-do_refresh $host $port $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-do_tpch $host $port $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
-do_refresh $host $port $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
+do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
+do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
         } else {
 switch $myposition {
 1 {
-do_refresh $host $port $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
         }
 default {
-do_tpch $host $port $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
+do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
         }
      }
   }
 } else {
-do_tpch $host $port $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
+do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
 		}}
 }
 
@@ -1117,6 +1191,7 @@ set RAISEERROR \"$mysql_raise_query_error\" ;# Exit script on MySQL query error 
 set VERBOSE \"$mysql_verbose\" ;# Show query text and output
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
+set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1138,6 +1213,14 @@ error "Query Error : $mysqlstatus(message)"
    } else {
 return $oput
 	}
+}
+
+proc chk_socket { host socket } {
+if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+return "TRUE"
+} else {
+return "FALSE"
+       }
 }
 #########################
 #CLOUD ANALYTIC TPCH QUERY GENERATION
@@ -1167,17 +1250,31 @@ return $sql($query_no)
 }
 #########################
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
-proc do_cloud { host port user password db RAISEERROR VERBOSE } {
+proc do_cloud { host port socket user password db RAISEERROR VERBOSE } {
 global mysqlstatus
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts stderr "error, the database connection to $host could not be established"
-puts stderr $mysqlstatus(message)
-return
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
  } else {
- mysqluse $mysql_handler $db
- mysql::autocommit $mysql_handler 0
- mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
- }
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 0
+mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
+} else {
+error $mysqlstatus(message)
+return
+}
 unset -nocomplain qlist
 set start [ clock seconds ]
 for { set q 1 } { $q <= 13 } { incr q } {
@@ -1203,5 +1300,5 @@ mysqlclose $mysql_handler
  }
 #########################
 #RUN CLOUD ANALYTIC TPC-H
-do_cloud $host $port $user $password $db $RAISEERROR $VERBOSE}
+do_cloud $host $port $socket $user $password $db $RAISEERROR $VERBOSE}
 }
