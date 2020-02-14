@@ -133,7 +133,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 #set matching fields in dialog to temporary dict
 variable myfields
-set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose} ]
+set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared} ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -321,12 +321,18 @@ set mysql_async_verbose "false"
 }
    grid $Prompt -column 0 -row 16 -sticky e
    grid $Name -column 1 -row 16 -sticky w
+ set Prompt $Parent.f1.p16a
+ttk::label $Prompt -text "Prepare Statements :"
+  set Name $Parent.f1.e16a
+ttk::checkbutton $Name -text "" -variable mysql_prepared -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky w
 set Name $Parent.f1.e17
    set Prompt $Parent.f1.p17
    ttk::label $Prompt -text "Minutes of Rampup Time :"
    ttk::entry $Name -width 30 -textvariable mysql_rampup
-   grid $Prompt -column 0 -row 17 -sticky e
-   grid $Name -column 1 -row 17 -sticky ew
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -334,8 +340,8 @@ set Name $Parent.f1.e18
    set Prompt $Parent.f1.p18
    ttk::label $Prompt -text "Minutes for Test Duration :"
    ttk::entry $Name -width 30 -textvariable mysql_duration
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky ew
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -343,8 +349,8 @@ set Name $Parent.f1.e19
    set Prompt $Parent.f1.p19
    ttk::label $Prompt -text "Use All Warehouses :"
 ttk::checkbutton $Name -text "" -variable mysql_allwarehouse -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky ew
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -352,8 +358,8 @@ set Name $Parent.f1.e20
    set Prompt $Parent.f1.p20
    ttk::label $Prompt -text "Time Profile :"
 ttk::checkbutton $Name -text "" -variable mysql_timeprofile -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20 -sticky ew
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -361,8 +367,8 @@ if {$mysql_driver == "test" } {
    set Prompt $Parent.f1.p21
    ttk::label $Prompt -text "Asynchronous Scaling :"
 ttk::checkbutton $Name -text "" -variable mysql_async_scale -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky ew
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
 if {$mysql_driver == "test" } {
         set mysql_async_scale "false"
         $Name configure -state disabled
@@ -386,8 +392,8 @@ set Name $Parent.f1.e22
    set Prompt $Parent.f1.p22
    ttk::label $Prompt -text "Asynch Clients per Virtual User :"
    ttk::entry $Name -width 30 -textvariable mysql_async_client
-   grid $Prompt -column 0 -row 22 -sticky e
-   grid $Name -column 1 -row 22 -sticky ew
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -395,8 +401,8 @@ set Name $Parent.f1.e23
    set Prompt $Parent.f1.p23
    ttk::label $Prompt -text "Asynch Client Login Delay :"
    ttk::entry $Name -width 30 -textvariable mysql_async_delay
-   grid $Prompt -column 0 -row 23 -sticky e
-   grid $Name -column 1 -row 23 -sticky ew
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -404,8 +410,8 @@ if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
    set Prompt $Parent.f1.p24
    ttk::label $Prompt -text "Asynchronous Verbose :"
 ttk::checkbutton $Name -text "" -variable mysql_async_verbose -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 24 -sticky e
-   grid $Name -column 1 -row 24 -sticky ew
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         set mysql_async_verbose "false"
         $Name configure -state disabled
