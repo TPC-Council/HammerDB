@@ -1325,6 +1325,11 @@ ostat $mysql_handler $w_id $prepare $RAISEERROR
 if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
+if {$prepare} {
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+catch {mysqlexec $mysql_handler "deallocate prepare $st"}
+		}
+        }
 mysqlclose $mysql_handler}
 }
 
@@ -1695,6 +1700,11 @@ ostat $mysql_handler $w_id $prepare $RAISEERROR
 if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
+if {$prepare} {
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+catch {mysqlexec $mysql_handler "deallocate prepare $st"}
+		}
+        }
 mysqlclose $mysql_handler
 	}
    }}
@@ -2078,6 +2088,11 @@ ostat $mysql_handler $w_id $prepare $RAISEERROR $clientname
 if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
         }
   }
+if {$prepare} {
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+catch {mysqlexec $mysql_handler "deallocate prepare $st"}
+		}
+        }
 mysqlclose $mysql_handler
 if { $async_verbose } { puts "$clientname:complete" }
 return $clientname:complete
