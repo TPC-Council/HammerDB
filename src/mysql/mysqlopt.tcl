@@ -7,9 +7,9 @@ global afval interval
 setlocaltcountvars $configmysql 1 
 variable myoptsfields 
 if { $bm eq "TPC-C" } {
-set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get}} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
+set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get}} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
 	} else {
-set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get}} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get}} ]
+set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get}} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get}} ]
 }
 if { [ info exists afval ] } {
 	after cancel $afval
@@ -42,6 +42,16 @@ set Name $Parent.f1.e1
    ttk::entry $Name  -width 30 -textvariable mysql_port
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e2a
+   set Prompt $Parent.f1.p2a
+   ttk::label $Prompt -text "MySQL Socket :"   
+   ttk::entry $Name  -width 30 -textvariable mysql_socket
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+   if {[string match windows $::tcl_platform(platform)]} {
+	set mysql_socket "null"
+	.countopt.f1.e2a configure -state disabled
+   }
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
    ttk::label $Prompt -text "MySQL User :"
@@ -50,8 +60,8 @@ if { $bm eq "TPC-C" } {
 	} else {
    ttk::entry $Name  -width 30 -textvariable mysql_tpch_user
 	}
-   grid $Prompt -column 0 -row 3 -sticky e
-   grid $Name -column 1 -row 3 -sticky ew
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
    ttk::label $Prompt -text "MySQL User Password :"   
@@ -60,14 +70,14 @@ if { $bm eq "TPC-C" } {
 	} else {
    ttk::entry $Name  -width 30 -textvariable mysql_tpch_pass
 	}
-   grid $Prompt -column 0 -row 4 -sticky e
-   grid $Name -column 1 -row 4 -sticky ew
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
    set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
    ttk::label $Prompt -text "Refresh Rate(secs) :"
    ttk::entry $Name -width 30 -textvariable interval
-   grid $Prompt -column 0 -row 5 -sticky e
-   grid $Name -column 1 -row 5 -sticky ew
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky ew
 
    bind .countopt.f1.e1 <Delete> {
       if [%W selection present] {
@@ -123,7 +133,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 #set matching fields in dialog to temporary dict
 variable myfields
-set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose} ]
+set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared} ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -164,31 +174,40 @@ grid $Prompt -column 1 -row 0 -sticky w
    ttk::entry $Name  -width 30 -textvariable mysql_port
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e2a
+   set Prompt $Parent.f1.p2a
+   ttk::label $Prompt -text "MySQL Socket :"
+   ttk::entry $Name  -width 30 -textvariable mysql_socket
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+   if {[string match windows $::tcl_platform(platform)]} {
+      .tpc.f1.e2a configure -state disabled
+   }
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
    ttk::label $Prompt -text "MySQL User :"
    ttk::entry $Name  -width 30 -textvariable mysql_user
-   grid $Prompt -column 0 -row 3 -sticky e
-   grid $Name -column 1 -row 3 -sticky ew
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
    ttk::label $Prompt -text "MySQL User Password :"   
    ttk::entry $Name  -width 30 -textvariable mysql_pass
-   grid $Prompt -column 0 -row 4 -sticky e
-   grid $Name -column 1 -row 4 -sticky ew
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
    ttk::label $Prompt -text "MySQL Database :"
    ttk::entry $Name -width 30 -textvariable mysql_dbase
-   grid $Prompt -column 0 -row 5 -sticky e
-   grid $Name -column 1 -row 5 -sticky ew
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
    ttk::label $Prompt -text "Transactional Storage Engine :"
    ttk::entry $Name -width 30 -textvariable mysql_storage_engine
-   grid $Prompt -column 0 -row 6 -sticky e
-   grid $Name -column 1 -row 6 -sticky ew
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7 -sticky ew
 set Prompt $Parent.f1.p8
 ttk::label $Prompt -text "Number of Warehouses :"
 set Name $Parent.f1.e8
@@ -247,6 +266,8 @@ grid $Name -column 1 -row 12 -sticky w
 bind .tpc.f1.r1 <ButtonPress-1> {
 set mysql_allwarehouse "false"
 set mysql_timeprofile "false"
+set mysql_async_scale "false"
+set mysql_async_verbose "false"
 .tpc.f1.e17 configure -state disabled
 .tpc.f1.e18 configure -state disabled
 .tpc.f1.e19 configure -state disabled
@@ -265,9 +286,11 @@ bind .tpc.f1.r2 <ButtonPress-1> {
 .tpc.f1.e19 configure -state normal
 .tpc.f1.e20 configure -state normal
 .tpc.f1.e21 configure -state normal
+if { $mysql_async_scale eq "true" } {
 .tpc.f1.e22 configure -state normal
 .tpc.f1.e23 configure -state normal
 .tpc.f1.e24 configure -state normal
+	}
 }
 set Name $Parent.f1.e14
    set Prompt $Parent.f1.p14
@@ -298,12 +321,18 @@ set mysql_async_verbose "false"
 }
    grid $Prompt -column 0 -row 16 -sticky e
    grid $Name -column 1 -row 16 -sticky w
+ set Prompt $Parent.f1.p16a
+ttk::label $Prompt -text "Prepare Statements :"
+  set Name $Parent.f1.e16a
+ttk::checkbutton $Name -text "" -variable mysql_prepared -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 17 -sticky e
+   grid $Name -column 1 -row 17 -sticky w
 set Name $Parent.f1.e17
    set Prompt $Parent.f1.p17
    ttk::label $Prompt -text "Minutes of Rampup Time :"
    ttk::entry $Name -width 30 -textvariable mysql_rampup
-   grid $Prompt -column 0 -row 17 -sticky e
-   grid $Name -column 1 -row 17 -sticky ew
+   grid $Prompt -column 0 -row 18 -sticky e
+   grid $Name -column 1 -row 18 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -311,8 +340,8 @@ set Name $Parent.f1.e18
    set Prompt $Parent.f1.p18
    ttk::label $Prompt -text "Minutes for Test Duration :"
    ttk::entry $Name -width 30 -textvariable mysql_duration
-   grid $Prompt -column 0 -row 18 -sticky e
-   grid $Name -column 1 -row 18 -sticky ew
+   grid $Prompt -column 0 -row 19 -sticky e
+   grid $Name -column 1 -row 19 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -320,8 +349,8 @@ set Name $Parent.f1.e19
    set Prompt $Parent.f1.p19
    ttk::label $Prompt -text "Use All Warehouses :"
 ttk::checkbutton $Name -text "" -variable mysql_allwarehouse -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 19 -sticky e
-   grid $Name -column 1 -row 19 -sticky ew
+   grid $Prompt -column 0 -row 20 -sticky e
+   grid $Name -column 1 -row 20 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -329,8 +358,8 @@ set Name $Parent.f1.e20
    set Prompt $Parent.f1.p20
    ttk::label $Prompt -text "Time Profile :"
 ttk::checkbutton $Name -text "" -variable mysql_timeprofile -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 20 -sticky e
-   grid $Name -column 1 -row 20 -sticky ew
+   grid $Prompt -column 0 -row 21 -sticky e
+   grid $Name -column 1 -row 21 -sticky ew
 if {$mysql_driver == "test" } {
 	$Name configure -state disabled
 	}
@@ -338,8 +367,8 @@ if {$mysql_driver == "test" } {
    set Prompt $Parent.f1.p21
    ttk::label $Prompt -text "Asynchronous Scaling :"
 ttk::checkbutton $Name -text "" -variable mysql_async_scale -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 21 -sticky e
-   grid $Name -column 1 -row 21 -sticky ew
+   grid $Prompt -column 0 -row 22 -sticky e
+   grid $Name -column 1 -row 22 -sticky ew
 if {$mysql_driver == "test" } {
         set mysql_async_scale "false"
         $Name configure -state disabled
@@ -363,8 +392,8 @@ set Name $Parent.f1.e22
    set Prompt $Parent.f1.p22
    ttk::label $Prompt -text "Asynch Clients per Virtual User :"
    ttk::entry $Name -width 30 -textvariable mysql_async_client
-   grid $Prompt -column 0 -row 22 -sticky e
-   grid $Name -column 1 -row 22 -sticky ew
+   grid $Prompt -column 0 -row 23 -sticky e
+   grid $Name -column 1 -row 23 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -372,8 +401,8 @@ set Name $Parent.f1.e23
    set Prompt $Parent.f1.p23
    ttk::label $Prompt -text "Asynch Client Login Delay :"
    ttk::entry $Name -width 30 -textvariable mysql_async_delay
-   grid $Prompt -column 0 -row 23 -sticky e
-   grid $Name -column 1 -row 23 -sticky ew
+   grid $Prompt -column 0 -row 24 -sticky e
+   grid $Name -column 1 -row 24 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         $Name configure -state disabled
         }
@@ -381,8 +410,8 @@ if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
    set Prompt $Parent.f1.p24
    ttk::label $Prompt -text "Asynchronous Verbose :"
 ttk::checkbutton $Name -text "" -variable mysql_async_verbose -onvalue "true" -offvalue "false"
-   grid $Prompt -column 0 -row 24 -sticky e
-   grid $Name -column 1 -row 24 -sticky ew
+   grid $Prompt -column 0 -row 25 -sticky e
+   grid $Name -column 1 -row 25 -sticky ew
 if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         set mysql_async_verbose "false"
         $Name configure -state disabled
@@ -430,7 +459,7 @@ upvar #0 configmysql configmysql
 setlocaltpchvars $configmysql
 #set matching fields in dialog to temporary dict
 variable myfields
-set myfields [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get}} tpch {mysql_tpch_user {.mytpch.f1.e3 get} mysql_tpch_pass {.mytpch.f1.e4 get} mysql_tpch_dbase {.mytpch.f1.e5 get} mysql_tpch_storage_engine {.mytpch.f1.e6 get} mysql_total_querysets {.mytpch.f1.e9 get} mysql_update_sets {.mytpch.f1.e13 get} mysql_trickle_refresh {.mytpch.f1.e14 get} mysql_scale_fact $mysql_scale_fact  mysql_num_tpch_threads $mysql_num_tpch_threads mysql_refresh_on $mysql_refresh_on mysql_raise_query_error $mysql_raise_query_error mysql_verbose $mysql_verbose mysql_refresh_verbose $mysql_refresh_verbose mysql_cloud_query $mysql_cloud_query} ]
+set myfields [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get}} tpch {mysql_tpch_user {.mytpch.f1.e3 get} mysql_tpch_pass {.mytpch.f1.e4 get} mysql_tpch_dbase {.mytpch.f1.e5 get} mysql_tpch_storage_engine {.mytpch.f1.e6 get} mysql_total_querysets {.mytpch.f1.e9 get} mysql_update_sets {.mytpch.f1.e13 get} mysql_trickle_refresh {.mytpch.f1.e14 get} mysql_scale_fact $mysql_scale_fact  mysql_num_tpch_threads $mysql_num_tpch_threads mysql_refresh_on $mysql_refresh_on mysql_raise_query_error $mysql_raise_query_error mysql_verbose $mysql_verbose mysql_refresh_verbose $mysql_refresh_verbose mysql_cloud_query $mysql_cloud_query} ]
    catch "destroy .mytpch"
    ttk::toplevel .mytpch
    wm withdraw .mytpch
@@ -470,38 +499,47 @@ grid $Prompt -column 1 -row 0 -sticky w
    ttk::entry $Name  -width 30 -textvariable mysql_port
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
+   set Name $Parent.f1.e2a
+   set Prompt $Parent.f1.p2a
+   ttk::label $Prompt -text "MySQL Socket :"
+   ttk::entry $Name  -width 30 -textvariable mysql_socket
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+   if {[string match windows $::tcl_platform(platform)]} {
+        .mytpch.f1.e2a configure -state disabled
+   }
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
    ttk::label $Prompt -text "MySQL User :"
    ttk::entry $Name  -width 30 -textvariable mysql_tpch_user
-   grid $Prompt -column 0 -row 3 -sticky e
-   grid $Name -column 1 -row 3 -sticky ew
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
    ttk::label $Prompt -text "MySQL User Password :"   
    ttk::entry $Name  -width 30 -textvariable mysql_tpch_pass
-   grid $Prompt -column 0 -row 4 -sticky e
-   grid $Name -column 1 -row 4 -sticky ew
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
    ttk::label $Prompt -text "MySQL Database :"
    ttk::entry $Name -width 30 -textvariable mysql_tpch_dbase
-   grid $Prompt -column 0 -row 5 -sticky e
-   grid $Name -column 1 -row 5 -sticky ew
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
    ttk::label $Prompt -text "Data Warehouse Storage Engine :"
    ttk::entry $Name -width 30 -textvariable mysql_tpch_storage_engine
-   grid $Prompt -column 0 -row 6 -sticky e
-   grid $Name -column 1 -row 6 -sticky ew
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7 -sticky ew
 set Name $Parent.f1.e7
    set Prompt $Parent.f1.p7 
    ttk::label $Prompt -text "Scale Factor :"
-   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Prompt -column 0 -row 8 -sticky e
    set Name $Parent.f1.f2
    ttk::frame $Name -width 30
-   grid $Name -column 1 -row 7 -sticky ew
+   grid $Name -column 1 -row 8 -sticky ew
 	set rcnt 1
 	foreach item {1} {
 	set Name $Parent.f1.f2.r$rcnt
@@ -534,8 +572,8 @@ set Prompt $Parent.f1.p8
 ttk::label $Prompt -text "Virtual Users to Build Schema :"
 set Name $Parent.f1.e8
 ttk::spinbox $Name -from 1 -to 512 -textvariable mysql_num_tpch_threads
-	grid $Prompt -column 0 -row 8 -sticky e
-	grid $Name -column 1 -row 8 -sticky ew
+	grid $Prompt -column 0 -row 9 -sticky e
+	grid $Name -column 1 -row 9 -sticky ew
 	}
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {

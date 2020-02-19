@@ -6,7 +6,7 @@ if {[dict exists $dbdict mysql library ]} {
 } else { set library "mysqltcl" }
 #Setup Transaction Counter Thread
 set tc_threadID [thread::create {
-proc read_more { MASTER library mysql_host mysql_port mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm } {
+proc read_more { MASTER library mysql_host mysql_port mysql_socket mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm } {
 set timeout 0
 set iconflag 0
 if { $interval <= 0 } { set interval 10 } 
@@ -45,12 +45,21 @@ return
 } else {
 namespace import tcountcommon::*
 }
-if {[catch {mysqlconnect -host $mysql_host -port $mysql_port -user $tmp_mysql_user -password $tmp_mysql_pass} mysql_handler]} {
+if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } {
+if [catch {mysqlconnect -socket $mysql_socket -user $tmp_mysql_user -password $tmp_mysql_pass} mysql_handler] {
 tsv::set application tc_errmsg $mysql_handler
 eval [subst {thread::send $MASTER show_tc_errmsg}]
 thread::release
 return
-     } 
+	} 
+} else {
+if [catch {mysqlconnect -host $mysql_host -port $mysql_port -user $tmp_mysql_user -password $tmp_mysql_pass} mysql_handler] {
+tsv::set application tc_errmsg $mysql_handler
+eval [subst {thread::send $MASTER show_tc_errmsg}]
+thread::release
+return
+	} 
+}
 #Enter loop until stop button pressed
 while { $timeout eq 0 } {
 set timeout [ tsv::get application timeout ]
@@ -126,5 +135,5 @@ upvar #0 configmysql configmysql
 setlocaltcountvars $configmysql 1
 set old 0
 #Call Transaction Counter to start read_more loop
-eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_user $mysql_pass $mysql_tpch_user $mysql_tpch_pass $interval $old tce $bm }}]
+eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket $mysql_user $mysql_pass $mysql_tpch_user $mysql_tpch_pass $interval $old tce $bm }}]
 } 
