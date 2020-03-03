@@ -11,8 +11,6 @@ HammerDB is the leading benchmarking and load testing software for the worlds mo
 
 GNU General Public License v3.0. Please see [License File](LICENSE) for more information.
 
-Steve Shaw
-
 ## Support
 
 - [Contact information](http://www.hammerdb.com)
