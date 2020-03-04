@@ -5,7 +5,7 @@ HammerDB is the leading benchmarking and load testing software for the worlds mo
 ## Credits
 
 - Steve Shaw
-- [All Contributors](https://github.com/Webysther/packagist-mirror/contributors)
+- [All Contributors](https://github.com/TPC-Council/HammerDB/contributors)
 
 ## License
 
