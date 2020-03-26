@@ -521,7 +521,7 @@ error "[pg_result $result -error]"
 return
 }
 
-proc do_tpch { host port scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
+proc do_tpch { host port scale_fact superuser superuser_password defaultdb db tspace user password createuserdatabase greenplum gpcompress num_vu } {
 global dist_names dist_weights weights dists weights
 ###############################################
 #Generating following rows
@@ -574,6 +574,7 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $user ] SCHEMA"
+if { $createuserdatabase eq "true" } {
 set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultdb ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
@@ -582,6 +583,8 @@ CreateUserDatabase $lda $db $tspace $superuser $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
+        }
+}
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
@@ -589,8 +592,7 @@ error "error, the database connection to $host could not be established"
 CreateTables $lda $greenplum $gpcompress
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
-	}
-}
+         }
 if { $threaded eq "MULTI-THREADED" } {
 tsv::set application load "READY"
 puts "Loading REGION..."
@@ -682,7 +684,7 @@ return
 		}
 	}
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_createuserdatabase $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
 	} else { return }
 }
 
@@ -706,6 +708,7 @@ set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query erro
 set VERBOSE \"$pg_verbose\" ;# Show query text and output
 set degree_of_parallel \"$pg_degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $pg_scale_fact ;#Scale factor of the tpc-h schema
+set createuserdatabase \"$pg_createuserdatabase\" ;#Create user and database
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set user \"$pg_tpch_user\" ;# PostgreSQL user
@@ -1160,7 +1163,7 @@ return $q2sub
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
+proc do_tpch { host port db user password createuserdatabase scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
 #Queries 17 and 20 are long running on PostgreSQL
 set SKIP_QUERY_17_20 "false" 
 set lda [ ConnectToPostgres $host $port $user $password $db ]

@@ -19,6 +19,7 @@
             <pg_dritasnap>false</pg_dritasnap>
             <pg_oracompat>false</pg_oracompat>
             <pg_storedprocs>false</pg_storedprocs>
+            <pg_createuserdatabase>true</pg_createuserdatabase>
         </schema>
         <driver>
             <pg_total_iterations>1000000</pg_total_iterations>
@@ -48,6 +49,7 @@
 	    <pg_tpch_gpcompat>false</pg_tpch_gpcompat>
 	    <pg_tpch_gpcompress>false</pg_tpch_gpcompress>
             <pg_num_tpch_threads>1</pg_num_tpch_threads>
+            <pg_createuserdatabase>true</pg_createuserdatabase>
         </schema>
         <driver>
             <pg_total_querysets>1</pg_total_querysets>
