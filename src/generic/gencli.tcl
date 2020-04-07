@@ -429,9 +429,9 @@ if {[ llength $args ] != 3} {
 	putscli "Error: Invalid number of arguments\nUsage: diset dict key value"
 	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms" 
 } else {
-	set dct [ lindex [ split  $args ]  0 ]
-	set key2 [ lindex [ split  $args ]  1 ]
-	set val [ lindex [ split  $args ]  2 ]
+	set dct [ lindex $args 0 ]
+	set key2 [ lindex $args 1 ]
+	set val [ lindex $args 2 ]
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key
@@ -441,10 +441,10 @@ if { [ dict get $dbdict $key name ] eq $rdbms } {
 	if {[dict exists [ set $dictname ] $dct ]} {
 	if {[dict exists [ set $dictname ] $dct $key2 ]} {
 	set previous [ dict get [ set $dictname ] $dct $key2 ]
-	if { $previous eq $val } {
+	if { $previous eq [ concat $val ] } {
 	putscli "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
 	} else {
-	if { [ string match *driver $key2 ] } {
+        if { [ string match *driver $key2 ] && ![ string match *odbc_driver $key2 ] } {
 	putscli "Clearing Script, reload script to activate new setting"
 	clearscript
 	if { $val != "test" && $val != "timed"  } {	
@@ -452,11 +452,11 @@ if { [ dict get $dbdict $key name ] eq $rdbms } {
 	return
 		}	
 	}
-	if { [catch {dict set $dictname $dct $key2 $val } message]} {
+	if { [catch {dict set $dictname $dct $key2 [ concat $val ] } message]} {
 	putscli "Failed to set Dictionary value: $message"
 	} else {
-	putscli "Changed $dct:$key2 from $previous to $val for $rdbms"
-	remote_command [ concat diset $dct $key2 $val ]
+	putscli "Changed $dct:$key2 from $previous to [ concat $val ] for $rdbms"
+	remote_command [ concat diset $dct $key2 [ list \{$val\} ]]
 	}}
 	} else {
 	putscli {Usage: diset dict key value}
