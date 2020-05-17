@@ -1,6 +1,6 @@
 package provide tpcccommon 1.0
 namespace eval tpcccommon {
-namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime async_keytime async_thinktime async_time
+namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime async_keytime async_thinktime async_time get_connect_xml
 #gettimestamp not included as uses different formats per database
 #TPCC BUILD PROCEDURES
 proc chk_thread {} {
@@ -147,4 +147,42 @@ puts "thinktime:$callingproc:$clientname:$TIME_taken secs"
 async_time [ expr $as_thkt * 1000 ]
         }
     }
+#XML Connect Data
+proc get_connect_xml { prefix } {
+if [catch {package require xml} ] { error "Failed to load xml package in tpcccommon module" } 
+set connect "config/connectpool/$prefix\cpool.xml"
+if { [ file exists $connect ] } { 
+	set cpool [ ::XML::To_Dict_Ml $connect ] 
+	return $cpool
+	} else { 
+	error "Connect Pool specified but file $connect does not exist" 
+	}
+    }
+}
+#Choose a Cursor when using multiple connections
+proc pick_cursor { policy cursors cnt len } {
+#pick a cursor from the list according to the policy
+#puts "input: $policy $cursors $cnt $len"
+switch $policy {
+#return first cursor
+first_named {
+return [ lindex $cursors 0 ] 
+   }
+#return last cursor
+last_named {
+return [ lindex $cursors end ] 
+   } 
+#return cursor at random
+random {
+return [ lindex $cursors [ expr {[ RandomNumber 1 $len ] - 1} ]]
+   }
+#return cursor in order cycling through the list
+round_robin {
+return [ lindex $cursors [ expr $cnt % $len ] ]  
+   }
+#if policy not found use the first cursor
+default {
+return [ lindex $cursors 0 ]
+    }
+  }
 }

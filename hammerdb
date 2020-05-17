@@ -186,7 +186,7 @@ for { set iconcount 0 } { $iconcount < [llength $iconlist] } { incr iconcount } 
         }
     }
 
-append loadlist { gendict.tcl gentheme.tcl genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl gentab.tcl gencnv.tcl gentc.tcl genmetrics.tcl gened.tcl genxml.tcl geninit.tcl }
+append loadlist { gentheme.tcl genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl gentab.tcl gencnv.tcl gentc.tcl genmetrics.tcl gened.tcl genxml.tcl geninit.tcl }
 
 set loadtext "Loading generic source"
 after 100

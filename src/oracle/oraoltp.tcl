@@ -1880,6 +1880,229 @@ return
 	} else { return }
 }
 
+proc insert_connect_pool_drive_script { testtype timedtype } {
+#When using connect pooling delete the existing portions of the script and replace with new connect pool version
+set syncdrvt(1) {
+#RUN TPC-C
+#Get Connect data as a dict
+set cpool [ get_connect_xml ora ]
+#Extract connect data only from dict
+set connectonly [ dict filter [ dict get $cpool connections ] key c? ]
+#Extract the keys, this will be c1, c2 etc and determines number of connections
+set conkeys [ dict keys $connectonly ]
+#Loop through the keys of the connection parameters
+dict for {id conparams} $connectonly {
+#Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
+dict with conparams {
+#set Oracle connect string
+set $id "$tpcc_user/$tpcc_pass@$instance"
+	}
+    }
+#For the connect keys c1, c2 etc make a connection
+foreach id [ split $conkeys ] {
+dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id ] ]
+	}
+#Extract which storedprocedures use which connection
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] { 
+unset -nocomplain clist
+#Extract the policy for the storedprocedures
+set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
+foreach sp [ dict get $cpool sprocs $sproc connections ] {
+lappend clist [ dict get $connlist $sp ]
+}
+set newname "cs$sproc"
+unset -nocomplain $newname
+lappend $newname $clist
+}
+#Prepare statements multiple times for stored procedure for each connection and add to cursor list
+foreach curn_st {curn_no curn_py curn_dl curn_sl curn_os} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+unset -nocomplain $cursor_list
+set curcnt 0
+#For all of the connections
+foreach lda [ join [ set $cslist ] ] {
+#Create a cursor name
+set cursor [ concat $curn_st\_$curcnt ]
+#Prepare a statement under the cursor name
+set $cursor [ prep_statement $lda $curn_st ] 
+incr curcnt
+#Add it to a list of cursors for that stored procedure
+lappend $cursor_list [ set $cursor ]
+	}
+#Record the number of cursors
+set $len [ llength  [ set $cursor_list ] ]
+#Initialise number of executions 
+set $cnt 0
+#puts "sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
+    }
+#Open standalone connect to determine highest warehouse id for all connections
+set mlda [ OracleLogon $connect mlda ]
+set curn1 [ oraopen $mlda ]
+set sql1 "select max(w_id) from warehouse"
+set w_id_input [ standsql $curn1 $sql1 ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set sql2 "select max(d_id) from district"
+set d_id_input [ standsql $curn1 $sql2 ]
+oraclose $curn1
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+#Initialize DBMS_RANDOM for all connections
+set sql3 "BEGIN DBMS_RANDOM.initialize (val => TO_NUMBER(TO_CHAR(SYSDATE,'MMSS')) * (USERENV('SESSIONID') - TRUNC(USERENV('SESSIONID'),-5))); END;"
+foreach conn [ dict values $connlist ]  {
+set curn1 [ oraopen $conn ]
+oraparse $curn1 $sql3
+if {[catch {oraplexec $curn1 $sql3} message]} {
+error "Failed to initialise DBMS_RANDOM $message have you run catoctk.sql as sys?" }
+oraclose $curn1
+}
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+puts "new order"
+if { $KEYANDTHINK } { keytime 18 }
+set curn_no [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+neword $curn_no $w_id $w_id_input $RAISEERROR
+incr nocnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 20} {
+puts "payment"
+if { $KEYANDTHINK } { keytime 3 }
+set curn_py [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+payment $curn_py $w_id $w_id_input $RAISEERROR
+incr pycnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 21} {
+puts "delivery"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_dl [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+delivery $curn_dl $w_id $RAISEERROR
+incr dlcnt
+if { $KEYANDTHINK } { thinktime 10 }
+} elseif {$choice <= 22} {
+puts "stock level"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_sl [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+slev $curn_sl $w_id $stock_level_d_id $RAISEERROR
+incr slcnt
+if { $KEYANDTHINK } { thinktime 5 }
+} elseif {$choice <= 23} {
+puts "order status"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_os [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+ostat $curn_os $w_id $RAISEERROR
+incr oscnt
+if { $KEYANDTHINK } { thinktime 5 }
+	}
+}
+foreach cursor $neworder_cursors { oraclose $cursor }
+foreach cursor $payment_cursors { oraclose $cursor }
+foreach cursor $delivery_cursors { oraclose $cursor }
+foreach cursor $stocklevel_cursors { oraclose $cursor }
+foreach cursor $orderstatus_cursors { oraclose $cursor }
+foreach lda [ dict values $connlist ] { oralogoff $lda }
+oralogoff $mlda
+}
+#Find single connection start and end points
+set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "oralogoff \$lda" end ]
+#puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
+#Delete text from start and end points
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+#Replace with connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
+if { $testtype eq "timed" } {
+#Diff between test and time sync scripts are the "puts stored proc lines", timesten login and output suppressed, delete stored proc lines and replace login and output lines
+foreach line { {puts "new order"} {puts "payment"} {puts "delivery"} {puts "stock level"} {puts "order status"} } {
+#find start of line
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+#delete to end of line including newline
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+		}
+foreach line {{dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id ] ]} {set mlda [ OracleLogon $connect mlda ]} {"Processing $total_iterations transactions without output suppressed..."}} timedline {{dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id $timesten ] ]} {set mlda [ OracleLogon $connect mlda $timesten ]} {"Processing $total_iterations transactions with output suppressed..."}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$timedline \n"
+		}
+	}
+if { $timedtype eq "async" } {
+set syncdrvt(2) {proc AsyncClientLogon { connectstring lda timesten RAISEERROR clientname async_verbose } {
+if {[catch {set lda [oralogon $connectstring]} message]} {
+if { $RAISEERROR } {
+puts "$clientname:login failed:$message"
+return "$clientname:login failed:$message"
+                 }
+        } else {
+if { !$timesten } { SetNLS $lda }
+oraautocom $lda on
+if { $async_verbose } { puts "Connected $clientname:$lda" }
+return $lda
+   }
+}
+}
+set syncdrvt(3) {for {set it 0} {$it < $total_iterations} {incr it} { 
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+set curn_no [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+if { $async_verbose } { puts "$clientname:w_id:$w_id:$curn_no:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+neword $curn_no $w_id $w_id_input $RAISEERROR $clientname
+incr nocnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+set curn_py [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+if { $async_verbose } { puts "$clientname:w_id:$w_id:$curn_py:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+payment $curn_py $w_id $w_id_input $RAISEERROR $clientname
+incr pycnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+set curn_dl [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+if { $async_verbose } { puts "$clientname:w_id:$w_id:$curn_dl:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+delivery $curn_dl $w_id $RAISEERROR $clientname
+incr dlcnt
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+set curn_sl [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+if { $async_verbose } { puts "$clientname:w_id:$w_id:$curn_sl:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+slev $curn_sl $w_id $stock_level_d_id $RAISEERROR $clientname
+incr slcnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+set curn_os [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+if { $async_verbose } { puts "$clientname:w_id:$w_id:$curn_os:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+ostat $curn_os $w_id $RAISEERROR $clientname
+incr oscnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+        }
+    }
+}
+set syncdrvi(2a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#STANDARD SQL" 1.0 ]
+#Insert Asynch Login procedure
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(2a) $syncdrvt(2)
+#Change Run Loop for Asynchronous
+set syncdrvi(3a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "for {set it 0}" 1.0 ]
+set syncdrvi(3b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach cursor \$neworder_cursors { oraclose \$cursor }" end ]
+#End of run loop is previous line
+set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
+#Delete run loop
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+#Replace with asynchronous connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Replace individual lines for Asynch
+foreach line {{dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id $timesten ]} {#puts "sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {puts "Processing $total_iterations transactions with output suppressed..."}} asynchline {{dict set connlist $id [ set lda$id [ AsyncClientLogon [ set $id ] lda$id $timesten $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {if { $async_verbose } { puts "Processing $total_iterations transactions with output suppressed..." }}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
+                }
+}
+}
+
 proc loadoratpcc { } {
 global _ED
 upvar #0 dbdict dbdict
@@ -1904,6 +2127,13 @@ set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c u
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+#LOGON
+proc OracleLogon { connectstring lda } {
+set lda [oralogon $connectstring ]
+SetNLS $lda
+oraautocom $lda on
+return $lda
+}
 #STANDARD SQL
 proc standsql { curn sql } {
 set ftch ""
@@ -1918,7 +2148,7 @@ orafetch  $curn -datavariable output
 return $ftch
     }
 }
-#Default NLS
+#NLS
 proc SetNLS { lda } {
 set curn_nls [oraopen $lda ]
 set nls(1) "alter session set NLS_LANGUAGE = AMERICAN"
@@ -2095,9 +2325,7 @@ return $curn_no
     }
 }
 #RUN TPC-C
-set lda [oralogon $connect]
-SetNLS $lda
-oraautocom $lda on
+set lda [ OracleLogon $connect lda ]
 foreach curn_st {curn_no curn_py curn_dl curn_sl curn_os} { set $curn_st [ prep_statement $lda $curn_st ] }
 set curn1 [oraopen $lda ]
 set sql1 "select max(w_id) from warehouse"
@@ -2150,6 +2378,9 @@ oraclose $curn_dl
 oraclose $curn_sl
 oraclose $curn_os
 oralogoff $lda}
+if { $connect_pool } { 
+insert_connect_pool_drive_script test sync 
+	} 
 }
 
 proc loadtimedoratpcc { } {
@@ -2184,6 +2415,13 @@ set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c u
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+#LOGON
+proc OracleLogon { connectstring lda timesten } {
+set lda [oralogon $connectstring ]
+if { !$timesten } { SetNLS $lda }
+oraautocom $lda on
+return $lda
+}
 #STANDARD SQL
 proc standsql { curn sql } {
 set ftch ""
@@ -2225,13 +2463,9 @@ set timesten 0
 switch $myposition {
 1 { 
 if { $mode eq "Local" || $mode eq "Master" } {
-set lda [oralogon $systemconnect]
-if { !$timesten } { SetNLS $lda }
-set lda1 [oralogon $connect]
-if { !$timesten } { SetNLS $lda1 }
-oraautocom $lda on
-oraautocom $lda1 on
+set lda [ OracleLogon $systemconnect lda $timesten ]
 set curn1 [oraopen $lda ] 
+set lda1 [ OracleLogon $connect lda1 $timesten ]
 set curn2 [oraopen $lda1 ]
 if { $timesten } {
 puts "For TimesTen use external ttStats utility for performance reports"
@@ -2512,9 +2746,7 @@ return $curn_no
     }
 }
 #RUN TPC-C
-set lda [oralogon $connect]
-if { !$timesten } { SetNLS $lda }
-oraautocom $lda on
+set lda [ OracleLogon $connect lda $timesten ]
 foreach curn_st {curn_no curn_py curn_dl curn_sl curn_os} { set $curn_st [ prep_statement $lda $curn_st ] }
 set curn1 [oraopen $lda ]
 set sql1 "select max(w_id) from warehouse"
@@ -2564,6 +2796,9 @@ oraclose $curn_os
 oralogoff $lda
 	}
      }} 
+if { $connect_pool } { 
+insert_connect_pool_drive_script timed sync 
+	} 
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -2589,6 +2824,13 @@ if [catch {package require $library} message] { error "Failed to load $library -
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
+#LOGON
+proc OracleLogon { connectstring lda timesten } {
+set lda [oralogon $connectstring ]
+if { !$timesten } { SetNLS $lda }
+oraautocom $lda on
+return $lda
+}
 #STANDARD SQL
 proc standsql { curn sql } {
 set ftch ""
@@ -2630,13 +2872,9 @@ set timesten 0
 switch $myposition {
 1 { 
 if { $mode eq "Local" || $mode eq "Master" } {
-set lda [oralogon $systemconnect]
-if { !$timesten } { SetNLS $lda }
-set lda1 [oralogon $connect]
-if { !$timesten } { SetNLS $lda1 }
-oraautocom $lda on
-oraautocom $lda1 on
-set curn1 [oraopen $lda ] 
+set lda [ OracleLogon $systemconnect lda $timesten ]
+set curn1 [oraopen $lda ]
+set lda1 [ OracleLogon $connect lda1 $timesten ]
 set curn2 [oraopen $lda1 ]
 if { $timesten } {
 puts "For TimesTen use external ttStats utility for performance reports"
@@ -2916,15 +3154,14 @@ return $curn_no
 	}
     }
 }
-
-#RUN TPC-C
+#CONNECT ASYNC
 promise::async simulate_client { clientname total_iterations connect RAISEERROR KEYANDTHINK timesten async_verbose async_delay } {
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" } 
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" } 
-if {[catch {set lda [oralogon $connect]} message]} {
+if {[catch {set lda [ OracleLogon $connect lda $timesten ]} message]} {
 if { $RAISEERROR } {
 puts "$clientname:login failed:$message"
 return "$clientname:login failed:$message"
@@ -2932,8 +3169,7 @@ return "$clientname:login failed:$message"
         } else {
 if { $async_verbose } { puts "Connected $clientname:$lda" }
    }
-if { !$timesten } { SetNLS $lda }
-oraautocom $lda on
+#RUN TPC-C
 foreach curn_st {curn_no curn_py curn_dl curn_sl curn_os} { set $curn_st [ prep_statement $lda $curn_st ] }
 set curn1 [oraopen $lda ]
 set sql1 "select max(w_id) from warehouse"
@@ -3002,5 +3238,8 @@ foreach client $acprom { puts $client }
        }
    }
 }} 
+if { $connect_pool } { 
+insert_connect_pool_drive_script timed async 
+	} 
 }
 }

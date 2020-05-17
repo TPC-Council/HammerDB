@@ -33,6 +33,7 @@
 	    <async_client>10</async_client>
 	    <async_verbose>false</async_verbose>
 	    <async_delay>1000</async_delay>
+	    <connect_pool>false</connect_pool>
         </driver>
     </tpcc>
     <tpch>
