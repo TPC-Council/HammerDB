@@ -2075,7 +2075,6 @@ CreateTables $lda $ora_compatible
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
         }
-}
 if { $threaded eq "MULTI-THREADED" } {
 tsv::set application load "READY"
 LoadItems $lda $MAXITEMS
