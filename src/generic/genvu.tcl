@@ -26,6 +26,7 @@ puts "Metrics Thread Error: $info"
 thread::errorproc myerrorproc
 
 proc findtempdir {} {
+global env
         set result "."       ;
         if {[string match windows $::tcl_platform(platform)]} {
             if {[info exists env(TEMP)] && [file isdirectory $env(TEMP)] \
