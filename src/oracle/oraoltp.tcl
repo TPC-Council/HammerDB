@@ -2093,12 +2093,20 @@ set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
 #Replace with asynchronous connect pool version
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Remove extra async connection
+set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
+set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mlda [ OracleLogon $connect mlda $timesten ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
 #Replace individual lines for Asynch
-foreach line {{dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id $timesten ]} {#puts "sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {puts "Processing $total_iterations transactions with output suppressed..."}} asynchline {{dict set connlist $id [ set lda$id [ AsyncClientLogon [ set $id ] lda$id $timesten $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {if { $async_verbose } { puts "Processing $total_iterations transactions with output suppressed..." }}} {
+foreach line {{if { $async_verbose } { puts "Connected $clientname:$lda" }} {dict set connlist $id [ set lda$id [ OracleLogon [ set $id ] lda$id $timesten ]} {#puts "sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {puts "Processing $total_iterations transactions with output suppressed..."}} asynchline {{if { $async_verbose } { puts "Connected $clientname:$mlda" }} {dict set connlist $id [ set lda$id [ AsyncClientLogon [ set $id ] lda$id $timesten $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {if { $async_verbose } { puts "Processing $total_iterations transactions with output suppressed..." }}} {
 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
                 }
+#Edit line with additional curly bracket needs additional subst command so cannot go in loop
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards [ subst -nocommands -novariables {if {[catch {set lda [ OracleLogon $connect lda $timesten ]} message]} \{} ] end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "[ subst -nocommands -novariables {if {[catch {set mlda [ OracleLogon $connect mlda $timesten ]} message]} \{} ] \n"
 #Add client side counters for timed async only this is different from non-async
 set syncdrvt(4) {#Initialize client side counters
 for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
