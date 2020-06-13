@@ -36,6 +36,7 @@
             <mssqls_async_client>10</mssqls_async_client>
             <mssqls_async_verbose>false</mssqls_async_verbose>
             <mssqls_async_delay>1000</mssqls_async_delay>
+	    <mssqls_connect_pool>false</mssqls_connect_pool>
         </driver>
     </tpcc>
     <tpch>
