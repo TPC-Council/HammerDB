@@ -186,3 +186,113 @@ return [ lindex $cursors 0 ]
     }
   }
 }
+
+proc printclientcountsync {myposition nocnt pycnt dlcnt slcnt oscnt} {
+tsv::keylset clientcount $myposition neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt status true
+puts "VU$myposition processed neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt transactions"
+}
+
+proc printclientcountasync {clientname nocnt pycnt dlcnt slcnt oscnt} {
+tsv::keylset clientcount $clientname neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt status true
+puts "$clientname processed neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt transactions"
+}
+
+proc initializeclientcountsync {totalvirtualusers} {
+upvar vu vu
+for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
+tsv::keylset clientcount $ccnt neworder 0 payment 0 delivery 0 stocklevel 0 orderstatus 0 status false
+set vu($ccnt) false
+}
+foreach spcnt {neworder payment delivery stocklevel orderstatus} {
+dict set totalcnt $spcnt 0
+        }
+}
+
+proc initializeclientcountasync {totalvirtualusers async_client} {
+upvar vu vu
+for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
+for {set vucnt 1} {$vucnt <= $async_client} {incr vucnt} {
+set clientdesc "vuser$ccnt:ac$vucnt"
+tsv::keylset clientcount $clientdesc neworder 0 payment 0 delivery 0 stocklevel 0 orderstatus 0 status false
+set vu($clientdesc) false
+        }
+}
+foreach spcnt {neworder payment delivery stocklevel orderstatus} {
+dict set totalcnt $spcnt 0
+        }
+}
+
+proc getclienttpmsync {rampup duration totalvirtualusers} {
+upvar vu vu
+set totalmin [ expr ($rampup + $duration)/60000 ]
+#attempt to fetch client data for 2 minutes
+for {set clnt 1} { $clnt <=120} {incr clnt} {
+set alldone true
+for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
+if [ tsv::keylget clientcount $ccnt status ] {
+#data for vuser now available
+if $vu($ccnt) {
+#data for vuser already captured
+        ;
+        } else {
+#add data to totals
+foreach spcnt {neworder payment delivery stocklevel orderstatus} {
+dict incr totalcnt $spcnt [ tsv::keylget clientcount $ccnt $spcnt ]
+               }
+set vu($ccnt) true
+        }
+      } else {
+#VU has not reported
+set alldone false
+          }
+      }
+if $alldone {
+#all VUs reported, divide all TPM by time duration
+puts "CLIENT SIDE TPM : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+break
+   } else { after 1000 }
+}
+if !$alldone {
+#not all VUs reported
+puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+        }
+}
+
+proc getclienttpmasync {rampup duration totalvirtualusers async_client} {
+upvar vu vu
+set totalmin [ expr ($rampup + $duration)/60000 ]
+#attempt to fetch client data for 10 minutes
+for {set clnt 1} { $clnt <=600} {incr clnt} {
+set alldone true
+for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
+for {set vucnt 1} {$vucnt <= $async_client} {incr vucnt} {
+set clientdesc "vuser$ccnt:ac$vucnt"
+if [ tsv::keylget clientcount $clientdesc status ] {
+#data for vuser now available
+if $vu($clientdesc) {
+#data for vuser already captured
+        ;
+        } else {
+#add data to totals
+foreach spcnt {neworder payment delivery stocklevel orderstatus} {
+dict incr totalcnt $spcnt [ tsv::keylget clientcount $clientdesc $spcnt ]
+               }
+set vu($clientdesc) true
+        }
+      } else {
+#VU has not reported
+set alldone false
+          }
+      }
+  }
+if $alldone {
+#all VUs reported, divide all TPM by time duration
+puts "CLIENT SIDE TPM : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+break
+   } else { after 1000 }
+}
+if !$alldone {
+#not all VUs reported
+puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+        }
+}

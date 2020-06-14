@@ -2108,56 +2108,11 @@ set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards [ subst -
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "[ subst -nocommands -novariables {if {[catch {set mlda [ OracleLogon $connect mlda $timesten ]} message]} \{} ] \n"
 #Add client side counters for timed async only this is different from non-async
-set syncdrvt(4) {#Initialize client side counters
-for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
-for {set vucnt 1} {$vucnt <= $async_client} {incr vucnt} {
-set clientdesc "vuser$ccnt:ac$vucnt"
-tsv::keylset clientcount $clientdesc neworder 0 payment 0 delivery 0 stocklevel 0 orderstatus 0 status false
-set vu($clientdesc) false
-        }
+set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
 }
-foreach spcnt {neworder payment delivery stocklevel orderstatus} {
-dict set totalcnt $spcnt 0
-        }
+set syncdrvt(5) {getclienttpmasync $rampup $duration $totalvirtualusers $async_client
 }
-set syncdrvt(5) {set totalmin [ expr ($rampup + $duration)/60000 ]
-#attempt to fetch client data for 10 minutes
-for {set clnt 1} { $clnt <=600} {incr clnt} {
-set alldone true
-for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
-for {set vucnt 1} {$vucnt <= $async_client} {incr vucnt} {
-set clientdesc "vuser$ccnt:ac$vucnt"
-if [ tsv::keylget clientcount $clientdesc status ] {
-#data for vuser now available
-if $vu($clientdesc) {
-#data for vuser already captured
-        ;
-        } else {
-#add data to totals
-foreach spcnt {neworder payment delivery stocklevel orderstatus} {
-dict incr totalcnt $spcnt [ tsv::keylget clientcount $clientdesc $spcnt ]
-               }
-set vu($clientdesc) true
-        }
-      } else {
-#VU has not reported
-set alldone false
-          }
-      }
-  }
-if $alldone {
-#all VUs reported, divide all TPM by time duration
-puts "CLIENT SIDE TPM : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
-break
-   } else { after 1000 }
-}
-if !$alldone {
-#not all VUs reported
-puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
-        }
-}
-set syncdrvt(6) {tsv::keylset clientcount $clientname neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt status true
-puts "$clientname processed neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt transactions"
+set syncdrvt(6) {printclientcountasync $clientname $nocnt $pycnt $dlcnt $slcnt $oscnt
 }
 set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
@@ -2167,50 +2122,11 @@ set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {f
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
 } else {
 #Add client side counters for timed non-async only
-set syncdrvt(4) {#Initialize client side counters
-for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
-tsv::keylset clientcount $ccnt neworder 0 payment 0 delivery 0 stocklevel 0 orderstatus 0 status false
-set vu($ccnt) false
+set syncdrvt(4) {initializeclientcountsync $totalvirtualusers
 }
-foreach spcnt {neworder payment delivery stocklevel orderstatus} {
-dict set totalcnt $spcnt 0
-        }
+set syncdrvt(5) {getclienttpmsync $rampup $duration $totalvirtualusers
 }
-set syncdrvt(5) {set totalmin [ expr ($rampup + $duration)/60000 ]
-#attempt to fetch client data for 2 minutes
-for {set clnt 1} { $clnt <=120} {incr clnt} {
-set alldone true
-for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
-if [ tsv::keylget clientcount $ccnt status ] {
-#data for vuser now available
-if $vu($ccnt) {
-#data for vuser already captured
-        ;
-        } else {
-#add data to totals
-foreach spcnt {neworder payment delivery stocklevel orderstatus} {
-dict incr totalcnt $spcnt [ tsv::keylget clientcount $ccnt $spcnt ]
-               }
-set vu($ccnt) true
-        }
-      } else {
-#VU has not reported
-set alldone false
-          }
-      }
-if $alldone {
-#all VUs reported, divide all TPM by time duration
-puts "CLIENT SIDE TPM : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
-break
-   } else { after 1000 }
-}
-if !$alldone {
-#not all VUs reported
-puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
-        }
-}
-set syncdrvt(6) {tsv::keylset clientcount $myposition neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt status true
-puts "VU$myposition processed neworder $nocnt payment $pycnt delivery $dlcnt stocklevel $slcnt orderstatus $oscnt transactions"
+set syncdrvt(6) {printclientcountsync $myposition $nocnt $pycnt $dlcnt $slcnt $oscnt
 }
 set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
