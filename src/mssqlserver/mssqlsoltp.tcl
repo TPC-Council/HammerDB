@@ -1982,7 +1982,7 @@ return
         } else { return }
 }
 
-proc insert_connect_pool_drive_script { testtype timedtype } {
+proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
 #When using connect pooling delete the existing portions of the script and replace with new connect pool version
 set syncdrvt(1) {
 #RUN TPC-C
@@ -2579,7 +2579,7 @@ $slev_st close
 $ostat_st close
 odbc close}
 if { $mssqls_connect_pool } { 
-insert_connect_pool_drive_script test sync 
+insert_mssqlsconnectpool_drivescript test sync 
 	}
 }
 
@@ -3013,7 +3013,7 @@ odbc close
       }
    }}
 if { $mssqls_connect_pool } { 
-insert_connect_pool_drive_script timed sync 
+insert_mssqlsconnectpool_drivescript timed sync 
 	}
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
@@ -3458,7 +3458,7 @@ foreach client $acprom { puts $client }
    }
 }}
 if { $mssqls_connect_pool } { 
-insert_connect_pool_drive_script timed async 
+insert_mssqlsconnectpool_drivescript timed async 
 	}
 }
 }
