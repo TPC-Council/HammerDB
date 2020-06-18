@@ -1,0 +1,41 @@
+<connpool>
+<connections>
+    <c1>
+        <db2_user>db2inst1</db2_user>
+        <db2_pass>ibmdb2</db2_pass>
+        <db2_dbase>tpcc1</db2_dbase>
+    </c1>
+    <c2>
+        <db2_user>db2inst1</db2_user>
+        <db2_pass>ibmdb2</db2_pass>
+        <db2_dbase>tpcc2</db2_dbase>
+    </c2>
+    <c3>
+        <db2_user>db2inst1</db2_user>
+        <db2_pass>ibmdb2</db2_pass>
+        <db2_dbase>tpcc3</db2_dbase>
+    </c3>
+</connections>
+<sprocs>
+  	<neworder>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</neworder>
+    	<payment>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</payment>
+    	<delivery>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</delivery>
+    	<stocklevel>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</stocklevel>
+    	<orderstatus>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</orderstatus>
+<sprocs>
+<connpool>
