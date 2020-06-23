@@ -1194,10 +1194,6 @@ set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
                 }
-#Edit line with additional curly bracket needs additional subst command so cannot go in loop
-#set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards [ subst -nocommands -novariables {if {[catch {set lda [ OracleLogon $connect lda $timesten ]} message]} \{} ] end ]
-#.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
-#.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "[ subst -nocommands -novariables {if {[catch {set mlda [ OracleLogon $connect mlda $timesten ]} message]} \{} ] \n"
 #Add client side counters for timed async only this is different from non-async
 set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
 }
