@@ -1,19 +1,25 @@
 <connpool>
 <connections>
     <c1>
-  	<tpcc_user>tpcc</tpcc_user>
-        <tpcc_pass>tpcc</tpcc_pass>
-        <instance>oracle1</instance>
+	<pg_host>host1</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
     </c1>
     <c2>
-  	<tpcc_user>tpcc</tpcc_user>
-        <tpcc_pass>tpcc</tpcc_pass>
-        <instance>oracle2</instance>
+	<pg_host>host2</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
     </c2>
     <c3>
-  	<tpcc_user>tpcc</tpcc_user>
-        <tpcc_pass>tpcc</tpcc_pass>
-        <instance>oracle3</instance>
+	<pg_host>host3</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
     </c3>
 </connections>
 <sprocs>

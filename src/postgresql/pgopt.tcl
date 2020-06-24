@@ -151,7 +151,7 @@ upvar #0 configpostgresql configpostgresql
 setlocaltpccvars $configpostgresql
 #set matching fields in dialog to temporary dict
 variable pgfields
-set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get}} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_storedprocs $pg_storedprocs pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_async_verbose $pg_async_verbose}]
+set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get}} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_storedprocs $pg_storedprocs pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
 set whlist [ get_warehouse_list_for_spinbox ]
 if { $pg_oracompat eq "true" } {
 if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -487,6 +487,12 @@ if {$pg_driver == "test" || $pg_async_scale == "false" } {
         set pg_async_verbose "false"
         $Name configure -state disabled
         }
+   set Name $Parent.f1.e29
+   set Prompt $Parent.f1.p29
+   ttk::label $Prompt -text "XML Connect Pool :"
+ttk::checkbutton $Name -text "" -variable pg_connect_pool -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 30 -sticky e
+   grid $Name -column 1 -row 30 -sticky ew
 }
 #This is the Cancel button variables stay as before
 set Name $Parent.b2
