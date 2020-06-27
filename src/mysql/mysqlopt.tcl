@@ -133,7 +133,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 #set matching fields in dialog to temporary dict
 variable myfields
-set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared} ]
+set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get}} tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared mysql_connect_pool $mysql_connect_pool} ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -416,6 +416,12 @@ if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
         set mysql_async_verbose "false"
         $Name configure -state disabled
         }
+   set Name $Parent.f1.e25
+   set Prompt $Parent.f1.p25
+   ttk::label $Prompt -text "XML Connect Pool :"
+ttk::checkbutton $Name -text "" -variable mysql_connect_pool -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 26 -sticky e
+   grid $Name -column 1 -row 26 -sticky ew
 }
 #This is the Cancel button variables stay as before
 set Name $Parent.b2

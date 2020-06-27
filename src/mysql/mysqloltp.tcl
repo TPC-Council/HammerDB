@@ -1047,6 +1047,258 @@ return
 	} else { return }
 }
 
+proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
+#When using connect pooling delete the existing portions of the script and replace with new connect pool version
+set syncdrvt(1) {
+#RUN TPC-C
+#MySQL connect pool uses prepared statements
+set prepare true
+#Get Connect data as a dict
+set cpool [ get_connect_xml mysql ]
+#Extract connect data only from dict
+set connectonly [ dict filter [ dict get $cpool connections ] key c? ]
+#Extract the keys, this will be c1, c2 etc and determines number of connections
+set conkeys [ dict keys $connectonly ]
+#Loop through the keys of the connection parameters
+dict for {id conparams} $connectonly {
+#Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
+dict with conparams {
+#set MySQL connect string
+set $id [ list $mysql_host $mysql_port $mysql_socket $mysql_user $mysql_pass $mysql_dbase ]
+	}
+    }
+#For the connect keys c1, c2 etc make a connection
+foreach id [ split $conkeys ] {
+    lassign [ set $id ] 1 2 3 4 5 6
+dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]
+if {  [ set mysql_handler$id ] eq "Failed" } {
+puts "error, the database connection to $1 could not be established"
+ 	}
+}
+#Extract which storedprocedures use which connection
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] { 
+unset -nocomplain clist
+#Extract the policy for the storedprocedures
+set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
+foreach sp [ dict get $cpool sprocs $sproc connections ] {
+lappend clist [ dict get $connlist $sp ]
+}
+set newname "cs$sproc"
+unset -nocomplain $newname
+lappend $newname $clist
+}
+#Prepare statements multiple times for stored procedure for each connection and add to cursor list
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+unset -nocomplain $cursor_list
+set curcnt 0
+#For all of the connections
+foreach mysql_handler [ join [ set $cslist ] ] {
+#Create a cursor name
+set cursor [ concat $st\_$curcnt ]
+#Prepare a statement under the cursor name
+set $st [ prep_statement $mysql_handler $st ]
+incr curcnt
+#Add it to a list of cursors for that stored procedure
+lappend $cursor_list $cursor
+	}
+#Record the number of cursors
+set $len [ llength  [ set $cursor_list ] ]
+#Initialise number of executions 
+set $cnt 0
+#For MySQL cursor names are placeholders to choose the correct policy. The placeholder is then used to select the connection. The prepared statements are always called neword_st, payment_st etc for each connection
+#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
+    }
+#Open standalone connect to determine highest warehouse id for all connections
+set mmysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
+set w_id_input [ list [ mysql::sel $mmysql_handler "select max(w_id) from warehouse" -list ] ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set d_id_input [ list [ mysql::sel $mmysql_handler "select max(d_id) from district" -list ] ]
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+puts "new order"
+if { $KEYANDTHINK } { keytime 18 }
+set curn_no [ pick_cursor $neworder_policy [ join $neworder_cursors ] $nocnt $nolen ]
+set cursor_position [ lsearch $neworder_cursors $curn_no ]
+set mysql_handler_no [ lindex [ join $csneworder ] $cursor_position ]
+neword $mysql_handler_no $w_id $w_id_input $prepare $RAISEERROR
+incr nocnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 20} {
+puts "payment"
+if { $KEYANDTHINK } { keytime 3 }
+set curn_py [ pick_cursor $payment_policy [ join $payment_cursors ] $pycnt $pylen ]
+set cursor_position [ lsearch $payment_cursors $curn_py ]
+set mysql_handler_py [ lindex [ join $cspayment ] $cursor_position ]
+payment $mysql_handler_py $w_id $w_id_input $prepare $RAISEERROR
+incr pycnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 21} {
+puts "delivery"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_dl [ pick_cursor $delivery_policy [ join $delivery_cursors ] $dlcnt $dllen ]
+set cursor_position [ lsearch $delivery_cursors $curn_dl ]
+set mysql_handler_dl [ lindex [ join $csdelivery ] $cursor_position ]
+delivery $mysql_handler_dl $w_id $prepare $RAISEERROR
+incr dlcnt
+if { $KEYANDTHINK } { thinktime 10 }
+} elseif {$choice <= 22} {
+puts "stock level"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_sl [ pick_cursor $stocklevel_policy [ join $stocklevel_cursors ] $slcnt $sllen ]
+set cursor_position [ lsearch $stocklevel_cursors $curn_sl ]
+set mysql_handler_sl [ lindex [ join $csstocklevel ] $cursor_position ]
+slev $mysql_handler_sl $w_id $stock_level_d_id $prepare $RAISEERROR
+incr slcnt
+if { $KEYANDTHINK } { thinktime 5 }
+} elseif {$choice <= 23} {
+puts "order status"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_os [ pick_cursor $orderstatus_policy [ join $orderstatus_cursors ] $oscnt $oslen ]
+set cursor_position [ lsearch $orderstatus_cursors $curn_os ]
+set mysql_handler_os [ lindex [ join $csorderstatus ] $cursor_position ]
+ostat $mysql_handler_os $w_id $prepare $RAISEERROR
+incr oscnt
+if { $KEYANDTHINK } { thinktime 5 }
+	}
+}
+foreach mysql_handler [ dict values $connlist ] { 
+	if {$prepare} {
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+catch {mysqlexec $mysql_handler "deallocate prepare $st"}
+		}
+        }
+mysqlclose $mysql_handler
+}
+mysqlclose $mmysql_handler
+}
+#Find single connection start and end points
+set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "mysqlclose \$mysql_handler" end ]
+#puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
+#Delete text from start and end points
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+#Replace with connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
+if { $testtype eq "timed" } {
+#Diff between test and time sync scripts are the "puts stored proc lines", output suppressed
+foreach line { {puts "new order"} {puts "payment"} {puts "delivery"} {puts "stock level"} {puts "order status"} } {
+#find start of line
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+#delete to end of line including newline
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+		}
+foreach line {{"Processing $total_iterations transactions without output suppressed..."}} timedline {{"Processing $total_iterations transactions with output suppressed..."}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$timedline \n"
+		}
+if { $timedtype eq "async" } {
+set syncdrvt(3) {for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+set curn_no [ pick_cursor $neworder_policy [ join $neworder_cursors ] $nocnt $nolen ]
+set cursor_position [ lsearch $neworder_cursors $curn_no ]
+set mysql_handler_no [ lindex [ join $csneworder ] $cursor_position ]
+neword $mysql_handler_no $w_id $w_id_input $prepare $RAISEERROR $clientname
+incr nocnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+set curn_py [ pick_cursor $payment_policy [ join $payment_cursors ] $pycnt $pylen ]
+set cursor_position [ lsearch $payment_cursors $curn_py ]
+set mysql_handler_py [ lindex [ join $cspayment ] $cursor_position ]
+payment $mysql_handler_py $w_id $w_id_input $prepare $RAISEERROR $clientname
+incr pycnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+set curn_dl [ pick_cursor $delivery_policy [ join $delivery_cursors ] $dlcnt $dllen ]
+set cursor_position [ lsearch $delivery_cursors $curn_dl ]
+set mysql_handler_dl [ lindex [ join $csdelivery ] $cursor_position ]
+delivery $mysql_handler_dl $w_id $prepare $RAISEERROR $clientname
+incr dlcnt
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+set curn_sl [ pick_cursor $stocklevel_policy [ join $stocklevel_cursors ] $slcnt $sllen ]
+set cursor_position [ lsearch $stocklevel_cursors $curn_sl ]
+set mysql_handler_sl [ lindex [ join $csstocklevel ] $cursor_position ]
+slev $mysql_handler_sl $w_id $stock_level_d_id $prepare $RAISEERROR $clientname
+incr slcnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+set curn_os [ pick_cursor $orderstatus_policy [ join $orderstatus_cursors ] $oscnt $oslen ]
+set cursor_position [ lsearch $orderstatus_cursors $curn_os ]
+set mysql_handler_os [ lindex [ join $csorderstatus ] $cursor_position ]
+ostat $mysql_handler_os $w_id $prepare $RAISEERROR $clientname
+incr oscnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+        }
+    }
+}
+set syncdrvi(3a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "for {set it 0}" 1.0 ]
+set syncdrvi(3b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach mysql_handler \[ dict values \$connlist \]" end ]
+#End of run loop is previous line
+set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
+#Delete run loop
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+#Replace with asynchronous connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Remove extra async connection
+set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
+set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
+#Replace individual lines for Asynch
+foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
+                }
+#Add client side counters for timed async only this is different from non-async
+set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
+}
+set syncdrvt(5) {getclienttpmasync $rampup $duration $totalvirtualusers $async_client
+}
+set syncdrvt(6) {printclientcountasync $clientname $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach mysql_handler [ dict values $connlist ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+} else {
+#Add client side counters for timed non-async only
+set syncdrvt(4) {initializeclientcountsync $totalvirtualusers
+}
+set syncdrvt(5) {getclienttpmsync $rampup $duration $totalvirtualusers
+}
+set syncdrvt(6) {printclientcountsync $myposition $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach mysql_handler [ dict values $connlist ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+	}
+    }
+}
+
 proc loadmysqltpcc { } {
 global _ED
 upvar #0 dbdict dbdict
@@ -1091,6 +1343,34 @@ return "TRUE"
 return "FALSE"
        }
 }
+
+proc ConnectToMySQL { host port socket user password db } {
+global mysqlstatus
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 0
+return $mysql_handler
+} else {
+error $mysqlstatus(message)
+return
+     }
+}
+
 #NEW ORDER
 proc neword { mysql_handler no_w_id w_id_input prepare RAISEERROR } {
 global mysqlstatus
@@ -1263,28 +1543,7 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
     }
 }
 #RUN TPC-C
-if { [ chk_socket $host $socket ] eq "TRUE" } {
-if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-puts "the local socket connection to $socket could not be established"
-set connected "FALSE"
- } else {
-set connected "TRUE"
-        }
-} else {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the tcp connection to $host:$port could not be established"
-set connected "FALSE"
- } else {
-set connected "TRUE"
-        }
-}
-if {$connected} {
-mysqluse $mysql_handler $db
-mysql::autocommit $mysql_handler 0
-} else {
-error $mysqlstatus(message)
-return
-}
+set mysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
 if {$prepare} {
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
 	}
@@ -1331,6 +1590,9 @@ catch {mysqlexec $mysql_handler "deallocate prepare $st"}
 		}
         }
 mysqlclose $mysql_handler}
+if { $mysql_connect_pool } {
+insert_mysqlconnectpool_drivescript test sync
+        }
 }
 
 proc loadtimedmysqltpcc { } {
@@ -1381,6 +1643,34 @@ return "TRUE"
 return "FALSE"
        }
 }
+
+proc ConnectToMySQL { host port socket user password db } {
+global mysqlstatus
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+puts "the local socket connection to $socket could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+puts "the tcp connection to $host:$port could not be established"
+set connected "FALSE"
+ } else {
+set connected "TRUE"
+        }
+}
+if {$connected} {
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 0
+return $mysql_handler
+} else {
+error $mysqlstatus(message)
+return
+     }
+}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
@@ -1643,28 +1933,7 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
     }
 }
 #RUN TPC-C
-if { [ chk_socket $host $socket ] eq "TRUE" } {
-if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-puts "the local socket connection to $socket could not be established"
-set connected "FALSE"
- } else {
-set connected "TRUE"
-        }
-} else {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-puts "the tcp connection to $host:$port could not be established"
-set connected "FALSE"
- } else {
-set connected "TRUE"
-        }
-}
-if {$connected} {
-mysqluse $mysql_handler $db
-mysql::autocommit $mysql_handler 0
-} else {
-error $mysqlstatus(message)
-return
-}
+set mysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
 if {$prepare} {
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
         }
@@ -1708,6 +1977,9 @@ catch {mysqlexec $mysql_handler "deallocate prepare $st"}
 mysqlclose $mysql_handler
 	}
    }}
+if { $mysql_connect_pool } {
+insert_mysqlconnectpool_drivescript timed sync
+        }
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -1748,6 +2020,38 @@ return "TRUE"
 return "FALSE"
        }
 }
+
+proc ConnectToMySQLAsynch { host port socket user password db clientname async_verbose } {
+global mysqlstatus
+if { [ chk_socket $host $socket ] eq "TRUE" } {
+if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
+set connected "FALSE"
+if { $RAISEERROR } {
+puts "$clientname:socket login failed:$mysqlstatus(message)"
+        }
+} else {
+set connected "TRUE"
+   }
+} else {
+if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
+set connected "FALSE"
+if { $RAISEERROR } {
+puts "$clientname:tcp login failed:$mysqlstatus(message)"
+        }
+   } else {
+set connected "TRUE"
+   }
+}
+if {$connected} {
+if { $async_verbose } { puts "Connected $clientname:$mysql_handler" }
+mysqluse $mysql_handler $db
+mysql::autocommit $mysql_handler 0
+return $mysql_handler
+} else {
+return "$clientname:login failed:$mysqlstatus(message)"
+}
+}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
@@ -2014,7 +2318,7 @@ mysqlexec $mysql_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
         }
     }
 }
-#RUN TPC-C
+#CONNECT ASYNC
 promise::async simulate_client { clientname total_iterations host port socket user password RAISEERROR KEYANDTHINK db prepare async_verbose async_delay } {
 global mysqlstatus
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
@@ -2022,32 +2326,8 @@ if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-if { [ chk_socket $host $socket ] eq "TRUE" } {
-if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-set connected "FALSE"
-if { $RAISEERROR } {
-puts "$clientname:socket login failed:$mysqlstatus(message)"
-        }
-} else {
-set connected "TRUE"
-   }
-} else {
-if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-set connected "FALSE"
-if { $RAISEERROR } {
-puts "$clientname:tcp login failed:$mysqlstatus(message)"
-        }
-   } else {
-set connected "TRUE"
-   }
-}
-if {$connected} {
-if { $async_verbose } { puts "Connected $clientname:$mysql_handler" }
-mysqluse $mysql_handler $db
-mysql::autocommit $mysql_handler 0
-} else {
-return "$clientname:login failed:$mysqlstatus(message)"
-}
+set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]
+#RUN TPC-C
 if {$prepare} {
 foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $mysql_handler $st ] }
         }
@@ -2110,5 +2390,8 @@ foreach client $acprom { puts $client }
       }
    }
 }}
+if { $mysql_connect_pool } {
+insert_mysqlconnectpool_drivescript timed async
+        }
 }
 }
