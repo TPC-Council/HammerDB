@@ -37,7 +37,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
@@ -466,7 +466,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
@@ -1005,7 +1005,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
