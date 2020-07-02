@@ -1,6 +1,6 @@
 # HammerDB
 
-HammerDB is the leading benchmarking and load testing software for the worlds most popular databases supporting Oracle Database, SQL Server, IBM Db2, MySQL, MariaDB, PostgreSQL and Redis.
+HammerDB is the leading benchmarking and load testing software for the worlds most popular databases supporting Oracle Database, Microsoft SQL Server, IBM Db2, PostgreSQL MySQL and MariaDB.
 
 ## Credits
 

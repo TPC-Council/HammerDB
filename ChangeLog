@@ -896,3 +896,31 @@ TPC-Council#44 Event driven virtual user and connection scaling with promise pac
 TPC-Council#72 HammerDb crashes in tclodbc - converted SQL Server TPC-C/TPC-H build and driver to tdbc::odbc
 TPC-Council#75 TPC-H cannot be executed for AWS RDS Oracle
 
+---------------------------------------------------------------------
+
+Version 4.0 Jul 2020
+
+Updated Binaries to:
+
+tcl8.6.10, tk8.6.10, thread2.8.4, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.0.0
+
+Pull Requests & Issues
+
+update dbms_random for PostgreSQL neword infinite loop (#136)
+multiple labelled connections / connect pool feature (#135)
+Use Existing User and DB in Postgres (#132) 
+Make column order in stock_i1 index in PostgreSQL consistent with Oracle (#124)
+Fix temp environment variables not detected (#126)
+Adding docs directory and documentation files (#121) 
+Fix for Issue #118 using diset with variables with spaces (#119)
+Add partitioning hints in PostgreSQL neword transaction (#115)
+Format details repo (#106)
+Deprecated Redis (#105)
+Reverse print out of metrics to put NOPM ahead of TPM (#104)
+MySQL prepared statements and socket option (#98)
+Partitioning for Oracle ORDERS and HISTORY (#97)
+PostgreSQL prepared statements for functions and tablespace option for schema builds (#95)
+Refactor Oracle and Postgres procedural code for performance (#92)
+Added Master/Slave Modes to CLI (#91)
+Added Geomean calculation to TPC-H workloads. (#86)
+Fix distribution of Warehouse across VUs for All Warehouse option. (#82)
