@@ -29,6 +29,7 @@
             <mysql_async_client>10</mysql_async_client>
             <mysql_async_verbose>false</mysql_async_verbose>
             <mysql_async_delay>1000</mysql_async_delay>
+	    <mysql_connect_pool>false</mysql_connect_pool>
         </driver>
     </tpcc>
     <tpch>

@@ -943,6 +943,288 @@ return
 	} else { return }
 }
 
+proc insert_db2connectpool_drivescript { testtype timedtype } {
+#When using connect pooling delete the existing portions of the script and replace with new connect pool version
+set syncdrvt(1) {
+#RUN TPC-C
+#Get Connect data as a dict
+set cpool [ get_connect_xml db2 ]
+#Extract connect data only from dict
+set connectonly [ dict filter [ dict get $cpool connections ] key c? ]
+#Extract the keys, this will be c1, c2 etc and determines number of connections
+set conkeys [ dict keys $connectonly ]
+#Loop through the keys of the connection parameters
+dict for {id conparams} $connectonly {
+#Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
+dict with conparams {
+#set Db2 connect string
+set $id [ list $db2_dbase $db2_user $db2_pass ]
+        }
+    }
+#For the connect keys c1, c2 etc make a connection
+foreach id [ split $conkeys ] {
+        lassign [ set $id ] 1 2 3
+dict set connlist $id [ set db_handle$id [ ConnectToDb2 $1 $2 $3 ] ]
+	}
+#Extract which storedprocedures use which connection
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] {
+unset -nocomplain clist
+#Extract the policy for the storedprocedures
+set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
+foreach sp [ dict get $cpool sprocs $sproc connections ] {
+lappend clist [ dict get $connlist $sp ]
+}
+set newname "cs$sproc"
+unset -nocomplain $newname
+lappend $newname $clist
+}
+#Prepare statements, select handles and global variables multiple times for stored procedure for each connection and add to cursor list
+foreach stmnt_handle {stmnt_handle_no stmnt_handle_py stmnt_handle_dl stmnt_handle_sl stmnt_handle_os} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } sel_handle {select_handle_no select_handle_py select_handle_dl select_handle_sl select_handle_os} sel_handle_list {neworder_selhandles payment_selhandles delivery_selhandles stocklevel_selhandles orderstatus_selhandles} gv_handle {set_handle_no set_handle_py set_handle_dl set_sl set_handle_os} gv_handle_list {neworder_gvhandles payment_gvhandles delivery_gvhandles stocklevel_gvhandles orderstatus_gvhandles} len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } {
+unset -nocomplain $cursor_list
+unset -nocomplain $sel_handle_list
+set curcnt 0
+#For all of the connections
+foreach db2sql [ join [ set $cslist ] ] {
+#Create a cursor name
+set cursor [ concat $stmnt_handle\_$curcnt ]
+set select_hdl [ concat $sel_handle\_$curcnt ]
+set set_hdl [ concat $gv_handle\_$curcnt ]
+#Prepare a statement under the cursor name
+set $cursor [ prep_statement $db2sql $stmnt_handle ]
+#Prepare a select handle under the select handle name
+set $select_hdl [ prep_select $db2sql $sel_handle ]
+#Prepare a set handle under the global variable handle name
+set $set_hdl [ prep_set_db2_global_var $db2sql $gv_handle ]
+incr curcnt
+#Add it to a list of cursors for that stored procedure
+lappend $cursor_list [ set $cursor ]
+#Add it to a list of select handles for that stored procedure
+lappend $sel_handle_list [ set $select_hdl ]
+#Add it to a list of set handles for  global variables
+lappend $gv_handle_list [ set $set_hdl ]
+        }
+#Record the number of cursors
+set $len [ llength  [ set $cursor_list ] ]
+#Initialise number of executions 
+set $cnt 0
+#For delivery and stock level sprocs set handles are expected to be an empty list
+#puts "sproc_cur:$stmnt_handle:$sel_handle:$gv_handle connections:[ set $cslist ] cursors:[set $cursor_list] select handles:[set $sel_handle_list] set handles:[set $gv_handle_list] number of cursors/select/global var handles:[set $len] execs:[set $cnt]"
+    }
+#Open standalone connect to determine highest warehouse id for all connections
+set mdb_handle [ ConnectToDb2 $dbname $user $password ]
+set stmnt_handle1 [ db2_select_direct $mdb_handle "select max(w_id) from warehouse" ] 
+set w_id_input [ db2_fetchrow $stmnt_handle1 ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set stmnt_handle2 [ db2_select_direct $mdb_handle "select max(d_id) from district" ] 
+set d_id_input [ db2_fetchrow $stmnt_handle2 ]
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+puts "new order"
+if { $KEYANDTHINK } { keytime 18 }
+set stmnt_handle_no [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $neworder_cursors $stmnt_handle_no ]
+set select_handle_no [ lindex $neworder_selhandles $cursor_position ]
+set set_handle_no [ lindex $neworder_gvhandles $cursor_position ]
+neword $set_handle_no $stmnt_handle_no $select_handle_no $w_id $w_id_input $RAISEERROR
+incr nocnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 20} {
+puts "payment"
+if { $KEYANDTHINK } { keytime 3 }
+set stmnt_handle_py [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $payment_cursors $stmnt_handle_py ]
+set select_handle_py [ lindex $payment_selhandles $cursor_position ]
+set set_handle_py [ lindex $payment_gvhandles $cursor_position ]
+payment $set_handle_py $stmnt_handle_py $select_handle_py $w_id $w_id_input $RAISEERROR
+incr pycnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 21} {
+puts "delivery"
+if { $KEYANDTHINK } { keytime 2 }
+set stmnt_handle_dl [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+#find cursor chosen and use select handle from same position
+set cursor_position [ lsearch $delivery_cursors $stmnt_handle_dl ]
+set select_handle_dl [ lindex $delivery_selhandles $cursor_position ]
+delivery $stmnt_handle_dl $select_handle_dl $w_id $RAISEERROR
+incr dlcnt
+if { $KEYANDTHINK } { thinktime 10 }
+} elseif {$choice <= 22} {
+puts "stock level"
+if { $KEYANDTHINK } { keytime 2 }
+set stmnt_handle_sl [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+#find cursor chosen and use select handle from same position
+set cursor_position [ lsearch $stocklevel_cursors $stmnt_handle_sl ]
+set select_handle_sl [ lindex $stocklevel_selhandles $cursor_position ]
+slev $stmnt_handle_sl $select_handle_sl $w_id $stock_level_d_id $RAISEERROR 
+incr slcnt
+if { $KEYANDTHINK } { thinktime 5 }
+} elseif {$choice <= 23} {
+puts "order status"
+if { $KEYANDTHINK } { keytime 2 }
+set stmnt_handle_os [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $orderstatus_cursors $stmnt_handle_os ]
+set select_handle_os [ lindex $orderstatus_selhandles $cursor_position ]
+set set_handle_os [ lindex $orderstatus_gvhandles $cursor_position ]
+ostat $set_handle_os $stmnt_handle_os $select_handle_os $w_id $RAISEERROR
+incr oscnt
+if { $KEYANDTHINK } { thinktime 5 }
+	}
+}
+foreach cursor $neworder_cursors { db2_finish $cursor }
+foreach cursor $payment_cursors { db2_finish $cursor }
+foreach cursor $delivery_cursors { db2_finish $cursor }
+foreach cursor $stocklevel_cursors { db2_finish $cursor }
+foreach cursor $orderstatus_cursors { db2_finish $cursor }
+foreach handle $neworder_selhandles { db2_finish $handle }
+foreach handle $payment_selhandles { db2_finish $handle }
+foreach handle $delivery_selhandles { db2_finish $handle }
+foreach handle $stocklevel_selhandles { db2_finish $handle }
+foreach handle $orderstatus_selhandles { db2_finish $handle }
+foreach gvhandle $neworder_gvhandles { db2_finish $gvhandle }
+foreach gvhandle $payment_gvhandles { db2_finish $gvhandle }
+foreach gvhandle $orderstatus_gvhandles { db2_finish $gvhandle }
+foreach db_handle [ dict values $connlist ] { db2_disconnect $db_handle }
+db2_disconnect $mdb_handle
+}
+#Find single connection start and end points
+set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "db2_disconnect \$db_handle" end ]
+#puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
+#Delete text from start and end points
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+#Replace with connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
+if { $testtype eq "timed" } {
+#Diff between test and time sync scripts are the "puts stored proc lines", output suppressed
+foreach line { {puts "new order"} {puts "payment"} {puts "delivery"} {puts "stock level"} {puts "order status"} } {
+#find start of line
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+#delete to end of line including newline
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+		}
+foreach line {{"Processing $total_iterations transactions without output suppressed..."}} timedline {{"Processing $total_iterations transactions with output suppressed..."}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$timedline \n"
+		}
+if { $timedtype eq "async" } {
+set syncdrvt(3) {for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+set stmnt_handle_no [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $neworder_cursors $stmnt_handle_no ]
+set select_handle_no [ lindex $neworder_selhandles $cursor_position ]
+set set_handle_no [ lindex $neworder_gvhandles $cursor_position ]
+neword $set_handle_no $stmnt_handle_no $select_handle_no $w_id $w_id_input $RAISEERROR $clientname
+incr nocnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+set stmnt_handle_py [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $payment_cursors $stmnt_handle_py ]
+set select_handle_py [ lindex $payment_selhandles $cursor_position ]
+set set_handle_py [ lindex $payment_gvhandles $cursor_position ]
+payment $set_handle_py $stmnt_handle_py $select_handle_py $w_id $w_id_input $RAISEERROR $clientname
+incr pycnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+set stmnt_handle_dl [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+#find cursor chosen and use select handle from same position
+set cursor_position [ lsearch $delivery_cursors $stmnt_handle_dl ]
+set select_handle_dl [ lindex $delivery_selhandles $cursor_position ]
+delivery $stmnt_handle_dl $select_handle_dl $w_id $RAISEERROR $clientname
+incr dlcnt
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+set stmnt_handle_sl [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+#find cursor chosen and use select handle from same position
+set cursor_position [ lsearch $stocklevel_cursors $stmnt_handle_sl ]
+set select_handle_sl [ lindex $stocklevel_selhandles $cursor_position ]
+slev $stmnt_handle_sl $select_handle_sl $w_id $stock_level_d_id $RAISEERROR $clientname
+incr slcnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+set stmnt_handle_os [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+#find cursor chosen and use select handle and set handle from same position
+set cursor_position [ lsearch $orderstatus_cursors $stmnt_handle_os ]
+set select_handle_os [ lindex $orderstatus_selhandles $cursor_position ]
+set set_handle_os [ lindex $orderstatus_gvhandles $cursor_position ]
+ostat $set_handle_os $stmnt_handle_os $select_handle_os $w_id $RAISEERROR $clientname
+incr oscnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+	}
+   }
+}
+set syncdrvi(3a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "for {set it 0}" 1.0 ]
+set syncdrvi(3b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach cursor \$neworder_cursors { db2_finish \$cursor }" end ]
+#End of run loop is previous line
+set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
+#Delete run loop
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+#Replace with asynchronous connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Remove extra async connection
+set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
+set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mdb_handle [ ConnectToDb2 $dbname $user $password ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
+#Replace individual lines for Asynch
+foreach line {{set db_handle [ ConnectToDb2Asynch $dbname $user $password $RAISEERROR $clientname $async_verbose ]} {dict set connlist $id [ set db_handle$id [ ConnectToDb2 $1 $2 $3 ] ]} {#puts "sproc_cur:$stmnt_handle:$sel_handle:$gv_handle connections:[ set $cslist ] cursors:[set $cursor_list] select handles:[set $sel_handle_list] set handles:[set $gv_handle_list] number of cursors/select/global var handles:[set $len] execs:[set $cnt]"}} asynchline {{set mdb_handle [ ConnectToDb2Asynch $dbname $user $password $RAISEERROR $clientname $async_verbose ]} {dict set connlist $id [ set db_handle$id [ ConnectToDb2Asynch $1 $2 $3 $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$stmnt_handle:$sel_handle:$gv_handle connections:[ set $cslist ] cursors:[set $cursor_list] select handles:[set $sel_handle_list] set handles:[set $gv_handle_list] number of cursors/select/global var handles:[set $len] execs:[set $cnt]"}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
+                }
+#Add client side counters for timed async only this is different from non-async
+set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
+}
+set syncdrvt(5) {getclienttpmasync $rampup $duration $totalvirtualusers $async_client
+}
+set syncdrvt(6) {printclientcountasync $clientname $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach cursor $neworder_cursors { db2_finish $cursor }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+} else {
+#Add client side counters for timed non-async only
+set syncdrvt(4) {initializeclientcountsync $totalvirtualusers
+}
+set syncdrvt(5) {getclienttpmsync $rampup $duration $totalvirtualusers
+}
+set syncdrvt(6) {printclientcountsync $myposition $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach cursor $neworder_cursors { db2_finish $cursor }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+	}
+    }
+}
+
 proc loaddb2tpcc {} {
 global _ED
 upvar #0 dbdict dbdict
@@ -1230,6 +1512,9 @@ db2_finish $select_handle_py
 db2_finish $select_handle_no
 db2_finish $select_handle_dl
 db2_disconnect $db_handle}
+if { $db2_connect_pool } {
+insert_db2connectpool_drivescript test sync
+        }
 }
 
 proc loadtimeddb2tpcc {} {
@@ -1607,6 +1892,9 @@ db2_finish $select_handle_dl
 db2_disconnect $db_handle
 	}
    }}
+if { $db2_connect_pool } {
+insert_db2connectpool_drivescript timed sync
+        }
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -1930,7 +2218,7 @@ return $set_handle_no
    }
 }
 
-#RUN TPC-C
+#CONNECT ASYNC
 promise::async simulate_client { clientname total_iterations user password dbname RAISEERROR KEYANDTHINK async_verbose async_delay } {
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" } 
@@ -1938,6 +2226,7 @@ async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
 set db_handle [ ConnectToDb2Asynch $dbname $user $password $RAISEERROR $clientname $async_verbose ]
+#RUN TPC-C
 foreach handle_gv {set_handle_os set_handle_py set_handle_no} {set $handle_gv [ prep_set_db2_global_var $db_handle $handle_gv ]}
 foreach handle_st {stmnt_handle_dl stmnt_handle_sl stmnt_handle_os stmnt_handle_py stmnt_handle_no} {set $handle_st [ prep_statement $db_handle $handle_st ]}
 foreach handle_se {select_handle_sl select_handle_dl select_handle_os select_handle_py select_handle_no} {set $handle_se [ prep_select $db_handle $handle_se ]}
@@ -2010,5 +2299,8 @@ foreach client $acprom { puts $client }
       }
    }
 }}
+if { $db2_connect_pool } {
+insert_db2connectpool_drivescript timed async
+        }
 }
 }

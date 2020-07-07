@@ -1,0 +1,47 @@
+<connpool>
+<connections>
+    <c1>
+	<pg_host>host1</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
+    </c1>
+    <c2>
+	<pg_host>host2</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
+    </c2>
+    <c3>
+	<pg_host>host3</pg_host>
+        <pg_port>5432</pg_port>
+	<pg_user>tpcc</pg_user>
+        <pg_pass>tpcc</pg_pass>
+        <pg_dbase>tpcc</pg_dbase>
+    </c3>
+</connections>
+<sprocs>
+  	<neworder>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</neworder>
+    	<payment>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</payment>
+    	<delivery>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</delivery>
+    	<stocklevel>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</stocklevel>
+    	<orderstatus>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</orderstatus>
+<sprocs>
+<connpool>

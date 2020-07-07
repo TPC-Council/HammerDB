@@ -1,0 +1,68 @@
+<connpool>
+<connections>
+    <c1>
+        <mssqls_server>(local)\SQL1</mssqls_server>
+        <mssqls_linux_server>host1</mssqls_linux_server>
+        <mssqls_tcp>false</mssqls_tcp>
+        <mssqls_port>1433</mssqls_port>
+        <mssqls_azure>false</mssqls_azure>
+        <mssqls_authentication>windows</mssqls_authentication>
+        <mssqls_linux_authent>sql</mssqls_linux_authent>
+	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+        <mssqls_uid>sa</mssqls_uid>
+        <mssqls_pass>admin</mssqls_pass>
+	<mssqls_dbase>tpcc</mssqls_dbase>
+    </c1>
+    <c2>
+        <mssqls_server>(local)\SQL2</mssqls_server>
+        <mssqls_linux_server>host2</mssqls_linux_server>
+        <mssqls_tcp>false</mssqls_tcp>
+        <mssqls_port>1433</mssqls_port>
+        <mssqls_azure>false</mssqls_azure>
+        <mssqls_authentication>windows</mssqls_authentication>
+        <mssqls_linux_authent>sql</mssqls_linux_authent>
+	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+        <mssqls_uid>sa</mssqls_uid>
+        <mssqls_pass>admin</mssqls_pass>
+	<mssqls_dbase>tpcc</mssqls_dbase>
+    </c2>
+    <c3>
+        <mssqls_server>(local)\SQL3</mssqls_server>
+        <mssqls_linux_server>host3</mssqls_linux_server>
+        <mssqls_tcp>false</mssqls_tcp>
+        <mssqls_port>1433</mssqls_port>
+        <mssqls_azure>false</mssqls_azure>
+        <mssqls_authentication>windows</mssqls_authentication>
+        <mssqls_linux_authent>sql</mssqls_linux_authent>
+	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+        <mssqls_uid>sa</mssqls_uid>
+        <mssqls_pass>admin</mssqls_pass>
+	<mssqls_dbase>tpcc</mssqls_dbase>
+    </c3>
+</connections>
+<sprocs>
+  	<neworder>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</neworder>
+    	<payment>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</payment>
+    	<delivery>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</delivery>
+    	<stocklevel>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</stocklevel>
+    	<orderstatus>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</orderstatus>
+<sprocs>
+<connpool>

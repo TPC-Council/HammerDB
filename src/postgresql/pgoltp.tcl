@@ -37,7 +37,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
@@ -466,7 +466,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
@@ -1005,7 +1005,7 @@ DECLARE
     start_int ALIAS FOR $1;
     end_int ALIAS FOR $2;
 BEGIN
-    RETURN trunc(random() * (end_int-start_int) + start_int);
+    RETURN trunc(random() * (end_int-start_int + 1) + start_int);
 END;
 $$ LANGUAGE 'plpgsql' STRICT;
 }
@@ -1591,14 +1591,42 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db tspace superuser user password } {
-set stmnt_count 3
-if { $tspace != "pg_default" } { incr stmnt_count }
+proc CreateUserDatabase { lda host port db tspace superuser superuser_password user password } {
+set stmnt_count 1
 puts "CREATING DATABASE $db under OWNER $user"
-set sql(1) "CREATE USER $user PASSWORD '$password'"
-set sql(2) "GRANT $user to $superuser"
-set sql(3) "CREATE DATABASE $db OWNER $user"
-set sql(4) "ALTER DATABASE $db SET TABLESPACE $tspace"
+set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
+if { [pg_result $result -numTuples] == 0 } {
+set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
+incr stmnt_count;
+set sql($stmnt_count) "GRANT $user to $superuser"
+    } else {
+puts "Using existing User $user for Schema build"
+set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
+    }
+incr stmnt_count;
+set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
+if { [pg_result $result -numTuples] == 0} {
+set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
+    } else {
+set existing_db [ ConnectToPostgres $host $port $superuser $superuser_password $db ]
+if { $existing_db eq "Failed" } {
+error "error, the database connection to $host could not be established"
+        } else {
+set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+if { [pg_result $result -numTuples] == 0 } {
+puts "Using existing empty Database $db for Schema build"
+set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+            } else {
+puts "Database with tables $db exists"
+error "Database $db exists but is not empty, specify a new or empty database name"
+            }
+        }
+pg_disconnect $existing_db
+    }
+if { $tspace != "pg_default" } {
+incr stmnt_count
+set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
+}
 for { set i 1 } { $i <= $stmnt_count } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
@@ -2060,7 +2088,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $tspace $superuser $user $password
+CreateUserDatabase $lda $host $port $db $tspace $superuser $superuser_password $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
@@ -2144,6 +2172,296 @@ return
 }
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
 	} else { return }
+}
+
+proc insert_pgconnectpool_drivescript { testtype timedtype } {
+#When using connect pooling delete the existing portions of the script and replace with new connect pool version
+set syncdrvt(1) {
+proc fn_prep_statement { lda curn_fn } {
+switch $curn_fn {
+curn_no {
+set prep_st "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
+}
+curn_py {
+set prep_st "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+}
+curn_dl {
+set prep_st "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
+}
+curn_sl {
+set prep_st "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
+}
+curn_os {
+set prep_st "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+}
+}
+set result [ pg_exec $lda $prep_st ]
+if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+error "[pg_result $result -error]"
+        } else {
+pg_result $result -clear
+return $curn_fn
+        }
+}
+#RUN TPC-C
+#PostgreSQL does not support prepared statements for stored procedures
+set pg_storedprocs false
+#Get Connect data as a dict
+set cpool [ get_connect_xml pg ]
+#Extract connect data only from dict
+set connectonly [ dict filter [ dict get $cpool connections ] key c? ]
+#Extract the keys, this will be c1, c2 etc and determines number of connections
+set conkeys [ dict keys $connectonly ]
+#Loop through the keys of the connection parameters
+dict for {id conparams} $connectonly {
+#Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
+dict with conparams {
+#set PostgreSQL connect string
+set $id [ list $pg_host $pg_port $pg_user $pg_pass $pg_dbase ]
+	}
+    }
+#For the connect keys c1, c2 etc make a connection
+foreach id [ split $conkeys ] {
+    lassign [ set $id ] 1 2 3 4 5
+dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 ] ]
+if {  [ set lda$id ] eq "Failed" } {
+puts "error, the database connection to $1 could not be established"
+ 	}
+}
+#Extract which storedprocedures use which connection
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] { 
+unset -nocomplain clist
+#Extract the policy for the storedprocedures
+set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
+foreach sp [ dict get $cpool sprocs $sproc connections ] {
+lappend clist [ dict get $connlist $sp ]
+}
+set newname "cs$sproc"
+unset -nocomplain $newname
+lappend $newname $clist
+}
+#Prepare statements multiple times for stored procedure for each connection and add to cursor list
+foreach curn_fn {curn_no curn_py curn_dl curn_sl curn_os} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+unset -nocomplain $cursor_list
+set curcnt 0
+#For all of the connections
+foreach lda [ join [ set $cslist ] ] {
+#Create a cursor name
+set cursor [ concat $curn_fn\_$curcnt ]
+#Prepare a statement under the cursor name
+fn_prep_statement $lda $curn_fn
+incr curcnt
+#Add it to a list of cursors for that stored procedure
+lappend $cursor_list $cursor
+	}
+#Record the number of cursors
+set $len [ llength  [ set $cursor_list ] ]
+#Initialise number of executions 
+set $cnt 0
+#For PostgreSQL cursor names are placeholders to choose the correct policy. The placeholder is then used to select the connection. The prepared statements are always called neworder, payment etc for each connection
+#puts "sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
+    }
+#Open standalone connect to determine highest warehouse id for all connections
+set mlda [ ConnectToPostgres $host $port $user $password $db ]
+if { $mlda eq "Failed" } {
+error "error, the database connection to $host could not be established"
+ } 
+pg_select $mlda "select max(w_id) from warehouse" w_id_input_arr {
+set w_id_input $w_id_input_arr(max)
+	}
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+pg_select $mlda "select max(d_id) from district" d_id_input_arr {
+set d_id_input $d_id_input_arr(max)
+}
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+puts "new order"
+if { $KEYANDTHINK } { keytime 18 }
+set curn_no [ pick_cursor $neworder_policy [ join $neworder_cursors ] $nocnt $nolen ]
+set cursor_position [ lsearch $neworder_cursors $curn_no ]
+set lda_no [ lindex [ join $csneworder ] $cursor_position ]
+neword $lda_no $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
+incr nocnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 20} {
+puts "payment"
+if { $KEYANDTHINK } { keytime 3 }
+set curn_py [ pick_cursor $payment_policy [ join $payment_cursors ] $pycnt $pylen ]
+set cursor_position [ lsearch $payment_cursors $curn_py ]
+set lda_py [ lindex [ join $cspayment ] $cursor_position ]
+payment $lda_py $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
+incr pycnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 21} {
+puts "delivery"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_dl [ pick_cursor $delivery_policy [ join $delivery_cursors ] $dlcnt $dllen ]
+set cursor_position [ lsearch $delivery_cursors $curn_dl ]
+set lda_dl [ lindex [ join $csdelivery ] $cursor_position ]
+delivery $lda_dl $w_id $RAISEERROR $ora_compatible $pg_storedprocs
+incr dlcnt
+if { $KEYANDTHINK } { thinktime 10 }
+} elseif {$choice <= 22} {
+puts "stock level"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_sl [ pick_cursor $stocklevel_policy [ join $stocklevel_cursors ] $slcnt $sllen ]
+set cursor_position [ lsearch $stocklevel_cursors $curn_sl ]
+set lda_sl [ lindex [ join $csstocklevel ] $cursor_position ]
+slev $lda_sl $w_id $stock_level_d_id $RAISEERROR $ora_compatible $pg_storedprocs
+incr slcnt
+if { $KEYANDTHINK } { thinktime 5 }
+} elseif {$choice <= 23} {
+puts "order status"
+if { $KEYANDTHINK } { keytime 2 }
+set curn_os [ pick_cursor $orderstatus_policy [ join $orderstatus_cursors ] $oscnt $oslen ]
+set cursor_position [ lsearch $orderstatus_cursors $curn_os ]
+set lda_os [ lindex [ join $csorderstatus ] $cursor_position ]
+ostat $lda_os $w_id $RAISEERROR $ora_compatible $pg_storedprocs
+incr oscnt
+if { $KEYANDTHINK } { thinktime 5 }
+	}
+}
+foreach lda [ dict values $connlist ] {  pg_disconnect $lda }
+pg_disconnect $mlda
+}
+#Find single connection start and end points
+set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "proc fn_prep_statement" end ]
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "pg_disconnect \$lda" end ]
+#puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
+#Delete text from start and end points
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+#Replace with connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
+if { $testtype eq "timed" } {
+#Diff between test and time sync scripts are the "puts stored proc lines", output suppressed
+foreach line { {puts "new order"} {puts "payment"} {puts "delivery"} {puts "stock level"} {puts "order status"} } {
+#find start of line
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+#delete to end of line including newline
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+		}
+foreach line {{"Processing $total_iterations transactions without output suppressed..."}} timedline {{"Processing $total_iterations transactions with output suppressed..."}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$timedline \n"
+		}
+if { $timedtype eq "async" } {
+set syncdrvt(2) [ subst -nocommands -novariables {#CONNECT ASYNC
+promise::async simulate_client { clientname total_iterations host port user password db ora_compatible pg_storedprocs RAISEERROR KEYANDTHINK async_verbose async_delay } \{
+set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
+if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
+async_time $acno
+if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
+if { $async_verbose } { puts "Logging in $clientname" }
+set mlda [ ConnectToPostgresAsynch $host $port $user $password $db $RAISEERROR $clientname $async_verbose ]
+} ]
+set syncdrvi(2a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#RUN TPC-C" 1.0 ]
+#Insert Asynch connections
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(2a) $syncdrvt(2)
+set syncdrvt(3) {for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+set curn_no [ pick_cursor $neworder_policy [ join $neworder_cursors ] $nocnt $nolen ]
+set cursor_position [ lsearch $neworder_cursors $curn_no ]
+set lda_no [ lindex [ join $csneworder ] $cursor_position ]
+neword $lda_no $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs $clientname
+incr nocnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+set curn_py [ pick_cursor $payment_policy [ join $payment_cursors ] $pycnt $pylen ]
+set cursor_position [ lsearch $payment_cursors $curn_py ]
+set lda_py [ lindex [ join $cspayment ] $cursor_position ]
+payment $lda_py $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs $clientname
+incr pycnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+set curn_dl [ pick_cursor $delivery_policy [ join $delivery_cursors ] $dlcnt $dllen ]
+set cursor_position [ lsearch $delivery_cursors $curn_dl ]
+set lda_dl [ lindex [ join $csdelivery ] $cursor_position ]
+delivery $lda_dl $w_id $RAISEERROR $ora_compatible $pg_storedprocs $clientname
+incr dlcnt
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+set curn_sl [ pick_cursor $stocklevel_policy [ join $stocklevel_cursors ] $slcnt $sllen ]
+set cursor_position [ lsearch $stocklevel_cursors $curn_sl ]
+set lda_sl [ lindex [ join $csstocklevel ] $cursor_position ]
+slev $lda_sl $w_id $stock_level_d_id $RAISEERROR $ora_compatible $pg_storedprocs $clientname
+incr slcnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+set curn_os [ pick_cursor $orderstatus_policy [ join $orderstatus_cursors ] $oscnt $oslen ]
+set cursor_position [ lsearch $orderstatus_cursors $curn_os ]
+set lda_os [ lindex [ join $csorderstatus ] $cursor_position ]
+ostat $lda_os $w_id $RAISEERROR $ora_compatible $pg_storedprocs $clientname
+incr oscnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+        }
+    }
+}
+set syncdrvi(3a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "for {set it 0}" 1.0 ]
+set syncdrvi(3b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach lda \[ dict values \$connlist \] {  pg_disconnect \$lda }" end ]
+#End of run loop is previous line
+set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
+#Delete run loop
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+#Replace with asynchronous connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Remove extra async connection
+set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
+set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mlda [ ConnectToPostgres $host $port $user $password $db ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
+#Replace individual lines for Asynch
+foreach line {{dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 ] ]} {#puts "sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{dict set connlist $id [ set lda$id [ ConnectToPostgresAsynch $1 $2 $3 $4 $5 $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
+                }
+#Add client side counters for timed async only this is different from non-async
+set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
+}
+set syncdrvt(5) {getclienttpmasync $rampup $duration $totalvirtualusers $async_client
+}
+set syncdrvt(6) {printclientcountasync $clientname $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach lda [ dict values $connlist ] {  pg_disconnect $lda }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+} else {
+#Add client side counters for timed non-async only
+set syncdrvt(4) {initializeclientcountsync $totalvirtualusers
+}
+set syncdrvt(5) {getclienttpmsync $rampup $duration $totalvirtualusers
+}
+set syncdrvt(6) {printclientcountsync $myposition $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach lda [ dict values $connlist ] {  pg_disconnect $lda }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+	}
+    }
 }
 
 proc loadpgtpcc { } {
@@ -2447,6 +2765,9 @@ if { $KEYANDTHINK } { thinktime 5 }
 	}
 }
 pg_disconnect $lda}
+if { $pg_connect_pool } {
+insert_pgconnectpool_drivescript test sync
+        }
 }
 
 proc loadtimedpgtpcc { } {
@@ -2885,6 +3206,9 @@ if { $KEYANDTHINK } { thinktime 5 }
 pg_disconnect $lda
 		}
       }}
+if { $pg_connect_pool } {
+insert_pgconnectpool_drivescript timed sync
+        }
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -3289,15 +3613,15 @@ pg_result $result -clear
         }
     }
 }
-#RUN TPC-C
+#CONNECT ASYNC
 promise::async simulate_client { clientname total_iterations host port user password db ora_compatible pg_storedprocs RAISEERROR KEYANDTHINK async_verbose async_delay } {
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-
 set lda [ ConnectToPostgresAsynch $host $port $user $password $db $RAISEERROR $clientname $async_verbose ]
+#RUN TPC-C
 if { $ora_compatible eq "true" } {
 set result [ pg_exec $lda "exec dbms_output.disable" ]
 pg_result $result -clear
@@ -3364,5 +3688,8 @@ foreach client $acprom { puts $client }
        }
      }
    }}
+if { $pg_connect_pool } {
+insert_pgconnectpool_drivescript timed async
+        }
 }
 }

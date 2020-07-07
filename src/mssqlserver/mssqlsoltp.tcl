@@ -1982,6 +1982,260 @@ return
         } else { return }
 }
 
+proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
+#When using connect pooling delete the existing portions of the script and replace with new connect pool version
+set syncdrvt(1) {
+#RUN TPC-C
+#Get Connect data as a dict
+set cpool [ get_connect_xml mssqls ]
+#Extract connect data only from dict
+set connectonly [ dict filter [ dict get $cpool connections ] key c? ]
+#Extract the keys, this will be c1, c2 etc and determines number of connections
+set conkeys [ dict keys $connectonly ]
+#Loop through the keys of the connection parameters
+dict for {id conparams} $connectonly {
+#Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
+dict with conparams {
+#set SQL Server connect string
+if {![string match windows $::tcl_platform(platform)]} {
+set mssqls_server $mssqls_linux_server 
+set mssqls_odbc_driver $mssqls_linux_odbc
+set mssqls_authentication $mssqls_linux_authent 
+	}
+set $id [ list $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_dbase ]
+	}
+    }
+#For the connect keys c1, c2 etc make a connection
+foreach id [ split $conkeys ] {
+	lassign [ set $id ] 1 2 3 4 5 6 7 8 9
+set connection [ connect_string $1 $2 $3 $4 $5 $6 $7 $8 $9 ]
+if [catch {tdbc::odbc::connection create odbc$id $connection} message ] {
+error "Connection to $connection could not be established : $message"
+} else {
+dict set connlist $id odbc$id
+if {!$azure} { odbc$id evaldirect "use $9" }
+odbc$id evaldirect "set implicit_transactions OFF"
+	}
+}
+#Extract which storedprocedures use which connection
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] { 
+unset -nocomplain clist
+#Extract the policy for the storedprocedures
+set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
+foreach sp [ dict get $cpool sprocs $sproc connections ] {
+lappend clist [ dict get $connlist $sp ]
+}
+set newname "cs$sproc"
+unset -nocomplain $newname
+lappend $newname $clist
+}
+#Prepare statements multiple times for stored procedure for each connection and add to cursor list
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+unset -nocomplain $cursor_list
+set curcnt 0
+#For all of the connections
+foreach odbc [ join [ set $cslist ] ] {
+#Create a cursor name
+set cursor [ concat $st\_$curcnt ]
+#Prepare a statement under the cursor name
+set $cursor [ prep_statement $odbc $st ] 
+incr curcnt
+#Add it to a list of cursors for that stored procedure
+lappend $cursor_list [ set $cursor ]
+	}
+#Record the number of cursors
+set $len [ llength  [ set $cursor_list ] ]
+#Initialise number of executions 
+set $cnt 0
+#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
+    }
+#Open standalone connect to determine highest warehouse id for all connections
+set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+error "Connection to $connection could not be established : $message"
+} else {
+if {!$azure} { odbc evaldirect "use $database" }
+odbc evaldirect "set implicit_transactions OFF"
+}
+set rows [ odbc allrows "select max(w_id) from warehouse" ]
+set w_id_input [ lindex {*}$rows 1 ]
+#2.4.1.1 set warehouse_id stays constant for a given terminal
+set w_id  [ RandomNumber 1 $w_id_input ]  
+set rows [ odbc allrows "select max(d_id) from district" ]
+set d_id_input [ lindex {*}$rows 1 ]
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+puts "Processing $total_iterations transactions without output suppressed..."
+set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+puts "new order"
+if { $KEYANDTHINK } { keytime 18 }
+set neword_st [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+neword $neword_st $w_id $w_id_input $RAISEERROR
+incr nocnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 20} {
+puts "payment"
+if { $KEYANDTHINK } { keytime 3 }
+set payment_st [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+payment $payment_st $w_id $w_id_input $RAISEERROR
+incr pycnt
+if { $KEYANDTHINK } { thinktime 12 }
+} elseif {$choice <= 21} {
+puts "delivery"
+if { $KEYANDTHINK } { keytime 2 }
+set delivery_st [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+delivery $delivery_st $w_id $RAISEERROR
+incr dlcnt
+if { $KEYANDTHINK } { thinktime 10 }
+} elseif {$choice <= 22} {
+puts "stock level"
+if { $KEYANDTHINK } { keytime 2 }
+set slev_st [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+slev $slev_st $w_id $stock_level_d_id $RAISEERROR
+incr slcnt
+if { $KEYANDTHINK } { thinktime 5 }
+} elseif {$choice <= 23} {
+puts "order status"
+if { $KEYANDTHINK } { keytime 2 }
+set ostat_st [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+ostat $ostat_st $w_id $RAISEERROR
+incr oscnt
+if { $KEYANDTHINK } { thinktime 5 }
+	}
+}
+foreach cursor $neworder_cursors { $cursor close }
+foreach cursor $payment_cursors { $cursor close }
+foreach cursor $delivery_cursors { $cursor close }
+foreach cursor $stocklevel_cursors { $cursor close }
+foreach cursor $orderstatus_cursors { $cursor close }
+foreach odbc_con [ dict values $connlist ] { $odbc_con close }
+odbc close
+}
+#Find single connection start and end points
+set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "odbc close" end ]
+if { $timedtype eq "async" } {
+set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "odbc-\$clientname close" end ]
+	}
+#puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
+#Delete text from start and end points
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+#Replace with connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
+if { $testtype eq "timed" } {
+#Diff between test and time sync scripts are the "puts stored proc lines", output suppressed, delete stored proc lines and replace output lines
+foreach line { {puts "new order"} {puts "payment"} {puts "delivery"} {puts "stock level"} {puts "order status"} } {
+#find start of line
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+#delete to end of line including newline
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+		}
+foreach line {{"Processing $total_iterations transactions without output suppressed..."}} timedline {{"Processing $total_iterations transactions with output suppressed..."}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$timedline \n"
+		}
+if { $timedtype eq "async" } {
+set syncdrvt(3) {for {set it 0} {$it < $total_iterations} {incr it} {
+if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+set choice [ RandomNumber 1 23 ]
+if {$choice <= 10} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:neword" }
+if { $KEYANDTHINK } { async_keytime 18  $clientname neword $async_verbose }
+set neword_st [ pick_cursor $neworder_policy $neworder_cursors $nocnt $nolen ]
+neword $neword_st $w_id $w_id_input $RAISEERROR $clientname
+incr nocnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname neword $async_verbose }
+} elseif {$choice <= 20} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:payment" }
+if { $KEYANDTHINK } { async_keytime 3 $clientname payment $async_verbose }
+set payment_st [ pick_cursor $payment_policy $payment_cursors $pycnt $pylen ]
+payment $payment_st $w_id $w_id_input $RAISEERROR $clientname
+incr pycnt
+if { $KEYANDTHINK } { async_thinktime 12 $clientname payment $async_verbose }
+} elseif {$choice <= 21} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:delivery" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname delivery $async_verbose }
+set delivery_st [ pick_cursor $delivery_policy $delivery_cursors $dlcnt $dllen ]
+delivery $delivery_st $w_id $RAISEERROR $clientname
+incr dlcnt
+if { $KEYANDTHINK } { async_thinktime 10 $clientname delivery $async_verbose }
+} elseif {$choice <= 22} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:slev" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname slev $async_verbose }
+set slev_st [ pick_cursor $stocklevel_policy $stocklevel_cursors $slcnt $sllen ]
+slev $slev_st $w_id $stock_level_d_id $RAISEERROR $clientname
+incr slcnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname slev $async_verbose }
+} elseif {$choice <= 23} {
+if { $async_verbose } { puts "$clientname:w_id:$w_id:ostat" }
+if { $KEYANDTHINK } { async_keytime 2 $clientname ostat $async_verbose }
+set ostat_st [ pick_cursor $orderstatus_policy $orderstatus_cursors $oscnt $oslen ]
+ostat $ostat_st $w_id $RAISEERROR $clientname
+incr oscnt
+if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
+	}
+   }
+}
+#Change Run Loop for Asynchronous
+set syncdrvi(3a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "for {set it 0}" 1.0 ]
+set syncdrvi(3b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach cursor \$neworder_cursors { \$cursor close }" end ]
+#End of run loop is previous line
+set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
+#Delete run loop
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+#Replace with asynchronous connect pool version
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
+#Remove extra async connection
+set syncdrvi(2a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
+set syncdrvi(2b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set rows [ odbc allrows "select max(w_id) from warehouse" ]} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(2a) $syncdrvi(2b)+1l
+set asynchconline {set rows [ odbc-$clientname allrows "select max(w_id) from warehouse" ]}
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(2a) "$asynchconline \n"
+#Replace individual lines for Asynch
+foreach line {{#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {puts "Processing $total_iterations transactions with output suppressed..."} {dict set connlist $id odbc$id} {if {!$azure} { odbc$id evaldirect "use $9" }} {odbc$id evaldirect "set implicit_transactions OFF"} {set rows [ odbc allrows "select max(d_id) from district" ]} {odbc close}} asynchline {{#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"} {if { $async_verbose } {puts "Processing $total_iterations transactions with output suppressed..." }} {dict set connlist $id odbc-$clientname-$id} {if {!$azure} { odbc-$clientname-$id evaldirect "use $9" }} {odbc-$clientname-$id evaldirect "set implicit_transactions OFF"} {set rows [ odbc-$clientname allrows "select max(d_id) from district" ]} {odbc-$clientname close}} {
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
+                }
+#Edit line with additional curly bracket needs additional subst command so cannot go in loop
+set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards [ subst -nocommands -novariables {if [catch {tdbc::odbc::connection create odbc$id $connection} message ] \{} ] end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "[ subst -nocommands -novariables {if [catch {tdbc::odbc::connection create odbc-$clientname-$id $connection} message ] \{} ] \n"
+#Add client side counters for timed async only this is different from non-async
+set syncdrvt(4) {initializeclientcountasync $totalvirtualusers $async_client
+}
+set syncdrvt(5) {getclienttpmasync $rampup $duration $totalvirtualusers $async_client
+}
+set syncdrvt(6) {printclientcountasync $clientname $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach cursor $neworder_cursors { $cursor close }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+} else {
+#Add client side counters for timed non-async only
+set syncdrvt(4) {initializeclientcountsync $totalvirtualusers
+}
+set syncdrvt(5) {getclienttpmsync $rampup $duration $totalvirtualusers
+}
+set syncdrvt(6) {printclientcountsync $myposition $nocnt $pycnt $dlcnt $slcnt $oscnt
+}
+set syncdrvi(4a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set ramptime 0" 1.0 ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
+set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
+set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach cursor $neworder_cursors { $cursor close }} end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
+	}
+    }
+}
+
 proc loadmssqlstpcc { } {
 global _ED
 upvar #0 dbdict dbdict
@@ -2324,6 +2578,9 @@ $delivery_st close
 $slev_st close
 $ostat_st close
 odbc close}
+if { $mssqls_connect_pool } { 
+insert_mssqlsconnectpool_drivescript test sync 
+	}
 }
 
 proc loadtimedmssqlstpcc { } {
@@ -2755,6 +3012,9 @@ $ostat_st close
 odbc close
       }
    }}
+if { $mssqls_connect_pool } { 
+insert_mssqlsconnectpool_drivescript timed sync 
+	}
 } else {
 #ASYNCHRONOUS TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -3116,29 +3376,30 @@ return $neword_st
     }
 }
 
-#RUN TPC-C
+#CONNECT ASYNC
 promise::async simulate_client { clientname total_iterations connection RAISEERROR KEYANDTHINK database azure async_verbose async_delay } {
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" } 
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-if [catch {tdbc::odbc::connection create odbc-$acno $connection} message ] {
+if [catch {tdbc::odbc::connection create odbc-$clientname $connection} message ] {
 if { $RAISEERROR } {
 puts "$clientname:login failed:$message"
 return "$clientname:login failed:$message"
 	} 
    } else {
 if { $async_verbose } { puts "Connected $clientname:$connection" }
-if {!$azure} { odbc-$acno evaldirect "use $database" }
-odbc-$acno evaldirect "set implicit_transactions OFF"
+if {!$azure} { odbc-$clientname evaldirect "use $database" }
+odbc-$clientname evaldirect "set implicit_transactions OFF"
    }
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement odbc-$acno $st ] }
-set rows [ odbc-$acno allrows "select max(w_id) from warehouse" ]
+#RUN TPC-C
+foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement odbc-$clientname $st ] }
+set rows [ odbc-$clientname allrows "select max(w_id) from warehouse" ]
 set w_id_input [ lindex {*}$rows 1 ]
 #2.4.1.1 set warehouse_id stays constant for a given terminal
 set w_id  [ RandomNumber 1 $w_id_input ]  
-set rows [ odbc-$acno allrows "select max(d_id) from district" ]
+set rows [ odbc-$clientname allrows "select max(d_id) from district" ]
 set d_id_input [ lindex {*}$rows 1 ]
 set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
 if { $async_verbose } { puts "Processing $total_iterations transactions with output suppressed..." }
@@ -3178,7 +3439,7 @@ $payment_st close
 $delivery_st close
 $slev_st close
 $ostat_st close
-odbc-$acno close
+odbc-$clientname close
 if { $async_verbose } { puts "$clientname:complete" }
 return $clientname:complete
 	  }
@@ -3196,5 +3457,8 @@ foreach client $acprom { puts $client }
       }
    }
 }}
+if { $mssqls_connect_pool } { 
+insert_mssqlsconnectpool_drivescript timed async 
+	}
 }
 }
