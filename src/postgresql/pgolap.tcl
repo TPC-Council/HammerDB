@@ -68,14 +68,42 @@ pg_result $result -clear
 return $lda
 }
 
-proc CreateUserDatabase { lda db tspace superuser user password } {
-set stmnt_count 3
-if { $tspace != "pg_default" } { incr stmnt_count }
+proc CreateUserDatabase { lda host port db tspace superuser superuser_password user password } {
+set stmnt_count 1
 puts "CREATING DATABASE $db under OWNER $user"
-set sql(1) "CREATE USER $user PASSWORD '$password'"
-set sql(2) "GRANT $user to $superuser"
-set sql(3) "CREATE DATABASE $db OWNER $user"
-set sql(4) "ALTER DATABASE $db SET TABLESPACE $tspace"
+set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
+if { [pg_result $result -numTuples] == 0 } {
+set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
+incr stmnt_count;
+set sql($stmnt_count) "GRANT $user to $superuser"
+    } else {
+puts "Using existing User $user for Schema build"
+set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
+    }
+incr stmnt_count;
+set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
+if { [pg_result $result -numTuples] == 0} {
+set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
+    } else {
+set existing_db [ ConnectToPostgres $host $port $superuser $superuser_password $db ]
+if { $existing_db eq "Failed" } {
+error "error, the database connection to $host could not be established"
+        } else {
+set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+if { [pg_result $result -numTuples] == 0 } {
+puts "Using existing empty Database $db for Schema build"
+set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+            } else {
+puts "Database with tables $db exists"
+error "Database $db exists but is not empty, specify a new or empty database name"
+            }
+        }
+pg_disconnect $existing_db
+    }
+if { $tspace != "pg_default" } {
+incr stmnt_count
+set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
+}
 for { set i 1 } { $i <= $stmnt_count } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
@@ -578,7 +606,7 @@ set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultd
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $db $tspace $superuser $user $password
+CreateUserDatabase $lda $host $port $db $tspace $superuser $superuser_password $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
