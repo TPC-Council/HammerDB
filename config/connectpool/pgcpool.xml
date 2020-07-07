@@ -43,5 +43,5 @@
 		<connections>c1 c2 c3</connections>
     		<policy>round_robin</policy>
 	</orderstatus>
-<sprocs>
-<connpool>
+</sprocs>
+</connpool>
