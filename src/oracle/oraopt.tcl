@@ -139,7 +139,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 #set matching fields in dialog to temporary dict
 variable orafields
-set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} async_client {.tpc.f1.e26 get} async_delay {.tpc.f1.e27 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse timeprofile $timeprofile async_scale $async_scale async_verbose $async_verbose}]
+set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} async_client {.tpc.f1.e26 get} async_delay {.tpc.f1.e27 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse timeprofile $timeprofile async_scale $async_scale async_verbose $async_verbose connect_pool $connect_pool}]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
@@ -512,6 +512,12 @@ if {$ora_driver == "test" || $async_scale == "false" } {
 	set async_verbose "false"
 	$Name configure -state disabled
 	}
+   set Name $Parent.f1.e29
+   set Prompt $Parent.f1.p29
+   ttk::label $Prompt -text "XML Connect Pool :"
+ttk::checkbutton $Name -text "" -variable connect_pool -onvalue "true" -offvalue "false"
+   grid $Prompt -column 0 -row 31 -sticky e
+   grid $Name -column 1 -row 31 -sticky ew
 }
 #This is the Cancel button variables stay as before
 set Name $Parent.b2

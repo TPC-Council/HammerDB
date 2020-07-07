@@ -176,48 +176,111 @@ proc ed_edit_clear {} {
 }
 
 proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
+#this proc reproduces the functionality built into ctext used in the GUI so CLI can do search and replace in scripts
 global _ED
-if { [ lindex $args 0 ] eq "fastinsert" && [ lindex $args 1 ] eq "end" } {
-set script [ lindex $args 2 ]
-append _ED(package) $script
+set offset 0
+set possibleactions {fastinsert fastdelete search} 
+set action [ lindex $args 0 ]
+if { [ lsearch $possibleactions $action ] eq -1 } {
+puts "Error: argument to text command should be one of [ join $possibleactions ]"
+return
+} else {
+switch $action {
+fastinsert {
+if {[string is integer -strict [ lindex $args 1 ]]} { 
+#Insert at the index given
+set insertind [ lindex $args 1 ] 
+set offset 0
+set substring [ lindex $args 2 ]
+set _ED(package) [ string insert $_ED(package) $insertind $substring ]
+#puts "success matched $insertind to insert $substring with offset $offset"
+} elseif { [ string match *\+1l [ lindex $args 1 ]] } {
+#Insert at the next line after the index
+#Remove +1l from 2nd arg
+set insertind [ string range [ lindex $args 1 ] 0 end-3 ]
+set offset +1l
+set substring [ lindex $args 2 ]
+set stringtofind "\n"
+#find next new line"
+	set nnl [ string first $stringtofind $_ED(package) $insertind ]
+#if not able to find new line set last index as end of script
+	if { $nnl eq -1 } { set nnl [ string length $_ED(package) ] }
+#puts "insert at $nnl this will be the string inserted $substring"
+set _ED(package) [ string insert $_ED(package) $nnl "\n$substring" ]
+#puts "success matched $insertind to insert $substring with offset $offset"
+	} elseif { [ string match end [ lindex $args 1 ]] } {
+#Insert at the end
+set insertind [ string length $_ED(package) ]
+set offset end
+set substring [ lindex $args 2 ]
+append _ED(package) $substring
+#puts "success matched $insertind to append $substring with offset $offset"
+	} elseif { [ string match end-2l [ lindex $args 1 ]] } {
+#insert 2 lines up from the end, used only for the timeproifle 
+set insertind [ string length $_ED(package) ]
+set offset end-2l
+set substring [ lindex $args 2 ]
+#For timeprofile we insert inside the last 2 curly braces
+        set stringtofind "\}"
+        #set stringtofind2 "\n"
+        set ind [ string last $stringtofind $_ED(package) ]
+        set ind2 [ string last $stringtofind $_ED(package) [ expr $ind - 1 ] ]
+        set ind3 [ string last $stringtofind $_ED(package) [ expr $ind2 - 1 ] ]
+set _ED(package) [ string insert $_ED(package) [ expr $ind3 + 2 ] $substring ]
+#puts "success matched $insertind to insert $substring with offset $offset"
 	} else {
-if { [ lindex $args 0 ] eq "search" && [ lindex $args 1 ] eq "-backwards" } {
+puts "Error: failed to match arguments for text insert into script : [ lindex $args 0 ] [ lindex $args 1 ]"
+return
+	}
+}
+fastdelete {
+#Request to delete characters
+#puts "Request to delete :args 0 [ lindex $args 0 ]:args 1 [ lindex $args 1 ]:args 2 [ lindex $args 2 ]"
+if { [ string match *\+1l [ lindex $args 2 ] ] } {
+#Requested to delete multiple lines
+set start [ lindex $args 1 ]
+#Remove +1l from 2nd arg
+set end [ string range [ lindex $args 2 ] 0 end-3 ]
+#puts "delete from $start to $end this will be the string deleted \"[ string range $_ED(package) $start $end ]\""
+	set stringtofind "\n"
+#find next new line"
+	set endnnl [ string first $stringtofind $_ED(package) $end ]
+#if not able to find new line set last index as end of script
+	if { $endnnl eq -1 } { set endnnl [ string length $_ED(package) ] }
+#puts "delete from $start to $endnnl this will be the string deleted \"[ string range $_ED(package) $start $endnnl ]\""
+set _ED(package) [ string replace $_ED(package) $start $endnnl ]
+		} elseif { [ string match "*lineend + 1 char" [ lindex $args 2 ] ] } {
+#Requested to delete from an index to the end of the line including newline character
+#puts "Request to delete from [ lindex $args 1 ] to [ lindex $args 1 ] lineend incl newline"
+set searchtonnl [ lindex [ split [ lindex $args 1 ] ] ]
+	set stringtofind "\n"
+#Searching for next newline so do not need + 1 char
+	set nnl [ string first $stringtofind $_ED(package) $searchtonnl ]
+#puts "delete from $searchtonnl to $nnl this will be the string deleted \"[ string range $_ED(package) $searchtonnl $nnl ]\""
+set _ED(package) [ string replace $_ED(package) $searchtonnl $nnl ]
+	  } else {
+puts "Error: failed to match arguments for text delete in script : [ lindex $args 0 ] [ lindex $args 1 ]"
+return
+	}
+}
+search {
+set srchdirection [ lindex $args 1 ] 
+if { $srchdirection eq "-backwards" } {
 	set stringtofind [lindex $args 2]
 	set ind [ string last $stringtofind $_ED(package) ]
 	return $ind
-	} else {
-if { [ lindex $args 0 ] eq "search" && [ lindex $args 1 ] eq "-forwards" } {
+	} elseif { $srchdirection eq "-forwards" } {
 	set stringtofind [lindex $args 2]
 	set ind [ string first $stringtofind $_ED(package) ]
 	return $ind
-		} else {
-if { [ lindex $args 0 ] eq "fastinsert" && [string is integer -strict [ lindex $args 1 ]] } {
-set insertind [ lindex $args 1 ]
-set substring [ lindex $args 2 ]
-set _ED(package) [ string insert $_ED(package) $insertind $substring ]
-		} else {
-if { [ lindex $args 0 ] eq "fastinsert" } {
-#timeprofile
-set insertind [ lindex $args 1 ]
-set substring [ lindex $args 2 ]
-if { [ string match *1l $insertind ] } {
-	set stringtofind "default \{"
-	set ind [ string last $stringtofind $_ED(package) ]
-set _ED(package) [ string insert $_ED(package) [ expr $ind + 10 ] $substring ]
-	} else {
-#string should match end-2l
-	set stringtofind "\}"
-	set stringtofind2 "\n"
-	set ind [ string last $stringtofind $_ED(package) ]
-	set ind2 [ string last $stringtofind $_ED(package) [ expr $ind - 1 ] ]
-	set ind3 [ string last $stringtofind $_ED(package) [ expr $ind2 - 1 ] ]
-set _ED(package) [ string insert $_ED(package) [ expr $ind3 + 2 ] $substring ]
-			}
-		    }
-		}	
-	    }
+	    } else {
+puts "Error: failed to match arguments for text search in script : [ lindex $args 0 ] [ lindex $args 1 ]"
+return
+				}
+      			}	
+		}
 	}
-}}
+}
 
 proc ed_status_message { flag message } {
 #	puts $message

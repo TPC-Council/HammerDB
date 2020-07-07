@@ -30,6 +30,7 @@
             <db2_async_client>10</db2_async_client>
             <db2_async_verbose>false</db2_async_verbose>
             <db2_async_delay>1000</db2_async_delay>
+            <db2_connect_pool>false</db2_connect_pool>
         </driver>
     </tpcc>
     <tpch>
