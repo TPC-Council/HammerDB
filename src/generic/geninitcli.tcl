@@ -1,5 +1,7 @@
 #Load database config
 set dbdict [ ::XML::To_Dict config/database.xml ]
+#Change formal OSS-TPC-x terminology to working TPC-x
+set dbdict [ regsub -all {(OSS-)(TPC-[CH])} $dbdict {\2} ]
 #Load database details in dict named configdbname
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key

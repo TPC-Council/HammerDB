@@ -8,7 +8,7 @@ export PATH=./bin:$PATH
 exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 ########################################################################
 # HammerDB
-# Copyright (C) 2003-2019 Steve Shaw
+# Copyright (C) 2003-2020 Steve Shaw
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
@@ -25,9 +25,9 @@ exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v3.3"
+set hdb_version "v4.0"
 puts "HammerDB Web Service $hdb_version"
-puts "Copyright (C) 2003-2019 Steve Shaw"
+puts "Copyright (C) 2003-2020 Steve Shaw"
 puts "Type \"help\" for a list of commands"
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/modules"
