@@ -902,10 +902,14 @@ Version 4.0 Jul 2020
 
 Updated Binaries to:
 
-tcl8.6.10, tk8.6.10, thread2.8.4, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.0.0
+tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.0.0
 
 Pull Requests & Issues
 
+Update SQL Server ODBC Driver (#140)
+Fix XML closing tags for sprocs and connpool (#139)
+Update SQL Server library version number for TCL8.6.10 (#138)
+Update versions, changelog and OSS-TPC-x workloads (#137)
 update dbms_random for PostgreSQL neword infinite loop (#136)
 multiple labelled connections / connect pool feature (#135)
 Use Existing User and DB in Postgres (#132) 
