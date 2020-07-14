@@ -839,7 +839,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
   </chapter>
 
   <chapter>
-    <title>Introduction to OLTP Testing (TPC-C)</title>
+    <title>Introduction to OLTP Testing (OSS-TPC-C)</title>
 
     <section>
       <title>What is a Transactional Workload</title>
@@ -867,7 +867,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
     </section>
 
     <section>
-      <title>What is the TPC and TPC-C?</title>
+      <title>What is the TPC and OSS-TPC-C?</title>
 
       <para>Designing and implementing a database benchmark is a significant
       challenge. Many performance tests and tools experience difficulties in
@@ -879,49 +879,43 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       so and the TPC is the industry body most widely recognized for defining
       benchmarks in the database industry recognized by all of the leading
       database vendors. TPC-C is the benchmark published by the TPC for Online
-      Transaction Processing and you can view the published TPC-C results at
-      the TPC website.</para>
+      Transaction Processing and you can view the published TPC-C results at the
+      TPC website.</para>
 
-      <para>As defined by the TPC "TPC benchmarks are industry standards. The
-      TPC, at no charge, distributes its benchmark specifications to the
-      public." For this reason HammerDB includes an implementation of the
-      specification of the TPC-C benchmark that can be run in supported
-      database environments. Implementing the TPC-C specification has the
-      significant advantage that you know that the test is reliable, scalable
-      and tested to produce accurate, repeatable and consistent
-      results.</para>
+      <para>The TPC Policies allow for derivations of TPC Benchmark Standards
+      that comply with the TPC Fair Use rules.  The HammerDB OSS-TPC-C
+      workload is an open source workload derived from the TPC-C Benchmark
+      Standard and as such is not comparable to published TPC-C results, as
+      the results do not comply with the TPC-C Benchmark Standard.</para>
     </section>
 
     <section>
-      <title>HammerDB Transactional TPC-C based workloads</title>
+      <title>HammerDB Transactional OSS-TPC-C based workloads</title>
 
-      <para>The HammerDB workload is based on and intended to be as close as
-      possible to the example published in the TPC-C specification. As such
-      the implementation is intentionally non-optimized or biased towards any
-      particular database implementation or system hardware (being open source
-      you are free to inspect all of the HammerDB source code). The crucial
-      element is to reiterate the point made in the previous section that the
-      HammerDB workloads are designed to be reliable, scalable and tested to
-      produce accurate, repeatable and consistent results. In other words
-      HammerDB is designed to measure relative as opposed to absolute database
-      performance between systems. What this means is if you run a test
-      against one particular configuration of hardware and software and re-run
-      the same test against exactly the same configuration you will get
-      exactly the same result within the bounds of the random selection of
-      transactions which will typically be within 1%. Results Any differences
-      between results are directly as a result of changes you have made to the
-      configuration (or management overhead of your system such as database
-      checkpoints or user/administrator error). Testing has proven that
-      HammerDB tests re-run multiple times unattended (see the autopilot
-      feature) on the same reliable configuration produce performance profiles
-      that will overlay each other almost identically. The Figure below
-      illustrates an example of this consistency and shows the actual results
-      of 2 sequences of tests run unattended one after another against one of
-      the supported databases with the autopilot feature from 1 to 144 virtual
-      users to test modifications to a WAL (Write Ahead Log File). In other
-      words HammerDB will give you the same results each time, if your results
-      vary you need to focus entirely on your database, OS and hardware
-      configuration.</para>
+      <para>The HammerDB OSS-TPC-C workload is intentionally not fully optimized
+      and not biased towards any particular database implementation or system
+      hardware (being open source you are free to inspect all of the HammerDB
+      source code).  The intent is to provide an out of the box type experience.
+      The crucial element is to reiterate the point made in the previous section
+      that the HammerDB workloads are designed to be reliable, scalable and tested
+      to produce accurate, repeatable and consistent results. In other words HammerDB
+      is designed to measure relative as opposed to absolute database performance
+      between systems. What this means is if you run a test against one particular
+      configuration of hardware and software and re-run the same test against exactly
+      the same configuration you will get exactly the same result within the bounds of
+      the random selection of transactions which will typically be within 1%. Results
+      Any differences between results are directly as a result of changes you have
+      made to the configuration (or management overhead of your system such as database
+      checkpoints or user/administrator error). Testing has proven that HammerDB
+      tests re-run multiple times unattended (see the autopilot feature) on the
+      same reliable configuration produce performance profiles that will overlay
+      each other almost identically. The Figure below illustrates an example of
+      this consistency and shows the actual results of 2 sequences of tests run
+      unattended one after another against one of the supported databases with
+      the autopilot feature from 1 to 144 virtual users to test modifications to
+      a WAL (Write Ahead Log File). In other words HammerDB will give you the same
+      results each time, if your results vary you need to focus entirely on your
+      database, OS and hardware configuration.</para>
 
       <para/>
 
@@ -1039,14 +1033,9 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
     <section>
       <title>Generating Performance Profiles</title>
 
-      <para>For an official audited TPC-C benchmark the result of the tests is
-      detailed as tpmC which represents the number of New Orders processed.
-      This measurement is published as a single data point representing peak
-      performance. A particular advantage of HammerDB is is the ability to
-      generate a performance profile as the load increases on your system (see
-      the Autopilot feature for doing this in an unattended manner). Therefore
-      whereas an official TPC-C benchmark gives you a single data-point and a
-      typical single-threaded test, consider the graph shown.</para>
+      <para>A particular advantage of HammerDB is is the ability to generate a
+      performance profile as the load increases on your system (see the Autopilot
+      feature for doing this in an unattended manner).</para>
 
       <figure>
         <title>Performance Profile</title>
@@ -1110,11 +1099,6 @@ Vuser 2:|neword|MIN-410|P50%-678|P95%-1314|P99%-4370|MAX-32030|SAMPLES-4084
 Vuser 2:|payment|MIN-331|P50%-583|P95%-1271|P99%-3152|MAX-43996|SAMPLES-4142
 Vuser 2:|delivery|MIN-1177|P50%-2132|P95%-3346|P99%-4040|MAX-8492|SAMPLES-416
 Vuser 2:|slev|MIN-684|P50%-880|P95%-1375|P99%-1950|MAX-230733|SAMPLES-364
-Vuser 2:|ostat|MIN-266|P50%-688.5|P95%-1292|P99%-1827|MAX-9790|SAMPLES-427
-Vuser 2:|gettimestamp|MIN-3|P50%-4|P95%-7|P99%-14|MAX-22|SAMPLES-8639
-Vuser 2:+-----------------+--------------+------+--------+--------------+--------------+
-Vuser 2:|PERCENTILES 2019-07-05 09:59:36 to 2019-07-05 09:59:46
-Vuser 2:|neword|MIN-404|P50%-702|P95%-1296|P99%-4318|MAX-71663|SAMPLES-3804
 Vuser 2:|payment|MIN-331|P50%-597|P95%-1250|P99%-4190|MAX-47539|SAMPLES-3879
 Vuser 2:|delivery|MIN-1306|P50%-2131|P95%-4013|P99%-8742|MAX-25095|SAMPLES-398
 Vuser 2:|slev|MIN-713|P50%-913|P95%-1438|P99%-2043|MAX-7434|SAMPLES-386
@@ -5976,7 +5960,7 @@ JSON format
   </chapter>
 
   <chapter>
-    <title>Introduction to Analytic Testing (TPC-H) and Cloud Queries</title>
+    <title>Introduction to Analytic Testing (OSS-TPC-H) and Cloud Queries</title>
 
     <para>Analytic workloads can also be interchangeably described as Decision
     Support, Data Warehousing or Business Intelligence, the basis of these
@@ -5985,7 +5969,7 @@ JSON format
     reading as opposed to modifying data and therefore requires a distinct
     approach. The ability of a database to process transactions gives limited
     information towards the ability of a database to support query based
-    workloads and vice-versa, therefore both TPC-C and TPC-H based workloads
+    workloads and vice-versa, therefore both OSS-TPC-C and OSS-TPC-H workloads
     complement each other in investigating the capabilities of a particular
     database. When reading large volumes of data to satisfy query workloads it
     should be apparent that if multiple CPU cores are available reading with a
@@ -6012,39 +5996,32 @@ JSON format
     supports single-threaded workloads only.</para>
 
     <section>
-      <title>What is TPC-H?</title>
+      <title>What is OSS-TPC-H?</title>
 
-      <para>To complement the usage of the TPC-C specification for OLTP
-      workloads HammerDB also uses the relevant TPC specification for Analytic
-      Systems called TPC-H. Just as with the TPC-C specification the “TPC
-      benchmarks are industry standards. The TPC, at no charge, distributes
-      its benchmark specifications to the public.”Therefore HammerDB includes
-      an implementation of the specification of the TPC-H benchmark that can
-      be run in any supported database environment. As with the load tests
-      based upon TPC-C it is important to note that the implementation is not
-      a full specification TPC-H benchmark and the query results cannot be
-      compared with the official published benchmarks in any way. Instead the
-      same approach has been taken to enable you to run an accurate and
-      repeatable query based workload against your own database. TPC-H in
-      simple terms can be thought of as complementing the workload implemented
-      in TPC-C related to the activities of a wholesale supplier. However
-      whereas TPC-C simulates an online ordering system TPC-H represents the
-      typical workload of business users inquiring about the performance of
-      their business. To do this TPC-H is represented by a set of business
-      focused ad-hoc queries (in addition to concurrent data updates and
-      deletes) and is measured upon the time it takes to complete these
-      queries. In particular the focus is upon highly complex queries that
-      require the processing of large volumes of data. Also in similarity to
-      TPC-C the schema size is not fixed and is dependent upon a Scale Factor
-      and there your schema your test schema can also be as small or large as
-      you wish with a larger schema requiring a more powerful computer system
-      to process the increased data volume for queries. However in contrast to
-      TPC-C it is not valid to compare the test results of query load tests
-      taken at different Scale Factors shown as SF in the Schema
-      diagram.</para>
+      <para>To complement the OLTP type OSS-TPC-C workload HammerDB also contains
+      a Fair Use derivation of the decision support based TPC-H Benchmark Standard.
+      The HammerDB OSS-TPC-H workload is an open source workload derived from the
+      TPC-H Benchmark Standard and as such is not comparable to published TPC-H 
+      results, as the results do not comply with the TPC-H Benchmark Standard.</para> 
+
+      <para>OSS-TPC-H in simple terms can be thought of as complementing the workload
+      implemented in OSS-TPC-C related to the activities of a wholesale supplier.
+      However, whereas OSS-TPC-C simulates an online ordering system OSS-TPC-H
+      represents the typical workload of a retailer running analytical queries
+      about their operations. To do this OSS-TPC-H is represented by a set of 
+      business focused ad-hoc queries (in addition to concurrent data updates
+      and deletes) and is measured upon the time it takes to complete these queries.
+      In particular the focus is upon highly complex queries that require the
+      processing of large volumes of data. Also in similarity to OSS-TPC-C the
+      schema size is not fixed and is dependent upon a Scale Factor and there
+      your schema your test schema can also be as small or large as you wish with
+      a larger schema requiring a more powerful computer system to process the
+      increased data volume for queries. However, in contrast to OSS-TPC-C it is 
+      not valid to compare the test results of query load tests taken at different
+      Scale Factors shown as SF in the Schema diagram.</para>
 
       <figure>
-        <title>TPC-H Schema.</title>
+        <title>OSS-TPC-H Schema.</title>
 
         <mediaobject>
           <imageobject>
@@ -6212,24 +6189,24 @@ order by
       set. HammerDB provides full capabilities to run this refresh set both
       automatically as part of a Power test and concurrently with a Throughput
       test. Note however that once a refresh set is run the schema is required
-      to be refreshed and it is prudent to backup and restore a HammerDB TPC-H
+      to be refreshed and it is prudent to backup and restore a HammerDB OSS-TPC-H
       based schema where running a refresh set is planned.</para>
     </section>
 
     <section>
-      <title>Choosing a Database for running TPC-H workloads</title>
+      <title>Choosing a Database for running OSS-TPC-H workloads</title>
 
       <para>TPC-H workloads run complex queries scanning large volumes of data
       and therefore require the use of database features such as parallel
       query and in-memory column stores to maximise performance. With the
-      available HammerDB TPC-H based workloads the three databases that
+      available HammerDB OSS-TPC-H based workloads the three databases that
       support these features are the Enterprise Editions of Oracle, SQL Server
       and Db2 and therefore these databases will deliver the best experience
-      for building and running TPC-H. Over time there has been improvement
+      for building and running OSS-TPC-H. Over time there has been improvement
       with open-source and open-source derived databases in the ability to run
-      TPC-H workloads. For example PostgreSQL supports Parallel Query and the
+      OSS-TPC-H workloads. For example PostgreSQL supports Parallel Query and the
       PostgreSQL derived versions of Amazon Redshift and Greenplum offer
-      further accelerated query solutions.MySQL does not support an analytic
+      further accelerated query solutions. MySQL does not support an analytic
       storage engine however the MariaDB column store storage is best suited
       for running analytic tests against MySQL. Nevertheless it is known that
       with some or all of the open source solutions a number of queries either
@@ -6241,10 +6218,10 @@ order by
       <section>
         <title>Oracle</title>
 
-        <para>The Oracle database is fully featured for running TPC-H based
+        <para>The Oracle database is fully featured for running OSS-TPC-H based
         workloads and presents two options for configuring the database either
         row oriented parallel query or the In-Memory Column Store (IM column
-        store). Both of these configurations are able to run a full TPC-H
+        store). Both of these configurations are able to run a full OSS-TPC-H
         workload and are configured on the database as opposed to configuring
         with HammerDB.</para>
       </section>
@@ -6252,7 +6229,7 @@ order by
       <section>
         <title>Microsoft SQL Server</title>
 
-        <para>SQL Server is able to support a full TPC-H workload and offers
+        <para>SQL Server is able to support a full OSS-TPC-H workload and offers
         row oriented parallel query as well as in-memory column store
         configured. The clustered columnstore build is selected through the
         HammerDB Build Options.</para>
@@ -6271,7 +6248,7 @@ order by
       <section>
         <title>Db2</title>
 
-        <para>Db2 can support a full TPCH workload through row oriented
+        <para>Db2 can support a full OSS-TPCH workload through row oriented
         parallel query and Db2 BLU in-memory column store. The column store is
         selected through the Db2 Organize by options.</para>
 
@@ -6322,7 +6299,7 @@ order by
         selected with the Data Warehouse Storage Engine Option.</para>
 
         <figure>
-          <title>MySQL MariaDB TPC-H</title>
+          <title>MySQL MariaDB OSS-TPC-H</title>
 
           <mediaobject>
             <imageobject>
@@ -6336,54 +6313,41 @@ order by
         <title>Redis</title>
 
         <para>Redis does not support analytic workloads and therefore HammerDB
-        does not have a TPC-H workload for Redis.</para>
+        does not have a OSS-TPC-H workload for Redis.</para>
       </section>
     </section>
 
     <section>
       <title>Benchmarking Database Cloud Services</title>
 
-      <para>In addition to the TPC-H workload for Oracle, PostgreSQL and MySQL
-      there are also a set of Cloud Analytic Queries made publicly available
-      by Oracle for comparison of Cloud Analytic services. These queries run
-      against a TPC-H schema and are included with HammerDB for running
-      against Oracle, Amazon Aurora and Amazon Redshift with Amazon Aurora and
-      Redshift being based upon and compatible with MySQL and PostgreSQL
-      respectively. Note however that in similarity to MySQL Amazon does not
-      have the features to support analytics such as parallel query or a
-      column store option and therefore running the analytic tests against
-      Aurora although possible is not likely to generate the best results.
-      Amazon Redshift however is a column oriented database based on
-      PostgreSQL and suitable for running analytic workloads.</para>
+      <para>In addition to the OS-TPC-H workload there are also a set of Cloud
+      Analytic Queries made publicly available by Oracle for comparison of
+      Cloud Analytic services. These queries run against a derived TPC-H
+      schema and are included with HammerDB for running against Oracle, 
+      Amazon Aurora and Amazon Redshift with Amazon Aurora and Redshift
+      being based upon and compatible with MySQL and PostgreSQL respectively.
+      Note however that in similarity to MySQL Amazon does not have the
+      features to support analytics such as parallel query or a column
+      store option and therefore running the analytic tests against Aurora
+      although possible is not likely to generate the best results. Amazon
+      Redshift however is a column oriented database based on PostgreSQL
+      and suitable for running analytic workloads.</para>
 
-      <para>For the Cloud Analytic workload the database is created and loaded
-      according to the TPC-H specification – HammerDB by default can create
-      and load schemas of scale factor 1, 10, 30, 100, 300 and 1000 which
-      corresponds to 1GB, 10GB, 30GB, 100GB, 300GB and 1TB respectively.
-      HammerDB will create the schema and load the data. The time this takes
-      is dependent on multiple factors – in particular storage performance is
-      a key factor for inserting a large number of rows into the database as
-      each insert requires redo logging and there is the potential for
-      contention as the number of virtual users increases all inserting rows
-      into the same table at the same time. For this reason especially as the
-      Oracle specification requires a schema size of 10TB, it is recommended
-      to create the schema with HammerDB using the Generating and Bulk Loading
-      Data feature and this guide details how to do this for both Oracle and
-      Redshift and this is particularly recommended when uploading data to the
-      cloud.</para>
+      <para>For the Cloud Analytic workload the Oracle specification requires
+      a schema size of 10TB, it is recommended to create the schema with
+      HammerDB using the Generating and Bulk Loading Data feature and this
+      guide details how to do this for both Oracle and Redshift and this
+      is particularly recommended when uploading data to the cloud.</para> 
 
-      <para>You are permitted to run both the in-built TPC-H query workload
-      and the Oracle provided query set against any size schema however the
-      Oracle workload provides 13 new analytic queries – that is run in
-      sequence as per the original power test of TPC-H. This new query set
-      compatible with Oracle, Redshift/PostgreSQL and MySQL/Aurora is enabled
-      under the TPC-H Driver Script Options dialog by selecting the Cloud
-      Analytic Queries checkbox. This query set reports the geometric mean of
-      the completed queries that returns rows for circumstances where the
-      query set is run on a scale factor size of less than 10TB. Given the
-      similarity of the Oracle implementation to the existing TPC-H workload
-      the following example illustrates running the workload against Amazon
-      Redshift.</para>
+      <para>You are permitted to run both the in-built OSS-TPC-H queries and
+      the Cloud Analytic Queries against the same database. This new query
+      set is enabled under the OSS-TPC-H Driver Script Options dialog by
+      selecting the Cloud Analytic Queries checkbox. This query set reports
+      the geometric mean of the completed queries that returns rows for
+      circumstances where the query set is run on a scale factor size of
+      less than 10TB. Given the similarity of the Oracle implementation to
+      the existing OSS-TPC-H workload the following example illustrates
+      running the workload against Amazon Redshift.</para>
 
       <section>
         <title>Redshift Cloud Analytic Workload</title>
@@ -6415,8 +6379,8 @@ order by
           </mediaobject>
         </figure>
 
-        <para>Create the TPC-H schema within Redshift using the HammerDB
-        Generating and Bulk Loading Data feature. Under PostgreSQL TPC-H
+        <para>Create the OSS-TPC-H schema within Redshift using the HammerDB
+        Generating and Bulk Loading Data feature. Under PostgreSQL OSS-TPC-H
         Driver Options use the Redshift Endpoint as your PostgreSQL host and
         5439 as your port. Set the user and password to the credentials you
         have set under the Amazon AWS console. To run the Cloud Analytic
@@ -6469,7 +6433,7 @@ order by
       parallel performance to drive the workload. When using in-memory column
       store features processors that support SIMD/AVX instructions sets are
       also required for the vectorisation of column scans. HammerDB by default
-      provides TPC-H schemas at Scale Factors 1,10,30,100,300 and 1000 (larger
+      provides OSS-TPC-H schemas at Scale Factors 1,10,30,100,300 and 1000 (larger
       can be configured if required). The Scale Factors correspond to the
       schema size in Gigabytes. As with the official TPC-H tests the results
       at one schema size should not be compared with the results derived with
@@ -6630,7 +6594,7 @@ SQL1063N  DB2START processing was successful.
 </programlisting>
 
         <para>In your db2cli.ini set the following parameter for each of the
-        databases that you plan to create to test the TPC-H workload, this
+        databases that you plan to create to test the OSS-TPC-H workload, this
         will prevent failure due to SQLSTATE 01003 “Null values were
         eliminated from the argument of a column function” when running the
         workload thereby preventing the query set from completing.</para>
@@ -6643,7 +6607,7 @@ IgnoreWarnList="'01003'"
 </programlisting>
 
         <para>When your database server is installed you should create a
-        database into which the test data will be installed, for TPC-H
+        database into which the test data will be installed, for OSS-TPC-H
         workloads a large pagesize is recommended.</para>
 
         <programlisting>[db2inst1 ~]$ db2 create database tpch pagesize 32 k
@@ -6695,8 +6659,8 @@ infinidb_import_for_batchinsert_delimiter=7
     <section>
       <title>Configuring Schema Build Options</title>
 
-      <para>To create the analytic test schema based on the TPC-H
-      specification you will need to select which benchmark and database you
+      <para>To create the analytic test schema based on OSS-TPC-H
+      you will need to select which benchmark and database you
       wish to use by choosing select benchmark from under the Options menu or
       under the benchmark tree-view. The initial settings are determined by
       the values in your XML configuration files. The following example shows
@@ -6713,12 +6677,12 @@ infinidb_import_for_batchinsert_delimiter=7
           </mediaobject>
         </figure></para>
 
-      <para>To create the TPC-H schema select the TPC-H schema options menu
+      <para>To create the OSS-TPC-H schema select the OSS-TPC-H schema options menu
       tab from the benchmark tree-view or the options menu. This menu will
       change dynamically according to your chosen database.</para>
 
       <para><figure>
-          <title>TPC-H Schema Build Options</title>
+          <title>OSS-TPC-H Schema Build Options</title>
 
           <mediaobject>
             <imageobject>
@@ -6743,7 +6707,7 @@ infinidb_import_for_batchinsert_delimiter=7
         <title>Oracle Schema Build Options</title>
 
         <figure>
-          <title>Oracle TPC-H Build Options</title>
+          <title>Oracle OSS-TPC-H Build Options</title>
 
           <mediaobject>
             <imageobject>
@@ -6793,11 +6757,11 @@ infinidb_import_for_batchinsert_delimiter=7
                   <entry>TPC-H User</entry>
 
                   <entry>The TPC-H user is the name of a user to be created
-                  that will own the TPC-H schema. This user can have any name
+                  that will own the OSS-TPC-H schema. This user can have any name
                   you choose but must not already exist and adhere to the
                   standard rules for naming Oracle users. You may if you wish
                   run the schema creation multiple times and have multiple
-                  TPC-H schemas created with ownership under a different user
+                  OSS-TPC-H schemas created with ownership under a different user
                   you create each time.</entry>
                 </row>
 
@@ -7177,7 +7141,7 @@ infinidb_import_for_batchinsert_delimiter=7
 
                   <entry>The MySQL user password is the password for the user
                   defined as the MySQL User. You will need to remember the
-                  MySQL user name and password for running the TPC-H driver
+                  MySQL user name and password for running the OSS-TPC-H driver
                   script after the database is built.</entry>
                 </row>
 
@@ -7185,7 +7149,7 @@ infinidb_import_for_batchinsert_delimiter=7
                   <entry>MySQL Database</entry>
 
                   <entry>The MySQL Database is the database that will be
-                  created containing the TPC-H schema creation. There must
+                  created containing the OSS-TPC-H schema creation. There must
                   have sufficient free space for the database to be
                   created.</entry>
                 </row>
@@ -7315,7 +7279,7 @@ infinidb_import_for_batchinsert_delimiter=7
 
                   <entry>The PostgreSQL Database is the database that will be
                   created and owned by the PostgreSQL User that contains the
-                  TPC-H schema.</entry>
+                  OSS-TPC-H schema.</entry>
                 </row>
 
                 <row>
@@ -7371,7 +7335,7 @@ infinidb_import_for_batchinsert_delimiter=7
       tree-view.</para>
 
       <figure>
-        <title>Build TPC-H Schema</title>
+        <title>Build OSS-TPC-H Schema</title>
 
         <mediaobject>
           <imageobject>
@@ -7989,7 +7953,7 @@ SET
       Options.</para>
 
       <figure>
-        <title>TPC-H Driver Options</title>
+        <title>OSS-TPC-H Driver Options</title>
 
         <mediaobject>
           <imageobject>
@@ -8230,7 +8194,7 @@ SET
 
                 <entry>Repeat Delay(ms) is the time that each Virtual User
                 will wait before running its next Iteration of the Driver
-                Script. For TPC-H this is an external loop before running
+                Script. For OSS-TPC-H this is an external loop before running
                 another query set, however should not be more than 1 when the
                 refresh function is enabled.</entry>
               </row>
@@ -8246,7 +8210,7 @@ SET
                 <entry>Show Output</entry>
 
                 <entry>Show Output will report Virtual User Output to the
-                Virtual User Output Window, For TPC-H tests this should be
+                Virtual User Output Window, For OSS-TPC-H tests this should be
                 enabled.</entry>
               </row>
 
@@ -8409,8 +8373,7 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
       <para>Many test environments are sufficient with running single Virtual
       User tests. With available parallel and column store configurations this
       test is sufficient to stress an entire system. Nevertheless a component
-      of the TPC-H test is the refresh function and to adhere as closely as
-      possible to a TPC-H test the refresh function should be run either side
+      of the OSS-TPC-H test is the refresh function should be run either side
       of the Power Test. To enable this functionality HammerDB has a special
       power test mode, whereby if refresh_on is set to true as shown and only
       one virtual user is configured then HammerDB will run a Power Test. Note
@@ -8435,7 +8398,7 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
       for your schema.</para>
 
       <figure>
-        <title>TPC-H refresh on</title>
+        <title>OSS-TPC-H refresh on</title>
 
         <mediaobject>
           <imageobject>
@@ -8620,7 +8583,7 @@ Cannot insert duplicate key in object 'dbo.orders'. The duplicate key value is (
     <section>
       <title>Calculate the Geometric Mean</title>
 
-      <para>For comparison of HammerDB TPC-H workloads between systems it is
+      <para>For comparison of HammerDB OSS-TPC-H workloads between systems it is
       recommended to use the geometric mean of the query times. This can be a
       straightforward comparison between power tests. When comparing
       throughput tests it is recommended to compare the geomean of the slowest
@@ -9121,7 +9084,7 @@ Vuser 2:Generating Stock Wid=1
 
       <para>Generating a template database is exceptionally straightforward.
       From the HammerDB documentation follow the steps for Build a Schema and
-      create the smallest size database such as Scale Factor 1 for TPC-H. This
+      create the smallest size database such as Scale Factor 1 for OSS-TPC-H. This
       database can then be used as a template to capture the DDL. Note that if
       you stop the database creation after the tables are created but before
       all of the data is loaded objects such as indexes will not have been
