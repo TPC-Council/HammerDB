@@ -1,11 +1,13 @@
-proc LCD_Pixels { canv_x canv_y onrim onfill offrim offfill } {
+proc LCD_Pixels { canv_x canv_y onrim onfill offrim offfill win_scale_fact } {
 global varStdFont_8 varStdFont_16
 foreach var {varColours varLCDSize varPixelSize varPixelSpace varFonts} { upvar #0 $var $var }
- set varPixelSize [list 5 6 5 0 0 0 0 6]
+set polydim1 [ expr {round((5 / 1.333333) * $win_scale_fact)} ]
+set polydim2 [ expr {round((6 / 1.333333) * $win_scale_fact)} ]
+set polyspace [ expr {round((2 / 1.333333) * $win_scale_fact)} ]
+ set varPixelSize [list $polydim1 $polydim2 $polydim1 0 0 0 0 $polydim2]
  #The space between pixels
- set varPixelSpace 2
+ set varPixelSpace $polyspace
  #The number of pixels in Row, Column
- #set varLCDSize [list 32 122]
  set varLCDSize [list $canv_x $canv_y]
  #LCD colours
  set varColours [list $onrim $onfill $offrim $offfill ]
@@ -839,17 +841,27 @@ ed_stop_transcount
 .ed_mainFrame.notebook tab .ed_mainFrame.tc  -state normal
 .ed_mainFrame.notebook select .ed_mainFrame.tc 
 set old 0
+global win_scale_fact
+set scale_width [ expr {(525 / 1.333333) * $win_scale_fact} ]
+set tcc_height [ expr {(60 / 1.333333) * $win_scale_fact} ]
+set tcg_height [ expr {(250 / 1.333333) * $win_scale_fact} ]
+set emug_height [ expr {(150 / 1.333333) * $win_scale_fact} ]
+set axistextoffset [ expr {(20 / 1.333333) *  $win_scale_fact * 0.50} ]
+set ticklen [ expr {(10 / 1.333333) *  $win_scale_fact * 0.60} ]
+set xref [ expr {(75 / 1.333333) *  $win_scale_fact * 0.90} ]
 #canvas for black on white numbers
-pack [ canvas .ed_mainFrame.tc.c -width 525 -height 60 -background white -highlightthickness 0 ] -fill both -expand 1 -side top
+pack [ canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -fill both -expand 1 -side top
 #Emu graph canvas
-pack [ canvas .ed_mainFrame.tc.g -width 525 -height 250 -background white -highlightthickness 0 ] -fill both -expand 1 -side left
-set graph [image create photo -data [ dict get $icons graph ] -gamma 1 -palette 5/5/4]
-.ed_mainFrame.tc.g create image 300 100 -image $graph
+pack [ canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left
+set graph [ create_image graph icons ]
+#.ed_mainFrame.tc.g create image 300 100 -image $graph
+.ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.75} ] [ expr {[ winfo reqwidth .ed_mainFrame.tc.g ]/6} ] -image $graph -anchor center
 set tcdata {}
 set timedata {}
 #Set Up LCD Pixels for Canvas size X pixels by Y Pixels Pixel On Rim Colour, Pixel On Fill Colour, Pixel Off Rim Colour, Pixel Off Fill Colour
 #Black & White
-LCD_Pixels 7 87 #626262 black white white
+#7 x 87 is the number of pixels we create 7 in height and 87 in length. This remains fixed as we scale up pixel size.
+LCD_Pixels 7 87 #626262 black white white $win_scale_fact
     #Add same padding
      set varLCDx 3
      set varLCDy 3
@@ -879,8 +891,10 @@ LCD_Pixels 7 87 #626262 black white white
      incr varLCDx 3
 showLCD 0
 
-emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width 525 -height 150 \
--axistextoffset 10 -autorange 1 -ticklen 5 -xref 75
+#emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width $scale_width -height $emug_height \
+#-axistextoffset 10 -autorange 1 -ticklen 5 -xref 75
+emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width $scale_width -height $emug_height \
+-axistextoffset $axistextoffset -autorange 1 -ticklen $ticklen -xref $xref
 
 #Call Database specific transaction counter
 upvar #0 dbdict dbdict
@@ -926,7 +940,7 @@ tsv::unset application thecount
 
 proc show_tc_errmsg {} {
 upvar #0 icons icons
-set ban [image create photo -data [ dict get $icons ban ] -gamma 1 -palette 5/5/4]
+set ban [ create_image ban icons ]
 set tc_errmsg [ tsv::get application tc_errmsg ]
 if { $tc_errmsg != "" } {
 puts "Transaction Counter Error:$tc_errmsg"
@@ -935,7 +949,7 @@ LCD_Display "               " 0 0 0
 LCD_Display "   TX ERROR   " 0 0 0
 #attempt to delete canvas
 catch { .ed_mainFrame.tc.g delete "all" }
-.ed_mainFrame.tc.g create image 300 100 -image $ban
+.ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.75} ] [ expr {[ winfo reqwidth .ed_mainFrame.tc.g ]/6} ] -image $ban -anchor center
 #error message is always followed by thread release before loop enter
 #so remove tc_threadID to prevent false positive on startup
 post_kill_transcount_cleanup

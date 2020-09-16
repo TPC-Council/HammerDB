@@ -306,6 +306,8 @@ set trdwin ".ed_mainFrame.tw"
 .ed_mainFrame.notebook select $trdwin
 set textColor black
 set fillColor white
+upvar #0 icons icons
+set outlineColor [ dict get $icons defaultBackground ] 
 set usercount $maxvuser
 set countuser 0
 if { $usercount <= 9 } {
@@ -327,12 +329,17 @@ set y [ expr {round(ceil($uscsq))} ]
         	}
 	}
 }
-set xval [ expr {($x * 100)*2}]
-set yval [ expr {($y * 100)*2}]
-set scrxarea [ expr {$xval + 100}]
-set scryarea [ expr {$yval + 100}]
+global win_scale_fact
+set rect_sz_fact [ expr {round((100/1.333333)*$win_scale_fact)} ]
+set dbl_sz_fact [ expr {$rect_sz_fact*2} ]
+set xval [ expr {($x * $rect_sz_fact)*2}]
+set yval [ expr {($y * $rect_sz_fact)*2}]
+set scrxarea [ expr {$xval + $rect_sz_fact}]
+set scryarea [ expr {$yval + $rect_sz_fact}]
+set hdb_buff [ expr {$rect_sz_fact/10} ]
+set txt_buff [ expr {$rect_sz_fact/5} ]
 set cnv [ canvas $trdwin.cv -background white -highlightthickness 0 -scrollregion \
-        "100 100 $scrxarea $scryarea" -yscrollcommand \
+        "$rect_sz_fact $rect_sz_fact $scrxarea $scryarea" -yscrollcommand \
         "$trdwin.cv.cv2.scrollY set" -xscrollcommand "$trdwin.cv.scrollX set" \
         -xscrollincrement 50 -yscrollincrement 25 ]
 pack $cnv -fill both -expand 1
@@ -346,23 +353,32 @@ set scr1 [ ttk::scrollbar $trdwin.cv.cv2.scrollY -orient vertical -command "$cnv
 set scr2 [ ttk::scrollbar $trdwin.cv.scrollX -orient horizontal -command "$cnv xview" ]
 pack $scr1 -expand 1 -fill y -ipadx 0 -ipady 0 -padx 0 -pady "0 15" -side right
 pack $scr2 -anchor s -expand 0 -fill x -ipadx 0 -ipady 0 -padx 0 -pady 0 -side bottom
-
-for {set y 100} {$y <= $yval} {incr y 200} {
-    set bottom [expr $y + 200]
-    for {set x 100} {$x <= $xval} {incr x 200} {
-        set right [expr $x+200]
-        $cnv create rectangle  $x $y $right $bottom \
-                -fill $fillColor -outline white
+for {set y $rect_sz_fact} {$y <= $yval} {incr y $dbl_sz_fact} {
+    set bottom [expr $y + $dbl_sz_fact]
+    for {set x $rect_sz_fact} {$x <= $xval} {incr x $dbl_sz_fact} {
+        set right [expr $x+$dbl_sz_fact]
+$cnv create rectangle  $x $y $right $bottom \
+                -fill $fillColor -outline $outlineColor
 if { $countuser < $usercount } {
 	set vuid $threadscreated($countuser)
 	if { $virtual_users eq [ expr $maxvuser - 1 ]  && $countuser eq 0} { set MON "-MONITOR" } else { set MON "" }
+	if { $ttk::currentTheme in {clearlooks arc breeze awlight}} {
+        $cnv create text [expr $x+$rect_sz_fact] [expr $y+$hdb_buff] \
+        -text "Virtual User [expr $countuser + 1]$MON" -font \
+         [ list basic [ expr [ font actual basic -size ] - 1 ] ] -fill $textColor
+        set tids($vuid) [ $cnv create text [expr $x+$rect_sz_fact] [expr $y+$txt_buff] \
+	-width $dbl_sz_fact -text "" -font \
+                [ list basic [ expr [ font actual basic -size ] - 2 ] ] -fill $textColor -anchor n -justify left ] 
+		incr countuser
+	} else {
         $cnv create text [expr $x+100] [expr $y+10] \
         -text "Virtual User [expr $countuser + 1]$MON" -font \
         [list TkDefaultFont 9] -fill $textColor
         set tids($vuid) [ $cnv create text [expr $x+100] [expr $y+20] \
-	-width 180 -text "" -font \
+	-width $rect_sz_fact -text "" -font \
                 [list TkDefaultFont 7 ] -fill $textColor -anchor n -justify left ] 
 		incr countuser
+				}
 			}
     		}
 	}

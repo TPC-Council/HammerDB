@@ -32,6 +32,7 @@ if { [ info exists afval ] } {
 }
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {Oracle TX Counter Options}
 
@@ -42,7 +43,7 @@ if { [ info exists afval ] } {
    pack $Name -anchor nw -fill x -side top -padx 5
 
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -143,6 +144,7 @@ set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_pass
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
 "all" { wm title .tpc {Oracle TPC-C Schema Options} }
@@ -155,14 +157,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5  
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -341,7 +343,7 @@ grid $Name -column 1 -row 13 -sticky ew
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 16 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -565,6 +567,7 @@ variable orafields
 set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e1a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
    catch "destroy .tpch"
    ttk::toplevel .tpch
+   wm transient .tpch .ed_mainFrame
    wm withdraw .tpch
 	switch $option {
 	"all" { wm title .tpch {Oracle TPC-H Schema Options} }
@@ -577,14 +580,14 @@ set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {
    pack $Name -anchor nw -fill x -side top -padx 5
    if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -705,7 +708,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 12 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -840,6 +843,7 @@ set old_agent $agent_hostname
 set old_id $agent_id
    catch "destroy .metric"
    ttk::toplevel .metric
+   wm transient .metric .ed_mainFrame
    wm withdraw .metric
    wm title .metric {Oracle Metrics Options}
    set Parent .metric
@@ -847,7 +851,7 @@ set old_id $agent_id
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons dashboard ]]
+ttk::label $Prompt -image [ create_image dashboard icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 
 set Prompt $Parent.f1.h2

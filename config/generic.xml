@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <hammerdb>
+   <theme>
+         <scaling>auto</scaling>
+	 <scaletheme>auto</scaletheme>
+	 <pixelsperpoint>auto</pixelsperpoint>
+   </theme>
    <code_highlight>
 	<highlight>true</highlight>
    </code_highlight>

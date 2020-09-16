@@ -12,13 +12,9 @@ global firstconnect
 set firstconnect "true"
 
 proc create_metrics_screen { } {
-global public metframe
+global public metframe win_scale_fact
 upvar #0 env e
 set metframe .ed_mainFrame.me
-catch {font create smallfont -family TkDefaultFont -size -8}
-catch {option add *font smallfont}
-catch {font create mydefaultfont -family TkDefaultFont -size 10}
-catch {option add *font mydefaultfont}
 if {  [ info exists hostname ] } { ; } else { set hostname "localhost" }
 if {  [ info exists id ] } { ; } else { set id 0 }
 ed_stop_metrics
@@ -27,8 +23,8 @@ ed_stop_metrics
    set main $public(main)
    set menu_frame $main.menu
    set public(menu_frame) $menu_frame
-   set public(p_x) 600
-   set public(p_y) 654
+   set public(p_x) [ expr {round((600/1.333333)*$win_scale_fact)} ]
+   set public(p_y) [ expr {round((654/1.333333)*$win_scale_fact)} ]
 if { ![winfo exists .ed_mainFrame.me.m] } {
   frame $main -background  $public(bg) -borderwidth 0 
   frame $main.f -background  $public(bg) -borderwidth 0 ;# frame, use frame to put tiled windows
@@ -223,7 +219,6 @@ global public
    set public(ash,graph_frame) $graph_frame
    #$ash_frame add .topdetails 
    $ash_frame add .ed_mainFrame.me.m.f.a.topdetails
-
    # Row 2 - container tabs and three column aggregates
    #set hold_details .hold_details
    set hold_details .ed_mainFrame.me.m.f.a.topdetails.hold_details
@@ -286,10 +281,10 @@ global public
    sqlbuttons_setup 
    waitbuttons_setup 
 
-    pack $tops_frame -side top -expand no -fill none -anchor nw
-    pack $sql_frame -in $tops_frame -side top -expand no -fill none -anchor nw
-    pack $evt_frame -in $tops_frame -side top -expand no -fill none -anchor nw
-    pack $ses_frame -in $tops_frame -side top -expand no -fill none -anchor nw
+    pack $tops_frame -side top -expand no -fill none -anchor nw 
+    pack $sql_frame -in $tops_frame -side top -expand no -fill none -anchor nw 
+    pack $evt_frame -in $tops_frame -side top -expand no -fill none -anchor nw 
+    pack $ses_frame -in $tops_frame -side top -expand no -fill none -anchor nw 
 
    # Session 
    ses_tbl  $public(ash,ses_frame) 60 10  " user_name %Active Activity SID  $public(ash,groups) "
@@ -369,8 +364,10 @@ global public
              set collist  "$collist  0 $col left "
              }
      tablelist::tablelist $tbl \
+         -background white \
          -columns " $collist " \
-         -font "TkDefaultFont -10" -setgrid no \
+	 -labelrelief flat \
+         -font $public(medfont) -setgrid no \
          -yscrollcommand [list $vsb set] \
          -width $ncols  -height $nrows -stretch all
      bind [$tbl bodytag] <Button-1> {
@@ -426,8 +423,10 @@ global public
              set collist  "$collist  0 $col left "
              }
      tablelist::tablelist $tbl \
+         -background white \
          -columns " $collist " \
-         -font "TkDefaultFont -10" -setgrid no \
+	 -labelrelief flat \
+         -font $public(medfont) -setgrid no \
          -yscrollcommand [list $vsb set] \
          -width $ncols -height $nrows -stretch all
      set public(sqltbl,cell)  0,0 
@@ -505,8 +504,10 @@ global public
              set collist  "$collist  0 $col left "
              }
      tablelist::tablelist $tbl \
+         -background white \
          -columns " $collist " \
-         -font "TkDefaultFont -10" -setgrid no \
+	 -labelrelief flat \
+         -font $public(medfont) -setgrid no \
          -yscrollcommand [list $vsb set] \
          -xscrollcommand [list $hsb set] \
          -width $ncols  -height $nrows -stretch all
@@ -540,8 +541,10 @@ global public
              set collist  "$collist  0 $col left "
              }
      tablelist::tablelist $tbl \
+         -background white \
          -columns " $collist " \
-         -font "TkDefaultFont -10" -setgrid no \
+	 -labelrelief flat \
+         -font $public(medfont) -setgrid no \
          -yscrollcommand [list $vsb set] \
          -xscrollcommand [list $hsb set] \
          -width $ncols  -height $nrows -stretch all
@@ -573,8 +576,10 @@ global public
              set collist  "$collist  0 $col left "
              }
      tablelist::tablelist $tbl \
+         -background white \
          -columns " $collist " \
-         -font "TkDefaultFont -10" -setgrid no \
+	 -labelrelief flat \
+         -font $public(medfont) -setgrid no \
          -yscrollcommand [list $vsb set] \
          -width $ncols  -height $nrows -stretch all
      bind [$tbl bodytag] <Button-1> {
@@ -635,11 +640,11 @@ proc createSesFrame {tbl row col w } {
     }
     set total [$tbl cellcget $row,activity -text]
     set act [ format "%3.0f" [ expr ceil(100 *  $total  / ($delta)) ] ]
-    label $w.t$row -text $act -font "TkDefaultFont 10"
+    label $w.t$row -text $act -font $public(medfont)
     # cell is 140 wide, the bars should all be under 100
     # put the activity value just above the bar
     set pc [ expr (($total + 0.0)/($delta )) * (100.0/142)     ]
-    place $w.t$row -relheight .7 -relx $pc
+    place $w.t$row -relheight 1.0 -relx $pc
    } err ] } { ; }
 }
 
@@ -661,11 +666,11 @@ proc createSqlFrame {tbl row col w } {
     }
     set total [$tbl cellcget $row,activity -text]
     set aas [ format "%0.0f" [ expr 100 * ($total+0.0) / $public(sqltbl,maxActivity) ] ]
-    label $w.t$row -text $aas -font "TkDefaultFont 10"
+    label $w.t$row -text $aas -font $public(medfont) 
     # cell is 140 wide, the bars should all be under 100
     # put the activity value just above the bar
     set pc [ expr (($total + 0.0)/$public(sqltbl,maxActivity) * (100.0/142) )   ]
-    place $w.t$row -relheight .8 -relx $pc
+    place $w.t$row -relheight 1.0 -relx $pc
    } err ] } { ; }
 }
 
@@ -685,11 +690,11 @@ proc createevtFrame {tbl row col w } {
     place $w.w$i -relheight 1.0
     set i 1
     set width [ format "%3.0f" $width ] 
-    label $w.w$i -text $width -font "TkDefaultFont 10"
+    label $w.w$i -text $width -font $public(medfont)
     # cell is 140 wide, the bars should all be under 100
     # put the activity value just above the bar
     set pc [ expr (($activity + 0.0)/$total * (100.0/142) )   ]
-    place $w.w$i -relheight .7 -relx $pc
+    place $w.w$i -relheight 1.0 -relx $pc
    } err ] } { ; }
 }
 
@@ -1596,7 +1601,8 @@ upvar #0 env e
     text $output.w  -yscrollcommand "$output.scrolly set" \
                   -xscrollcommand "$output.scrollx set" \
                   -width $public(cols) -height 26    \
-                  -wrap word 
+                  -wrap word \
+		  -font {basic}
     ttk::scrollbar $output.scrolly -command "$output.w yview"
     ttk::scrollbar $output.scrollx -command "$output.w xview"  \
                                     -orient horizontal
@@ -3251,11 +3257,8 @@ set public(run)  1
     set public(fga)       yellow
     set public(fgsm)      $public(pale_warmgrey)
     set public(bgsm)      #A0B0D0
-  set public(fixedfont) systemfixed
-  set public(smallfont) {"TkDefaultFont" 7 }
-  set public(lrgfont)   {"TkDefaultFont" 18 bold }
-  set public(bldfont)   {"TkDefaultFont" 12 bold }
-  set public(medfont)   {"TkDefaultFont" 10 }
+  set public(smallfont) [ list basic [ expr [ font actual basic -size ] - 3 ] ]
+  set public(medfont) [ list basic [ expr [ font actual basic -size ] - 2 ] ]
  if {[winfo depth .] > 1} {
      set public(bold) "-background #43ce80 -relief raised -borderwidth 1"
      set public(normal) "-background {} -relief flat"

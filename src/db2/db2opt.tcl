@@ -29,6 +29,7 @@ set tmp_db2_dbase db2_tpch_dbase
         }
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {Db2 TX Counter Options}
    set Parent .countopt
@@ -36,7 +37,7 @@ set tmp_db2_dbase db2_tpch_dbase
    ttk::frame $Name 
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -124,6 +125,7 @@ set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
 "all" { wm title .tpc {Db2 TPC-C Schema Options} }
@@ -136,14 +138,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -243,7 +245,7 @@ if { $db2_partition eq "true" } {
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 11 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -475,6 +477,7 @@ variable db2fields
 set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_dbase {}} tpch {db2_tpch_user {.db2tpch.f1.e1 get} db2_tpch_pass {.db2tpch.f1.e2 get} db2_tpch_dbase {.db2tpch.f1.e3 get} db2_tpch_def_tab {.db2tpch.f1.e4 get} db2_total_querysets {.db2tpch.f1.e9 get} db2_degree_of_parallel {.db2tpch.f1.e12 get} db2_update_sets {.db2tpch.f1.e14 get} db2_trickle_refresh {.db2tpch.f1.e15 get} db2_scale_fact $db2_scale_fact db2_num_tpch_threads $db2_num_tpch_threads db2_tpch_organizeby $db2_tpch_organizeby db2_raise_query_error $db2_raise_query_error db2_verbose $db2_verbose db2_refresh_on $db2_refresh_on db2_refresh_verbose $db2_refresh_verbose} ]
    catch "destroy .db2tpch"
    ttk::toplevel .db2tpch
+   wm transient .db2tpch .ed_mainFrame
    wm withdraw .db2tpch
 switch $option {
 "all" { wm title .db2tpch {Db2 TPC-H Schema Options} }
@@ -487,14 +490,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -584,7 +587,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable db2_num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 8 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"

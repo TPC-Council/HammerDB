@@ -545,6 +545,12 @@ proc plot_data {graph} {
     if {![is_graph $graph]} { 
         error "$graph is not an emu_graph"
     }
+    set x_min $emu_graph($graph,xmin)
+    set x_max $emu_graph($graph,xmax)
+    set y_min $emu_graph($graph,ymin)  
+    set x_min_c [x2canvas $graph $x_min]
+    set x_max_c [x2canvas $graph $x_max]
+    set y_min_c [y2canvas $graph $y_min]
 
     set canvas $emu_graph($graph,canvas)
     foreach tag $emu_graph($graph,gradsets) {
@@ -605,8 +611,9 @@ proc plot_data {graph} {
         }
 	    ## create the line as a single line item
 	    ## add start and end points
+
 	set ribcoords $coords
-	set coords [concat 75 180 $coords 600 180]
+	set coords [concat $x_min_c $y_min_c $coords $x_max_c $y_min_c ]
 	    #grab last 6 points for gradient poly
 	set lastsixcoords [ lrange $coords end-5 end ]
             #complete grad coordinates by adding pair at bottom of line in line with last point

@@ -34,6 +34,7 @@ if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
 
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {PostgreSQL TX Counter Options}
    set Parent .countopt
@@ -41,7 +42,7 @@ if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
    ttk::frame $Name 
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -165,6 +166,7 @@ if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
 	}
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
 "all" { wm title .tpc {PostgreSQL TPC-C Schema Options} }
@@ -177,14 +179,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -304,7 +306,7 @@ grid $Name -column 1 -row 13 -sticky ew
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 14 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -539,6 +541,7 @@ variable pgfields
 set pgfields [ dict create connection {pg_host {.pgtpch.f1.e1 get} pg_port {.pgtpch.f1.e2 get}} tpch {pg_tpch_superuser {.pgtpch.f1.e3 get} pg_tpch_superuserpass {.pgtpch.f1.e4 get} pg_tpch_defaultdbase {.pgtpch.f1.e5 get} pg_tpch_user {.pgtpch.f1.e6 get} pg_tpch_pass {.pgtpch.f1.e7 get} pg_tpch_dbase {.pgtpch.f1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
    catch "destroy .pgtpch"
    ttk::toplevel .pgtpch
+   wm transient .pgtpch .ed_mainFrame
    wm withdraw .pgtpch
 switch $option {
 "all" { wm title .pgtpch {PostgreSQL TPC-H Schema Options} }
@@ -551,14 +554,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -689,7 +692,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable pg_num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 14 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"

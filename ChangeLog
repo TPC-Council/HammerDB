@@ -898,7 +898,7 @@ TPC-Council#75 TPC-H cannot be executed for AWS RDS Oracle
 
 ---------------------------------------------------------------------
 
-Version 4.0 Jul 2020
+Version 4.0 Oct 2020
 
 Updated Binaries to:
 
@@ -928,3 +928,4 @@ Refactor Oracle and Postgres procedural code for performance (#92)
 Added Master/Slave Modes to CLI (#91)
 Added Geomean calculation to TPC-H workloads. (#86)
 Fix distribution of Warehouse across VUs for All Warehouse option. (#82)
+GUI HD Display (#19)
