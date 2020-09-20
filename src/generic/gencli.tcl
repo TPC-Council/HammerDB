@@ -566,6 +566,12 @@ puts "Success ... loaded library $library for $db"
 
 proc dbset { args } {
 global rdbms bm opmode
+set bmprefixincl "false"
+if {[ llength $args ] eq 3 && [ lindex [ split  $args ]  0 ] eq "bm" && [ lindex [ split  $args ]  1 ] eq "HDB" } {
+#Benchmark includes prefix "HDB" remove it for setting the benchmark in the dict but note it was there
+set args [ lreplace $args 1 1 ]
+set bmprefixincl "true"
+}
 if {[ llength $args ] != 2} {
 putscli {Usage: dbset [db|bm] value}
 } else {
@@ -610,7 +616,12 @@ putscli "Unknown benchmark $toup, choose one from $posswkl"
 } else {
 set bm $toup
 remote_command [ concat dbset bm $toup ]
+if { $bmprefixincl } {
+#Benchmark includes prefix "HDB"
+putscli "Benchmark set to HDB $toup for $rdbms"
+	} else {
 putscli "Benchmark set to $toup for $rdbms"
+	}
 	}
       } else {
 putscli "Unknown benchmark $toup, choose one from $posswkl"
@@ -1103,8 +1114,8 @@ set gen_directory $tmp
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "TPC-C"
-ed_status_message -show "TPC-C Driver Script"
+set _ED(packagekeyname) "HDB TPC-C"
+ed_status_message -show "HDB TPC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -1141,8 +1152,8 @@ upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global cloud_query mysql_cloud_query pg_cloud_query
-set _ED(packagekeyname) "TPC-H"
-puts "TPC-H Driver Script"
+set _ED(packagekeyname) "HDB TPC-H"
+puts "HDB TPC-H Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key

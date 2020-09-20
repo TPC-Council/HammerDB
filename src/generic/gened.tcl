@@ -130,8 +130,8 @@ update
    set Name $Parent.menuframe.tpcc
    set Menu_string($Name) {
 	{{command}  {Benchmark} {-command "select_rdbms none" -underline 0}}
-      {{cascade}  {TPC-C Schema} {{{command}  {Build} {-command "configtpcc build" -underline 0}} {{command}  {Driver} {-command "configtpcc drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpcc" -underline 0}}}}
-      {{cascade}  {TPC-H Schema} {{{command}  {Build} {-command "configtpch build" -underline 0}} {{command}  {Driver} {-command "configtpch drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpch" -underline 0}}}}
+      {{cascade}  {HDB TPC-C Schema} {{{command}  {Build} {-command "configtpcc build" -underline 0}} {{command}  {Driver} {-command "configtpcc drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpcc" -underline 0}}}}
+      {{cascade}  {HDB TPC-H Schema} {{{command}  {Build} {-command "configtpch build" -underline 0}} {{command}  {Driver} {-command "configtpch drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpch" -underline 0}}}}
       {{command}  {Virtual User} {-command "vuser_options" -underline 1}}
 	{{command}  {Autopilot} {-command "autopilot_options" -underline 0}}
 	{{command}  {Transaction Counter} {-command "countopts" -underline 0}}
@@ -191,7 +191,7 @@ construct_button $Parent.editbuttons.load edit open open.ppm "ed_file_load" "Ope
 construct_button $Parent.editbuttons.clear edit new new.ppm "ed_edit_clear" "Clear the screen"
 set Parent .ed_mainFrame
 construct_button $Parent.buttons.hmenu bar hmenu new.ppm "pop_up_menu"  "Open Edit Menu"
-construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPC Schema" 
+construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create HDB TPC Schema" 
 construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
 construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
 construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command run_virtual; run_virtual" "Run Virtual Users" 
@@ -200,7 +200,7 @@ construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_au
 construct_button $Parent.buttons.pencil bar pencil pencil.ppm "transcount" "Start Transaction Counter" 
 construct_button $Parent.buttons.dashboard bar dashboard dashboard.ppm "metrics" "Start Metrics" 
 construct_button $Parent.buttons.mode bar mode mode.ppm "select_mode" "Mode" 
-construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate TPC Data" 
+construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate HDB TPC Data" 
 #bindtags to call to prevent highlighting of buttons when status changed
 bind BreakTag <Enter> {break}
 bind BreakTag2 <Leave> {break}
@@ -426,7 +426,8 @@ set highlighticon [ dict get $treeidicons $selected ]
 set lastselected $selected
 }
 bind .ed_mainFrame.treeframe.treeview <Leave> { ed_status_message -perm }
-$Name insert $rdbms end -id $rdbms.$bm -text  $bm
+$Name insert $rdbms end -id $rdbms.$bm -text "$bm" -image [ create_image hdbicon icons ]
+dict set treeidicons $rdbms.$bm hdbicon
 $Name insert $rdbms.$bm end -id $rdbms.$bm.build -text "Schema Build" -image [ create_image boxes icons ]
 dict set treeidicons $rdbms.$bm.build boxes
 $Name item $rdbms.$bm.build -tags $rdbms.$bm.buildhlp
@@ -2969,7 +2970,7 @@ set wkcnt 0
 if {$name eq $rdbms} { set validrdbms true }
 foreach { wk } $workloads {
 incr wkcnt
-#if there are 2 workloads then DB supprts TPC-C and TPC-H
+#if there are 2 workloads then DB supports TPC-C and TPC-H
 if { $wkcnt eq 2 } { lappend fullwkl $name }
          }
       }
@@ -3006,11 +3007,11 @@ append bmbuild [ subst {grid $Name -column 1 -row $rowind -sticky w} ] "\n"
 }}
 eval $bmbuild
    set Name $Parent.f1.bm1
-ttk::radiobutton $Name -text "TPC-C" -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
+ttk::radiobutton $Name -text "TPC-C" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
 }
  grid $Name -column 2 -row 1 -sticky w                                                                               
    set Name $Parent.f1.bm2
-ttk::radiobutton $Name -text "TPC-H" -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
+ttk::radiobutton $Name -text "TPC-H" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
 }
  grid $Name -column 2 -row 2 -sticky w
 if { [ lsearch $fullwkl $rdbms ] eq -1 } { $Name configure -state disabled ; set bm "TPC-C" }
@@ -3018,7 +3019,7 @@ if { [ lsearch $fullwkl $rdbms ] eq -1 } { $Name configure -state disabled ; set
    ttk::button $Name -command { 
 catch "destroy .rdbms"
 if { $oldbm eq $bm && $oldrdbms eq $rdbms } { 
-tk_messageBox -title "Confirm Benchmark" -message "No Change Made : $bm for $rdbms" 
+tk_messageBox -title "Confirm Benchmark" -message "No Change Made : HDB $bm for $rdbms" 
 } else {
 if { $rdbms eq "Trafodion" } {
 .ed_mainFrame.buttons.pencil configure -state disabled 
@@ -3028,7 +3029,7 @@ if { $rdbms eq "Trafodion" } {
 set oldbm $bm
 set oldrdbms $rdbms
 disable_bm_menu
-tk_messageBox -title "Confirm Benchmark" -message "$bm for $rdbms" 
+tk_messageBox -title "Confirm Benchmark" -message "HDB $bm for $rdbms" 
 remote_command [ concat vuser_bench_ops $rdbms $bm ]
 remote_command disable_bm_menu
 	}
@@ -3157,8 +3158,8 @@ break
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "TPC-C"
-ed_status_message -show "TPC-C Driver Script"
+set _ED(packagekeyname) "HDB TPC-C"
+ed_status_message -show "HDB TPC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } { 
 set dictname config$key
@@ -3196,8 +3197,8 @@ upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global cloud_query mysql_cloud_query pg_cloud_query
-set _ED(packagekeyname) "TPC-H"
-ed_status_message -show "TPC-H Driver Script"
+set _ED(packagekeyname) "HDB TPC-H"
+ed_status_message -show "HDB TPC-H Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key

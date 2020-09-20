@@ -8,7 +8,7 @@ upvar #0 configmysql configmysql
 #set variables to values in dict
 setlocaltpccvars $configmysql
 if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mysql_count_ware Warehouse MySQL TPC-C schema\nin host [string toupper $mysql_connector] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $mysql_storage_engine ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mysql_count_ware Warehouse MySQL HDB TPC-C schema\nin host [string toupper $mysql_connector] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $mysql_storage_engine ]?" -type yesno ] == yes} { 
 if { $mysql_num_vu eq 1 || $mysql_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -17,7 +17,7 @@ set maxvuser [ expr $mysql_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C creation"
+set _ED(packagekeyname) "HDB TPC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -1310,7 +1310,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "MySQL TPC-C"
+set _ED(packagekeyname) "MySQL HDB TPC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# MySQL Library
@@ -1606,7 +1606,7 @@ upvar #0 configmysql configmysql
 setlocaltpccvars $configmysql
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "MySQL TPC-C Timed"
+set _ED(packagekeyname) "MySQL HDB TPC-C Timed"
 if { !$mysql_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6

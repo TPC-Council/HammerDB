@@ -578,7 +578,7 @@ GET http://localhost:8080/jobs?jobid=TEXT: Show output for the specified job id.
 get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333
 \[
   \"0\",
-  \"Ready to create a 6 Warehouse Oracle TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
+  \"Ready to create a 6 Warehouse Oracle HDB TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
   \"0\",
   \"Vuser 1:RUNNING\",
   \"1\",
@@ -621,7 +621,7 @@ GET http://localhost:8080/jobs?jobid=TEXT&amp;status: Show status for the specif
 get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333&amp;status
 \[
   \"0\",
-  \"Ready to create a 6 Warehouse Oracle TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
+  \"Ready to create a 6 Warehouse Oracle HDB TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
   \"0\",
   \"Vuser 1:RUNNING\",
   \"0\",
@@ -696,7 +696,7 @@ rest::post http://localhost:8080/dgset $body
 <b>GET dumpdb</b>: Dumps output of the SQLite database to the console.
 GET http://localhost:8080/dumpdb
 ***************DEBUG***************
-5CEE889958A003E203838313 0 {Ready to create a 6 Warehouse Oracle TPC-C schema
+5CEE889958A003E203838313 0 {Ready to create a 6 Warehouse Oracle HDB TPC-C schema
 in database VULPDB1 under user TPCC in tablespace TPCCTAB?} 5CEE889958A003E203838313 0 {Vuser 1:RUNNING} 5CEE889958A003E203838313 1 {Monitor Thread} 5CEE889958A003E203838313 1 {CREATING TPCC SCHEMA} 5CEE889958A003E203838313 0 {Vuser 2:RUNNING} 5CEE889958A003E203838313 2 {Worker Thread} 5CEE889958A003E203838313 2 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 1 {Error: ORA-12541: TNS:no listener} 5CEE889958A003E203838313 0 {Vuser 1:FINISHED FAILED} 5CEE889958A003E203838313 0 {Vuser 3:RUNNING} 5CEE889958A003E203838313 3 {Worker Thread} 5CEE889958A003E203838313 3 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 0 {Vuser 4:RUNNING} 5CEE889958A003E203838313 4 {Worker Thread} 5CEE889958A003E203838313 4 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 2 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 2:FINISHED SUCCESS} 5CEE889958A003E203838313 3 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 3:FINISHED SUCCESS} 5CEE889958A003E203838313 4 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 4:FINISHED SUCCESS} 5CEE889958A003E203838313 0 {ALL VIRTUAL USERS COMPLETE}
 ***************DEBUG***************</pre>
     <br>
@@ -935,6 +935,12 @@ return
 } else {
 set key [ huddle keys $huddlecontent ] 
 set val [ huddle get_stripped $huddlecontent $key ]
+set bmprefixincl "false"
+if { [ string match {HDB\ *} $val ] } { 
+set bmprefixincl "true"
+#Benchmark has HDB prefix
+regsub -all {HDB\ } $val "" val
+}
 set ind [ lsearch {db bm} $key ]
 if { $ind eq -1 } {
 dict set jsondict error message "Invalid option to dbset key value"
@@ -975,7 +981,11 @@ dict set jsondict error message "Unknown benchmark $toup, choose one from $possw
 	wapp-2-json 2 $jsondict
 } else {
 set bm $toup
+if { $bmprefixincl } {
+dict set jsondict success message "Benchmark set to HDB $toup for $rdbms"
+	} else {
 dict set jsondict success message "Benchmark set to $toup for $rdbms"
+	}
 	wapp-2-json 2 $jsondict
 	}
       } else {

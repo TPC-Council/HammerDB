@@ -1,3 +1,7 @@
+#All icons orignally sourced for from open-iconic https://github.com/iconic/open-iconic
+#non-scaleable icons are PNG in base64 format (modified with GIMP)
+#scaleable icons are SVG format (modified with Inkscape)
+#All icon sets in HammerDB including modification and colouring by Lucas Shaw
 proc create_icon_images { iconset } {
 switch $iconset {
 iconicgray {
@@ -3275,6 +3279,52 @@ dict set iconssvg warningsvg {
 </svg>
 }
 
+dict set iconssvg hdbiconsvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="hammerDB-icon-SVG-g.svg"
+   version="1.1"
+   id="svg2"
+   xml:space="preserve"
+   width="89.907104"
+   height="114.88928"
+   viewBox="0 0 89.907105 114.88928"><sodipodi:namedview
+     inkscape:current-layer="svg2"
+     inkscape:window-maximized="0"
+     inkscape:window-y="27"
+     inkscape:window-x="17"
+     inkscape:cy="56.020871"
+     inkscape:cx="57.444613"
+     inkscape:zoom="1.3609708"
+     showgrid="false"
+     id="namedview16"
+     inkscape:window-height="681"
+     inkscape:window-width="1748"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0" /><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
+     id="defs6" /><path
+     d="m 83.861533,1.2401157 h -25.30134 c -3.50266,0 -3.97866,1.592005 -3.97866,4.294665 V 45.321451 H 35.166863 V 5.5347807 c 0,-3.817331 -2.07067,-4.294665 -4.61733,-4.294665 H 5.7255329 c -3.02267,0.158667 -4.14,1.433335 -4.14,4.294665 V 109.29877 c 0,3.81734 1.59067,4.296 4.776,4.296 H 35.072193 c 0.93867,-5 2.092,-8.82266 2.092,-8.82266 h 2.98134 V 85.384111 l -0.27867,-5.85334 c -0.248,-4.52132 -3.14533,-6.50799 -6.38667,-6.65466 -5.17733,-0.236 -5.69466,2.56134 -8.97466,3.116 -3.39067,0.56267 -6.51467,0.35334 -6.51467,0.35334 -1.8,0.0987 -3.25867,-1.09867 -3.25867,-2.67467 v -14.37733 c 0,-1.57867 1.45867,-2.75734 3.25867,-2.64 0,0 3.17467,-0.144 6.51467,0.42933 3.344,0.572 3.66666,2.27333 6.73466,3.364 3.076,1.09867 4.28934,-1.33733 6.53067,-2.94933 2.24933,-1.61867 8.34267,-1.68134 12.944,-1.36534 4.6,0.31467 9.19467,1.24134 9.19467,1.24134 20.24133,5.34933 22.512,22.29732 22.512,22.29732 -13.31867,-14.18932 -24.39734,-9.01066 -29.412,-3.21866 -3.33734,3.852 -2.86134,9.404 -2.86134,9.404 h -0.0253 v 18.915999 h 2.04 c 0,0 1.15467,3.82266 2.09067,8.82266 h 29.76933 c 3.02267,0 4.29467,-0.796 4.29467,-4.296 V 5.3761207 c 0,-3.498671 -1.272,-4.136005 -4.456,-4.136005"
+     style="fill:#626262;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.133333"
+     id="path30" /></svg>
+}
 return [ set iconssvg ]
 }
 
@@ -5374,6 +5424,53 @@ dict set iconssvg tasksvg {
      id="path2"
      d="M0 0v7h7v-3.59l-1 1v1.59h-5v-5h3.59l1-1h-5.59zm7 0l-3 3-1-1-1 1 2 2 4-4-1-1z" />
 </svg>
+}
+
+dict set iconssvg hdbiconsvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   viewBox="0 0 89.907105 114.88928"
+   height="114.88928"
+   width="89.907104"
+   xml:space="preserve"
+   id="svg2"
+   version="1.1"
+   sodipodi:docname="hammerDB-icon-SVG-o.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"><sodipodi:namedview
+     inkscape:document-rotation="0"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1748"
+     inkscape:window-height="880"
+     id="namedview16"
+     showgrid="false"
+     inkscape:zoom="1.3609708"
+     inkscape:cx="57.444613"
+     inkscape:cy="56.020871"
+     inkscape:window-x="0"
+     inkscape:window-y="62"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2" /><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+     id="defs6" /><path
+     id="path30"
+     style="fill:#ff7900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.133333"
+     d="m 83.861533,1.2401157 h -25.30134 c -3.50266,0 -3.97866,1.592005 -3.97866,4.294665 V 45.321451 H 35.166863 V 5.5347807 c 0,-3.817331 -2.07067,-4.294665 -4.61733,-4.294665 H 5.7255329 c -3.02267,0.158667 -4.14,1.433335 -4.14,4.294665 V 109.29877 c 0,3.81734 1.59067,4.296 4.776,4.296 H 35.072193 c 0.93867,-5 2.092,-8.82266 2.092,-8.82266 h 2.98134 V 85.384111 l -0.27867,-5.85334 c -0.248,-4.52132 -3.14533,-6.50799 -6.38667,-6.65466 -5.17733,-0.236 -5.69466,2.56134 -8.97466,3.116 -3.39067,0.56267 -6.51467,0.35334 -6.51467,0.35334 -1.8,0.0987 -3.25867,-1.09867 -3.25867,-2.67467 v -14.37733 c 0,-1.57867 1.45867,-2.75734 3.25867,-2.64 0,0 3.17467,-0.144 6.51467,0.42933 3.344,0.572 3.66666,2.27333 6.73466,3.364 3.076,1.09867 4.28934,-1.33733 6.53067,-2.94933 2.24933,-1.61867 8.34267,-1.68134 12.944,-1.36534 4.6,0.31467 9.19467,1.24134 9.19467,1.24134 20.24133,5.34933 22.512,22.29732 22.512,22.29732 -13.31867,-14.18932 -24.39734,-9.01066 -29.412,-3.21866 -3.33734,3.852 -2.86134,9.404 -2.86134,9.404 h -0.0253 v 18.915999 h 2.04 c 0,0 1.15467,3.82266 2.09067,8.82266 h 29.76933 c 3.02267,0 4.29467,-0.796 4.29467,-4.296 V 5.3761207 c 0,-3.498671 -1.272,-4.136005 -4.456,-4.136005" /></svg>
 }
 return [ set iconssvg ]
 }

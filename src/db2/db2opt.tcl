@@ -128,9 +128,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Db2 TPC-C Schema Options} }
-"build" { wm title .tpc {Db2 TPC-C Build Options} }
-"drive" {  wm title .tpc {Db2 TPC-C Driver Options} }
+"all" { wm title .tpc {Db2 HDB TPC-C Schema Options} }
+"build" { wm title .tpc {Db2 HDB TPC-C Build Options} }
+"drive" {  wm title .tpc {Db2 HDB TPC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -165,7 +165,7 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "Db2 Database :"
+   ttk::label $Prompt -text "TPC-C Db2 Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
@@ -252,7 +252,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 11 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 12 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable db2_driver
@@ -480,9 +480,9 @@ set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_
    wm transient .db2tpch .ed_mainFrame
    wm withdraw .db2tpch
 switch $option {
-"all" { wm title .db2tpch {Db2 TPC-H Schema Options} }
-"build" { wm title .db2tpch {Db2 TPC-H Build Options} }
-"drive" {  wm title .db2tpch {Db2 TPC-H Driver Options} }
+"all" { wm title .db2tpch {Db2 HDB TPC-H Schema Options} }
+"build" { wm title .db2tpch {Db2 HDB TPC-H Build Options} }
+"drive" {  wm title .db2tpch {Db2 HDB TPC-H Driver Options} }
 	}
    set Parent .db2tpch
    set Name $Parent.f1
@@ -517,7 +517,7 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "Db2 Database :"
+   ttk::label $Prompt -text "TPC-H Db2 Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_tpch_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
