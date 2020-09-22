@@ -2555,7 +2555,7 @@ set end_nopm [ standsql $curn2 $sql4 ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm TimesTen TPM"
+puts [ testresult $nopm $tpm TimesTen ]
 	} else {
 puts "Test complete, Taking end AWR snapshot."
 oraparse $curn1 $sql1
@@ -2588,7 +2588,7 @@ set ractpm [ expr $ractpm + [ standsql $curn1 $sqlrac ]]
 set tpm $ractpm
         }
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Oracle TPM"
+puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1
@@ -2964,7 +2964,7 @@ set end_nopm [ standsql $curn2 $sql4 ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm TimesTen TPM"
+puts [ testresult $nopm $tpm TimesTen ]
 	} else {
 puts "Test complete, Taking end AWR snapshot."
 oraparse $curn1 $sql1
@@ -2997,7 +2997,7 @@ set ractpm [ expr $ractpm + [ standsql $curn1 $sqlrac ]]
 set tpm $ractpm
         }
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Oracle TPM"
+puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1

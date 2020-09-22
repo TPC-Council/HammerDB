@@ -11,6 +11,7 @@
    <benchmark>
 	<rdbms>Oracle</rdbms>
 	<bm>TPC-C</bm>
+	<first_result>NOPM</first_result>
    </benchmark>
    <virtual_user_options>
         <virtual_users>1</virtual_users>

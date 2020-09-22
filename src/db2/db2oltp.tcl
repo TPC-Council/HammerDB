@@ -1630,7 +1630,7 @@ db2_finish $stmnt_handle4
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Db2 TPM"
+puts [ testresult $nopm $tpm Db2 ]
 if { $doingmonreport eq "true" } {
 puts "---MONREPORT OUTPUT---"
 puts $monreport
@@ -1997,7 +1997,7 @@ db2_finish $stmnt_handle4
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Db2 TPM"
+puts [ testresult $nopm $tpm Db2 ]
 if { $doingmonreport eq "true" } {
 puts "---MONREPORT OUTPUT---"
 puts $monreport

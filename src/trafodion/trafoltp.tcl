@@ -2254,7 +2254,7 @@ $stmnt close
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Trafodion TPM"
+puts [ testresult $nopm $tpm Trafodion ]
 tsv::set application abort 1
 if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 odbc close

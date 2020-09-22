@@ -296,3 +296,16 @@ if !$alldone {
 puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
         }
 }
+
+proc testresult { nopm tpm db } {
+upvar #0 genericdict genericdict
+if {[dict exists $genericdict benchmark first_result ]} {
+set res_format [ dict get $genericdict benchmark first_result ]
+if { $res_format eq "TPM" } {
+return "TEST RESULT : System achieved $tpm $db TPM at $nopm NOPM"
+	} else {
+;# drop to default NOPM first
+	}
+	}
+return "TEST RESULT : System achieved $nopm NOPM from $tpm $db TPM"
+}
