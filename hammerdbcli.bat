@@ -1,4 +1,5 @@
 @echo off
+COLOR 07
 set path=.\bin;%PATH%
-START tclsh86t hammerdbcli %1 %2
+CALL tclsh86t hammerdbcli %1 %2
 exit

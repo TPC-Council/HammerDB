@@ -304,10 +304,18 @@ if { $suppo == 1 } {
 set trdwin ".ed_mainFrame.tw"
 .ed_mainFrame.notebook tab $trdwin -state normal
 .ed_mainFrame.notebook select $trdwin
+upvar #0 icons icons
+if { [ info exists icons ] } {
+#running in GUI get values from icons
 set textColor black
 set fillColor white
-upvar #0 icons icons
 set outlineColor [ dict get $icons defaultBackground ] 
+	} else {
+#running in CLI set placeholder values to avoid variable does not exist
+set textColor black
+set fillColor white
+set outlineColor white 
+	}
 set usercount $maxvuser
 set countuser 0
 if { $usercount <= 9 } {
@@ -330,6 +338,12 @@ set y [ expr {round(ceil($uscsq))} ]
 	}
 }
 global win_scale_fact
+if { [ info exists win_scale_fact ] } {
+;#running in GUI
+	} else {
+#running in CLI, set placeholder variable to avoid variable does not exist
+set win_scale_fact 1.333333
+	}
 set rect_sz_fact [ expr {round((100/1.333333)*$win_scale_fact)} ]
 set dbl_sz_fact [ expr {$rect_sz_fact*2} ]
 set xval [ expr {($x * $rect_sz_fact)*2}]
