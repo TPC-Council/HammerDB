@@ -12,5 +12,6 @@ lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\o
 #Get generic config data
 set genericdict [ ::XML::To_Dict config/generic.xml ]
 get_xml_data
-guid_init
 #Make generics global
+tsv::set application genericdict $genericdict
+guid_init
