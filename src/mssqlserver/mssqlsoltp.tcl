@@ -16,7 +16,7 @@ set mssqls_server $mssqls_linux_server
 set mssqls_odbc_driver $mssqls_linux_odbc
 set mssqls_authentication $mssqls_linux_authent 
 	}
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server HDB TPC-C schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server TPROC-C schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
 if { $mssqls_num_vu eq 1 || $mssqls_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -25,7 +25,7 @@ set maxvuser [ expr $mssqls_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "HDB TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -2256,7 +2256,7 @@ set mssqls_authentication $mssqls_linux_authent
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "SQL Server HDB TPC-C"
+set _ED(packagekeyname) "SQL Server TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# SQL Server Library
@@ -2603,7 +2603,7 @@ set mssqls_authentication $mssqls_linux_authent
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "SQL Server HDB TPC-C"
+set _ED(packagekeyname) "SQL Server TPROC-C"
 if { !$mssqls_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6

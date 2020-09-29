@@ -16,9 +16,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Trafodion HDB TPC-C Schema Options} }
-"build" { wm title .tpc {Trafodion HDB TPC-C Build Options} }
-"drive" {  wm title .tpc {Trafodion HDB TPC-C Driver Options} }
+"all" { wm title .tpc {Trafodion TPROC-C Schema Options} }
+"build" { wm title .tpc {Trafodion TPROC-C Build Options} }
+"drive" {  wm title .tpc {Trafodion TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -207,7 +207,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 16 -sticky w
 	}
 set Prompt $Parent.f1.p17
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 17 -sticky e
 set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable traf_driver

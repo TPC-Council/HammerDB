@@ -1,7 +1,7 @@
 #Load database config
 set dbdict [ ::XML::To_Dict config/database.xml ]
-#Change formal HDB TPC-x terminology to working TPC-x and readd prefix for display
-set dbdict [ regsub -all {(\{HDB\ )(TPC-[CH])(\})} $dbdict {\2} ]
+#Change  TPROC-x terminology to working TPC-x
+set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
 #Start the GUI using database config
 ed_start_gui $dbdict $icons $iconalt
 wm positionfrom .

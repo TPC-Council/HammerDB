@@ -7,9 +7,9 @@ set library [ dict get $dbdict oracle library ]
 upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 if { $tpcc_tt_compat eq "true" } {
-set install_message "Ready to create a $count_ware Warehouse TimesTen HDB TPC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
+set install_message "Ready to create a $count_ware Warehouse TimesTen TPROC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
 	} else {
-set install_message "Ready to create a $count_ware Warehouse Oracle HDB TPC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
+set install_message "Ready to create a $count_ware Warehouse Oracle TPROC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
 	}
 if {[ tk_messageBox -title "Create Schema" -icon question -message $install_message -type yesno ] == yes} { 
 if { $num_vu eq 1 || $count_ware eq 1 } {
@@ -20,7 +20,7 @@ set maxvuser [ expr $num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "HDB TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create thread(s) for schema creation: $message"
 	return 1
@@ -2148,7 +2148,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Oracle HDB TPC-C"
+set _ED(packagekeyname) "Oracle TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
@@ -2428,7 +2428,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Oracle Timed HDB TPC-C"
+set _ED(packagekeyname) "Oracle Timed TPROC-C"
 if { !$async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6

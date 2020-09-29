@@ -147,9 +147,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Oracle HDB TPC-C Schema Options} }
-"build" { wm title .tpc {Oracle HDB TPC-C Build Options} }
-"drive" {  wm title .tpc {Oracle HDB TPC-C Driver Options} }
+"all" { wm title .tpc {Oracle TPROC-C Schema Options} }
+"build" { wm title .tpc {Oracle TPROC-C Build Options} }
+"drive" {  wm title .tpc {Oracle TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -190,32 +190,32 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 3 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "TPC-C User :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpcc_user
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-C User Password :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpcc_pass
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-C Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_def_tab
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
 set Name $Parent.f1.e6a
    set Prompt $Parent.f1.p6a
-   ttk::label $Prompt -text "Order Line Tablespace :"
+   ttk::label $Prompt -text "TPROC-C Order Line Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_ol_tab
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -sticky ew
 set Name $Parent.f1.e7
    set Prompt $Parent.f1.p7
-   ttk::label $Prompt -text "TPC-C Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_def_temp
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
@@ -350,7 +350,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 16 -sticky w
 	}
 set Prompt $Parent.f1.p15
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 17 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable ora_driver
@@ -570,9 +570,9 @@ set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {
    wm transient .tpch .ed_mainFrame
    wm withdraw .tpch
 	switch $option {
-	"all" { wm title .tpch {Oracle HDB TPC-H Schema Options} }
-	"build" { wm title .tpch {Oracle HDB TPC-H Build Options} }
-	"drive" {  wm title .tpch {Oracle HDB TPC-H Driver Options} }
+	"all" { wm title .tpch {Oracle TPROC-H Schema Options} }
+	"build" { wm title .tpch {Oracle TPROC-H Build Options} }
+	"drive" {  wm title .tpch {Oracle TPROC-H Driver Options} }
 	}
    set Parent .tpch
    set Name $Parent.f1
@@ -613,26 +613,26 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 3 -columnspan 4 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "TPC-H User :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_user
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -columnspan 4 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "TPC-H User Password :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpch_pass
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5 -columnspan 4 -sticky ew
    if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-H Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_def_tab
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -columnspan 4 -sticky ew
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-H Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_def_temp
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -columnspan 4 -sticky ew

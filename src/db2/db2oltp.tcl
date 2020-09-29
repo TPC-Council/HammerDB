@@ -7,7 +7,7 @@ if {[dict exists $dbdict db2 library ]} {
 upvar #0 configdb2 configdb2
 #set variables to values in dict
 setlocaltpccvars $configdb2
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 HDB TPC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
 if { $db2_num_vu eq 1 || $db2_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -16,7 +16,7 @@ set maxvuser [ expr $db2_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "Db2 HDB TPC-C creation"
+set _ED(packagekeyname) "Db2 TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -1236,7 +1236,7 @@ upvar #0 configdb2 configdb2
 setlocaltpccvars $configdb2
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Db2 HDB TPC-C"
+set _ED(packagekeyname) "Db2 TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
@@ -1531,7 +1531,7 @@ set db2_monreport 0
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Db2 HDB TPC-C Timed"
+set _ED(packagekeyname) "Db2 TPROC-C Timed"
 if { !$db2_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6

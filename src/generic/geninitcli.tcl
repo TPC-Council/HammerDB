@@ -1,7 +1,6 @@
 #Load database config
 set dbdict [ ::XML::To_Dict config/database.xml ]
-#Change formal HDB TPC-x terminology to working TPC-x and readd prefix for display
-set dbdict [ regsub -all {(\{HDB\ )(TPC-[CH])(\})} $dbdict {\2} ]
+set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
 #Load database details in dict named configdbname
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key

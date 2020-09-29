@@ -22,6 +22,8 @@ ttk::style configure TEntry -foreground black
 ttk::style configure TEntry -selectforeground "#FF7900"
 ttk::style configure TEntry -borderwidth 0
 ttk::style configure TPanedwindow -background $defaultBackground
+ttk::style configure TButton -relief flat
+ttk::style map TButton -background [ list active "#FF7900" ]
 }
 
 proc framesizes { win_scale_fact } {
@@ -453,15 +455,15 @@ set tmpgendict [ ::XML::To_Dict config/generic.xml ]
 if {[dict exists $tmpgendict theme scaling ]} {
 set scaling [dict get $tmpgendict theme scaling ]
 if { $scaling eq "auto" } {
-#Using a scaling theme default is arc on Linux and breeze on Windows
+#Using a scaling theme default is awlight on Linux and breeze on Windows
 #alternative themes are "arc breeze awlight"
 set theme [dict get $tmpgendict theme scaletheme ]
 if { $theme ni {arc breeze awlight} } { 
 #Options for Windows and Linux in case default is changed in future awtheme
 if {$tcl_platform(platform) == "windows"} {
-	set theme breeze 
+	set theme "breeze"
 		} else {
-	set theme breeze 
+	set theme "awlight"
 		}
 }
 set pixelsperpoint [dict get $tmpgendict theme pixelsperpoint ]

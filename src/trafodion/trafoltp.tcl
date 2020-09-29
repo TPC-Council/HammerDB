@@ -8,10 +8,10 @@ upvar #0 configtrafodion configtrafodion
 #set variables to values in dict
 setlocaltpccvars $configtrafodion
 if { $trafodion_load_data eq "true" && $trafodion_build_jsps eq "true" } {
-set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion HDB TPC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema with JSPs?"
+set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPROC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema with JSPs?"
 	} else {
 if { $trafodion_load_data eq "true" && $trafodion_build_jsps eq "false" } {
-set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion HDB TPC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema without JSPs?"
+set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPROC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema without JSPs?"
 	} else {
 if { $trafodion_load_data eq "false" && $trafodion_build_jsps eq "true" } {
 set trafmsg "Ready to create Trafodion JSPs only without data\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema?"
@@ -29,7 +29,7 @@ set maxvuser [ expr $trafodion_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "Trafodion HDB TPC-C creation"
+set _ED(packagekeyname) "Trafodion TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -1821,7 +1821,7 @@ set $val [ dict get $attributes $val ]
 }}}}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Trafodion HDB TPC-C"
+set _ED(packagekeyname) "Trafodion TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Trafodion Library
@@ -2126,7 +2126,7 @@ set $val [ dict get $attributes $val ]
 }}}}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Trafodion HDB TPC-C Timed"
+set _ED(packagekeyname) "Trafodion TPROC-C Timed"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
 #EDITABLE OPTIONS##################################################

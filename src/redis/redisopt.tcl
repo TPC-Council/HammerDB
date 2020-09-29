@@ -100,9 +100,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Redis HDB TPC-C Schema Options} }
-"build" { wm title .tpc {Redis HDB TPC-C Build Options} }
-"drive" {  wm title .tpc {Redis HDB TPC-C Driver Options} }
+"all" { wm title .tpc {Redis TPROC-C Schema Options} }
+"build" { wm title .tpc {Redis TPROC-C Build Options} }
+"drive" {  wm title .tpc {Redis TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -177,7 +177,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 6 -sticky w
 	}
 set Prompt $Parent.f1.p6
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 7 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable redis_driver

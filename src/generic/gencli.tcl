@@ -566,12 +566,6 @@ puts "Success ... loaded library $library for $db"
 
 proc dbset { args } {
 global rdbms bm opmode
-set bmprefixincl "false"
-if {[ llength $args ] eq 3 && [ lindex [ split  $args ]  0 ] eq "bm" && [ lindex [ split  $args ]  1 ] eq "HDB" } {
-#Benchmark includes prefix "HDB" remove it for setting the benchmark in the dict but note it was there
-set args [ lreplace $args 1 1 ]
-set bmprefixincl "true"
-}
 if {[ llength $args ] != 2} {
 putscli {Usage: dbset [db|bm] value}
 } else {
@@ -603,30 +597,27 @@ putscli "Database set to $rdbms"
 }	
 bm {
 set toup [ string toupper $val ]
-if { [ string match ???-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
+if { [ string match ???-? $toup ] || [ string match ?????-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set posswkl  [ split  [ dict get $dbdict $key workloads ]]
+set posswkl2 [ regsub -all {(TP)(C)(-[CH])} $posswkl {\1RO\2\3} ]
 if { $dashformat } {
-set ind [ lsearch $posswkl $toup ]
+set ind [ lsearch [ concat $posswkl $posswkl2 ] $toup ]
 if { $ind eq -1 } {
-putscli "Unknown benchmark $toup, choose one from $posswkl"
+putscli "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
 } else {
-set bm $toup
-remote_command [ concat dbset bm $toup ]
-if { $bmprefixincl } {
-#Benchmark includes prefix "HDB"
-putscli "Benchmark set to HDB $toup for $rdbms"
-	} else {
+set dicttoup [ regsub -all {(TP)(RO)(C-[CH])} $toup {\1\3} ]
+set bm $dicttoup
+remote_command [ concat dbset bm $dicttoup ]
 putscli "Benchmark set to $toup for $rdbms"
-	}
-	}
+        }
       } else {
-putscli "Unknown benchmark $toup, choose one from $posswkl"
-		}
-	}
+putscli "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
+                }
+        }
 }}
 default {
 putscli "Unknown dbset option"
@@ -1114,8 +1105,8 @@ set gen_directory $tmp
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "HDB TPC-C"
-ed_status_message -show "HDB TPC-C Driver Script"
+set _ED(packagekeyname) "TPROC-C"
+ed_status_message -show "TPROC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -1152,8 +1143,8 @@ upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global cloud_query mysql_cloud_query pg_cloud_query
-set _ED(packagekeyname) "HDB TPC-H"
-puts "HDB TPC-H Driver Script"
+set _ED(packagekeyname) "TPROC-H"
+puts "TPROC-H Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key

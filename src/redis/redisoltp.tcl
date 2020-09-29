@@ -7,7 +7,7 @@ if {[dict exists $dbdict redis library ]} {
 upvar #0 configredis configredis
 #set variables to values in dict
 setlocaltpccvars $configredis
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $redis_count_ware Warehouse Redis HDB TPC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $redis_count_ware Warehouse Redis TPROC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
 if { $redis_num_vu eq 1 || $redis_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -16,7 +16,7 @@ set maxvuser [ expr $redis_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "HDB TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -396,7 +396,7 @@ upvar #0 configredis configredis
 setlocaltpccvars $configredis
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Redis HDB TPC-C"
+set _ED(packagekeyname) "Redis TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Redis Library
@@ -717,7 +717,7 @@ upvar #0 configredis configredis
 setlocaltpccvars $configredis
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Redis HDB TPC-C"
+set _ED(packagekeyname) "Redis TPROC-C"
 if { !$redis_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6

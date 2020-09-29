@@ -190,9 +190,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 	switch $option {
-	"all" { wm title .tpc {Microsoft SQL Server HDB TPC-C Schema Options} }
-	"build" { wm title .tpc {Microsoft SQL Server HDB TPC-C Build Options} }
-	"drive" { wm title .tpc {Microsoft SQL Server HDB TPC-C Driver Options} }
+	"all" { wm title .tpc {Microsoft SQL Server TPROC-C Schema Options} }
+	"build" { wm title .tpc {Microsoft SQL Server TPROC-C Build Options} }
+	"drive" { wm title .tpc {Microsoft SQL Server TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -308,7 +308,7 @@ if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq
         }
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-C SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mssqls_dbase
    grid $Prompt -column 0 -row 10 -sticky e
    grid $Name -column 1 -row 10 -sticky ew
@@ -392,7 +392,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 17 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 18 -sticky e
 set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mssqls_driver
@@ -618,9 +618,9 @@ set mssqlsfields [ dict merge $mssqlsconn $tpchfields ]
    wm transient .mssqlstpch .ed_mainFrame
    wm withdraw .mssqlstpch
 switch $option {
-"all" { wm title .mssqlstpch {SQL Server HDB TPC-H Schema Options} }
-"build" { wm title .mssqlstpch {SQL Server HDB TPC-H Build Options} }
-"drive" {  wm title .mssqlstpch {SQL Server HDB TPC-H Driver Options} }
+"all" { wm title .mssqlstpch {SQL Server TPROC-H Schema Options} }
+"build" { wm title .mssqlstpch {SQL Server TPROC-H Build Options} }
+"drive" {  wm title .mssqlstpch {SQL Server TPROC-H Driver Options} }
 	}
    set Parent .mssqlstpch
    set Name $Parent.f1
@@ -736,7 +736,7 @@ if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq
         }
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-H SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mssqls_tpch_dbase
    grid $Prompt -column 0 -row 10 -sticky e
    grid $Name -column 1 -row 10 -sticky ew

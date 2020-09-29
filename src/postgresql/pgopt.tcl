@@ -169,9 +169,9 @@ if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {PostgreSQL HDB TPC-C Schema Options} }
-"build" { wm title .tpc {PostgreSQL HDB TPC-C Build Options} }
-"drive" {  wm title .tpc {PostgreSQL HDB TPC-C Driver Options} }
+"all" { wm title .tpc {PostgreSQL TPROC-C Schema Options} }
+"build" { wm title .tpc {PostgreSQL TPROC-C Build Options} }
+"drive" {  wm title .tpc {PostgreSQL TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -224,26 +224,26 @@ set Name $Parent.f1.e5
    grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "PostgreSQL User :"
+   ttk::label $Prompt -text "TPROC-C PostgreSQL User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable pg_user
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
 set Name $Parent.f1.e7
    set Prompt $Parent.f1.p7
-   ttk::label $Prompt -text "PostgreSQL User Password :"   
+   ttk::label $Prompt -text "TPROC-C PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left 
    ttk::entry $Name  -width 30 -textvariable pg_pass
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -sticky ew
 set Name $Parent.f1.e8
    set Prompt $Parent.f1.p8
-   ttk::label $Prompt -text "TPC-C PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable pg_dbase
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e8a
    set Prompt $Parent.f1.p8a
-   ttk::label $Prompt -text "PostgreSQL Tablespace :"
+   ttk::label $Prompt -text "TPROC-C PostgreSQL Tablespace :" -image [ create_image hdbicon icons ] -compound left 
    ttk::entry $Name -width 30 -textvariable pg_tspace
    grid $Prompt -column 0 -row 9 -sticky e
    grid $Name -column 1 -row 9 -sticky ew
@@ -313,7 +313,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 14 -sticky w
 	}
 set Prompt $Parent.f1.p14
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 15 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable pg_driver
@@ -544,9 +544,9 @@ set pgfields [ dict create connection {pg_host {.pgtpch.f1.e1 get} pg_port {.pgt
    wm transient .pgtpch .ed_mainFrame
    wm withdraw .pgtpch
 switch $option {
-"all" { wm title .pgtpch {PostgreSQL HDB TPC-H Schema Options} }
-"build" { wm title .pgtpch {PostgreSQL HDB TPC-H Build Options} }
-"drive" {  wm title .pgtpch {PostgreSQL HDB TPC-H Driver Options} }
+"all" { wm title .pgtpch {PostgreSQL TPROC-H Schema Options} }
+"build" { wm title .pgtpch {PostgreSQL TPROC-H Build Options} }
+"drive" {  wm title .pgtpch {PostgreSQL TPROC-H Driver Options} }
 	}
    set Parent .pgtpch
    set Name $Parent.f1
@@ -601,26 +601,26 @@ set Name $Parent.f1.e5
 	}
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
- ttk::label $Prompt -text "PostgreSQL User :"
+ ttk::label $Prompt -text "TPROC-H PostgreSQL User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable pg_tpch_user
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
 set Name $Parent.f1.e7
    set Prompt $Parent.f1.p7
-   ttk::label $Prompt -text "PostgreSQL User Password :"
+   ttk::label $Prompt -text "TPROC-H PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable pg_tpch_pass
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -sticky ew
 set Name $Parent.f1.e8
    set Prompt $Parent.f1.p8
-   ttk::label $Prompt -text "TPC-H PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable pg_tpch_dbase
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e8a
    set Prompt $Parent.f1.p8a
-   ttk::label $Prompt -text "PostgreSQL Tablespace :"
+   ttk::label $Prompt -text "TPROC-H PostgreSQL Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable pg_tpch_tspace
    grid $Prompt -column 0 -row 9 -sticky e
    grid $Name -column 1 -row 9 -sticky ew

@@ -141,9 +141,9 @@ set whlist [ get_warehouse_list_for_spinbox ]
    wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {MySQL HDB TPC-C Schema Options} }
-"build" { wm title .tpc {MySQL HDB TPC-C Build Options} }
-"drive" {  wm title .tpc {MySQL HDB TPC-C Driver Options} }
+"all" { wm title .tpc {MySQL TPROC-C Schema Options} }
+"build" { wm title .tpc {MySQL TPROC-C Build Options} }
+"drive" {  wm title .tpc {MySQL TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -199,7 +199,7 @@ set Name $Parent.f1.e4
    grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-C MySQL Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-C MySQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mysql_dbase
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
@@ -260,7 +260,7 @@ ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 11 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 12 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mysql_driver
@@ -473,9 +473,9 @@ set myfields [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port
    wm transient .mytpch .ed_mainFrame
    wm withdraw .mytpch
 switch $option {
-"all" { wm title .mytpch {MySQL HDB TPC-H Schema Options} }
-"build" { wm title .mytpch {MySQL HDB TPC-H Build Options} }
-"drive" {  wm title .mytpch {MySQL HDB TPC-H Driver Options} }
+"all" { wm title .mytpch {MySQL TPROC-H Schema Options} }
+"build" { wm title .mytpch {MySQL TPROC-H Build Options} }
+"drive" {  wm title .mytpch {MySQL TPROC-H Driver Options} }
 	}
    set Parent .mytpch
    set Name $Parent.f1
@@ -531,7 +531,7 @@ set Name $Parent.f1.e4
    grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-H MySQL Database :" -image [ create_image hdbicon icons ] -compound left
+   ttk::label $Prompt -text "TPROC-H MySQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mysql_tpch_dbase
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
