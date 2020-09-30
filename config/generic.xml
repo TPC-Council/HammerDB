@@ -30,10 +30,10 @@
 	    <autopilot_sequence>1 2 4 8 12 16 20 24</autopilot_sequence>
     </autopilot>
     <mode>
-        <slave_options>
+        <replica_options>
             <hostname>localhost</hostname>
             <id>0</id>
-        </slave_options>
+        </replica_options>
     </mode>
     <transaction_counter>
 	<settings>

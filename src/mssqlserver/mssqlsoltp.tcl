@@ -2656,7 +2656,7 @@ return $connection
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 error "Connection to $connection could not be established : $message"
@@ -2727,7 +2727,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
 puts [ testresult $nopm $tpm "SQL Server" ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if  [catch {odbc evaldirect "checkpoint"} message ]  {
@@ -2738,7 +2738,7 @@ puts "Checkpoint Complete"
     }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
@@ -3071,7 +3071,7 @@ return $connection
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 error "Connection to $connection could not be established : $message"
@@ -3142,7 +3142,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
 puts [ testresult $nopm $tpm "SQL Server" ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if  [catch {odbc evaldirect "checkpoint"} message ]  {
@@ -3153,7 +3153,7 @@ puts "Checkpoint Complete"
     }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

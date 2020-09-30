@@ -2840,7 +2840,7 @@ return $lda
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
 set lda [ ConnectToPostgres $host $port $superuser $superuser_password $default_database ]
 if { $lda eq "Failed" } {
@@ -2932,7 +2932,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
 puts [ testresult $nopm $tpm PostgreSQL ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $VACUUM } {
 	set RAISEERROR "true"
 puts "Checkpoint and Vacuum"
@@ -2963,7 +2963,7 @@ pg_disconnect $lda
 	}
 pg_disconnect $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
@@ -3271,7 +3271,7 @@ return $lda
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
 set lda [ ConnectToPostgres $host $port $superuser $superuser_password $default_database ]
 if { $lda eq "Failed" } {
@@ -3363,7 +3363,7 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
 puts [ testresult $nopm $tpm PostgreSQL ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $VACUUM } {
 	set RAISEERROR "true"
 puts "Checkpoint and Vacuum"
@@ -3394,7 +3394,7 @@ pg_disconnect $lda
 	}
 pg_disconnect $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

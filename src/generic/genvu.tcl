@@ -153,7 +153,7 @@ set thlist [ lreplace $thlist $idx $idx ]
   }
 }
 set thlen [ llength $thlist ] 
-if { $opmode != "Slave" } {
+if { $opmode != "Replica" } {
 if { $thlen > 1 } {
 set thlen [ expr { $thlen - 1 } ]
 set thlist [ join [lreplace $thlist $thlen $thlen ] ]
@@ -170,13 +170,13 @@ catch {thread::cancel $ij}
 return 1
 } else { ;#Only the Master thread is running }
 } else {
-#Running in slave mode so attempt to terminate virtual users and continue
+#Running in replica mode so attempt to terminate virtual users and continue
 if { $thlen > 1 } {
 set thlen [ expr { $thlen - 1 } ]
 set thlist [ join [lreplace $thlist $thlen $thlen ] ]
 set termcheck "fail"
 for { set termincnt 1 } {$termincnt < 4 } {incr termincnt } {
-puts "Virtual Users still active in background in slave mode - attempting to terminate and continue - attempt $termincnt"
+puts "Virtual Users still active in background in replica mode - attempting to terminate and continue - attempt $termincnt"
 foreach ij $thlist {
 catch {thread::cancel $ij}
 	}
@@ -194,7 +194,7 @@ if { $termcheck eq "fail" } {
 puts "Failed to terminate running Virtual Users"
 return 1 
 	} else {
-#running in slave mode virtual users terminated so continue
+#running in replica mode virtual users terminated so continue
 puts "Continuing"
 	} 
     }
@@ -422,7 +422,7 @@ set filename [file join $tmpdir hammerdb.log ]
 	puts $flog "Hammerdb Log @ [clock format [clock seconds]]"
 	puts $flog "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 			}
-if { $opmode != "Slave" } {
+if { $opmode != "Replica" } {
 if { $apmode eq "disabled" } {
 tk_messageBox -title "Logging Active" -message "Logging activated\nto $filename"
 		} else {
@@ -430,7 +430,7 @@ puts "Logging activated to $filename"
 			}
 		}
 	} else {
-if { $opmode != "Slave" } {
+if { $opmode != "Replica" } {
 if { $apmode eq "disabled" } {
 tk_messageBox -icon error -message "Could not create Logfile"
 		} else {

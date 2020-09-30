@@ -768,11 +768,11 @@ proc vudestroy {} {
 	    }
 	}	
     } else {
-	if { $opmode eq "Slave" } {
-#In Master Slave Mode ed_kill_vusers may have already been called from Master so thread::names is 1
+	if { $opmode eq "Replica" } {
+#In Primary Replica Mode ed_kill_vusers may have already been called from Primary so thread::names is 1
 	unset -nocomplain AVUC
 	unset -nocomplain vustatus
-	putscli "vudestroy from Master, Slave status clean up"
+	putscli "vudestroy from Primary, Replica status clean up"
 	   } else {
 	putscli "No Virtual Users found to destroy"
 	}
@@ -856,11 +856,11 @@ puts "Loaded $customscript"
 
 proc distributescript {} {
 global opmode masterlist
-if { $opmode != "Master" } { 
-puts "Error: Cannot distribute script if not in Master mode"
+if { $opmode != "Primary" } { 
+puts "Error: Cannot distribute script if not in Primary mode"
 	} else {
 if { [ llength $masterlist ] eq 0 } {
-puts "Error: Master has no Slaves to distribute to"
+puts "Error: Primary has no Replicas to distribute to"
  	} else {
 distribute
 	}
@@ -1179,16 +1179,16 @@ return
 	"local" {
 set opmode "Local"
 	}
-	"master" {
-set opmode "Master"
+	"primary" {
+set opmode "Primary"
 	}
-	"slave" {
-set opmode "Slave"
+	"replica" {
+set opmode "Replica"
 set id $assignid
 set hostname $assignhost
 	}
 	default {
-	puts "Error:Mode to switch to must be one of Local, Master or Slave"
+	puts "Error:Mode to switch to must be one of Local, Primary or Replica"
 	return
 	}
 }	
@@ -1303,11 +1303,11 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
 }
 distributescript {
 putscli "distributescript"
-putscli "In Master mode distributes the script loaded by Master to the connected Slaves." 
+putscli "In Primary mode distributes the script loaded by Primary to the connected Replicas." 
 }
 switchmode {
-putscli "switchmode - Usage: switchmode \[mode\] ?MasterID? ?MasterHostname?"
-putscli "Equivalent to the Mode option in the graphical interface. Mode to switch to must be one of Local, Master or Slave. If Mode is Slave then the ID and Hostname of the Master to connect to must be given."
+putscli "switchmode - Usage: switchmode \[mode\] ?PrimaryID? ?PrimaryHostname?"
+putscli "Equivalent to the Mode option in the graphical interface. Mode to switch to must be one of Local, Primary or Replica. If Mode is Replica then the ID and Hostname of the Primary to connect to must be given."
 }
 buildschema {
 putscli "buildschema - Usage: buildschema"

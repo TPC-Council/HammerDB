@@ -906,6 +906,7 @@ tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.
 
 Pull Requests & Issues
 
+Inclusive Language Updates (#152)
 Add runtimer and waittocomplete routines to CLI (#149)
 HammerDB CLI on Windows can have incorrect colours (#148)
 Update SQL Server ODBC Driver (#140)

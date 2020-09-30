@@ -282,6 +282,7 @@ proc ::ttk::unix_messageBox_draw { \
 	variable ::ttk::dialog_module::window_name
 	variable ::ttk::dialog_module::italic_font
 	set vertical_padding {0i 0.20i}
+	set horizontal_padding 4
 	
 	ttk::toplevel $window_name 
 	wm transient $window_name .ed_mainFrame
@@ -291,28 +292,18 @@ proc ::ttk::unix_messageBox_draw { \
 	#upvar #0 icons icons
 	switch $window_icon_type {
 		error {
-	#		set error [ dict get $icons error ]
-	#		set window_icon [image create photo -data $error]
 			set window_icon [create_image error icons ]
 		}
 		info {
-	#		set information [ dict get $icons information ]
-	#		set window_icon [image create photo -data $information]
 			set window_icon [create_image information icons ]
 		}
 		question {
-	#		set question [ dict get $icons question ]
-	#		set window_icon [image create photo -data $question]
 			set window_icon [create_image question icons ]
 		}
 		warning {
-	#		set warning [ dict get $icons warning ]
-	#		set window_icon [image create photo -data $warning]
 			set window_icon [create_image warning icons ]
 		}
 		default {
-	#		set information [ dict get $icons information ]
-	#		set window_icon [image create photo -data $information]
 			set window_icon [create_image information icons ]
 		}
 	}
@@ -364,30 +355,30 @@ proc ::ttk::unix_messageBox_draw { \
 	
 	switch $grid_type {
 		abortretryignore {
-			grid $window_name.top_frame.button_frame.abort_button -row 0 -column 0  -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.retry_button -row 0 -column 1  -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.ignore_button -row 0 -column 2  -pady $vertical_padding
+			grid $window_name.top_frame.button_frame.abort_button -row 0 -column 0  -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.retry_button -row 0 -column 1  -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.ignore_button -row 0 -column 2  -pady $vertical_padding -padx $horizontal_padding 
 		} 
 		ok {
 			grid $window_name.top_frame.button_frame.ok_button -row 0 -column 0 \
 			-sticky we -padx 5 -pady $vertical_padding
 		} 
 		okcancel {
-			grid $window_name.top_frame.button_frame.ok_button -row 0 -column 0 -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 1  -pady $vertical_padding
+			grid $window_name.top_frame.button_frame.ok_button -row 0 -column 0 -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 1  -pady $vertical_padding -padx $horizontal_padding 
 		} 
 		retrycancel {
-			grid $window_name.top_frame.button_frame.retry_button -row 0 -column 0  -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 1  -pady $vertical_padding
+			grid $window_name.top_frame.button_frame.retry_button -row 0 -column 0  -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 1  -pady $vertical_padding -padx $horizontal_padding 
 		} 
 		yesno {
-			grid $window_name.top_frame.button_frame.yes_button -row 0 -column 0 -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.no_button -row 0 -column 1  -pady $vertical_padding
+			grid $window_name.top_frame.button_frame.yes_button -row 0 -column 0 -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.no_button -row 0 -column 1  -pady $vertical_padding -padx $horizontal_padding 
 		} 
 		yesnocancel {
-			grid $window_name.top_frame.button_frame.yes_button -row 0 -column 0  -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.no_button -row 0 -column 1 -pady $vertical_padding
-			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 2  -pady $vertical_padding
+			grid $window_name.top_frame.button_frame.yes_button -row 0 -column 0  -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.no_button -row 0 -column 1 -pady $vertical_padding -padx $horizontal_padding 
+			grid $window_name.top_frame.button_frame.cancel_button -row 0 -column 2  -pady $vertical_padding -padx $horizontal_padding 
 		}
 	}
 	

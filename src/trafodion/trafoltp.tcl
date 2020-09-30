@@ -2174,7 +2174,7 @@ return $connection
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $dsn $odbc_driver $server $user $password ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 puts stderr "Error: the database connection to $connection could not be established"
@@ -2256,10 +2256,10 @@ set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
 puts [ testresult $nopm $tpm Trafodion ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

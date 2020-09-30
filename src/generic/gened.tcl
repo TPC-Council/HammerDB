@@ -177,7 +177,7 @@ construct_menu $Name Options\  $Menu_string($Name)
    ttk::frame $Name 
 
 construct_button $Parent.editbuttons.console edit ctext console.gif "convert_to_oratcl" "Convert Trace to Oratcl" 
-construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Master Distribution" 
+construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Primary Distribution" 
 $Parent.editbuttons.distribute configure -state disabled
 #placeholder button for persistent saving of Xml options to database
 #construct_button $Parent.editbuttons.savexml edit savexml savexml.ppm "xmlopts" "Save Configuration"
@@ -2907,14 +2907,14 @@ bind $Parent.f1.b1 <Button> {
 .mode.f1.e2 configure -state disabled 
                 }
    set Name $Parent.f1.b2
-ttk::radiobutton $Name -text "Master Mode" -variable opmode -value "Master" 
+ttk::radiobutton $Name -text "Primary Mode" -variable opmode -value "Primary" 
 grid $Name -column 0 -row 2 -sticky w                                          
 bind $Parent.f1.b2 <Button> {
 .mode.f1.e1 configure -state disabled 
 .mode.f1.e2 configure -state disabled 
                 }
    set Name $Parent.f1.b3
-ttk::radiobutton $Name -text "Slave Mode" -variable opmode -value "Slave"
+ttk::radiobutton $Name -text "Replica Mode" -variable opmode -value "Replica"
 grid $Name -column 0 -row 3 -sticky w
 bind $Parent.f1.b3 <Button> {
 .mode.f1.e1 configure -state normal 
@@ -2922,20 +2922,20 @@ bind $Parent.f1.b3 <Button> {
                 }
    set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
-   ttk::label $Prompt -text "Master ID :"
+   ttk::label $Prompt -text "Primary ID :"
    ttk::entry $Name -width 30 -textvariable id
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4
-if {$opmode != "Slave" } {
+if {$opmode != "Replica" } {
         $Name configure -state disabled
         }
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
-   ttk::label $Prompt -text "Master Hostname :"
+   ttk::label $Prompt -text "Primary Hostname :"
    ttk::entry $Name -width 30 -textvariable hostname
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5
-if {$opmode != "Slave" } {
+if {$opmode != "Replica" } {
         $Name configure -state disabled
         }
    set Name $Parent.b4

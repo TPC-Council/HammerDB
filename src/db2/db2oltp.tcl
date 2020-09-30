@@ -1570,7 +1570,7 @@ return $db_handle
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 {
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set db_handle [ ConnectToDb2 $dbname $user $password ]
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -1636,10 +1636,10 @@ puts "---MONREPORT OUTPUT---"
 puts $monreport
 	}
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 db2_disconnect $db_handle
                } else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
                 }
 	    }
 default {
@@ -1937,7 +1937,7 @@ return $db_handle
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 {
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set db_handle [ ConnectToDb2 $dbname $user $password ]
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -2003,10 +2003,10 @@ puts "---MONREPORT OUTPUT---"
 puts $monreport
 	}
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 db2_disconnect $db_handle
                } else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
                 }
 	    }
 default {

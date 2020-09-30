@@ -2497,7 +2497,7 @@ set timesten 0
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set lda [ OracleLogon $systemconnect lda $timesten ]
 set curn1 [oraopen $lda ] 
 set lda1 [ OracleLogon $connect lda1 $timesten ]
@@ -2592,7 +2592,7 @@ puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if { $timesten } {
@@ -2613,7 +2613,7 @@ oraclose $curn2
 oralogoff $lda
 oralogoff $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
@@ -2906,7 +2906,7 @@ set timesten 0
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set lda [ OracleLogon $systemconnect lda $timesten ]
 set curn1 [oraopen $lda ]
 set lda1 [ OracleLogon $connect lda1 $timesten ]
@@ -3001,7 +3001,7 @@ puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if { $timesten } {
@@ -3022,7 +3022,7 @@ oraclose $curn2
 oralogoff $lda
 oralogoff $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
