@@ -445,6 +445,8 @@ if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global _ED
 ed_edit_commit
 set flbuff $_ED(package)
+#When distributing script to Replicas change mode from Primary to Replica
+set flbuff [ regsub -all {mode "Primary"} $flbuff {mode "Replica"} ]
 foreach f $masterlist {
 puts -nonewline "Distributing to $f ..."
 if { [catch {
@@ -452,10 +454,13 @@ Primary send $f set _ED(package) [ concat [ list $flbuff\n]]
 Primary send $f update
 Primary send $f [ concat upd_lprefix $lprefix ]
 Primary send $f set _ED(temppackage) [ concat [ list $flbuff\n]]
-Primary send $f ed_edit } b] } {
+Primary send $f ed_edit 
+Primary send $f [ concat applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text ]
+		} b] 
+		} {
 puts "Failed $b"
 } else {
-puts "Succeeded"
+puts "Primary Distribution Succeeded"
 		}
 	}
 }
