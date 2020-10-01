@@ -451,6 +451,7 @@ foreach f $masterlist {
 puts -nonewline "Distributing to $f ..."
 if { [catch {
 Primary send $f set _ED(package) [ concat [ list $flbuff\n]]
+Primary send $f set _ED(packagekeyname) [ concat [ list $_ED(packagekeyname) ] ]
 Primary send $f update
 Primary send $f [ concat upd_lprefix $lprefix ]
 Primary send $f set _ED(temppackage) [ concat [ list $flbuff\n]]
