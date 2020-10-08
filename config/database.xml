@@ -47,7 +47,7 @@
 	<description>Redis</description>
 	<prefix>redis</prefix>
 	<library>redis</library>
-	<workloads>{HDB TPC-C}</workloads>
+	<workloads>TPROC-C</workloads>
 	<commands>redis</commands>
 </redis>
 -->
@@ -57,7 +57,7 @@
 	<description>Trafodion</description>
 	<prefix>traf</prefix>
 	<library>tdbc::odbc</library>
-	<workloads>{HDB TPC-C}</workloads>
+	<workloads>TPROC-C</workloads>
 	<commands>tdbc::odbc</commands>
 </trafodion>
 -->
