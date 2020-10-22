@@ -1448,7 +1448,12 @@ return
 proc UpdateStatistics { odbc db azure } {
 puts "UPDATING SCHEMA STATISTICS"
 if {!$azure} {
-$odbc evaldirect "EXEC sp_updatestats"
+$odbc evaldirect "CREATE OR ALTER PROCEDURE dbo.sp_updstats
+with execute as 'dbo'
+as
+exec sp_updatestats
+"
+$odbc evaldirect "EXEC dbo.sp_updstats"
 } else {
 set sql(1) "USE $db"
 set sql(2) "EXEC sp_updatestats"
