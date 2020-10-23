@@ -1364,7 +1364,7 @@ putscli "Helper routine to run a timer in the main hammerdbcli thread to keep it
 }
 waittocomplete {
 putscli "waittocomplete - Usage: waittocomplete"
-putscli "Helper routine to enable the main hammerdbcli thread to keep it busy until vucomplete is detected. When vucomplete is detected exit is called causing all virtual users and the main hammerdblci thread to terminate. Often used when calling hammerdb from external scripting commands. Usually followed by vwait forever."
+putscli "Helper routine to enable the main hammerdbcli thread to keep it busy until vucomplete is detected. When vucomplete is detected exit is called causing all virtual users and the main hammerdblci thread to terminate. Often used when calling hammerdb from external scripting commands."
 }
 }
 }
