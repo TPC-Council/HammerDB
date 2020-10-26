@@ -950,8 +950,7 @@ proc ed_loadsave {loadflag} {
    pack $Name -side right -anchor nw
 
    set Name $Parent.list
-   ttk::frame $Name -borderwidth 2 -height 50 \
-         	-relief raised -width 50
+   ttk::frame $Name -borderwidth 2 -height 50 -width 50
    pack $Name -side top -anchor nw -expand yes -fill both
    
    set Name $Parent.list.lb1
