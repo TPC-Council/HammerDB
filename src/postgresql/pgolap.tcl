@@ -60,17 +60,21 @@ proc ConnectToPostgres { host port azure user password dbname } {
         }
     }
 
-    puts "$user $password $host $port $is_super_user"
-    global tcl_platform
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
 
-    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
         set lda "Failed" ; puts $message
         error $message
     } else {
         if {$tcl_platform(platform) == "windows"} {
             #Workaround for Bug #95 where first connection fails on Windows
             catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
@@ -104,33 +108,33 @@ proc CreateUserDatabase { lda host port azure db tspace superuser superuser_pass
         set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
     } else {
         set existing_db [ ConnectToPostgres $host $port $azure $superuser $superuser_password $db  ]
-    if { $existing_db eq "Failed" } {
-        error "error, the database connection to $host could not be established"
-    } else {
-        set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
-        if { [pg_result $result -numTuples] == 0 } {
-            puts "Using existing empty Database $db for Schema build"
-            set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+        if { $existing_db eq "Failed" } {
+            error "error, the database connection to $host could not be established"
         } else {
-            puts "Database with tables $db exists"
-            error "Database $db exists but is not empty, specify a new or empty database name"
+            set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+            if { [pg_result $result -numTuples] == 0 } {
+                puts "Using existing empty Database $db for Schema build"
+                set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+            } else {
+                puts "Database with tables $db exists"
+                error "Database $db exists but is not empty, specify a new or empty database name"
+            }
+        }
+        pg_disconnect $existing_db
+    }
+    if { $tspace != "pg_default" } {
+        incr stmnt_count
+        set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
+    }
+    for { set i 1 } { $i <= $stmnt_count } { incr i } {
+        set result [ pg_exec $lda $sql($i) ]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
+        } else {
+            pg_result $result -clear
         }
     }
-    pg_disconnect $existing_db
-}
-if { $tspace != "pg_default" } {
-incr stmnt_count
-set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
-}
-for { set i 1 } { $i <= $stmnt_count } { incr i } {
-set result [ pg_exec $lda $sql($i) ]
-if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-error "[pg_result $result -error]"
-        } else {
-pg_result $result -clear
-        }
-    }
-return
+    return
 }
 
 proc CreateTables { lda greenplum gpcompress } {
@@ -567,7 +571,7 @@ error "[pg_result $result -error]"
 return
 }
 
-proc do_tpch { host port scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
+proc do_tpch { host port azure scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
 global dist_names dist_weights weights dists weights
 ###############################################
 #Generating following rows
@@ -754,7 +758,7 @@ set degree_of_parallel \"$pg_degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $pg_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
-set azure \"$mssqls_azure\";#Azure Type Connection
+set azure \"$pg_azure\";#Azure Type Connection
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
@@ -794,17 +798,21 @@ proc ConnectToPostgres { host port azure user password dbname } {
         }
     }
 
-    puts "$user $password $host $port $is_super_user"
-    global tcl_platform
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
 
-    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
         set lda "Failed" ; puts $message
         error $message
     } else {
         if {$tcl_platform(platform) == "windows"} {
             #Workaround for Bug #95 where first connection fails on Windows
             catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
@@ -965,8 +973,8 @@ set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 }
 
-proc do_refresh { host port db user password scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+proc do_refresh { host port azure db user password scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  	}
@@ -1219,10 +1227,10 @@ return $q2sub
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
+proc do_tpch { host port azure db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
 #Queries 17 and 20 are long running on PostgreSQL
 set SKIP_QUERY_17_20 "false"
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  	}
@@ -1364,6 +1372,7 @@ set degree_of_parallel \"$pg_degree_of_parallel\" ;# Degree of Parallelism
 set redshift_compat \"$pg_rs_compat\" ;# Queries to run against redshift (true or false)
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
+set azure \"$pg_azure\";#Azure Type Connection
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1399,17 +1408,21 @@ proc ConnectToPostgres { host port azure user password dbname } {
         }
     }
 
-    puts "$user $password $host $port $is_super_user"
-    global tcl_platform
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
 
-    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
         set lda "Failed" ; puts $message
         error $message
     } else {
         if {$tcl_platform(platform) == "windows"} {
             #Workaround for Bug #95 where first connection fails on Windows
             catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
@@ -1480,13 +1493,13 @@ return $sql($query_no)
 }
 #########################
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
-proc do_cloud { host port user password db RAISEERROR VERBOSE degree_of_parallel redshift_compat } {
+proc do_cloud { host port azure password db RAISEERROR VERBOSE degree_of_parallel redshift_compat } {
 if { $redshift_compat } {
 set VERSION "redshift"
 	} else {
 set VERSION "postgres"
 	}
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $VERSION eq "postgres" } {
 create_median_and_percentile $lda
 set result [ pg_exec $lda "set max_parallel_workers_per_gather=$degree_of_parallel"]

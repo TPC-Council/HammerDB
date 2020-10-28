@@ -7,7 +7,7 @@ if {[dict exists $dbdict postgresql library ]} {
 upvar #0 configpostgresql configpostgresql
 #set variables to values in dict
 setlocaltpccvars $configpostgresql
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $pg_count_ware Warehouse PostgreSQL TPC-C schema\nin host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_user ] in database [ string toupper $pg_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $pg_count_ware Warehouse PostgreSQL TPC-C schema\nin host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_user ] in database [ string toupper $pg_dbase ]?" -type yesno ] == yes} {
 if { $pg_num_vu eq 1 || $pg_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -135,8 +135,8 @@ AND s_w_id = no_ol_supply_w_id;
 no_ol_amount := (  no_ol_quantity * no_i_price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) );
 
 IF no_d_id = 1
-THEN 
-no_ol_dist_info := no_s_dist_01; 
+THEN
+no_ol_dist_info := no_s_dist_01;
 
 ELSIF no_d_id = 2
 THEN
@@ -315,7 +315,7 @@ FROM customer
 WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id;
 END IF;
 p_c_balance := ( p_c_balance + p_h_amount );
-IF p_c_credit = 'BC' 
+IF p_c_credit = 'BC'
 THEN
  SELECT c_data INTO p_c_data
 FROM customer
@@ -360,9 +360,9 @@ os_entdate		OUT DATE,
 os_o_carrier_id		OUT INTEGER )
 IS
 TYPE numbertable IS TABLE OF NUMBER INDEX BY BINARY_INTEGER;
-os_ol_i_id numbertable;	
-os_ol_supply_w_id numbertable;	
-os_ol_quantity numbertable;	
+os_ol_i_id numbertable;
+os_ol_supply_w_id numbertable;
+os_ol_quantity numbertable;
 TYPE amounttable IS TABLE OF NUMBER(6,2) INDEX BY BINARY_INTEGER;
 os_ol_amount amounttable;
 TYPE datetable IS TABLE OF DATE INDEX BY BINARY_INTEGER;
@@ -393,7 +393,7 @@ END IF;
 OPEN c_name;
 FOR loop_counter IN 0 .. cast((namecnt/2) AS INTEGER)
 LOOP
-FETCH c_name  
+FETCH c_name
 INTO os_c_balance, os_c_first, os_c_middle, os_c_id;
 END LOOP;
 close c_name;
@@ -404,7 +404,7 @@ FROM customer
 WHERE c_id = os_c_id AND c_d_id = os_d_id AND c_w_id = os_w_id;
 END IF;
 BEGIN
-SELECT o_id, o_carrier_id, o_entry_d 
+SELECT o_id, o_carrier_id, o_entry_d
 INTO os_o_id, os_o_carrier_id, os_entdate
 FROM
 (SELECT o_id, o_carrier_id, o_entry_d
@@ -434,8 +434,8 @@ st_w_id			INTEGER,
 st_d_id			INTEGER,
 threshold		INTEGER,
 stock_count		OUT INTEGER )
-IS 
-st_o_id			NUMBER;	
+IS
+st_o_id			NUMBER;
 BEGIN
 SELECT d_next_o_id INTO st_o_id
 FROM district
@@ -1573,69 +1573,91 @@ pg_result $result -clear
 return
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
+
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
 
-proc CreateUserDatabase { lda host port db tspace superuser superuser_password user password } {
-set stmnt_count 1
-puts "CREATING DATABASE $db under OWNER $user"
-set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
-if { [pg_result $result -numTuples] == 0 } {
-set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
-incr stmnt_count;
-set sql($stmnt_count) "GRANT $user to $superuser"
+proc CreateUserDatabase { lda host port azure db tspace superuser superuser_password user password } {
+    set stmnt_count 1
+    puts "CREATING DATABASE $db under OWNER $user"
+    set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
+    if { [pg_result $result -numTuples] == 0 } {
+        set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
+        incr stmnt_count;
+        if { $azure eq "true" } {
+            # After logging in to postgres
+            # we do not need the machine name
+            set superuser [lindex [split  "$superuser"  @] 0]
+        }
+
+        set sql($stmnt_count) "GRANT $user to $superuser"
+
     } else {
-puts "Using existing User $user for Schema build"
-set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
+        puts "Using existing User $user for Schema build"
+        set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
     }
-incr stmnt_count;
-set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
-if { [pg_result $result -numTuples] == 0} {
-set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
+    incr stmnt_count;
+    set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
+    if { [pg_result $result -numTuples] == 0} {
+        set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
     } else {
-set existing_db [ ConnectToPostgres $host $port $superuser $superuser_password $db ]
-if { $existing_db eq "Failed" } {
-error "error, the database connection to $host could not be established"
+        set existing_db [ ConnectToPostgres $host $port $azure $superuser $superuser_password $db  ]
+        if { $existing_db eq "Failed" } {
+            error "error, the database connection to $host could not be established"
         } else {
-set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
-if { [pg_result $result -numTuples] == 0 } {
-puts "Using existing empty Database $db for Schema build"
-set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+            set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+            if { [pg_result $result -numTuples] == 0 } {
+                puts "Using existing empty Database $db for Schema build"
+                set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
             } else {
-puts "Database with tables $db exists"
-error "Database $db exists but is not empty, specify a new or empty database name"
+                puts "Database with tables $db exists"
+                error "Database $db exists but is not empty, specify a new or empty database name"
             }
         }
-pg_disconnect $existing_db
+        pg_disconnect $existing_db
     }
-if { $tspace != "pg_default" } {
-incr stmnt_count
-set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
-}
-for { set i 1 } { $i <= $stmnt_count } { incr i } {
-set result [ pg_exec $lda $sql($i) ]
-if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-error "[pg_result $result -error]"
+    if { $tspace != "pg_default" } {
+        incr stmnt_count
+        set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
+    }
+    for { set i 1 } { $i <= $stmnt_count } { incr i } {
+        set result [ pg_exec $lda $sql($i) ]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
         } else {
-pg_result $result -clear
+            pg_result $result -clear
         }
     }
-return
+    return
 }
 
 proc CreateTables { lda ora_compatible } {
@@ -1743,7 +1765,7 @@ set c_data [ MakeAlphaString 300 500 $globArray $chalen ]
 append c_val_list ('$c_id', '$c_d_id', '$c_w_id', '$c_first', '$c_middle', '$c_last', '[ lindex $c_add 0 ]', '[ lindex $c_add 1 ]', '[ lindex $c_add 2 ]', '[ lindex $c_add 3 ]', '[ lindex $c_add 4 ]', '$c_phone', [ date_function ], '$c_credit', '$c_credit_lim', '$c_discount', '$c_balance', '$c_data', '10.0', '1', '0')
 set h_data [ MakeAlphaString 12 24 $globArray $chalen ]
 append h_val_list ('$c_id', '$c_d_id', '$c_w_id', '$c_w_id', '$c_d_id', [ date_function ], '$h_amount', '$h_data')
-if { $bld_cnt<= 999 } { 
+if { $bld_cnt<= 999 } {
 append c_val_list ,
 append h_val_list ,
 	}
@@ -1890,11 +1912,11 @@ for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
 set orig($i) 0
 }
 for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
-set pos [ RandomNumber 0 $MAXITEMS ] 
+set pos [ RandomNumber 0 $MAXITEMS ]
 set orig($pos) 1
 	}
 for {set i_id 1} {$i_id <= $MAXITEMS } {incr i_id } {
-set i_im_id [ RandomNumber 1 10000 ] 
+set i_im_id [ RandomNumber 1 10000 ]
 set i_name [ MakeAlphaString 14 24 $globArray $chalen ]
 set i_price_ran [ RandomNumber 100 10000 ]
 set i_price [ format "%4.2f" [ expr {$i_price_ran / 100.0} ] ]
@@ -1933,7 +1955,7 @@ for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
 set orig($i) 0
 }
 for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
-set pos [ RandomNumber 0 $MAXITEMS ] 
+set pos [ RandomNumber 0 $MAXITEMS ]
 set orig($pos) 1
 	}
 for {set s_i_id 1} {$s_i_id <= $MAXITEMS } {incr s_i_id } {
@@ -1957,7 +1979,7 @@ set s_data [ string replace $s_data $first $last "original" ]
 		}
 	}
 append val_list ('$s_i_id', '$s_w_id', '$s_quantity', '$s_dist_01', '$s_dist_02', '$s_dist_03', '$s_dist_04', '$s_dist_05', '$s_dist_06', '$s_dist_07', '$s_dist_08', '$s_dist_09', '$s_dist_10', '$s_data', '0', '0', '0')
-if { $bld_cnt<= 999 } { 
+if { $bld_cnt<= 999 } {
 append val_list ,
 }
 incr bld_cnt
@@ -2063,7 +2085,7 @@ if { $num_vu > 1 && [ chk_thread ] eq "TRUE" } {
 set threaded "MULTI-THREADED"
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
-	1 { 
+	1 {
 puts "Monitor Thread"
 if { $threaded eq "MULTI-THREADED" } {
 tsv::lappend common thrdlst monitor
@@ -2073,7 +2095,7 @@ tsv::lappend common thrdlst idle
 tsv::set application load "WAIT"
 		}
 	}
-	default { 
+	default {
 puts "Worker Thread"
 if { [ expr $myposition - 1 ] > $count_ware } { puts "No Warehouses to Create"; return }
      }
@@ -2084,15 +2106,15 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $user ] SCHEMA"
-set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultdb ]
+set lda [ ConnectToPostgres $host $port $azure $superuser $superuser_password $defaultdb ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $host $port $db $tspace $superuser $superuser_password $user $password
+CreateUserDatabase $lda $host $port $azure $db $tspace $superuser $superuser_password $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
@@ -2106,7 +2128,7 @@ tsv::set application load "READY"
 LoadItems $lda $MAXITEMS
 puts "Monitoring Workers..."
 set prevactive 0
-while 1 {  
+while 1 {
 set idlcnt 0; set lvcnt 0; set dncnt 0;
 for {set th 2} {$th <= $totalvirtualusers } {incr th} {
 switch [tsv::lindex common thrdlst $th] {
@@ -2120,7 +2142,7 @@ puts "Workers: $lvcnt Active $dncnt Done"
 	}
 set prevactive $lvcnt
 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-after 10000 
+after 10000
 }} else {
 LoadItems $lda $MAXITEMS
 }}
@@ -2128,15 +2150,15 @@ if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposi
 if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
-while 1 {  
+while 1 {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
-if { $mtcnt eq 48 } { 
-puts "Monitor failed to notify ready state" 
+if { $mtcnt eq 48 } {
+puts "Monitor failed to notify ready state"
 return
 	}
-after 5000 
+after 5000
 }
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
@@ -2163,7 +2185,7 @@ tsv::lreplace common thrdlst $myposition $myposition done
 if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 CreateIndexes $lda
 CreateStoredProcs $lda $ora_compatible $pg_storedprocs
-GatherStatistics $lda 
+GatherStatistics $lda
 puts "[ string toupper $user ] SCHEMA COMPLETE"
 pg_disconnect $lda
 return
@@ -2217,19 +2239,19 @@ dict for {id conparams} $connectonly {
 #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
 dict with conparams {
 #set PostgreSQL connect string
-set $id [ list $pg_host $pg_port $pg_user $pg_pass $pg_dbase ]
+set $id [ list $pg_host $pg_port $pg_azure $pg_user $pg_pass $pg_dbase ]
 	}
     }
 #For the connect keys c1, c2 etc make a connection
 foreach id [ split $conkeys ] {
     lassign [ set $id ] 1 2 3 4 5
-dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 ] ]
+dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 $6 ] ]
 if {  [ set lda$id ] eq "Failed" } {
 puts "error, the database connection to $1 could not be established"
  	}
 }
 #Extract which storedprocedures use which connection
-foreach sproc [ dict keys [ dict get $cpool sprocs ] ] { 
+foreach sproc [ dict keys [ dict get $cpool sprocs ] ] {
 unset -nocomplain clist
 #Extract the policy for the storedprocedures
 set $sproc\_policy [ dict get $cpool sprocs $sproc policy ]
@@ -2241,7 +2263,7 @@ unset -nocomplain $newname
 lappend $newname $clist
 }
 #Prepare statements multiple times for stored procedure for each connection and add to cursor list
-foreach curn_fn {curn_no curn_py curn_dl curn_sl curn_os} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+foreach curn_fn {curn_no curn_py curn_dl curn_sl curn_os} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } {
 unset -nocomplain $cursor_list
 set curcnt 0
 #For all of the connections
@@ -2256,7 +2278,7 @@ lappend $cursor_list $cursor
 	}
 #Record the number of cursors
 set $len [ llength  [ set $cursor_list ] ]
-#Initialise number of executions 
+#Initialise number of executions
 set $cnt 0
 #For PostgreSQL cursor names are placeholders to choose the correct policy. The placeholder is then used to select the connection. The prepared statements are always called neworder, payment etc for each connection
 #puts "sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
@@ -2265,16 +2287,16 @@ set $cnt 0
 set mlda [ ConnectToPostgres $host $port $user $password $db ]
 if { $mlda eq "Failed" } {
 error "error, the database connection to $host could not be established"
- } 
+ }
 pg_select $mlda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}
 #2.4.1.1 set warehouse_id stays constant for a given terminal
-set w_id  [ RandomNumber 1 $w_id_input ]  
+set w_id  [ RandomNumber 1 $w_id_input ]
 pg_select $mlda "select max(d_id) from district" d_id_input_arr {
 set d_id_input $d_id_input_arr(max)
 }
-set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
 puts "Processing $total_iterations transactions without output suppressed..."
 set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
@@ -2353,13 +2375,13 @@ set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end
 		}
 if { $timedtype eq "async" } {
 set syncdrvt(2) [ subst -nocommands -novariables {#CONNECT ASYNC
-promise::async simulate_client { clientname total_iterations host port user password db ora_compatible pg_storedprocs RAISEERROR KEYANDTHINK async_verbose async_delay } \{
+promise::async simulate_client { clientname total_iterations host port azure user password db ora_compatible pg_storedprocs RAISEERROR KEYANDTHINK async_verbose async_delay } \{
 set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
 if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-set mlda [ ConnectToPostgresAsynch $host $port $user $password $db $RAISEERROR $clientname $async_verbose ]
+set mlda [ ConnectToPostgresAsynch $host $port $azure $user $password $db $RAISEERROR $clientname $async_verbose ]
 } ]
 set syncdrvi(2a) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#RUN TPC-C" 1.0 ]
 #Insert Asynch connections
@@ -2425,10 +2447,10 @@ set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
 #Remove extra async connection
 set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
-set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mlda [ ConnectToPostgres $host $port $user $password $db ]} end ]
+set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mlda [ ConnectToPostgres $host $port $azure $user $password $db ]} end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
 #Replace individual lines for Asynch
-foreach line {{dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 ] ]} {#puts "sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{dict set connlist $id [ set lda$id [ ConnectToPostgresAsynch $1 $2 $3 $4 $5 $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+foreach line {{dict set connlist $id [ set lda$id [ ConnectToPostgres $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{dict set connlist $id [ set lda$id [ ConnectToPostgresAsynch $1 $2 $3 $4 $5 $6 $RAISEERROR $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$curn_fn connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
@@ -2486,6 +2508,7 @@ set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
+set azure \"$pg_azure\";#Azure Type Connection
 set user \"$pg_user\" ;# PostgreSQL user
 set password \"$pg_pass\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
@@ -2502,23 +2525,39 @@ set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
 return $tstamp
 }
 #POSTGRES CONNECTION
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
+
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
+
 #NEW ORDER
 proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
 #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
@@ -2627,7 +2666,7 @@ set result [pg_exec $lda "exec ostat($w_id,$d_id,$c_id,$byname,'$name')" ]
 } else {
 if { $pg_storedprocs eq "true" } {
 set date [ gettimestamp ]
-set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ] 
+set result [pg_exec $lda "call ostat($w_id,$d_id,$c_id,$byname,'$name','','',0.0,0,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone,0,'')" ]
 	} else {
 set result [ pg_exec_prepared $lda ostat {} {} $w_id $d_id $c_id $byname $name ]
 	}
@@ -2652,7 +2691,7 @@ if { $ora_compatible eq "true" } {
 set result [pg_exec $lda "exec delivery($w_id,$carrier_id,TO_TIMESTAMP($date,'YYYYMMDDHH24MISS'))" ]
 } else {
 if { $pg_storedprocs eq "true" } {
-set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ] 
+set result [pg_exec $lda "call delivery($w_id,$carrier_id,TO_TIMESTAMP('$date','YYYYMMDDHH24MISS')::timestamp without time zone)" ]
 	} else {
 set result [ pg_exec_prepared $lda delivery {} {} $w_id $carrier_id ]
 	}
@@ -2727,11 +2766,11 @@ pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}
 #2.4.1.1 set warehouse_id stays constant for a given terminal
-set w_id  [ RandomNumber 1 $w_id_input ]  
+set w_id  [ RandomNumber 1 $w_id_input ]
 pg_select $lda "select max(d_id) from district" d_id_input_arr {
 set d_id_input $d_id_input_arr(max)
 }
-set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
 puts "Processing $total_iterations transactions without output suppressed..."
 set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
@@ -2799,6 +2838,7 @@ set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
+set azure \"$pg_azure\";#Azure Type Connection
 set superuser \"$pg_superuser\" ;# Superuser privilege user
 set superuser_password \"$pg_superuserpass\" ;# Password for Superuser
 set default_database \"$pg_defaultdbase\" ;# Default Database for Superuser
@@ -2816,37 +2856,53 @@ if { [ chk_thread ] eq "FALSE" } {
 error "PostgreSQL Timed Script must be run in Thread Enabled Interpreter"
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
+
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
-1 { 
+1 {
 if { $mode eq "Local" || $mode eq "Master" } {
 if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
-set lda [ ConnectToPostgres $host $port $superuser $superuser_password $default_database ]
+set lda [ ConnectToPostgres $host $port $azure $superuser $superuser_password $default_database ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
- 	} 
+ 	}
 }
-set lda1 [ ConnectToPostgres $host $port $user $password $db ]
+set lda1 [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda1 eq "Failed" } {
 error "error, the database connection to $host could not be established"
- 	} 
+ 	}
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
 set rampup [ expr $rampup*60000 ]
@@ -3154,7 +3210,7 @@ pg_result $result -clear
     }
 }
 #RUN TPC-C
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
@@ -3171,11 +3227,11 @@ pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}
 #2.4.1.1 set warehouse_id stays constant for a given terminal
-set w_id  [ RandomNumber 1 $w_id_input ]  
+set w_id  [ RandomNumber 1 $w_id_input ]
 pg_select $lda "select max(d_id) from district" d_id_input_arr {
 set d_id_input $d_id_input_arr(max)
 }
-set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
 puts "Processing $total_iterations transactions with output suppressed..."
 set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
@@ -3247,37 +3303,53 @@ if { [ chk_thread ] eq "FALSE" } {
 error "PostgreSQL Timed Script must be run in Thread Enabled Interpreter"
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
+
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
-1 { 
+1 {
 if { $mode eq "Local" || $mode eq "Master" } {
 if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
-set lda [ ConnectToPostgres $host $port $superuser $superuser_password $default_database ]
+set lda [ ConnectToPostgres $host $port $azure $superuser $superuser_password $default_database ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
- 	} 
+ 	}
 }
-set lda1 [ ConnectToPostgres $host $port $user $password $db ]
+set lda1 [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda1 eq "Failed" } {
 error "error, the database connection to $host could not be established"
- 	} 
+ 	}
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
 set rampup [ expr $rampup*60000 ]
@@ -3399,34 +3471,50 @@ proc gettimestamp { } {
 set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
 return $tstamp
 }
-proc ConnectToPostgresAsynch { host port user password dbname RAISEERROR clientname async_verbose } {
-global tcl_platform
-puts "Connecting to database $dbname"
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" 
-if { $RAISEERROR } {
-puts "$clientname:login failed:$message"
-return "$clientname:login failed:$message"
-        }
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" 
-if { $RAISEERROR } {
-puts "$clientname:login failed:$message"
-return "$clientname:login failed:$message"
+proc ConnectToPostgresAsynch { host port azure user password dbname RAISEERROR clientname async_verbose } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
     }
- }
-if { $async_verbose } { puts "Connected $clientname:$lda" }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+
+    #Azure requires ssl connection
+    set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 0
+    }
+
+    global tcl_platform
+    puts "Connecting to database $dbname"
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+        set lda "Failed"
+        if { $RAISEERROR } {
+            puts "$clientname:login failed:$message"
+            return "$clientname:login failed:$message"
         }
-return $lda
+     } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = $sslConnectionEnabled ]]} message]} {
+                set lda "Failed"
+                if { $RAISEERROR } {
+                puts "$clientname:login failed:$message"
+                return "$clientname:login failed:$message"
+                }
+            }
+        }
+        if { $async_verbose } { puts "Connected $clientname:$lda" }
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
+
 #NEW ORDER
 proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs clientname } {
 #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
@@ -3620,13 +3708,13 @@ if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
 async_time $acno
 if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
 if { $async_verbose } { puts "Logging in $clientname" }
-set lda [ ConnectToPostgresAsynch $host $port $user $password $db $RAISEERROR $clientname $async_verbose ]
+set lda [ ConnectToPostgresAsynch $host $port $azure $user $password $db $RAISEERROR $clientname $async_verbose ]
 #RUN TPC-C
 if { $ora_compatible eq "true" } {
 set result [ pg_exec $lda "exec dbms_output.disable" ]
 pg_result $result -clear
 	} elseif { $pg_storedprocs eq "true" } {
-        ; 
+        ;
         } else {
 fn_prep_statement $lda $clientname
         }
@@ -3634,11 +3722,11 @@ pg_select $lda "select max(w_id) from warehouse" w_id_input_arr {
 set w_id_input $w_id_input_arr(max)
 	}
 #2.4.1.1 set warehouse_id stays constant for a given terminal
-set w_id  [ RandomNumber 1 $w_id_input ]  
+set w_id  [ RandomNumber 1 $w_id_input ]
 pg_select $lda "select max(d_id) from district" d_id_input_arr {
 set d_id_input $d_id_input_arr(max)
 }
-set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
 puts "Processing $total_iterations transactions with output suppressed..."
 set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 for {set it 0} {$it < $total_iterations} {incr it} {
