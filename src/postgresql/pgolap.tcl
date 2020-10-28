@@ -50,56 +50,74 @@ pg_result $result -clear
 return
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    puts "$user $password $host $port $is_super_user"
+    global tcl_platform
+
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
 
-proc CreateUserDatabase { lda host port db tspace superuser superuser_password user password } {
-set stmnt_count 1
-puts "CREATING DATABASE $db under OWNER $user"
-set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
-if { [pg_result $result -numTuples] == 0 } {
-set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
-incr stmnt_count;
-set sql($stmnt_count) "GRANT $user to $superuser"
-    } else {
-puts "Using existing User $user for Schema build"
-set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
-    }
-incr stmnt_count;
-set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
-if { [pg_result $result -numTuples] == 0} {
-set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
-    } else {
-set existing_db [ ConnectToPostgres $host $port $superuser $superuser_password $db ]
-if { $existing_db eq "Failed" } {
-error "error, the database connection to $host could not be established"
-        } else {
-set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
-if { [pg_result $result -numTuples] == 0 } {
-puts "Using existing empty Database $db for Schema build"
-set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
-            } else {
-puts "Database with tables $db exists"
-error "Database $db exists but is not empty, specify a new or empty database name"
-            }
+proc CreateUserDatabase { lda host port azure db tspace superuser superuser_password user password } {
+    set stmnt_count 1
+    puts "CREATING DATABASE $db under OWNER $user"
+    set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
+    if { [pg_result $result -numTuples] == 0 } {
+        set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
+        incr stmnt_count;
+        if { $azure eq "true" } {
+            # After logging in to postgres
+            # we do not need the machine name
+            set superuser [lindex [split  "$superuser"  @] 0]
         }
-pg_disconnect $existing_db
+
+        set sql($stmnt_count) "GRANT $user to $superuser"
+
+    } else {
+        puts "Using existing User $user for Schema build"
+        set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
     }
+    incr stmnt_count;
+    set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
+    if { [pg_result $result -numTuples] == 0} {
+        set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
+    } else {
+        set existing_db [ ConnectToPostgres $host $port $azure $superuser $superuser_password $db  ]
+    if { $existing_db eq "Failed" } {
+        error "error, the database connection to $host could not be established"
+    } else {
+        set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+        if { [pg_result $result -numTuples] == 0 } {
+            puts "Using existing empty Database $db for Schema build"
+            set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+        } else {
+            puts "Database with tables $db exists"
+            error "Database $db exists but is not empty, specify a new or empty database name"
+        }
+    }
+    pg_disconnect $existing_db
+}
 if { $tspace != "pg_default" } {
 incr stmnt_count
 set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
@@ -128,7 +146,7 @@ set sql(2) "CREATE TABLE PARTSUPP (PS_PARTKEY NUMERIC NOT NULL, PS_SUPPKEY NUMER
 set sql(3) "CREATE TABLE CUSTOMER(C_CUSTKEY NUMERIC NOT NULL, C_MKTSEGMENT CHAR(10), C_NATIONKEY NUMERIC, C_NAME VARCHAR(25), C_ADDRESS VARCHAR(40), C_PHONE CHAR(15), C_ACCTBAL NUMERIC, C_COMMENT VARCHAR(118)) $compression DISTRIBUTED BY (C_CUSTKEY)"
 set sql(4) "CREATE TABLE PART(P_PARTKEY NUMERIC NOT NULL, P_TYPE VARCHAR(25), P_SIZE NUMERIC, P_BRAND CHAR(10), P_NAME VARCHAR(55), P_CONTAINER CHAR(10), P_MFGR CHAR(25), P_RETAILPRICE NUMERIC, P_COMMENT VARCHAR(23)) $compression DISTRIBUTED BY (P_PARTKEY)"
 set sql(5) "CREATE TABLE SUPPLIER(S_SUPPKEY NUMERIC NOT NULL, S_NATIONKEY NUMERIC, S_COMMENT VARCHAR(102), S_NAME CHAR(25), S_ADDRESS VARCHAR(40), S_PHONE CHAR(15), S_ACCTBAL NUMERIC)  $compression DISTRIBUTED BY (S_SUPPKEY)"
-set sql(6) "CREATE TABLE NATION(N_NATIONKEY NUMERIC NOT NULL, N_NAME CHAR(25), N_REGIONKEY NUMERIC, N_COMMENT VARCHAR(152)) $compression DISTRIBUTED BY (N_NATIONKEY)" 
+set sql(6) "CREATE TABLE NATION(N_NATIONKEY NUMERIC NOT NULL, N_NAME CHAR(25), N_REGIONKEY NUMERIC, N_COMMENT VARCHAR(152)) $compression DISTRIBUTED BY (N_NATIONKEY)"
 set sql(7) "CREATE TABLE REGION(R_REGIONKEY NUMERIC, R_NAME CHAR(25), R_COMMENT VARCHAR(152)) $compression DISTRIBUTED BY (R_REGIONKEY)"
 set sql(8) "CREATE TABLE LINEITEM(L_SHIPDATE TIMESTAMP, L_ORDERKEY NUMERIC NOT NULL, L_DISCOUNT NUMERIC NOT NULL, L_EXTENDEDPRICE NUMERIC NOT NULL, L_SUPPKEY NUMERIC NOT NULL, L_QUANTITY NUMERIC NOT NULL, L_RETURNFLAG CHAR(1), L_PARTKEY NUMERIC NOT NULL, L_LINESTATUS CHAR(1), L_TAX NUMERIC NOT NULL, L_COMMITDATE TIMESTAMP, L_RECEIPTDATE TIMESTAMP, L_SHIPMODE CHAR(10), L_LINENUMBER NUMERIC NOT NULL, L_SHIPINSTRUCT CHAR(25), L_COMMENT VARCHAR(44)) $compression DISTRIBUTED BY (L_LINENUMBER, L_ORDERKEY)"
 	} else {
@@ -137,7 +155,7 @@ set sql(2) "CREATE TABLE PARTSUPP (PS_PARTKEY NUMERIC NOT NULL, PS_SUPPKEY NUMER
 set sql(3) "CREATE TABLE CUSTOMER(C_CUSTKEY NUMERIC NOT NULL, C_MKTSEGMENT CHAR(10), C_NATIONKEY NUMERIC, C_NAME VARCHAR(25), C_ADDRESS VARCHAR(40), C_PHONE CHAR(15), C_ACCTBAL NUMERIC, C_COMMENT VARCHAR(118))"
 set sql(4) "CREATE TABLE PART(P_PARTKEY NUMERIC NOT NULL, P_TYPE VARCHAR(25), P_SIZE NUMERIC, P_BRAND CHAR(10), P_NAME VARCHAR(55), P_CONTAINER CHAR(10), P_MFGR CHAR(25), P_RETAILPRICE NUMERIC, P_COMMENT VARCHAR(23))"
 set sql(5) "CREATE TABLE SUPPLIER(S_SUPPKEY NUMERIC NOT NULL, S_NATIONKEY NUMERIC, S_COMMENT VARCHAR(102), S_NAME CHAR(25), S_ADDRESS VARCHAR(40), S_PHONE CHAR(15), S_ACCTBAL NUMERIC)"
-set sql(6) "CREATE TABLE NATION(N_NATIONKEY NUMERIC NOT NULL, N_NAME CHAR(25), N_REGIONKEY NUMERIC, N_COMMENT VARCHAR(152))" 
+set sql(6) "CREATE TABLE NATION(N_NATIONKEY NUMERIC NOT NULL, N_NAME CHAR(25), N_REGIONKEY NUMERIC, N_COMMENT VARCHAR(152))"
 set sql(7) "CREATE TABLE REGION(R_REGIONKEY NUMERIC, R_NAME CHAR(25), R_COMMENT VARCHAR(152))"
 set sql(8) "CREATE TABLE LINEITEM(L_SHIPDATE TIMESTAMP, L_ORDERKEY NUMERIC NOT NULL, L_DISCOUNT NUMERIC NOT NULL, L_EXTENDEDPRICE NUMERIC NOT NULL, L_SUPPKEY NUMERIC NOT NULL, L_QUANTITY NUMERIC NOT NULL, L_RETURNFLAG CHAR(1), L_PARTKEY NUMERIC NOT NULL, L_LINESTATUS CHAR(1), L_TAX NUMERIC NOT NULL, L_COMMITDATE TIMESTAMP, L_RECEIPTDATE TIMESTAMP, L_SHIPMODE CHAR(10), L_LINENUMBER NUMERIC NOT NULL, L_SHIPINSTRUCT CHAR(25), L_COMMENT VARCHAR(44))"
 	}
@@ -224,7 +242,7 @@ set comment [ string replace $comment $st $fi $BBB_COMMEND ]
 	}
 }
 append supp_val_list ('$suppkey', '$nation_code', '$comment', '$name', '$address', '$phone', '$acctbal')
-if { ![ expr {$i % $rowcount} ] || $i eq $end_rows } {    
+if { ![ expr {$i % $rowcount} ] || $i eq $end_rows } {
 set result [ pg_exec $lda "INSERT INTO SUPPLIER (S_SUPPKEY, S_NATIONKEY, S_COMMENT, S_NAME, S_ADDRESS, S_PHONE, S_ACCTBAL) VALUES $supp_val_list" ]
 	if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
             error "[pg_result $result -error]"
@@ -239,7 +257,7 @@ if {!$greenplum} {
 	} else {
 if {!$greenplum} {
 append supp_val_list ,
-		} 
+		}
 	}
 if { ![ expr {$i % 10000} ] } {
 	puts "Loading SUPPLIER...$i"
@@ -264,8 +282,8 @@ set phone [ gen_phone ]
 set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])} ] / 100} ] ]
 set mktsegment [ pick_str_1 msegmnt ]
 set comment [ TEXT_1 73 ]
-append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment') 
-if { ![ expr {$i % $rowcount} ] || $i eq $end_rows } {    
+append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment')
+if { ![ expr {$i % $rowcount} ] || $i eq $end_rows } {
 set result [ pg_exec $lda "INSERT INTO CUSTOMER (C_CUSTKEY, C_MKTSEGMENT, C_NATIONKEY, C_NAME, C_ADDRESS, C_PHONE, C_ACCTBAL, C_COMMENT) values $cust_val_list" ]
 	if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
             error "[pg_result $result -error]"
@@ -306,9 +324,9 @@ append name [ pick_str_1 colors ]
 set mf [ RandomNumber 1 5 ]
 set mfgr [ concat Manufacturer#$mf ]
 set brand [ concat Brand#[ expr {$mf * 10 + [ RandomNumber 1 5 ]} ] ]
-set type [ pick_str_1 p_types ] 
+set type [ pick_str_1 p_types ]
 set size [ RandomNumber 1 50 ]
-set container [ pick_str_1 p_cntr ] 
+set container [ pick_str_1 p_cntr ]
 set price [ rpb_routine $i ]
 set comment [ TEXT_1 14 ]
 append part_val_list ('$partkey', '$type', '$size', '$brand', '$name', '$container', '$mfgr', '$price', '$comment')
@@ -327,7 +345,7 @@ append psupp_val_list ,
     }
 if {!$greenplum} {
 #PostgreSQL does multi-line inserts later, Greenplum does line-by-line
- } else { 
+ } else {
 set result [ pg_exec $lda "INSERT INTO PARTSUPP (PS_PARTKEY, PS_SUPPKEY, PS_SUPPLYCOST, PS_AVAILQTY, PS_COMMENT) VALUES $psupp_val_list" ]
 	if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
             error "[pg_result $result -error]"
@@ -338,7 +356,7 @@ set result [ pg_exec $lda "INSERT INTO PARTSUPP (PS_PARTKEY, PS_SUPPKEY, PS_SUPP
 	}
    }
 # end of psupp loop
-if { ![ expr {$i % $rowcount} ]  || $i eq $end_rows } {     
+if { ![ expr {$i % $rowcount} ]  || $i eq $end_rows } {
 set result [ pg_exec $lda "INSERT INTO PART (P_PARTKEY, P_TYPE, P_SIZE, P_BRAND, P_NAME, P_CONTAINER, P_MFGR, P_RETAILPRICE, P_COMMENT) VALUES $part_val_list" ]
 	if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
             error "[pg_result $result -error]"
@@ -408,7 +426,7 @@ set ascdate($d) [ mk_time $d ]
 }
 set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
 set date $ascdate([ expr {$tmp_date - 92001} ])
-set opriority [ pick_str_1 o_oprio ] 
+set opriority [ pick_str_1 o_oprio ]
 set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
 set clerk [ concat Clerk#[format %1.9d $clk_num]]
 set comment [ TEXT_1 49 ]
@@ -424,8 +442,8 @@ set llcnt [ expr {$l + 1} ]
 set lquantity [ RandomNumber 1 50 ]
 set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
 set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-set linstruct [ pick_str_1 instruct ] 
-set lsmode [ pick_str_1 smode ] 
+set linstruct [ pick_str_1 instruct ]
+set lsmode [ pick_str_1 smode ]
 set lcomment [ TEXT_1 27 ]
 set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
 set rprice [ rpb_routine $lpartkey ]
@@ -434,7 +452,7 @@ set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
 set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
 set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
 set s_date [ RandomNumber 1 121 ]
-set s_date [ expr {$s_date + $tmp_date} ] 
+set s_date [ expr {$s_date + $tmp_date} ]
 set c_date [ RandomNumber 30 90 ]
 set c_date [ expr {$c_date + $tmp_date} ]
 set r_date [ RandomNumber 1 30 ]
@@ -443,17 +461,17 @@ set lsdate $ascdate([ expr {$s_date - 92001} ])
 set lcdate $ascdate([ expr {$c_date - 92001} ])
 set lrdate $ascdate([ expr {$r_date - 92001} ])
 if { [ julian $r_date ] <= 95168 } {
-set lrflag [ pick_str_1 rflag ] 
+set lrflag [ pick_str_1 rflag ]
 } else { set lrflag "N" }
 if { [ julian $s_date ] <= 95168 } {
 incr ocnt
 set lstatus "F"
 } else { set lstatus "O" }
-append lineit_val_list ([ date_function ]('$lsdate','YYYY-Mon-DD'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', [ date_function ]('$lcdate','YYYY-Mon-DD'), [ date_function ]('$lrdate','YYYY-Mon-DD'), '$lsmode', '$llcnt', '$linstruct', '$lcomment') 
+append lineit_val_list ([ date_function ]('$lsdate','YYYY-Mon-DD'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', [ date_function ]('$lcdate','YYYY-Mon-DD'), [ date_function ]('$lrdate','YYYY-Mon-DD'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')
 if {!$greenplum} {
-if { $l < [ expr $lcnt - 1 ] } { 
+if { $l < [ expr $lcnt - 1 ] } {
 append lineit_val_list ,
-	} 
+	}
       } else {
 set result [ pg_exec $lda "INSERT INTO LINEITEM (L_SHIPDATE, L_ORDERKEY, L_DISCOUNT, L_EXTENDEDPRICE, L_SUPPKEY, L_QUANTITY, L_RETURNFLAG, L_PARTKEY, L_LINESTATUS, L_TAX, L_COMMITDATE, L_RECEIPTDATE, L_SHIPMODE, L_LINENUMBER, L_SHIPINSTRUCT, L_COMMENT) VALUES $lineit_val_list" ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
@@ -467,8 +485,8 @@ if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 #End Lineitem Loop
 if { $ocnt > 0} { set orderstatus "P" }
 if { $ocnt == $lcnt } { set orderstatus "F" }
-append order_val_list ([ date_function ]('$date','YYYY-Mon-DD'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
-if { ![ expr {$i % $rowcount} ]  || $i eq $end_rows } {     
+append order_val_list ([ date_function ]('$date','YYYY-Mon-DD'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')
+if { ![ expr {$i % $rowcount} ]  || $i eq $end_rows } {
 if {!$greenplum} {
 set result [ pg_exec $lda "INSERT INTO LINEITEM (L_SHIPDATE, L_ORDERKEY, L_DISCOUNT, L_EXTENDEDPRICE, L_SUPPKEY, L_QUANTITY, L_RETURNFLAG, L_PARTKEY, L_LINESTATUS, L_TAX, L_COMMITDATE, L_RECEIPTDATE, L_SHIPMODE, L_LINENUMBER, L_SHIPINSTRUCT, L_COMMENT) VALUES $lineit_val_list" ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
@@ -488,7 +506,7 @@ if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 	pg_result $result -clear
 	}
 	unset -nocomplain lineit_val_list
-	unset order_val_list	
+	unset order_val_list
    	} else {
 	if {!$greenplum} {
 	append order_val_list ,
@@ -581,7 +599,7 @@ if { $num_vu > 1 && [ chk_thread ] eq "TRUE" } {
 set threaded "MULTI-THREADED"
 set rema [ lassign [ findvuhposition ] myposition totalvirtualusers ]
 switch $myposition {
-	1 { 
+	1 {
 puts "Monitor Thread"
 if { $threaded eq "MULTI-THREADED" } {
 tsv::lappend common thrdlst monitor
@@ -591,7 +609,7 @@ tsv::lappend common thrdlst idle
 tsv::set application load "WAIT"
 		}
 	}
-	default { 
+	default {
 puts "Worker Thread"
 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
      }
@@ -602,15 +620,15 @@ set num_vu 1
   }
 if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
 puts "CREATING [ string toupper $user ] SCHEMA"
-set lda [ ConnectToPostgres $host $port $superuser $superuser_password $defaultdb ]
+set lda [ ConnectToPostgres $host $port $azure $superuser $superuser_password $defaultdb ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $host $port $db $tspace $superuser $superuser_password $user $password
+CreateUserDatabase $lda $host $azure $port $db $tspace $superuser $superuser_password $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
@@ -667,7 +685,7 @@ return
         }
 after 5000
 }
-set lda [ ConnectToPostgres $host $port $user $password $db ]
+set lda [ ConnectToPostgres $host $port $azure $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  }
@@ -680,8 +698,8 @@ set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" 
 tsv::lreplace common thrdlst $myposition $myposition active
 } else {
 set sf_chunk "1 $sup_rows"
-set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
-set part_chunk "1 [ expr {$sup_rows * $part_mult} ]" 
+set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
 set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
 }
 puts "Start:[ clock format [ clock seconds ] ]"
@@ -710,7 +728,7 @@ return
 		}
 	}
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_azure $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
 	} else { return }
 }
 
@@ -736,6 +754,7 @@ set degree_of_parallel \"$pg_degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $pg_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
+set azure \"$mssqls_azure\";#Azure Type Connection
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
@@ -765,23 +784,35 @@ puts "Query Failed : $sql : $message"
 return [ expr $rowcount ]
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-set lda "Failed" ; puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    puts "$user $password $host $port $is_super_user"
+    global tcl_platform
+
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
+
 #########################
 #TPCH REFRESH PROCEDURE
 proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -801,7 +832,7 @@ set delta 1
 set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
 set O_CKEY_MAX [ expr {150000 * $scale_factor} ]
 set O_ODATE_MAX [ expr {(92001 + 2557 - (121 + 30) - 1)} ]
-set sfrows [ expr {$scale_factor * 1500} ] 
+set sfrows [ expr {$scale_factor * 1500} ]
 set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
 set endindex [ expr {$upd_num * $sfrows} ]
 for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -825,7 +856,7 @@ set ascdate($d) [ mk_time $d ]
 }
 set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
 set date $ascdate([ expr {$tmp_date - 92001} ])
-set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ] 
+set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ]
 set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
 set clerk [ concat Clerk#[format %1.9d $clk_num]]
 set comment [ TEXT_2 49 ]
@@ -852,8 +883,8 @@ set llcnt [ expr {$l + 1} ]
 set lquantity [ RandomNumber 1 50 ]
 set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
 set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-set linstruct [ pick_str_2 [ get_dists instruct ] instruct ] 
-set lsmode [ pick_str_2 [ get_dists smode ] smode ] 
+set linstruct [ pick_str_2 [ get_dists instruct ] instruct ]
+set lsmode [ pick_str_2 [ get_dists smode ] smode ]
 set lcomment [ TEXT_2 27 ]
 set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
 set rprice [ rpb_routine $lpartkey ]
@@ -862,7 +893,7 @@ set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
 set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
 set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
 set s_date [ RandomNumber 1 121 ]
-set s_date [ expr {$s_date + $tmp_date} ] 
+set s_date [ expr {$s_date + $tmp_date} ]
 set c_date [ RandomNumber 30 90 ]
 set c_date [ expr {$c_date + $tmp_date} ]
 set r_date [ RandomNumber 1 30 ]
@@ -871,7 +902,7 @@ set lsdate $ascdate([ expr {$s_date - 92001} ])
 set lcdate $ascdate([ expr {$c_date - 92001} ])
 set lrdate $ascdate([ expr {$r_date - 92001} ])
 if { [ julian $r_date ] <= 95168 } {
-set lrflag [ pick_str_2 [ get_dists rflag ] rflag ] 
+set lrflag [ pick_str_2 [ get_dists rflag ] rflag ]
 } else { set lrflag "N" }
 if { [ julian $s_date ] <= 95168 } {
 incr ocnt
@@ -884,9 +915,9 @@ if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 	pg_result $result -clear
 	}
   }
-if { ![ expr {$i % 1000} ] } {     
+if { ![ expr {$i % 1000} ] } {
 	set result [ pg_exec $lda "commit" ]
-	pg_result $result -clear	
+	pg_result $result -clear
    }
 }
 set result [ pg_exec $lda "commit" ]
@@ -900,7 +931,7 @@ proc del_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
 #DELETE FROM LINEITEM WHERE L_ORDERKEY = [value]
 #END LOOP
 set refresh 100
-set sfrows [ expr {$scale_factor * 1500} ] 
+set sfrows [ expr {$scale_factor * 1500} ]
 set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
 set endindex [ expr {$upd_num * $sfrows} ]
 for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -925,7 +956,7 @@ if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 if { $REFRESH_VERBOSE } {
 puts "Refresh Delete Orderkey $okey..."
 	}
-if { ![ expr {$i % 1000} ] } {     
+if { ![ expr {$i % 1000} ] } {
 	set result [ pg_exec $lda "commit" ]
 	pg_result $result -clear
    }
@@ -945,7 +976,7 @@ if {  [ tsv::get application abort ]  } { break }
 if { $RF_SET eq "RF1" || $RF_SET eq "BOTH" } {
 puts "New Sales refresh"
 set r0 [clock clicks -millisec]
-mk_order_ref $lda $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE 
+mk_order_ref $lda $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE
 set r1 [clock clicks -millisec]
 set rvalnew [expr {double($r1-$r0)/1000}]
 puts "New Sales refresh complete in $rvalnew seconds"
@@ -953,7 +984,7 @@ puts "New Sales refresh complete in $rvalnew seconds"
 if { $RF_SET eq "RF2" || $RF_SET eq "BOTH" } {
 puts "Old Sales refresh"
 set r3 [clock clicks -millisec]
-del_order_ref $lda $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE 
+del_order_ref $lda $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE
 set r4 [clock clicks -millisec]
 set rvalold [expr {double($r4-$r3)/1000}]
 puts "Old Sales refresh complete in $rvalold seconds"
@@ -1054,7 +1085,7 @@ regsub -all {:2} $q2sub $qc2 q2sub
 8 {
 set nationlist [ get_dists nations2 ]
 set regionlist [ get_dists regions ]
-set qc [ pick_str_2 $nationlist nations2 ] 
+set qc [ pick_str_2 $nationlist nations2 ]
 regsub -all {:1} $q2sub $qc q2sub
 set nind [ lsearch -glob $nationlist [concat \*$qc\*] ]
 switch $nind {
@@ -1118,26 +1149,26 @@ set tmp_date [ concat 19$yr-$mon-01 ]
 regsub -all {:1} $q2sub $tmp_date q2sub
 }
 16 {
-set tmp1 [RandomNumber 1 5] 
-set tmp2 [RandomNumber 1 5] 
+set tmp1 [RandomNumber 1 5]
+set tmp2 [RandomNumber 1 5]
 regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
 set p_type [ split [ pick_str_2 [ get_dists p_types ] p_types ] ]
 set qc [ concat [ lindex $p_type 0 ] [ lindex $p_type 1 ] ]
 regsub -all {:2} $q2sub $qc q2sub
 set permute [list]
 for {set i 3} {$i <= $MAX_PARAM} {incr i} {
-set tmp3 [RandomNumber 1 50] 
+set tmp3 [RandomNumber 1 50]
 while { [ lsearch $permute $tmp3 ] != -1  } {
-set tmp3 [RandomNumber 1 50] 
-} 
+set tmp3 [RandomNumber 1 50]
+}
 lappend permute $tmp3
 set qc $tmp3
 regsub -all ":$i" $q2sub $qc q2sub
 	}
    }
 17 {
-set tmp1 [RandomNumber 1 5] 
-set tmp2 [RandomNumber 1 5] 
+set tmp1 [RandomNumber 1 5]
+set tmp2 [RandomNumber 1 5]
 regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
 set qc [ pick_str_2 [ get_dists p_cntr ] p_cntr ]
 regsub -all {:2} $q2sub $qc q2sub
@@ -1146,14 +1177,14 @@ regsub -all {:2} $q2sub $qc q2sub
 regsub -all {:1} $q2sub [RandomNumber 312 315] q2sub
 }
 19 {
-set tmp1 [RandomNumber 1 5] 
-set tmp2 [RandomNumber 1 5] 
+set tmp1 [RandomNumber 1 5]
+set tmp2 [RandomNumber 1 5]
 regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-set tmp1 [RandomNumber 1 5] 
-set tmp2 [RandomNumber 1 5] 
+set tmp1 [RandomNumber 1 5]
+set tmp2 [RandomNumber 1 5]
 regsub {:2} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-set tmp1 [RandomNumber 1 5] 
-set tmp2 [RandomNumber 1 5] 
+set tmp1 [RandomNumber 1 5]
+set tmp2 [RandomNumber 1 5]
 regsub {:3} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
 regsub -all {:4} $q2sub [RandomNumber 1 10] q2sub
 regsub -all {:5} $q2sub [RandomNumber 10 20] q2sub
@@ -1174,10 +1205,10 @@ regsub -all {:1} $q2sub $qc q2sub
 22 {
 set permute [list]
 for {set i 0} {$i <= 7} {incr i} {
-set tmp3 [RandomNumber 10 34] 
+set tmp3 [RandomNumber 10 34]
 while { [ lsearch $permute $tmp3 ] != -1  } {
-set tmp3 [RandomNumber 10 34] 
-} 
+set tmp3 [RandomNumber 10 34]
+}
 lappend permute $tmp3
 set qc $tmp3
 regsub -all ":$i" $q2sub $qc q2sub
@@ -1190,7 +1221,7 @@ return $q2sub
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { host port db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
 #Queries 17 and 20 are long running on PostgreSQL
-set SKIP_QUERY_17_20 "false" 
+set SKIP_QUERY_17_20 "false"
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
@@ -1226,7 +1257,7 @@ set qos [ lindex $o_s_list [ expr $q - 1 ] ]
 puts "Executing Query $qos ($q of 22)"
 if {$VERBOSE} { puts $dssquery($qos) }
 if {$qos != 15} {
-if {(($qos eq 17) || ($qos eq 20))  && $SKIP_QUERY_17_20 eq "true" } { 
+if {(($qos eq 17) || ($qos eq 20))  && $SKIP_QUERY_17_20 eq "true" } {
 puts "Long Running Queries 17 and 20 Not Executed"
 	} else {
 set t0 [clock clicks -millisec]
@@ -1246,15 +1277,15 @@ if { $RAISEERROR } {
 error "[pg_result $result -error]"
 		} else {
 puts "Query 15 view error set RAISEERROR for Details"
-		}  
+		}
 	} else {
 pg_result $result -clear
 	}
 	} else {
 set t0 [clock clicks -millisec]
-if {[catch { pg_select $lda $dssquery($qos,$q15c) var { 
-set rowcount [ expr $var(.tupno) + 1 ]		
-if { $VERBOSE } { 
+if {[catch { pg_select $lda $dssquery($qos,$q15c) var {
+set rowcount [ expr $var(.tupno) + 1 ]
+if { $VERBOSE } {
 foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
 set rowcount 0
 if { $RAISEERROR } {
@@ -1262,7 +1293,7 @@ error "Query Error : $message"
 	} else {
 puts "Query Failed : $dssquery($qos,$q15c) : $message"
 	}
-      } 
+      }
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 if { $rowcount > 0 } { lappend qlist $value }
@@ -1299,16 +1330,16 @@ do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degr
 do_refresh $host $port $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
 	} else {
 switch $myposition {
-1 { 
+1 {
 do_refresh $host $port $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
 	}
-default { 
-do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ] 
+default {
+do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ]
 	}
     }
  }
 } else {
-do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition 
+do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
 	}}
 }
 
@@ -1345,35 +1376,46 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
 set rowcount 0
-if {[catch { pg_select $lda $sql var { 
+if {[catch { pg_select $lda $sql var {
 set rowcount [ expr $var(.tupno) + 1 ]
-if { $VERBOSE } { 
+if { $VERBOSE } {
 foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
 if { $RAISEERROR } {
 error "Query Error : $message"
 	} else {
 puts "Query Failed : $sql : $message"
 	}
-   } 
+   }
 return [ expr $rowcount ]
 }
 
-proc ConnectToPostgres { host port user password dbname } {
-global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
-puts $message
-error $message
- } else {
-if {$tcl_platform(platform) == "windows"} {
-#Workaround for Bug #95 where first connection fails on Windows
-catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+proc ConnectToPostgres { host port azure user password dbname } {
+    #Azure requres machine name suffix when login
+    if { $azure eq "true" } {
+        set contains_machine_name [string match "*@*" $user]
+        if {$contains_machine_name == 0} {
+            set machine [lindex [split  "$host"  .] 0]
+            set user "$user@$machine"
         }
-pg_notice_handler $lda puts
-set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-pg_result $result -clear
+    }
+
+    puts "$user $password $host $port $is_super_user"
+    global tcl_platform
+
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname requiressl = 1 ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        if {$tcl_platform(platform) == "windows"} {
+            #Workaround for Bug #95 where first connection fails on Windows
+            catch {pg_disconnect $lda}
+            set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
         }
-return $lda
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
 }
 
 proc create_median_and_percentile { lda } {
@@ -1440,9 +1482,9 @@ return $sql($query_no)
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
 proc do_cloud { host port user password db RAISEERROR VERBOSE degree_of_parallel redshift_compat } {
 if { $redshift_compat } {
-set VERSION "redshift"	
+set VERSION "redshift"
 	} else {
-set VERSION "postgres"	
+set VERSION "postgres"
 	}
 set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $VERSION eq "postgres" } {
@@ -1470,7 +1512,7 @@ set rowcount $oput
 puts "$rowcount rows returned in $value seconds"
 if {$VERBOSE} { printlist $oput }
 if { $rowcount > 0 } { lappend qlist $value }
-	      } 
+	      }
 set end [ clock seconds ]
 set wall [ expr $end - $start ]
 puts "Completed query set in $wall seconds"
