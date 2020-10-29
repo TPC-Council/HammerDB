@@ -1334,7 +1334,7 @@ set trickle_refresh 0
 set update_sets 1
 set REFRESH_VERBOSE "false"
 do_refresh $host $port $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets 0
+do_tpch $host $port $azure $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets 0
 do_refresh $host $port $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
 	} else {
 switch $myposition {
@@ -1342,12 +1342,12 @@ switch $myposition {
 do_refresh $host $port $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
 	}
 default {
-do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ]
+do_tpch $host $port $azure $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ]
 	}
     }
  }
 } else {
-do_tpch $host $port $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
+do_tpch $host $port $azure $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
 	}}
 }
 
