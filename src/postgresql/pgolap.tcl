@@ -628,7 +628,7 @@ set lda [ ConnectToPostgres $host $port $azure $superuser $superuser_password $d
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateUserDatabase $lda $host $azure $port $db $tspace $superuser $superuser_password $user $password
+CreateUserDatabase $lda $host $port $azure $db $tspace $superuser $superuser_password $user $password
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
 pg_disconnect $lda
