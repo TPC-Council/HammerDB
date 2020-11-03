@@ -18,6 +18,7 @@ if { [ info exists afval ] } {
 
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {MySQL TX Counter Options}
    set Parent .countopt
@@ -25,7 +26,7 @@ if { [ info exists afval ] } {
    ttk::frame $Name 
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -137,11 +138,12 @@ set myfields [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {MySQL TPC-C Schema Options} }
-"build" { wm title .tpc {MySQL TPC-C Build Options} }
-"drive" {  wm title .tpc {MySQL TPC-C Driver Options} }
+"all" { wm title .tpc {MySQL TPROC-C Schema Options} }
+"build" { wm title .tpc {MySQL TPROC-C Build Options} }
+"drive" {  wm title .tpc {MySQL TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -149,14 +151,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -197,7 +199,7 @@ set Name $Parent.f1.e4
    grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "MySQL Database :"
+   ttk::label $Prompt -text "TPROC-C MySQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mysql_dbase
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
@@ -251,14 +253,14 @@ if {$mysql_count_ware <= 200 } {
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 11 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 11 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 12 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mysql_driver
@@ -468,11 +470,12 @@ variable myfields
 set myfields [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get}} tpch {mysql_tpch_user {.mytpch.f1.e3 get} mysql_tpch_pass {.mytpch.f1.e4 get} mysql_tpch_dbase {.mytpch.f1.e5 get} mysql_tpch_storage_engine {.mytpch.f1.e6 get} mysql_total_querysets {.mytpch.f1.e9 get} mysql_update_sets {.mytpch.f1.e13 get} mysql_trickle_refresh {.mytpch.f1.e14 get} mysql_scale_fact $mysql_scale_fact  mysql_num_tpch_threads $mysql_num_tpch_threads mysql_refresh_on $mysql_refresh_on mysql_raise_query_error $mysql_raise_query_error mysql_verbose $mysql_verbose mysql_refresh_verbose $mysql_refresh_verbose mysql_cloud_query $mysql_cloud_query} ]
    catch "destroy .mytpch"
    ttk::toplevel .mytpch
+   wm transient .mytpch .ed_mainFrame
    wm withdraw .mytpch
 switch $option {
-"all" { wm title .mytpch {MySQL TPC-H Schema Options} }
-"build" { wm title .mytpch {MySQL TPC-H Build Options} }
-"drive" {  wm title .mytpch {MySQL TPC-H Driver Options} }
+"all" { wm title .mytpch {MySQL TPROC-H Schema Options} }
+"build" { wm title .mytpch {MySQL TPROC-H Build Options} }
+"drive" {  wm title .mytpch {MySQL TPROC-H Driver Options} }
 	}
    set Parent .mytpch
    set Name $Parent.f1
@@ -480,14 +483,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -528,7 +531,7 @@ set Name $Parent.f1.e4
    grid $Name -column 1 -row 5 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "MySQL Database :"
+   ttk::label $Prompt -text "TPROC-H MySQL Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mysql_tpch_dbase
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
@@ -584,7 +587,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable mysql_num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 11 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"

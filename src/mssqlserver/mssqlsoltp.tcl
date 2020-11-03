@@ -16,7 +16,7 @@ set mssqls_server $mssqls_linux_server
 set mssqls_odbc_driver $mssqls_linux_odbc
 set mssqls_authentication $mssqls_linux_authent 
 	}
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server TPC-C schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mssqls_count_ware Warehouse MS SQL Server TPROC-C schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
 if { $mssqls_num_vu eq 1 || $mssqls_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -25,7 +25,7 @@ set maxvuser [ expr $mssqls_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -1943,12 +1943,14 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
@@ -2261,7 +2263,7 @@ set mssqls_authentication $mssqls_linux_authent
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "SQL Server TPC-C"
+set _ED(packagekeyname) "SQL Server TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# SQL Server Library
@@ -2608,7 +2610,7 @@ set mssqls_authentication $mssqls_linux_authent
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "SQL Server TPC-C"
+set _ED(packagekeyname) "SQL Server TPROC-C"
 if { !$mssqls_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -2661,7 +2663,7 @@ return $connection
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 error "Connection to $connection could not be established : $message"
@@ -2730,9 +2732,9 @@ set tpm 0
 	}
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm SQL Server TPM"
+puts [ testresult $nopm $tpm "SQL Server" ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if  [catch {odbc evaldirect "checkpoint"} message ]  {
@@ -2743,7 +2745,7 @@ puts "Checkpoint Complete"
     }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
@@ -3076,7 +3078,7 @@ return $connection
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 error "Connection to $connection could not be established : $message"
@@ -3145,9 +3147,9 @@ set tpm 0
 	}
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm SQL Server TPM"
+puts [ testresult $nopm $tpm "SQL Server" ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if  [catch {odbc evaldirect "checkpoint"} message ]  {
@@ -3158,7 +3160,7 @@ puts "Checkpoint Complete"
     }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

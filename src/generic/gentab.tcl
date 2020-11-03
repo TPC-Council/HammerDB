@@ -27,7 +27,7 @@ if { [ info exists inrun ] } {
 proc configtable { } {
 global threadscreated virtual_users maxvuser table ntimes thvnum vus repeat task clo totrun 
 upvar #0 icons icons
-set benchmark [image create photo -data [ dict get $icons benchmark ]]
+set benchmark [ create_image benchmark icons ]
 for { set vuser 0} {$vuser < $maxvuser} {incr vuser} {
 set thvnum($threadscreated($vuser)) $vuser
 $table insert end "[expr $vuser + 1] $ntimes 0"
@@ -65,14 +65,16 @@ set top $w
 	-yscrollcommand [list $vsb set] \
 	-height 10 -width 87 -stretch all \
 	-background white \
-	-borderwidth 0
+	-borderwidth 0 \
+	-labelrelief flat \
+	-font basic
     ttk::scrollbar $vsb -orient vertical -command [list $tbl yview]
     grid $tbl -row 0 -column 0 -sticky news
     grid $vsb -row 0 -column 1 -sticky ns
     grid rowconfigure    $tf 0 -weight 1
     grid columnconfigure $tf 0 -weight 1
     pack $tf -side top -expand yes -fill both
-	if { $ttk::currentTheme eq "clearlooks" } {
+	if { $ttk::currentTheme in {clearlooks arc breeze awlight}} {
 	$tbl configure -labelforeground black
 	$tbl configure -selectbackground #FF7900
 	$tbl configure -stripebackground [ dict get $icons defaultBackground ]

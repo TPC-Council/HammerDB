@@ -898,7 +898,7 @@ TPC-Council#75 TPC-H cannot be executed for AWS RDS Oracle
 
 ---------------------------------------------------------------------
 
-Version 4.0 Jul 2020
+Version 4.0 Oct 2020
 
 Updated Binaries to:
 
@@ -906,6 +906,9 @@ tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.
 
 Pull Requests & Issues
 
+Inclusive Language Updates (#152)
+Add runtimer and waittocomplete routines to CLI (#149)
+HammerDB CLI on Windows can have incorrect colours (#148)
 Update SQL Server ODBC Driver (#140)
 Fix XML closing tags for sprocs and connpool (#139)
 Update SQL Server library version number for TCL8.6.10 (#138)
@@ -928,3 +931,6 @@ Refactor Oracle and Postgres procedural code for performance (#92)
 Added Master/Slave Modes to CLI (#91)
 Added Geomean calculation to TPC-H workloads. (#86)
 Fix distribution of Warehouse across VUs for All Warehouse option. (#82)
+Consider changing "Benchmark Options" from TPC-C or TPC-H to something that
+underscores "based on TPC-C/TPC-H" (#46)
+GUI HD Display (#19)

@@ -22,6 +22,7 @@ if { [ info exists afval ] } {
 
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {SQL Server TX Counter Options}
    set Parent .countopt
@@ -29,7 +30,7 @@ if { [ info exists afval ] } {
    ttk::frame $Name 
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -186,11 +187,12 @@ set mssqlsfields [ dict merge $mssqlsconn $tpccfields ]
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 	switch $option {
-	"all" { wm title .tpc {Microsoft SQL Server TPC-C Schema Options} }
-	"build" { wm title .tpc {Microsoft SQL Server TPC-C Build Options} }
-	"drive" { wm title .tpc {Microsoft SQL Server TPC-C Driver Options} }
+	"all" { wm title .tpc {Microsoft SQL Server TPROC-C Schema Options} }
+	"build" { wm title .tpc {Microsoft SQL Server TPROC-C Build Options} }
+	"drive" { wm title .tpc {Microsoft SQL Server TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -198,14 +200,14 @@ set whlist [ get_warehouse_list_for_spinbox ]
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -306,7 +308,7 @@ if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq
         }
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "SQL Server Database :"
+   ttk::label $Prompt -text "TPROC-C SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mssqls_dbase
    grid $Prompt -column 0 -row 10 -sticky e
    grid $Name -column 1 -row 10 -sticky ew
@@ -383,14 +385,14 @@ grid $Name -column 1 -row 16 -sticky ew
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 17 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 17 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 18 -sticky e
 set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mssqls_driver
@@ -613,11 +615,12 @@ variable mssqlsfields
 set mssqlsfields [ dict merge $mssqlsconn $tpchfields ]
    catch "destroy .mssqlstpch"
    ttk::toplevel .mssqlstpch
+   wm transient .mssqlstpch .ed_mainFrame
    wm withdraw .mssqlstpch
 switch $option {
-"all" { wm title .mssqlstpch {SQL Server TPC-H Schema Options} }
-"build" { wm title .mssqlstpch {SQL Server TPC-H Build Options} }
-"drive" {  wm title .mssqlstpch {SQL Server TPC-H Driver Options} }
+"all" { wm title .mssqlstpch {SQL Server TPROC-H Schema Options} }
+"build" { wm title .mssqlstpch {SQL Server TPROC-H Build Options} }
+"drive" {  wm title .mssqlstpch {SQL Server TPROC-H Driver Options} }
 	}
    set Parent .mssqlstpch
    set Name $Parent.f1
@@ -625,14 +628,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -733,7 +736,7 @@ if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq
         }
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "SQL Server TPCH Database :"
+   ttk::label $Prompt -text "TPROC-H SQL Server Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable mssqls_tpch_dbase
    grid $Prompt -column 0 -row 10 -sticky e
    grid $Name -column 1 -row 10 -sticky ew
@@ -795,7 +798,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable mssqls_num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 15 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"

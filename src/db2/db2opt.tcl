@@ -29,6 +29,7 @@ set tmp_db2_dbase db2_tpch_dbase
         }
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {Db2 TX Counter Options}
    set Parent .countopt
@@ -36,26 +37,26 @@ set tmp_db2_dbase db2_tpch_dbase
    ttk::frame $Name 
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
 grid $Prompt -column 1 -row 0 -sticky w
 set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
-   ttk::label $Prompt -text "Db2 User :"
+   ttk::label $Prompt -text "TPROC-C Db2 User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable $tmp_db2_user
    grid $Prompt -column 0 -row 1 -sticky e
    grid $Name -column 1 -row 1 -sticky ew
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
-   ttk::label $Prompt -text "Db2 User Password :"   
+   ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
    ttk::entry $Name  -width 30 -textvariable $tmp_db2_pass
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "Db2 Database :"
+   ttk::label $Prompt -text "TPROC-C Db2 Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable $tmp_db2_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
@@ -124,11 +125,12 @@ set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Db2 TPC-C Schema Options} }
-"build" { wm title .tpc {Db2 TPC-C Build Options} }
-"drive" {  wm title .tpc {Db2 TPC-C Driver Options} }
+"all" { wm title .tpc {Db2 TPROC-C Schema Options} }
+"build" { wm title .tpc {Db2 TPROC-C Build Options} }
+"drive" {  wm title .tpc {Db2 TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -136,14 +138,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -151,32 +153,32 @@ grid $Prompt -column 1 -row 0 -sticky w
 	}
    set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
-   ttk::label $Prompt -text "Db2 User :"
+   ttk::label $Prompt -text "TPROC-C Db2 User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable db2_user
    grid $Prompt -column 0 -row 1 -sticky e
    grid $Name -column 1 -row 1 -sticky ew
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
-   ttk::label $Prompt -text "Db2 User Password :"   
+   ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
    ttk::entry $Name  -width 30 -textvariable db2_pass
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "Db2 Database :"
+   ttk::label $Prompt -text "TPROC-C Db2 Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "Db2 Default Tablespace :"
+   ttk::label $Prompt -text "TPROC-C Db2 Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable db2_def_tab
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "Db2 Tablespace List (Space Separated Values) :"
+   ttk::label $Prompt -text "TPROC-C Db2 Tablespace List (Space Separated Values) :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable db2_tab_list
 if { $db2_partition eq "false" } {
 	.tpc.f1.e5 configure -state disabled
@@ -243,14 +245,14 @@ if { $db2_partition eq "true" } {
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 11 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 11 -sticky w
 	}
 set Prompt $Parent.f1.p12
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 12 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable db2_driver
@@ -475,11 +477,12 @@ variable db2fields
 set db2fields [ dict create connection {db2_def_user {} db2_def_pass {} db2_def_dbase {}} tpch {db2_tpch_user {.db2tpch.f1.e1 get} db2_tpch_pass {.db2tpch.f1.e2 get} db2_tpch_dbase {.db2tpch.f1.e3 get} db2_tpch_def_tab {.db2tpch.f1.e4 get} db2_total_querysets {.db2tpch.f1.e9 get} db2_degree_of_parallel {.db2tpch.f1.e12 get} db2_update_sets {.db2tpch.f1.e14 get} db2_trickle_refresh {.db2tpch.f1.e15 get} db2_scale_fact $db2_scale_fact db2_num_tpch_threads $db2_num_tpch_threads db2_tpch_organizeby $db2_tpch_organizeby db2_raise_query_error $db2_raise_query_error db2_verbose $db2_verbose db2_refresh_on $db2_refresh_on db2_refresh_verbose $db2_refresh_verbose} ]
    catch "destroy .db2tpch"
    ttk::toplevel .db2tpch
+   wm transient .db2tpch .ed_mainFrame
    wm withdraw .db2tpch
 switch $option {
-"all" { wm title .db2tpch {Db2 TPC-H Schema Options} }
-"build" { wm title .db2tpch {Db2 TPC-H Build Options} }
-"drive" {  wm title .db2tpch {Db2 TPC-H Driver Options} }
+"all" { wm title .db2tpch {Db2 TPROC-H Schema Options} }
+"build" { wm title .db2tpch {Db2 TPROC-H Build Options} }
+"drive" {  wm title .db2tpch {Db2 TPROC-H Driver Options} }
 	}
    set Parent .db2tpch
    set Name $Parent.f1
@@ -487,14 +490,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -502,26 +505,26 @@ grid $Prompt -column 1 -row 0 -sticky w
 	}
  set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
-   ttk::label $Prompt -text "Db2 User :"
+   ttk::label $Prompt -text "TPROC-H Db2 User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable db2_tpch_user
    grid $Prompt -column 0 -row 1 -sticky e
    grid $Name -column 1 -row 1 -sticky ew
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
-   ttk::label $Prompt -text "Db2 User Password :"
+   ttk::label $Prompt -text "TPROC-H Db2 User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_tpch_pass
    grid $Prompt -column 0 -row 2 -sticky e
    grid $Name -column 1 -row 2 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "Db2 Database :"
+   ttk::label $Prompt -text "TPROC-H Db2 Database :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_tpch_dbase
    grid $Prompt -column 0 -row 3 -sticky e
    grid $Name -column 1 -row 3 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "Db2 Default Tablespace :"
+   ttk::label $Prompt -text "TPROC-H Db2 Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable db2_tpch_def_tab
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -sticky ew
@@ -584,7 +587,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable db2_num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 8 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"

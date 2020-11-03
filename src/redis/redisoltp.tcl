@@ -7,7 +7,7 @@ if {[dict exists $dbdict redis library ]} {
 upvar #0 configredis configredis
 #set variables to values in dict
 setlocaltpccvars $configredis
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $redis_count_ware Warehouse Redis TPC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $redis_count_ware Warehouse Redis TPROC-C schema\nin host [string toupper $redis_host:$redis_port] in namespace $redis_namespace?" -type yesno ] == yes} { 
 if { $redis_num_vu eq 1 || $redis_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -16,7 +16,7 @@ set maxvuser [ expr $redis_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -336,12 +336,14 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 if {[catch {set redis [redis $host $port ]}]} {
@@ -396,7 +398,7 @@ upvar #0 configredis configredis
 setlocaltpccvars $configredis
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Redis TPC-C"
+set _ED(packagekeyname) "Redis TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Redis Library
@@ -717,7 +719,7 @@ upvar #0 configredis configredis
 setlocaltpccvars $configredis
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Redis TPC-C"
+set _ED(packagekeyname) "Redis TPROC-C"
 if { !$redis_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -745,7 +747,7 @@ error "Redis Timed Script must be run in Thread Enabled Interpreter"
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 if {[catch {set redis [redis $host $port ]}]} {
 puts stderr "Error, the connection to $host:$port could not be established"
 return
@@ -814,11 +816,11 @@ incr end_nopm [ $redis HMGET DISTRICT:$w_id:$d_id D_NEXT_O_ID ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Redis TPM"
+puts [ testresult $nopm $tpm Redis ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 $redis QUIT
 	}
@@ -1141,7 +1143,7 @@ error "Redis Timed Script must be run in Thread Enabled Interpreter"
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 if {[catch {set redis [redis $host $port ]}]} {
 puts stderr "Error, the connection to $host:$port could not be established"
 return
@@ -1210,11 +1212,11 @@ incr end_nopm [ $redis HMGET DISTRICT:$w_id:$d_id D_NEXT_O_ID ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Redis TPM"
+puts [ testresult $nopm $tpm Redis ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 $redis QUIT
 	}

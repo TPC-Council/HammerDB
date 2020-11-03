@@ -440,6 +440,84 @@ ghSsoAUviMEManCDHOygBz8IW8IQinCEJCyhCU+IwhSqcIUsbKELXwjDGMpwhjSsoQ1viMMc
 gAAAOw==
 }
 
+#H logo with white background in GIF format
+dict set logos iconwht {
+R0lGODlhYQB4AOf7AAAeSgUiPwAiVAAkUAAlVwwiVgsjUQAlZAEnTgAkcAAmXgQoVQMmbA8mTw4n
+SgUoYQArVwYpXAYoZwArXQAqaAAqbgAsZBEqSAAuVAAsagorWQsqZAsrXwAvXAAuZgAtcg0qawAv
+YRcoZAAubQwtVQ4rZQAvZwAwYxYrVA0tWwAwZwEvbgAwaA8sZhcrWgIwaQEyWRAtYQMwcAAyaQMw
+dQQyXxItaAQxahEuYhAvXQQyZBguUgUyZRMtbhEwWAA0ZQAzcRMvYyAtUgcyawA1ZwA1bQg0YhQx
+XwkzbQk0Zwozcwg2XQA2dRYxZgA4cBY0XQA4fRk1Uw42agA6bAA7ZxA2cCEzXhE2dhM2fB02axM5
+bSE4Vx05YhU7aQs9fR07Xig3aBo9cSFAXhtBaiU/aSVHdixHbCdPbS9PfzJOhT1VbzdXcDtVe0BV
+djZXgjhWhzVakEFccEhZgUdbfE1afURdhEJff0hfekxfdT5kgkxggkZjg0hiiEZilENmi0hnk2Bk
+ck5njk1pikNsllVpi1Rrh1xqfEdwmlBxkVlunWNyil10kHJzfF56nGZ9mW59m2SAoW+HqoeIkXSM
+qHqNn3WQpnSQsnuTsICTq3eWsoKVunWau3yYu32Zr4GYtYWZpIWYsHyZwoGcs4ibs4WcuXmfzY2g
+soeiuZahu5OmvomqzI+ryJ6twJ+r0qCzzJ+2yKm42Ke7zbS70a7B2qTE4bDE16rG3a7F5LfG2rfH
+58HK0rvL3rXN37PO5rrO2svK0b3N4LbO7cLO3LrR477S68LS5snZ7cPb883d68/d+9Dg9Nri+Njk
+8t7j89np/dTs/+jo89vv++Lu/Ofw+O7z9uj0/+D5/u32/vn25uj5//r18/L3+vX2//j2+v/19vz1
+//b49fD5///1+//38P749v/3/e/8/fL89/z5/vn86+n//vn79/z78vb8/v/6+f/85v37//L///v9
++v/8+vX/+v799P78//j/9P/+7v/9+//+9f/9//n///z/+///9v7//CH+EUNyZWF0ZWQgd2l0aCBH
+SU1QACwAAAAAYQB4AAAI/gD1/fvXrmDBgQgTKlyYkN1Ae+K8/RPIsKI9d+7IDQTXrqLHdQPlDQQp
+cp29k/YUHvxnz6BLjxVFdhu4EmbCkxrXrWsH0uZNePBQntT5z509dEH/iVQoT5/Tp1CjSn1K0OA2
+ah19InwZcqpXqff03UNo0l7SdksxytPIUKjbtyeV0qM3EJ3WheAGjtMHt+/JefPcEvyHTh7OqvLc
+jTMqFGhQe1+ndks5kN24pXfHaWyHLuXeyFHNTj6JrhvnjvAM0+xIbvM1g/Fix3NJu7bLeNni/Rvn
+8O4/cvau5Z5tu7jt2AbhjdyKsCWyUU1w4IjBIYZ1Cdiza98uwQEJEj4W/jHb7ZsgKzU+OixowIW7
+++wcpnOIEEHLm18GVQ7UeA1UACRDvODBgCy8wMOBCCaoIA8nONECEAIIkpVv0mwxgBMZeDECBQt2
+iOAMIPIgxQwxaAEIN+0otxBf+rQjAQ8sxCjjjDTWKOMJOmywwgtHGFPeP7ZIIQELPGSQwQk2Jqlk
+DPGwk9JJYw3EooswKmnljDjqaEMOxfx4CgcZDKFDBiv8cOWZLDDpJEv2RDkRZFSieaUOOY7QQgpd
+lldJBEogEQOZOshppZpPtonQlC8KqiSdJYxgQwrA/ChKDEqkSWYIiiZJKJtuIlplpjTqgIMHI9yQ
+wy6SxjCCB2OWCWqN/ptCeSicib46ow4xkIrEEaiW1wkHI7CgAwgZmGmrjLEaKiWtnx6Lq65H4PJj
+JzHsqIMEFBh7bJpNFtops9vG+GwGSOQgra+qWsDDCq6Gm+y3Lda67QmjBgvpj55wsIIHIZRgQw3h
+crumrMvG26yt9JLKwr3l5btvv/8G/O6sBgecsL2RNqwvv/4C7G63nFIcZ7gXL5yxbw5zHPHHAyv7
+ZsUk12syvhtD7PG2Exc88rwyM4xyzR1LDDLBL+98bMk+35WyzUK3DK/RCPd8stJAr4zz0C57arHU
+ND8cNMveiizv0Vxr7LXVx+Zc9NhRK5y0Vkt/fbXTYh/8KtJTw131/s1pY/0023eX/fPZfNuqttYx
+u523T3GjbbjfdW+teNcqF/7q4eAmjjHlTIMdss6Ag4o353L3TTfodosuONWENx026pJvbnblrn++
+duqZjj5753O/fnvsM+9e+uOn/6558IPT7jnRiPM8ufCOXw457Me/zfjetTOf+bYeFPiCBRCgapxt
+nHTAwo7VOZF91tsfa4EFHgxxgw+L21T+C+hz8ML6f+Ou6BAesEALLECCXUxIK+VjwQheQJ3uLY99
+MNtWgCywPx90SR4YzKAGNygPTmjAAxl4wXRuwL/IhQt+LBgCCwp4QJ9wogYvyAALpEPCB/YvYAMS
+IAF75RtOGAEJ/quyTsAE5rvmHesGAUzhE4AxPttYogNA9EB1hoi5CB4xgAEaACt+oYsuevGLYNRF
+JBZwgyDioIa9s50Rh8hGKk7PeG2Mow1NKMc6Sq94a7SjHs9URajt8Y+aemMeAUlIZAmyfYVMJBHV
+iEhFErKPoWPBAjRghBoY4QcckIKfYnAC/a2gAj8IQfwyQIEb2OAEMZiBE26QASWMYAVkWsEHZvkB
+HUghCTqYQAhOEAIecIADG/DADZKAKUFBEnc06AEsKaAEJRyAAR9YwQ10oIEJHGgC8EMCgDyAhCTg
+IAQpoCR4wOMDDWggBQvYEJmaOYIRIGEDQLjCBiyQBCMo6phJ/koAFA5gARz8sgkx4IEGFnBJHfBA
+VFWwQQk2EIEkFMAFZCDEJVIRC2H4whfD4MUrTEEJRbyhDDgQgAIsYAOFVuGTGbhBDDRwz0NacUYv
+CAECMvGMeJgjNuaIBjE4gQYR9EAKHLDBAVZQhQjoYA6wIM5fxncNY7iiEmu4wBE4UAIgKCED/Wwp
+HhsZox9gYA3WaEdY9IEPfbCjIPFoBRhOEIEqXCEDCpDCIaZxkJMAZR7Aacxe/rGTdsRjGqhoAwmk
+YAF4ytCYLvVjjGwQgj3MZh36WAc8yJGRnlADEU8QADFJAAl19GYdeRWHWUiDktbkFSUFKcYilqAB
+IGq1iFxl/kEFqlCHdqTEKI/5Bzue0lRQtKEQuJgNXy0LjwO25B9A6Yxdg1LcgjDDET4oppzwaaMe
+xEAP7cgLXztyDrqcJiPJ0cc7UFKVdtCFLgmRx0HQ+w96rMSvt5DDaxn5Uhmtig/tcEdNfsRfm4DC
+BxlgQgQ6kAUGBHKr9Y3RffO73/46eCHmCEYXIjCFJCigUjaibo0WrN8WPvjDLAkHMs6gAQtUIQYH
+hm2CFegB/HYYxDAeiDjaaw02eKAIlouRhmnE4QbHuL/wYEc66PGMLkwABimmr2JZ7GIf//hH2nhK
+O44xBh8kWXsr7rGHn1yedlDjH9ogiCsWcGUILlnLXH7w/my+4Q5s/CMeiSjzDW1UgiTYwbbtjYdg
+zEoV3e4WH+yYx2NQY4+eYPA3yG2JMlaBCC8goXsxmMIgSuEM4fIFHdyYwgawcAAddCAENtjxjMR0
+561cRLs9acdrkPOaf4ADOEERSVwSohH1LuMRO2jAEUCwARYgIZc56MIOBPGK15xEHJvIQQkyEIIc
+/EnUMlIAD7BbGL46BRvpEEhBchEJNjQABXzQRDJe05mzHMXa+2lHNkaxAwM0QQEZsMEALRADHYQA
+m57eQy2ucRFztEEAVSChDUAA7RhVYQJseM1k7UEOyOrjHPFIBh04UIACxYgAOKBENtoxmdVURh/a
+OEk2/u7QACRkAARKMOUNvucBESUhA0AYggG+gAlpFMQUCMCBjlZwgIKnMAJPgMVrbhMPZ2gCDCIw
+6P4CiIMT7IAU8ZiJSPKjj6k3ww0p2MAVoABXHQzoBb+mDgcokAF3TgAAeThGO6oRhQkAoQIgCHVi
+I8kCJwjAB22YBCkuEYpAzMEMJGgCCBgwAWK+IKZSOAEBuKCMCdVkJ8YghALYdQAKIIEHNZBCDOC3
+P7BrAd5AIKERqCCLeDSiBlUgFg98Ti4pNnuS95YCDyLgARsAQX8vmKAFOMAEAaSiHbsdTKqz0QgA
+SMEDCvD1C+zNg+l4QEAt4FcSWHBhIFhACkJYBS18/jB5JyzA50MI4fMB6AQjTGEGFpiBvU9QggOM
+oAfEksANPpCEQrTDKchNSDuIQYIhWLIGU8UBSMACHKADSbByi4VJLNACNjACG4AEHEACqkACSEAB
+HLAEPhcwXvcHwNci+kUODhEPfsADKmRHGRguPDADHCgWtoUWDuEMY6A/enSC26JJbnB/99CCuvUP
+s7AAwDKDc+c/4ZIEFtAF90cQytEU7TAKCzAENgCECLZkAcMDG5AC9+deQbEZjpACSPCEJhiEesQD
+NnAEV2hbDPcP5iAIISBAUKhiUoiCLECG2vYX9hAPexACG9ACbahkdBcuIOQCR2iG89ANIogDJbWH
+/lj2htuiLh6QIvjQEffXInzwhEjyhVHYh4vIA40ID49IEE7RDpPIApVYRzToPproiJD4iaE4inJU
+irbCiKjoiZJIiYhoZphoipvYiZEIirRoiW54i694ipyYirMoirU4Z3UEi8Moi7xojL7Ih0KYiblI
+jM3IinHkiq+ijLqoir1IimBoR9pIjat4jHQkR+HIjOP4jIkIjNkojNtYjNbYRtgIKue4i+nojZcY
+jbgYi/bYja34jcnojuLoj9cIkOYokOhIkPI4PZABHO0gADOggS/gKAzCAwqAB3hgCK+RGAnRDZKg
+CEawAnpkAfdXECchEIahD4HRDjgwfeGiAy9A/gE2MAMhoANhEBt0tQ0hMRDbYA/dcA2hoD7gGIj2
+8A0UARmCFg8AFTARqQA2wC86wIFZMRMbMRjz0A69AAFAOIficJT6ABzxwAERGS43sHtIcAM8IIF4
+lRDgAFmDQQ7tYA1RoEdNUJJsQhHo8JUtEQFSEDAroAA4oANiQgLGkEFhdigcgRDxEAd6hANHSA8E
+ww16GQ8RMJbbsgIcYAT6wwFicA3uoBQlwVc0sRHt8Al6pADxIBCQCRl1MZlhwAEBQ3Cf9j32VxXL
+gWhZwQ7boAt6lAVN8hCsyRL3cBLt0Ad9GS4V0AQawANAwAKYQBtLIVkt0Q5RRhB6BAfARxBH+zEW
+oXkS0MAI1hGe4jme5CmeJFADwFQAVjALuuEbaZAF/bR58Vme9Pk+MRAdCpAFcNCWmKEQIDEa0CAb
+AjqgBFqgyOFl+pAOXWYO5uBXyGGgBopWaPVYPcEQSzEa7JChGrqhHNqhGqqX4jBZ7IAP5ZGhT7Fb
+ZuWhKioVGXpoMYEQSOEXMuoW89AZ3DCdW6YVLjGjbpEVOVoRRPFjT3EO7TUX5XFe3eVkMJEfRvqj
+QboOGFQWPCqju9Ub2lUeU5qlggET/ckmWuoXynVs5cFczPUNovWlZioUdvGiQToQ9/CmcBqncjqn
+cJofFVoeUfGmYkGnfAoVY+UmCxEQADs=
+}
+
+#Legacy H logo in PNG format transparent background
 dict set logos icontrans {
 R0lGODlhYQB4APQAAAUvZhU8cCRJeTRWg0RjjFNwlmN9oHOKqYKXspGkvKGxxbG+z8DL2dDY4uDl
 7O/y9QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEA
@@ -460,4 +538,129 @@ agpE6ZjarZfGEyOZSoHKBhYuaOpmr7Tmt+eslCAZ35wsEEmJhTAggOQsCZHFBEOCjBAwF3Xghivu
 uOSWa+656Kar7rrkhgAAOw==
 }
 return [ set logos ]
+}
+
+proc create_logo_images_svg {} {
+dict set logossvg logosvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="hammerDB-logo-SVG.svg"
+   version="1.1"
+   id="svg2"
+   xml:space="preserve"
+   width="770.77332"
+   height="307.95999"
+   viewBox="0 0 770.77332 307.95999"><sodipodi:namedview
+     inkscape:current-layer="svg2"
+     inkscape:window-maximized="0"
+     inkscape:window-y="26"
+     inkscape:window-x="58"
+     inkscape:cy="153.98"
+     inkscape:cx="385.38666"
+     inkscape:zoom="1.3609708"
+     showgrid="false"
+     id="namedview16"
+     inkscape:window-height="681"
+     inkscape:window-width="1748"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0" /><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+     id="defs6" /><g
+     id="g10"
+     transform="matrix(1.3333333,0,0,-1.3333333,0,209.96)"><g
+       id="g12"
+       transform="scale(0.1)"><path
+         d="m 1015.77,309.121 c -34.614,-9.539 -51.317,-15.5 -66.825,-36.992 -19.101,-26.277 -21.48,-66.848 -21.48,-79.969 0,-41.781 16.715,-74 47.73,-74 40.575,0 40.575,41.77 40.575,71.61 z m 213.66,-162.32 c 0,-26.27 0,-53.7307 -16.72,-76.4104 -8.33,-10.7304 -63.25,-69.21091 -227.96,-69.21091 -107.414,0 -275.723,19.10161 -275.723,180.23031 0,176.641 201.727,206.488 306.743,222 v 64.449 c 0,26.262 0,68.039 -39.368,68.039 -32.222,0 -41.785,-23.886 -48.937,-44.16 -15.527,-40.59 -28.641,-76.398 -94.301,-76.398 -69.219,0 -99.062,48.941 -99.062,90.711 0,48.949 38.183,94.301 99.062,120.558 59.691,25.063 126.524,28.661 192.166,28.661 74,0 140.85,-10.75 179.05,-68.04 23.86,-37.011 25.05,-72.808 25.05,-106.23 V 146.801"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path14" /><path
+         d="m 1316.6,508.449 c 0,47.731 1.19,58.481 15.5,75.192 46.56,54.918 195.76,72.808 249.45,72.808 121.76,0 165.93,-35.808 196.95,-60.879 64.45,46.539 145.62,60.879 225.58,60.879 128.92,0 208.88,-56.097 212.45,-202.91 V 51.3086 c -1.19,-23.8594 -5.96,-32.2266 -29.84,-32.2266 h -170.67 c -26.25,0 -31.04,11.918 -31.04,31.0391 V 445.18 c 0,33.429 -1.19,76.39 -51.32,76.39 -27.43,0 -41.78,-19.078 -45.35,-27.449 -4.77,-11.93 -5.97,-22.68 -5.97,-54.902 V 51.3086 c -1.2,-21.4883 -3.57,-31.0273 -31.03,-31.0273 h -165.89 c -25.09,0 -34.63,5.9609 -34.63,31.0273 V 446.391 c 0,34.609 0,44.148 -8.35,57.289 -8.36,13.109 -25.06,21.492 -40.58,21.492 -14.34,0 -31.03,-7.184 -41.78,-20.301 -11.94,-15.531 -11.94,-31.039 -11.94,-62.082 V 53.6914 c 0,-26.2422 -7.16,-33.4101 -33.41,-33.4101 h -168.29 c -21.49,0 -29.84,5.9609 -29.84,28.6406 V 508.449"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path16" /><path
+         d="m 2310.89,508.449 c 0,47.731 1.2,58.481 15.53,75.192 46.53,54.918 195.73,72.808 249.44,72.808 121.75,0 165.9,-35.808 196.95,-60.879 64.44,46.539 145.61,60.879 225.58,60.879 128.92,0 208.88,-56.097 212.45,-202.91 V 51.3086 c -1.19,-23.8594 -5.97,-32.2266 -29.83,-32.2266 h -170.68 c -26.25,0 -31.02,11.918 -31.02,31.0391 V 445.18 c 0,33.429 -1.2,76.39 -51.33,76.39 -27.46,0 -41.8,-19.078 -45.38,-27.449 -4.77,-11.93 -5.96,-22.68 -5.96,-54.902 V 51.3086 c -1.19,-21.4883 -3.56,-31.0273 -31.02,-31.0273 h -165.91 c -25.07,0 -34.63,5.9609 -34.63,31.0273 V 446.391 c 0,34.609 0,44.148 -8.33,57.289 -8.37,13.109 -25.07,21.492 -40.58,21.492 -14.33,0 -31.05,-7.184 -41.8,-20.301 -11.93,-15.531 -11.93,-31.039 -11.93,-62.082 V 53.6914 c 0,-26.2422 -7.15,-33.4101 -33.42,-33.4101 h -168.29 c -21.47,0 -29.84,5.9609 -29.84,28.6406 V 508.449"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path18" /><path
+         d="m 3585.7,427.289 c -2.4,32.223 -7.17,95.473 -58.5,95.473 -53.7,0 -66.85,-58.481 -65.63,-114.571 z M 3478.28,298.371 c 20.27,-82.359 101.43,-99.062 142.03,-99.062 46.55,0 68.03,14.339 85.93,28.652 27.46,25.059 35.79,33.41 54.91,33.41 23.87,0 42.95,-20.289 42.95,-54.91 C 3804.1,170.672 3767.13,0 3576.14,0 c -50.12,0 -137.24,10.7422 -198.13,69.2109 -21.49,20.3008 -93.12,100.2691 -93.12,266.1681 0,233.941 152.79,321.07 280.51,321.07 190.98,0 238.7,-183.808 238.7,-247.078 0,-60.859 -35.79,-65.621 -58.47,-69.223 l -267.35,-41.777"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path20" /><path
+         d="m 4109.69,47.7188 c 0,-25.0469 -7.19,-28.6368 -31.05,-28.6368 h -171.86 c -26.27,0 -29.87,8.3672 -29.87,31.0391 V 535.898 c 0,44.172 0,64.454 77.6,90.711 68.03,22.692 168.29,28.661 214.85,28.661 37.01,0 175.44,0 175.44,-127.731 0,-50.141 -27.46,-94.289 -81.15,-94.289 -51.32,0 -63.26,34.609 -75.18,71.621 -8.38,25.059 -13.16,39.379 -40.61,39.379 -38.17,0 -38.17,-22.68 -38.17,-47.719 V 47.7188"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path22" /><path
+         d="m 4626.52,173.059 c 119.37,-2.387 157.55,60.863 157.55,254.23 0,202.891 -31.04,303.16 -157.55,292.422 z m -250.63,630.203 c 0,29.828 10.75,38.187 25.05,44.168 31.04,13.121 134.88,26.242 214.84,26.242 54.91,0 211.25,-2.383 316.3,-106.223 47.73,-46.558 113.39,-145.609 113.39,-330.617 0,-116.961 -31.03,-208.871 -75.19,-270.941 C 4860.45,14.3086 4669.5,7.14844 4593.11,7.14844 c -58.48,0 -145.63,5.96096 -187.39,20.30076 -28.65,10.75 -29.83,26.2422 -29.83,56.1016 V 803.262"
+         style="fill:#f68712;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path24" /><path
+         d="m 5396.44,163.52 c 22.67,-1.211 32.2,-1.211 35.8,-1.211 72.81,0 99.07,42.972 99.07,105.031 0,72.808 -27.46,132.492 -114.6,132.492 -8.33,0 -15.49,-1.203 -20.27,-1.203 z m 0,353.269 c 113.38,-7.141 119.34,69.242 119.34,112.211 0,29.832 -8.36,56.09 -16.71,70.422 -15.52,23.879 -34.61,33.418 -71.61,33.418 -11.94,0 -17.91,-1.199 -31.02,-2.391 z M 5149.36,796.09 c 0,25.07 1.18,44.16 27.46,54.898 28.64,11.953 113.39,22.684 211.24,22.684 118.17,0 205.33,-8.34 268.57,-45.363 59.67,-34.61 97.87,-90.707 97.87,-170.668 0,-85.93 -48.95,-144.422 -124.14,-180.243 -8.34,-4.757 -16.71,-8.328 -25.05,-11.918 7.16,-1.199 15.49,-3.582 23.87,-5.968 102.64,-29.84 151.59,-119.364 151.59,-210.071 0,-95.492 -54.92,-171.8707 -145.62,-210.0621 C 5569.49,13.1094 5490.7,8.33203 5405.96,8.33203 c -93.08,0 -182.61,7.16797 -217.22,15.51957 -36.98,8.3593 -39.38,26.2695 -39.38,59.6992 V 796.09"
+         style="fill:#f68712;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path26" /><path
+         d="M 617.07,861.738 H 427.309 c -26.27,0 -29.844,-11.937 -29.844,-32.218 V 531.129 H 251.855 V 829.52 c 0,28.64 -15.523,32.218 -34.625,32.218 H 31.0508 C 8.375,860.551 0,850.988 0,829.52 V 51.3086 C 0,22.6719 11.9297,19.082 35.8164,19.082 H 251.152 c 7.039,37.4883 15.684,66.168 15.684,66.168 h 22.359 v 145.41 l -2.09,43.91 c -1.855,33.891 -23.585,48.809 -47.902,49.899 -38.828,1.773 -42.711,-19.207 -67.308,-23.36 -25.426,-4.23 -48.852,-2.668 -48.852,-2.668 -13.508,-0.742 -24.4453,8.258 -24.4453,20.059 v 107.84 c 0,11.84 10.9373,20.691 24.4453,19.808 0,0 23.805,1.071 48.852,-3.226 25.082,-4.293 27.5,-17.051 50.515,-25.242 23.063,-8.239 32.168,10.039 48.981,22.14 16.871,12.121 62.562,12.602 97.078,10.231 34.5,-2.36 68.957,-9.309 68.957,-9.309 C 589.23,400.621 606.266,273.5 606.266,273.5 506.379,379.93 423.285,341.082 385.68,297.648 360.645,268.77 364.219,227.121 364.219,227.121 h -0.196 V 85.25 h 15.301 c 0,0 8.664,-28.6797 15.688,-66.168 H 618.27 c 22.683,0 32.222,5.9688 32.222,32.2266 V 830.719 c 0,26.23 -9.539,31.019 -33.422,31.019"
+         style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         id="path28" /></g></g></svg>
+}
+
+#H logo in SVG format not currently supported as icon image format
+dict set logossvg icontranssvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   viewBox="0 0 770.77332 307.95999"
+   height="307.95999"
+   width="770.77332"
+   xml:space="preserve"
+   id="svg2"
+   version="1.1"
+   sodipodi:docname="hammerDB-icon-SVG.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"><sodipodi:namedview
+     inkscape:document-rotation="0"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1748"
+     inkscape:window-height="681"
+     id="namedview16"
+     showgrid="false"
+     inkscape:zoom="1.3609708"
+     inkscape:cx="385.38666"
+     inkscape:cy="153.98"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g10" /><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+     id="defs6" /><g
+     transform="matrix(1.3333333,0,0,-1.3333333,0,307.96)"
+     id="g10"><path
+       d="m 308.85269,156.57057 h -18.976 c -2.627,0 -2.984,-1.194 -2.984,-3.221 v -29.84 h -14.561 v 29.84 c 0,2.863 -1.553,3.221 -3.463,3.221 h -18.618 c -2.267,-0.119 -3.105,-1.075 -3.105,-3.221 V 75.526574 c 0,-2.863 1.193,-3.222 3.582,-3.222 h 21.533 c 0.704,3.75 1.569,6.617 1.569,6.617 h 2.236 v 14.541 l -0.209,4.39 c -0.186,3.390996 -2.359,4.880996 -4.79,4.990996 -3.883,0.177 -4.271,-1.921 -6.731,-2.337 -2.543,-0.422 -4.886,-0.265 -4.886,-0.265 -1.35,-0.074 -2.444,0.824 -2.444,2.006 v 10.783 c 0,1.184 1.094,2.068 2.444,1.98 0,0 2.381,0.108 4.886,-0.322 2.508,-0.429 2.75,-1.705 5.051,-2.523 2.307,-0.824 3.217,1.003 4.898,2.212 1.687,1.214 6.257,1.261 9.708,1.024 3.45,-0.236 6.896,-0.931 6.896,-0.931 15.181,-4.012 16.884,-16.722996 16.884,-16.722996 -9.989,10.641996 -18.298,6.757996 -22.059,2.413996 -2.503,-2.888996 -2.146,-7.052996 -2.146,-7.052996 h -0.019 v -14.187 h 1.53 c 0,0 0.866,-2.867 1.568,-6.617 h 22.327 c 2.267,0 3.221,0.597 3.221,3.222 v 77.941996 c 0,2.624 -0.954,3.102 -3.342,3.102"
+       style="fill:#162e60;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.1"
+       id="path30" /></g></svg>
+}
+return [ set logossvg ]
 }

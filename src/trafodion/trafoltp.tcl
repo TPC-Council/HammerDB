@@ -8,10 +8,10 @@ upvar #0 configtrafodion configtrafodion
 #set variables to values in dict
 setlocaltpccvars $configtrafodion
 if { $trafodion_load_data eq "true" && $trafodion_build_jsps eq "true" } {
-set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema with JSPs?"
+set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPROC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema with JSPs?"
 	} else {
 if { $trafodion_load_data eq "true" && $trafodion_build_jsps eq "false" } {
-set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema without JSPs?"
+set trafmsg "Ready to create a $trafodion_count_ware Warehouse Trafodion TPROC-C schema\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema without JSPs?"
 	} else {
 if { $trafodion_load_data eq "false" && $trafodion_build_jsps eq "true" } {
 set trafmsg "Ready to create Trafodion JSPs only without data\nin host [string toupper TCP:$trafodion_server:$trafodion_port] in schema $trafodion_schema?"
@@ -29,7 +29,7 @@ set maxvuser [ expr $trafodion_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C creation"
+set _ED(packagekeyname) "Trafodion TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -1725,12 +1725,14 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
@@ -1821,7 +1823,7 @@ set $val [ dict get $attributes $val ]
 }}}}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Trafodion TPC-C"
+set _ED(packagekeyname) "Trafodion TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Trafodion Library
@@ -2126,7 +2128,7 @@ set $val [ dict get $attributes $val ]
 }}}}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Trafodion TPC-C Timed"
+set _ED(packagekeyname) "Trafodion TPROC-C Timed"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #THIS SCRIPT TO BE RUN WITH VIRTUAL USER OUTPUT ENABLED
 #EDITABLE OPTIONS##################################################
@@ -2174,7 +2176,7 @@ return $connection
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set connection [ connect_string $dsn $odbc_driver $server $user $password ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
 puts stderr "Error: the database connection to $connection could not be established"
@@ -2254,12 +2256,12 @@ $stmnt close
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Trafodion TPM"
+puts [ testresult $nopm $tpm Trafodion ]
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 odbc close
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

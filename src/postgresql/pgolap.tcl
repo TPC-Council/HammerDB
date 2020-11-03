@@ -7,7 +7,7 @@ if {[dict exists $dbdict postgresql library ]} {
 upvar #0 configpostgresql configpostgresql
 #set variables to values in dict
 setlocaltpchvars $configpostgresql
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $pg_scale_fact TPC-H schema\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $pg_scale_fact TPROC-H schema\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
 if { $pg_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -16,7 +16,7 @@ set maxvuser [ expr $pg_num_tpch_threads + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "PostgreSQL TPC-H creation"
+set _ED(packagekeyname) "PostgreSQL TPROC-H creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create threads for schema creation: $message"
         return
@@ -658,6 +658,7 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -665,6 +666,7 @@ if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 set lda [ ConnectToPostgres $host $port $user $password $db ]
@@ -725,7 +727,7 @@ upvar #0 configpostgresql configpostgresql
 setlocaltpchvars $configpostgresql
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "PostgreSQL TPC-H"
+set _ED(packagekeyname) "PostgreSQL TPROC-H"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# PostgreSQL Library

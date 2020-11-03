@@ -13,11 +13,12 @@ set traffields [ dict create connection {trafodion_dsn {.tpc.f1.e1 get} trafodio
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Trafodion TPC-C Schema Options} }
-"build" { wm title .tpc {Trafodion TPC-C Build Options} }
-"drive" {  wm title .tpc {Trafodion TPC-C Driver Options} }
+"all" { wm title .tpc {Trafodion TPROC-C Schema Options} }
+"build" { wm title .tpc {Trafodion TPROC-C Build Options} }
+"drive" {  wm title .tpc {Trafodion TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -25,14 +26,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -199,14 +200,14 @@ if {$trafodion_build_jsps == "true" && $trafodion_copy_remote == "true"} {
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 16 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 16 -sticky w
 	}
 set Prompt $Parent.f1.p17
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 17 -sticky e
 set Name $Parent.f1.r3
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable traf_driver

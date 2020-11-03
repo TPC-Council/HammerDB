@@ -16,7 +16,7 @@ switch $rdbms {
         "Redis" { set db "redis" }
         "Trafodion" { set db "traf" }
 	}
-set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPC-C schema\nin directory $gen_directory ?" 
+set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPROC-C schema\nin directory $gen_directory ?" 
 if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
 if { $gen_num_vu eq 1 || $gen_count_ware eq 1 } {
 set maxvuser 1
@@ -28,7 +28,7 @@ set virtual_users $maxvuser
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C generation"
+set _ED(packagekeyname) "TPROC-C generation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create thread(s) for data generation: $message"
 	return 1
@@ -471,7 +471,7 @@ switch $rdbms {
         "Redis" { set db "redis" }
         "Trafodion" { set db "traf" }
 	}
-set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPC-H schema\nin directory $gen_directory ?" 
+set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPROC-H schema\nin directory $gen_directory ?" 
 if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
 if { $gen_num_vu eq 1 } {
 set maxvuser 1
@@ -483,7 +483,7 @@ set virtual_users $maxvuser
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-H generation"
+set _ED(packagekeyname) "TPROC-H generation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create thread(s) for data generation: $message"
 	return 1

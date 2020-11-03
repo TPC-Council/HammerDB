@@ -355,8 +355,8 @@ puts "Error: There is no workload to run because the Script is empty"
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "TPC-C"
-ed_status_message -show "TPC-C Driver Script"
+set _ED(packagekeyname) "TPROC-C"
+ed_status_message -show "TPROC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -962,24 +962,26 @@ dict set jsondict success message "Database set to $rdbms"
 }	
 bm {
 set toup [ string toupper $val ]
-if { [ string match ???-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
+if { [ string match ???-? $toup ] || [ string match ?????-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set posswkl  [ split  [ dict get $dbdict $key workloads ]]
+set posswkl2 [ regsub -all {(TP)(C)(-[CH])} $posswkl {\1RO\2\3} ]
 if { $dashformat } {
-set ind [ lsearch $posswkl $toup ]
+set ind [ lsearch [ concat $posswkl $posswkl2 ] $toup ]
 if { $ind eq -1 } {
-dict set jsondict error message "Unknown benchmark $toup, choose one from $posswkl"
+dict set jsondict error message "Unknown benchmark $toup, choose one from $posswkl (or compatible names $posswkl)"
 	wapp-2-json 2 $jsondict
 } else {
-set bm $toup
+set dicttoup [ regsub -all {(TP)(RO)(C-[CH])} $toup {\1\3} ]
+set bm $dicttoup
 dict set jsondict success message "Benchmark set to $toup for $rdbms"
 	wapp-2-json 2 $jsondict
 	}
       } else {
-dict set jsondict error message "Unknown benchmark $toup, choose one from $posswkl"
+dict set jsondict error message "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
 	wapp-2-json 2 $jsondict
 		}
 	}
@@ -989,7 +991,7 @@ puts "Unknown dbset option"
 puts {Usage: dbset [db|bm|config] value}
 	}
       }
-}}}	
+}}}
 
 proc wapp-page-vuset {} {
 global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps

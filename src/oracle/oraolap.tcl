@@ -7,9 +7,9 @@ if {[dict exists $dbdict oracle library ]} {
 upvar #0 configoracle configoracle
 setlocaltpchvars $configoracle
 if { $tpch_tt_compat eq "true" } {
-set install_message "Ready to create a Scale Factor $scale_fact TimesTen TPC-H schema\nin the existing database [string toupper $instance]\n under existing user [ string toupper $tpch_user ]?"
+set install_message "Ready to create a Scale Factor $scale_fact TimesTen TPROC-H schema\nin the existing database [string toupper $instance]\n under existing user [ string toupper $tpch_user ]?"
 	} else {
-set install_message "Ready to create a Scale Factor $scale_fact TPC-H schema in database [string toupper $instance]\n under user [ string toupper $tpch_user ] in tablespace [ string toupper $tpch_def_tab]?"
+set install_message "Ready to create a Scale Factor $scale_fact TPROC-H schema in database [string toupper $instance]\n under user [ string toupper $tpch_user ] in tablespace [ string toupper $tpch_def_tab]?"
 	}
 if {[ tk_messageBox -title "Create Schema" -icon question -message $install_message -type yesno
  ] == yes} {
@@ -21,7 +21,7 @@ set maxvuser [ expr $num_tpch_threads + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "Oracle TPC-H creation"
+set _ED(packagekeyname) "Oracle TPROC-H creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create threads for schema creation: $message"
 	return 1
@@ -842,6 +842,7 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -849,6 +850,7 @@ if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 set connect $tpch_user/$tpch_pass@$instance
@@ -918,7 +920,7 @@ upvar #0 configoracle configoracle
 setlocaltpchvars $configoracle
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Oracle TPC-H"
+set _ED(packagekeyname) "Oracle TPROC-H"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library

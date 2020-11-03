@@ -32,6 +32,7 @@ if { [ info exists afval ] } {
 }
    catch "destroy .countopt"
    ttk::toplevel .countopt
+   wm transient .countopt .ed_mainFrame
    wm withdraw .countopt
    wm title .countopt {Oracle TX Counter Options}
 
@@ -42,7 +43,7 @@ if { [ info exists afval ] } {
    pack $Name -anchor nw -fill x -side top -padx 5
 
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons pencil]]
+ttk::label $Prompt -image [ create_image pencil icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Transaction Counter Options"
@@ -143,11 +144,12 @@ set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_pass
 set whlist [ get_warehouse_list_for_spinbox ]
    catch "destroy .tpc"
    ttk::toplevel .tpc
+   wm transient .tpc .ed_mainFrame
    wm withdraw .tpc
 switch $option {
-"all" { wm title .tpc {Oracle TPC-C Schema Options} }
-"build" { wm title .tpc {Oracle TPC-C Build Options} }
-"drive" {  wm title .tpc {Oracle TPC-C Driver Options} }
+"all" { wm title .tpc {Oracle TPROC-C Schema Options} }
+"build" { wm title .tpc {Oracle TPROC-C Build Options} }
+"drive" {  wm title .tpc {Oracle TPROC-C Driver Options} }
 	}
    set Parent .tpc
    set Name $Parent.f1
@@ -155,14 +157,14 @@ switch $option {
    pack $Name -anchor nw -fill x -side top -padx 5  
 if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -188,32 +190,32 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 3 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "TPC-C User :"
+   ttk::label $Prompt -text "TPROC-C User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpcc_user
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -sticky ew
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-C User Password :"   
+   ttk::label $Prompt -text "TPROC-C User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpcc_pass
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5 -sticky ew
 if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-C Default Tablespace :"
+   ttk::label $Prompt -text "TPROC-C Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_def_tab
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -sticky ew
 set Name $Parent.f1.e6a
    set Prompt $Parent.f1.p6a
-   ttk::label $Prompt -text "Order Line Tablespace :"
+   ttk::label $Prompt -text "TPROC-C Order Line Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_ol_tab
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -sticky ew
 set Name $Parent.f1.e7
    set Prompt $Parent.f1.p7
-   ttk::label $Prompt -text "TPC-C Temporary Tablespace :"    
+   ttk::label $Prompt -text "TPROC-C Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpcc_def_temp
    grid $Prompt -column 0 -row 8 -sticky e
    grid $Name -column 1 -row 8 -sticky ew
@@ -341,14 +343,14 @@ grid $Name -column 1 -row 13 -sticky ew
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 16 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
 grid $Prompt -column 1 -row 16 -sticky w
 	}
 set Prompt $Parent.f1.p15
-ttk::label $Prompt -text "TPC-C Driver Script :"
+ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
 grid $Prompt -column 0 -row 17 -sticky e
 set Name $Parent.f1.r1
 ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable ora_driver
@@ -565,11 +567,12 @@ variable orafields
 set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e1a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
    catch "destroy .tpch"
    ttk::toplevel .tpch
+   wm transient .tpch .ed_mainFrame
    wm withdraw .tpch
 	switch $option {
-	"all" { wm title .tpch {Oracle TPC-H Schema Options} }
-	"build" { wm title .tpch {Oracle TPC-H Build Options} }
-	"drive" {  wm title .tpch {Oracle TPC-H Driver Options} }
+	"all" { wm title .tpch {Oracle TPROC-H Schema Options} }
+	"build" { wm title .tpch {Oracle TPROC-H Build Options} }
+	"drive" {  wm title .tpch {Oracle TPROC-H Driver Options} }
 	}
    set Parent .tpch
    set Name $Parent.f1
@@ -577,14 +580,14 @@ set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {
    pack $Name -anchor nw -fill x -side top -padx 5
    if { $option eq "all" || $option eq "build" } {
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons boxes ]]
+ttk::label $Prompt -image [ create_image boxes icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Build Options"
 grid $Prompt -column 1 -row 0 -sticky w
 	} else {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -610,26 +613,26 @@ grid $Prompt -column 1 -row 0 -sticky w
    grid $Name -column 1 -row 3 -columnspan 4 -sticky ew
 set Name $Parent.f1.e3
    set Prompt $Parent.f1.p3
-   ttk::label $Prompt -text "TPC-H User :"
+   ttk::label $Prompt -text "TPROC-H User :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_user
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -columnspan 4 -sticky ew
 set Name $Parent.f1.e4
    set Prompt $Parent.f1.p4
-   ttk::label $Prompt -text "TPC-H User Password :"
+   ttk::label $Prompt -text "TPROC-H User Password :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name  -width 30 -textvariable tpch_pass
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5 -columnspan 4 -sticky ew
    if { $option eq "all" || $option eq "build" } {
 set Name $Parent.f1.e5
    set Prompt $Parent.f1.p5
-   ttk::label $Prompt -text "TPC-H Default Tablespace :"
+   ttk::label $Prompt -text "TPROC-H Default Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_def_tab
    grid $Prompt -column 0 -row 6 -sticky e
    grid $Name -column 1 -row 6 -columnspan 4 -sticky ew
 set Name $Parent.f1.e6
    set Prompt $Parent.f1.p6
-   ttk::label $Prompt -text "TPC-H Temporary Tablespace :"
+   ttk::label $Prompt -text "TPROC-H Temporary Tablespace :" -image [ create_image hdbicon icons ] -compound left
    ttk::entry $Name -width 30 -textvariable tpch_def_temp
    grid $Prompt -column 0 -row 7 -sticky e
    grid $Name -column 1 -row 7 -columnspan 4 -sticky ew
@@ -705,7 +708,7 @@ ttk::spinbox $Name -from 1 -to 512 -textvariable num_tpch_threads
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
-ttk::label $Prompt -image [image create photo -data [ dict get $icons driveroptlo ]]
+ttk::label $Prompt -image [ create_image driveroptlo icons ]
 grid $Prompt -column 0 -row 12 -sticky e
 set Prompt $Parent.f1.h4
 ttk::label $Prompt -text "Driver Options"
@@ -840,6 +843,7 @@ set old_agent $agent_hostname
 set old_id $agent_id
    catch "destroy .metric"
    ttk::toplevel .metric
+   wm transient .metric .ed_mainFrame
    wm withdraw .metric
    wm title .metric {Oracle Metrics Options}
    set Parent .metric
@@ -847,7 +851,7 @@ set old_id $agent_id
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons dashboard ]]
+ttk::label $Prompt -image [ create_image dashboard icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 
 set Prompt $Parent.f1.h2

@@ -597,25 +597,27 @@ putscli "Database set to $rdbms"
 }	
 bm {
 set toup [ string toupper $val ]
-if { [ string match ???-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
+if { [ string match ???-? $toup ] || [ string match ?????-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set posswkl  [ split  [ dict get $dbdict $key workloads ]]
+set posswkl2 [ regsub -all {(TP)(C)(-[CH])} $posswkl {\1RO\2\3} ]
 if { $dashformat } {
-set ind [ lsearch $posswkl $toup ]
+set ind [ lsearch [ concat $posswkl $posswkl2 ] $toup ]
 if { $ind eq -1 } {
-putscli "Unknown benchmark $toup, choose one from $posswkl"
+putscli "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
 } else {
-set bm $toup
-remote_command [ concat dbset bm $toup ]
+set dicttoup [ regsub -all {(TP)(RO)(C-[CH])} $toup {\1\3} ]
+set bm $dicttoup
+remote_command [ concat dbset bm $dicttoup ]
 putscli "Benchmark set to $toup for $rdbms"
-	}
+        }
       } else {
-putscli "Unknown benchmark $toup, choose one from $posswkl"
-		}
-	}
+putscli "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
+                }
+        }
 }}
 default {
 putscli "Unknown dbset option"
@@ -766,11 +768,11 @@ proc vudestroy {} {
 	    }
 	}	
     } else {
-	if { $opmode eq "Slave" } {
-#In Master Slave Mode ed_kill_vusers may have already been called from Master so thread::names is 1
+	if { $opmode eq "Replica" } {
+#In Primary Replica Mode ed_kill_vusers may have already been called from Primary so thread::names is 1
 	unset -nocomplain AVUC
 	unset -nocomplain vustatus
-	putscli "vudestroy from Master, Slave status clean up"
+	putscli "vudestroy from Primary, Replica status clean up"
 	   } else {
 	putscli "No Virtual Users found to destroy"
 	}
@@ -854,11 +856,11 @@ puts "Loaded $customscript"
 
 proc distributescript {} {
 global opmode masterlist
-if { $opmode != "Master" } { 
-puts "Error: Cannot distribute script if not in Master mode"
+if { $opmode != "Primary" } { 
+puts "Error: Cannot distribute script if not in Primary mode"
 	} else {
 if { [ llength $masterlist ] eq 0 } {
-puts "Error: Master has no Slaves to distribute to"
+puts "Error: Primary has no Replicas to distribute to"
  	} else {
 distribute
 	}
@@ -1103,8 +1105,8 @@ set gen_directory $tmp
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "TPC-C"
-ed_status_message -show "TPC-C Driver Script"
+set _ED(packagekeyname) "TPROC-C"
+ed_status_message -show "TPROC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -1141,8 +1143,8 @@ upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global cloud_query mysql_cloud_query pg_cloud_query
-set _ED(packagekeyname) "TPC-H"
-puts "TPC-H Driver Script"
+set _ED(packagekeyname) "TPROC-H"
+puts "TPROC-H Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -1177,16 +1179,16 @@ return
 	"local" {
 set opmode "Local"
 	}
-	"master" {
-set opmode "Master"
+	"primary" {
+set opmode "Primary"
 	}
-	"slave" {
-set opmode "Slave"
+	"replica" {
+set opmode "Replica"
 set id $assignid
 set hostname $assignhost
 	}
 	default {
-	puts "Error:Mode to switch to must be one of Local, Master or Slave"
+	puts "Error:Mode to switch to must be one of Local, Primary or Replica"
 	return
 	}
 }	
@@ -1198,6 +1200,37 @@ return
 proc quit {} {
 puts "Shutting down HammerDB CLI"
 exit
+}
+
+proc waittocomplete {} {
+proc wait_to_complete_loop {} {
+upvar wcomplete wcomplete
+set wcomplete [vucomplete]
+if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else { 
+putscli "waittocomplete called script exit"
+exit
+}
+}
+set wcomplete "false"
+wait_to_complete_loop
+vwait forever
+}
+
+proc runtimer { seconds } {
+set x 0
+set timerstop 0
+while {!$timerstop} {
+ incr x
+ after 1000
+  if { ![ expr {$x % 60} ] } {
+  set y [ expr $x / 60 ]
+  putscli "Timer: $y minutes elapsed"
+  }
+ update
+ if {  [ vucomplete ] || $x eq $seconds } { set timerstop 1 }
+    }
+putscli "runtimer returned after $x seconds"
+return
 }
 
 proc help { args } {
@@ -1218,6 +1251,7 @@ Type \"help command\" for more details on specific commands below"
        	loadscript
        	print 
 	quit
+	runtimer
 	switchmode
 	vucomplete
        	vucreate
@@ -1225,19 +1259,20 @@ Type \"help command\" for more details on specific commands below"
        	vurun
        	vuset
        	vustatus 
+	waittocomplete
 	}
 } else {
 set option [ lindex [ split  $args ]  0 ]
-set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun switchmode} $option ]
+set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun switchmode runtimer waittocomplete} $option ]
 if { $ind eq -1 } {
-puts "Error: invalid option"
-puts {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|switchmode]}
+putscli "Error: invalid option"
+putscli {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|switchmode|runtimer|waittocomplete]}
 return
 } else {
 switch  $option {
 print {
-puts {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen]}
-puts "prints the current configuration: 
+putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen]}
+putscli "prints the current configuration: 
 db: database 
 bm: benchmark
 dict: the dictionary for the current database ie all active variables
@@ -1248,79 +1283,88 @@ vustatus: the status of the virtual users
 datagen: the datagen configuration"
 }
 quit {
-puts "quit - Usage: quit"
-puts "Shuts down the HammerDB CLI."
+putscli "quit - Usage: quit"
+putscli "Shuts down the HammerDB CLI."
 }
 librarycheck {
-puts "librarycheck - Usage: librarycheck"
-puts "Attempts to load the vendor provided 3rd party library for all databases and reports whether the attempt was successful."
+putscli "librarycheck - Usage: librarycheck"
+putscli "Attempts to load the vendor provided 3rd party library for all databases and reports whether the attempt was successful."
 }
 dbset {
-puts "dbset - Usage: dbset \[db|bm\] value"
-puts "Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu in the graphical interface. Database value is set by the database prefix in the XML configuration." 
+putscli "dbset - Usage: dbset \[db|bm\] value"
+putscli "Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu in the graphical interface. Database value is set by the database prefix in the XML configuration." 
 }
 diset {
-puts "diset - Usage: diset dict key value"
-puts "Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use \"print dict\" to see what these variables are and diset to change:
+putscli "diset - Usage: diset dict key value"
+putscli "Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use \"print dict\" to see what these variables are and diset to change:
 Example:
 hammerdb>diset tpcc count_ware 10
 Changed tpcc:count_ware from 1 to 10 for Oracle"
 }
 distributescript {
-puts "distributescript"
-puts "In Master mode distributes the script loaded by Master to the connected Slaves." 
+putscli "distributescript"
+putscli "In Primary mode distributes the script loaded by Primary to the connected Replicas." 
 }
 switchmode {
-puts "switchmode - Usage: switchmode \[mode\] ?MasterID? ?MasterHostname?"
-puts "Equivalent to the Mode option in the graphical interface. Mode to switch to must be one of Local, Master or Slave. If Mode is Slave then the ID and Hostname of the Master to connect to must be given."
+putscli "switchmode - Usage: switchmode \[mode\] ?PrimaryID? ?PrimaryHostname?"
+putscli "Equivalent to the Mode option in the graphical interface. Mode to switch to must be one of Local, Primary or Replica. If Mode is Replica then the ID and Hostname of the Primary to connect to must be given."
 }
 buildschema {
-puts "buildschema - Usage: buildschema"
-puts "Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface." 
+putscli "buildschema - Usage: buildschema"
+putscli "Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface." 
 }
 vuset {
-puts "vuset - Usage: vuset \[vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps\]"
-puts "Configure the virtual user options. Equivalent to the Virtual User Options window in the graphical interface." 
+putscli "vuset - Usage: vuset \[vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps\]"
+putscli "Configure the virtual user options. Equivalent to the Virtual User Options window in the graphical interface." 
 }
 vucreate {
-puts "vucreate - Usage: vucreate"
-puts "Create the virtual users. Equivalent to the Virtual User Create option in the graphical interface. Use \"print vucreated\" to see the number created, vustatus to see the status and vucomplete to see whether all active virtual users have finished the workload. A script must be loaded before virtual users can be created." 
+putscli "vucreate - Usage: vucreate"
+putscli "Create the virtual users. Equivalent to the Virtual User Create option in the graphical interface. Use \"print vucreated\" to see the number created, vustatus to see the status and vucomplete to see whether all active virtual users have finished the workload. A script must be loaded before virtual users can be created." 
 }
 vurun {
-puts "vurun - Usage: vurun"
-puts "Send the loaded script to the created virtual users for execution. Equivalent to the Run command in the graphical interface."
+putscli "vurun - Usage: vurun"
+putscli "Send the loaded script to the created virtual users for execution. Equivalent to the Run command in the graphical interface."
 }
 vudestroy {
-puts "vudestroy - Usage: vudestroy"
-puts "Destroy the virtual users. Equivalent to the Destroy Virtual Users button in the graphical interface that replaces the Create Virtual Users button after virtual user creation."
+putscli "vudestroy - Usage: vudestroy"
+putscli "Destroy the virtual users. Equivalent to the Destroy Virtual Users button in the graphical interface that replaces the Create Virtual Users button after virtual user creation."
 }
 vustatus {
-puts "vustatus - Usage: vustatus"
-puts "Show the status of virtual users. Status will be \"WAIT IDLE\" for virtual users that are created but not running a workload,\"RUNNING\" for virtual users that are running a workload, \"FINISH SUCCESS\" for virtual users that completed successfully or \"FINISH FAILED\" for virtual users that encountered an error." 
+putscli "vustatus - Usage: vustatus"
+putscli "Show the status of virtual users. Status will be \"WAIT IDLE\" for virtual users that are created but not running a workload,\"RUNNING\" for virtual users that are running a workload, \"FINISH SUCCESS\" for virtual users that completed successfully or \"FINISH FAILED\" for virtual users that encountered an error." 
 }
 vucomplete {
-puts "vucomplete - Usage: vucomplete"
-puts "Returns \"true\" or \"false\" depending on whether all virtual users that started a workload have completed regardless of whether the status was \"FINISH SUCCESS\" or \"FINISH FAILED\"."
+putscli "vucomplete - Usage: vucomplete"
+putscli "Returns \"true\" or \"false\" depending on whether all virtual users that started a workload have completed regardless of whether the status was \"FINISH SUCCESS\" or \"FINISH FAILED\"."
 }
 loadscript {
-puts "loadscript - Usage: loadscript"
-puts "Load the script for the database and benchmark set with dbset and the dictionary variables set with diset. Use \"print script\" to see the script that is loaded. Equivalent to loading a Driver Script in the Script Editor window in the graphical interface."
+putscli "loadscript - Usage: loadscript"
+putscli "Load the script for the database and benchmark set with dbset and the dictionary variables set with diset. Use \"print script\" to see the script that is loaded. Equivalent to loading a Driver Script in the Script Editor window in the graphical interface."
 }
 clearscript {
-puts "clearscript - Usage: clearscript"
-puts "Clears the script. Equivalent to the \"Clear the Screen\" button in the graphical interface." 
+putscli "clearscript - Usage: clearscript"
+putscli "Clears the script. Equivalent to the \"Clear the Screen\" button in the graphical interface." 
 }
 customscript {
-puts "customscript - Usage: customscript scriptname.tcl"
-puts "Load an external script. Equivalent to the \"Open Existing File\" button in the graphical interface."  
+putscli "customscript - Usage: customscript scriptname.tcl"
+putscli "Load an external script. Equivalent to the \"Open Existing File\" button in the graphical interface."  
 }
 dgset {
-puts "dgset - Usage: dgset \[vu|ware|directory\]" 
-puts "Set the Datagen options. Equivalent to the Datagen Options dialog in the graphical interface."
+putscli "dgset - Usage: dgset \[vu|ware|directory\]" 
+putscli "Set the Datagen options. Equivalent to the Datagen Options dialog in the graphical interface."
 }
 datagenrun {
-puts "datagenrun - Usage: datagenrun"
-puts "Run Data Generation. Equivalent to the Generate option in the graphical interface."
+putscli "datagenrun - Usage: datagenrun"
+putscli "Run Data Generation. Equivalent to the Generate option in the graphical interface."
+}
+runtimer {
+putscli "runtimer - Usage: runtimer seconds"
+putscli "Helper routine to run a timer in the main hammerdbcli thread to keep it busy for a period of time whilst the virtual users run a workload. The timer will return when vucomplete returns true or the timer reaches the seconds value. Usually followed by vudestroy."
+
+}
+waittocomplete {
+putscli "waittocomplete - Usage: waittocomplete"
+putscli "Helper routine to enable the main hammerdbcli thread to keep it busy until vucomplete is detected. When vucomplete is detected exit is called causing all virtual users and the main hammerdblci thread to terminate. Often used when calling hammerdb from external scripting commands."
 }
 }
 }

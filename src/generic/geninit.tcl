@@ -1,7 +1,7 @@
 #Load database config
 set dbdict [ ::XML::To_Dict config/database.xml ]
-#Change formal OSS-TPC-x terminology to working TPC-x
-set dbdict [ regsub -all {(OSS-)(TPC-[CH])} $dbdict {\2} ]
+#Change  TPROC-x terminology to working TPC-x
+set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
 #Start the GUI using database config
 ed_start_gui $dbdict $icons $iconalt
 wm positionfrom .
@@ -17,6 +17,7 @@ lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\o
 set genericdict [ ::XML::To_Dict config/generic.xml ]
 get_xml_data
 #Make generics global
+tsv::set application genericdict $genericdict
 #Complete GUI using database config
 disable_bm_menu
 guid_init

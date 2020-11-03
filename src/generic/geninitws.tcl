@@ -1,7 +1,6 @@
 #Load database config
 set dbdict [ ::XML::To_Dict config/database.xml ]
-#Change formal OSS-TPC-x terminology to working TPC-x
-set dbdict [ regsub -all {(OSS-)(TPC-[CH])} $dbdict {\2} ]
+set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
 #Load database details in dict named configdbname
 foreach { key } [ dict keys $dbdict ] {
 set dictname config$key
@@ -12,5 +11,6 @@ lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\o
 #Get generic config data
 set genericdict [ ::XML::To_Dict config/generic.xml ]
 get_xml_data
-guid_init
 #Make generics global
+tsv::set application genericdict $genericdict
+guid_init

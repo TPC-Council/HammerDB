@@ -12,32 +12,27 @@ foreach tkcmd $tkcmdlist {
 }
 
 proc ed_start_gui { dbdict icons iconalt } {
-global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode tabix tabiy
+global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode win_scale_fact treewidth tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy treebuild pop_treel
    set opmode "Local"
-   #Scaling factor for physical units to pixels with design default of 1.3333333
-   set scale_fact 1.333333
-   tk scaling $scale_fact
-   #Scale fonts
-   foreach font [ font names ] {
-   font configure $font -size [font configure $font -size ]
-        }
-   set tabix [ expr {round(481.2 * $scale_fact)} ]
-   set tabiy [ expr {round(240.6 * $scale_fact)} ]
-   set mainx [ expr {round(610 * $scale_fact)} ]
-   set mainy [ expr {round(482.7 * $scale_fact)} ]
-   set mainminx [ expr {round(248.1 * $scale_fact)} ]
-   set mainminy [ expr {round(240.6 * $scale_fact)} ]
-   set mainmaxx [ expr {round(744.3 * $scale_fact)} ]
-   set mainmaxy [ expr {round(556.4 * $scale_fact)} ]
    ttk::toplevel .ed_mainFrame
    wm withdraw .ed_mainFrame
    wm title .ed_mainFrame "HammerDB"
    wm geometry .ed_mainFrame +100+100
    set Parent .ed_mainFrame
    set masterlist ""
-   set windock [ dict get $icons windock ]
+#SVG images in notebook causes segfault. Use manual png scaling
+   if { $win_scale_fact <= 1.5 } {
+   set dfx 1x
+   	} elseif { $win_scale_fact <= 3.0 } {
+   set dfx 2x
+	} elseif { $win_scale_fact <= 4.0 } {
+   set dfx 3x
+	} else {
+   set dfx 4x
+	}
+   set windock [ dict get $icons windock-$dfx ]
    image create photo ::img::dock -data $windock
-   set winundock [ dict get $icons winundock ]
+   set winundock [ dict get $icons winundock-$dfx ]
    image create photo ::img::undock -data $winundock
 
    set Name $Parent.statusbar
@@ -135,8 +130,8 @@ update
    set Name $Parent.menuframe.tpcc
    set Menu_string($Name) {
 	{{command}  {Benchmark} {-command "select_rdbms none" -underline 0}}
-      {{cascade}  {TPC-C Schema} {{{command}  {Build and Driver} {-command "configtpcc all" -underline 6}} {{command}  {Load Driver Script} {-command "loadtpcc" -underline 6}}}}
-      {{cascade}  {TPC-H Schema} {{{command}  {Build and Driver} {-command "configtpch all" -underline 6}} {{command}  {Load Driver Script} {-command "loadtpch" -underline 6}}}}
+      {{cascade}  {TPROC-C Schema} {{{command}  {Build} {-command "configtpcc build" -underline 0}} {{command}  {Driver} {-command "configtpcc drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpcc" -underline 0}}}}
+      {{cascade}  {TPROC-H Schema} {{{command}  {Build} {-command "configtpch build" -underline 0}} {{command}  {Driver} {-command "configtpch drive" -underline 0}} {{command}  {Load Driver} {-command "loadtpch" -underline 0}}}}
       {{command}  {Virtual User} {-command "vuser_options" -underline 1}}
 	{{command}  {Autopilot} {-command "autopilot_options" -underline 0}}
 	{{command}  {Transaction Counter} {-command "countopts" -underline 0}}
@@ -182,7 +177,7 @@ construct_menu $Name Options\  $Menu_string($Name)
    ttk::frame $Name 
 
 construct_button $Parent.editbuttons.console edit ctext console.gif "convert_to_oratcl" "Convert Trace to Oratcl" 
-construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Master Distribution" 
+construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Primary Distribution" 
 $Parent.editbuttons.distribute configure -state disabled
 #placeholder button for persistent saving of Xml options to database
 #construct_button $Parent.editbuttons.savexml edit savexml savexml.ppm "xmlopts" "Save Configuration"
@@ -196,8 +191,8 @@ construct_button $Parent.editbuttons.load edit open open.ppm "ed_file_load" "Ope
 construct_button $Parent.editbuttons.clear edit new new.ppm "ed_edit_clear" "Clear the screen"
 set Parent .ed_mainFrame
 construct_button $Parent.buttons.hmenu bar hmenu new.ppm "pop_up_menu"  "Open Edit Menu"
-construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPC Schema" 
-construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
+construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
+construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
 construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
 construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command run_virtual; run_virtual" "Run Virtual Users" 
 construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_autopilot" "Start Autopilot" 
@@ -205,30 +200,30 @@ construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_au
 construct_button $Parent.buttons.pencil bar pencil pencil.ppm "transcount" "Start Transaction Counter" 
 construct_button $Parent.buttons.dashboard bar dashboard dashboard.ppm "metrics" "Start Metrics" 
 construct_button $Parent.buttons.mode bar mode mode.ppm "select_mode" "Mode" 
-construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate TPC Data" 
+construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate TPROC Data" 
 #bindtags to call to prevent highlighting of buttons when status changed
 bind BreakTag <Enter> {break}
 bind BreakTag2 <Leave> {break}
 
-set succ [image create photo -data [ dict get $icons tick ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set fail [image create photo -data [ dict get $icons cross ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set vus [image create photo -data [ dict get $icons oneuser ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set run [image create photo -data [ dict get $icons running ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set clo [image create photo -data [ dict get $icons clock ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set repeat [image create photo -data [ dict get $icons repeat ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-set task [image create photo -data [ dict get $icons task ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+foreach { tbicname } { succ fail vus run clo repeat task } { tbicon } { tick cross oneuser running clock repeat task } { set $tbicname [ create_image $tbicon icons ] }
 
 set Name $Parent.panedwin
    if { $ttk::currentTheme eq "clearlooks" } {
    panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] } else {
+   if { $ttk::currentTheme in {arc breeze awlight} } {
+   panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] } else {
    panedwindow $Name -orient horizontal -showhandle true
+   	  }
 	}
    pack $Name -expand yes -fill both
 
    set Name $Parent.panedwin.subpanedwin
    if { $ttk::currentTheme eq "clearlooks" } {
    panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]} else {
+   if { $ttk::currentTheme in {arc breeze awlight} } {
+   panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]} else {
    panedwindow $Name -orient vertical -showhandle true
+   	  }
 	}
    pack $Name -expand yes -fill both
 
@@ -240,8 +235,8 @@ ttk::scrollbar $Parent.treeframe.vbar -orient vertical -command "$Parent.treefra
  pack $Parent.treeframe.vbar -anchor center -expand 0 -fill y -ipadx 0 -ipady 0 \
          -padx 0 -pady 0 -side right
 set Name $Parent.treeframe.treeview
-ttk::treeview $Name -yscrollcommand "$Parent.treeframe.vbar set"
-$Name column #0 -stretch 1 -minwidth 1 -width 161
+ttk::treeview $Name -yscrollcommand "$Parent.treeframe.vbar set" -selectmode browse -show [ list tree headings ] 
+$Name column #0 -stretch 1 -minwidth 1 -width $treewidth
 $Name heading #0 -text "Benchmark"
 $Name configure -padding {0 0 0 0}
 pack $Name -side left -anchor w -expand 1 -fill both 
@@ -329,10 +324,20 @@ if { $tabname eq "tc" } {
 }
 # Attach a toplevel to the notebook
 proc Attach {notebook tab {index end}} {
+global win_scale_fact
 upvar #0 icons icons
-set windock [ dict get $icons windock ]
+   if { $win_scale_fact <= 1.5 } {
+   set dfx 1x
+   	} elseif { $win_scale_fact <= 3.0 } {
+   set dfx 2x
+	} elseif { $win_scale_fact <= 4.0 } {
+   set dfx 3x
+	} else {
+   set dfx 4x
+	}
+set windock [ dict get $icons windock-$dfx ]
 image create photo ::img::dock -data $windock 
-set winundock [ dict get $icons winundock ]
+set winundock [ dict get $icons winundock-$dfx ]
 image create photo ::img::undock -data $winundock
 set tabcount [ llength [ $notebook tabs ] ]
 set tabname [ lindex [ split $tab "." ] end ]
@@ -343,7 +348,7 @@ if { $tabname eq "me" } { set index [ expr $tabcount - 1 ] }
     if {[catch {
         if {[catch {$notebook insert $index $tab -text $title -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
-                     {active !disabled} ::img::undock]
+                     {active !disabled} ::img::undock] -compound right
 	} err]} {
             $notebook add $tab -text $title
         }
@@ -364,16 +369,18 @@ ttk::notebook $Name
                      {active !disabled} ::img::undock]
    $Name add [ tk::frame $Parent.me ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
-                     {active !disabled} ::img::undock]
+                     {active !disabled} ::img::undock] -compound right
    $Name add [ tk::frame $Parent.ap ] -text "Autopilot" -state disabled
    ttk::notebook::enableTraversal $Name
-   $Parent.panedwin.subpanedwin add $Name -minsize 3i -stretch first
-   $Parent.panedwin add $Parent.panedwin.subpanedwin  -minsize 3i
+   set pminunit [ expr {$mainy / 10} ] 
+   $Parent.panedwin.subpanedwin add $Name -minsize [ expr $pminunit * 4.60 ] -stretch always
+   $Parent.panedwin add $Parent.panedwin.subpanedwin -minsize [ expr $pminunit * 4.60 ]
 
    set Name $Parent.vuserframe
    ttk::frame $Name
-   $Parent.panedwin.subpanedwin add $Name -minsize 1.3i -stretch never
+   $Parent.panedwin.subpanedwin add $Name -minsize [ expr $pminunit * 2.0 ] -stretch never
    set table [ tablist $Name ]
+   #Sizing for the lowersubpanedwin is in the tkcon module
    tkcon show
 
    set Name $Parent.buttons.statl15
@@ -400,7 +407,6 @@ foreach { db bn } $pop_treel {
    wm geometry .ed_mainFrame ${mainx}x${mainy}+30+30
    if {$tcl_platform(platform) == "windows"} {set y 0}
    wm minsize .ed_mainFrame $mainminx $mainminy
-   #wm maxsize .ed_mainFrame $mainmaxx $mainmaxy
 }
 
 proc populate_tree {rdbms bm icons iconalt} {
@@ -411,124 +417,125 @@ bind .ed_mainFrame.treeframe.treeview <<TreeviewSelect>> {
 set selected [ .ed_mainFrame.treeframe.treeview selection ] 
 if { [ dict exists $treeidicons $lastselected ] } {
 set unhighlighticon [ dict get $treeidicons $lastselected ]
-.ed_mainFrame.treeframe.treeview item $lastselected -image [image create photo -data [ dict get $icons $unhighlighticon ] ]
+.ed_mainFrame.treeframe.treeview item $lastselected -image [ create_image $unhighlighticon icons ]
 	}
 if { [ dict exists $treeidicons $selected ] } {
 set highlighticon [ dict get $treeidicons $selected ]
-.ed_mainFrame.treeframe.treeview item $selected -image [image create photo -data [ dict get $iconalt $highlighticon ] ]
+.ed_mainFrame.treeframe.treeview item $selected -image  [ create_image $highlighticon iconalt ]
 	}
 set lastselected $selected
 }
 bind .ed_mainFrame.treeframe.treeview <Leave> { ed_status_message -perm }
-$Name insert $rdbms end -id $rdbms.$bm -text  $bm
-$Name insert $rdbms.$bm end -id $rdbms.$bm.build -text "Schema Build" -image [image create photo -data [ dict get $icons boxes ] ]
+$Name insert $rdbms end -id $rdbms.$bm -text [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] -image [ create_image hdbicon icons ]
+dict set treeidicons $rdbms.$bm hdbicon
+$Name insert $rdbms.$bm end -id $rdbms.$bm.build -text "Schema Build" -image [ create_image boxes icons ]
 dict set treeidicons $rdbms.$bm.build boxes
 $Name item $rdbms.$bm.build -tags $rdbms.$bm.buildhlp
 tooltip::tooltip $Name -item $rdbms.$bm.build "Configure and Build $rdbms $bm Schema"
-$Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.schema -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.schema -text "Options" -image [ create_image option icons ] 
 dict set treeidicons $rdbms.$bm.build.schema option
 $Name item $rdbms.$bm.build.schema -tags {buildopt}
 tooltip::tooltip $Name -item $rdbms.$bm.build.schema "$rdbms $bm Schema Options"
 $Name tag bind buildopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if {$bm eq "TPC-C"} {configtpcc build } else {configtpch build } } }    
-$Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.go -text "Build" -image [image create photo -data [ dict get $icons boxes ] ] 
+$Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.go -text "Build" -image [ create_image boxes icons ]
 dict set treeidicons $rdbms.$bm.build.go boxes
 $Name item $rdbms.$bm.build.go -tags builsch
 tooltip::tooltip $Name -item $rdbms.$bm.build.go "Create $rdbms $bm Schema"
 $Name tag bind builsch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { build_schema } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.driver -text "Driver Script" -image [image create photo -data [ dict get $icons driveroptim ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.driver -text "Driver Script" -image [ create_image driveroptim icons ]
 dict set treeidicons $rdbms.$bm.driver driveroptim
 $Name item $rdbms.$bm.driver -tags {drvhlp}
 tooltip::tooltip $Name -item $rdbms.$bm.driver "Configure and Load $rdbms $bm Driver Script"
-$Name insert $rdbms.$bm.driver end -id $rdbms.$bm.driver.schema -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.driver end -id $rdbms.$bm.driver.schema -text "Options" -image [ create_image option icons ] 
 dict set treeidicons $rdbms.$bm.driver.schema option
 $Name item $rdbms.$bm.driver.schema -tags drvopt
 tooltip::tooltip $Name -item $rdbms.$bm.driver.schema "$rdbms $bm Driver Script Options"
 $Name tag bind drvopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if {$bm eq "TPC-C"} {configtpcc drive } else {configtpch drive} } }
-$Name insert $rdbms.$bm.driver end -id $rdbms.$bm.driver.load -text "Load" -image [image create photo -data [ dict get $icons driveroptlo ] ] 
+$Name insert $rdbms.$bm.driver end -id $rdbms.$bm.driver.load -text "Load" -image [ create_image driveroptlo icons ] 
 dict set treeidicons $rdbms.$bm.driver.load driveroptlo
 $Name item $rdbms.$bm.driver.load -tags drvscr
 tooltip::tooltip $Name -item $rdbms.$bm.driver.load "Load $rdbms $bm Driver Script"
 $Name tag bind drvscr <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { if {$bm eq "TPC-C"} {loadtpcc} else {loadtpch} } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.vusers -text "Virtual User" -image [image create photo -data [ dict get $icons vuseroptim  ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.vusers -text "Virtual User" -image [ create_image vuseroptim icons ]
 dict set treeidicons $rdbms.$bm.vusers vuseroptim
 $Name item $rdbms.$bm.vusers -tags {vuserhlp}
 tooltip::tooltip $Name -item $rdbms.$bm.vusers "Configure and Load Virtual Users"
-$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.options -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.options -text "Options" -image [ create_image option icons ] 
 dict set treeidicons $rdbms.$bm.vusers.options option
 $Name item $rdbms.$bm.vusers.options -tags vuseopt
 tooltip::tooltip $Name -item $rdbms.$bm.vusers.options "Virtual User Options"
 $Name tag bind vuseopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {vuser_options } }
-$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.load -text "Create" -image [image create photo -data [ dict get $icons lvuser ] ]
+$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.load -text "Create" -image [ create_image lvuser icons ]
 dict set treeidicons $rdbms.$bm.vusers.load lvuser
 $Name item $rdbms.$bm.vusers.load -tags vuseload
 tooltip::tooltip $Name -item $rdbms.$bm.vusers.load "Create Virtual Users"
 $Name tag bind vuseload <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.lvuser invoke } }
-$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.run -text "Run" -image [image create photo -data [ dict get $icons runworld ] ] 
+$Name insert $rdbms.$bm.vusers end -id $rdbms.$bm.vusers.run -text "Run" -image [ create_image runworld icons ] 
 dict set treeidicons $rdbms.$bm.vusers.run runworld
 $Name item $rdbms.$bm.vusers.run -tags vuserun
 tooltip::tooltip $Name -item $rdbms.$bm.vusers.run "Run Virtual Users"
 $Name tag bind vuserun <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.runworld invoke } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.autopilot -text "Autopilot" -image [image create photo -data [ dict get $icons autopilot ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.autopilot -text "Autopilot" -image [ create_image autopilot icons ]
 dict set treeidicons $rdbms.$bm.autopilot autopilot
 $Name item $rdbms.$bm.autopilot -tags {autohlp}
 tooltip::tooltip $Name -item $rdbms.$bm.autopilot "Configure and Run Autopilot"
-$Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.options -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.options -text "Options" -image [ create_image option icons ] 
 dict set treeidicons $rdbms.$bm.autopilot.options option
 $Name item $rdbms.$bm.autopilot.options -tags autoopt
 tooltip::tooltip $Name -item $rdbms.$bm.autopilot.options "Autopilot Options"
 $Name tag bind autoopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {autopilot_options } }
-$Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.start -text "Autopilot" -image [image create photo -data [ dict get $icons autopilot] ] 
+$Name insert $rdbms.$bm.autopilot end -id $rdbms.$bm.autopilot.start -text "Autopilot" -image [ create_image autopilot icons ] 
 dict set treeidicons $rdbms.$bm.autopilot.start autopilot
 $Name item $rdbms.$bm.autopilot.start -tags autostart
 tooltip::tooltip $Name -item $rdbms.$bm.autopilot.start "Start Autopilot"
 $Name tag bind autostart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { start_autopilot } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.txcounter -text "Transactions" -image [image create photo -data [ dict get $icons pencil ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.txcounter -text "Transactions" -image [ create_image pencil icons ]
 dict set treeidicons $rdbms.$bm.txcounter pencil
 $Name item $rdbms.$bm.txcounter -tags {txhlp}
 tooltip::tooltip $Name -item $rdbms.$bm.txcounter "Configure and Run Transaction Counter"
-$Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.options -text "Options" -image [image create photo -data [ dict get $icons option] ] 
+$Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.options -text "Options" -image [ create_image option icons ] 
 dict set treeidicons $rdbms.$bm.txcounter.options option
 $Name item $rdbms.$bm.txcounter.options -tags txopt
 tooltip::tooltip $Name -item $rdbms.$bm.txcounter.options "Transaction Counter Options"
 $Name tag bind txopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { countopts } }
-$Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.start -text "Counter" -image [image create photo -data [ dict get $icons pencil ] ] 
+$Name insert $rdbms.$bm.txcounter end -id $rdbms.$bm.txcounter.start -text "Counter" -image [ create_image pencil icons ] 
 dict set treeidicons $rdbms.$bm.txcounter.start pencil
 $Name item $rdbms.$bm.txcounter.start -tags txstart
 tooltip::tooltip $Name -item $rdbms.$bm.txcounter.start "Start Transaction Counter"
 $Name tag bind txstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.pencil invoke } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.metrics -text "Metrics" -image [image create photo -data [ dict get $icons dashboard ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.metrics -text "Metrics" -image [ create_image dashboard icons ]
 dict set treeidicons $rdbms.$bm.metrics dashboard
 $Name item $rdbms.$bm.metrics -tags {methlp}
 tooltip::tooltip $Name -item $rdbms.$bm.metrics "Configure and Run Metrics"
-$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.options -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.options -text "Options" -image [ create_image option icons ]
 dict set treeidicons $rdbms.$bm.metrics.options option
 $Name item $rdbms.$bm.metrics.options -tags metopt
 tooltip::tooltip $Name -item $rdbms.$bm.metrics.options "Metrics Options"
 $Name tag bind metopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { metricsopts } }
-$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.start -text "Display" -image [image create photo -data [ dict get $icons dashboard ] ] 
+$Name insert $rdbms.$bm.metrics end -id $rdbms.$bm.metrics.start -text "Display" -image [ create_image dashboard icons ]
 dict set treeidicons $rdbms.$bm.metrics.start dashboard
 $Name item $rdbms.$bm.metrics.start -tags metstart
 tooltip::tooltip $Name -item $rdbms.$bm.metrics.start "Start Metrics Display"
 $Name tag bind metstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.dashboard invoke } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.mode -text "Mode" -image [image create photo -data [ dict get $icons mode ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.mode -text "Mode" -image [ create_image mode icons ]
 dict set treeidicons $rdbms.$bm.mode mode
 $Name item $rdbms.$bm.mode -tags {modehlp}
 tooltip::tooltip $Name -item $rdbms.$bm.mode "Configure and Run Remote Conection Modes"
-$Name insert $rdbms.$bm.mode end -id $rdbms.$bm.mode.options -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.mode end -id $rdbms.$bm.mode.options -text "Options" -image [ create_image option icons ]
 dict set treeidicons $rdbms.$bm.mode.options option
 $Name item $rdbms.$bm.mode.options -tags modeopt
 tooltip::tooltip $Name -item $rdbms.$bm.mode.options "Remote Conection Mode Options"
 $Name tag bind modeopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {select_mode } }
-$Name insert $rdbms.$bm end -id $rdbms.$bm.datagen -text "Datagen" -image [image create photo -data [ dict get $icons datagen ] ]
+$Name insert $rdbms.$bm end -id $rdbms.$bm.datagen -text "Datagen" -image [ create_image datagen icons ]
 dict set treeidicons $rdbms.$bm.datagen datagen
 $Name item $rdbms.$bm.datagen -tags {dghlp}
 tooltip::tooltip $Name -item $rdbms.$bm.datagen "Configure and Run Data Generation for Upload"
-$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.options -text "Options" -image [image create photo -data [ dict get $icons option ] ] 
+$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.options -text "Options" -image [ create_image option icons ]
 dict set treeidicons $rdbms.$bm.datagen.options option 
 $Name item $rdbms.$bm.datagen.options -tags dgopt
 tooltip::tooltip $Name -item $rdbms.$bm.datagen.options "Data Generation Options"
 $Name tag bind dgopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { dgopts } }
-$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.start -text "Generate" -image [image create photo -data [ dict get $icons datagen ] ] 
+$Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.start -text "Generate" -image [ create_image datagen icons ]
 dict set treeidicons $rdbms.$bm.datagen.start datagen 
 $Name item $rdbms.$bm.datagen.start -tags dgstart
 tooltip::tooltip $Name -item $rdbms.$bm.datagen.start "Start Data Generation"
@@ -607,20 +614,39 @@ upvar #0 icons icons
   }
 
 proc disable_tree { } {
-    global rdbms bm
+    #Up to v3.3 we could detach and move tree nodes around
+    #In v4.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
+    #This version entirely deletes all tree nodes and rebuilds the tree just to remove the trailing column header
+    #This is not the best way to select a new database from a treeview but works around the trailing header
+    global rdbms bm treebuild pop_treel 
+    upvar #0 icons icons
+    upvar #0 iconalt iconalt
     set Name .ed_mainFrame.treeframe.treeview
+    #Delete all of the nodes in the treeview for all of the databases
+    foreach { db bn } $pop_treel {
+	catch {$Name delete $db\.$bn}
+	catch {$Name delete $db}
+	}
+	#Rebuild the basic treeview
+	eval $treebuild
+	#Repopulate the treeview
+    foreach { db bn } $pop_treel {
+        populate_tree $db $bn $icons $iconalt
+        }
+	#At this point,all nodes in the treeview are active, disable them all
     set databases [$Name children {}]
     foreach db $databases {
-        set benchmarks [$Name children $db]
+	    set benchmarks [$Name children $db]
         foreach dbbn $benchmarks {
             $Name detach $dbbn
         }
-    }
+     }
+       #Move the chosen database and workload to the top, re-enable it
     $Name move $rdbms {} 0
     $Name move $rdbms.$bm $rdbms 0
+    $Name selection set $rdbms.$bm
     $Name see $rdbms.$bm
     $Name focus $rdbms.$bm
-    $Name selection set $rdbms.$bm
 }
   
 proc disable_enable_options_menu { disoren } {
@@ -706,25 +732,63 @@ highlight_off
 }
 
 proc construct_button {Name button_type iconname file cmd helpmsg} {
+upvar #0 iconssvg iconssvg 
+if { [ info exists iconssvg ] } {
+if {[dict exists $iconssvg $iconname\svg ]} {
+construct_button_svg $Name $button_type $iconname\svg $file $cmd $helpmsg
+	} else {
+construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
+		}
+	} else { 
+construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
+	}
+}
+
+proc construct_button_png {Name button_type iconname file cmd helpmsg} {
 #If called with button type of bar buttons are packed in the button bar along the top
 #edit buttons are packed along the left hand side visible when the menu button is pressed
 #all butons are bound to show an alternative icon when entered and original when left
-global tcl_version ctext 
-upvar #0 icons icons 
-upvar #0 iconalt iconalt 
+global tcl_version ctext
+upvar #0 icons icons
+upvar #0 iconalt iconalt
 set im [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-button $Name -image $im -command "$cmd" -borderwidth 0 -width 32 -background [ dict get $icons defaultBackground ] -activebackground [ dict get $icons defaultBackground ]
+button $Name -image $im -command "$cmd" -highlightthickness 0 -borderwidth 0 -width 32 -background [ dict get $icons defaultBackground ] -activebackground [ dict get $icons defaultBackground ]
 tooltip::tooltip $Name $helpmsg
 if { $button_type eq "bar" } {
    pack $Name -anchor nw -side left -expand 0  -fill x -padx {4 4} -pady {4 4}
-	} else {
+        } else {
    pack $Name -anchor sw -side bottom -expand 0  -fill y -pady {4 4} -padx {4 4}
-	}
+        }
    bind $Name <Enter> [
 list $Name config -image [image create photo -data [ dict get $iconalt $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
 ]
 bind $Name <Leave> [
 list $Name config -image [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
+        ]
+  }
+
+proc construct_button_svg {Name button_type iconname file cmd helpmsg} {
+#If called with button type of bar buttons are packed in the button bar along the top
+#edit buttons are packed along the left hand side visible when the menu button is pressed
+#all butons are bound to show an alternative icon when entered and original when left
+global tcl_version ctext win_scale_fact
+upvar #0 iconssvg iconssvg 
+upvar #0 iconaltsvg iconaltsvg 
+set buttonscale [ expr {round(16 / 1.333333 * $win_scale_fact)} ]
+set im [image create photo -data [ dict get $iconssvg $iconname ] -format "svg -scaletoheight $buttonscale"]
+button $Name -image $im -command "$cmd" -highlightthickness 0 -borderwidth 0 -width [ expr {round($buttonscale * 2)} ] -background [ dict get $iconssvg defaultBackground ] -activebackground [ dict get $iconssvg defaultBackground ]
+tooltip::tooltip $Name $helpmsg
+set padding [ expr {round($buttonscale / 4)} ]
+if { $button_type eq "bar" } {
+   pack $Name -anchor nw -side left -expand 0  -fill x -padx "$padding $padding" -pady "$padding $padding"
+	} else {
+   pack $Name -anchor sw -side bottom -expand 0  -fill y -pady "$padding $padding" -padx "$padding $padding"
+	}
+   bind $Name <Enter> [
+list $Name config -image [image create photo -data [ dict get $iconaltsvg $iconname ] -format "svg -scaletoheight $buttonscale"] -command "$cmd"
+]
+bind $Name <Leave> [
+list $Name config -image [image create photo -data [ dict get $iconssvg $iconname ] -format "svg -scaletoheight $buttonscale"] -command "$cmd"
 	]
   }
 
@@ -810,6 +874,7 @@ proc ed_loadsave {loadflag} {
    set ed_loadsave(done) 0
 
    ttk::toplevel .ed_loadsave
+   wm transient .ed_loadsave .ed_mainFrame
    wm withdraw .ed_loadsave
    if {[string match $loadflag "load"]} {
       wm title .ed_loadsave "Open File"
@@ -885,8 +950,7 @@ proc ed_loadsave {loadflag} {
    pack $Name -side right -anchor nw
 
    set Name $Parent.list
-   ttk::frame $Name -borderwidth 2 -height 50 \
-         	-relief raised -width 50
+   ttk::frame $Name -borderwidth 2 -height 50 -width 50
    pack $Name -side top -anchor nw -expand yes -fill both
    
    set Name $Parent.list.lb1
@@ -1105,6 +1169,7 @@ proc ed_edit_searchf {} {
    global _ED
    catch "destroy .ed_edit_searchf"
    ttk::toplevel .ed_edit_searchf
+   wm transient .ed_edit_searchf .ed_mainFrame
    wm withdraw .ed_edit_searchf
    wm title .ed_edit_searchf {Search}
 
@@ -1314,6 +1379,7 @@ upvar #0 icons icons
    global _ED 
    global Menu_string
    global highlight
+   global defaultBackground
 
    catch "destroy .ed_mainFrame.mainwin.buttons"
    catch "destroy .ed_mainFrame.mainwin.f1"
@@ -1355,7 +1421,7 @@ if { $ttk::currentTheme eq "black" } {
 	set hbgrd [ dict get $icons defaultBackground ]
 	} 
 if { $highlight eq "true" } {
-   ctext $Name -background white  -borderwidth $bwidth -foreground black \
+   ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
 	-highlight 1 \
          -highlightbackground LightGray -insertbackground black \
          -selectbackground $hbgrd -selectforeground black \
@@ -1364,11 +1430,12 @@ if { $highlight eq "true" } {
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
          -yscrollcommand "$Parent.textFrame.left.horizScrollbar set" \
          -linemap 1 \
+	 -linemapbg $defaultBackground \
 	 -linemap_markable 0
    setctexthighlight $Name
    easyCtextCommenting $Name
 	} else {
-   ctext $Name -background white  -borderwidth $bwidth -foreground black \
+   ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
 	-highlight 0 \
          -highlightbackground LightGray -insertbackground black \
          -selectbackground $hbgrd -selectforeground black \
@@ -1395,24 +1462,55 @@ if { $highlight eq "true" } {
    update
 }
 
-proc ed_stop_button {} {
-global _ED tcl_version
-upvar #0 icons icons
-set Name .ed_mainFrame.editbuttons.test
+#proc ed_stop_button {} {
+#global _ED tcl_version
+#upvar #0 icons icons
+#set Name .ed_mainFrame.editbuttons.test
+#
+#set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+#
+#$Name config -image $im -command "ed_kill_apps"
+#bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
+#		 "Stop running code"}   
+#}
 
-set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-
-$Name config -image $im -command "ed_kill_apps"
-bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-		 "Stop running code"}   
+proc create_image { iconname iconset } {
+global win_scale_fact
+foreach { imageset } { icons iconalt iconssvg iconaltsvg } { upvar #0 $imageset $imageset }
+set buttonscale [ expr {round(16 / 1.333333 * $win_scale_fact)} ]
+if { [ info exists iconssvg ] } {
+if { $iconset eq "iconalt" } {
+set im [image create photo -data [ dict get $iconaltsvg $iconname\svg ] -format "svg -scaletoheight $buttonscale"]
+	} else {
+if { $iconname in {error information question warning ban graph} } {
+#Larger Icon used in dialog and transaction counter
+if { $iconname in {ban graph} } {
+set buttonscale [ expr {$buttonscale * 4} ]
+	} else {
+set buttonscale [ expr {$buttonscale * 2} ]
+	}
+	}
+set im [image create photo -data [ dict get $iconssvg $iconname\svg ] -format "svg -scaletoheight $buttonscale"]
+	}
+	} else {
+if { $iconset eq "iconalt" } {
+set im [image create photo -data [ dict get $iconalt $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+	} else {
+if { $iconname in {error information question warning ban graph} } {
+#Larger Icon used in dialog and transaction counter
+set im [ image create photo -data [ dict get $icons $iconname ] ]
+	} else {
+set im [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+	}
+	}
+	}
+return $im
 }
-
 
 proc ed_stop_transcount {} {
 global _ED tcl_version
-upvar #0 icons icons
 set Name .ed_mainFrame.buttons.pencil
-    set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image stop icons ]
 $Name config -image $im -command "ed_kill_transcount" 
 #bindtags command sets a break to prevent highlighting of button
 bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.pencil ]
@@ -1422,28 +1520,25 @@ bind .ed_mainFrame.buttons.pencil <Enter> {}
 
 proc ed_transcount_button {} {
 global _ED tcl_version
-upvar #0 icons icons
-upvar #0 iconalt iconalt
 set Name .ed_mainFrame.buttons.pencil
 #button is pressed so show highlight
-    set im [image create photo -data [ dict get $iconalt pencil ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image pencil iconalt ]
 $Name config -image $im -command "transcount" 
 #return bind order as before so highlights shown
 bindtags $Name [ list .ed_mainFrame.buttons.pencil Button .ed_mainFrame all ]
 tooltip::tooltip .ed_mainFrame.buttons.pencil "Start Transaction Counter"
   bind $Name <Enter> [
-list $Name config -image [image create photo -data [ dict get $iconalt pencil ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "transcount"
+list $Name config -image [ create_image pencil iconalt ] -command "transcount"
 ]
 bind $Name <Leave> [
-list $Name config -image [image create photo -data [ dict get $icons pencil ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "transcount"
+list $Name config -image [ create_image pencil icons ] -command "transcount"
         ]
 }
 
 proc ed_stop_metrics {} {
 global _ED tcl_version
-upvar #0 icons icons
 set Name .ed_mainFrame.buttons.dashboard
-    set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image stop icons ]
 $Name config -image $im -command "ed_kill_metrics" 
 #bindtags command sets a break to prevent highlighting of button
 bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.dashboard ]
@@ -1453,47 +1548,44 @@ bind .ed_mainFrame.buttons.dashboard <Enter> {}
 
 proc ed_metrics_button {} {
 global _ED tcl_version
-upvar #0 icons icons
-upvar #0 iconalt iconalt
 set Name .ed_mainFrame.buttons.dashboard
 #button is pressed so show highlight
-set im [image create photo -data [ dict get $iconalt dashboard ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+set im [ create_image dashboard iconalt ]
 $Name config -image $im -command "metrics"
 #return bind order as before so highlights shown
 bindtags $Name [ list .ed_mainFrame.buttons.dashboard Button .ed_mainFrame all ]
 tooltip::tooltip .ed_mainFrame.buttons.dashboard "Start Metrics"
   bind $Name <Enter> [
-list $Name config -image [image create photo -data [ dict get $iconalt dashboard ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "metrics"
+list $Name config -image [ create_image dashboard iconalt ] -command "metrics"
 ]
 bind $Name <Leave> [
-list $Name config -image [image create photo -data [ dict get $icons dashboard ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "metrics"
+list $Name config -image [ create_image dashboard icons ] -command "metrics"
         ]
 }
 
-proc ed_test_button {} {
-global _ED tcl_version
-upvar #0 icons icons
-set Name .ed_mainFrame.editbuttons.test
-
-    set im [image create photo -data [ dict get $icons test ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-
-$Name config -image $im -command "ed_run_package"
-bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-		 "Test current code"}
-}
+#proc ed_test_button {} {
+#global _ED tcl_version
+#upvar #0 icons icons
+#set Name .ed_mainFrame.editbuttons.test
+#
+#    set im [image create photo -data [ dict get $icons test ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+#
+#$Name config -image $im -command "ed_run_package"
+#bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
+#		 "Test current code"}
+#}
 
 proc ed_stop_vuser {} {
 global _ED tcl_version
-upvar #0 icons icons
 set Name .ed_mainFrame.buttons.lvuser
-    set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image stop icons ]
 $Name config -image $im -command "remote_command ed_kill_vusers; ed_kill_vusers" 
 #bindtags command sets a break to prevent highlighting of button
 bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.lvuser ]
 tooltip::tooltip .ed_mainFrame.buttons.lvuser "Destroy Virtual Users"
 bind .ed_mainFrame.buttons.lvuser <Enter> {}   
 set Name .ed_mainFrame.buttons.runworld
-    set im [image create photo -data [ dict get $icons rungreen ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image rungreen icons ]
 $Name config -image $im -command "remote_command run_virtual; run_virtual" 
 #bindtags command sets a break to prevent highlighting of button
 bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.runworld ]
@@ -1503,41 +1595,38 @@ bind .ed_mainFrame.buttons.runworld <Enter> {}
 
 proc ed_lvuser_button {} {
 global _ED tcl_version
-upvar #0 icons icons
-upvar #0 iconalt iconalt
 set Name .ed_mainFrame.buttons.lvuser
 #button is pressed so show highlight
-set im [image create photo -data [dict get $iconalt lvuser ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+    set im [ create_image lvuser iconalt ]
 $Name config -image $im -command "remote_command load_virtual; load_virtual"
 #return bind order as before so highlights shown
 bindtags $Name [ list .ed_mainFrame.buttons.lvuser Button .ed_mainFrame all ]
 tooltip::tooltip .ed_mainFrame.buttons.lvuser "Create Virtual Users"
    bind $Name <Enter> [
-list $Name config -image [image create photo -data [ dict get $iconalt lvuser ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "remote_command load_virtual; load_virtual"
+list $Name config -image [ create_image lvuser iconalt ] -command "remote_command load_virtual; load_virtual"
 ]
 bind $Name <Leave> [
-list $Name config -image [image create photo -data [ dict get $icons lvuser ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "remote_command load_virtual; load_virtual"
+list $Name config -image [ create_image lvuser icons ] -command "remote_command load_virtual; load_virtual"
 	]
 set Name .ed_mainFrame.buttons.runworld
 #button is not pressed so show normal
-set im [image create photo -data [dict get $icons runworld ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+set im [ create_image runworld icons ]
 $Name config -image $im -command "remote_command run_virtual; run_virtual"
 #return bind order as before so highlights shown
 bindtags $Name [ list .ed_mainFrame.buttons.runworld Button .ed_mainFrame all ]
 tooltip::tooltip .ed_mainFrame.buttons.runworld "Run Virtual Users"
    bind $Name <Enter> [
-list $Name config -image [image create photo -data [ dict get $iconalt runworld ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "remote_command run_virtual; run_virtual"
+list $Name config -image [ create_image runworld iconalt ] -command "remote_command run_virtual; run_virtual"
 ]
 bind $Name <Leave> [
-list $Name config -image [image create photo -data [ dict get $icons runworld ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "remote_command run_virtual; run_virtual"
+list $Name config -image [ create_image runworld icons ] -command "remote_command run_virtual; run_virtual"
 	]
 }
 
 proc ed_stop_autopilot {} {
 global _ED tcl_version
-upvar #0 icons icons
 set Name .ed_mainFrame.buttons.autopilot
-    set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+set im [ create_image stop icons ]
 $Name config -image $im -command "ed_kill_autopilot" 
 #bindtags command sets a break to prevent highlighting of button
 bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.autopilot ]
@@ -1547,23 +1636,20 @@ bind .ed_mainFrame.buttons.autopilot <Enter> {}
 
 proc ed_autopilot_button {} {
 global _ED tcl_version
-upvar #0 icons icons
-upvar #0 iconalt iconalt
 set Name .ed_mainFrame.buttons.autopilot
 #button is pressed so show highlight
-set im [image create photo -data [ dict get $iconalt autopilot ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
+set im [ create_image autopilot iconalt ]
 $Name config -image $im -command "start_autopilot"
 #return bind order as before so highlights shown
 bindtags $Name [ list .ed_mainFrame.buttons.autopilot Button .ed_mainFrame all ]
 tooltip::tooltip .ed_mainFrame.buttons.autopilot "Start Autopilot"
   bind $Name <Enter> [
-list $Name config -image [image create photo -data [ dict get $iconalt autopilot ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "start_autopilot"
+list $Name config -image [ create_image autopilot iconalt ] -command "start_autopilot"
 ]
 bind $Name <Leave> [
-list $Name config -image [image create photo -data [ dict get $icons autopilot ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "start_autopilot"
+list $Name config -image [ create_image autopilot icons ] -command "start_autopilot"
         ]
 }
-
 
 proc ed_run_package {} {
 global _ED maxvuser suppo ntimes
@@ -1605,7 +1691,7 @@ proc ed_kill_apps {args} {
    set _ED(runslave) ""
    .ed_mainFrame configure -cursor {}
    ed_status_message -perm
-   ed_test_button
+   #ed_test_button
    update
 }
 
@@ -1629,6 +1715,7 @@ tk_messageBox -icon error -message "Virtual Users already created, destroy Virtu
 return
 	}
    ttk::toplevel .vuserop
+   wm transient .vuserop .ed_mainFrame
    wm withdraw .vuserop
    wm title .vuserop {Virtual User Options}
 
@@ -1639,7 +1726,7 @@ return
    pack $Name -anchor nw -fill x -side top -padx 5
 
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [dict get $icons lvuser ]]
+ttk::label $Prompt -image [ create_image lvuser icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Virtual User Options"
@@ -1981,6 +2068,7 @@ proc window.font { {init_font "Arial 10"} } {
     catch {destroy .choose_font}
     set w .choose_font
     ttk::toplevel $w
+    wm transient $w .ed_mainFrame
     wm withdraw $w
     wm protocol $w WM_DELETE_WINDOW "set dxf(tmp) \"\"; destroy $w"
     catch {wm transient $w .appearance}
@@ -2408,6 +2496,7 @@ if {  [ info exists no_log_buffer ] } { ; } else { set no_log_buffer 0 }
 if {  [ info exists log_timestamps ] } { ; } else { set log_timestamps 0 }
    catch "destroy .apopt"
    ttk::toplevel .apopt
+   wm transient .apopt .ed_mainFrame
    wm withdraw .apopt
    wm title .apopt {Autopilot Options}
    set Parent .apopt
@@ -2415,7 +2504,7 @@ if {  [ info exists log_timestamps ] } { ; } else { set log_timestamps 0 }
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5 
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons autopilot ]]
+ttk::label $Prompt -image [ create_image autopilot icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Autopilot Options"
@@ -2599,6 +2688,7 @@ set old_agent $agent_hostname
 set old_id $agent_id
    catch "destroy .metric"
    ttk::toplevel .metric
+   wm transient .metric .ed_mainFrame
    wm withdraw .metric
    wm title .metric {Metrics Agent Options}
    set Parent .metric
@@ -2606,7 +2696,7 @@ set old_id $agent_id
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5                              
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons dashboard ]]
+ttk::label $Prompt -image [ create_image dashboard icons ]
 grid $Prompt -column 0 -row 0 -sticky e
                                              
 set Prompt $Parent.f1.h2
@@ -2663,17 +2753,18 @@ incr i $k
 }}
  catch "destroy .dgopt"
    ttk::toplevel .dgopt
+   wm transient .dgopt .ed_mainFrame
    wm withdraw .dgopt
-   wm title .dgopt "$bm Data Generation Options"
+   wm title .dgopt "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] Data Generation Options"
    set Parent .dgopt
    set Name $Parent.f1
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons datagen] ]
+ttk::label $Prompt -image [ create_image datagen icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
-ttk::label $Prompt -text "$bm Data Generation Options"
+ttk::label $Prompt -text "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] Data Generation Options"
 grid $Prompt -column 1 -row 0 -sticky w
 if { $bm eq "TPC-C" } {
 set Prompt $Parent.f1.p1
@@ -2793,6 +2884,7 @@ if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }
    set oldmode $opmode
    catch "destroy .mode"
    ttk::toplevel .mode
+   wm transient .mode .ed_mainFrame
    wm withdraw .mode
    wm title .mode {Mode Options}
    set Parent .mode
@@ -2800,7 +2892,7 @@ if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5                                                                           
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons mode]]
+ttk::label $Prompt -image [ create_image mode icons ]
 grid $Prompt -column 0 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Mode Options"
@@ -2814,14 +2906,14 @@ bind $Parent.f1.b1 <Button> {
 .mode.f1.e2 configure -state disabled 
                 }
    set Name $Parent.f1.b2
-ttk::radiobutton $Name -text "Master Mode" -variable opmode -value "Master" 
+ttk::radiobutton $Name -text "Primary Mode" -variable opmode -value "Primary" 
 grid $Name -column 0 -row 2 -sticky w                                          
 bind $Parent.f1.b2 <Button> {
 .mode.f1.e1 configure -state disabled 
 .mode.f1.e2 configure -state disabled 
                 }
    set Name $Parent.f1.b3
-ttk::radiobutton $Name -text "Slave Mode" -variable opmode -value "Slave"
+ttk::radiobutton $Name -text "Replica Mode" -variable opmode -value "Replica"
 grid $Name -column 0 -row 3 -sticky w
 bind $Parent.f1.b3 <Button> {
 .mode.f1.e1 configure -state normal 
@@ -2829,20 +2921,20 @@ bind $Parent.f1.b3 <Button> {
                 }
    set Name $Parent.f1.e1
    set Prompt $Parent.f1.p1
-   ttk::label $Prompt -text "Master ID :"
+   ttk::label $Prompt -text "Primary ID :"
    ttk::entry $Name -width 30 -textvariable id
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4
-if {$opmode != "Slave" } {
+if {$opmode != "Replica" } {
         $Name configure -state disabled
         }
    set Name $Parent.f1.e2
    set Prompt $Parent.f1.p2
-   ttk::label $Prompt -text "Master Hostname :"
+   ttk::label $Prompt -text "Primary Hostname :"
    ttk::entry $Name -width 30 -textvariable hostname
    grid $Prompt -column 0 -row 5 -sticky e
    grid $Name -column 1 -row 5
-if {$opmode != "Slave" } {
+if {$opmode != "Replica" } {
         $Name configure -state disabled
         }
    set Name $Parent.b4
@@ -2871,13 +2963,14 @@ upvar 1 oldbm oldbm
 set validrdbms false
 set oldrdbms $rdbms
 set oldbm $bm
+if { $preselect eq "none" } { set preselect $rdbms }
 dict for {database attributes} $dbdict  {
 dict with attributes {
 set wkcnt 0
 if {$name eq $rdbms} { set validrdbms true }
 foreach { wk } $workloads {
 incr wkcnt
-#if there are 2 workloads then DB supprts TPC-C and TPC-H
+#if there are 2 workloads then DB supports TPC-C and TPC-H
 if { $wkcnt eq 2 } { lappend fullwkl $name }
          }
       }
@@ -2886,6 +2979,7 @@ if { $validrdbms eq false } { set rdbms "Oracle" }
 set rdbms $preselect 
    catch "destroy .rdbms"
    ttk::toplevel .rdbms
+   wm transient .rdbms .ed_mainFrame
    wm withdraw .rdbms
    wm title .rdbms {Benchmark Options}
    set Parent .rdbms
@@ -2893,7 +2987,7 @@ set rdbms $preselect
    ttk::frame $Name
    pack $Name -anchor nw -fill x -side top -padx 5                                                                            
 set Prompt $Parent.f1.h1
-ttk::label $Prompt -image [image create photo -data [ dict get $icons benchmark ] ]
+ttk::label $Prompt -image [ create_image benchmark icons ]
 grid $Prompt -column 1 -row 0 -sticky e
 set Prompt $Parent.f1.h2
 ttk::label $Prompt -text "Benchmark Options"
@@ -2913,11 +3007,11 @@ append bmbuild [ subst {grid $Name -column 1 -row $rowind -sticky w} ] "\n"
 }}
 eval $bmbuild
    set Name $Parent.f1.bm1
-ttk::radiobutton $Name -text "TPC-C" -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
+ttk::radiobutton $Name -text "TPROC-C" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
 }
  grid $Name -column 2 -row 1 -sticky w                                                                               
    set Name $Parent.f1.bm2
-ttk::radiobutton $Name -text "TPC-H" -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
+ttk::radiobutton $Name -text "TPROC-H" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
 }
  grid $Name -column 2 -row 2 -sticky w
 if { [ lsearch $fullwkl $rdbms ] eq -1 } { $Name configure -state disabled ; set bm "TPC-C" }
@@ -2925,7 +3019,7 @@ if { [ lsearch $fullwkl $rdbms ] eq -1 } { $Name configure -state disabled ; set
    ttk::button $Name -command { 
 catch "destroy .rdbms"
 if { $oldbm eq $bm && $oldrdbms eq $rdbms } { 
-tk_messageBox -title "Confirm Benchmark" -message "No Change Made : $bm for $rdbms" 
+tk_messageBox -title "Confirm Benchmark" -message "No Change Made : [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
 } else {
 if { $rdbms eq "Trafodion" } {
 .ed_mainFrame.buttons.pencil configure -state disabled 
@@ -2935,7 +3029,7 @@ if { $rdbms eq "Trafodion" } {
 set oldbm $bm
 set oldrdbms $rdbms
 disable_bm_menu
-tk_messageBox -title "Confirm Benchmark" -message "$bm for $rdbms" 
+tk_messageBox -title "Confirm Benchmark" -message "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
 remote_command [ concat vuser_bench_ops $rdbms $bm ]
 remote_command disable_bm_menu
 	}
@@ -3064,8 +3158,8 @@ break
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
-set _ED(packagekeyname) "TPC-C"
-ed_status_message -show "TPC-C Driver Script"
+set _ED(packagekeyname) "TPROC-C"
+ed_status_message -show "TPROC-C Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } { 
 set dictname config$key
@@ -3103,8 +3197,8 @@ upvar #0 dbdict dbdict
 global _ED rdbms lprefix
 if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global cloud_query mysql_cloud_query pg_cloud_query
-set _ED(packagekeyname) "TPC-H"
-ed_status_message -show "TPC-H Driver Script"
+set _ED(packagekeyname) "TPROC-H"
+ed_status_message -show "TPROC-H Driver Script"
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
 set dictname config$key
@@ -3174,6 +3268,4 @@ catch {dict set $configdict $descriptor $val [ eval $field ]}
 catch {dict set $configdict $descriptor $val $field}
 }}}}}}
 }
-
-font create basic -family arial -size 10
 bind Entry <BackSpace> {tkEntryBackspace %W}

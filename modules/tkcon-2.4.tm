@@ -3434,11 +3434,9 @@ proc tkcon {cmd args} {
 	    if {![winfo exists $PRIV(root)]} {
 		::tkcon::Init
 	    }
-	    #wm deiconify $PRIV(root)
-	    #raise $PRIV(root)
-	    #pack $PRIV(root) -anchor n -side top -expand 0 -fill x
-	    .ed_mainFrame.panedwin.subpanedwin add $PRIV(root) -minsize 1.3i -stretch never
-	    #focus -force $PRIV(console)
+	    #Sizing to embed tkcon into lower pane of the subpanedwindow
+	    upvar 1 pminunit pminunit
+	    .ed_mainFrame.panedwin.subpanedwin add $PRIV(root) -minsize [ expr $pminunit * 2.0 ] -stretch never
 	}
 	ti* {
 	    ## 'title' ?title? - gets/sets the console's title

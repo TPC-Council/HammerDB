@@ -7,9 +7,9 @@ set library [ dict get $dbdict oracle library ]
 upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 if { $tpcc_tt_compat eq "true" } {
-set install_message "Ready to create a $count_ware Warehouse TimesTen TPC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
+set install_message "Ready to create a $count_ware Warehouse TimesTen TPROC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
 	} else {
-set install_message "Ready to create a $count_ware Warehouse Oracle TPC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
+set install_message "Ready to create a $count_ware Warehouse Oracle TPROC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
 	}
 if {[ tk_messageBox -title "Create Schema" -icon question -message $install_message -type yesno ] == yes} { 
 if { $num_vu eq 1 || $count_ware eq 1 } {
@@ -20,7 +20,7 @@ set maxvuser [ expr $num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "TPC-C creation"
+set _ED(packagekeyname) "TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create thread(s) for schema creation: $message"
 	return 1
@@ -1830,7 +1830,8 @@ if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposi
 if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
-while 1 {  
+while 1 { 
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -1838,6 +1839,7 @@ if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state" 
 return
 	}
+}
 after 5000 
 }
 set connect $tpcc_user/$tpcc_pass@$instance
@@ -2148,7 +2150,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Oracle TPC-C"
+set _ED(packagekeyname) "Oracle TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
@@ -2428,7 +2430,7 @@ upvar #0 configoracle configoracle
 setlocaltpccvars $configoracle
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Oracle Timed TPC-C"
+set _ED(packagekeyname) "Oracle Timed TPROC-C"
 if { !$async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -2497,7 +2499,7 @@ set timesten 0
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set lda [ OracleLogon $systemconnect lda $timesten ]
 set curn1 [oraopen $lda ] 
 set lda1 [ OracleLogon $connect lda1 $timesten ]
@@ -2555,7 +2557,7 @@ set end_nopm [ standsql $curn2 $sql4 ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm TimesTen TPM"
+puts [ testresult $nopm $tpm TimesTen ]
 	} else {
 puts "Test complete, Taking end AWR snapshot."
 oraparse $curn1 $sql1
@@ -2588,11 +2590,11 @@ set ractpm [ expr $ractpm + [ standsql $curn1 $sqlrac ]]
 set tpm $ractpm
         }
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Oracle TPM"
+puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if { $timesten } {
@@ -2613,7 +2615,7 @@ oraclose $curn2
 oralogoff $lda
 oralogoff $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {
@@ -2906,7 +2908,7 @@ set timesten 0
 }
 switch $myposition {
 1 { 
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set lda [ OracleLogon $systemconnect lda $timesten ]
 set curn1 [oraopen $lda ]
 set lda1 [ OracleLogon $connect lda1 $timesten ]
@@ -2964,7 +2966,7 @@ set end_nopm [ standsql $curn2 $sql4 ]
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm TimesTen TPM"
+puts [ testresult $nopm $tpm TimesTen ]
 	} else {
 puts "Test complete, Taking end AWR snapshot."
 oraparse $curn1 $sql1
@@ -2997,11 +2999,11 @@ set ractpm [ expr $ractpm + [ standsql $curn1 $sqlrac ]]
 set tpm $ractpm
         }
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Oracle TPM"
+puts [ testresult $nopm $tpm Oracle ]
 	}
 }
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 if { $CHECKPOINT } {
 puts "Checkpoint"
 if { $timesten } {
@@ -3022,7 +3024,7 @@ oraclose $curn2
 oralogoff $lda
 oralogoff $lda1
 		} else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
 		}
 	}
 default {

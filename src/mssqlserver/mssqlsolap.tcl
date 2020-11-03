@@ -16,7 +16,7 @@ set mssqls_server $mssqls_linux_server
 set mssqls_odbc_driver $mssqls_linux_odbc
 set mssqls_authentication $mssqls_linux_authent
         }
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPC-H schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPROC-H schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
 if { $mssqls_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -25,7 +25,7 @@ set maxvuser [ expr $mssqls_num_tpch_threads + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "SQL Server TPC-H creation"
+set _ED(packagekeyname) "SQL Server TPROC-H creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create threads for schema creation: $message"
 	return
@@ -541,6 +541,7 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -548,6 +549,7 @@ if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
@@ -617,7 +619,7 @@ set mssqls_authentication $mssqls_linux_authent
         }
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "SQL Server TPC-H"
+set _ED(packagekeyname) "SQL Server TPROC-H"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# SQL Server Library

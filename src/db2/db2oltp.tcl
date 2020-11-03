@@ -7,7 +7,7 @@ if {[dict exists $dbdict db2 library ]} {
 upvar #0 configdb2 configdb2
 #set variables to values in dict
 setlocaltpccvars $configdb2
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 TPC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
 if { $db2_num_vu eq 1 || $db2_count_ware eq 1 } {
 set maxvuser 1
 } else {
@@ -16,7 +16,7 @@ set maxvuser [ expr $db2_num_vu + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "Db2 TPC-C creation"
+set _ED(packagekeyname) "Db2 TPROC-C creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to created thread for schema creation: $message"
 	return
@@ -893,6 +893,7 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {  
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -900,6 +901,7 @@ if { $mtcnt eq 480 } {
 puts "Monitor failed to notify ready state" 
 return
 	}
+}
 after 5000 
 }
 set db_handle [ ConnectToDb2 $dbname $user $password ]
@@ -1236,7 +1238,7 @@ upvar #0 configdb2 configdb2
 setlocaltpccvars $configdb2
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Db2 TPC-C"
+set _ED(packagekeyname) "Db2 TPROC-C"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
@@ -1531,7 +1533,7 @@ set db2_monreport 0
 	}
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Db2 TPC-C Timed"
+set _ED(packagekeyname) "Db2 TPROC-C Timed"
 if { !$db2_async_scale } {
 #REGULAR TIMED SCRIPT
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -1570,7 +1572,7 @@ return $db_handle
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 {
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set db_handle [ ConnectToDb2 $dbname $user $password ]
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -1630,16 +1632,16 @@ db2_finish $stmnt_handle4
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Db2 TPM"
+puts [ testresult $nopm $tpm Db2 ]
 if { $doingmonreport eq "true" } {
 puts "---MONREPORT OUTPUT---"
 puts $monreport
 	}
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 db2_disconnect $db_handle
                } else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
                 }
 	    }
 default {
@@ -1937,7 +1939,7 @@ return $db_handle
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
 1 {
-if { $mode eq "Local" || $mode eq "Master" } {
+if { $mode eq "Local" || $mode eq "Primary" } {
 set db_handle [ ConnectToDb2 $dbname $user $password ]
 set ramptime 0
 puts "Beginning rampup time of $rampup minutes"
@@ -1997,16 +1999,16 @@ db2_finish $stmnt_handle4
 set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
 set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
 puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-puts "TEST RESULT : System achieved $nopm NOPM from $tpm Db2 TPM"
+puts [ testresult $nopm $tpm Db2 ]
 if { $doingmonreport eq "true" } {
 puts "---MONREPORT OUTPUT---"
 puts $monreport
 	}
 tsv::set application abort 1
-if { $mode eq "Master" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
 db2_disconnect $db_handle
                } else {
-puts "Operating in Slave Mode, No Snapshots taken..."
+puts "Operating in Replica Mode, No Snapshots taken..."
                 }
 	    }
 default {

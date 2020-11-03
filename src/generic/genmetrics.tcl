@@ -37,15 +37,21 @@ return
 }
 
 proc DoDisplay {maxcpu cpu_model caller} {
-global S CLR cputobars cputotxt cpucoords metframe
+global S CLR cputobars cputotxt cpucoords metframe win_scale_fact
 set CLR(bg) black
 set CLR(usr) green
 set CLR(sys) red
-set S(bar,width) 20
-set S(bar,height) 87
-set S(col,padding) 24
-set S(padding) 3
-set S(border) 5
+set S(bar,width) [ expr {round((20/1.333333)*$win_scale_fact)} ]
+set S(bar,height) [ expr {round((87/1.333333)*$win_scale_fact)} ]
+set S(col,padding) [ expr {round((24/1.333333)*$win_scale_fact)} ]
+set S(padding) [ expr {round((3/1.333333)*$win_scale_fact)} ]
+set S(border) [ expr {round((5/1.333333)*$win_scale_fact)} ]
+set S(mask) [ expr {round((4/1.333333)*$win_scale_fact)} ]
+set S(maskplus) [ expr {round((1/1.333333)*$win_scale_fact)} ]
+set S(widscl) [ expr {round((375/1.333333)*$win_scale_fact)} ]
+set S(hdscl) [ expr {round((25/1.333333)*$win_scale_fact)} ]
+set S(txtalign) [ expr {round((12/1.333333)*$win_scale_fact)} ]
+set S(hdralign) [ expr {round((15/1.333333)*$win_scale_fact)} ]
 #Remove descriptive name from CPU so does not overrun buffer
 regsub -all {Platinum|Gold|Silver|Bronze} $cpu_model "" cpu_model
 set cnvpth $metframe.f
@@ -63,7 +69,7 @@ if { $maxcpu <= 16 } { set maxrows 1 }
     set rowdeduction 0
     set coladdition 0
     set newrow 0
-    set width [expr {max($maxperrow * ($S(bar,width)+$S(padding)) + $S(padding),375)}]
+    set width [expr {max($maxperrow * ($S(bar,width)+$S(padding)) + $S(padding),$S(widscl))}]
     set height [ expr {($S(bar,height)+$S(col,padding))*$maxrows} ]
     set scrollheight [ expr {$height*2} ]
     frame $metframe.f -bd $S(border) -relief flat -bg $CLR(bg)
@@ -75,8 +81,8 @@ if { $ttk::currentTheme eq "black" } {
     pack $cnv1 -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
     pack $metframe.f -fill both -expand 1
 #Create fixed header
-    canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height 25 -bg $CLR(bg)
-    $metframe.f.header create text [ expr {$width/2 - 15} ]  12 -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {mydefaultfont} -tags "cpumodel"
+    canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height $S(hdscl) -bg $CLR(bg)
+    $metframe.f.header create text [ expr {$width/2 - $S(hdralign)} ] $S(txtalign) -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {basic} -tags "cpumodel"
     pack $metframe.f.header
 #Height for all objects is the height of the bar and text multiplied by all cpus add header
     set canvforbars $cnvpth.c 
@@ -108,12 +114,11 @@ if { $newrow > 0 } {
 set cpucoords($cpu) [ list $x0 $y0 $x1 $y1 ]
         $canvforbars create rect $x0 $y1 $x1 $y1 -tag bar$cpu-sys -fill $CLR(sys)
         $canvforbars create rect $x0 $y1 $x1 $y1 -tag bar$cpu-usr -fill $CLR(usr)
-#Set mask to create meter effect
-	for { set ymask $y0 } { $ymask <= $y1 } { incr ymask 4 } {
-        $canvforbars create rect $x0 $ymask $x1 [ expr $ymask + 1 ] -tag bar$cpu-mask -fill $CLR(bg) -outline $CLR(bg)
+	for { set ymask $y0 } { $ymask <= $y1 } { incr ymask $S(mask) } {
+        $canvforbars create rect $x0 $ymask $x1 [ expr $ymask + $S(maskplus) ] -tag bar$cpu-mask -fill $CLR(bg) -outline $CLR(bg)
 	}
 #Set CPU utilisation % value and hide with same as background colour
-        $canvforbars create text  [ expr $x0 + 12 ]  [ expr $y1 + 12 ] -text "0%" -fill $CLR(bg) -font {smallfont} -tags "pcent$cpu"
+        $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ]  -tags "pcent$cpu"
     }
 }
 
@@ -140,7 +145,7 @@ set cpu 0
 }
 
 proc AdjustBarHeight {cpu usr sys percent} {
-    global cputobars cputotxt CLR cpucoords metframe
+    global S cputobars cputotxt CLR cpucoords metframe
     set usrtag bar$cpu-usr
     set systag bar$cpu-sys
     set canvforbars $metframe.f.c
@@ -154,7 +159,7 @@ proc AdjustBarHeight {cpu usr sys percent} {
 #Create Sys rectangle starting from top of usr up to max of top of bar
     $canvforbars coords $systag $x0 [ expr {$newYusr - ($y1 - $newYsys)} ] $x1 $newYusr
     $canvforbars delete pcent$cpu
-    $canvforbars create text  [ expr $x0 + 12 ] [ expr $y1 + 12 ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font {smallfont} -tags "pcent$cpu"
+    $canvforbars create text  [ expr $x0 + $S(txtalign) ] [ expr $y1 + $S(txtalign) ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ] -tags "pcent$cpu"
 	}
 
 proc metrics {} {
@@ -169,10 +174,6 @@ genmetrics
 proc genmetrics {} {
 global agent_hostname agent_id metframe
 set metframe .ed_mainFrame.me
-catch {font create smallfont -family TkDefaultFont -size -8}
-catch {option add *font smallfont}
-catch {font create mydefaultfont -family TkDefaultFont -size 10}
-catch {option add *font mydefaultfont}
 if {  [ info exists hostname ] } { ; } else { set hostname "localhost" }
 if {  [ info exists id ] } { ; } else { set id 0 }
 ed_stop_metrics
@@ -212,10 +213,6 @@ pack $metframe.sv -anchor e -expand 0 -fill y -side right
 pack $metframe.f -fill both -expand 1 -anchor w
 return
 	} else {
-catch {font create smallfont -family TkDefaultFont -size -8}
-catch {option add *font smallfont}
-catch {font create mydefaultfont -family TkDefaultFont -size 10}
-catch {option add *font mydefaultfont}
 if {  [ info exists hostname ] } { ; } else { set hostname "localhost" }
 if {  [ info exists id ] } { ; } else { set id 0 }
 DoDisplay 1 "Connecting to Agent to Display CPU Metrics" local

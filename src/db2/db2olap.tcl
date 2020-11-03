@@ -8,7 +8,7 @@ upvar #0 configdb2 configdb2
 #set variables to values in dict
 setlocaltpchvars $configdb2
 if { $db2_tpch_organizeby eq "COL" } { set db2_tpch_organizeby "COLUMN" }
-if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $db2_scale_fact TPC-H schema under user [ string toupper $db2_tpch_user ]\n in database [ string toupper $db2_tpch_dbase ]?" -type yesno ] == yes} {
+if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $db2_scale_fact TPROC-H schema under user [ string toupper $db2_tpch_user ]\n in database [ string toupper $db2_tpch_dbase ]?" -type yesno ] == yes} {
 if { $db2_num_tpch_threads eq 1 } {
 set maxvuser 1
 } else {
@@ -17,7 +17,7 @@ set maxvuser [ expr $db2_num_tpch_threads + 1 ]
 set suppo 1
 set ntimes 1
 ed_edit_clear
-set _ED(packagekeyname) "Db2 TPC-H creation"
+set _ED(packagekeyname) "Db2 TPROC-H creation"
 if { [catch {load_virtual} message]} {
 puts "Failed to create threads for schema creation: $message"
         return
@@ -542,6 +542,7 @@ if { $threaded eq "MULTI-THREADED" } {
 puts "Waiting for Monitor Thread..."
 set mtcnt 0
 while 1 {
+if { [ tsv::exists application load ] } {
 incr mtcnt
 if {  [ tsv::get application load ] eq "READY" } { break }
 if {  [ tsv::get application abort ]  } { return }
@@ -549,6 +550,7 @@ if { $mtcnt eq 48 } {
 puts "Monitor failed to notify ready state"
 return
         }
+}
 after 5000
 }
 set db_handle [ ConnectToDb2 $dbname $user $password ]
@@ -618,7 +620,7 @@ upvar #0 configdb2 configdb2
 setlocaltpchvars $configdb2
 ed_edit_clear
 .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-set _ED(packagekeyname) "Db2 TPC-H"
+set _ED(packagekeyname) "Db2 TPROC-H"
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library

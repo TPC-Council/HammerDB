@@ -66,35 +66,66 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
                 puts stderr "While loading image file\
                         \"$logo_file\"...\n$errorInfo"
         }
-
+    #Display LOGO in SVG format to scale HD displays, fallback is PNG
+    if {[catch {package require tksvg}]} {
+    # SVG not supported use original PNG logo
     set logoset [ create_logo_images ]
-
     set logo [ dict get $logoset logo ]
-    set icontrans [ dict get $logoset icontrans ]
-
     set logim [ image create photo -height 120 -width 694 -data $logo ]
-    set icont [ image create photo -height 120 -width 97 -data $icontrans ]
-
-    foreach imagedata {logo icontrans logoset} {unset -nocomplain $imagedata}
-
+    } else {
+    # SVG supported use SVG logo to scale
+    set logoset [ create_logo_images ]
+    set logosetsvg [ create_logo_images_svg ]
+    set logosvg [ dict get $logosetsvg logosvg ]
+    if { [ format "%.2f" [ tk scaling ] ] <= 1.33 } {
+    set logim [ image create photo -data $logosvg -format "svg -scaletoheight 240" ]
+    	} else {
+	set scaleheight [ expr {round((240/1.333333)*[tk scaling])} ]
+    set logim [ image create photo -data $logosvg -format "svg -scaletoheight $scaleheight" ]
+	}
+    }
+    # Window Icon is not supported in SVG always use PNG
+    set iconwht [ dict get $logoset iconwht ]
+    set iconw [ image create photo -height 120 -width 97 -data $iconwht ]
+    foreach imagedata {logo iconwht logoset logosetsvg} {unset -nocomplain $imagedata}
+    #Splash Screen Fonts
     set gbg white;
-    set big   {Helvetica -24 {bold italic}}
-    set mid   {Helvetica -18 {bold}} 
-    set small {Helvetica -10} 
-    set load  {Helvetica -12}
-
+    set mid   {TkDefaultFont 20 {bold}} 
+    set load  {TkDefaultFont 14}
+    if {$tcl_platform(platform) == "windows"} {
+    if {{Segoe UI} in [ font families ] } {
+    set mid   {{Segoe UI} 20 {bold}} 
+    set load  {{Segoe UI} 14}
+        } else {
+    set mid   {TkDefaultFont 20 {bold}} 
+    set load  {TkDefaultFont 14}
+        }
+    } else {
+    if {{Liberation Sans} in [ font families ] } {
+    set mid   {{Liberation Sans} 20 {bold}} 
+    set load  {{Liberation Sans} 14}
+        } else {
+    set mid   {TkDefaultFont 20 {bold}} 
+    set load  {TkDefaultFont 14}
+        }
+    }
     . conf  -bg $gbg  -cursor watch
 
-    wm iconphoto . -default $icont
+    wm iconphoto . -default $iconw
     frame .progress -bg $gbg
   label .title -text " $hdb_version "  -font $mid \
             -bg $gbg  -fg #f99317  -padx 0
     label .progress.loadmsg  -textvariable loadtext \
             -anchor s  -bg $gbg  -font $load
-    set disp_canv [ canvas .progress.canv -highlightthickness 0 -bg $gbg -height 120 -width 694 ]	
+    if { [ format "%.2f" [ tk scaling ] ] <= 1.33 } {
+    set disp_canv [ canvas .progress.canv -highlightthickness 0 -bg $gbg -height 150 -width 694 ]	
     $disp_canv create image 350 70 -image $logim
+    	} else {
+	set disp_canv [ canvas .progress.canv -highlightthickness 0 -bg $gbg -height [expr {round((150/1.333333)*[tk scaling])}] -width [expr {round((694/1.333333)*[tk scaling])}] ]
+	$disp_canv create image [expr {round((350/1.333333)*[tk scaling])} ] [expr {round((70/1.333333)*[tk scaling])} ] -image $logim
+	}
 
-    foreach imagedata {logim icont} {unset -nocomplain $imagedata}
+    foreach imagedata {logim iconw} {unset -nocomplain $imagedata}
 
 	pack $disp_canv 
 	pack .progress.loadmsg
@@ -102,7 +133,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
     scale .progress.bar  -from 0  -to 1  -label {}  -bd 0 \
             -orient horizontal  -length 20  -showvalue 0 \
             -background #003068  -troughcolor $gbg  -state normal \
-            -tickinterval 0  -width 10  -takefocus 0  -cursor {} \
+            -tickinterval 0  -width [expr {round((10/1.333333)*[tk scaling])}] -takefocus 0  -cursor {} \
             -relief flat  -sliderrelief flat  -sliderlength 4
     .progress.bar set 0
 

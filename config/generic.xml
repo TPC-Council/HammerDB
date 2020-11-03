@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <hammerdb>
+   <theme>
+         <scaling>auto</scaling>
+	 <scaletheme>auto</scaletheme>
+	 <pixelsperpoint>auto</pixelsperpoint>
+   </theme>
    <code_highlight>
 	<highlight>true</highlight>
    </code_highlight>
    <benchmark>
 	<rdbms>Oracle</rdbms>
 	<bm>TPC-C</bm>
+	<first_result>NOPM</first_result>
    </benchmark>
    <virtual_user_options>
         <virtual_users>1</virtual_users>
@@ -24,10 +30,10 @@
 	    <autopilot_sequence>1 2 4 8 12 16 20 24</autopilot_sequence>
     </autopilot>
     <mode>
-        <slave_options>
+        <replica_options>
             <hostname>localhost</hostname>
             <id>0</id>
-        </slave_options>
+        </replica_options>
     </mode>
     <transaction_counter>
 	<settings>

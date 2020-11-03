@@ -296,3 +296,20 @@ if !$alldone {
 puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
         }
 }
+#Check genericdict on loading to define test result format
+#Need to use the genericdict tsv as defining in virtual user threads
+catch {set genericdict [ tsv::get application genericdict ]}
+if { [ info exists genericdict ] } {
+if {[dict exists $genericdict benchmark first_result]} {
+set res_format [ dict get $genericdict benchmark first_result ]
+	} else { set res_format "NOPM" }
+} else { set res_format "NOPM" }
+if { $res_format eq "TPM" } {
+proc testresult { nopm tpm db } {
+return "TEST RESULT : System achieved $tpm $db TPM at $nopm NOPM"
+	}
+	} else {
+proc testresult { nopm tpm db } {
+return "TEST RESULT : System achieved $nopm NOPM from $tpm $db TPM"
+	}
+	}

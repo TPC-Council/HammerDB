@@ -291,25 +291,25 @@ switch $opmode {
 "Local" { puts -nonewline "Setting Local Mode : "
 set chanlist [ lindex [ ::comm channels ] end ]
 switch -- $chanlist {
-::Slave {
-set slaveid [ Slave self ]
+::Replica {
+set slaveid [ Replica self ]
 set slavehost [ info hostname ]
 if { $masterlist eq "masterclose" } {
 unset opmode; upvar 1 opmode opmode
 set opmode "Local"
-puts "Master has closed down"
+puts "Primary has closed down"
 } else {
-if { [catch {Slave send "$id $hostname" "puts \"Slave $slaveid $slavehost disconnected\""} b ] } {
-puts "Slave disconnection failed: $b"
+if { [catch {Replica send "$id $hostname" "puts \"Replica $slaveid $slavehost disconnected\""} b ] } {
+puts "Replica disconnection failed: $b"
 } else {
-puts "Slave disconnected"
+puts "Replica disconnected"
 		}
 	}
 }
-::Master { puts "Closing Master"
+::Primary { puts "Closing Primary"
 foreach f $masterlist {
 puts -nonewline "Closing $f ..."
-if { [catch {Master send $f switch_mode \"Local\" localhost 0 masterclose} b ] } {
+if { [catch {Primary send $f switch_mode \"Local\" localhost 0 masterclose} b ] } {
 puts "Failed to close $f: $b"
 } else {
 puts "Closed"
@@ -326,28 +326,28 @@ ed_status_message -perm Local
 $Name configure -state disabled
 update idletasks
 }
-"Master" {
+"Primary" {
 set chanlist [ lindex [ ::comm channels ] end ]
-if { $chanlist eq "::Slave" } {
+if { $chanlist eq "::Replica" } {
 puts "Closing [ string trim $chanlist : ] connection"
 if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
 	}
 }
-if { [catch {::comm new Master -listen 1 -local 0 -port {}} b] } {
+if { [catch {::comm new Primary -listen 1 -local 0 -port {}} b] } {
 puts "Creation Failed : $b" } else {
-puts -nonewline "Setting Master Mode at id : "
-puts -nonewline "[ Master self ], hostname : "
-ed_status_message -perm Master
+puts -nonewline "Setting Primary Mode at id : "
+puts -nonewline "[ Primary self ], hostname : "
+ed_status_message -perm Primary
 $Name configure -state active
 update idletasks
 puts [ info hostname ]
-tk_messageBox -title "Master Mode Active" -message "Master Mode active at id : [ Master self ], hostname : [ info hostname ]"
-Master hook incoming {
-puts "Received a new slave connection from host $addr"
+tk_messageBox -title "Primary Mode Active" -message "Primary Mode active at id : [ Primary self ], hostname : [ info hostname ]"
+Primary hook incoming {
+puts "Received a new replica connection from host $addr"
 if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 }
-Master hook lost {
+Primary hook lost {
 global masterlist
 set todel [ lsearch $masterlist $id ]
 if { $todel != -1 } {
@@ -356,15 +356,15 @@ if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "
 set masterlist [ lreplace $masterlist $todel $todel ]
 	}
 }
-Master hook eval {
+Primary hook eval {
 upvar 1 opmode opmode
 global masterlist
 if {[regexp {\"([0-9]+)\W([[:alnum:],[:punct:]]+)\"} $buffer all id host]} {
 lappend masterlist "$id $host"
-puts "New slave joined : $masterlist"
+puts "New replica joined : $masterlist"
 if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 } else {
-if {[regexp {\"Slave ([0-9]+)\W([[:alnum:],[:punct:]]+) disconnected\"} $buffer all id host]} {
+if {[regexp {\"Replica ([0-9]+)\W([[:alnum:],[:punct:]]+) disconnected\"} $buffer all id host]} {
 set todel [ lsearch -exact $masterlist "$id $host" ]
 if { $todel != -1 } {
 set masterlist [ lreplace $masterlist $todel $todel ]
@@ -374,9 +374,9 @@ set masterlist [ lreplace $masterlist $todel $todel ]
 		}
 	}
 }
-"Slave" {
+"Replica" {
 set chanlist [ lindex [ ::comm channels ] end ]
-if { $chanlist eq "::Master" } {
+if { $chanlist eq "::Primary" } {
 puts "Closing [ string trim $chanlist : ] connection"
 if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 if { [catch { $chanlist destroy } b] } {
@@ -384,20 +384,20 @@ puts "Error $b"
 if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 	}
 }
-if { [catch {::comm new Slave -listen 1 -local 0 -port {}} b] } {
+if { [catch {::comm new Replica -listen 1 -local 0 -port {}} b] } {
 puts "Creation Failed : $b" } else {
-ed_status_message -perm Slave
+ed_status_message -perm Replica
 $Name configure -state disabled
-puts -nonewline "Setting Slave Mode at id : "
+puts -nonewline "Setting Replica Mode at id : "
 update idletasks
-Slave hook lost {
+Replica hook lost {
 global opmode
-if { $opmode eq "Slave" } {
+if { $opmode eq "Replica" } {
 if { [ llength [ ::comm interps ]] > 1 } {
-if { [catch { Slave destroy } b] } {
+if { [catch { Replica destroy } b] } {
 ;
 } else {
-puts "slave lost connection : $reason"
+puts "replica lost connection : $reason"
 if { [ llength [ namespace which TclReadLine::print ] ] } { TclReadLine::print "\r" }
 set opmode "Local"
 ed_status_message -perm Local
@@ -407,22 +407,22 @@ update idletasks
 	  }	
     }
 }
-set slaveid [ Slave self ]
+set slaveid [ Replica self ]
 set slavehost [ info hostname ]
 puts "$slaveid, hostname : $slavehost"
-puts -nonewline "Slave connecting to $hostname $id : "
+puts -nonewline "Replica connecting to $hostname $id : "
 if { [catch {::comm connect "$id $hostname"} b] } {
 puts "Connection Failed : $b"
 switch_mode "Local" $slavehost $slaveid $masterlist
 set opmode "Local"
 } else {
 puts "Connection succeeded"
-if { [catch {::comm send "$id $hostname" "catch {Master connect \"$slaveid $slavehost\"} "} b] } {
-puts "Master connect back failed: $b\nCanonical hostname [ info hostname ] must be used"
+if { [catch {::comm send "$id $hostname" "catch {Primary connect \"$slaveid $slavehost\"} "} b] } {
+puts "Primary connect back failed: $b\nCanonical hostname [ info hostname ] must be used"
 switch_mode "Local" $slavehost $slaveid $masterlist
 set opmode "Local"
 } else {
-puts "Master call back successful"
+puts "Primary call back successful"
 				}
 			}
 		}
@@ -445,17 +445,23 @@ if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
 global _ED
 ed_edit_commit
 set flbuff $_ED(package)
+#When distributing script to Replicas change mode from Primary to Replica
+set flbuff [ regsub -all {mode "Primary"} $flbuff {mode "Replica"} ]
 foreach f $masterlist {
 puts -nonewline "Distributing to $f ..."
 if { [catch {
-Master send $f set _ED(package) [ concat [ list $flbuff\n]]
-Master send $f update
-Master send $f [ concat upd_lprefix $lprefix ]
-Master send $f set _ED(temppackage) [ concat [ list $flbuff\n]]
-Master send $f ed_edit } b] } {
+Primary send $f set _ED(package) [ concat [ list $flbuff\n]]
+Primary send $f set _ED(packagekeyname) [ concat [ list $_ED(packagekeyname) ] ]
+Primary send $f update
+Primary send $f [ concat upd_lprefix $lprefix ]
+Primary send $f set _ED(temppackage) [ concat [ list $flbuff\n]]
+Primary send $f ed_edit 
+Primary send $f [ concat applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text ]
+		} b] 
+		} {
 puts "Failed $b"
 } else {
-puts "Succeeded"
+puts "Primary Distribution Succeeded"
 		}
 	}
 }
@@ -463,9 +469,9 @@ puts "Succeeded"
 proc remote_command { command } {
 upvar 1 opmode opmode
 global masterlist
-if { $opmode eq "Master" } {
+if { $opmode eq "Primary" } {
 foreach f $masterlist {
-if { [catch { Master send -async $f eval $command } b] } {
+if { [catch { Primary send -async $f eval $command } b] } {
 puts "Failed $b"
 } else { ; }
 		}
