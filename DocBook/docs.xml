@@ -353,129 +353,20 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     <section>
       <title>Checksum Verification</title>
 
-      <para>Checksums for the HammerDB 4.0 installation files are shown in the
-      table below. The integrity of the HammerDB installation files can be
-      verified on Windows with the Microsoft File Checksum Integrity
-      Verifier.</para>
+      <para>Checksums for the installation files are shown alongside the
+      download files in <link
+      xlink:href="https://github.com/TPC-Council/HammerDB/releases">GitHub
+      Releases</link>. The integrity of the HammerDB installation files can be
+      verified on Windows with the Microsoft File Checksum Integrity Verifier
+      which can be downloaded at no cost from Microsoft and run as
+      follows:</para>
 
       <programlisting>fciv -both HammerDB-4.0-Win-x86-64-Setup.exe</programlisting>
 
-      <para>and on Linux with md5sum and sha1sum</para>
+      <para>and on Linux with md5sum and sha1sum as shown:</para>
 
       <programlisting>md5sum HammerDB-4.0-Linux.tar.gz 
 sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
-
-      <para><table>
-          <title>v4.0 Checksum Verification</title>
-
-          <tgroup cols="3">
-            <thead>
-              <row>
-                <entry align="center">File</entry>
-
-                <entry align="center">MD5</entry>
-
-                <entry align="center">SHA-1</entry>
-              </row>
-            </thead>
-
-            <tbody>
-              <row>
-                <entry>Hammerdb-4.0-win-x64-setup.exe</entry>
-
-                <entry>98259a467bffae8a5665e11440f9b9b0</entry>
-
-                <entry>f42667f985cb31cc7cd8ee5a9ff95442ad32b648</entry>
-              </row>
-
-              <row>
-                <entry>HammerDB-4.0-Linux-x64-installer.run</entry>
-
-                <entry>251e3098d93ac8ab2cdd5e10f114c79a</entry>
-
-                <entry>59f449769a9ef10961e8406d43cb0109f9bf75e6</entry>
-              </row>
-
-              <row>
-                <entry>HammerDB-4.0-Win.zip</entry>
-
-                <entry>fd935a9d4cf68d00fab8694f45f0267b</entry>
-
-                <entry>bd4ed3a7f1fdc3188a5439afed1cdb5bcdb14d67</entry>
-              </row>
-
-              <row>
-                <entry>HammerDB-4.0-Linux.tar.gz</entry>
-
-                <entry>fa9c4e2654a49f856cecf63c8ca9be5b</entry>
-
-                <entry>a6a35c234d324077c7819ca4ae4aa8eabaff4c15</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </table></para>
-
-      <para>Checksums for the HammerDB 3.3 installation files are shown in the
-      table below. The integrity of the HammerDB installation files can be
-      verified on Windows with the Microsoft File Checksum Integrity
-      Verifier.</para>
-
-      <programlisting>fciv -both HammerDB-3.3-Win-x86-64-Setup.exe</programlisting>
-
-      <para>and on Linux with md5sum and sha1sum</para>
-
-      <programlisting>md5sum HammerDB-3.3-Linux.tar.gz 
-sha1sum HammerDB-3.3-Linux.tar.gz</programlisting>
-
-      <table>
-        <title>v3.3 Checksum Verification</title>
-
-        <tgroup cols="3">
-          <thead>
-            <row>
-              <entry align="center">File</entry>
-
-              <entry align="center">MD5</entry>
-
-              <entry align="center">SHA-1</entry>
-            </row>
-          </thead>
-
-          <tbody>
-            <row>
-              <entry>HammerDB-3.3-Win-x86-64-Setup.exe</entry>
-
-              <entry>fcf40f89d40ed793e21cf36c456dfbd4</entry>
-
-              <entry>580c470c062c1247fe0d20d1e0ae112d5060b3d3</entry>
-            </row>
-
-            <row>
-              <entry>HammerDB-3.3-Linux-x86-64-Install</entry>
-
-              <entry>e6db6bf807f9d0c38262727bed858372</entry>
-
-              <entry>1aed3d97256c1e22b56cd9d1e5d95fd7d28a1bad</entry>
-            </row>
-
-            <row>
-              <entry>HammerDB-3.3-Win.zip</entry>
-
-              <entry>2aab7cb47069877676d1c734bea52768</entry>
-
-              <entry>aac24182dd41f1c862950834c13f97cbfbb10b0c</entry>
-            </row>
-
-            <row>
-              <entry>HammerDB-3.3-Linux.tar.gz</entry>
-
-              <entry>c0857cff6d91aaac80e90d50d92d67d5</entry>
-
-              <entry>3a0a7552e74c0f8cb07376301b23c6a5ca29d0f1</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </table>
     </section>
 
     <section>
