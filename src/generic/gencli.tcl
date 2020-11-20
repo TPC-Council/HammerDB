@@ -62,6 +62,7 @@ proc .ed_mainFrame.editbuttons.test { args } { ; }
 proc .ed_mainFrame.editbuttons.distribute { args } { ; }
 proc destroy { args } { ; }
 proc ed_edit { args } { ; }
+proc applyctexthighlight { args } { ; }
 proc winfo { args } { return "false" }
 proc even x {expr {($x % 2) == 0}}
 proc odd  x {expr {($x % 2) != 0}}
