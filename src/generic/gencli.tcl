@@ -66,6 +66,15 @@ proc winfo { args } { return "false" }
 proc even x {expr {($x % 2) == 0}}
 proc odd  x {expr {($x % 2) != 0}}
 
+proc bgerror {{message ""}} {
+      global errorInfo
+    if {[string match {*threadscreated*} $errorInfo]} {
+      #puts stderr "Background Error ignored - Threads Killed"
+        } else {
+        puts stderr "Unmatched Background Error - $errorInfo"
+        }
+}
+
 proc configtable {} { 
 global vustatus threadscreated virtual_users maxvuser table ntimes thvnum totrun AVUC
 set AVUC "idle"
