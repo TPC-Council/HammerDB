@@ -1227,19 +1227,29 @@ vwait forever
 }
 
 proc runtimer { seconds } {
-set x 0
-set timerstop 0
-while {!$timerstop} {
- incr x
- after 1000
-  if { ![ expr {$x % 60} ] } {
-  set y [ expr $x / 60 ]
+upvar elapsed elapsed
+upvar timevar timevar
+proc runtimer_loop { seconds } {
+upvar elapsed elapsed
+incr elapsed
+upvar timevar timevar
+set rcomplete [vucomplete]
+  if { ![ expr {$elapsed % 60} ] } {
+  set y [ expr $elapsed / 60 ]
   putscli "Timer: $y minutes elapsed"
   }
- update
- if {  [ vucomplete ] || $x eq $seconds } { set timerstop 1 }
-    }
-putscli "runtimer returned after $x seconds"
+if {!$rcomplete && $elapsed < $seconds } {
+;#Neither vucomplete or time reached, reschedule loop
+catch {after 1000 runtimer_loop $seconds }} else {
+putscli "runtimer returned after $elapsed seconds"
+set elapsed 0
+set timevar 1
+        }
+}
+set elapsed 0
+set timevar 0
+runtimer_loop $seconds
+vwait timevar
 return
 }
 
