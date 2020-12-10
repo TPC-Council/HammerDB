@@ -62,9 +62,19 @@ proc .ed_mainFrame.editbuttons.test { args } { ; }
 proc .ed_mainFrame.editbuttons.distribute { args } { ; }
 proc destroy { args } { ; }
 proc ed_edit { args } { ; }
+proc applyctexthighlight { args } { ; }
 proc winfo { args } { return "false" }
 proc even x {expr {($x % 2) == 0}}
 proc odd  x {expr {($x % 2) != 0}}
+
+proc bgerror {{message ""}} {
+      global errorInfo
+    if {[string match {*threadscreated*} $errorInfo]} {
+      #puts stderr "Background Error ignored - Threads Killed"
+        } else {
+        puts stderr "Unmatched Background Error - $errorInfo"
+        }
+}
 
 proc configtable {} { 
 global vustatus threadscreated virtual_users maxvuser table ntimes thvnum totrun AVUC
@@ -1217,19 +1227,29 @@ vwait forever
 }
 
 proc runtimer { seconds } {
-set x 0
-set timerstop 0
-while {!$timerstop} {
- incr x
- after 1000
-  if { ![ expr {$x % 60} ] } {
-  set y [ expr $x / 60 ]
+upvar elapsed elapsed
+upvar timevar timevar
+proc runtimer_loop { seconds } {
+upvar elapsed elapsed
+incr elapsed
+upvar timevar timevar
+set rcomplete [vucomplete]
+  if { ![ expr {$elapsed % 60} ] } {
+  set y [ expr $elapsed / 60 ]
   putscli "Timer: $y minutes elapsed"
   }
- update
- if {  [ vucomplete ] || $x eq $seconds } { set timerstop 1 }
-    }
-putscli "runtimer returned after $x seconds"
+if {!$rcomplete && $elapsed < $seconds } {
+;#Neither vucomplete or time reached, reschedule loop
+catch {after 1000 runtimer_loop $seconds }} else {
+putscli "runtimer returned after $elapsed seconds"
+set elapsed 0
+set timevar 1
+        }
+}
+set elapsed 0
+set timevar 0
+runtimer_loop $seconds
+vwait timevar
 return
 }
 
