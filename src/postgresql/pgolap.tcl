@@ -63,7 +63,7 @@ proc ConnectToPostgres { host port azure user password dbname } {
     #Azure requires ssl connection
     set sslConnectionEnabled 0
     if { $azure eq "true" } {
-        set sslConnectionEnabled 0
+        set sslConnectionEnabled 1
     }
 
 global tcl_platform
@@ -810,8 +810,8 @@ proc ConnectToPostgres { host port azure user password dbname } {
 
     #Azure requires ssl connection
     set sslConnectionEnabled 0
-    if { $azure eq "true" } {s
-        set sslConnectionEnabled 0
+    if { $azure eq "true" } {
+        set sslConnectionEnabled 1
     }
 
 global tcl_platform
@@ -1421,7 +1421,7 @@ proc ConnectToPostgres { host port azure user password dbname } {
     #Azure requires ssl connection
     set sslConnectionEnabled 0
     if { $azure eq "true" } {
-        set sslConnectionEnabled 0
+        set sslConnectionEnabled 1
     }
 
 global tcl_platform
