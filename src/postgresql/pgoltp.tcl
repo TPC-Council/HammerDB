@@ -1642,7 +1642,7 @@ pg_result $result -clear
 return
 }
 
-proc CreateTables { lda ora_compatible } {
+proc CreateTables { lda ora_compatible num_part } {
 puts "CREATING TPCC TABLES"
 if { $ora_compatible eq "true" } {
 set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0), C_FIRST VARCHAR2(16), C_MIDDLE CHAR(2), C_LAST VARCHAR2(16), C_STREET_1 VARCHAR2(20), C_STREET_2 VARCHAR2(20), C_CITY VARCHAR2(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE DATE, C_CREDIT CHAR(2), C_CREDIT_LIM NUMBER(12, 2), C_DISCOUNT NUMBER(4, 4), C_BALANCE NUMBER(12, 2), C_YTD_PAYMENT NUMBER(12, 2), C_PAYMENT_CNT NUMBER(8, 0), C_DELIVERY_CNT NUMBER(8, 0), C_DATA VARCHAR2(500))"
@@ -1663,7 +1663,11 @@ set sql(5) "CREATE TABLE WAREHOUSE (W_ID NUMERIC(4,0), W_YTD NUMERIC(12, 2), W_T
 set sql(6) "CREATE TABLE STOCK (S_I_ID NUMERIC(6,0), S_W_ID NUMERIC(4,0), S_QUANTITY NUMERIC(6,0), S_DIST_01 CHAR(24), S_DIST_02 CHAR(24), S_DIST_03 CHAR(24), S_DIST_04 CHAR(24), S_DIST_05 CHAR(24), S_DIST_06 CHAR(24), S_DIST_07 CHAR(24), S_DIST_08 CHAR(24), S_DIST_09 CHAR(24), S_DIST_10 CHAR(24), S_YTD NUMERIC(10, 0), S_ORDER_CNT NUMERIC(6,0), S_REMOTE_CNT NUMERIC(6,0), S_DATA VARCHAR(50)) WITH (FILLFACTOR=50)"
 set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID NUMERIC, NO_D_ID NUMERIC, NO_O_ID NUMERIC) WITH (FILLFACTOR=50)"
 set sql(8) "CREATE TABLE ORDERS (O_ID NUMERIC, O_W_ID NUMERIC, O_D_ID NUMERIC, O_C_ID NUMERIC, O_CARRIER_ID NUMERIC, O_OL_CNT NUMERIC, O_ALL_LOCAL NUMERIC, O_ENTRY_D TIMESTAMP) WITH (FILLFACTOR=50)"
+if {$num_part eq 0} {
 set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMERIC, OL_D_ID NUMERIC, OL_O_ID NUMERIC, OL_NUMBER NUMERIC, OL_I_ID NUMERIC, OL_DELIVERY_D TIMESTAMP, OL_AMOUNT NUMERIC, OL_SUPPLY_W_ID NUMERIC, OL_QUANTITY NUMERIC, OL_DIST_INFO CHAR(24)) WITH (FILLFACTOR=50)"
+		} else {
+set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMERIC, OL_D_ID NUMERIC, OL_O_ID NUMERIC, OL_NUMBER NUMERIC, OL_I_ID NUMERIC, OL_DELIVERY_D TIMESTAMP, OL_AMOUNT NUMERIC, OL_SUPPLY_W_ID NUMERIC, OL_QUANTITY NUMERIC, OL_DIST_INFO CHAR(24)) PARTITION BY HASH (OL_W_ID)"
+		}
 	}
 for { set i 1 } { $i <= 9 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
@@ -1673,6 +1677,17 @@ error "[pg_result $result -error]"
 pg_result $result -clear
 	}
     }
+if {$num_part > 0} {
+for { set i 0 } { $i <= [ expr {$num_part - 1} ] } { incr i } {
+set sqlpart "CREATE TABLE ol_$i PARTITION OF ORDER_LINE FOR VALUES WITH (MODULUS $num_part, REMAINDER $i) WITH (FILLFACTOR=50)"
+set result [ pg_exec $lda $sqlpart ]
+if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+error "[pg_result $result -error]"
+        } else {
+pg_result $result -clear
+         }
+      }
+   }
 }
 
 proc CreateIndexes { lda } {
@@ -2057,7 +2072,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	pg_result $result -clear
 	return
 }
-proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs num_vu } {
+proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs partition num_vu } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -2100,7 +2115,16 @@ set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateTables $lda $ora_compatible
+if { $partition eq "true" } {
+if {$count_ware < 200} {
+set num_part 0
+        } else {
+set num_part [ expr round($count_ware/100) ]
+        }
+        } else {
+set num_part 0
+}
+CreateTables $lda $ora_compatible $num_part
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
         }
@@ -2176,7 +2200,7 @@ return
        }
    }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_partition $pg_num_vu"
 	} else { return }
 }
 
