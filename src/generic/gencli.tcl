@@ -849,6 +849,7 @@ if { [ file exists $customscript ] && [ file isfile $customscript ] && [ file ex
 set _ED(file) $customscript
 	     } else {
 puts "Usage: customscript scriptname.tcl"
+        return
 	}
 if {$_ED(file) == ""} {return}
     if {![file readable $_ED(file)]} {
