@@ -308,16 +308,16 @@ event add <<Any-Button-Any-Key>> <Any-ButtonRelease>
 event add <<Any-Button-Any-Key>> <KeyRelease>
 grid $Prompt -column 0 -row 13 -sticky e
 grid $Name -column 1 -row 13 -sticky ew
-}
 set Prompt $Parent.f1.p11a
 ttk::label $Prompt -text "Partition Order Line Table :"
 set Name $Parent.f1.e11a
 ttk::checkbutton $Name -text "" -variable pg_partition -onvalue "true" -offvalue "false"
    grid $Prompt -column 0 -row 14 -sticky e
    grid $Name -column 1 -row 14 -sticky w
-if {$pg_count_ware <= 200 } {
+if {$pg_count_ware < 200 } {
         $Name configure -state disabled
         }
+}
 if { $option eq "all" || $option eq "drive" } {
 if { $option eq "all" } {
 set Prompt $Parent.f1.h3
