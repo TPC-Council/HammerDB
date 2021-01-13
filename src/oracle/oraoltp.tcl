@@ -2528,14 +2528,21 @@ set start_trans [ standsql $curn2 $sql1 ]
 	} else {
 puts "Rampup complete, Taking start AWR snapshot."
 if {[catch {oraplexec $curn1 $sql1} message]} { error "Failed to create snapshot : $message" }
-set sql2 "SELECT INSTANCE_NUMBER, INSTANCE_NAME, DB_NAME, DBID, SNAP_ID, TO_CHAR(END_INTERVAL_TIME,'DD MON YYYY HH24:MI') FROM (SELECT DI.INSTANCE_NUMBER, DI.INSTANCE_NAME, DI.DB_NAME, DI.DBID, DS.SNAP_ID, DS.END_INTERVAL_TIME FROM DBA_HIST_SNAPSHOT DS, DBA_HIST_DATABASE_INSTANCE DI WHERE DS.DBID=DI.DBID AND DS.INSTANCE_NUMBER=DI.INSTANCE_NUMBER AND DS.STARTUP_TIME=DI.STARTUP_TIME ORDER BY DS.SNAP_ID DESC) WHERE ROWNUM=1"
+set sql2a "SELECT version FROM v\$instance"
+if {[catch {orasql $curn1 $sql2a} message]} {
+error "SQL statement failed: $sql2a : $message"
+} else {
+orafetch  $curn1 -datavariable db_version
+set maj_db_version [expr [lindex [split  $db_version "."] 0] + 0]
+set extra_sql2 [expr $maj_db_version >= 19 ? \"AND DI.CON_ID = SYS_CONTEXT('USERENV','CON_ID')\" : \" \"]
+set sql2 [concat "SELECT INSTANCE_NUMBER, INSTANCE_NAME, DB_NAME, DBID, SNAP_ID, TO_CHAR(END_INTERVAL_TIME,'DD MON YYYY HH24:MI') FROM (SELECT DI.INSTANCE_NUMBER, DI.INSTANCE_NAME, DI.DB_NAME, DI.DBID, DS.SNAP_ID, DS.END_INTERVAL_TIME FROM DBA_HIST_SNAPSHOT DS, DBA_HIST_DATABASE_INSTANCE DI WHERE DS.DBID=DI.DBID AND DS.INSTANCE_NUMBER=DI.INSTANCE_NUMBER AND DS.STARTUP_TIME=DI.STARTUP_TIME" $extra_sql2 "ORDER BY DS.SNAP_ID DESC) WHERE ROWNUM=1"]
 if {[catch {orasql $curn1 $sql2} message]} {
 error "SQL statement failed: $sql2 : $message"
 } else {
 orafetch  $curn1 -datavariable firstsnap
 split  $firstsnap " "
 puts "Start Snapshot [ lindex $firstsnap 4 ] taken at [ lindex $firstsnap 5 ] of instance [ lindex $firstsnap 1 ] ([lindex $firstsnap 0]) of database [ lindex $firstsnap 2 ] ([lindex $firstsnap 3])"
-}}
+}}}
 set sql4 "select sum(d_next_o_id) from district"
 set start_nopm [ standsql $curn2 $sql4 ]
 puts "Timing test period of $duration in minutes"
