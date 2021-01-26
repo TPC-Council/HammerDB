@@ -1642,7 +1642,7 @@ pg_result $result -clear
 return
 }
 
-proc CreateTables { lda ora_compatible } {
+proc CreateTables { lda ora_compatible num_part } {
 puts "CREATING TPCC TABLES"
 if { $ora_compatible eq "true" } {
 set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMBER(5, 0), C_D_ID NUMBER(2, 0), C_W_ID NUMBER(4, 0), C_FIRST VARCHAR2(16), C_MIDDLE CHAR(2), C_LAST VARCHAR2(16), C_STREET_1 VARCHAR2(20), C_STREET_2 VARCHAR2(20), C_CITY VARCHAR2(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE DATE, C_CREDIT CHAR(2), C_CREDIT_LIM NUMBER(12, 2), C_DISCOUNT NUMBER(4, 4), C_BALANCE NUMBER(12, 2), C_YTD_PAYMENT NUMBER(12, 2), C_PAYMENT_CNT NUMBER(8, 0), C_DELIVERY_CNT NUMBER(8, 0), C_DATA VARCHAR2(500))"
@@ -1655,15 +1655,19 @@ set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID NUMBER, NO_D_ID NUMBER, NO_O_ID NUMB
 set sql(8) "CREATE TABLE ORDERS (O_ID NUMBER, O_W_ID NUMBER, O_D_ID NUMBER, O_C_ID NUMBER, O_CARRIER_ID NUMBER, O_OL_CNT NUMBER, O_ALL_LOCAL NUMBER, O_ENTRY_D DATE)"
 set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24))"
 	} else {
-set sql(1) "CREATE TABLE CUSTOMER (C_ID NUMERIC(5,0), C_D_ID NUMERIC(2,0), C_W_ID NUMERIC(4,0), C_FIRST VARCHAR(16), C_MIDDLE CHAR(2), C_LAST VARCHAR(16), C_STREET_1 VARCHAR(20), C_STREET_2 VARCHAR(20), C_CITY VARCHAR(20), C_STATE CHAR(2), C_ZIP CHAR(9), C_PHONE CHAR(16), C_SINCE TIMESTAMP, C_CREDIT CHAR(2), C_CREDIT_LIM NUMERIC(12, 2), C_DISCOUNT NUMERIC(4,4), C_BALANCE NUMERIC(12, 2), C_YTD_PAYMENT NUMERIC(12, 2), C_PAYMENT_CNT NUMERIC(8,0), C_DELIVERY_CNT NUMERIC(8,0), C_DATA VARCHAR(500)) WITH (FILLFACTOR=50)"
-set sql(2) "CREATE TABLE DISTRICT (D_ID NUMERIC(2,0), D_W_ID NUMERIC(4,0), D_YTD NUMERIC(12, 2), D_TAX NUMERIC(4,4), D_NEXT_O_ID NUMERIC, D_NAME VARCHAR(10), D_STREET_1 VARCHAR(20), D_STREET_2 VARCHAR(20), D_CITY VARCHAR(20), D_STATE CHAR(2), D_ZIP CHAR(9)) WITH (FILLFACTOR=10)"
-set sql(3) "CREATE TABLE HISTORY (H_C_ID NUMERIC, H_C_D_ID NUMERIC, H_C_W_ID NUMERIC, H_D_ID NUMERIC, H_W_ID NUMERIC, H_DATE TIMESTAMP, H_AMOUNT NUMERIC(6,2), H_DATA VARCHAR(24)) WITH (FILLFACTOR=50)"
-set sql(4) "CREATE TABLE ITEM (I_ID NUMERIC(6,0), I_IM_ID NUMERIC, I_NAME VARCHAR(24), I_PRICE NUMERIC(5,2), I_DATA VARCHAR(50)) WITH (FILLFACTOR=50)"
-set sql(5) "CREATE TABLE WAREHOUSE (W_ID NUMERIC(4,0), W_YTD NUMERIC(12, 2), W_TAX NUMERIC(4,4), W_NAME VARCHAR(10), W_STREET_1 VARCHAR(20), W_STREET_2 VARCHAR(20), W_CITY VARCHAR(20), W_STATE CHAR(2), W_ZIP CHAR(9)) WITH (FILLFACTOR=10)"
-set sql(6) "CREATE TABLE STOCK (S_I_ID NUMERIC(6,0), S_W_ID NUMERIC(4,0), S_QUANTITY NUMERIC(6,0), S_DIST_01 CHAR(24), S_DIST_02 CHAR(24), S_DIST_03 CHAR(24), S_DIST_04 CHAR(24), S_DIST_05 CHAR(24), S_DIST_06 CHAR(24), S_DIST_07 CHAR(24), S_DIST_08 CHAR(24), S_DIST_09 CHAR(24), S_DIST_10 CHAR(24), S_YTD NUMERIC(10, 0), S_ORDER_CNT NUMERIC(6,0), S_REMOTE_CNT NUMERIC(6,0), S_DATA VARCHAR(50)) WITH (FILLFACTOR=50)"
-set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID NUMERIC, NO_D_ID NUMERIC, NO_O_ID NUMERIC) WITH (FILLFACTOR=50)"
-set sql(8) "CREATE TABLE ORDERS (O_ID NUMERIC, O_W_ID NUMERIC, O_D_ID NUMERIC, O_C_ID NUMERIC, O_CARRIER_ID NUMERIC, O_OL_CNT NUMERIC, O_ALL_LOCAL NUMERIC, O_ENTRY_D TIMESTAMP) WITH (FILLFACTOR=50)"
-set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMERIC, OL_D_ID NUMERIC, OL_O_ID NUMERIC, OL_NUMBER NUMERIC, OL_I_ID NUMERIC, OL_DELIVERY_D TIMESTAMP, OL_AMOUNT NUMERIC, OL_SUPPLY_W_ID NUMERIC, OL_QUANTITY NUMERIC, OL_DIST_INFO CHAR(24)) WITH (FILLFACTOR=50)"
+set sql(1) "CREATE TABLE CUSTOMER (C_SINCE TIMESTAMP WITH TIME ZONE NOT NULL, C_ID INTEGER NOT NULL, C_W_ID INTEGER NOT NULL, C_D_ID SMALLINT NOT NULL, C_PAYMENT_CNT SMALLINT NOT NULL, C_DELIVERY_CNT SMALLINT NOT NULL, C_FIRST CHARACTER VARYING(16) NOT NULL, C_MIDDLE CHARACTER(2) NOT NULL, C_LAST CHARACTER VARYING(16) NOT NULL, C_STREET_1 CHARACTER VARYING(20) NOT NULL, C_STREET_2 CHARACTER VARYING(20) NOT NULL, C_CITY CHARACTER VARYING(20) NOT NULL, C_STATE CHARACTER(2) NOT NULL, C_ZIP CHARACTER(9) NOT NULL, C_PHONE CHARACTER(16) NOT NULL, C_CREDIT CHARACTER(2) NOT NULL, C_CREDIT_LIM NUMERIC(12,2) NOT NULL, C_DISCOUNT NUMERIC(4,4) NOT NULL, C_BALANCE NUMERIC(12,2) NOT NULL, C_YTD_PAYMENT NUMERIC(12,2) NOT NULL, C_DATA CHARACTER VARYING(500) NOT NULL, CONSTRAINT CUSTOMER_I1 PRIMARY KEY (C_W_ID, C_D_ID, C_ID))"
+set sql(2) "CREATE TABLE DISTRICT (D_W_ID INTEGER NOT NULL, D_NEXT_O_ID INTEGER NOT NULL, D_ID SMALLINT NOT NULL, D_YTD NUMERIC(12,2) NOT NULL, D_TAX NUMERIC(4,4) NOT NULL, D_NAME CHARACTER VARYING(10) NOT NULL, D_STREET_1 CHARACTER VARYING(20) NOT NULL, D_STREET_2 CHARACTER VARYING(20) NOT NULL, D_CITY CHARACTER VARYING(20) NOT NULL, D_STATE CHARACTER(2) NOT NULL, D_ZIP CHARACTER(9) NOT NULL, CONSTRAINT DISTRICT_I1 PRIMARY KEY (D_W_ID, D_ID))"
+set sql(3) "CREATE TABLE HISTORY (H_DATE TIMESTAMP WITH TIME ZONE NOT NULL, H_C_ID INTEGER, H_C_W_ID INTEGER NOT NULL, H_W_ID INTEGER NOT NULL, H_C_D_ID SMALLINT NOT NULL, H_D_ID SMALLINT NOT NULL, H_AMOUNT NUMERIC(6,2) NOT NULL, H_DATA CHARACTER VARYING(24) NOT NULL)"
+set sql(4) "CREATE TABLE ITEM (I_ID INTEGER NOT NULL, I_IM_ID INTEGER NOT NULL, I_NAME CHARACTER VARYING(24) NOT NULL, I_PRICE NUMERIC(5,2) NOT NULL, I_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT ITEM_I1 PRIMARY KEY (I_ID))"
+set sql(5) "CREATE TABLE WAREHOUSE (W_ID INTEGER NOT NULL, W_NAME CHARACTER VARYING(10) NOT NULL, W_STREET_1 CHARACTER VARYING(20) NOT NULL, W_STREET_2 CHARACTER VARYING(20) NOT NULL, W_CITY CHARACTER VARYING(20) NOT NULL, W_STATE CHARACTER(2) NOT NULL, W_ZIP CHARACTER(9) NOT NULL, W_TAX NUMERIC(4,4) NOT NULL, W_YTD NUMERIC(12,2) NOT NULL, CONSTRAINT WAREHOUSE_I1 PRIMARY KEY (W_ID))"
+set sql(6) "CREATE TABLE STOCK (S_I_ID INTEGER NOT NULL, S_W_ID INTEGER NOT NULL, S_YTD INTEGER NOT NULL, S_QUANTITY SMALLINT NOT NULL, S_ORDER_CNT SMALLINT NOT NULL, S_REMOTE_CNT SMALLINT NOT NULL, S_DIST_01 CHARACTER(24) NOT NULL, S_DIST_02 CHARACTER(24) NOT NULL, S_DIST_03 CHARACTER(24) NOT NULL, S_DIST_04 CHARACTER(24) NOT NULL, S_DIST_05 CHARACTER(24) NOT NULL, S_DIST_06 CHARACTER(24) NOT NULL, S_DIST_07 CHARACTER(24) NOT NULL, S_DIST_08 CHARACTER(24) NOT NULL, S_DIST_09 CHARACTER(24) NOT NULL, S_DIST_10 CHARACTER(24) NOT NULL, S_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT STOCK_I1 PRIMARY KEY (S_W_ID, S_I_ID))"
+set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID INTEGER NOT NULL, NO_O_ID INTEGER NOT NULL, NO_D_ID SMALLINT NOT NULL, CONSTRAINT NEW_ORDER_I1 PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID))"
+set sql(8) "CREATE TABLE ORDERS (O_ENTRY_D TIMESTAMP WITH TIME ZONE NOT NULL, O_ID INTEGER NOT NULL, O_W_ID INTEGER NOT NULL, O_C_ID INTEGER NOT NULL, O_D_ID SMALLINT NOT NULL, O_CARRIER_ID SMALLINT, O_OL_CNT SMALLINT NOT NULL, O_ALL_LOCAL SMALLINT NOT NULL, CONSTRAINT ORDERS_I1 PRIMARY KEY (O_W_ID, O_D_ID, O_ID))"
+if {$num_part eq 0} {
+set sql(9) "CREATE TABLE ORDER_LINE (OL_DELIVERY_D TIMESTAMP WITH TIME ZONE, OL_O_ID INTEGER NOT NULL, OL_W_ID INTEGER NOT NULL, OL_I_ID INTEGER NOT NULL, OL_SUPPLY_W_ID INTEGER NOT NULL, OL_D_ID SMALLINT NOT NULL, OL_NUMBER SMALLINT NOT NULL, OL_QUANTITY SMALLINT NOT NULL, OL_AMOUNT NUMERIC(6,2), OL_DIST_INFO CHARACTER(24), CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER))"
+		} else {
+set sql(9) "CREATE TABLE ORDER_LINE (OL_DELIVERY_D TIMESTAMP WITH TIME ZONE, OL_O_ID INTEGER NOT NULL, OL_W_ID INTEGER NOT NULL, OL_I_ID INTEGER NOT NULL, OL_SUPPLY_W_ID INTEGER NOT NULL, OL_D_ID SMALLINT NOT NULL, OL_NUMBER SMALLINT NOT NULL, OL_QUANTITY SMALLINT NOT NULL, OL_AMOUNT NUMERIC(6,2), OL_DIST_INFO CHARACTER(24), CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER)) PARTITION BY HASH (OL_W_ID)"
+		}
 	}
 for { set i 1 } { $i <= 9 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
@@ -1673,21 +1677,24 @@ error "[pg_result $result -error]"
 pg_result $result -clear
 	}
     }
+if {$num_part > 0} {
+for { set i 0 } { $i <= [ expr {$num_part - 1} ] } { incr i } {
+set sqlpart "CREATE TABLE ol_$i PARTITION OF ORDER_LINE FOR VALUES WITH (MODULUS $num_part, REMAINDER $i)"
+set result [ pg_exec $lda $sqlpart ]
+if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+error "[pg_result $result -error]"
+        } else {
+pg_result $result -clear
+         }
+      }
+   }
 }
 
 proc CreateIndexes { lda } {
 puts "CREATING TPCC INDEXES"
-set sql(1) "ALTER TABLE CUSTOMER ADD CONSTRAINT CUSTOMER_I1 PRIMARY KEY (C_W_ID, C_D_ID, C_ID)"
-set sql(2) "CREATE UNIQUE INDEX CUSTOMER_I2 ON CUSTOMER (C_W_ID, C_D_ID, C_LAST, C_FIRST, C_ID)"
-set sql(3) "ALTER TABLE DISTRICT ADD CONSTRAINT DISTRICT_I1 PRIMARY KEY (D_W_ID, D_ID) WITH (FILLFACTOR = 100)"
-set sql(4) "ALTER TABLE NEW_ORDER ADD CONSTRAINT NEW_ORDER_I1 PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID)"
-set sql(5) "ALTER TABLE ITEM ADD CONSTRAINT ITEM_I1 PRIMARY KEY (I_ID)"
-set sql(6) "ALTER TABLE ORDERS ADD CONSTRAINT ORDERS_I1 PRIMARY KEY (O_W_ID, O_D_ID, O_ID)"
-set sql(7) "CREATE UNIQUE INDEX ORDERS_I2 ON ORDERS (O_W_ID, O_D_ID, O_C_ID, O_ID)"
-set sql(8) "ALTER TABLE ORDER_LINE ADD CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER)"
-set sql(9) "ALTER TABLE STOCK ADD CONSTRAINT STOCK_I1 PRIMARY KEY (S_I_ID, S_W_ID)"
-set sql(10) "ALTER TABLE WAREHOUSE ADD CONSTRAINT WAREHOUSE_I1 PRIMARY KEY (W_ID) WITH (FILLFACTOR = 100)"
-for { set i 1 } { $i <= 10 } { incr i } {
+set sql(1) "CREATE UNIQUE INDEX CUSTOMER_I2 ON CUSTOMER USING BTREE (C_W_ID, C_D_ID, C_LAST, C_FIRST, C_ID)"
+set sql(2) "CREATE UNIQUE INDEX ORDERS_I2 ON ORDERS USING BTREE (O_W_ID, O_D_ID, O_C_ID, O_ID)"
+for { set i 1 } { $i <= 2 } { incr i } {
 set result [ pg_exec $lda $sql($i) ]
 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
 error "[pg_result $result -error]"
@@ -2057,7 +2064,7 @@ for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
 	pg_result $result -clear
 	return
 }
-proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs num_vu } {
+proc do_tpcc { host port count_ware superuser superuser_password defaultdb db tspace user password ora_compatible pg_storedprocs partition num_vu } {
 set MAXITEMS 100000
 set CUST_PER_DIST 3000
 set DIST_PER_WARE 10
@@ -2100,7 +2107,16 @@ set lda [ ConnectToPostgres $host $port $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  } else {
-CreateTables $lda $ora_compatible
+if { $partition eq "true" } {
+if {$count_ware < 200} {
+set num_part 0
+        } else {
+set num_part [ expr round($count_ware/100) ]
+        }
+        } else {
+set num_part 0
+}
+CreateTables $lda $ora_compatible $num_part
 set result [ pg_exec $lda "commit" ]
 pg_result $result -clear
         }
@@ -2176,7 +2192,7 @@ return
        }
    }
 }
-.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_num_vu"
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_storedprocs $pg_partition $pg_num_vu"
 	} else { return }
 }
 
@@ -2198,7 +2214,7 @@ curn_sl {
 set prep_st "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
 }
 curn_os {
-set prep_st "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_st "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 }
 }
 set result [ pg_exec $lda $prep_st ]
@@ -2703,7 +2719,7 @@ pg_result $result -clear
 proc fn_prep_statement { lda } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
 set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
-set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
 foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
@@ -3147,7 +3163,7 @@ pg_result $result -clear
 proc fn_prep_statement { lda } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
 set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
-set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
 foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
@@ -3607,7 +3623,7 @@ pg_result $result -clear
 proc fn_prep_statement { lda clientname } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
 set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
-set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id NUMERIC,  ol_supply_w_id NUMERIC, ol_quantity NUMERIC, ol_amount NUMERIC, ol_delivery_d TIMESTAMP,  out_os_c_id INTEGER, out_os_c_last VARCHAR, os_c_first VARCHAR, os_c_middle VARCHAR, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
+set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
 foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {

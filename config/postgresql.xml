@@ -19,6 +19,7 @@
             <pg_dritasnap>false</pg_dritasnap>
             <pg_oracompat>false</pg_oracompat>
             <pg_storedprocs>false</pg_storedprocs>
+            <pg_partition>false</pg_partition>
         </schema>
         <driver>
             <pg_total_iterations>1000000</pg_total_iterations>
