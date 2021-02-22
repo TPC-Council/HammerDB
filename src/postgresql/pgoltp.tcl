@@ -803,7 +803,7 @@ byname			IN INTEGER,
 p_h_amount		IN NUMERIC,
 p_c_credit              INOUT CHAR(2),
 p_c_last		INOUT VARCHAR(16),
-p_c_id			INOUT NUMERIC(5,0),
+p_c_id			INOUT INTEGER,
 p_w_street_1            INOUT VARCHAR(20),
 p_w_street_2            INOUT VARCHAR(20),
 p_w_city                INOUT VARCHAR(20),
@@ -1333,7 +1333,7 @@ BEGIN
 END;
 ' LANGUAGE 'plpgsql';
 }
-set sql(4) { CREATE OR REPLACE FUNCTION PAYMENT (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR, VARCHAR, NUMERIC ) RETURNS INTEGER AS '
+set sql(4) { CREATE OR REPLACE FUNCTION PAYMENT (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR, VARCHAR, NUMERIC ) RETURNS INTEGER AS '
 DECLARE
     p_w_id			ALIAS FOR $1;
     p_d_id			ALIAS FOR $2;
@@ -1348,7 +1348,7 @@ DECLARE
 	p_c_balance     NUMERIC(12, 2);
 	p_c_credit      CHAR(2);
     p_c_last		VARCHAR(16);
-	p_c_id					INT;
+	p_c_id			INTEGER;
 	p_w_street_1            VARCHAR(20);
 	p_w_street_2            VARCHAR(20);
 	p_w_city                VARCHAR(20);
@@ -2205,7 +2205,7 @@ curn_no {
 set prep_st "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
 }
 curn_py {
-set prep_st "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_st "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
 }
 curn_dl {
 set prep_st "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
@@ -2718,7 +2718,7 @@ pg_result $result -clear
 
 proc fn_prep_statement { lda } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
-set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
 set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
@@ -3162,7 +3162,7 @@ pg_result $result -clear
 
 proc fn_prep_statement { lda } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
-set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
 set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
@@ -3622,7 +3622,7 @@ pg_result $result -clear
 
 proc fn_prep_statement { lda clientname } {
 set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
-set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
+set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
 set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
 set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
 set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
