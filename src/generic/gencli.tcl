@@ -1273,6 +1273,7 @@ Type \"help command\" for more details on specific commands below"
        	print 
 	quit
 	runtimer
+	steprun
 	switchmode
 	vucomplete
        	vucreate
@@ -1284,10 +1285,10 @@ Type \"help command\" for more details on specific commands below"
 	}
 } else {
 set option [ lindex [ split  $args ]  0 ]
-set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun switchmode runtimer waittocomplete} $option ]
+set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun steprun switchmode runtimer waittocomplete} $option ]
 if { $ind eq -1 } {
 putscli "Error: invalid option"
-putscli {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|switchmode|runtimer|waittocomplete]}
+putscli {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|steprun|switchmode|runtimer|waittocomplete]}
 return
 } else {
 switch  $option {
@@ -1325,6 +1326,10 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
 distributescript {
 putscli "distributescript"
 putscli "In Primary mode distributes the script loaded by Primary to the connected Replicas." 
+}
+steprun {
+putscli "steprun - Usage: steprun"
+putscli "Automatically switches into Primary mode, creates and connects the multiple Replicas defined in config/steps.xml and starts the Primary and Replica Virtual Users at the defined intervals creating a step workload. Both Primary and Replicas will exit on completion."
 }
 switchmode {
 putscli "switchmode - Usage: switchmode \[mode\] ?PrimaryID? ?PrimaryHostname?"
