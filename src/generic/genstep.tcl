@@ -3,10 +3,10 @@ proc replica_callback { primport } {
 global opmode
 switchmode replica $primport
 if { $opmode != "Replica" } {
-puts "Error: Failed to switch to Replica mode via callback"
+putscli "Error: Failed to switch to Replica mode via callback"
 return
 } else {
-puts "Switched to Replica mode via callback"
+putscli "Switched to Replica mode via callback"
 replica_waittocomplete
         }
 }
@@ -72,14 +72,14 @@ return ""
 #Send a single command to a replica
 proc sendonecommand { command stepcount } {
 global masterlist masterlistcopy
-puts "Sending \"$command\" to [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
+putscli "Sending \"$command\" to [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
 Primary send [ lindex $masterlistcopy [ expr $stepcount - 1 ]] eval $command  
 }
 
 #do the equivalent of dbset for all parameters in a dict, ie set the entire dict
 proc dbsetall { stepcount dbname dbconfig } {
 global masterlist masterlistcopy
-puts "Sending dbset all to [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
+putscli "Sending dbset all to [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
 Primary send [ lindex $masterlistcopy [ expr $stepcount - 1 ]] set $dbname [ concat [list $dbconfig ]] 
 }
 
@@ -87,7 +87,7 @@ Primary send [ lindex $masterlistcopy [ expr $stepcount - 1 ]] set $dbname [ con
 proc start_replicas {stepnumbers callbackfile} {
 global tcl_platform
 for {set step 1} {$step <= $stepnumbers} {incr step} {
-puts "Starting $step replica HammerDB instance"
+putscli "Starting $step replica HammerDB instance"
 if {$tcl_platform(platform) == "windows"} {
 exec ./bin/tclsh86t hammerdbcli auto $callbackfile &
 	} else {
@@ -227,7 +227,7 @@ foreach command [ list "diset tpcc $prefix\_timeprofile false" "diset tpcc $pref
 incr stepcount
 } else {
 #Set primary values
-puts "Setting primary to run $vucount virtual users for $duration duration"
+putscli "Setting primary to run $vucount virtual users for $duration duration"
 foreach {startafter duration vucount} [ split $value ] {}
 if { $prefix eq "ora" } {
 diset tpcc duration $duration
