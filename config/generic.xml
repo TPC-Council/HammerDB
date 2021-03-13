@@ -37,7 +37,10 @@
     </mode>
     <transaction_counter>
 	<settings>
-            <refresh_rate>10</refresh_rate>
+            <tc_refresh_rate>10</tc_refresh_rate>
+            <tc_log_to_temp>0</tc_log_to_temp>
+	    <tc_unique_log_name>0</tc_unique_log_name>
+	    <tc_log_timestamps>0</tc_log_timestamps>
 	</settings>
     </transaction_counter>
     <metrics>

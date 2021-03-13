@@ -62,7 +62,7 @@ for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
         }
     }
 
-append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl geninitcli.tcl gencli.tcl }
+append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl }
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
 		set loadtext $f
