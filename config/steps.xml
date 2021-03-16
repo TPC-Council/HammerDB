@@ -1,0 +1,22 @@
+<steps>
+	<replica1>
+		<start_after_prev>1</start_after_prev>
+		<duration>4</duration>
+		<virtual_users>2</virtual_users>
+	</replica1>
+	<replica2>
+		<start_after_prev>1</start_after_prev>
+		<duration>3</duration>
+		<virtual_users>2</virtual_users>
+	</replica2>
+	<replica3>
+		<start_after_prev>1</start_after_prev>
+		<duration>2</duration>
+		<virtual_users>2</virtual_users>
+	</replica3>
+	<replica4>
+		<start_after_prev>1</start_after_prev>
+		<duration>1</duration>
+		<virtual_users>2</virtual_users>
+	</replica4>
+</steps>
