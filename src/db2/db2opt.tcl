@@ -2,8 +2,14 @@ proc countdb2opts { bm } {
 upvar #0 icons icons
 upvar #0 configdb2 configdb2
 upvar #0 genericdict genericdict
-global afval interval
-
+global afval interval tclog uniquelog tcstamp
+dict with genericdict { dict with transaction_counter {
+#variables for button options need to be global
+set interval $tc_refresh_rate
+set tclog $tc_log_to_temp
+set uniquelog $tc_unique_log_name
+set tcstamp $tc_log_timestamps
+}}
 setlocaltcountvars $configdb2 1
 variable db2optsfields
 if { $bm eq "TPC-C" } {
@@ -67,6 +73,35 @@ set Name $Parent.f1.e3
    grid $Prompt -column 0 -row 4 -sticky e
    grid $Name -column 1 -row 4 -sticky ew
 
+  set Name $Parent.f1.e7
+ttk::checkbutton $Name -text "Log Output to Temp" -variable tclog -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 7 -sticky w
+bind .countopt.f1.e7 <Button> {
+set opst [ .countopt.f1.e7 cget -state ]
+if {$opst != "disabled" && $tclog == 0} {
+.countopt.f1.e8 configure -state active
+.countopt.f1.e9 configure -state active
+        } else {
+set uniquelog 0
+set tcstamp 0
+.countopt.f1.e8 configure -state disabled
+.countopt.f1.e9 configure -state disabled
+                        }
+                }
+  set Name $Parent.f1.e8
+ttk::checkbutton $Name -text "Use Unique Log Name" -variable uniquelog -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 8 -sticky w
+        if {$tclog == 0} {
+        $Name configure -state disabled
+        }
+
+   set Name $Parent.f1.e9
+ttk::checkbutton $Name -text "Log Timestamps" -variable tcstamp -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 9 -sticky w
+        if {$tclog == 0} {
+        $Name configure -state disabled
+        }
+
    bind .countopt.f1.e1 <Delete> {
       if [%W selection present] {
          %W delete sel.first sel.last
@@ -87,10 +122,16 @@ if { $bm eq "TPC-C" } {
    ttk::button $Name -command {
 copyfieldstoconfig configdb2 [ subst $db2optsfields ] tpcc
 unset db2optsfields
-if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
-        set interval 10 } else {
-        dict set genericdict transaction_counter refresh_rate [.countopt.f1.e4 get]
-        }
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
+	dict set genericdict transaction_counter tc_refresh_rate 10
+	   } else {
+	dict with genericdict { dict with transaction_counter {
+	set tc_refresh_rate [.countopt.f1.e4 get]
+       	set tc_log_to_temp $tclog
+        set tc_unique_log_name $uniquelog
+        set tc_log_timestamps $tcstamp 
+	}}
+	}
          destroy .countopt
            catch "destroy .tc"
             } -text {OK}
@@ -98,10 +139,16 @@ if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh 
    ttk::button $Name -command {
 copyfieldstoconfig configdb2 [ subst $db2optsfields ] tpch
 unset db2optsfields
-if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
-        set interval 10 } else {
-        dict set genericdict transaction_counter refresh_rate [.countopt.f1.e4 get]
-        }
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
+	dict set genericdict transaction_counter tc_refresh_rate 10
+	   } else {
+	dict with genericdict { dict with transaction_counter {
+	set tc_refresh_rate [.countopt.f1.e4 get]
+       	set tc_log_to_temp $tclog
+        set tc_unique_log_name $uniquelog
+        set tc_log_timestamps $tcstamp 
+	}}
+	}
   destroy .countopt
            catch "destroy .tc"
             } -text {OK}

@@ -357,7 +357,7 @@ puts {Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuf
 return
 }
 set val [ lindex [ split  $args ]  1 ]
-if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
+if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
 puts "Error: Virtual Users exist, destroy with vudestroy before changing settings"
 return
 }
@@ -640,12 +640,12 @@ putscli {Usage: dbset [db|bm|config] value}
 proc print { args } {
 global _ED rdbms bm virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps gen_count_ware gen_scale_fact gen_directory gen_num_vu
 if {[ llength $args ] != 1} {
-puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen]}
+puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
 } else {
-set ind [ lsearch {db bm dict script vuconf vucreated vustatus vucomplete datagen} $args ]
+set ind [ lsearch {db bm dict script vuconf vucreated vustatus vucomplete datagen tcconf} $args ]
 if { $ind eq -1 } {
 puts "Error: invalid option"
-puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen]}
+puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
 return
 	}
 switch $args {
@@ -695,7 +695,7 @@ puts "$i = [ set $j ]"
 	}
 }
 vucreated {
-puts "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users created"
+puts "[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] Virtual Users created"
 }
 vustatus {
 vustatus
@@ -715,6 +715,10 @@ puts "Data Generation set to build a $bm schema for $rdbms with $gen_count_ware 
 puts "Data Generation set to build a $bm schema for $rdbms with $gen_scale_fact scale factor with $gen_num_vu virtual users in $gen_directory" 
 	}
 }
+tcconf {
+upvar #0 genericdict genericdict
+dict with genericdict { pdict 2 $transaction_counter }
+}
 default {
 puts "unknown print option"
 	}
@@ -732,7 +736,7 @@ global _ED lprefix vustatus opmode
 if { [ string length $_ED(package) ] eq 0  } {
 putscli "No Script loaded: Load script before creating Virtual Users"
 } else {
-if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
+if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
 putscli "Error: Virtual Users exist, destroy with vudestroy before creating"
 return
 }
@@ -743,9 +747,9 @@ set vustatus {}
 	putscli "Failed to create virtual users: $message"
 	} else {
 if { $lprefix eq "loadtimed" } {
-putscli "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created with Monitor VU"
+putscli "[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] Virtual Users Created with Monitor VU"
 } else {
-putscli "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created"
+putscli "[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] Virtual Users Created"
 	    }
 	}
     }
@@ -753,7 +757,7 @@ putscli "[expr [ llength [ thread::names ] ] - 1 ] Virtual Users Created"
 
 proc vudestroy {} {
 	global threadscreated threadsbytid vustatus AVUC opmode
-	if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
+	if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
 	tsv::set application abort 1
 	if { [catch {ed_kill_vusers} message]} {
 	putscli "Virtual Users remain running in background or shutting down, retry"
@@ -765,7 +769,7 @@ proc vudestroy {} {
 	incr x
 	after 1000
 	update
-	if {[expr [ llength [ thread::names ] ] - 1 ] eq 0} {
+	if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
 	set checkstop 1
 	putscli "vudestroy success"
 	unset -nocomplain AVUC
@@ -1254,6 +1258,155 @@ vwait timevar
 return
 }
 
+proc tcstart {} {
+global tc_threadID
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+tk_messageBox -icon warning -message "Transaction Counter thread already running with threadid:$tc_threadID"
+return 
+} else {
+tk_messageBox -icon warning -message "Transaction Counter thread already running"
+return
+}
+} else {
+#Start transaction counter
+transcount
+}
+}
+
+proc tcstatus {} {
+global tc_threadID
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+tk_messageBox -icon warning -message "Transaction Counter thread running with threadid:$tc_threadID"
+return 
+} else {
+tk_messageBox -icon warning -message "Transaction Counter thread running"
+return
+}
+} else {
+putscli "Transaction Counter is not running"
+}
+}
+
+proc tcstop {} {
+global tc_threadID
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+tk_messageBox -icon warning -message "Transaction Counter thread running with threadid:$tc_threadID"
+ed_kill_transcount 
+} else {
+tk_messageBox -icon warning -message "Transaction Counter thread running"
+ed_kill_transcount 
+}
+} else {
+putscli "Transaction Counter is not running"
+}
+}
+
+proc tcset {args} {
+upvar #0 genericdict genericdict
+if {[ llength $args ] != 2} {
+puts {Usage: tcset [refreshrate|logtotemp|unique|timestamps] value}
+} else {
+set option [ lindex [ split  $args ]  0 ]
+set ind [ lsearch {refreshrate logtotemp unique timestamps} $option ]
+if { $ind eq -1 } {
+puts "Error: invalid option"
+puts {Usage: vuset [refreshrate|logtotemp|unique|timestamps] value}
+return
+}
+set val [ lindex [ split  $args ]  1 ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+tk_messageBox -icon warning -message "Stop Transaction Counter before setting configuration"
+return
+}} 
+switch  $option {
+refreshrate { 
+set refreshrate $val
+if { ![string is integer -strict $refreshrate] } {
+        tk_messageBox -message "Refresh rate must be an integer more than 0 secs and less than 60 secs"
+	puts -nonewline "setting to value: "
+        set refreshrate 10
+        } else {
+	if { ($refreshrate >= 60) || ($refreshrate <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
+        set refreshrate 10 
+	}
+   }
+if { [catch {dict set genericdict transaction_counter tc_refresh_rate $refreshrate}] } {
+putscli "Failed to set Transaction Counter refresh rate"
+} else {
+putscli "Transaction Counter refresh rate set to $refreshrate"
+}
+}
+logtotemp { 
+set logtotemp $val
+if { ![string is integer -strict $logtotemp ] } {
+        tk_messageBox -message "Log Output must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set logtotemp  0
+        } else {
+if { $logtotemp  > 1 } { tk_messageBox -message "Log Output must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set logtotemp  0
+        }
+   }
+if { [catch {dict set genericdict transaction_counter tc_log_to_temp $logtotemp}] } {
+putscli "Failed to set Transaction Counter log to temp"
+} else {
+putscli "Transaction Counter log to temp set to $logtotemp"
+}
+}
+unique { 
+set unique_log_name $val
+if { ![string is integer -strict $unique_log_name] } {
+        tk_messageBox -message "Unique Log Name must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set unique_log_name 0
+        } else {
+if { $unique_log_name > 1 } { tk_messageBox -message "Unique Log Name must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set unique_log_name 0
+        }
+   }
+if { [catch {dict set genericdict transaction_counter tc_unique_log_name $unique_log_name}] } {
+putscli "Failed to set Transaction Counter unique log name"
+} else {
+putscli "Transaction Counter unique log name set to $unique_log_name"
+}
+}
+timestamps { 
+set log_timestamps $val
+if { ![string is integer -strict $log_timestamps] } {
+        tk_messageBox -message "Log timestamps must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set log_timestamps 0
+        } else {
+if { $log_timestamps > 1 } { tk_messageBox -message "Log timestamps must be 0 or 1"
+	puts -nonewline "setting to value: "
+        set log_timestamps 0
+        }
+   }
+if { [catch {dict set genericdict transaction_counter tc_log_timestamps $log_timestamps}] } {
+putscli "Failed to set Transaction Counter log timestamps"
+} else {
+putscli "Transaction Counter timestamps set to $log_timestamps"
+}
+}
+default {
+puts "Unknown tcset option"
+puts {Usage: tcset [refreshrate|logtotemp|unique|timestamps] value}
+	}
+}}}
+
 proc help { args } {
 global hdb_version
 if {[ llength $args ] != 1} {
@@ -1275,6 +1428,10 @@ Type \"help command\" for more details on specific commands below"
 	runtimer
 	steprun
 	switchmode
+	tcset
+	tcstart
+	tcstatus
+	tcstop
 	vucomplete
        	vucreate
        	vudestroy
@@ -1285,15 +1442,15 @@ Type \"help command\" for more details on specific commands below"
 	}
 } else {
 set option [ lindex [ split  $args ]  0 ]
-set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun steprun switchmode runtimer waittocomplete} $option ]
+set ind [ lsearch {print librarycheck dbset diset distributescript buildschema vuset vucreate vurun vudestroy vustatus vucomplete quit loadscript clearscript customscript dgset datagenrun steprun switchmode runtimer waittocomplete tcset tcstart tcstatus tcstop} $option ]
 if { $ind eq -1 } {
 putscli "Error: invalid option"
-putscli {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|steprun|switchmode|runtimer|waittocomplete]}
+putscli {Usage: help [print|librarycheck|dbset|diset|distributescript|buildschema|vuset|vucreate|vurun|vudestroy|vustatus|vucomplete|quit|loadscript|clearscript|customscript|dgset|datagenrun|steprun|switchmode|runtimer|waittocomplete|tcset|tcstart|tcstatus|tcstop]}
 return
 } else {
 switch  $option {
 print {
-putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen]}
+putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen|tcconf]}
 putscli "prints the current configuration: 
 db: database 
 bm: benchmark
@@ -1302,7 +1459,8 @@ script: the loaded script
 vuconf: the virtual user configuration
 vucreated: the number of virtual users created
 vustatus: the status of the virtual users
-datagen: the datagen configuration"
+datagen: the datagen configuration
+tcconf: the transaction counter configuration"
 }
 quit {
 putscli "quit - Usage: quit"
@@ -1391,6 +1549,22 @@ putscli "Helper routine to run a timer in the main hammerdbcli thread to keep it
 waittocomplete {
 putscli "waittocomplete - Usage: waittocomplete"
 putscli "Helper routine to enable the main hammerdbcli thread to keep it busy until vucomplete is detected. When vucomplete is detected exit is called causing all virtual users and the main hammerdblci thread to terminate. Often used when calling hammerdb from external scripting commands."
+}
+tcset {
+putscli "tcset - Usage: tcset \[refreshrate|logtotemp|unique|timestamps\]"
+putscli "Configure the transaction counter options. Equivalent to the Transaction Counter Options window in the graphical interface." 
+}
+tcstart {
+putscli "tcstart - Usage: tcstart"
+putscli "Starts the Transaction Counter."
+}
+tcstatus {
+putscli "status - Usage: tcstatus"
+putscli "Checks the status of the Transaction Counter."
+}
+tcstop {
+putscli "tcstop - Usage: tcstop"
+putscli "Stops the Transaction Counter."
 }
 }
 }

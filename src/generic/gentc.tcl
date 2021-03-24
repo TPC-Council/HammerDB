@@ -1,3 +1,4 @@
+#Generic GUI Transaction Counter
 proc LCD_Pixels { canv_x canv_y onrim onfill offrim offfill win_scale_fact } {
 global varStdFont_8 varStdFont_16
 foreach var {varColours varLCDSize varPixelSize varPixelSpace varFonts} { upvar #0 $var $var }
@@ -794,7 +795,7 @@ proc SetPixels {varRow varCol varChar}  {
  }
 
 proc showLCD {number} {
-global bm
+global bm rdbms
 if { $bm eq "TPC-C" } { set metric "tpm" } else { set metric "qph" }
 #blank display before displaying number
 LCD_Display "               " 0 0 0
@@ -807,19 +808,30 @@ LCD_Display "$number$metric" 0 0 [ expr {$startcol-7} ]
 	} else {
 LCD_Display "ERR:OVERFLOW" 0 0 0
 	}
+write_to_transcount_log $number $rdbms $metric
 return
- }
+}
 
 proc transcount { } {
-global tcl_platform masterthread tc_threadID bm rdbms afval
+global tcl_platform masterthread tc_threadID bm rdbms afval tc_flog
 upvar #0 icons icons
 foreach var {varColours varLCDSize varPixelSize varPixelSpace varFonts} { upvar #0 $var $var }
 upvar #0 genericdict genericdict
 tsv::set application tc_errmsg ""
-if {[dict exists $genericdict settings refresh_rate]} {
-set interval [ dict get $genericdict settings refresh_rate ]
-        } else { set interval 10 }
-
+#If log to temp is set open transaction counter logfile
+dict with genericdict { dict with transaction_counter {
+set interval $tc_refresh_rate
+set tclog $tc_log_to_temp
+set uniquelog $tc_unique_log_name
+}}
+if { $tclog } {
+set tc_logfile [ open_transcount_log gui $uniquelog ]
+if { $tc_logfile != "notclog" } {
+set tc_flog $tc_logfile
+} else {
+set tc_flog "notclog"
+}
+}
 set tclist [ thread::names ]
 if { [ info exists tc_threadID ] } {
 set idx [ lsearch $tclist $tc_threadID ]
@@ -889,7 +901,7 @@ LCD_Pixels 7 87 #626262 black white white $win_scale_fact
     #Add same padding
      incr varLCDy 3
      incr varLCDx 3
-showLCD 0
+#showLCD 0
 
 #emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width $scale_width -height $emug_height \
 #-axistextoffset 10 -autorange 1 -ticklen 5 -xref 75
@@ -915,6 +927,7 @@ proc ed_kill_transcount {args} {
    global _ED
    tsv::set application timeout 1
    ed_status_message -show "... Stopping Transaction Counter ..."
+   close_transcount_log gui
    update
    ed_transcount_button
    update
@@ -931,13 +944,6 @@ Attach .ed_mainFrame.notebook .ed_mainFrame.tc 2
 ed_status_message -finish "Transaction Counter Stopped"
 }
 
-proc post_kill_transcount_cleanup {} {
-global tc_threadID
-unset -nocomplain tc_threadID
-tsv::set application timeout 2
-tsv::unset application thecount
- }
-
 proc show_tc_errmsg {} {
 upvar #0 icons icons
 set ban [ create_image ban icons ]
@@ -953,27 +959,4 @@ catch { .ed_mainFrame.tc.g delete "all" }
 #error message is always followed by thread release before loop enter
 #so remove tc_threadID to prevent false positive on startup
 post_kill_transcount_cleanup
-}
-
-proc setlocaltcountvars { configdict allvars } {
-#set variables to values in dict
-if $allvars {
-dict for {descriptor attributes} $configdict  {
-if {$descriptor eq "connection" || $descriptor eq "tpcc" || $descriptor eq "tpch" } {
-foreach { val } [ dict keys $attributes ] {
-uplevel "variable $val"
-upvar 1 $val $val
-if {[dict exists $attributes $val]} {
-set $val [ dict get $attributes $val ]
-}}}}
-} else {
-dict for {descriptor attributes} $configdict  {
-if {$descriptor eq "connection" } {
-foreach { val } [ dict keys $attributes ] {
-uplevel "variable $val"
-upvar 1 $val $val
-if {[dict exists $attributes $val]} {
-set $val [ dict get $attributes $val ]
-}}}}
-}
 }
