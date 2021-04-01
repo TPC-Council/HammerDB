@@ -67,7 +67,7 @@ set timept(2) {xttimeproflog $totalvirtualusers $library
 set timept(3) {xtreport $myposition
 }
 #search for insert points and insert functions
-set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "package require tpcccommon" end ]
+set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "if \[catch \{package require tpcccommon\} \]" end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(1)+1l $timept(1)
 set timepi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(2)+1l $timept(2)
