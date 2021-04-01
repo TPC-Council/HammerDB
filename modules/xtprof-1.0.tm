@@ -333,7 +333,9 @@ set medianendclicks [ median [ dict values $endclicks ]]
 set medianendms [ median [ dict values $endms ]]
 foreach sproc $lev2uniquekeys {
 #$sproc-clickslist is the summary gathered from all virtual users
+if { [ llength [ set $sproc-clickslist ]] > 2 } {
 	    set sd [ sigma {*}[ set $sproc-clickslist ]]
+	} else { set sd 0 }
 set sortedclicks [lsort -integer [ set $sproc-clickslist ]]
 	   set calls [ llength $sortedclicks ]
 	   set min [ lindex $sortedclicks 0 ]
@@ -410,7 +412,11 @@ proc xttimeprofdump {myposition} {
 	    ############################################################
 	    #Add unsorted timings to clickslist
 	    dict set vutimings $fun clickslist [ set $fun-clickslist ]
+            if { [ llength [ set $fun-clickslist ]] > 2 } {
 	    dict set vutimings $fun sd [ sigma {*}[dict get $vutimings $fun clickslist] ]
+	    } else { 
+	    dict set vutimings $fun sd 0
+	    }
 	    #Sort the clickslist to calculate percentiles
 	    set $fun-clickslist [lsort -integer [ set $fun-clickslist ]]
 	    dict set vutimings $fun calls [ llength [ set $fun-clickslist ]]
