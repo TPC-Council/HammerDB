@@ -43,7 +43,7 @@ set allwi(5) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "promi
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(5)+1l $allwt(4)
 	}
    }
-timeprofile {
+ettimeprofile {
 #set additional text for all warehouses
 set timept(1) {set timeprofile "true";# Output virtual user response times
 }
@@ -55,6 +55,21 @@ set timept(3) {if {$timeprofile eq "true" && $myposition eq 2} {::etprof::printL
 set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(1) $timept(1)
 set timepi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "default \{" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(2)+1l $timept(2)
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert end-2l $timept(3)
+  }
+xttimeprofile {
+#set additional text for all warehouses
+set timept(1) {if [catch {package require xtprof} ] { error "Failed to load extended time profile functions" } else { namespace import xtprof::* }
+}
+set timept(2) {xttimeproflog $totalvirtualusers $library
+}
+set timept(3) {xtreport $myposition
+}
+#search for insert points and insert functions
+set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "package require tpcccommon" end ]
+.ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(1)+1l $timept(1)
+set timepi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(2)+1l $timept(2)
 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end-2l $timept(3)
   }

@@ -381,7 +381,8 @@ if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-if { $db_timeprofile } { shared_tpcc_functions "timeprofile" "false" }
+#Always run ettimeprofile in WS as the extended timeprofile uses a separate log
+if { $db_timeprofile } { shared_tpcc_functions "ettimeprofile" "false" }
         }
 break
     }
