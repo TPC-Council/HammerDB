@@ -222,7 +222,7 @@ set dbtoreport ""
 if {[catch {set dbdict [ ::XML::To_Dict config/database.xml ]} message ]} { ; } else {
 dict for {key value} $dbdict {
 dict for {key2 value2} $value {
-if { $value2 eq $library } {
+if { [ string match *$library* $value2 ] } {
 set dbtoreport [ dict get $value name ]
 break
       }
