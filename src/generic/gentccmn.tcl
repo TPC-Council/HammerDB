@@ -88,6 +88,7 @@ if { [catch {set tc_flog "notclog"} message]} { ; }
 
 proc write_to_transcount_log { number rdbms metric } {
 global tc_flog
+if { ![info exists tc_flog] } { set tc_flog "notclog"}
 upvar #0 genericdict genericdict
 if { $tc_flog != "notclog" } {
 dict with genericdict { dict with transaction_counter { set tstamp $tc_log_timestamps }}

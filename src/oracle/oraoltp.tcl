@@ -2164,6 +2164,7 @@ set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c u
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
 #LOGON
 proc OracleLogon { connectstring lda } {
 set lda [oralogon $connectstring ]
@@ -2452,6 +2453,7 @@ set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c u
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
 #LOGON
 proc OracleLogon { connectstring lda timesten } {
 set lda [oralogon $connectstring ]
@@ -2861,6 +2863,7 @@ if [catch {package require $library} message] { error "Failed to load $library -
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
+
 #LOGON
 proc OracleLogon { connectstring lda timesten } {
 set lda [oralogon $connectstring ]

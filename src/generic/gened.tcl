@@ -3181,10 +3181,15 @@ set db_async_scale "false"
 	}
 if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
 	}
+upvar #0 genericdict genericdict
+if {[dict exists $genericdict timeprofile profiler]} {
+set profiler [ dict get $genericdict timeprofile profiler]
+        }
+if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "ettimeprofile" }
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-if { $db_timeprofile } { shared_tpcc_functions "timeprofile" "false" }
+if { $db_timeprofile } { shared_tpcc_functions $profile_func "false" }
 	}
 break
     }

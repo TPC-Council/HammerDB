@@ -60,4 +60,8 @@
 	   <ws_port>8080</ws_port> 
 	   <sqlite_db>:memory:</sqlite_db> 
     </webservice>
+    <timeprofile>
+           <profiler>xtprof</profiler>
+           <xt_unique_log_name>0</xt_unique_log_name>
+    </timeprofile>
 </hammerdb>
