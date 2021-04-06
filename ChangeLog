@@ -934,3 +934,25 @@ Fix distribution of Warehouse across VUs for All Warehouse option. (#82)
 Consider changing "Benchmark Options" from TPC-C or TPC-H to something that
 underscores "based on TPC-C/TPC-H" (#46)
 GUI HD Display (#19)
+
+---------------------------------------------------------------------
+
+Version 4.1 April 2021
+
+Pull Requests & Issues
+
+Extended Time Profiling as per Issue #224 (#225)
+Fix for Issue #216 Unkown prepared statement handler with connect pool (#217)
+Add TX Counter to CLI and TX Counter logging (#215) 
+Adds feature enable Variable Load/Stress Testing enhancement workload (#211) 
+Fix for Issue #194 Postgres datatype change from number to integer (#204) 
+Swap column order in stock index in pgoltp.tcl (#193)
+Proposed solution to #189 - Wrong AWR Snapshots listed (#190)
+Update PostgreSQL Data Types and Hash Partition for Issue #187 (#188) 
+Add limit clause to TPC-H Oracle queries (#186) 
+Proposed fix to Issue #184 (#185) 
+Update CLI runtimer to asynchronous (#180) 
+Add task manager module (#178) 
+Add bgerror to CLI (#177) 
+Add indexes to PostgreSQL Foreign Keys (#170) 
+Fix distributescript applyctexthighlight error (#169)

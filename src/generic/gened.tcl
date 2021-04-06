@@ -1912,14 +1912,14 @@ if { $ntimes < 1 } { tk_messageBox -message "The number of iterations must be 1 
 proc about { } {
 global hdb_version
 tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2020
+Copyright (C) 2003-2021
 Steve Shaw\n" 
 }
 
 proc license { } {
 tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
-Copyright (C) 2003-2020 Steve Shaw
+Copyright (C) 2003-2021 Steve Shaw
 
 This program is free software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation,
