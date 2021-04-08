@@ -220,7 +220,7 @@ lappend startafterlist $step $startafter
 putscli "Setting $step to start after $startafter duration $duration VU count $vucount, Replica instance is [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
 #Apply settings, always set rampup to 0 as Primary does the rampup
 if { $prefix eq "ora" } {
-foreach command [ list "diset tpcc timeprofile false" "diset tpcc rampup 0" "diset tpcc duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
+foreach command [ list "diset tpcc ora_timeprofile false" "diset tpcc rampup 0" "diset tpcc duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
 } else {
 foreach command [ list "diset tpcc $prefix\_timeprofile false" "diset tpcc $prefix\_rampup 0" "diset tpcc $prefix\_duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
 }
