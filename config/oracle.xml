@@ -28,7 +28,7 @@
             <rampup>2</rampup>
             <duration>5</duration>
             <allwarehouse>false</allwarehouse>
-            <otimeprofile>false</otimeprofile>
+            <ora_timeprofile>false</ora_timeprofile>
 	    <async_scale>false</async_scale>
 	    <async_client>10</async_client>
 	    <async_verbose>false</async_verbose>
