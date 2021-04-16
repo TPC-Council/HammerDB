@@ -1113,7 +1113,7 @@ unset -nocomplain $newname
 lappend $newname $clist
 }
 #Prepare statements multiple times for stored procedure for each connection and add to cursor list
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } { 
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} cslist {csneworder cspayment csdelivery csstocklevel csorderstatus} cursor_list { neworder_cursors payment_cursors delivery_cursors stocklevel_cursors orderstatus_cursors } len { nolen pylen dllen sllen oslen } cnt { nocnt pycnt dlcnt slcnt oscnt } {
 unset -nocomplain $cursor_list
 set curcnt 0
 #For all of the connections
@@ -1194,7 +1194,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 foreach maria_handler [ dict values $connlist ] { 
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
 catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 }
@@ -1582,7 +1582,7 @@ mariaexec $maria_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
 #RUN TPC-C
 set maria_handler [ ConnectToMaria $host $port $socket $user $password $db ]
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $maria_handler $st ] }
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
 }
 set w_id_input [ list [ maria::sel $maria_handler "select max(w_id) from warehouse" -list ] ]
 #2.4.1.1 set warehouse_id stays constant for a given terminal
@@ -1622,7 +1622,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 }
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
 catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 }
@@ -1986,7 +1986,7 @@ mariaexec $maria_handler "prepare neword_st from 'CALL NEWORD(?,?,?,?,?,@disc,@l
 #RUN TPC-C
 set maria_handler [ ConnectToMaria $host $port $socket $user $password $db ]
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $maria_handler $st ] }
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
 }
 set w_id_input [ list [ maria::sel $maria_handler "select max(w_id) from warehouse" -list ] ]
 #2.4.1.1 set warehouse_id stays constant for a given terminal
@@ -2021,7 +2021,7 @@ if { $KEYANDTHINK } { thinktime 5 }
 }
 }
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
 catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 }
@@ -2389,7 +2389,7 @@ if { $async_verbose } { puts "Logging in $clientname" }
 set maria_handler [ ConnectToMariaAsynch $host $port $socket $user $password $db $clientname $async_verbose ]
 #RUN TPC-C
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { set $st [ prep_statement $maria_handler $st ] }
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
 }
 set w_id_input [ list [ maria::sel $maria_handler "select max(w_id) from warehouse" -list ] ]
 #2.4.1.1 set warehouse_id stays constant for a given terminal
@@ -2429,7 +2429,7 @@ if { $KEYANDTHINK } { async_thinktime 5 $clientname ostat $async_verbose }
 }
 }
 if {$prepare} {
-foreach st {neword_st payment_st ostat_st delivery_st slev_st} { 
+foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
 catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 }
