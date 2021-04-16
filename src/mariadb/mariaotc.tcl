@@ -11,7 +11,7 @@ proc read_more { MASTER library maria_host maria_port maria_socket maria_user ma
 set timeout 0
 set iconflag 0
 if { $interval <= 0 } { set interval 10 } 
-set gcol "orange"
+set gcol "#42ADB6"
 if { ![ info exists tcdata ] } { set tcdata {} }
 if { ![ info exists timedata ] } { set timedata {} }
 if { $bm eq "TPC-C" } {
