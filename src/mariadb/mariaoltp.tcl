@@ -1626,8 +1626,7 @@ foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
 catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 }
-mariaclose $maria_handler
-}
+mariaclose $maria_handler}
 if { $maria_connect_pool } {
 insert_mariaconnectpool_drivescript test sync
 }
@@ -2027,8 +2026,7 @@ catch {mariaexec $maria_handler "deallocate prepare $st"}
 }
 mariaclose $maria_handler
 }
-}
-}
+}}
 if { $maria_connect_pool } {
 insert_mariaconnectpool_drivescript timed sync
 }
