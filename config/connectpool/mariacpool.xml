@@ -2,7 +2,7 @@
 <connections>
     <c1>
 	<maria_host>host1</maria_host>
-        <maria_port>5432</maria_port>
+        <maria_port>3306</maria_port>
         <mariadb.socket>/tmp/mariadb.sock</mariadb.socket>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
@@ -10,7 +10,7 @@
     </c1>
     <c2>
 	<maria_host>host2</maria_host>
-        <maria_port>5432</maria_port>
+        <maria_port>3306</maria_port>
         <mariadb.socket>/tmp/mariadb.sock</mariadb.socket>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
@@ -18,7 +18,7 @@
     </c2>
     <c3>
 	<maria_host>host3</maria_host>
-        <maria_port>5432</maria_port>
+        <maria_port>3306</maria_port>
         <mariadb.socket>/tmp/mariadb.sock</mariadb.socket>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
