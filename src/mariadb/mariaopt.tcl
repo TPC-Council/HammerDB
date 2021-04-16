@@ -2,14 +2,20 @@ proc countmariaopts { bm } {
 upvar #0 icons icons
 upvar #0 configmariadb configmariadb
 upvar #0 genericdict genericdict
-global afval interval
-
+global afval interval tclog uniquelog tcstamp
+dict with genericdict { dict with transaction_counter {
+#variables for button options need to be global
+set interval $tc_refresh_rate
+set tclog $tc_log_to_temp
+set uniquelog $tc_unique_log_name
+set tcstamp $tc_log_timestamps
+}}
 setlocaltcountvars $configmariadb 1 
-variable myoptsfields 
+variable mariaoptsfields 
 if { $bm eq "TPC-C" } {
-set myoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get}} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
+set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get}} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
 } else {
-set myoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get}} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
+set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get}} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
 }
 if { [ info exists afval ] } {
 after cancel $afval
@@ -86,6 +92,35 @@ ttk::entry $Name -width 30 -textvariable interval
 grid $Prompt -column 0 -row 6 -sticky e
 grid $Name -column 1 -row 6 -sticky ew
 
+   set Name $Parent.f1.e7
+ttk::checkbutton $Name -text "Log Output to Temp" -variable tclog -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 7 -sticky w
+bind .countopt.f1.e7 <Button> {
+set opst [ .countopt.f1.e7 cget -state ]
+if {$opst != "disabled" && $tclog == 0} {
+.countopt.f1.e8 configure -state active
+.countopt.f1.e9 configure -state active
+        } else {
+set uniquelog 0
+set tcstamp 0
+.countopt.f1.e8 configure -state disabled
+.countopt.f1.e9 configure -state disabled
+                        }
+                }
+  set Name $Parent.f1.e8
+ttk::checkbutton $Name -text "Use Unique Log Name" -variable uniquelog -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 8 -sticky w
+        if {$tclog == 0} {
+        $Name configure -state disabled
+        }
+
+	 set Name $Parent.f1.e9
+ttk::checkbutton $Name -text "Log Timestamps" -variable tcstamp -onvalue 1 -offvalue 0
+   grid $Name -column 1 -row 9 -sticky w
+        if {$tclog == 0} {
+        $Name configure -state disabled
+        }
+
 bind .countopt.f1.e1 <Delete> {
 if [%W selection present] {
 %W delete sel.first sel.last
@@ -96,7 +131,7 @@ if [%W selection present] {
 
 set Name $Parent.b2
 ttk::button $Name  -command {
-unset myoptsfields
+unset mariaoptsfields
 destroy .countopt
 } -text Cancel
 
@@ -105,30 +140,39 @@ pack $Name -anchor nw -side right -padx 3 -pady 3
 set Name $Parent.b1
 if { $bm eq "TPC-C" } {
 ttk::button $Name -command {
-copyfieldstoconfig configmariadb [ subst $myoptsfields ] tpcc
-unset myoptsfields
-if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
-set interval 10 
-} else {
-dict set genericdict transaction_counter refresh_rate [.countopt.f1.e5 get]
-}
+copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpcc
+unset mariaoptsfields
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
+        dict set genericdict transaction_counter tc_refresh_rate 10
+           } else {
+        dict with genericdict { dict with transaction_counter {
+        set tc_refresh_rate [.countopt.f1.e5 get]
+        set tc_log_to_temp $tclog
+        set tc_unique_log_name $uniquelog
+        set tc_log_timestamps $tcstamp
+        }}
+        }
 destroy .countopt
 catch "destroy .tc"
 } -text {OK}
 } else {
 ttk::button $Name -command {
-copyfieldstoconfig configmariadb [ subst $myoptsfields ] tpch
-unset myoptsfields
-if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
-set interval 10 
-} else {
-dict set genericdict transaction_counter refresh_rate [.countopt.f1.e5 get]
-}
+copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpch
+unset mariaoptsfields
+if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
+        dict set genericdict transaction_counter tc_refresh_rate 10
+           } else {
+        dict with genericdict { dict with transaction_counter {
+        set tc_refresh_rate [.countopt.f1.e5 get]
+        set tc_log_to_temp $tclog
+        set tc_unique_log_name $uniquelog
+        set tc_log_timestamps $tcstamp
+        }}
+        }
 destroy .countopt
 catch "destroy .tc"
 } -text {OK}
 }
-
 pack $Name -anchor nw -side right -padx 3 -pady 3
 
 wm geometry .countopt +50+50
@@ -145,8 +189,8 @@ upvar #0 configmariadb configmariadb
 setlocaltpccvars $configmariadb
 
 #set matching fields in dialog to temporary dict
-variable myfields
-set myfields [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get}} tpcc {maria_user {.tpc.f1.e3 get} maria_pass {.tpc.f1.e4 get} maria_dbase {.tpc.f1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_connect_pool $maria_connect_pool} ]
+variable mariafields
+set mariafields [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get}} tpcc {maria_user {.tpc.f1.e3 get} maria_pass {.tpc.f1.e4 get} maria_dbase {.tpc.f1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_connect_pool $maria_connect_pool} ]
 set whlist [ get_warehouse_list_for_spinbox ]
 
 catch "destroy .tpc"
@@ -478,7 +522,7 @@ grid $Name -column 1 -row 26 -sticky ew
 #This is the Cancel button variables stay as before
 set Name $Parent.b2
 ttk::button $Name -command {
-unset myfields
+unset mariafields
 destroy .tpc
 } -text Cancel
 
@@ -489,8 +533,8 @@ set Name $Parent.b1
 switch $option {
 "drive" {
 ttk::button $Name -command {
-copyfieldstoconfig configmariadb [ subst $myfields ] tpcc
-unset myfields
+copyfieldstoconfig configmariadb [ subst $mariafields ] tpcc
+unset mariafields
 destroy .tpc
 loadtpcc
 } -text {OK}
@@ -499,8 +543,8 @@ loadtpcc
 ttk::button $Name -command {
 set maria_count_ware [ verify_warehouse $maria_count_ware 5000 ]
 set maria_num_vu [ verify_build_threads $maria_num_vu $maria_count_ware 512 ]
-copyfieldstoconfig configmariadb [ subst $myfields ] tpcc
-unset myfields
+copyfieldstoconfig configmariadb [ subst $mariafields ] tpcc
+unset mariafields
 destroy .tpc
 } -text {OK}
 }
@@ -521,8 +565,8 @@ upvar #0 configmariadb configmariadb
 setlocaltpchvars $configmariadb
 
 #set matching fields in dialog to temporary dict
-variable myfields
-set myfields [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get}} tpch {maria_tpch_user {.mytpch.f1.e3 get} maria_tpch_pass {.mytpch.f1.e4 get} maria_tpch_dbase {.mytpch.f1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query} ]
+variable mariafields
+set mariafields [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get}} tpch {maria_tpch_user {.mytpch.f1.e3 get} maria_tpch_pass {.mytpch.f1.e4 get} maria_tpch_dbase {.mytpch.f1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query} ]
 catch "destroy .mytpch"
 ttk::toplevel .mytpch
 wm transient .mytpch .ed_mainFrame
@@ -744,7 +788,7 @@ grid $Name -column 1 -row 19 -sticky w
 #This is the Cancel button variables stay as before
 set Name $Parent.b2
 ttk::button $Name -command {
-unset myfields
+unset mariafields
 destroy .mytpch
 } -text Cancel
 pack $Name -anchor nw -side right -padx 3 -pady 3
@@ -754,8 +798,8 @@ set Name $Parent.b1
 switch $option {
 "drive" {
 ttk::button $Name -command {
-copyfieldstoconfig configmariadb [ subst $myfields ] tpch
-unset myfields
+copyfieldstoconfig configmariadb [ subst $mariafields ] tpch
+unset mariafields
 destroy .mytpch
 loadtpch
 } -text {OK}
@@ -763,8 +807,8 @@ loadtpch
 "default" {
 ttk::button $Name -command {
 set maria_num_tpch_threads [ verify_build_threads $maria_num_tpch_threads 512 512 ]
-copyfieldstoconfig configmariadb [ subst $myfields ] tpch
-unset myfields
+copyfieldstoconfig configmariadb [ subst $mariafields ] tpch
+unset mariafields
 destroy .mytpch
 } -text {OK}
 }
