@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<maria>
+<mariadb>
     <connection>
         <maria_host>127.0.0.1</maria_host>
         <maria_port>3306</maria_port>
@@ -52,4 +52,4 @@
 	    <maria_cloud_query>false</maria_cloud_query>
         </driver>
     </tpch>
-</maria>
+</mariadb>

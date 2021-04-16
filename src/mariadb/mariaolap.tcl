@@ -6,9 +6,9 @@ proc build_mariatpch {} {
   } else {
     set library "mariatcl" 
   }
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpchvars $configmaria
+  setlocaltpchvars $configmariadb
   if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
   if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $maria_scale_fact TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ] in database [ string toupper $maria_tpch_dbase ] with storage engine [ string toupper $maria_tpch_storage_engine ]?" -type yesno ] == yes} { 
     if { $maria_num_tpch_threads eq 1 } {
@@ -19,7 +19,7 @@ proc build_mariatpch {} {
     set suppo 1
     set ntimes 1
     ed_edit_clear
-    set _ED(packagekeyname) "Maria TPROC-H creation"
+    set _ED(packagekeyname) "MariaDB TPROC-H creation"
     if { [catch {load_virtual} message]} {
       puts "Failed to create threads for schema creation: $message"
       return
@@ -624,12 +624,12 @@ proc loadmariatpch { } {
   } else { 
     set library "mariatcl" 
   }
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpchvars $configmaria
+  setlocaltpchvars $configmariadb
   ed_edit_clear
   .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-  set _ED(packagekeyname) "Maria TPROC-H"
+  set _ED(packagekeyname) "MariaDB TPROC-H"
   .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
   #EDITABLE OPTIONS##################################################
   set library $library ;# Maria Library
@@ -1206,12 +1206,12 @@ proc loadmariacloud {} {
   if {[dict exists $dbdict maria library ]} {
     set library [ dict get $dbdict maria library ]
   } else { set library "mariatcl" }
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpchvars $configmaria
+  setlocaltpchvars $configmariadb
   ed_edit_clear
   .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-  set _ED(packagekeyname) "Maria Cloud"
+  set _ED(packagekeyname) "MariaDB Cloud"
   .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
   #EDITABLE OPTIONS##################################################
   set library $library ;# Maria Library

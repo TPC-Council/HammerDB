@@ -1,10 +1,10 @@
 proc countmariaopts { bm } {
   upvar #0 icons icons
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   upvar #0 genericdict genericdict
   global afval interval
   
-  setlocaltcountvars $configmaria 1 
+  setlocaltcountvars $configmariadb 1 
   variable myoptsfields 
   if { $bm eq "TPC-C" } {
     set myoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get}} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
@@ -105,7 +105,7 @@ proc countmariaopts { bm } {
   set Name $Parent.b1
   if { $bm eq "TPC-C" } {
     ttk::button $Name -command {
-      copyfieldstoconfig configmaria [ subst $myoptsfields ] tpcc
+      copyfieldstoconfig configmariadb [ subst $myoptsfields ] tpcc
       unset myoptsfields
       if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
         set interval 10 
@@ -117,7 +117,7 @@ proc countmariaopts { bm } {
     } -text {OK}
   } else {
     ttk::button $Name -command {
-      copyfieldstoconfig configmaria [ subst $myoptsfields ] tpch
+      copyfieldstoconfig configmariadb [ subst $myoptsfields ] tpch
       unset myoptsfields
       if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
         set interval 10 
@@ -139,10 +139,10 @@ proc countmariaopts { bm } {
   
 proc configmariatpcc {option} {
   upvar #0 icons icons
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
 
   #set variables to values in dict
-  setlocaltpccvars $configmaria
+  setlocaltpccvars $configmariadb
 
   #set matching fields in dialog to temporary dict
   variable myfields
@@ -489,7 +489,7 @@ proc configmariatpcc {option} {
   switch $option {
     "drive" {
       ttk::button $Name -command {
-        copyfieldstoconfig configmaria [ subst $myfields ] tpcc
+        copyfieldstoconfig configmariadb [ subst $myfields ] tpcc
         unset myfields
         destroy .tpc
         loadtpcc
@@ -499,7 +499,7 @@ proc configmariatpcc {option} {
       ttk::button $Name -command {
         set maria_count_ware [ verify_warehouse $maria_count_ware 5000 ]
         set maria_num_vu [ verify_build_threads $maria_num_vu $maria_count_ware 512 ]
-        copyfieldstoconfig configmaria [ subst $myfields ] tpcc
+        copyfieldstoconfig configmariadb [ subst $myfields ] tpcc
         unset myfields
         destroy .tpc
       } -text {OK}
@@ -515,10 +515,10 @@ proc configmariatpcc {option} {
   
 proc configmariatpch {option} {
   upvar #0 icons icons
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
 
   #set variables to values in dict
-  setlocaltpchvars $configmaria
+  setlocaltpchvars $configmariadb
 
   #set matching fields in dialog to temporary dict
   variable myfields
@@ -754,7 +754,7 @@ proc configmariatpch {option} {
   switch $option {
     "drive" {
       ttk::button $Name -command {
-        copyfieldstoconfig configmaria [ subst $myfields ] tpch
+        copyfieldstoconfig configmariadb [ subst $myfields ] tpch
         unset myfields
         destroy .mytpch
         loadtpch
@@ -763,7 +763,7 @@ proc configmariatpch {option} {
     "default" {
       ttk::button $Name -command {
         set maria_num_tpch_threads [ verify_build_threads $maria_num_tpch_threads 512 512 ]
-        copyfieldstoconfig configmaria [ subst $myfields ] tpch
+        copyfieldstoconfig configmariadb [ subst $myfields ] tpch
         unset myfields
         destroy .mytpch
       } -text {OK}

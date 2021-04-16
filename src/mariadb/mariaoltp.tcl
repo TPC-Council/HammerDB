@@ -8,15 +8,15 @@ proc build_mariatpcc {} {
     set library "mariatcl" 
   }
 
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpccvars $configmaria
+  setlocaltpccvars $configmariadb
 
   if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
     set maria_connector "$maria_host:$maria_port" 
   }
 
-  if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $maria_count_ware Warehouse Maria TPROC-C schema\nin host [string toupper $maria_connector] under user [ string toupper $maria_user ] in database [ string toupper $maria_dbase ] with storage engine [ string toupper $maria_storage_engine ]?" -type yesno ] == yes} { 
+  if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $maria_count_ware Warehouse MariaDB TPROC-C schema\nin host [string toupper $maria_connector] under user [ string toupper $maria_user ] in database [ string toupper $maria_dbase ] with storage engine [ string toupper $maria_storage_engine ]?" -type yesno ] == yes} { 
     if { $maria_num_vu eq 1 || $maria_count_ware eq 1 } {
       set maxvuser 1
     } else {
@@ -1331,12 +1331,12 @@ proc loadmariatpcc { } {
   if {[dict exists $dbdict maria library ]} {
     set library [ dict get $dbdict maria library ]
   } else { set library "mariatcl" }
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpccvars $configmaria
+  setlocaltpccvars $configmariadb
   ed_edit_clear
   .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-  set _ED(packagekeyname) "Maria TPROC-C"
+  set _ED(packagekeyname) "MariaDB TPROC-C"
   .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
   #EDITABLE OPTIONS##################################################
   set library $library ;# Maria Library
@@ -1639,12 +1639,12 @@ proc loadtimedmariatpcc { } {
   if {[dict exists $dbdict maria library ]} {
     set library [ dict get $dbdict maria library ]
   } else { set library "mariatcl" }
-  upvar #0 configmaria configmaria
+  upvar #0 configmariadb configmariadb
   #set variables to values in dict
-  setlocaltpccvars $configmaria
+  setlocaltpccvars $configmariadb
   ed_edit_clear
   .ed_mainFrame.notebook select .ed_mainFrame.mainwin
-  set _ED(packagekeyname) "Maria TPROC-C Timed"
+  set _ED(packagekeyname) "MariaDB TPROC-C Timed"
   if { !$maria_async_scale } {
     #REGULAR TIMED SCRIPT
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
@@ -1787,7 +1787,7 @@ proc loadtimedmariatpcc { } {
           set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
           set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
           puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
-          puts [ testresult $nopm $tpm Maria ]
+          puts [ testresult $nopm $tpm MariaDB ]
           tsv::set application abort 1
           if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
             catch { mariaclose $maria_handler }
@@ -2182,7 +2182,7 @@ proc loadtimedmariatpcc { } {
             set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
             set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
             puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
-            puts [ testresult $nopm $tpm Maria ]
+            puts [ testresult $nopm $tpm MariaDB ]
             tsv::set application abort 1
             if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
             catch { mariaclose $maria_handler }

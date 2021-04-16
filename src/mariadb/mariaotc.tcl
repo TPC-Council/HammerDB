@@ -134,8 +134,8 @@ proc tcount_maria {bm interval masterthread} {
     thread::wait 
   }]
   #Setup Transaction Counter Connection Variables
-  upvar #0 configmaria configmaria
-  setlocaltcountvars $configmaria 1
+  upvar #0 configmariadb configmariadb
+  setlocaltcountvars $configmariadb 1
   set old 0
   #Call Transaction Counter to start read_more loop
   eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket $maria_user $maria_pass $maria_tpch_user $maria_tpch_pass $interval $old tce $bm }}]
