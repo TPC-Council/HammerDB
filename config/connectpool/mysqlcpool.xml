@@ -2,7 +2,7 @@
 <connections>
     <c1>
 	<mysql_host>host1</mysql_host>
-        <mysql_port>5432</mysql_port>
+        <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
 	<mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>
@@ -10,7 +10,7 @@
     </c1>
     <c2>
 	<mysql_host>host2</mysql_host>
-        <mysql_port>5432</mysql_port>
+        <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
 	<mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>
@@ -18,7 +18,7 @@
     </c2>
     <c3>
 	<mysql_host>host3</mysql_host>
-        <mysql_port>5432</mysql_port>
+        <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
 	<mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>

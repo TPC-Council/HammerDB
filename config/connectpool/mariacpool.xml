@@ -1,0 +1,50 @@
+<connpool>
+<connections>
+    <c1>
+	<maria_host>host1</maria_host>
+        <maria_port>3306</maria_port>
+        <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_user>root</maria_user>
+        <maria_pass>maria</maria_pass>
+        <maria_dbase>tpcc</maria_dbase>
+    </c1>
+    <c2>
+	<maria_host>host2</maria_host>
+        <maria_port>3306</maria_port>
+        <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_user>root</maria_user>
+        <maria_pass>maria</maria_pass>
+        <maria_dbase>tpcc</maria_dbase>
+    </c2>
+    <c3>
+	<maria_host>host3</maria_host>
+        <maria_port>3306</maria_port>
+        <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_user>root</maria_user>
+        <maria_pass>maria</maria_pass>
+        <maria_dbase>tpcc</maria_dbase>
+    </c3>
+</connections>
+<sprocs>
+  	<neworder>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</neworder>
+    	<payment>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</payment>
+    	<delivery>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</delivery>
+    	<stocklevel>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</stocklevel>
+    	<orderstatus>
+		<connections>c1 c2 c3</connections>
+    		<policy>round_robin</policy>
+	</orderstatus>
+</sprocs>
+</connpool>
