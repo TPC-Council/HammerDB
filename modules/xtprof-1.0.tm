@@ -229,32 +229,62 @@ break
     }
   }
 }
-#Extract xt_unique_log_name from generic.xml assume log name is not unique if config cannot be read
+#Extract xt_unique_log_name and xt_gather_timeout from generic.xml assume log name is not unique if config cannot be read. Assume timeout is 10 mins if config cannot be read.
 set xtunique_log_name 0
+set xtgather_timeout 10
+set 2key 0
 if {[catch {set gendict [ ::XML::To_Dict config/generic.xml ]} message ]} { ; } else {
 dict for {key value} $gendict {
 dict for {key2 value2} $value {
 if { $key2 eq "xt_unique_log_name" } {
 set xtunique_log_name $value2
-break
+incr 2key
+if { $2key eq 2 } { break }
       }
-    }
+if { $key2 eq "xt_gather_timeout" } {
+set xtgather_timeout $value2
+incr 2key
+if { $2key eq 2 } { break }
+        }
+     }
   }
 }
-#Wait for 5 minutes for all virtual users to have set their timing data in the thread shared keyed list
-for {set clnt 1} { $clnt <=300} {incr clnt} {
-set alldone true
-for {set f 2} {$f <= $totalvirtualusers} {incr f} {
-if {![ tsv::exists allvutimings $f ]} { set alldone false 
+if { [ string is entier $xtgather_timeout ] } { 
+set xtto [expr {$xtgather_timeout * 60}]
+} else {
+set xttto 600
+#Set xtgather_timout in case decided to print this value in future
+set xtgather_timeout 10
 }
+#Wait for xtto seconds for all virtual users to have set their timing data in the thread shared keyed list
+for {set clnt 1} { $clnt <= $xtto } {incr clnt} {
+set alldone true
+set vureported {}
+for {set f 2} {$f <= $totalvirtualusers} {incr f} {
+if {![ tsv::exists allvutimings $f ]} { 
+set alldone false 
+} else {
+lappend vureported $f
 	}
+}
 if $alldone { break } else { after 1000 }
 }
-if !$alldone { puts "WARNING:TIMING DATA INCOMPLETE" } else {
+if !$alldone { 
+if { [ llength $vureported ] eq 0 } {
+#tsv array allvutimings doesn't exist
+puts  "ERROR:Timing Gather Timed Out before any Virtual User Reported"
+return
+	} else {
+#tsv array exists but is not complete
+puts "WARNING:Timing Data Incomplete" 
+	}
+} else {
 puts -nonewline "Calculating timings..."
 }
 #Convert tsv keyed list to dict in the monitor thread
 for {set f 2} {$f <= $totalvirtualusers} {incr f} {
+#If Timing Data incomplete continue to next iteration in loop
+if {![ tsv::exists allvutimings $f ]} { continue }
 foreach func [ tsv::keylkeys allvutimings $f ] { dict set monitortimings $f $func [ join [ tsv::keylget allvutimings $f $func ]] }
 dict set clicktimings $f [ tsv::keylget allclicktimings $f msperclick ]
 dict set endclicks $f [ tsv::keylget allclicktimings $f endclicks ]
