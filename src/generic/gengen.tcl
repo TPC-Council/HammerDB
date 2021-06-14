@@ -10,8 +10,9 @@ if {  [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
 switch $rdbms {
         "Oracle" { set db "oracle" }
         "MSSQLServer" { set db "mssql" }
-        "DB2" { set db "db2" }
+        "Db2" { set db "db2" }
         "MySQL" { set db "mysql" }
+        "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
         "Redis" { set db "redis" }
         "Trafodion" { set db "traf" }
@@ -465,8 +466,9 @@ if {  [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
 switch $rdbms {
         "Oracle" { set db "oracle" }
         "MSSQLServer" { set db "mssql" }
-        "DB2" { set db "db2" }
+        "Db2" { set db "db2" }
         "MySQL" { set db "mysql" }
+        "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
         "Redis" { set db "redis" }
         "Trafodion" { set db "traf" }

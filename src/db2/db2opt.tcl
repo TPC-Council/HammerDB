@@ -499,8 +499,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set db2_count_ware [ verify_warehouse $db2_count_ware 5000 ]
-set db2_num_vu [ verify_build_threads $db2_num_vu $db2_count_ware 512 ]
+set db2_count_ware [ verify_warehouse $db2_count_ware 100000 ]
+set db2_num_vu [ verify_build_threads $db2_num_vu $db2_count_ware 1024 ]
 copyfieldstoconfig configdb2 [ subst $db2fields ] tpcc
 unset db2fields
 destroy .tpc

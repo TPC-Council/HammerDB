@@ -23,7 +23,7 @@
             <mssqls_durability>SCHEMA_AND_DATA</mssqls_durability>
         </schema>
         <driver>
-            <mssqls_total_iterations>1000000</mssqls_total_iterations>
+            <mssqls_total_iterations>10000000</mssqls_total_iterations>
             <mssqls_raiseerror>false</mssqls_raiseerror>
             <mssqls_keyandthink>false</mssqls_keyandthink>
 	    <mssqls_checkpoint>false</mssqls_checkpoint>

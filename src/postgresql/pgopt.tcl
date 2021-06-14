@@ -577,8 +577,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set pg_count_ware [ verify_warehouse $pg_count_ware 5000 ]
-set pg_num_vu [ verify_build_threads $pg_num_vu $pg_count_ware 512 ]
+set pg_count_ware [ verify_warehouse $pg_count_ware 100000 ]
+set pg_num_vu [ verify_build_threads $pg_num_vu $pg_count_ware 1024 ]
 copyfieldstoconfig configpostgresql [ subst $pgfields ] tpcc
 unset pgfields
 destroy .tpc

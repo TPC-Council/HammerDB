@@ -17,7 +17,7 @@
 	    <maria_prepared>false</maria_prepared>
         </schema>
         <driver>
-            <maria_total_iterations>1000000</maria_total_iterations>
+            <maria_total_iterations>10000000</maria_total_iterations>
             <maria_raiseerror>false</maria_raiseerror>
             <maria_keyandthink>false</maria_keyandthink>
             <maria_driver>test</maria_driver>

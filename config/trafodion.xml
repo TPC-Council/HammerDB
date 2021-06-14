@@ -20,7 +20,7 @@
             <trafodion_node_list>sandbox</trafodion_node_list>
         </schema>
         <driver>
-            <trafodion_total_iterations>1000000</trafodion_total_iterations>
+            <trafodion_total_iterations>10000000</trafodion_total_iterations>
             <trafodion_raiseerror>false</trafodion_raiseerror>
             <trafodion_keyandthink>false</trafodion_keyandthink>
             <traf_driver>test</traf_driver>

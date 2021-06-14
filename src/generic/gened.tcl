@@ -2746,7 +2746,7 @@ if {  ![ info exists bm ] } { set bm "TPC-C" }
 #generate list of warehouses for spinbox
 set whlist ""
 set i 1
-foreach j {10 100 1000 10000 40000} k {1 10 100 1000 10000} {
+foreach j {10 100 1000 10000 110000} k {1 10 100 1000 10000} {
 while {$i < $j} {
 lappend whlist $i 
 incr i $k
@@ -2850,8 +2850,8 @@ grid $Name -column 1 -row 3 -sticky ew
    set Name $Parent.b6
    ttk::button $Name -command {
 if { $bm eq "TPC-C" } {
-if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 30000 } { 
-	tk_messageBox -message "The number of warehouses must be a positive integer less than 30000" 
+	if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 100000 } {
+        tk_messageBox -message "The number of warehouses must be a positive integer less than or equal to 100000"
 	set gen_count_ware 1
 	}
 if {$gen_num_vu > $gen_count_ware} {
@@ -2859,7 +2859,7 @@ set gen_num_vu $gen_count_ware
                 }
 }
 if { ![string is integer -strict $gen_num_vu] || $gen_num_vu < 1 || $gen_num_vu > 1024 } { 
-	tk_messageBox -message "The number of virutal users must be a positive integer less than 1024" 
+	tk_messageBox -message "The number of virtual users must be a positive integer less than 1024" 
 	set gen_num_vu 1
 	}
          set gen_directory [.dgopt.f1.e3 get]
@@ -3226,7 +3226,7 @@ applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
 proc get_warehouse_list_for_spinbox {} {
 set whlist ""
 set i 1
-foreach j {10 100 1000 6000} k {1 10 100 1000} {
+foreach j {10 100 1000 10000 110000} k {1 10 100 1000 10000} {
 while {$i < $j} {
 lappend whlist $i
 incr i $k

@@ -301,8 +301,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set trafodion_count_ware [ verify_warehouse $trafodion_count_ware 5000 ]
-set trafodion_num_vu [ verify_build_threads $trafodion_num_vu $trafodion_count_ware 512 ]
+set trafodion_count_ware [ verify_warehouse $trafodion_count_ware 100000 ]
+set trafodion_num_vu [ verify_build_threads $trafodion_num_vu $trafodion_count_ware 1024 ]
 copyfieldstoconfig configtrafodion [ subst $traffields ] tpcc
 unset traffields
 destroy .tpc
