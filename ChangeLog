@@ -941,6 +941,7 @@ Version 4.1 April 2021
 
 Pull Requests & Issues
 
+Update ora_timeprofile variable for runstep compatibility (#228)
 Extended Time Profiling as per Issue #224 (#225)
 Fix for Issue #216 Unkown prepared statement handler with connect pool (#217)
 Add TX Counter to CLI and TX Counter logging (#215) 
@@ -956,3 +957,14 @@ Add task manager module (#178)
 Add bgerror to CLI (#177) 
 Add indexes to PostgreSQL Foreign Keys (#170) 
 Fix distributescript applyctexthighlight error (#169)
+
+---------------------------------------------------------------------
+
+Version 4.2 June 2021
+
+Pull Requests & Issues
+
+Update to increase TPROC-C Schema Size Limits for Issue #250 (#251)
+Fix for Timing Data Times Out (#248)
+Fix for Issue #242 can't read tc_flog no such variable #242 (#243)
+Add MariaDB as a separate database #54 (#234)
