@@ -957,3 +957,14 @@ Add task manager module (#178)
 Add bgerror to CLI (#177) 
 Add indexes to PostgreSQL Foreign Keys (#170) 
 Fix distributescript applyctexthighlight error (#169)
+
+---------------------------------------------------------------------
+
+Version 4.2 June 2021
+
+Pull Requests & Issues
+
+Update to increase TPROC-C Schema Size Limits for Issue #250 (#251)
+Fix for Timing Data Times Out (#248)
+Fix for Issue #242 can't read tc_flog no such variable #242 (#243)
+Add MariaDB as a separate database #54 (#234)
