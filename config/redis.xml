@@ -11,7 +11,7 @@
             <redis_num_vu>1</redis_num_vu>
         </schema>
         <driver>
-            <redis_total_iterations>1000000</redis_total_iterations>
+            <redis_total_iterations>10000000</redis_total_iterations>
             <redis_raiseerror>false</redis_raiseerror>
             <redis_keyandthink>false</redis_keyandthink>
             <redis_driver>test</redis_driver>

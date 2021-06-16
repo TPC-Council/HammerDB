@@ -1046,8 +1046,8 @@ switch  $option {
 vu {
 set gen_num_vu $val
 if { $bm eq "TPC-C" } {
-if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 30000 } { 
-	tk_messageBox -message "The number of warehouses must be a positive integer less than 30000" 
+if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 100000 } { 
+	tk_messageBox -message "The number of warehouses must be a positive integer less than or equal to 100000" 
 	#puts -nonewline "setting to value: "
 	set gen_num_vu 1
         set virtual_users 1
@@ -1061,7 +1061,7 @@ if { $gen_num_vu > $gen_count_ware } {
 	return
 	}}
 if { ![string is integer -strict $gen_num_vu] || $gen_num_vu < 1 || $gen_num_vu > 1024 } { 
-	tk_messageBox -message "The number of virutal users must be a positive integer less than 1024" 
+	tk_messageBox -message "The number of virtual users must be a positive integer less than 1024" 
 	#puts -nonewline "setting to value: "
 	set gen_num_vu 1
         set virtual_users 1

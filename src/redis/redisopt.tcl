@@ -349,8 +349,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set redis_count_ware [ verify_warehouse $redis_count_ware 5000 ]
-set redis_num_vu [ verify_build_threads $redis_num_vu $redis_count_ware 512 ]
+set redis_count_ware [ verify_warehouse $redis_count_ware 100000 ]
+set redis_num_vu [ verify_build_threads $redis_num_vu $redis_count_ware 1024 ]
 copyfieldstoconfig configredis [ subst $redfields ] tpcc
 unset redfields
 destroy .tpc

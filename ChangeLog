@@ -941,6 +941,7 @@ Version 4.1 April 2021
 
 Pull Requests & Issues
 
+Update ora_timeprofile variable for runstep compatibility (#228)
 Extended Time Profiling as per Issue #224 (#225)
 Fix for Issue #216 Unkown prepared statement handler with connect pool (#217)
 Add TX Counter to CLI and TX Counter logging (#215) 

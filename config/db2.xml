@@ -17,7 +17,7 @@
 	    <db2_partition>false</db2_partition>
         </schema>
         <driver>
-            <db2_total_iterations>1000000</db2_total_iterations>
+            <db2_total_iterations>10000000</db2_total_iterations>
             <db2_raiseerror>false</db2_raiseerror>
             <db2_keyandthink>false</db2_keyandthink>
             <db2_driver>test</db2_driver>

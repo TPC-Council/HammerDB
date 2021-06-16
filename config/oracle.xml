@@ -20,7 +20,7 @@
 	    <tpcc_tt_compat>false</tpcc_tt_compat>
         </schema>
         <driver>
-            <total_iterations>1000000</total_iterations>
+            <total_iterations>10000000</total_iterations>
             <raiseerror>false</raiseerror>
             <keyandthink>false</keyandthink>
 	    <checkpoint>false</checkpoint>
