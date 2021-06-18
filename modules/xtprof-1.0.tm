@@ -13,6 +13,12 @@ set TimeProfilerMode 0
 if [catch {package require xml} ] { error "Failed to load XML functions into Time Profile Package" } 
 if { [info exists TimeProfilerMode] } {
 puts "Initializing xtprof time profiler"
+if {[ tsv::exists allvutimings 2 ]} { 
+tsv::unset allvutimings
+	}
+if {[ tsv::exists allclicktimings 2 ]} { 
+tsv::unset allclicktimings
+	}
     proc xttimeprofiler {args} {
         global ProfilerArray
         

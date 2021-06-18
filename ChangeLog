@@ -964,6 +964,7 @@ Version 4.2 June 2021
 
 Pull Requests & Issues
 
+Xtprof timer can retain old data #253 (#254)
 Update to increase TPROC-C Schema Size Limits for Issue #250 (#251)
 Fix for Timing Data Times Out (#248)
 Fix for Issue #242 can't read tc_flog no such variable #242 (#243)
