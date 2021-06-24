@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.1.</para>
+      <para>The following are the release notes for HammerDB v4.2.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -67,24 +67,28 @@
       </section>
 
       <section>
-        <title>PostgreSQL TPROC-C Schema refactoring</title>
+        <title>MariaDB added as database separate from MySQL</title>
 
-        <para>From version 4.1 the PostgreSQL has been refactored changing the
-        datatypes according to PostgreSQL community recommendations.
-        Additional hash partitioning has been enabled for the orderline table
-        that has been measured to reduce table bloat over repeated tests. Both
-        changes have been measured to improve performance over the previous
-        PostgreSQL schema by up to 3%. </para>
+        <para>Prior to version 4.2 MariaDB was supported using the MySQL
+        workload, this required the separate installation of the MySQL 8.0
+        client. From version 4.2 MariaDB has been added as a separate database
+        using the MariaDB client meaning no separate installation is required.
+        At version 4.2 the MariaDB workload implementation is the same as the
+        MySQL workload, however these are expected to diverge over time by
+        taking advantage of different database features.</para>
       </section>
 
       <section>
-        <title>Oracle and PostgreSQL TPROC-H Schema and Query updates</title>
+        <title>Increase of TPROC-C Schema Size Limits to 100,000
+        warehouses</title>
 
-        <para>For PostgreSQL additional indexes have been added to foreign
-        keys for the TPROC-H workload. For Oracle a missing limit clause was
-        added to some TPROC-H queries. These changes improve performance of
-        TPROC-H workloads for PostgreSQL and Oracle compared to v4.0 and
-        earlier. </para>
+        <para>From version 4.2 the TPROC-C Schema Size Limits have been
+        increased from 5,000 for the GUI/CLI schema build and 30,000 for the
+        datagen feature to 100,000 for both enabling the building of larger
+        schemas. This enables the testing of larger scaled workload scenarios
+        however it is recommended to read the documentation carefully to
+        prevent over-provisioning of the schema for the intended test and
+        system.</para>
       </section>
 
       <section>
@@ -168,53 +172,24 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.1 New Features</title>
+      <title>HammerDB v4.2 New Features</title>
 
-      <para>HammerDB v4.1 New Features are all referenced to GitHub issues,
+      <para>HammerDB v4.2 New Features are all referenced to GitHub issues,
       where more details for each new feature and related pull requests can be
       found here: <link
       xlink:href="https://github.com/TPC-Council/HammerDB/issues">https://github.com/TPC-Council/HammerDB/issues</link></para>
 
-      <para>[TPC-Council#228] Update ora_timeprofile variable for runstep
-      compatibility</para>
+      <para>[TPC-Council#253] Xtprof timer can retain old data</para>
 
-      <para>[TPC-Council#225] Extended Time Profiling as per Issue #224</para>
+      <para>[TPC-Council#250] Update to increase TPROC-C Schema Size Limits
+      for Issue</para>
 
-      <para>[TPC-Council#217] Fix for Issue #216 Unknown prepared statement
-      handler with connect pool</para>
+      <para>[TPC-Council#248] Fix for Timing Data Times Out</para>
 
-      <para>[TPC-Council#215] Add TX Counter to CLI and TX Counter
-      logging</para>
+      <para>[TPC-Council#242] Fix for Issue #242 can't read tc_flog no such
+      variable</para>
 
-      <para>[TPC-Council#211] Adds feature enable Variable Load/Stress Testing
-      enhancement workload</para>
-
-      <para>[TPC-Council#204] Fix for Issue #194 Postgres datatype change from
-      number to integer</para>
-
-      <para>[TPC-Council#193] Swap column order in stock index in
-      pgoltp.tcl</para>
-
-      <para>[TPC-Council#190] Proposed solution to #189 - Wrong AWR Snapshots
-      listed</para>
-
-      <para>[TPC-Council#188] Update PostgreSQL Data Types and Hash Partition
-      for Issue #187</para>
-
-      <para>[TPC-Council#186] Add limit clause to TPC-H Oracle queries</para>
-
-      <para>[TPC-Council#184] Proposed fix to Issue #184</para>
-
-      <para>[TPC-Council#180] Update CLI runtimer to asynchronous</para>
-
-      <para>[TPC-Council#178] Add task manager module</para>
-
-      <para>[TPC-Council#177] Add bgerror to CLI</para>
-
-      <para>[TPC-Council#170] Add indexes to PostgreSQL Foreign Keys</para>
-
-      <para>[TPC-Council#169] Fix distributescript applyctexthighlight
-      error</para>
+      <para>[TPC-Council#54] Add MariaDB as a separate database</para>
     </section>
 
     <section>
@@ -249,7 +224,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
               <row>
                 <entry>Linux</entry>
 
-                <entry>Ubuntu 17.X 18.X 19.X / RHEL 7.X RHEL 8.X</entry>
+                <entry>Ubuntu 17.X 18.X 19.X 20.X / RHEL 7.X RHEL 8.X</entry>
               </row>
 
               <row>
@@ -296,9 +271,15 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             </row>
 
             <row>
-              <entry>MySQL (MariaDB) (Amazon Aurora)</entry>
+              <entry>MySQL (Amazon Aurora)</entry>
 
-              <entry>5.7 / 8.0 / 10.2 / 10.3 / 10.4 / 10.5</entry>
+              <entry>5.7 / 8.0</entry>
+            </row>
+
+            <row>
+              <entry>MariaDB</entry>
+
+              <entry>10.2 / 10.3 / 10.4 / 10.5</entry>
             </row>
 
             <row>
@@ -323,12 +304,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.1-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.2-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.1-Linux.tar.gz 
-sha1sum HammerDB-4.1-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.2-Linux.tar.gz 
+sha1sum HammerDB-4.2-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -432,7 +413,10 @@ sha1sum HammerDB-4.1-Linux.tar.gz</programlisting>
           </mediaobject>
         </figure>
 
-        <para>HammerDB will start ready for you to use</para>
+        <para>HammerDB will start ready for you to use. The order of the
+        databases in the treeview is in the order that they were added to
+        HammerDB, however this is user configurable. To change the order see
+        section 9 XML Configuration further in this Chapter.</para>
 
         <figure>
           <title>HammerDB Started</title>
@@ -523,10 +507,10 @@ sha1sum HammerDB-4.1-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.1.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.2.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.1.</para>
+        HammerDB-4.2.</para>
       </section>
 
       <section>
@@ -573,7 +557,7 @@ sha1sum HammerDB-4.1-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.1
+      <programlisting>HammerDB CLI v4.2
 Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -588,6 +572,8 @@ Checking database library for MySQL
 Success ... loaded library mysqltcl for MySQL
 Checking database library for PostgreSQL
 Success ... loaded library Pgtcl for PostgreSQL
+Checking database library for MariaDB
+Success ... loaded library mariatcl for MariaDB
 
 hammerdb&gt;
 </programlisting>
@@ -784,6 +770,18 @@ Success ... loaded library mysqltcl for MySQL</programlisting>
             </row>
 
             <row>
+              <entry>MariaDB Linux</entry>
+
+              <entry>libmariadb.so</entry>
+            </row>
+
+            <row>
+              <entry>MariaDB Windows</entry>
+
+              <entry>LIBMARIADB.DLL</entry>
+            </row>
+
+            <row>
               <entry>PostgreSQL Linux</entry>
 
               <entry>libpq.so</entry>
@@ -861,18 +859,27 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.1 (4.0 and version 3.3) has been built and
-        tested against a MySQL 8.0 client installation, hammerDB version
+        <para>HammerDB version 4.2 (4.1/4.0 and version 3.3) has been built
+        and tested against a MySQL 8.0 client installation, hammerDB version
         3.0-3.2 has been built against MySQL 5.7. On Linux this means that
         HammerDB will require a MySQL client library called
         libmysqlclient.so.21 for HammerDB version 4.1,4.0 and 3.3 and
         libmysqlclient.so.20 for version 3.2 and earlier. This client library
         needs to be referenced in the LD_LIBRARY_PATH as shown previously in
-        this section. Note that for testing MariaDB you also need the
-        libmysqlclient.so.21 from an installation of MySQL 8.0. You do not
-        need to install MySQL 8.0 as the only file you need is
-        "libmysqlclient.so.21". With this file installed and in the library
-        path the HammerDB client can connect to MariaDB.</para>
+        this section. On Windows libmysqll.dll is required and should be
+        referenced in the PATH environment variable.</para>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>HammerDB version 4.2 has been built and tested against MariaDB
+        10.5.10 client installation. On Linux this means that HammerDB will
+        require a MariaDB client library called libmariadb.so.3. This client
+        library needs to be referenced in the LD_LIBRARY_PATH as shown
+        previously in this section. On Windows the client library is called
+        libmariadb.dll and should be referenced in the PATH environment
+        variable.</para>
       </section>
 
       <section>
@@ -1516,7 +1523,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
 
       <para>Additionally it is important to understand the workload. By
       default each virtual user has the concept of a home warehouses where
-      approximately 75% of its workload will take place. With HammerDB this
+      approximately 90% of its workload will take place. With HammerDB this
       home warehouse is chosen at random at the start of the test and remains
       fixed. For example it can then be understood that if you configure a
       schema with 1000 warehouses and run a test with 10 virtual users by
@@ -1693,7 +1700,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         bytecode and you can observe this by running a Linux utility such as
         perf to see that the top function is TEBCresume. (Tcl Execute ByteCode
         Resume). During normal HammerDB operations TEBCResume should also be
-        the top function for the same reason.</para>
+        the top client function for the same reason.</para>
 
         <programlisting>Samples: 67K of event 'cycles:ppp', Event count (approx.): 33450114923
 Overhead  Shared Object                  Symbol
@@ -2090,7 +2097,8 @@ DB20000I  The SQL command completed successfully.
         example the following on MySQL 8.0.</para>
 
         <programlisting>mysql&gt; alter user 'root'@'localhost' identified by 'mysql';
-Query OK, 0 rows affected (0.00 sec)</programlisting>
+Query OK, 0 rows affected (0.00 sec)
+</programlisting>
 
         <para>and the following on MySQL 5.6</para>
 
@@ -2130,6 +2138,41 @@ owners.
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 mysql&gt; 
 </programlisting>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>You should have the MariaDB database software installed and
+        running. Make sure you set a password for either the root user or a
+        user with the correct privileges to create the TPROC-C database, for
+        example.</para>
+
+        <programlisting>Server version: 10.5.10-MariaDB MariaDB Server
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; SET PASSWORD FOR 'root'@localhost = PASSWORD("maria");
+</programlisting>
+
+        <para>When choosing a MariaDB Server to test note that HammerDB load
+        testing can drive your system utilization to maximum levels and
+        therefore testing an active production system is not recommended. When
+        you have installed the load generation server and SUT database and
+        have verified that you can communicate between them by logging in
+        remotely you can proceed to building a test schema. Note that when
+        HammerDB is running on the same system as the MariaDB server you have
+        the option of connecting through sockets. The socket name is defined
+        by the MariaDB socket parameter with the HammerDB default being
+        /tmp/mariadb.sock.</para>
+
+        <programlisting>./bin/mysql -uroot -S/tmp/mariadb.sock -p
+Enter password: 
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 6
+Server version: 10.5.10-MariaDB MariaDB Server
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; </programlisting>
       </section>
 
       <section>
@@ -2915,6 +2958,131 @@ GO
       </section>
 
       <section>
+        <title>MariaDB Schema Build Options</title>
+
+        <figure>
+          <title>MariaDB Build Options</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch4-7a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para><table>
+            <title>MariaDB Build Options</title>
+
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry align="center">Option</entry>
+
+                  <entry align="center">Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>MariaDB Host</entry>
+
+                  <entry>The MariaDB Host Name is the host name that your load
+                  generation server will use to connect to the database
+                  running on the SUT database server.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Port</entry>
+
+                  <entry>The MariaDB Port is the network port that your load
+                  generation server will use to connect to the database
+                  running on the SUT database server. In most cases this will
+                  be the default port of 3306.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Socket</entry>
+
+                  <entry>The MariaDB Socket option is enabled on Linux only.
+                  If HammerDB is running on the same server and the MariaDB
+                  Host is 127.0.0.1 or localhost then HammerDB will open a
+                  connection on the socket given instead of using
+                  TCP/IP.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User</entry>
+
+                  <entry>The MariaDB User is the user which has permission to
+                  create a database and you previously granted access to from
+                  the load generation server. The root user already exists in
+                  all MariaDB databases and has the necessary permissions to
+                  create the TPROC-C database.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User Password</entry>
+
+                  <entry>The MariaDB user password is the password for the
+                  user defined as the MariaDB User. You will need to remember
+                  the MariaDB user name and password for running the TPROC-C
+                  driver script after the database is built.</entry>
+                </row>
+
+                <row>
+                  <entry>TRPOC-C MariaDB Database</entry>
+
+                  <entry>The MariaDB Database is the database that will be
+                  created containing the TPROC-C schema creation. There must
+                  have sufficient free space for the database to be
+                  created.</entry>
+                </row>
+
+                <row>
+                  <entry>Transactional Storage Engine</entry>
+
+                  <entry>Use the "show engine" command to display available
+                  storage engines and select a storage engine that supports
+                  transactions. By default set to InnoDB.</entry>
+                </row>
+
+                <row>
+                  <entry>Number of Warehouses</entry>
+
+                  <entry>The Number of Warehouses is selected by a listbox.
+                  You should set this value to number of warehouses you have
+                  chosen for your test.</entry>
+                </row>
+
+                <row>
+                  <entry>Virtual Users to Build Schema</entry>
+
+                  <entry>The Virtual Users to Build Schema is the number of
+                  Virtual Users to be created on the Load Generation Server
+                  that will complete your multi-threaded schema build. You
+                  should set this value to either the number of warehouses you
+                  are going to create (You cannot set the number of virtual
+                  users lower than the number of warehouses value) or the
+                  number of cores/Hyper-Threads on your Load Generation
+                  Server. If you have a significantly larger core/Hyper-Thread
+                  count on your Database Server then also installing HammerDB
+                  locally n this server as well to run the schema build can
+                  take advantage of the higher core count to run the build
+                  more quickly.</entry>
+                </row>
+
+                <row>
+                  <entry>Partition Order Line Table</entry>
+
+                  <entry>Partition Order Line Table for improved
+                  scalability.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table></para>
+      </section>
+
+      <section>
         <title>PostgreSQL Schema Build Options</title>
 
         <figure>
@@ -3376,7 +3544,7 @@ db2 =&gt;
         <para>If you have made a mistake simply close the application and run
         the following SQL to undo the database you have created.</para>
 
-        <programlisting>SQL&gt;drop database tpcc;</programlisting>
+        <programlisting>mysql&gt;drop database tpcc;</programlisting>
 
         <para>you can verify the contents with SQL or your favourite admin
         tool as the newly created user.</para>
@@ -3441,6 +3609,86 @@ mysql&gt; select routine_name from information_schema.routines where routine_sch
 | SLEV         |
 +--------------+
 5 rows in set (0.03 sec)
+</programlisting>
+      </section>
+
+      <section>
+        <title>Deleting or Verifying the MariaDB Schema</title>
+
+        <para>If you have made a mistake simply close the application and run
+        the following SQL to undo the database you have created.</para>
+
+        <programlisting>Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; drop database tpcc;
+Query OK, 9 rows affected (0.137 sec)
+MariaDB [(none)]&gt; </programlisting>
+
+        <para>you can verify the contents with SQL or your favourite admin
+        tool as the newly created user.</para>
+
+        <programlisting>MariaDB [(none)]&gt; use tpcc;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB [tpcc]&gt; show tables;
++----------------+
+| Tables_in_tpcc |
++----------------+
+| customer       |
+| district       |
+| history        |
+| item           |
+| new_order      |
+| order_line     |
+| orders         |
+| stock          |
+| warehouse      |
++----------------+
+9 rows in set (0.001 sec)
+
+MariaDB [tpcc]&gt; select * from warehouse limit 1 \G
+*************************** 1. row ***************************
+      w_id: 1
+     w_ytd: 4976593.00
+     w_tax: 0.1300
+    w_name: vBxysQ
+w_street_1: bWwcsLWCJ9Ftiw
+w_street_2: loLreYeoH3icmKt
+    w_city: dUB0TsCnUUHD
+   w_state: sQ
+     w_zip: 632911111
+1 row in set (0.002 sec)
+
+MariaDB [tpcc]&gt; show indexes from warehouse \G
+*************************** 1. row ***************************
+        Table: warehouse
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: w_id
+    Collation: A
+  Cardinality: 20
+     Sub_part: NULL
+       Packed: NULL
+         Null: 
+   Index_type: BTREE
+      Comment: 
+Index_comment: 
+1 row in set (0.001 sec)
+
+MariaDB [tpcc]&gt; select routine_name from information_schema.routines where routine_schema = 'TPCC';
++--------------+
+| routine_name |
++--------------+
+| DELIVERY     |
+| NEWORD       |
+| OSTAT        |
+| PAYMENT      |
+| SLEV         |
++--------------+
+5 rows in set (0.008 sec)
 </programlisting>
       </section>
 
@@ -3872,8 +4120,7 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
 
         <para>Time Profile functionality is enabled by selecting the Time
         Profile checkbox in the driver options for the GUI or setting the
-        database prefix specific timeprofile option to true in the CLI.
-        </para>
+        database prefix specific timeprofile option to true in the CLI.</para>
 
         <para/>
 
@@ -3893,11 +4140,12 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
         is selected by modifying the timeprofile section in the generic.xml
         file with the options being xtprof and etprof respectively. The
         additional option xt_unique_log_name when set to 1 enables a unique
-        log name to be used for the output of the time profiling data. </para>
+        log name to be used for the output of the time profiling data.</para>
 
         <programlisting>&lt;timeprofile&gt;
            &lt;profiler&gt;xtprof&lt;/profiler&gt;
            &lt;xt_unique_log_name&gt;0&lt;/xt_unique_log_name&gt;
+           &lt;xt_gather_timeout&gt;10&lt;/xt_gather_timeout&gt;
 &lt;/timeprofile&gt;</programlisting>
 
         <para>When xtprof is selected HammerDB will collect time profiling
@@ -3910,12 +4158,33 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
         throughput. Calculations take place after the test has run and will
         therefore not impact the performance measurements.</para>
 
+        <para>The xt_gather_timeout option sets a user configurable value in
+        minutes for the time for HammerDB to wait for Virtual Users to report
+        timings when event driven scaling is used with many 1000's of
+        sessions. In this scenario xt_gather_timeout defines how long to wait
+        for the Virtual User timing report until proceeding to the
+        calculation. If no Virtual Users have reported an error is printed, if
+        a subset of the Virtual Users have reported a timing report is printed
+        for those Virtual Users that did report.</para>
+
+        <programlisting>Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:5 VU * 10 AC = 50 Active Sessions configured
+Vuser 1:TEST RESULT : System achieved 53 NOPM from 399 PostgreSQL TPM
+Vuser 1:Gathering timing data from Active Virtual Users...
+Vuser 4:All asynchronous clients complete
+Vuser 5:All asynchronous clients complete
+Vuser 3:All asynchronous clients complete
+Vuser 2:All asynchronous clients complete
+Vuser 1:WARNING:Timing Data Incomplete
+Vuser 1:4 out of 5 Virtual Users reported
+Vuser 1:Writing timing data to /tmp/hdbxtprofile.log</programlisting>
+
         <para>Within the logfile HammerDB will report for all Active Virtual
         Users meaning the first Virtual User will be 2 as Virtual User 1 is
         the monitor. The report will also provide a summary of all Active
         Virtual Users. Note that for the summary the total time will be for
         all virtual users and therefore will be equivalent to the running time
-        multiplied by the virtual user count. </para>
+        multiplied by the virtual user count.</para>
 
         <table>
           <title>Xt Time Profile</title>
@@ -3952,7 +4221,7 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
               <row>
                 <entry>MAX</entry>
 
-                <entry>Maximum response time in milliseconds. </entry>
+                <entry>Maximum response time in milliseconds.</entry>
               </row>
 
               <row>
@@ -3993,7 +4262,7 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
 
                 <entry>Ratio showing percentage time taken for that stored
                 procedure. The total of these values may be less than 100% as
-                only timings for the stored procedures are shown. </entry>
+                only timings for the stored procedures are shown.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -4705,7 +4974,7 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
       </section>
 
       <section>
-        <title>Step Testing with Variable Load </title>
+        <title>Step Testing with Variable Load</title>
 
         <para>Step testing is methodology of varying the load on the database
         over a period time. In HammerDB this variable load us achieved by
@@ -4721,7 +4990,7 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
         best for capturing changes in response times and transaction rates
         throughout the test for further analysis such as rapidly finding peak
         performance in one test by increasing the load and observing the
-        transaction rates. </para>
+        transaction rates.</para>
 
         <figure>
           <title>Step Test</title>
@@ -4741,7 +5010,7 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
         replicas defined) the configuration takes the time after the previous
         replica started, the duration to run (with no rampup as the primary
         has already done the rampup) and the number of virtual users, all
-        other configuration is inherited from the primary. </para>
+        other configuration is inherited from the primary.</para>
 
         <programlisting>&lt;steps&gt;
 &lt;replica1&gt;
@@ -4767,7 +5036,7 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
 &lt;/steps&gt;</programlisting>
 
         <para>When the workload is started it will provide a summary of the
-        configuration. </para>
+        configuration.</para>
 
         <programlisting>primary starts immediately, runs rampup for 2 minutes then runs test for 5 minutes with 2 Active VU
 replica1 starts 1 minutes after rampup completes and runs test for 4 minutes with 2 Active VU
@@ -4784,7 +5053,7 @@ replica4 starts 1 minutes after previous replica starts and runs test for 1 minu
         then running for 4,3,2 and 1 minute respectively meaning primary and
         replicas complete at the same time. To start a step workload configure
         a driver script as normal and instead of vurun call the steprun
-        command. </para>
+        command.</para>
 
         <programlisting>dbset db mssqls
 dbset bm TPC-C
@@ -4992,7 +5261,7 @@ Vuser 1:Rampup 1 minutes complete ...</programlisting>
 
     <section>
       <title>Additional Driver Script Options for Stored Procedures and Server
-      Side Reports: PostgreSQL, MySQL, Oracle, Db2 and EnterpriseDB
+      Side Reports: PostgreSQL, MySQL, MariaDB, Oracle, Db2 and EnterpriseDB
       PostgreSQL</title>
 
       <section>
@@ -5003,13 +5272,24 @@ Vuser 1:Rampup 1 minutes complete ...</programlisting>
         the option to use PostgreSQL stored procedures instead. However
         prepared statements are not supported by PostgreSQL for stored
         procedures only for functions and therefore if using the XML connect
-        pool feature only PostgreSQL functions are supported.</para>
+        pool feature only PostgreSQL functions are supported. Conversely
+        PgBouncer does not at the time of writing keep track of prepared
+        statements and therefore when using event driven scaling, stored
+        procedures are recommended.</para>
       </section>
 
       <section>
         <title>MySQL Prepare Statements</title>
 
         <para>With MySQL there is the option to use server side prepared
+        statements. This option is mandatory if using the XML connect pool
+        feature.</para>
+      </section>
+
+      <section>
+        <title>MariaDB Prepare Statements</title>
+
+        <para>With MariaDB there is the option to use server side prepared
         statements. This option is mandatory if using the XML connect pool
         feature.</para>
       </section>
@@ -5634,6 +5914,27 @@ done
       <para>Note that Com_commit is used instead of the handler_commit value
       used in previous releases of HammerDB as a result of MySQL Bug #52453
       handler_commit is incremented for InnoDB SELECT queries.</para>
+    </section>
+
+    <section>
+      <title>MariaDB Transaction Counter</title>
+
+      <para>For MariaDB the connection parameters are the same as the schema
+      options. The refresh rate determines the sampling interval.</para>
+
+      <figure>
+        <title>MariaDB TX Counter Options</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch6-5a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following SQL is used to sample the transaction rate.</para>
+
+      <programlisting>show global status where Variable_name = 'Com_commit' or Variable_name =  'Com_rollback'</programlisting>
     </section>
 
     <section>
@@ -6573,7 +6874,7 @@ hammerdb&gt;
               <row>
                 <entry>tcstart</entry>
 
-                <entry> Usage: tcstart </entry>
+                <entry>Usage: tcstart</entry>
 
                 <entry>Starts the Transaction Counter.</entry>
               </row>
@@ -6581,7 +6882,7 @@ hammerdb&gt;
               <row>
                 <entry>tcstatus</entry>
 
-                <entry>Usage: tcstatus </entry>
+                <entry>Usage: tcstatus</entry>
 
                 <entry>Checks the status of the Transaction Counter.</entry>
               </row>
@@ -8513,22 +8814,39 @@ order by
       </section>
 
       <section>
-        <title>MySQL / MariaDB</title>
+        <title>MySQL</title>
 
         <para>MySQL does not support row oriented parallel query or a column
         store configuration and therefore queries run against a MySQL database
-        are expected to be long-running. However the MySQL compatible MariaDB
-        supports a separate installation of a column store based database
-        which offers significantly improved query times. However some queries
-        will result in database errors or long running queries. This option is
-        selected with the Data Warehouse Storage Engine Option.</para>
+        are expected to be long-running. In testing the myisam storage engine
+        offers improved query times compared to InnoDB.</para>
 
         <figure>
-          <title>MySQL MariaDB TPROC-H</title>
+          <title>MySQL TPROC-H</title>
 
           <mediaobject>
             <imageobject>
               <imagedata fileref="docs/images/ch9-12.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
+
+      <section>
+        <title> MariaDB</title>
+
+        <para>MariaDB supports a separate installation of a column store based
+        database which offers significantly improved query times for most
+        queries. However at versions tested some queries will result in
+        database errors or long running queries. This option is selected with
+        the Data Warehouse Storage Engine Option set to "Columnstore". </para>
+
+        <figure>
+          <title>MariaDB TPROC-H</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch9-12a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -8850,14 +9168,22 @@ force_parallel_mode = on
       </section>
 
       <section>
-        <title>MySQL / MariaDB</title>
+        <title>MySQL</title>
 
-        <para>To test analytic workloads on a MySQL compatible databases
-        MariaDB columnstore is the solution that should be used. Note that
-        this is a separate installation from a MySQL or MariaDB installation
-        rather than a pluggable storage engine. As MariaDB columnstore is
-        based on a columnstore solution called InfiniDB the relevant
-        parameters start with infinidb, for example:</para>
+        <para>MySQL does not support analytic workloads and therefore there
+        are no configuration parameters to optimize the database for such a
+        workload. </para>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>To test analytic workloads MariaDB columnstore is the solution
+        that should be used. Note that this is a separate installation from a
+        standard MariaDB installation rather than a pluggable storage engine.
+        As MariaDB columnstore is based on a columnstore solution called
+        InfiniDB the relevant parameters start with infinidb, for
+        example:</para>
 
         <programlisting># Enable compression by default on create, set to 0 to turn off
 infinidb_compression_type=2
@@ -8870,8 +9196,7 @@ infinidb_diskjoin_largesidelimit=0
 infinidb_diskjoin_bucketsize=100
 infinidb_um_mem_limit=64000
 infinidb_use_import_for_batchinsert=1
-infinidb_import_for_batchinsert_delimiter=7
-</programlisting>
+infinidb_import_for_batchinsert_delimiter=7</programlisting>
       </section>
     </section>
 
@@ -9368,6 +9693,111 @@ infinidb_import_for_batchinsert_delimiter=7
                   <entry>MySQL Database</entry>
 
                   <entry>The MySQL Database is the database that will be
+                  created containing the TPROC-H schema creation. There must
+                  have sufficient free space for the database to be
+                  created.</entry>
+                </row>
+
+                <row>
+                  <entry>Data Warehouse Storage Engine</entry>
+
+                  <entry>Use the "show engine" command to display available
+                  storage engines and select a storage engine that supports
+                  analytics. For MariaDB columnstore specify.
+                  "Columnstore"</entry>
+                </row>
+
+                <row>
+                  <entry>Scale Factor</entry>
+
+                  <entry>The Scale Factor is selected by a radio button with a
+                  choice of scale factors of 1,10,30,100,300 and 1000
+                  corresponding to 1GB, 10GB, 30GB,100GB and 1000GB
+                  respectively, larger schema sizes can also be created with
+                  the datagen option. Note that the required space will be
+                  larger than these values due to the indexes
+                  required.</entry>
+                </row>
+
+                <row>
+                  <entry>Virtual Users to Build Schema</entry>
+
+                  <entry>The Virtual Users to Build Schema is the number of
+                  Virtual Users to be created on the Load Generation Server
+                  that will complete your multi-threaded schema build. You
+                  should set this value to the number of cores on your Load
+                  Generation Server or SUT if HammerDB is running
+                  there.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table></para>
+      </section>
+
+      <section>
+        <title>MariaDB Schema Build Options</title>
+
+        <para><figure>
+            <title>MariaDB Build Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-8a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><table>
+            <title>MySQL Build Options</title>
+
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry align="center">Option</entry>
+
+                  <entry align="center">Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>MariaDB Host</entry>
+
+                  <entry>The MariaDB Host Name is the host name of the SUT
+                  database server.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Port</entry>
+
+                  <entry>The MariaDB Port is the network port on the SUT
+                  database server. In most cases this will be the default port
+                  of 3306.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User</entry>
+
+                  <entry>The MariaDB User is the user which has permission to
+                  create a database and you previously granted access to from
+                  the load generation server. The root user already exists in
+                  all MariaDB databases and has the necessary permissions to
+                  create the TPROC-H database.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User Password</entry>
+
+                  <entry>The MariaDB user password is the password for the
+                  user defined as the MariaDB User. You will need to remember
+                  the MariaDB user name and password for running the TPROC-H
+                  driver script after the database is built.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Database</entry>
+
+                  <entry>The MariaDB Database is the database that will be
                   created containing the TPROC-H schema creation. There must
                   have sufficient free space for the database to be
                   created.</entry>
@@ -9980,6 +10410,14 @@ IgnoreWarnList="'01003'"
 
       <section>
         <title>Verifying and Backing up the MySQL Schema</title>
+
+        <para>MySQL does not directly support analytic workloads, however
+        where used the same verification and backup methodology can be used as
+        given for MariaDB.</para>
+      </section>
+
+      <section>
+        <title>Verifying and Backing up the MariaDB Schema</title>
 
         <para>The schema build is now complete with the following tables
         created and populated with the example showing a scale factor 1
@@ -10860,8 +11298,14 @@ GEOMEAN 4.011822724
     in the cloud or where the target database has a column structure meaning
     that load performance using batch inserts is poor. Additionally bulk
     loading can enable more flexibility to modify the schema according to
-    preference and reload during testing. This chpater details how to generate
-    and load large data sets with HammerDB.</para>
+    preference and reload during testing. This chapter details how to generate
+    and load large data sets with HammerDB. From version 4.2 the limit for
+    generating the TPROC-C schema has increased from 30,000 to 100,000
+    warehouses. Note that this is an interface limit to prevent
+    over-provisioning (100,000 warehouses may generate up to 10TB of data),
+    however it is straightforward to exceed this capacity by manually
+    modifying the generated datageb build script to increase the value.
+    </para>
 
     <section>
       <title>Generate the Dataset</title>
@@ -11518,7 +11962,25 @@ db2 load from /home/db2inst1/TPCHDATA/nation_1.tbl of DEL MODIFIED BY DELPRIORIT
         <title>MySQL</title>
 
         <para>Bulk loading is done in MySQL using the load data infile
-        command. This can be done as follows:</para>
+        command. For the MySQL TPROC-C schema NULLS are not automatically
+        recognised and a SET command is required as follows for the ORDER_LINE
+        and ORDERS table:</para>
+
+        <programlisting>load data infile '/home/mysql/TPCCDATA/order_line_1.tbl' INTO table order_line fields terminated by '|'
+(ol_w_id, ol_d_id, ol_o_id, ol_number, ol_i_id, @dt1, ol_amount, ol_supply_w_id, ol_quantity, ol_dist_info)
+set ol_delivery_d = nullif(@dt1,'');
+
+load data infile '/home/mysql/TPCCDATA/orders_1.tbl' INTO table orders fields terminated by '|'
+(o_id, o_w_id, o_d_id, o_c_id, @id1, o_ol_cnt, o_all_local, o_entry_d)
+set o_carrier_id = nullif(@id1,'');
+</programlisting>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>As with MySQL bulk loading is done in MariaDB using the load
+        data infile command. </para>
 
         <programlisting>mysql&gt; load data infile '/home/mysql/TPCHDATA/supplier_1.tbl' INTO table SUPPLIER fields terminated by '|';</programlisting>
 
@@ -11556,19 +12018,7 @@ Query OK, 150000 rows affected (0.74 sec)
 Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0
 
 Query OK, 150000 rows affected (1.56 sec)
-Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0
-</programlisting>For the MySQL TPROC-C schema NULLS are not automatically
-        recognised and a SET command is required as follows for the ORDER_LINE
-        and ORDERS table:</para>
-
-        <programlisting>load data infile '/home/mysql/TPCCDATA/order_line_1.tbl' INTO table order_line fields terminated by '|'
-(ol_w_id, ol_d_id, ol_o_id, ol_number, ol_i_id, @dt1, ol_amount, ol_supply_w_id, ol_quantity, ol_dist_info)
-set ol_delivery_d = nullif(@dt1,'');
-
-load data infile '/home/mysql/TPCCDATA/orders_1.tbl' INTO table orders fields terminated by '|'
-(o_id, o_w_id, o_d_id, o_c_id, @id1, o_ol_cnt, o_all_local, o_entry_d)
-set o_carrier_id = nullif(@id1,'');
-</programlisting>
+Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0</programlisting></para>
       </section>
 
       <section>
