@@ -6,15 +6,15 @@ if {[dict exists $dbdict postgresql library ]} {
 } else { set library "Pgtcl" }
 #Setup Transaction Counter Thread
 set tc_threadID [thread::create {
-proc ConnectToPostgres { host port user password dbname } {
+proc ConnectToPostgres { host port user sslmode password dbname } {
 global tcl_platform
-if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} message]} {
+if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
 set lda "connection failed:$message"
  } else {
 if {$tcl_platform(platform) == "windows"} {
 #Workaround for Bug #95 where first connection fails on Windows
 catch {pg_disconnect $lda}
-set lda [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
         }
 pg_notice_handler $lda puts
 set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
@@ -22,7 +22,7 @@ pg_result $result -clear
         }
 return $lda
 }
-proc read_more { MASTER library pg_host pg_port pg_superuser pg_superuserpass pg_defaultdbase pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase interval old tce bm } {
+proc read_more { MASTER library pg_host pg_port pg_sslmode pg_superuser pg_superuserpass pg_defaultdbase pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase interval old tce bm } {
 set timeout 0
 set iconflag 0
 if { $interval <= 0 } { set interval 10 } 
@@ -61,7 +61,7 @@ return
 } else { 
 namespace import tcountcommon::* 
 }
-set tc_lda [ ConnectToPostgres $pg_host $pg_port $tmp_pg_su $tmp_pg_supass $tmp_pg_defdb ]
+set tc_lda [ ConnectToPostgres $pg_host $pg_port $pg_sslmode $tmp_pg_su $tmp_pg_supass $tmp_pg_defdb ]
 if { [string match {*connection*} $tc_lda] } {
 tsv::set application tc_errmsg $tc_lda
 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -139,5 +139,5 @@ upvar #0 configpostgresql configpostgresql
 setlocaltcountvars $configpostgresql 1
 set old 0
 #Call Transaction Counter to start read_more loop
-eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $interval $old tce $bm }}] 
+eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $interval $old tce $bm }}] 
 } 
