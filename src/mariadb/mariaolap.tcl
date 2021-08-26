@@ -1132,7 +1132,7 @@ set rowcount [ llength $oput ]
 if { $rowcount > 0 } { lappend qlist $value }
 if {$VERBOSE} {
 puts "query $qos returned $rowcount rows"
-puts $oput
+printlist $oput
 }
 puts "query $qos completed in $value seconds"
 } else {
@@ -1330,7 +1330,7 @@ set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 set rowcount [ llength $oput ]
 puts "$rowcount rows returned in $value seconds"
-if {$VERBOSE} { puts $oput }
+if {$VERBOSE} { printlist $oput }
 if { $rowcount > 0 } { lappend qlist $value }
 } 
 set end [ clock seconds ]
