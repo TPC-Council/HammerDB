@@ -72,8 +72,7 @@ set sql(1) "CREATE TABLE `ORDERS` (
 `O_TOTALPRICE` DECIMAL(10,2) NULL,
 `O_COMMENT` VARCHAR(79) BINARY NULL,
 PRIMARY KEY (`O_ORDERKEY`),
-FOREIGN KEY ORDERS_FK1(`O_CUSTKEY`) REFERENCES CUSTOMER(`C_CUSTKEY`),
-INDEX ORDERS_DT_IDX (`O_ORDERDATE`)
+FOREIGN KEY ORDERS_FK1(`O_CUSTKEY`) REFERENCES CUSTOMER(`C_CUSTKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
 set sql(2) "CREATE TABLE `PARTSUPP` (
@@ -83,6 +82,8 @@ PS_SUPPLYCOST INT NOT NULL,
 PS_AVAILQTY INT NULL,
 PS_COMMENT VARCHAR(199) BINARY NULL,
 PRIMARY KEY (`PS_PARTKEY`,`PS_SUPPKEY`),
+INDEX PARTSUPP_PART_FKIDX (`PS_PARTKEY`),
+INDEX PARTSUPP_SUPPLIER_FKIDX (`PS_SUPPKEY`),
 FOREIGN KEY PARTSUPP_FK1(`PS_PARTKEY`) REFERENCES PART(`P_PARTKEY`),
 FOREIGN KEY PARTSUPP_FK2(`PS_SUPPKEY`) REFERENCES SUPPLIER(`S_SUPPKEY`)
 )
@@ -97,6 +98,7 @@ C_PHONE CHAR(15) BINARY NULL,
 C_ACCTBAL DECIMAL(10,2) NULL,
 C_COMMENT VARCHAR(118) BINARY NULL,
 PRIMARY KEY (`C_CUSTKEY`),
+INDEX CUSTOMER_NATION_FKIDX (`C_NATIONKEY`),
 FOREIGN KEY CUSTOMER_FK1(`C_NATIONKEY`) REFERENCES NATION(`N_NATIONKEY`)
 ) 
 ENGINE = $maria_tpch_storage_engine"
@@ -122,6 +124,7 @@ S_ADDRESS VARCHAR(40) BINARY NULL,
 S_PHONE CHAR(15) BINARY NULL,
 S_ACCTBAL DECIMAL(10,2) NULL,
 PRIMARY KEY (`S_SUPPKEY`),
+INDEX SUPPLIER_NATION_FKIDX (`S_NATIONKEY`),
 FOREIGN KEY SUPPLIER_FK1(`S_NATIONKEY`) REFERENCES NATION(`N_NATIONKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
@@ -131,6 +134,7 @@ N_NAME CHAR(25) BINARY NULL,
 N_REGIONKEY INT NULL,
 N_COMMENT VARCHAR(152) BINARY NULL,
 PRIMARY KEY (`N_NATIONKEY`),
+INDEX NATION_REGIONKEY_FKIDX (`N_REGIONKEY`),
 FOREIGN KEY NATION_FK1(`N_REGIONKEY`) REFERENCES REGION(`R_REGIONKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
@@ -159,13 +163,10 @@ L_LINENUMBER INT NOT NULL,
 L_SHIPINSTRUCT CHAR(25) BINARY NULL,
 L_COMMENT VARCHAR(44) BINARY NULL,
 PRIMARY KEY (`L_ORDERKEY`, `L_LINENUMBER`),
+INDEX LINEITEM_PART_SUPP_FKIDX (`L_PARTKEY`,`L_SUPPKEY`),
+INDEX IDX_LINEITEM_ORDERKEY_FKIDX (`L_ORDERKEY`),
 FOREIGN KEY LINEITEM_FK1(`L_ORDERKEY`) REFERENCES ORDERS(`O_ORDERKEY`),
-FOREIGN KEY LINEITEM_FK2(`L_SUPPKEY`) REFERENCES SUPPLIER(`S_SUPPKEY`),
-FOREIGN KEY LINEITEM_FK3(`L_PARTKEY`, `L_SUPPKEY`) REFERENCES PARTSUPP(`PS_PARTKEY`, `PS_SUPPKEY`),
-FOREIGN KEY LINEITEM_FK4(`L_PARTKEY`) REFERENCES PART(`P_PARTKEY`),
-INDEX LI_SHP_DT_IDX (`L_SHIPDATE`),
-INDEX LI_COM_DT_IDX (`L_COMMITDATE`),
-INDEX LI_RCPT_DT_IDX (`L_RECEIPTDATE`)
+FOREIGN KEY LINEITEM_FK2(`L_PARTKEY`, `L_SUPPKEY`) REFERENCES PARTSUPP(`PS_PARTKEY`, `PS_SUPPKEY`)
 ) 
 ENGINE = $maria_tpch_storage_engine"
 for { set i 1 } { $i <= 8 } { incr i } {
@@ -656,7 +657,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { maria_handler sql RAISEERROR } {
 global mariastatus
-catch { set oput [ join [ maria::sel $maria_handler "$sql" -list ] ] }
+catch { set oput [ maria::sel $maria_handler "$sql" -list ] }
 if { $mariastatus(code)  } {
 if { $RAISEERROR } {
 error "Query Error : $mariastatus(message)"
@@ -1115,7 +1116,9 @@ incr q15c
 }
 }
 set o_s_list [ ordered_set $myposition ]
+unset -nocomplain qlist
 for { set q 1 } { $q <= 22 } { incr q } {
+set rowcount 0
 if {  [ tsv::get application abort ]  } { break }
 set qos [ lindex $o_s_list [ expr $q - 1 ] ]
 puts "Executing Query $qos ($q of 22)"
@@ -1125,7 +1128,12 @@ set t0 [clock clicks -millisec]
 set oput [ standsql $maria_handler $dssquery($qos) $RAISEERROR ]
 set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
-if {$VERBOSE} { printlist $oput }
+set rowcount [ llength $oput ]
+if { $rowcount > 0 } { lappend qlist $value }
+if {$VERBOSE} {
+puts "query $qos returned $rowcount rows"
+puts $oput
+}
 puts "query $qos completed in $value seconds"
 } else {
 set q15c 0
@@ -1163,6 +1171,7 @@ set end [ clock seconds ]
 set wall [ expr $end - $start ]
 set qsets [ expr $it + 1 ]
 puts "Completed $qsets query set(s) in $wall seconds"
+puts "Geometric mean of query times returning rows ([llength $qlist]) is [ format \"%.5f\" [ gmean $qlist ]]"
 }
 mariaclose $maria_handler
 }
@@ -1321,13 +1330,13 @@ set t1 [clock clicks -millisec]
 set value [expr {double($t1-$t0)/1000}]
 set rowcount [ llength $oput ]
 puts "$rowcount rows returned in $value seconds"
-if {$VERBOSE} { printlist $oput }
+if {$VERBOSE} { puts $oput }
 if { $rowcount > 0 } { lappend qlist $value }
 } 
 set end [ clock seconds ]
 set wall [ expr $end - $start ]
 puts "Completed query set in $wall seconds"
-puts "Geometric mean of query times returning rows is [ format \"%.5f\" [ gmean $qlist ]]"
+puts "Geometric mean of query times returning rows ([llength $qlist]) is [ format \"%.5f\" [ gmean $qlist ]]"
 mariaclose $maria_handler
 }
 

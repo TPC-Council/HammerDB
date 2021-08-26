@@ -39,7 +39,7 @@
             <maria_tpch_pass>maria</maria_tpch_pass>
             <maria_tpch_dbase>tpch</maria_tpch_dbase>
             <maria_num_tpch_threads>1</maria_num_tpch_threads>
-  	    <maria_tpch_storage_engine>myisam</maria_tpch_storage_engine>
+  	    <maria_tpch_storage_engine>innodb</maria_tpch_storage_engine>
         </schema>
         <driver>
             <maria_total_querysets>1</maria_total_querysets>
