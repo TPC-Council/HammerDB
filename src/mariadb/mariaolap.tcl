@@ -657,7 +657,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { maria_handler sql RAISEERROR } {
 global mariastatus
-catch { set oput [ maria::sel $maria_handler "$sql" -list ] }
+catch { set oput [ join [ maria::sel $maria_handler "$sql" -list ] ] }
 if { $mariastatus(code)  } {
 if { $RAISEERROR } {
 error "Query Error : $mariastatus(message)"
@@ -1242,7 +1242,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { maria_handler sql RAISEERROR } {
 global mariastatus
-catch { set oput [ maria::sel $maria_handler "$sql" -list ] }
+catch { set oput [ join [ maria::sel $maria_handler "$sql" -list ] ] }
 if { $mariastatus(code)  } {
 if { $RAISEERROR } {
 error "Query Error : $mariastatus(message)"

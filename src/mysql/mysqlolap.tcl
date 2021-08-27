@@ -636,7 +636,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { mysql_handler sql RAISEERROR } {
 global mysqlstatus
-catch { set oput [ mysql::sel $mysql_handler "$sql" -list ] }
+catch { set oput [ join [ mysql::sel $mysql_handler "$sql" -list ] ] }
 if { $mysqlstatus(code)  } {
 if { $RAISEERROR } {
 error "Query Error : $mysqlstatus(message)"
@@ -1219,7 +1219,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { mysql_handler sql RAISEERROR } {
 global mysqlstatus
-catch { set oput [ mysql::sel $mysql_handler "$sql" -list ] }
+catch { set oput [ join [ mysql::sel $mysql_handler "$sql" -list ] ] }
 if { $mysqlstatus(code)  } {
 if { $RAISEERROR } {
 error "Query Error : $mysqlstatus(message)"
