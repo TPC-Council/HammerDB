@@ -6,7 +6,7 @@ if {[dict exists $dbdict postgresql library ]} {
 } else { set library "Pgtcl" }
 #Setup Transaction Counter Thread
 set tc_threadID [thread::create {
-proc ConnectToPostgres { host port user sslmode password dbname } {
+proc ConnectToPostgres { host port sslmode user password dbname } {
 global tcl_platform
 if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
 set lda "connection failed:$message"

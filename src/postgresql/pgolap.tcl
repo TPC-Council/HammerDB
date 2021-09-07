@@ -947,7 +947,7 @@ pg_result $result -clear
 }
 
 proc do_refresh { host port sslmode db user password scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-set lda [ ConnectToPostgres $host $sslmode $port $sslmode $user $password $db ]
+set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
 if { $lda eq "Failed" } {
 error "error, the database connection to $host could not be established"
  	}
