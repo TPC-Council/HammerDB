@@ -163,13 +163,15 @@ proc AdjustBarHeight {cpu usr sys percent} {
 	}
 
 proc metrics {} {
-global rdbms
-if { $rdbms eq "Oracle" } {
-orametrics
-        } else {
-genmetrics
-                }
-        }
+  global rdbms
+  if { $rdbms eq "Oracle" } {
+    orametrics
+  } elseif { $rdbms eq "PostgreSQL" } {
+    pgmetrics
+  } else {
+    genmetrics
+  }
+}
 
 proc genmetrics {} {
 global agent_hostname agent_id metframe
