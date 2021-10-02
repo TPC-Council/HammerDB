@@ -624,8 +624,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set mssqls_count_ware [ verify_warehouse $mssqls_count_ware 5000 ]
-set mssqls_num_vu [ verify_build_threads $mssqls_num_vu $mssqls_count_ware 512 ]
+set mssqls_count_ware [ verify_warehouse $mssqls_count_ware 100000 ]
+set mssqls_num_vu [ verify_build_threads $mssqls_num_vu $mssqls_count_ware 1024 ]
 copyfieldstoconfig configmssqlserver [ subst $mssqlsfields ] tpcc
 unset mssqlsfields
 destroy .tpc

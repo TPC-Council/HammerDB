@@ -541,8 +541,8 @@ loadtpcc
 }
 "default" {
 ttk::button $Name -command {
-set maria_count_ware [ verify_warehouse $maria_count_ware 5000 ]
-set maria_num_vu [ verify_build_threads $maria_num_vu $maria_count_ware 512 ]
+set maria_count_ware [ verify_warehouse $maria_count_ware 100000 ]
+set maria_num_vu [ verify_build_threads $maria_num_vu $maria_count_ware 1024 ]
 copyfieldstoconfig configmariadb [ subst $mariafields ] tpcc
 unset mariafields
 destroy .tpc

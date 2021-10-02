@@ -492,8 +492,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set mysql_count_ware [ verify_warehouse $mysql_count_ware 5000 ]
-set mysql_num_vu [ verify_build_threads $mysql_num_vu $mysql_count_ware 512 ]
+set mysql_count_ware [ verify_warehouse $mysql_count_ware 100000 ]
+set mysql_num_vu [ verify_build_threads $mysql_num_vu $mysql_count_ware 1024 ]
 copyfieldstoconfig configmysql [ subst $myfields ] tpcc
 unset myfields
 destroy .tpc

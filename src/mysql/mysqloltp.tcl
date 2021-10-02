@@ -456,7 +456,7 @@ puts "CREATING TPCC TABLES"
 set sql(1) "CREATE TABLE `customer` (
   `c_id` INT(5) NOT NULL,
   `c_d_id` INT(2) NOT NULL,
-  `c_w_id` INT(4) NOT NULL,
+  `c_w_id` INT(6) NOT NULL,
   `c_first` VARCHAR(16) BINARY NULL,
   `c_middle` CHAR(2) BINARY NULL,
   `c_last` VARCHAR(16) BINARY NULL,
@@ -481,7 +481,7 @@ KEY c_w_id (`c_w_id`,`c_d_id`,`c_last`(16),`c_first`(16))
 ENGINE = $mysql_storage_engine"
 set sql(2) "CREATE TABLE `district` (
   `d_id` INT(2) NOT NULL,
-  `d_w_id` INT(4) NOT NULL,
+  `d_w_id` INT(6) NOT NULL,
   `d_ytd` DECIMAL(12, 2) NULL,
   `d_tax` DECIMAL(4, 4) NULL,
   `d_next_o_id` INT NULL,
@@ -569,7 +569,7 @@ PARTITIONS $num_part"
 	}
 set sql(8) "CREATE TABLE `stock` (
   `s_i_id` INT(6) NOT NULL,
-  `s_w_id` INT(4) NOT NULL,
+  `s_w_id` INT(6) NOT NULL,
   `s_quantity` INT(6) NULL,
   `s_dist_01` CHAR(24) BINARY NULL,
   `s_dist_02` CHAR(24) BINARY NULL,
@@ -589,7 +589,7 @@ PRIMARY KEY (`s_w_id`,`s_i_id`)
 )
 ENGINE = $mysql_storage_engine"
 set sql(9) "CREATE TABLE `warehouse` (
-  `w_id` INT(4) NOT NULL,
+  `w_id` INT(6) NOT NULL,
   `w_ytd` DECIMAL(12, 2) NULL,
   `w_tax` DECIMAL(4, 4) NULL,
   `w_name` VARCHAR(10) BINARY NULL,

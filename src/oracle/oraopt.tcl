@@ -581,8 +581,8 @@ loadtpcc
         }
 "default" {
    ttk::button $Name -command {
-set count_ware [ verify_warehouse $count_ware 5000 ]
-set num_vu [ verify_build_threads $num_vu $count_ware 512 ]
+set count_ware [ verify_warehouse $count_ware 100000 ]
+set num_vu [ verify_build_threads $num_vu $count_ware 1024 ]
 copyfieldstoconfig configoracle [ subst $orafields ] tpcc
 unset orafields
 destroy .tpc

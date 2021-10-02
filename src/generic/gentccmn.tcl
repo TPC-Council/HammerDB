@@ -68,6 +68,7 @@ return $tc_flog
 
 proc close_transcount_log { iface } {
 global tc_flog
+if { ![info exists tc_flog] } { set tc_flog "notclog"}
 if { $tc_flog != "notclog" } {
 if { [catch {close $tc_flog} message]} {
 if { $iface eq "cli" } {

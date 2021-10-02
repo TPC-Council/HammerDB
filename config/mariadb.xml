@@ -17,7 +17,7 @@
 	    <maria_prepared>false</maria_prepared>
         </schema>
         <driver>
-            <maria_total_iterations>1000000</maria_total_iterations>
+            <maria_total_iterations>10000000</maria_total_iterations>
             <maria_raiseerror>false</maria_raiseerror>
             <maria_keyandthink>false</maria_keyandthink>
             <maria_driver>test</maria_driver>
@@ -39,7 +39,7 @@
             <maria_tpch_pass>maria</maria_tpch_pass>
             <maria_tpch_dbase>tpch</maria_tpch_dbase>
             <maria_num_tpch_threads>1</maria_num_tpch_threads>
-  	    <maria_tpch_storage_engine>myisam</maria_tpch_storage_engine>
+  	    <maria_tpch_storage_engine>innodb</maria_tpch_storage_engine>
         </schema>
         <driver>
             <maria_total_querysets>1</maria_total_querysets>

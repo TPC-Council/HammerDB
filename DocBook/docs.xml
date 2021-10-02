@@ -22,14 +22,14 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.0.</para>
+      <para>The following are the release notes for HammerDB v4.2.</para>
 
       <section>
         <title>Nomenclature Change</title>
 
-        <para>In the database.xml file and the User Interface the workload
-        names have changed to TPROC-C and TPROC-H. This is a nomenclature
-        change only to represent that the workloads are fair use
+        <para>From version 4.0 In the database.xml file and the User Interface
+        the workload names have changed to TPROC-C and TPROC-H. This is a
+        nomenclature change only to represent that the workloads are fair use
         implementations derived from the TPC specifications and the
         nomenclature does not change the functionality of the workload
         compared to prior versions using the TPC-C and TPC-H
@@ -39,12 +39,12 @@
       <section>
         <title>Stored Procedure Refactoring and Performance</title>
 
-        <para>At version 4.0 the stored procedures for the Oracle and
+        <para>From version 4.0 the stored procedures for the Oracle and
         PostgreSQL TPROC-C workloads have been refactored. This increases the
         expected performance between versions and consequently the performance
         from HammerDB v4.0 cannot be compared directly to the performance of
         v3.3 or previous releases. Additionally for some workloads HammerDB
-        v4.0 changes the relationship between the NOPM and TPM metrics
+        v4.0 changed the relationship between the NOPM and TPM metrics
         compared to previous versions. As a result of the stored procedure
         refactoring using bulk operations more work is processed per commit
         and therefore in these cases the NOPM has increased whilst the TPM
@@ -67,27 +67,28 @@
       </section>
 
       <section>
-        <title>Redis Deprecated</title>
+        <title>MariaDB added as database separate from MySQL</title>
 
-        <para>The Redis workload has been deprecated and no longer features by
-        default in the main HammerDB menu. In particular as a single-threaded
-        database without support for stored procedures it was considered that
-        Redis was not suitable for running workloads derived from the TPC
-        specifications and could not reach similar levels of performance as
-        the relational databases currently supported. Redis can still be
-        enabled for unsupported use by uncommenting the Redis database entry
-        in database.xml.</para>
+        <para>Prior to version 4.2 MariaDB was supported using the MySQL
+        workload, this required the separate installation of the MySQL 8.0
+        client. From version 4.2 MariaDB has been added as a separate database
+        using the MariaDB client meaning no separate installation is required.
+        At version 4.2 the MariaDB workload implementation is the same as the
+        MySQL workload, however these are expected to diverge over time by
+        taking advantage of different database features.</para>
+      </section>
 
-        <programlisting><emphasis role="bold">&lt;!--Redis deprecated, uncomment to enable as unsupported</emphasis>
-&lt;redis&gt;
-&lt;name&gt;Redis&lt;/name&gt;
-&lt;description&gt;Redis&lt;/description&gt;
-&lt;prefix&gt;redis&lt;/prefix&gt;
-&lt;library&gt;redis&lt;/library&gt;
-&lt;workloads&gt;{TPROC-C}&lt;/workloads&gt;
-&lt;commands&gt;redis&lt;/commands&gt;
-&lt;/redis&gt;
-<emphasis role="bold">--&gt;</emphasis></programlisting>
+      <section>
+        <title>Increase of TPROC-C Schema Size Limits to 100,000
+        warehouses</title>
+
+        <para>From version 4.2 the TPROC-C Schema Size Limits have been
+        increased from 5,000 for the GUI/CLI schema build and 30,000 for the
+        datagen feature to 100,000 for both enabling the building of larger
+        schemas. This enables the testing of larger scaled workload scenarios
+        however it is recommended to read the documentation carefully to
+        prevent over-provisioning of the schema for the intended test and
+        system.</para>
       </section>
 
       <section>
@@ -160,7 +161,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     <section>
       <title>Documentation License and Copyright</title>
 
-      <para>Copyright (C) 2020 Steve Shaw.</para>
+      <para>Copyright (C) 2021 Steve Shaw.</para>
 
       <para>Permission is granted to copy, distribute and/or modify this
       document under the terms of the GNU Free Documentation License, Version
@@ -171,88 +172,24 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.0 New Features</title>
+      <title>HammerDB v4.2 New Features</title>
 
-      <para>Updated Binaries to: tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6,
-      mysqltcl3.052, pgtcl2.1.1, db2tcl2.0.0</para>
-
-      <para>HammerDB v4.0 New Features are all referenced to GitHub issues,
+      <para>HammerDB v4.2 New Features are all referenced to GitHub issues,
       where more details for each new feature and related pull requests can be
       found here: <link
       xlink:href="https://github.com/TPC-Council/HammerDB/issues">https://github.com/TPC-Council/HammerDB/issues</link></para>
 
-      <para>[TPC-Council#152] Inclusive Language Updates</para>
+      <para>[TPC-Council#253] Xtprof timer can retain old data</para>
 
-      <para>[TPC-Council#149] Add runtimer and waittocomplete routines to
-      CLI</para>
+      <para>[TPC-Council#250] Update to increase TPROC-C Schema Size Limits
+      for Issue</para>
 
-      <para>[TPC-Council#148] HammerDB CLI on Windows can have incorrect
-      colours</para>
+      <para>[TPC-Council#248] Fix for Timing Data Times Out</para>
 
-      <para>[TPC-Council#140] Update SQL Server ODBC Driver</para>
+      <para>[TPC-Council#242] Fix for Issue #242 can't read tc_flog no such
+      variable</para>
 
-      <para>[TPC-Council#139] Fix XML closing tags for sprocs and
-      connpool</para>
-
-      <para>[TPC-Council#138] Update SQL Server library version number for
-      TCL8.6.10</para>
-
-      <para>[TPC-Council#137] Update versions, changelog and OSS-TPC-x
-      workloads</para>
-
-      <para>[TPC-Council#136] update dbms_random for PostgreSQL neword
-      infinite loop</para>
-
-      <para>[TPC-Council#135] multiple labelled connections / connect pool
-      feature</para>
-
-      <para>[TPC-Council#132] Use Existing User and DB in Postgres</para>
-
-      <para>[TPC-Council#126] Adding docs directory and documentation
-      files</para>
-
-      <para>[TPC-Council#124] Make column order in stock_i1 index in
-      PostgreSQL consistent with Oracle</para>
-
-      <para>[TPC-Council#121] Fix temp environment variables not
-      detected</para>
-
-      <para>[TPC-Council#119] Fix for Issue #118 using diset with variables
-      with spaces</para>
-
-      <para>[TPC-Council#115] Add partitioning hints in PostgreSQL neword
-      transaction</para>
-
-      <para>[TPC-Council#106] Format details repo</para>
-
-      <para>[TPC-Council#105] Deprecated Redis</para>
-
-      <para>[TPC-Council#104] Reverse print out of metrics to put NOPM ahead
-      of TPM</para>
-
-      <para>[TPC-Council#98] MySQL prepared statements and socket
-      option</para>
-
-      <para>[TPC-Council#97] Partitioning for Oracle ORDERS and HISTORY</para>
-
-      <para>[TPC-Council#95] PostgreSQL prepared statements for functions and
-      tablespace option for schema builds</para>
-
-      <para>[TPC-Council#92] Refactor Oracle and Postgres procedural code for
-      performance</para>
-
-      <para>[TPC-Council#91] Added Master/Slave Modes to CLI</para>
-
-      <para>[TPC-Council#86] Added Geomean calculation to TPC-H
-      workloads</para>
-
-      <para>[TPC-Council#82] Fix distribution of Warehouse across VUs for All
-      Warehouse option</para>
-
-      <para>[TPC-Council#46] Consider changing "Benchmark Options" from TPC-C
-      or TPC-H to something that underscores "based on TPC-C/TPC-H"</para>
-
-      <para>[TPC-Council#19] GUI HD Display</para>
+      <para>[TPC-Council#54] Add MariaDB as a separate database</para>
     </section>
 
     <section>
@@ -287,7 +224,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
               <row>
                 <entry>Linux</entry>
 
-                <entry>Ubuntu 17.X 18.X 19.X / RHEL 7.X RHEL 8.X</entry>
+                <entry>Ubuntu 17.X 18.X 19.X 20.X / RHEL 7.X RHEL 8.X</entry>
               </row>
 
               <row>
@@ -334,9 +271,15 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             </row>
 
             <row>
-              <entry>MySQL (MariaDB) (Amazon Aurora)</entry>
+              <entry>MySQL (Amazon Aurora)</entry>
 
-              <entry>5.7 / 8.0 / 10.2 / 10.3 / 10.4 / 10.5</entry>
+              <entry>5.7 / 8.0</entry>
+            </row>
+
+            <row>
+              <entry>MariaDB</entry>
+
+              <entry>10.2 / 10.3 / 10.4 / 10.5</entry>
             </row>
 
             <row>
@@ -361,12 +304,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.0-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.2-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.0-Linux.tar.gz 
-sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.2-Linux.tar.gz 
+sha1sum HammerDB-4.2-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -381,8 +324,19 @@ sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
       <section>
         <title>Self Extracting Installer</title>
 
-        <para>Double click on the Setup file and the language choice is
-        shown.</para>
+        <para>Double click on the Setup file the installer will confirm the
+        Verified Publisher as the TRANSACTION PROCESSING PERFORMANCE COUNCIL.
+        Click Yes to start the installation.</para>
+
+        <figure>
+          <title>Verified Publisher</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/CH1-4a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
 
         <para>Click continue to begin the installation.</para>
 
@@ -459,7 +413,10 @@ sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
           </mediaobject>
         </figure>
 
-        <para>HammerDB will start ready for you to use</para>
+        <para>HammerDB will start ready for you to use. The order of the
+        databases in the treeview is in the order that they were added to
+        HammerDB, however this is user configurable. To change the order see
+        section 9 XML Configuration further in this Chapter.</para>
 
         <figure>
           <title>HammerDB Started</title>
@@ -550,10 +507,10 @@ sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.0.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.2.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.0.</para>
+        HammerDB-4.2.</para>
       </section>
 
       <section>
@@ -600,8 +557,8 @@ sha1sum HammerDB-4.0-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.0
-Copyright (C) 2003-2020 Steve Shaw
+      <programlisting>HammerDB CLI v4.2
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;librarycheck
@@ -615,6 +572,8 @@ Checking database library for MySQL
 Success ... loaded library mysqltcl for MySQL
 Checking database library for PostgreSQL
 Success ... loaded library Pgtcl for PostgreSQL
+Checking database library for MariaDB
+Success ... loaded library mariatcl for MariaDB
 
 hammerdb&gt;
 </programlisting>
@@ -688,7 +647,7 @@ hammerdb&gt;
       the file that is missing as libmysqlclient.so.21.</para>
 
       <programlisting>Checking database library for MySQL
-Error: failed to load mysqltcl - couldn't load file "/home/steve/HammerDB-4.0/lib/mysqltcl-3.052/libmysqltcl3.052.so": libmysqlclient.so.21: cannot open shared object file: No such file or directory
+Error: failed to load mysqltcl - couldn't load file "/home/steve/HammerDB-4.1/lib/mysqltcl-3.052/libmysqltcl3.052.so": libmysqlclient.so.21: cannot open shared object file: No such file or directory
 Ensure that MySQL client libraries are installed and the location in the LD_LIBRARY_PATH environment variable
 </programlisting>
 
@@ -811,6 +770,18 @@ Success ... loaded library mysqltcl for MySQL</programlisting>
             </row>
 
             <row>
+              <entry>MariaDB Linux</entry>
+
+              <entry>libmariadb.so</entry>
+            </row>
+
+            <row>
+              <entry>MariaDB Windows</entry>
+
+              <entry>LIBMARIADB.DLL</entry>
+            </row>
+
+            <row>
               <entry>PostgreSQL Linux</entry>
 
               <entry>libpq.so</entry>
@@ -888,18 +859,27 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.0 (and version 3.3) has been built and tested
-        against a MySQL 8.0 client installation, hammerDB version 3.0-3.2 has
-        been built against MySQL 5.7. On Linux this means that HammerDB will
-        require a MySQL client library called libmysqlclient.so.21 for
-        HammerDB version 4.0 and 3.3 and libmysqlclient.so.20 for version 3.2
-        and earlier. This client library needs to be referenced in the
-        LD_LIBRARY_PATH as shown previously in this section. Note that for
-        testing MariaDB you also need the libmysqlclient.so.21 from an
-        installation of MySQL 8.0. You do not need to install MySQL 8.0 as the
-        only file you need is "libmysqlclient.so.21". With this file installed
-        and in the library path the HammerDB client can connect to
-        MariaDB.</para>
+        <para>HammerDB version 4.2 (4.1/4.0 and version 3.3) has been built
+        and tested against a MySQL 8.0 client installation, hammerDB version
+        3.0-3.2 has been built against MySQL 5.7. On Linux this means that
+        HammerDB will require a MySQL client library called
+        libmysqlclient.so.21 for HammerDB version 4.1,4.0 and 3.3 and
+        libmysqlclient.so.20 for version 3.2 and earlier. This client library
+        needs to be referenced in the LD_LIBRARY_PATH as shown previously in
+        this section. On Windows libmysqll.dll is required and should be
+        referenced in the PATH environment variable.</para>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>HammerDB version 4.2 has been built and tested against MariaDB
+        10.5.10 client installation. On Linux this means that HammerDB will
+        require a MariaDB client library called libmariadb.so.3. This client
+        library needs to be referenced in the LD_LIBRARY_PATH as shown
+        previously in this section. On Windows the client library is called
+        libmariadb.dll and should be referenced in the PATH environment
+        variable.</para>
       </section>
 
       <section>
@@ -940,7 +920,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         value in generic.xml to the name of the database of your choice. The
         name entry for a particular database can be found in the database.xml
         file. For example the following would set SQL Server to be the
-        database at the top of the menu on startup.</para>
+        database at the top of the menu.</para>
 
         <programlisting>&lt;benchmark&gt;
 &lt;rdbms&gt;MSSQLServer&lt;/rdbms&gt;
@@ -948,14 +928,31 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
 &lt;first_result&gt;NOPM&lt;/first_result&gt;
 &lt;/benchmark&gt;</programlisting>
       </figure>
+
+      <para>On startup SQL Server is shown first and already selected meaning
+      it is not required to switch to a preferred database from the default
+      choice.</para>
+
+      <figure>
+        <title>Modified Default Database</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch1-17a.PNG"/>
+          </imageobject>
+        </mediaobject>
+
+        <para>Similarly it also possible to change the default workload to
+        TPROC-H by modifying the bm value to TPC-H.</para>
+      </figure>
     </section>
 
     <section>
       <title>Themes and Scalable Graphics</title>
 
-      <para>HammerDB v4.0 includes an updated graphical interface that adapts
-      to scale to UHD displays such as Microsoft pixelsense displays. The
-      behaviour of the display is set in the theme section of
+      <para>HammerDB v4.0 onwards includes an updated graphical interface that
+      adapts to scale to UHD displays such as Microsoft pixelsense displays.
+      The behaviour of the display is set in the theme section of
       generic.xml.</para>
 
       <programlisting>&lt;theme&gt;
@@ -1526,7 +1523,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
 
       <para>Additionally it is important to understand the workload. By
       default each virtual user has the concept of a home warehouses where
-      approximately 75% of its workload will take place. With HammerDB this
+      approximately 90% of its workload will take place. With HammerDB this
       home warehouse is chosen at random at the start of the test and remains
       fixed. For example it can then be understood that if you configure a
       schema with 1000 warehouses and run a test with 10 virtual users by
@@ -1703,7 +1700,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         bytecode and you can observe this by running a Linux utility such as
         perf to see that the top function is TEBCresume. (Tcl Execute ByteCode
         Resume). During normal HammerDB operations TEBCResume should also be
-        the top function for the same reason.</para>
+        the top client function for the same reason.</para>
 
         <programlisting>Samples: 67K of event 'cycles:ppp', Event count (approx.): 33450114923
 Overhead  Shared Object                  Symbol
@@ -2100,7 +2097,8 @@ DB20000I  The SQL command completed successfully.
         example the following on MySQL 8.0.</para>
 
         <programlisting>mysql&gt; alter user 'root'@'localhost' identified by 'mysql';
-Query OK, 0 rows affected (0.00 sec)</programlisting>
+Query OK, 0 rows affected (0.00 sec)
+</programlisting>
 
         <para>and the following on MySQL 5.6</para>
 
@@ -2140,6 +2138,41 @@ owners.
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 mysql&gt; 
 </programlisting>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>You should have the MariaDB database software installed and
+        running. Make sure you set a password for either the root user or a
+        user with the correct privileges to create the TPROC-C database, for
+        example.</para>
+
+        <programlisting>Server version: 10.5.10-MariaDB MariaDB Server
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; SET PASSWORD FOR 'root'@localhost = PASSWORD("maria");
+</programlisting>
+
+        <para>When choosing a MariaDB Server to test note that HammerDB load
+        testing can drive your system utilization to maximum levels and
+        therefore testing an active production system is not recommended. When
+        you have installed the load generation server and SUT database and
+        have verified that you can communicate between them by logging in
+        remotely you can proceed to building a test schema. Note that when
+        HammerDB is running on the same system as the MariaDB server you have
+        the option of connecting through sockets. The socket name is defined
+        by the MariaDB socket parameter with the HammerDB default being
+        /tmp/mariadb.sock.</para>
+
+        <programlisting>./bin/mysql -uroot -S/tmp/mariadb.sock -p
+Enter password: 
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 6
+Server version: 10.5.10-MariaDB MariaDB Server
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; </programlisting>
       </section>
 
       <section>
@@ -2925,6 +2958,131 @@ GO
       </section>
 
       <section>
+        <title>MariaDB Schema Build Options</title>
+
+        <figure>
+          <title>MariaDB Build Options</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch4-7a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para><table>
+            <title>MariaDB Build Options</title>
+
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry align="center">Option</entry>
+
+                  <entry align="center">Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>MariaDB Host</entry>
+
+                  <entry>The MariaDB Host Name is the host name that your load
+                  generation server will use to connect to the database
+                  running on the SUT database server.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Port</entry>
+
+                  <entry>The MariaDB Port is the network port that your load
+                  generation server will use to connect to the database
+                  running on the SUT database server. In most cases this will
+                  be the default port of 3306.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Socket</entry>
+
+                  <entry>The MariaDB Socket option is enabled on Linux only.
+                  If HammerDB is running on the same server and the MariaDB
+                  Host is 127.0.0.1 or localhost then HammerDB will open a
+                  connection on the socket given instead of using
+                  TCP/IP.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User</entry>
+
+                  <entry>The MariaDB User is the user which has permission to
+                  create a database and you previously granted access to from
+                  the load generation server. The root user already exists in
+                  all MariaDB databases and has the necessary permissions to
+                  create the TPROC-C database.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User Password</entry>
+
+                  <entry>The MariaDB user password is the password for the
+                  user defined as the MariaDB User. You will need to remember
+                  the MariaDB user name and password for running the TPROC-C
+                  driver script after the database is built.</entry>
+                </row>
+
+                <row>
+                  <entry>TRPOC-C MariaDB Database</entry>
+
+                  <entry>The MariaDB Database is the database that will be
+                  created containing the TPROC-C schema creation. There must
+                  have sufficient free space for the database to be
+                  created.</entry>
+                </row>
+
+                <row>
+                  <entry>Transactional Storage Engine</entry>
+
+                  <entry>Use the "show engine" command to display available
+                  storage engines and select a storage engine that supports
+                  transactions. By default set to InnoDB.</entry>
+                </row>
+
+                <row>
+                  <entry>Number of Warehouses</entry>
+
+                  <entry>The Number of Warehouses is selected by a listbox.
+                  You should set this value to number of warehouses you have
+                  chosen for your test.</entry>
+                </row>
+
+                <row>
+                  <entry>Virtual Users to Build Schema</entry>
+
+                  <entry>The Virtual Users to Build Schema is the number of
+                  Virtual Users to be created on the Load Generation Server
+                  that will complete your multi-threaded schema build. You
+                  should set this value to either the number of warehouses you
+                  are going to create (You cannot set the number of virtual
+                  users lower than the number of warehouses value) or the
+                  number of cores/Hyper-Threads on your Load Generation
+                  Server. If you have a significantly larger core/Hyper-Thread
+                  count on your Database Server then also installing HammerDB
+                  locally n this server as well to run the schema build can
+                  take advantage of the higher core count to run the build
+                  more quickly.</entry>
+                </row>
+
+                <row>
+                  <entry>Partition Order Line Table</entry>
+
+                  <entry>Partition Order Line Table for improved
+                  scalability.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table></para>
+      </section>
+
+      <section>
         <title>PostgreSQL Schema Build Options</title>
 
         <figure>
@@ -3386,7 +3544,7 @@ db2 =&gt;
         <para>If you have made a mistake simply close the application and run
         the following SQL to undo the database you have created.</para>
 
-        <programlisting>SQL&gt;drop database tpcc;</programlisting>
+        <programlisting>mysql&gt;drop database tpcc;</programlisting>
 
         <para>you can verify the contents with SQL or your favourite admin
         tool as the newly created user.</para>
@@ -3451,6 +3609,86 @@ mysql&gt; select routine_name from information_schema.routines where routine_sch
 | SLEV         |
 +--------------+
 5 rows in set (0.03 sec)
+</programlisting>
+      </section>
+
+      <section>
+        <title>Deleting or Verifying the MariaDB Schema</title>
+
+        <para>If you have made a mistake simply close the application and run
+        the following SQL to undo the database you have created.</para>
+
+        <programlisting>Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]&gt; drop database tpcc;
+Query OK, 9 rows affected (0.137 sec)
+MariaDB [(none)]&gt; </programlisting>
+
+        <para>you can verify the contents with SQL or your favourite admin
+        tool as the newly created user.</para>
+
+        <programlisting>MariaDB [(none)]&gt; use tpcc;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB [tpcc]&gt; show tables;
++----------------+
+| Tables_in_tpcc |
++----------------+
+| customer       |
+| district       |
+| history        |
+| item           |
+| new_order      |
+| order_line     |
+| orders         |
+| stock          |
+| warehouse      |
++----------------+
+9 rows in set (0.001 sec)
+
+MariaDB [tpcc]&gt; select * from warehouse limit 1 \G
+*************************** 1. row ***************************
+      w_id: 1
+     w_ytd: 4976593.00
+     w_tax: 0.1300
+    w_name: vBxysQ
+w_street_1: bWwcsLWCJ9Ftiw
+w_street_2: loLreYeoH3icmKt
+    w_city: dUB0TsCnUUHD
+   w_state: sQ
+     w_zip: 632911111
+1 row in set (0.002 sec)
+
+MariaDB [tpcc]&gt; show indexes from warehouse \G
+*************************** 1. row ***************************
+        Table: warehouse
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: w_id
+    Collation: A
+  Cardinality: 20
+     Sub_part: NULL
+       Packed: NULL
+         Null: 
+   Index_type: BTREE
+      Comment: 
+Index_comment: 
+1 row in set (0.001 sec)
+
+MariaDB [tpcc]&gt; select routine_name from information_schema.routines where routine_schema = 'TPCC';
++--------------+
+| routine_name |
++--------------+
+| DELIVERY     |
+| NEWORD       |
+| OSTAT        |
+| PAYMENT      |
+| SLEV         |
++--------------+
+5 rows in set (0.008 sec)
 </programlisting>
       </section>
 
@@ -3878,15 +4116,280 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
         virtual users running on the system, response times show performance
         based on the experience of the individual user. When comparing systems
         both throughput and response time are important comparative
-        measurements. HammerDB includes a time profiling package called etprof
-        that enables you to select an individual user and measure the response
-        times. This functionality is enabled by selecting Time Profile
-        checkbox in the driver options. When enabled the time profile will
+        measurements.</para>
+
+        <para>Time Profile functionality is enabled by selecting the Time
+        Profile checkbox in the driver options for the GUI or setting the
+        database prefix specific timeprofile option to true in the CLI.</para>
+
+        <para/>
+
+        <figure>
+          <title>Time Profile</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch4-15o.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>There are different time profiling packages named xtprof and
+        etprof with xtprof introduced at version 4.1 being the default and
+        recommended time profiling package to use. The time profiling package
+        is selected by modifying the timeprofile section in the generic.xml
+        file with the options being xtprof and etprof respectively. The
+        additional option xt_unique_log_name when set to 1 enables a unique
+        log name to be used for the output of the time profiling data.</para>
+
+        <programlisting>&lt;timeprofile&gt;
+           &lt;profiler&gt;xtprof&lt;/profiler&gt;
+           &lt;xt_unique_log_name&gt;0&lt;/xt_unique_log_name&gt;
+           &lt;xt_gather_timeout&gt;10&lt;/xt_gather_timeout&gt;
+&lt;/timeprofile&gt;</programlisting>
+
+        <para>When xtprof is selected HammerDB will collect time profiling
+        data for all active virtual users. At the end of the run after the
+        performance has been reported all of the data will be gathered,
+        calculated and appended to a logfile called hdbxtprofile.log or if a
+        unique log name is used for example a log name such as
+        hdbxtprofile_607407EE586C03E293732393.log. Measured overhead for
+        profiling all of the virtual users is expected to be up to 4% of the
+        throughput. Calculations take place after the test has run and will
+        therefore not impact the performance measurements.</para>
+
+        <para>The xt_gather_timeout option sets a user configurable value in
+        minutes for the time for HammerDB to wait for Virtual Users to report
+        timings when event driven scaling is used with many 1000's of
+        sessions. In this scenario xt_gather_timeout defines how long to wait
+        for the Virtual User timing report until proceeding to the
+        calculation. If no Virtual Users have reported an error is printed, if
+        a subset of the Virtual Users have reported a timing report is printed
+        for those Virtual Users that did report.</para>
+
+        <programlisting>Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:5 VU * 10 AC = 50 Active Sessions configured
+Vuser 1:TEST RESULT : System achieved 53 NOPM from 399 PostgreSQL TPM
+Vuser 1:Gathering timing data from Active Virtual Users...
+Vuser 4:All asynchronous clients complete
+Vuser 5:All asynchronous clients complete
+Vuser 3:All asynchronous clients complete
+Vuser 2:All asynchronous clients complete
+Vuser 1:WARNING:Timing Data Incomplete
+Vuser 1:4 out of 5 Virtual Users reported
+Vuser 1:Writing timing data to /tmp/hdbxtprofile.log</programlisting>
+
+        <para>Within the logfile HammerDB will report for all Active Virtual
+        Users meaning the first Virtual User will be 2 as Virtual User 1 is
+        the monitor. The report will also provide a summary of all Active
+        Virtual Users. Note that for the summary the total time will be for
+        all virtual users and therefore will be equivalent to the running time
+        multiplied by the virtual user count.</para>
+
+        <table>
+          <title>Xt Time Profile</title>
+
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry align="center">Value</entry>
+
+                <entry align="center">Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>CALLS</entry>
+
+                <entry>Number of times that the stored procedure was
+                called.</entry>
+              </row>
+
+              <row>
+                <entry>MIN</entry>
+
+                <entry>Minimum response time in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>AVG</entry>
+
+                <entry>Average response time in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>MAX</entry>
+
+                <entry>Maximum response time in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>TOTAL</entry>
+
+                <entry>Total time spent in that stored procedure during the
+                measuring interval. The total time will include both rampup
+                and timed test times.</entry>
+              </row>
+
+              <row>
+                <entry>P99</entry>
+
+                <entry>99th percentile in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>P95</entry>
+
+                <entry>95th percentile in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>P50</entry>
+
+                <entry>50th percentile in milliseconds.</entry>
+              </row>
+
+              <row>
+                <entry>SD</entry>
+
+                <entry>Standard Deviation showing variance in captured
+                values.</entry>
+              </row>
+
+              <row>
+                <entry>RATIO</entry>
+
+                <entry>Ratio showing percentage time taken for that stored
+                procedure. The total of these values may be less than 100% as
+                only timings for the stored procedures are shown.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
+
+        <para>an example xt time profile report is shown.</para>
+
+        <programlisting>MSSQLServer Hammerdb Time Profile Report @ Fri Apr 02 10:23:56 BST 2021
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; VIRTUAL USER 2 : ELAPSED TIME : 421062ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 169244 MIN: 0.430ms AVG: 0.994ms MAX: 1042.998ms TOTAL: 168189.754ms
+P99: 2.465ms P95: 1.383ms P50: 0.857ms SD: 41300.051 RATIO: 39.944%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 169863 MIN: 0.342ms AVG: 0.854ms MAX: 1726.371ms TOTAL: 145028.480ms
+P99: 2.353ms P95: 1.390ms P50: 0.685ms SD: 64474.647 RATIO: 34.443%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 17027 MIN: 1.298ms AVG: 2.709ms MAX: 163.655ms TOTAL: 46129.940ms
+P99: 5.360ms P95: 3.647ms P50: 2.541ms SD: 25810.720 RATIO: 10.956%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 16822 MIN: 0.617ms AVG: 1.903ms MAX: 764.873ms TOTAL: 32006.646ms
+P99: 2.308ms P95: 1.821ms P50: 1.343ms SD: 156601.733 RATIO: 7.601%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 17188 MIN: 0.213ms AVG: 1.035ms MAX: 468.477ms TOTAL: 17790.442ms
+P99: 2.047ms P95: 1.483ms P50: 0.774ms SD: 77601.204 RATIO: 4.225%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; VIRTUAL USER 3 : ELAPSED TIME : 420313ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 159980 MIN: 0.444ms AVG: 1.022ms MAX: 1643.138ms TOTAL: 163441.841ms
+P99: 2.567ms P95: 1.492ms P50: 0.862ms SD: 58276.974 RATIO: 38.886%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 160285 MIN: 0.346ms AVG: 0.881ms MAX: 2023.197ms TOTAL: 141213.427ms
+P99: 2.503ms P95: 1.473ms P50: 0.705ms SD: 65938.596 RATIO: 33.597%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 16069 MIN: 1.272ms AVG: 3.417ms MAX: 206.193ms TOTAL: 54904.266ms
+P99: 7.418ms P95: 5.324ms P50: 3.192ms SD: 32127.714 RATIO: 13.063%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 16050 MIN: 0.678ms AVG: 2.006ms MAX: 626.750ms TOTAL: 32200.179ms
+P99: 2.643ms P95: 1.910ms P50: 1.343ms SD: 168030.717 RATIO: 7.661%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 16000 MIN: 0.222ms AVG: 1.072ms MAX: 578.273ms TOTAL: 17157.497ms
+P99: 2.063ms P95: 1.489ms P50: 0.782ms SD: 90527.786 RATIO: 4.082%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; VIRTUAL USER 4 : ELAPSED TIME : 419788ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 171907 MIN: 0.439ms AVG: 0.970ms MAX: 1013.525ms TOTAL: 166696.636ms
+P99: 2.488ms P95: 1.342ms P50: 0.833ms SD: 40049.741 RATIO: 39.710%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 171395 MIN: 0.348ms AVG: 0.825ms MAX: 2027.276ms TOTAL: 141448.137ms
+P99: 2.309ms P95: 1.353ms P50: 0.669ms SD: 59576.289 RATIO: 33.695%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 17242 MIN: 1.292ms AVG: 2.783ms MAX: 1662.594ms TOTAL: 47976.469ms
+P99: 5.314ms P95: 3.614ms P50: 2.487ms SD: 145408.189 RATIO: 11.429%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 17149 MIN: 0.637ms AVG: 1.911ms MAX: 1053.436ms TOTAL: 32775.092ms
+P99: 2.231ms P95: 1.805ms P50: 1.319ms SD: 169897.509 RATIO: 7.808%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 17379 MIN: 0.221ms AVG: 1.076ms MAX: 385.704ms TOTAL: 18699.482ms
+P99: 2.059ms P95: 1.463ms P50: 0.754ms SD: 82806.139 RATIO: 4.455%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; VIRTUAL USER 5 : ELAPSED TIME : 419663ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 171092 MIN: 0.424ms AVG: 0.967ms MAX: 1229.934ms TOTAL: 165440.937ms
+P99: 2.408ms P95: 1.356ms P50: 0.839ms SD: 43716.072 RATIO: 39.422%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 171379 MIN: 0.331ms AVG: 0.829ms MAX: 1731.137ms TOTAL: 142134.192ms
+P99: 2.240ms P95: 1.372ms P50: 0.676ms SD: 66909.786 RATIO: 33.869%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 17376 MIN: 1.333ms AVG: 2.711ms MAX: 522.322ms TOTAL: 47110.423ms
+P99: 5.066ms P95: 3.665ms P50: 2.502ms SD: 55115.193 RATIO: 11.226%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 17000 MIN: 0.677ms AVG: 2.060ms MAX: 638.143ms TOTAL: 35019.365ms
+P99: 2.227ms P95: 1.820ms P50: 1.324ms SD: 181337.117 RATIO: 8.345%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 17393 MIN: 0.230ms AVG: 1.028ms MAX: 416.741ms TOTAL: 17880.809ms
+P99: 2.069ms P95: 1.485ms P50: 0.765ms SD: 78776.046 RATIO: 4.261%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; VIRTUAL USER 6 : ELAPSED TIME : 418748ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 156981 MIN: 0.440ms AVG: 1.046ms MAX: 1612.589ms TOTAL: 164162.970ms
+P99: 2.758ms P95: 1.525ms P50: 0.882ms SD: 63714.779 RATIO: 39.203%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 157020 MIN: 0.351ms AVG: 0.895ms MAX: 2026.866ms TOTAL: 140488.701ms
+P99: 2.654ms  P95: 1.525ms P50: 0.719ms SD: 61228.592 RATIO: 33.550%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 15770 MIN: 1.383ms AVG: 3.498ms MAX: 788.532ms TOTAL: 55159.762ms
+P99: 7.326ms P95: 5.431ms P50: 3.250ms SD: 66690.551 RATIO: 13.173%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 15797 MIN: 0.670ms AVG: 1.947ms MAX: 583.215ms TOTAL: 30754.041ms
+P99: 2.723ms P95: 1.898ms P50: 1.380ms SD: 152847.699 RATIO: 7.344%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 15976 MIN: 0.238ms AVG: 1.024ms MAX: 343.665ms TOTAL: 16364.749ms
+P99: 2.089ms P95: 1.527ms P50: 0.790ms SD: 63035.213 RATIO: 3.908%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+&gt;&gt;&gt;&gt;&gt; SUMMARY OF 5 ACTIVE VIRTUAL USERS : MEDIAN ELAPSED TIME : 419788ms
+&gt;&gt;&gt;&gt;&gt; PROC: NEWORD
+CALLS: 829204 MIN: 0.424ms AVG: 0.998ms MAX: 1643.139ms TOTAL: 827932.303ms
+P99: 2.542ms P95: 1.419ms P50: 0.854ms SD: 49988.460 RATIO: 39.445%
+&gt;&gt;&gt;&gt;&gt; PROC: PAYMENT
+CALLS: 829942 MIN: 0.331ms AVG: 0.856ms MAX: 2027.278ms TOTAL: 710313.076ms
+P99: 2.412ms P95: 1.424ms P50: 0.690ms SD: 63696.833 RATIO: 33.841%
+&gt;&gt;&gt;&gt;&gt; PROC: DELIVERY
+CALLS: 83484 MIN: 1.272ms AVG: 3.010ms MAX: 1662.596ms TOTAL: 251280.909ms
+P99: 6.723ms P95: 4.607ms P50: 2.694ms SD: 78650.494 RATIO: 11.972%
+&gt;&gt;&gt;&gt;&gt; PROC: SLEV
+CALLS: 82818 MIN: 0.617ms AVG: 1.965ms MAX: 1053.437ms TOTAL: 162755.356ms
+P99: 2.419ms P95: 1.851ms P50: 1.341ms SD: 166238.802 RATIO: 7.754%
+&gt;&gt;&gt;&gt;&gt; PROC: OSTAT
+CALLS: 83936 MIN: 0.213ms AVG: 1.047ms MAX: 578.273ms TOTAL: 87892.997ms
+P99: 2.067ms P95: 1.488ms P50: 0.772ms SD: 79101.309 RATIO: 4.187%
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+</programlisting>
+
+        <para>An alternative time profiling package time called etprof can be
+        selected by modifying the timeprofile section in generic.xml to change
+        xtprof to etprof. A key difference between etprof and xtprof is that
+        whereas xtprof enables you to capture time profiling for all virtual
+        users etprof only enables you to select the first Active Virtual User
+        and measure the response times. When enabled the time profile will
         show response time percentile values at 10 second intervals, reporting
         the minimum, 50th percentile, 95th percentile, 99th percentile and
         maximum for each of the procedures during that 10 second interval as
         well as cumulative values for all of the test at the end of the test
-        run. The time profile values are recorded in microseconds.</para>
+        run. For etprof the time profile values are recorded in microseconds.
+        etprof should be viewed as way to drill down into an individual
+        virtual user after analyzing xtprof data.</para>
 
         <programlisting>Hammerdb Log @ Fri Jul 05 09:55:26 BST 2019
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -4469,11 +4972,296 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
         therefore it is at the users discretion to use these settings
         appropriately to ensure consistent results.</para>
       </section>
+
+      <section>
+        <title>Step Testing with Variable Load</title>
+
+        <para>Step testing is methodology of varying the load on the database
+        over a period time. In HammerDB this variable load us achieved by
+        automating the Remote Primary and Replica modes functionality. As the
+        primary will automatically create and connect a number of replicas
+        this functionality is available only when using the CLI and is started
+        using the steprun command. Designing the steps is best approached by
+        considering each horizontal block a primary or replica level with the
+        primary at the base and the replicas at subsequent steps. Note that
+        with a variable load the number of NOPM or TPM recorded over time is
+        less relevant than for a non-variable timed test as the number of
+        transactions will vary throughout the test. Instead this approach is
+        best for capturing changes in response times and transaction rates
+        throughout the test for further analysis such as rapidly finding peak
+        performance in one test by increasing the load and observing the
+        transaction rates.</para>
+
+        <figure>
+          <title>Step Test</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch4-16a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>The base of the steps is the primary configuration and this
+        continues to be configured as normal with time defined by rampup and
+        duration and the number of virtual users with the vuset vu command.
+        The replicas are configured in the steps.xml file in the config
+        directory. For each replica (there is no limit on the number of
+        replicas defined) the configuration takes the time after the previous
+        replica started, the duration to run (with no rampup as the primary
+        has already done the rampup) and the number of virtual users, all
+        other configuration is inherited from the primary.</para>
+
+        <programlisting>&lt;steps&gt;
+&lt;replica1&gt;
+  &lt;start_after_prev&gt;1&lt;/start_after_prev&gt;
+  &lt;duration&gt;4&lt;/duration&gt;
+  &lt;virtual_users&gt;2&lt;/virtual_users&gt;
+ &lt;/replica1&gt;
+ &lt;replica2&gt;
+  &lt;start_after_prev&gt;1&lt;/start_after_prev&gt;
+  &lt;duration&gt;3&lt;/duration&gt;
+  &lt;virtual_users&gt;2&lt;/virtual_users&gt;
+ &lt;/replica2&gt;
+ &lt;replica3&gt;
+  &lt;start_after_prev&gt;1&lt;/start_after_prev&gt;
+  &lt;duration&gt;2&lt;/duration&gt;
+  &lt;virtual_users&gt;2&lt;/virtual_users&gt;
+ &lt;/replica3&gt;
+ &lt;replica4&gt;
+  &lt;start_after_prev&gt;1&lt;/start_after_prev&gt;
+  &lt;duration&gt;1&lt;/duration&gt;
+  &lt;virtual_users&gt;2&lt;/virtual_users&gt;
+ &lt;/replica4&gt;
+&lt;/steps&gt;</programlisting>
+
+        <para>When the workload is started it will provide a summary of the
+        configuration.</para>
+
+        <programlisting>primary starts immediately, runs rampup for 2 minutes then runs test for 5 minutes with 2 Active VU
+replica1 starts 1 minutes after rampup completes and runs test for 4 minutes with 2 Active VU
+replica2 starts 1 minutes after previous replica starts and runs test for 3 minutes with 2 Active VU
+replica3 starts 1 minutes after previous replica starts and runs test for 2 minutes with 2 Active VU
+replica4 starts 1 minutes after previous replica starts and runs test for 1 minutes with 2 Active VU</programlisting>
+
+        <para>The configuration must resemble a pyramid configuration with the
+        primary providing the base and running for the longest period of time.
+        If the replicas overrun this base then the step workload will error
+        and exit without running. The default configuration is an example
+        where there is a 2 minute rampup, 5 minute test on the primary, with 3
+        replicas starting 1 minute after the rampup or previous replicas and
+        then running for 4,3,2 and 1 minute respectively meaning primary and
+        replicas complete at the same time. To start a step workload configure
+        a driver script as normal and instead of vurun call the steprun
+        command.</para>
+
+        <programlisting>dbset db mssqls
+dbset bm TPC-C
+diset connection mssqls_server {(local)\SQLDEVELOP}
+diset tpcc mssqls_dbase tpcc
+diset tpcc mssqls_total_iterations 10000000
+diset tpcc mssqls_driver timed
+diset tpcc mssqls_rampup 2
+diset tpcc mssqls_duration 5
+#diset tpcc mssqls_timeprofile true
+vuset logtotemp 1
+vuset vu 2
+steprun</programlisting>
+
+        <para>No further intervention is needed and the primary will
+        automatically create, configure and run replica instances of HammerDB
+        at the specified time intervals, with an example from the default
+        shown.</para>
+
+        <programlisting>HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
+Type "help" for a list of commands
+The xml is well-formed, applying configuration
+hammerdb&gt;source runstepmssqls.tcl
+Database set to MSSQLServer
+Benchmark set to TPC-C for MSSQLServer
+Changed connection:mssqls_server from (local) to (local)\SQLDEVELOP for MSSQLServer
+Value tpcc for tpcc:mssqls_dbase is the same as existing value tpcc, no change made
+Changed tpcc:mssqls_total_iterations from 1000000 to 10000000 for MSSQLServer
+Clearing Script, reload script to activate new setting
+Script cleared
+Changed tpcc:mssqls_driver from test to timed for MSSQLServer
+Value 2 for tpcc:mssqls_rampup is the same as existing value 2, no change made
+Value 5 for tpcc:mssqls_duration is the same as existing value 5, no change made
+primary starts immediately, runs rampup for 2 minutes then runs test for 5 minutes with 2 Active VU
+replica1 starts 1 minutes after rampup completes and runs test for 4 minutes with 2 Active VU
+replica2 starts 1 minutes after previous replica starts and runs test for 3 minutes with 2 Active VU
+replica3 starts 1 minutes after previous replica starts and runs test for 2 minutes with 2 Active VU
+replica4 starts 1 minutes after previous replica starts and runs test for 1 minutes with 2 Active VU
+Switch from Local
+to Primary mode?
+Enter yes or no: replied yes
+Setting Primary Mode at id : 17848, hostname : osprey
+Primary Mode active at id : 17848, hostname : osprey
+Starting 1 replica HammerDB instance
+Starting 2 replica HammerDB instance
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
+Type "help" for a list of commands
+Starting 3 replica HammerDB instance
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
+Type "help" for a list of commands
+Starting 4 replica HammerDB instance
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
+Type "help" for a list of commands
+Doing wait to connnect ....
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
+Primary waiting for all replicas to connect .... 0 out of 4 are connected
+Type "help" for a list of commands
+The xml is well-formed, applying configuration
+The xml is well-formed, applying configuration
+Switch from Local
+to Replica mode?
+Switch from Local
+to Replica mode?
+The xml is well-formed, applying configuration
+Enter yes or no: replied yes
+Enter yes or no: replied yes
+The xml is well-formed, applying configuration
+Switch from Local
+to Replica mode?
+Enter yes or no: replied yes
+Setting Replica Mode at id : 40148, hostname : osprey
+Setting Replica Mode at id : 21020, hostname : osprey
+Switch from Local
+to Replica mode?
+Replica connecting to localhost 17848 : Connection succeeded
+Replica connecting to localhost 17848 : Connection succeeded
+Received a new replica connection from host ::1
+Enter yes or no: replied yes
+Received a new replica connection from host ::1
+Setting Replica Mode at id : 30792, hostname : osprey
+Replica connecting to localhost 17848 : Connection succeeded
+Received a new replica connection from host ::1
+Setting Replica Mode at id : 40980, hostname : osprey
+Replica connecting to localhost 17848 : Connection succeeded
+Received a new replica connection from host ::1
+New replica joined : {21020 osprey}
+New replica joined : {21020 osprey} {40148 osprey}
+Primary call back successful
+Switched to Replica mode via callback
+New replica joined : {21020 osprey} {40148 osprey} {30792 osprey}
+Primary call back successful
+Switched to Replica mode via callback
+New replica joined : {21020 osprey} {40148 osprey} {30792 osprey} {40980 osprey}
+Primary call back successful
+Switched to Replica mode via callback
+Primary call back successful
+Switched to Replica mode via callback
+Primary waiting for all replicas to connect .... {21020 osprey} {40148 osprey} {30792 osprey} {40980 osprey} out of 4 are connected
+Primary Received all replica connections {21020 osprey} {40148 osprey} {30792 osprey} {40980 osprey}
+Database set to MSSQLServer
+Database set to MSSQLServer
+Database set to MSSQLServer
+Database set to MSSQLServer
+Database set to MSSQLServer
+Setting primary to run 2 virtual users for 5 duration
+Value 5 for tpcc:mssqls_duration is the same as existing value 5, no change made
+Sending dbset all to 21020 osprey
+Setting replica1 to start after 1 duration 4 VU count 2, Replica instance is 21020 osprey
+Sending "diset tpcc mssqls_timeprofile false" to 21020 osprey
+Value false for tpcc:mssqls_timeprofile is the same as existing value false, no change made
+Sending "diset tpcc mssqls_rampup 0" to 21020 osprey
+Changed tpcc:mssqls_rampup from 2 to 0 for MSSQLServer
+Sending "diset tpcc mssqls_duration 4" to 21020 osprey
+Changed tpcc:mssqls_duration from 5 to 4 for MSSQLServer
+Sending "vuset vu 2" to 21020 osprey
+Sending dbset all to 40148 osprey
+Setting replica2 to start after 1 duration 3 VU count 2, Replica instance is 40148 osprey
+Sending "diset tpcc mssqls_timeprofile false" to 40148 osprey
+Value false for tpcc:mssqls_timeprofile is the same as existing value false, no change made
+Sending "diset tpcc mssqls_rampup 0" to 40148 osprey
+Changed tpcc:mssqls_rampup from 2 to 0 for MSSQLServer
+Sending "diset tpcc mssqls_duration 3" to 40148 osprey
+Changed tpcc:mssqls_duration from 5 to 3 for MSSQLServer
+Sending "vuset vu 2" to 40148 osprey
+Sending dbset all to 30792 osprey
+Setting replica3 to start after 1 duration 2 VU count 2, Replica instance is 30792 osprey
+Sending "diset tpcc mssqls_timeprofile false" to 30792 osprey
+Value false for tpcc:mssqls_timeprofile is the same as existing value false, no change made
+Sending "diset tpcc mssqls_rampup 0" to 30792 osprey
+Changed tpcc:mssqls_rampup from 2 to 0 for MSSQLServer
+Sending "diset tpcc mssqls_duration 2" to 30792 osprey
+Changed tpcc:mssqls_duration from 5 to 2 for MSSQLServer
+Sending "vuset vu 2" to 30792 osprey
+Sending dbset all to 40980 osprey
+Setting replica4 to start after 1 duration 1 VU count 2, Replica instance is 40980 osprey
+Sending "diset tpcc mssqls_timeprofile false" to 40980 osprey
+Value false for tpcc:mssqls_timeprofile is the same as existing value false, no change made
+Sending "diset tpcc mssqls_rampup 0" to 40980 osprey
+Changed tpcc:mssqls_rampup from 2 to 0 for MSSQLServer
+Sending "diset tpcc mssqls_duration 1" to 40980 osprey
+Changed tpcc:mssqls_duration from 5 to 1 for MSSQLServer
+Sending "vuset vu 2" to 40980 osprey
+Script loaded, Type "print script" to view
+Script loaded, Type "print script" to view
+Script loaded, Type "print script" to view
+Script loaded, Type "print script" to view
+Script loaded, Type "print script" to view
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Logging activated
+to C:/Users/Steve/AppData/Local/Temp/hammerdb_604382F71F8D03E263731303.log
+3 Virtual Users Created with Monitor VU
+3 Virtual Users Created with Monitor VU
+3 Virtual Users Created with Monitor VU
+3 Virtual Users Created with Monitor VU
+3 Virtual Users Created with Monitor VU
+Starting Primary VUs
+Vuser 1:RUNNING
+Vuser 1:Beginning rampup time of 2 minutes
+Vuser 2:RUNNING
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 3:RUNNING
+Vuser 3:Processing 10000000 transactions with output suppressed...
+Delaying Start of Replicas to rampup 2 replica1 1 replica2 1 replica3 1 replica4 1
+Delaying replica1 for 3 minutes.
+Delaying replica2 for 4 minutes.
+Delaying replica3 for 5 minutes.
+Delaying replica4 for 6 minutes.
+Primary entering loop waiting for vucomplete
+Vuser 1:Rampup 1 minutes complete ...</programlisting>
+
+        <para>Viewing the GUI or CLI transaction counter the effect can be
+        seen that the load is varied as the replicas are automatically
+        started.</para>
+
+        <figure>
+          <title>Step Load</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch4-16b.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
     </section>
 
     <section>
       <title>Additional Driver Script Options for Stored Procedures and Server
-      Side Reports: PostgreSQL, MySQL, Oracle, Db2 and EnterpriseDB
+      Side Reports: PostgreSQL, MySQL, MariaDB, Oracle, Db2 and EnterpriseDB
       PostgreSQL</title>
 
       <section>
@@ -4484,13 +5272,24 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
         the option to use PostgreSQL stored procedures instead. However
         prepared statements are not supported by PostgreSQL for stored
         procedures only for functions and therefore if using the XML connect
-        pool feature only PostgreSQL functions are supported.</para>
+        pool feature only PostgreSQL functions are supported. Conversely
+        PgBouncer does not at the time of writing keep track of prepared
+        statements and therefore when using event driven scaling, stored
+        procedures are recommended.</para>
       </section>
 
       <section>
         <title>MySQL Prepare Statements</title>
 
         <para>With MySQL there is the option to use server side prepared
+        statements. This option is mandatory if using the XML connect pool
+        feature.</para>
+      </section>
+
+      <section>
+        <title>MariaDB Prepare Statements</title>
+
+        <para>With MariaDB there is the option to use server side prepared
         statements. This option is mandatory if using the XML connect pool
         feature.</para>
       </section>
@@ -5118,6 +5917,27 @@ done
     </section>
 
     <section>
+      <title>MariaDB Transaction Counter</title>
+
+      <para>For MariaDB the connection parameters are the same as the schema
+      options. The refresh rate determines the sampling interval.</para>
+
+      <figure>
+        <title>MariaDB TX Counter Options</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch6-5a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following SQL is used to sample the transaction rate.</para>
+
+      <programlisting>show global status where Variable_name = 'Com_commit' or Variable_name =  'Com_rollback'</programlisting>
+    </section>
+
+    <section>
       <title>PostgreSQL Transaction Counter</title>
 
       <para>For PostgreSQL the connection parameters are the same as the
@@ -5202,6 +6022,66 @@ done
         </mediaobject>
       </figure>
     </section>
+
+    <section>
+      <title>Logging Transaction Counter Output</title>
+
+      <para>HammerDB also provides the option to log the output of the
+      transaction counter to a separate logfile. This enables the recording of
+      transactions throughout the test that can be used to verify the
+      transaction rate across time. To enable transaction counter logging
+      select Log Output to Temp. There are also options to use a unique log
+      name and to generate timestamps. With the following options
+      selected.</para>
+
+      <figure>
+        <title>Log Transaction Counter Output</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch6-12.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following output in a logfile called hdbtcount.log will be
+      produced in the defined temporary directory.</para>
+
+      <programlisting>Hammerdb Transaction Counter Log @ Mon Apr 12 15:06:00 BST 2021
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+0 MSSQLServer tpm @ Mon Apr 12 15:06:03 BST 2021
+317814 MSSQLServer tpm @ Mon Apr 12 15:06:13 BST 2021
+316860 MSSQLServer tpm @ Mon Apr 12 15:06:23 BST 2021
+300186 MSSQLServer tpm @ Mon Apr 12 15:06:33 BST 2021
+298410 MSSQLServer tpm @ Mon Apr 12 15:06:44 BST 2021
+282222 MSSQLServer tpm @ Mon Apr 12 15:06:54 BST 2021
+275118 MSSQLServer tpm @ Mon Apr 12 15:07:04 BST 2021
+263574 MSSQLServer tpm @ Mon Apr 12 15:07:14 BST 2021
+283950 MSSQLServer tpm @ Mon Apr 12 15:07:24 BST 2021
+276912 MSSQLServer tpm @ Mon Apr 12 15:07:34 BST 2021
+278562 MSSQLServer tpm @ Mon Apr 12 15:07:44 BST 2021
+272130 MSSQLServer tpm @ Mon Apr 12 15:07:54 BST 2021
+269208 MSSQLServer tpm @ Mon Apr 12 15:08:05 BST 2021
+290556 MSSQLServer tpm @ Mon Apr 12 15:08:15 BST 2021
+245502 MSSQLServer tpm @ Mon Apr 12 15:08:25 BST 2021
+278718 MSSQLServer tpm @ Mon Apr 12 15:08:35 BST 2021
+279438 MSSQLServer tpm @ Mon Apr 12 15:08:45 BST 2021
+245094 MSSQLServer tpm @ Mon Apr 12 15:08:55 BST 2021
+267156 MSSQLServer tpm @ Mon Apr 12 15:09:05 BST 2021
+278580 MSSQLServer tpm @ Mon Apr 12 15:09:15 BST 2021
+260592 MSSQLServer tpm @ Mon Apr 12 15:09:25 BST 2021
+290712 MSSQLServer tpm @ Mon Apr 12 15:09:36 BST 2021
+275400 MSSQLServer tpm @ Mon Apr 12 15:09:46 BST 2021
+304038 MSSQLServer tpm @ Mon Apr 12 15:09:56 BST 2021
+302268 MSSQLServer tpm @ Mon Apr 12 15:10:06 BST 2021
+251604 MSSQLServer tpm @ Mon Apr 12 15:10:16 BST 2021
+256410 MSSQLServer tpm @ Mon Apr 12 15:10:26 BST 2021
+273306 MSSQLServer tpm @ Mon Apr 12 15:10:36 BST 2021
+</programlisting>
+
+      <para>Equivalent functionality exists in the CLI to enable transaction
+      counter logging with the tcset command.</para>
+    </section>
   </chapter>
 
   <chapter>
@@ -5228,7 +6108,7 @@ sysstat version 11.5.7
       agent directory.</para>
 
       <programlisting>$./agent 
-Initializing HammerDB Metric Agent 4.0
+Initializing HammerDB Metric Agent 4.1
 HammerDB Metric Agent active @ id 20376 hostname CRANE (Ctrl-C to Exit)</programlisting>
 
       <para>On Windows double-click on agent.bat in the agent
@@ -5712,9 +6592,9 @@ New replica joined : {18424 osprey}</programlisting>
 
       <para>To start the command line in interactive mode on Linux run:</para>
 
-      <programlisting>steve@CRANE:~/HammerDB-4.0$ ./hammerdbcli 
-HammerDB CLI v4.0
-Copyright (C) 2003-2020 Steve Shaw
+      <programlisting>steve@CRANE:~/HammerDB-4.1$ ./hammerdbcli 
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;</programlisting>
@@ -5751,12 +6631,12 @@ hammerdb&gt;</programlisting>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB CLI v4.0
-Copyright (C) 2003-2020 Steve Shaw
+      <programlisting>HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;help
-HammerDB v4.0 CLI Help Index
+HammerDB v4.1 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
@@ -5773,7 +6653,12 @@ Type "help command" for more details on specific commands below
         print
         quit
         runtimer
+        steprun
         switchmode
+        tcset
+        tcstart
+        tcstatus
+        tcstop
         vucomplete
         vucreate
         vudestroy
@@ -5781,6 +6666,7 @@ Type "help command" for more details on specific commands below
         vuset
         vustatus
         waittocomplete
+
 
 hammerdb&gt;
 </programlisting>
@@ -5939,13 +6825,25 @@ hammerdb&gt;
               <row>
                 <entry>runtimer</entry>
 
-                <entry>runtimer - Usage: runtimer seconds</entry>
+                <entry>Usage: runtimer seconds</entry>
 
                 <entry>Helper routine to run a timer in the main hammerdbcli
                 thread to keep it busy for a period of time whilst the virtual
-                users run a workload. The timer will return when vucomplete
-                returns true or the timer reaches the seconds value. Usually
-                followed by vudestroy.</entry>
+                users run a workload. The timer runs asynchronously and will
+                return when vucomplete returns true or the timer reaches the
+                seconds value. Usually followed by vudestroy.</entry>
+              </row>
+
+              <row>
+                <entry>steprun</entry>
+
+                <entry>Usage: steprun</entry>
+
+                <entry>Automatically switches into Primary mode, creates and
+                connects the multiple Replicas defined in config/steps.xml and
+                starts the Primary and Replica Virtual Users at the defined
+                intervals creating a step workload. Both Primary and Replicas
+                will exit on completion.</entry>
               </row>
 
               <row>
@@ -5960,6 +6858,41 @@ hammerdb&gt;
                 must be one of Local, Primary or Replica. If Mode is Replica
                 then the ID and Hostname of the Primary to connect to must be
                 given.</entry>
+              </row>
+
+              <row>
+                <entry>tcset</entry>
+
+                <entry>Usage: tcset
+                [refreshrate|logtotemp|unique|timestamps]</entry>
+
+                <entry>Configure the transaction counter options. Equivalent
+                to the Transaction Counter Options window in the graphical
+                interface.</entry>
+              </row>
+
+              <row>
+                <entry>tcstart</entry>
+
+                <entry>Usage: tcstart</entry>
+
+                <entry>Starts the Transaction Counter.</entry>
+              </row>
+
+              <row>
+                <entry>tcstatus</entry>
+
+                <entry>Usage: tcstatus</entry>
+
+                <entry>Checks the status of the Transaction Counter.</entry>
+              </row>
+
+              <row>
+                <entry>tcstop</entry>
+
+                <entry>Usage: tcstop</entry>
+
+                <entry>Stops the Transaction Counter.</entry>
               </row>
 
               <row>
@@ -6551,8 +7484,8 @@ puts "TEST SEQUENCE COMPLETE"</programlisting>
       name of the script. The following output is produced without further
       intervention whilst also writing the output to the logfile.</para>
 
-      <programlisting>HammerDB CLI v4.0
-Copyright (C) 2003-2020 Steve Shaw
+      <programlisting>HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;source cliexample.tcl
@@ -6719,9 +7652,9 @@ waittocomplete</programlisting>
       <para>On starting the Web service with the hammerdbws command HammerDB
       will listen on the specified port for HTTP requests.</para>
 
-      <programlisting>[oracle@vulture HammerDB-4.0]$ ./hammerdbws 
-HammerDB Web Service v4.0
-Copyright (C) 2003-2020 Steve Shaw
+      <programlisting>[oracle@vulture HammerDB-4.1]$ ./hammerdbws 
+HammerDB Web Service v4.1
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 Initialized new SQLite in-memory database
@@ -7881,22 +8814,39 @@ order by
       </section>
 
       <section>
-        <title>MySQL / MariaDB</title>
+        <title>MySQL</title>
 
         <para>MySQL does not support row oriented parallel query or a column
         store configuration and therefore queries run against a MySQL database
-        are expected to be long-running. However the MySQL compatible MariaDB
-        supports a separate installation of a column store based database
-        which offers significantly improved query times. However some queries
-        will result in database errors or long running queries. This option is
-        selected with the Data Warehouse Storage Engine Option.</para>
+        are expected to be long-running. In testing the myisam storage engine
+        offers improved query times compared to InnoDB.</para>
 
         <figure>
-          <title>MySQL MariaDB TPROC-H</title>
+          <title>MySQL TPROC-H</title>
 
           <mediaobject>
             <imageobject>
               <imagedata fileref="docs/images/ch9-12.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
+
+      <section>
+        <title> MariaDB</title>
+
+        <para>MariaDB supports a separate installation of a column store based
+        database which offers significantly improved query times for most
+        queries. However at versions tested some queries will result in
+        database errors or long running queries. This option is selected with
+        the Data Warehouse Storage Engine Option set to "Columnstore". </para>
+
+        <figure>
+          <title>MariaDB TPROC-H</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch9-12a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -8218,14 +9168,22 @@ force_parallel_mode = on
       </section>
 
       <section>
-        <title>MySQL / MariaDB</title>
+        <title>MySQL</title>
 
-        <para>To test analytic workloads on a MySQL compatible databases
-        MariaDB columnstore is the solution that should be used. Note that
-        this is a separate installation from a MySQL or MariaDB installation
-        rather than a pluggable storage engine. As MariaDB columnstore is
-        based on a columnstore solution called InfiniDB the relevant
-        parameters start with infinidb, for example:</para>
+        <para>MySQL does not support analytic workloads and therefore there
+        are no configuration parameters to optimize the database for such a
+        workload. </para>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>To test analytic workloads MariaDB columnstore is the solution
+        that should be used. Note that this is a separate installation from a
+        standard MariaDB installation rather than a pluggable storage engine.
+        As MariaDB columnstore is based on a columnstore solution called
+        InfiniDB the relevant parameters start with infinidb, for
+        example:</para>
 
         <programlisting># Enable compression by default on create, set to 0 to turn off
 infinidb_compression_type=2
@@ -8238,8 +9196,7 @@ infinidb_diskjoin_largesidelimit=0
 infinidb_diskjoin_bucketsize=100
 infinidb_um_mem_limit=64000
 infinidb_use_import_for_batchinsert=1
-infinidb_import_for_batchinsert_delimiter=7
-</programlisting>
+infinidb_import_for_batchinsert_delimiter=7</programlisting>
       </section>
     </section>
 
@@ -8736,6 +9693,111 @@ infinidb_import_for_batchinsert_delimiter=7
                   <entry>MySQL Database</entry>
 
                   <entry>The MySQL Database is the database that will be
+                  created containing the TPROC-H schema creation. There must
+                  have sufficient free space for the database to be
+                  created.</entry>
+                </row>
+
+                <row>
+                  <entry>Data Warehouse Storage Engine</entry>
+
+                  <entry>Use the "show engine" command to display available
+                  storage engines and select a storage engine that supports
+                  analytics. For MariaDB columnstore specify.
+                  "Columnstore"</entry>
+                </row>
+
+                <row>
+                  <entry>Scale Factor</entry>
+
+                  <entry>The Scale Factor is selected by a radio button with a
+                  choice of scale factors of 1,10,30,100,300 and 1000
+                  corresponding to 1GB, 10GB, 30GB,100GB and 1000GB
+                  respectively, larger schema sizes can also be created with
+                  the datagen option. Note that the required space will be
+                  larger than these values due to the indexes
+                  required.</entry>
+                </row>
+
+                <row>
+                  <entry>Virtual Users to Build Schema</entry>
+
+                  <entry>The Virtual Users to Build Schema is the number of
+                  Virtual Users to be created on the Load Generation Server
+                  that will complete your multi-threaded schema build. You
+                  should set this value to the number of cores on your Load
+                  Generation Server or SUT if HammerDB is running
+                  there.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table></para>
+      </section>
+
+      <section>
+        <title>MariaDB Schema Build Options</title>
+
+        <para><figure>
+            <title>MariaDB Build Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-8a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><table>
+            <title>MySQL Build Options</title>
+
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry align="center">Option</entry>
+
+                  <entry align="center">Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>MariaDB Host</entry>
+
+                  <entry>The MariaDB Host Name is the host name of the SUT
+                  database server.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Port</entry>
+
+                  <entry>The MariaDB Port is the network port on the SUT
+                  database server. In most cases this will be the default port
+                  of 3306.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User</entry>
+
+                  <entry>The MariaDB User is the user which has permission to
+                  create a database and you previously granted access to from
+                  the load generation server. The root user already exists in
+                  all MariaDB databases and has the necessary permissions to
+                  create the TPROC-H database.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB User Password</entry>
+
+                  <entry>The MariaDB user password is the password for the
+                  user defined as the MariaDB User. You will need to remember
+                  the MariaDB user name and password for running the TPROC-H
+                  driver script after the database is built.</entry>
+                </row>
+
+                <row>
+                  <entry>MariaDB Database</entry>
+
+                  <entry>The MariaDB Database is the database that will be
                   created containing the TPROC-H schema creation. There must
                   have sufficient free space for the database to be
                   created.</entry>
@@ -9348,6 +10410,14 @@ IgnoreWarnList="'01003'"
 
       <section>
         <title>Verifying and Backing up the MySQL Schema</title>
+
+        <para>MySQL does not directly support analytic workloads, however
+        where used the same verification and backup methodology can be used as
+        given for MariaDB.</para>
+      </section>
+
+      <section>
+        <title>Verifying and Backing up the MariaDB Schema</title>
 
         <para>The schema build is now complete with the following tables
         created and populated with the example showing a scale factor 1
@@ -10228,8 +11298,14 @@ GEOMEAN 4.011822724
     in the cloud or where the target database has a column structure meaning
     that load performance using batch inserts is poor. Additionally bulk
     loading can enable more flexibility to modify the schema according to
-    preference and reload during testing. This chpater details how to generate
-    and load large data sets with HammerDB.</para>
+    preference and reload during testing. This chapter details how to generate
+    and load large data sets with HammerDB. From version 4.2 the limit for
+    generating the TPROC-C schema has increased from 30,000 to 100,000
+    warehouses. Note that this is an interface limit to prevent
+    over-provisioning (100,000 warehouses may generate up to 10TB of data),
+    however it is straightforward to exceed this capacity by manually
+    modifying the generated datageb build script to increase the value.
+    </para>
 
     <section>
       <title>Generate the Dataset</title>
@@ -10425,8 +11501,8 @@ GEOMEAN 4.011822724
       generate data for.</para>
 
       <programlisting>./hammerdbcli 
-HammerDB CLI v4.0
-Copyright (C) 2003-2020 Steve Shaw
+HammerDB CLI v4.1
+Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;print datagen
@@ -10886,7 +11962,25 @@ db2 load from /home/db2inst1/TPCHDATA/nation_1.tbl of DEL MODIFIED BY DELPRIORIT
         <title>MySQL</title>
 
         <para>Bulk loading is done in MySQL using the load data infile
-        command. This can be done as follows:</para>
+        command. For the MySQL TPROC-C schema NULLS are not automatically
+        recognised and a SET command is required as follows for the ORDER_LINE
+        and ORDERS table:</para>
+
+        <programlisting>load data infile '/home/mysql/TPCCDATA/order_line_1.tbl' INTO table order_line fields terminated by '|'
+(ol_w_id, ol_d_id, ol_o_id, ol_number, ol_i_id, @dt1, ol_amount, ol_supply_w_id, ol_quantity, ol_dist_info)
+set ol_delivery_d = nullif(@dt1,'');
+
+load data infile '/home/mysql/TPCCDATA/orders_1.tbl' INTO table orders fields terminated by '|'
+(o_id, o_w_id, o_d_id, o_c_id, @id1, o_ol_cnt, o_all_local, o_entry_d)
+set o_carrier_id = nullif(@id1,'');
+</programlisting>
+      </section>
+
+      <section>
+        <title>MariaDB</title>
+
+        <para>As with MySQL bulk loading is done in MariaDB using the load
+        data infile command. </para>
 
         <programlisting>mysql&gt; load data infile '/home/mysql/TPCHDATA/supplier_1.tbl' INTO table SUPPLIER fields terminated by '|';</programlisting>
 
@@ -10924,19 +12018,7 @@ Query OK, 150000 rows affected (0.74 sec)
 Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0
 
 Query OK, 150000 rows affected (1.56 sec)
-Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0
-</programlisting>For the MySQL TPROC-C schema NULLS are not automatically
-        recognised and a SET command is required as follows for the ORDER_LINE
-        and ORDERS table:</para>
-
-        <programlisting>load data infile '/home/mysql/TPCCDATA/order_line_1.tbl' INTO table order_line fields terminated by '|'
-(ol_w_id, ol_d_id, ol_o_id, ol_number, ol_i_id, @dt1, ol_amount, ol_supply_w_id, ol_quantity, ol_dist_info)
-set ol_delivery_d = nullif(@dt1,'');
-
-load data infile '/home/mysql/TPCCDATA/orders_1.tbl' INTO table orders fields terminated by '|'
-(o_id, o_w_id, o_d_id, o_c_id, @id1, o_ol_cnt, o_all_local, o_entry_d)
-set o_carrier_id = nullif(@id1,'');
-</programlisting>
+Records: 150000  Deleted: 0  Skipped: 0  Warnings: 0</programlisting></para>
       </section>
 
       <section>

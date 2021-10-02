@@ -17,7 +17,7 @@
 	    <mysql_prepared>false</mysql_prepared>
         </schema>
         <driver>
-            <mysql_total_iterations>1000000</mysql_total_iterations>
+            <mysql_total_iterations>10000000</mysql_total_iterations>
             <mysql_raiseerror>false</mysql_raiseerror>
             <mysql_keyandthink>false</mysql_keyandthink>
             <mysql_driver>test</mysql_driver>
@@ -39,7 +39,7 @@
             <mysql_tpch_pass>mysql</mysql_tpch_pass>
             <mysql_tpch_dbase>tpch</mysql_tpch_dbase>
             <mysql_num_tpch_threads>1</mysql_num_tpch_threads>
-  	    <mysql_tpch_storage_engine>myisam</mysql_tpch_storage_engine>
+  	    <mysql_tpch_storage_engine>innodb</mysql_tpch_storage_engine>
         </schema>
         <driver>
             <mysql_total_querysets>1</mysql_total_querysets>

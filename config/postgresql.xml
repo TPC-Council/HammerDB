@@ -3,6 +3,7 @@
     <connection>
         <pg_host>localhost</pg_host>
         <pg_port>5432</pg_port>
+        <pg_sslmode>prefer</pg_sslmode>
     </connection>
 	<tpcc>
         <schema>
@@ -22,7 +23,7 @@
             <pg_partition>false</pg_partition>
         </schema>
         <driver>
-            <pg_total_iterations>1000000</pg_total_iterations>
+            <pg_total_iterations>10000000</pg_total_iterations>
             <pg_raiseerror>false</pg_raiseerror>
             <pg_keyandthink>false</pg_keyandthink>
             <pg_driver>test</pg_driver>
