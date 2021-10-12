@@ -304,6 +304,10 @@ set lev2uniquekeys [ lsort -unique [concat {*}[lmap k1 [dict keys $monitortiming
 if { ![ string equal "delivery neword ostat payment slev" $lev2uniquekeys ]} { 
 puts "WARNING:Timing data returned values for functions different than expected delivery neword ostat payment slev: $lev2uniquekeys"
 }
+
+if ![ tsv::exists webservice wsport ] {
+#Not working in webservice mode so open file for writing timing data
+set using_webservice "false"
 set tmpdir [ findtempdir ]
 if { $tmpdir != "notmpdir" } {
         if { $xtunique_log_name eq 1 } {
@@ -323,6 +327,25 @@ puts $fd "$dbtoreport Hammerdb Time Profile Report @ [clock format [clock second
           }
 } else {
      error "Could not open tempfile for Time Profile Report"
+  }
+} else {
+#set local variable using_webservice
+set using_webservice "true"
+if [catch {package require sqlite3} message ] {
+puts "Error loading SQLite : $message"
+return
+        }
+set sqlite_db [ tsv::get webservice sqldb ]
+if [catch {sqlite3 hdb $sqlite_db} message ] {
+puts "Error initializing SQLite database for Job Timings : $message"
+return
+        } else {
+catch {hdb timeout 30000}
+#hdb eval {PRAGMA foreign_keys=ON}
+#Select most recent jobid
+unset -nocomplain jobid
+set jobid [ hdb eval {select jobid from JOBMAIN order by datetime(timestamp) DESC LIMIT 1} ]
+	}
 }
 set vustoreport [ dict keys $monitortimings ]
 for { set vutri 0 } { $vutri < [llength $vustoreport] } { incr vutri } {
@@ -339,9 +362,23 @@ set sprocorder [ lsort -stride 2 -index 1 -real -decreasing $sprocratio ]
 for { set so 0 } { $so < [llength $sprocorder] } { incr so } {
 set sprocorder [ lreplace $sprocorder [ expr $so + 1 ] [ expr $so + 1 ] ] 
 }
-        puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
-        puts $fd [format ">>>>> VIRTUAL USER %s : ELAPSED TIME : %.0fms" $vutr [dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed]]
-foreach sproc $sprocorder {
+if { $using_webservice } {
+	foreach sproc $sprocorder {
+#DEBUG insert into JOBTIMINGS TABLE
+#puts [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min,avg,max,total,p99,p95,p50,sd,ratio,summary,elapsed) VALUES($jobid,$vutr,[format "%s" [ string toupper $sproc]],[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed])} ]
+#Insert XTprof timing data into JobTiming table for each Virtual User
+hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct,summary,elapsed_ms) VALUES('$jobid',$vutr,'[format "%s" [ string toupper $sproc]]',[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed])} ]
+#Add the timings to a list of timings for the same stored proc for all virtual users
+#At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
+#To record all individual data points for a virtual user write the output of this command to a file
+#Preceed with {*} to expand the list into individual space separated values
+#The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
+ 	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
+		}
+	} else {
+            puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
+            puts $fd [format ">>>>> VIRTUAL USER %s : ELAPSED TIME : %.0fms" $vutr [dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed]]
+	foreach sproc $sprocorder {
             puts $fd [format ">>>>> PROC: %s" [ string toupper $sproc]]
             puts -nonewline $fd [format "CALLS: %d\t" [dict get $monitortimings $vutr $sproc calls]] 
             puts -nonewline $fd [format "MIN: %.3fms\t" [dict get $monitortimings $vutr $sproc min]]
@@ -353,13 +390,13 @@ foreach sproc $sprocorder {
             puts -nonewline $fd [format "P50: %.3fms\t" [dict get $monitortimings $vutr $sproc p50]]
             puts -nonewline $fd [format "SD: %.3f\t" [dict get $monitortimings $vutr $sproc sd]]
             puts $fd [format "RATIO: %.3f%c" [dict get $monitortimings $vutr $sproc ratio] 37]
-
 #Add the timings to a list of timings for the same stored proc for all virtual users
 #At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
 #To record all individual data points for a virtual user write the output of this command to a file
 #Preceed with {*} to expand the list into individual space separated values
 #The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
  	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
+		}
         }
 }
 #Calculate Summary for All Virtual Users
@@ -401,6 +438,12 @@ set sprocorder [ lsort -stride 2 -index 1 -real -decreasing $sprocratio ]
 for { set so 0 } { $so < [llength $sprocorder] } { incr so } {
 set sprocorder [ lreplace $sprocorder [ expr $so + 1 ] [ expr $so + 1 ] ] 
 }
+if { $using_webservice } {
+foreach sproc $sprocorder {
+#Insert summary timings into JOBTIMING table, summary identified by summary column eq 1
+hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct,summary,elapsed_ms) VALUES('$jobid',[llength $vustoreport],'[format "%s" [ string toupper $sproc]]',[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],1,$medianendms)} ]
+		}
+	} else {
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
      puts $fd [format ">>>>> SUMMARY OF [llength $vustoreport] ACTIVE VIRTUAL USERS : MEDIAN ELAPSED TIME : %.0fms" $medianendms]
 foreach sproc $sprocorder {
@@ -415,9 +458,10 @@ foreach sproc $sprocorder {
             puts -nonewline $fd [format "P50: %.3fms\t" [dict get $sumtimings $sproc p50]]
             puts -nonewline $fd [format "SD: %.3f\t" [dict get $sumtimings $sproc sd]]
             puts $fd [format "RATIO: %.3f%c" [dict get $sumtimings $sproc ratio] 37]
-}
+	}
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 close $fd
+	}
 }
     
 proc xttimeprofdump {myposition} {
