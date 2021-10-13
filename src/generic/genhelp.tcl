@@ -240,8 +240,6 @@ get http://localhost:8080/buildschema
 <b>GET jobs</b>: Show the job ids, configuration, output, status, results and timings of jobs created by buildschema and vurun. Job output is equivalent to the output viewed in the graphical interface or command line.
 get http://localhost:8080/jobs
 get http://localhost:8080/jobs?jobid=TEXT
-get http://localhost:8080/jobs?result
-get http://localhost:8080/jobs?timestamp
 get http://localhost:8080/jobs?jobid=TEXT&bm
 get http://localhost:8080/jobs?jobid=TEXT&db
 get http://localhost:8080/jobs?jobid=TEXT&delete
