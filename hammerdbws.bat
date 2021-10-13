@@ -1,5 +1,5 @@
 @echo off
+COLOR 07
 set path=.\bin;%PATH%
-START tclsh86t hammerdbws
+CALL tclsh86t hammerdbws %1 %2
 exit
-
