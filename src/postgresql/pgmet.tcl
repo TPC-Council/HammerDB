@@ -295,7 +295,7 @@ proc ash_init { { display  0 } } {
     pack $ses_frame -in $tops_frame -side top -expand no -fill none -anchor nw 
     
     # Session 
-    ses_tbl  $public(ash,ses_frame) 60 10  " user_name %Active Activity SID  $public(ash,groups) "
+    ses_tbl  $public(ash,ses_frame) 60 10  " user_name %Active Activity SID(PID)  $public(ash,groups) "
     set public(ash,sestbl) $public(ash,ses_frame).tbl
     
     # Wait events
@@ -407,8 +407,8 @@ proc ses_tbl { win ncols nrows cols } {
       $public(ash,sestbl) configure -selectforeground  black 
       $public(ash,output) delete 0.0 end
       #$public(ash,output) insert  insert "   working ... "
-      $public(ash,output) insert  insert "Session ID: $id\n"
-      $public(ash,output) insert  insert "CPU: $CPU \nBCPU: $BCPU \nIO: $IO \nSystem_IO: $System_IO \nTimeout: $Timeout \nLWLock: $LWLock \nLock: $Lock \nBufferPin: $BufferPin \nActivity: $Activity \nExtension: $Extension \nClient: $Client \nIPC: $IPC \n"
+      $public(ash,output) insert  insert "Statistic of wait events for the process $id\n\n"
+      $public(ash,output) insert  insert "CPU:\t\t$CPU \nBCPU:\t\t$BCPU \nIO:\t\t$IO \nSystem_IO:\t\t$System_IO \nTimeout:\t\t$Timeout \nLWLock:\t\t$LWLock \nLock:\t\t$Lock \nBufferPin:\t\t$BufferPin \nActivity:\t\t$Activity \nExtension:\t\t$Extension \nClient:\t\t$Client \nIPC:\t\t$IPC \n"
       update idletasks
       clipboard clear
       clipboard append $id
@@ -1207,17 +1207,17 @@ proc ash_sqlstats_fetch { args } {
         set stats(shared_blks_dirtied) [lindex $row 5]
         set stats(shared_blks_written) [lindex $row 6]
         set stats(calls)               [lindex $row 7]
-        set stats(blk_write_time)      [ format "%0.1f" [lindex $row 8] ]
+        set stats(blk_write_time)      [ format "%0.2f" [lindex $row 8] ]
         set stats(local_blks_read)     [lindex $row 9]
         set stats(wal_bytes)           [lindex $row 10]
-        set stats(blk_read_time)       [ format "%0.1f" [lindex $row 11] ]
+        set stats(blk_read_time)       [ format "%0.2f" [lindex $row 11] ]
         set stats(local_blks_hit)      [lindex $row 12]
-        set stats(total_plan_time)     [ format "%0.1f" [lindex $row 13] ]
+        set stats(total_plan_time)     [ format "%0.2f" [lindex $row 13] ]
         set stats(temp_blks_read)      [lindex $row 14]
         set stats(temp_blks_written)   [lindex $row 15]
         set stats(shared_blks_read)    [lindex $row 16]
         set stats(plans)               [lindex $row 17]
-        set stats(total_exec_time)     [ format "%0.1f" [lindex $row 18] ]
+        set stats(total_exec_time)     [ format "%0.2f" [lindex $row 18] ]
         set stats(shared_blks_hit)     [lindex $row 19]
 
         foreach val {  
@@ -1234,17 +1234,25 @@ proc ash_sqlstats_fetch { args } {
           local_blks_written
           temp_blks_read
           temp_blks_written
-          blk_read_time
-          blk_write_time
-          plans
-          total_plan_time
           wal_records
           wal_fpi
           wal_bytes
+          plans
+          total_plan_time
+          blk_read_time
+          blk_write_time
         } { 
           set val1 $stats($val)
-          set val2 [ format "%0.3f" [ expr $stats($val) / $stats(calls) ] ]
-          set val3 [ format "%0.3f" [ expr $stats($val) / $stats(rows) ] ]
+          if { $stats(calls) == 0 } {
+            set val2 0
+          } else {
+            set val2 [ format "%0.2f" [ expr $stats($val) / $stats(calls) ] ]
+          }
+          if { $stats(rows) == 0 } {
+            set val3 0
+          } else {
+            set val3 [ format "%0.2f" [ expr $stats($val) / $stats(rows) ] ]
+          }
           #while {[regsub {^([-+]?\d+)(\d{3})} $val1 {\1,\2} val1]} {}
           #while {[regsub {^([-+]?\d+)(\d{3})} $val2 {\1,\2} val2]} {}
           #while {[regsub {^([-+]?\d+)(\d{3})} $val3 {\1,\2} val3]} {}
@@ -1289,7 +1297,7 @@ proc ash_eventsqls_fetch { args } {
         if { $sql == "" } { set sql "Empty SQL" }
         $public(ash,output) insert insert "\n-- No.$cnt --------------------------\n"
         $public(ash,output) insert insert "Event Backend Type: $backend_type \n"
-        $public(ash,output) insert insert "SQL that caused $total times $wait_event\n$sql \n"
+        $public(ash,output) insert insert "SQL that caused $total times $wait_event wait event\n$sql \n"
       }
     }
   } err] } { puts "call $cur_proc, err:$err"; } 
@@ -1862,14 +1870,15 @@ proc sqlio_fetch { args } {
   set cur_proc sqlio_fetch  
   if { [ catch {
     $public(ash,output) delete 0.0 end
+    $public(ash,output) insert end "IO wait events in the past 2 hours:\n"
     foreach row [ lindex $args 1 ] {
       if { [ lindex $row 0 ] != "" } {
         set Total     [lindex $row 0]
         set WaitEvent [lindex $row 1]
-        $public(ash,output) insert end "$WaitEvent\t\t$Total\n"
+        $public(ash,output) insert end "  $WaitEvent\t\t$Total\n"
       }
     }
-    $public(ash,output) insert end "\n"
+    $public(ash,output) insert end "\nQuery SQL:\n"
     $public(ash,output) insert end "[ subst $public(sql,sqlio) ] \n"
   } err] } { puts "call $cur_proc, err:$err"; } 
   unlock public(thread_actv) $cur_proc
