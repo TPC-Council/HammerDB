@@ -903,3 +903,135 @@ destroy .pgtpch
    raise .pgtpch
    update
 }
+
+proc metpgopts {} { 
+global agent_hostname agent_id bm
+upvar #0 icons icons
+upvar #0 configpostgresql configpostgresql
+setlocaltcountvars $configpostgresql 1
+variable pgoptsfields
+if { $bm eq "TPC-C" } {
+variable pg_oracompat
+if {[dict exists configpostgresql tpcc pg_oracompat ]} {
+set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
+	}
+set pgoptsfields [ dict create connection {pg_host {.metric.f1.e1 get} pg_port {.metric.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.metric.f1.e3 get} pg_superuserpass {.metric.f1.e4 get} pg_defaultdbase {.metric.f1.e5 get}} ]
+} else {
+set pgoptsfields [ dict create connection {pg_host {.metric.f1.e1 get} pg_port {.metric.f1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.metric.f1.e3 get} pg_tpch_superuserpass {.metric.f1.e4 get} pg_tpch_defaultdbase {.metric.f1.e5 get}} ]
+}
+if { $bm eq "TPC-C" } {
+if { $pg_oracompat eq "true" } {
+if { $pg_port eq "5432" } { set pg_port "5444" }
+if { $pg_superuser eq "postgres" } { set pg_superuser "enterprisedb" }
+if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "edb" }
+	} else {
+if { $pg_port eq "5444" } { set pg_port "5432" }
+if { $pg_superuser eq "enterprisedb" } { set pg_superuser "postgres" }
+if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
+	}
+} 
+if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
+if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
+set old_agent $agent_hostname
+set old_id $agent_id
+   catch "destroy .metric"
+   ttk::toplevel .metric
+   wm transient .metric .ed_mainFrame
+   wm withdraw .metric
+   wm title .metric {PostgreSQL Metrics Options}
+   set Parent .metric
+   set Name $Parent.f1
+   ttk::frame $Name
+   pack $Name -anchor nw -fill x -side top -padx 5
+set Prompt $Parent.f1.h1
+ttk::label $Prompt -image [ create_image dashboard icons ]
+grid $Prompt -column 0 -row 0 -sticky e
+set Prompt $Parent.f1.h2
+ttk::label $Prompt -text "PostgreSQL and OS Agent"
+grid $Prompt -column 1 -row 0 -sticky w
+   set Name $Parent.f1.e1
+   set Prompt $Parent.f1.p1
+   ttk::label $Prompt -text "PostgreSQL Host :"
+   ttk::entry $Name -width 30 -textvariable pg_host
+   grid $Prompt -column 0 -row 1 -sticky e
+   grid $Name -column 1 -row 1 -sticky ew
+   set Name $Parent.f1.e2
+   set Prompt $Parent.f1.p2
+   ttk::label $Prompt -text "PostgreSQL Port :"   
+   ttk::entry $Name  -width 30 -textvariable pg_port
+   grid $Prompt -column 0 -row 2 -sticky e
+   grid $Name -column 1 -row 2 -sticky ew
+set Name $Parent.f1.e3
+   set Prompt $Parent.f1.p3
+   ttk::label $Prompt -text "PostgreSQL Superuser :"
+if { $bm eq "TPC-C" } {
+   ttk::entry $Name  -width 30 -textvariable pg_superuser
+	} else {
+   ttk::entry $Name  -width 30 -textvariable pg_tpch_superuser
+	}
+   grid $Prompt -column 0 -row 3 -sticky e
+   grid $Name -column 1 -row 3 -sticky ew
+set Name $Parent.f1.e4
+   set Prompt $Parent.f1.p4
+   ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
+if { $bm eq "TPC-C" } {
+   ttk::entry $Name  -width 30 -textvariable pg_superuserpass
+	} else {
+   ttk::entry $Name  -width 30 -textvariable pg_tpch_superuserpass
+	}
+   grid $Prompt -column 0 -row 4 -sticky e
+   grid $Name -column 1 -row 4 -sticky ew
+set Name $Parent.f1.e5
+   set Prompt $Parent.f1.p5
+   ttk::label $Prompt -text "PostgreSQL Default Database :"
+if { $bm eq "TPC-C" } {
+   ttk::entry $Name -width 30 -textvariable pg_defaultdbase
+	} else {
+   ttk::entry $Name -width 30 -textvariable pg_tpch_defaultdbase
+	}
+   grid $Prompt -column 0 -row 5 -sticky e
+   grid $Name -column 1 -row 5 -sticky ew
+set Prompt $Parent.f1.p6
+ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
+set Name $Parent.f1.e6
+ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
+   grid $Prompt -column 0 -row 6 -sticky e
+   grid $Name -column 1 -row 6 -sticky w
+   set Name $Parent.f1.e7
+   set Prompt $Parent.f1.p7
+   ttk::label $Prompt -text "Agent ID :"
+   ttk::entry $Name -width 30 -textvariable agent_id
+   grid $Prompt -column 0 -row 7 -sticky e
+   grid $Name -column 1 -row 7
+   set Name $Parent.f1.e8
+   set Prompt $Parent.f1.p8
+   ttk::label $Prompt -text "Agent Hostname :"
+   ttk::entry $Name -width 30 -textvariable agent_hostname
+   grid $Prompt -column 0 -row 8 -sticky e
+   grid $Name -column 1 -row 8
+set Name $Parent.b4
+   ttk::button $Name -command { destroy .metric } -text Cancel
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   set Name $Parent.b5
+   ttk::button $Name -command {
+         set agent_id [.metric.f1.e7 get]
+         set agent_hostname [.metric.f1.e8 get]
+if { $bm eq "TPC-C" } {
+copyfieldstoconfig configpostgresql [ subst $pgoptsfields ] tpcc
+unset pgoptsfields
+} else {
+copyfieldstoconfig configpostgresql [ subst $pgoptsfields ] tpch
+unset pgoptsfields
+	}
+         catch "destroy .metric"
+if { ![string is integer -strict $agent_id] } {
+tk_messageBox -message "Agent id must be an integer"
+set agent_id 0
+          }
+        } -text {OK}
+   pack $Name -anchor w -side right -padx 3 -pady 3
+   wm geometry .metric +50+50
+   wm deiconify .metric
+   raise .metric
+   update
+}
