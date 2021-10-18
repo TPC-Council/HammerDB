@@ -926,7 +926,7 @@ if { $pg_superuser eq "postgres" } { set pg_superuser "enterprisedb" }
 if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "edb" }
 	} else {
 if { $pg_port eq "5444" } { set pg_port "5432" }
-if { $pg_superuser eq "enterprisedb" } { set pg_superuser "postgres" }
+if { $pg_tpch_superuser eq "enterprisedb" } { set pg_tpch_superuser "postgres" }
 if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
 	}
 } 

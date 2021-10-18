@@ -1904,18 +1904,28 @@ proc wait_analysis { id } {
 }
 
 proc connect_to_postgresql {} {
-  global public masterthread dbmon_threadID
+  global public masterthread dbmon_threadID bm
   upvar #0 configpostgresql configpostgresql
   setlocaltcountvars $configpostgresql 1
   set public(connected) 0
   set public(host) $pg_host
   set public(port) $pg_port
+  set public(sslmode) $pg_sslmode
+  if { $bm eq "TPC-C" } {
   set public(suser) $pg_superuser
   set public(suser_pw) $pg_superuserpass
   set public(default_db) $pg_defaultdbase
   set public(user) $pg_user
   set public(user_pw) $pg_pass
   set public(tproc_db) $pg_dbase
+  } else {
+  set public(suser) $pg_tpch_superuser
+  set public(suser_pw) $pg_tpch_superuserpass
+  set public(default_db) $pg_tpch_defaultdbase
+  set public(user) $pg_tpch_user
+  set public(user_pw) $pg_tpch_pass
+  set public(tproc_db) $pg_tpch_dbase
+  }
 
   if { ! [ info exists dbmon_threadID ] } {
     set public(parent) $masterthread
@@ -1926,7 +1936,7 @@ proc connect_to_postgresql {} {
 
   #Do logon in thread
   set db_type "default"
-  thread::send -async $dbmon_threadID "pg_logon $public(parent) $pg_host $pg_port $pg_superuser $pg_superuserpass $pg_defaultdbase $db_type"
+  thread::send -async $dbmon_threadID "pg_logon $public(parent) $public(host) $public(port) $public(sslmode) $public(suser) $public(suser_pw) $public(default_db) $db_type"
 
   #Do logon for getting sql plan
   #set db_type "tproc"
@@ -1951,12 +1961,12 @@ proc thread_init { } {
     global tpublic
   
     proc just_disconnect { parent } {
-      thread::send $parent "putsm \"Metrics closing down...\""
+      #thread::send $parent "putsm \"Metrics Closing down...\""
       catch {thread::release}
     }
 
-    proc pg_logon { parent host port user password db db_type} {
-      thread::send $parent "putsm \"Metrics connecting to $host $port $user $password $db\""
+    proc pg_logon { parent host port sslmode user password db db_type} {
+      thread::send $parent "putsm \"Metrics Connecting to host:$host port:$port\""
       set cur_proc pg_logon 
       set handle none
       set err "unknown"
@@ -1967,13 +1977,11 @@ proc thread_init { } {
         return
       }
 
-      set handle [ ConnectToPostgres $host $port $user $password $db ]
+      set handle [ ConnectToPostgres $parent $host $port $sslmode $user $password $db ]
       
       if { $handle eq "Failed" } {
-        set $err "error, the database connection to $host could not be established"
-
-        thread::send $parent "::callback_err \"$err\""
-        #thread::send $parent "::callback_mesg \"$cmd\""
+        #set err "error, the database connection to $host could not be established"
+        #thread::send $parent "::callback_err \"$err\""
         just_disconnect $parent
         return
       }
@@ -2000,41 +2008,36 @@ proc thread_init { } {
     }
   
     proc pg_logoff { parent handle } {
-      thread::send $parent "putsm \"Metrics logging off from PostgreSQL...\""
+      thread::send $parent "putsm \"Metrics Disconnect from PostgreSQL...\""
       set cur_proc pg_logoff 
       set err "unknown"
-      
-      if { [ catch {
-        pg_disconnect $handle
-      } err ] } { 
+      if { [ catch { pg_disconnect $handle } err ] } { 
         set err  [ join $err ]
         thread::send -async $parent "::callback_err \"$err\""
-        thread::send -async $parent "::callback_mesg \"pg_disconnect $handle\""
-      }
-      
       just_disconnect $parent
+      } else {
+      just_disconnect $parent
+      	}
     }
 
     #POSTGRES CONNECTION
-    proc ConnectToPostgres { host port user password dbname } {
-      global tcl_platform
-      global public masterthread dbmon_threadID
-    
-      if {[catch {set handle [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} err]} {
-        set handle "Failed";
-        thread::send -async $parent "::callback_err \"$err\""
-      } else {
-        if {$tcl_platform(platform) == "windows"} {
-          #Workaround for Bug #95 where first connection fails on Windows
-          catch {pg_disconnect $handle}
-          set handle [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+    proc ConnectToPostgres { parent host port sslmode user password dbname } {
+	global tcl_platform public masterthread dbmon_threadID
+	if {[catch {set handle [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} err]} {
+	set handle "Failed" 
+	thread::send -async $parent "::callback_err [ join $err ]"
+ 	} else {
+	if {$tcl_platform(platform) == "windows"} {
+	#Workaround for Bug #95 where first connection fails on Windows
+	catch {pg_disconnect $handle}
+	set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
         }
-        pg_notice_handler $handle puts
-        set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-        pg_result $result -clear
-      }
-      return $handle
-    }
+	pg_notice_handler $handle puts
+	set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+	pg_result $result -clear
+        }
+	return $handle
+	}
 
     proc pg_sql {parent handle sql} {
       set cur_proc pg_sql 
@@ -3147,7 +3150,7 @@ proc init_publics {} {
   set public(colors,count) 1
 }
 
-proc post_kill_dbmon_cleanup {} {
+proc pg_post_kill_dbmon_cleanup {} {
   global public dbmon_threadID
   .ed_mainFrame.buttons.dashboard configure -state disabled
   set public(connected) "err"
@@ -3158,8 +3161,8 @@ proc post_kill_dbmon_cleanup {} {
     if { [ info exists dbmon_threadID ]} { 
       if { [ thread::exists $dbmon_threadID ] } {
         if { [ info exists public(handle) ] } {
-          #logoff also calls just_disconnect
-          thread::send  -async $dbmon_threadID "pg_logoff $public(parent) $public(handle)"
+          #logoff also calls just_disconnect so release thread inside and cancel from outside
+          thread::send -async $dbmon_threadID "pg_logoff $public(parent) $public(handle)"
           tsv::set application themonitor "QUIT"
           catch {thread::cancel $dbmon_threadID}
         } else {
@@ -3170,12 +3173,13 @@ proc post_kill_dbmon_cleanup {} {
     }
     #thread logoff and disconnect asynch so may not have closed by this point
     if { ![ thread::exists $dbmon_threadID ] } {
+      puts "Metrics Closed\n"
       unset -nocomplain dbmon_threadID
       tsv::set application themonitor "READY"
       .ed_mainFrame.buttons.dashboard configure -state normal
     } else {
-      puts "Warning: Metrics connection remains active"
-      after 2000 post_kill_dbmon_cleanup
+      #puts "Closing Metrics thread ..."
+      after 2000 pg_post_kill_dbmon_cleanup
     }
   }
 }
@@ -3194,7 +3198,7 @@ proc pgmetrics { } {
         yes { return }
         no {
           set public(connected) "err"
-          post_kill_dbmon_cleanup
+          pg_post_kill_dbmon_cleanup
           return
         }
       }
@@ -3206,6 +3210,5 @@ proc pgmetrics { } {
   ed_status_message -finish "... Starting Metrics ..."
   ed_stop_metrics
   .ed_mainFrame.buttons.dashboard configure -state disabled
-
   connect_to_postgresql
 }

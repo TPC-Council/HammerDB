@@ -230,7 +230,11 @@ return
 
 proc ed_kill_metrics {args} {
    global _ED rdbms 
-if { $rdbms == "Oracle" } { post_kill_dbmon_cleanup }
+if { $rdbms == "Oracle" } {
+	post_kill_dbmon_cleanup 
+	} elseif { $rdbms == "PostgreSQL" } {
+	pg_post_kill_dbmon_cleanup 
+	}
    ed_status_message -show "... Stopping Metrics ..."
    ed_metrics_button
 if { [ interp exists metrics_interp ] } {
