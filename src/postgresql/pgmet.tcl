@@ -25,7 +25,7 @@ proc create_metrics_screen { } {
   set public(p_x) [ expr {round((600/1.333333)*$win_scale_fact)} ]
   set public(p_y) [ expr {round((654/1.333333)*$win_scale_fact)} ]
   if { ![winfo exists .ed_mainFrame.me.m] } {
-    frame $main -background   $public(bg) -borderwidth 0 
+    frame $main -background $public(bg) -borderwidth 0 
     frame $main.f -background $public(bg) -borderwidth 0 ;# frame, use frame to put tiled windows
     pack $main                            -expand true -fill both 
     pack [ ttk::sizegrip $main.grip ]     -side bottom -anchor se
@@ -61,7 +61,7 @@ proc display_only { {name "" } {proc  "" }    } {
 proc colors1 { } {
   global public
   set num_colors 0
-  foreach color { red pgnge yellow green blue purple } {
+  foreach color { red orange yellow green blue purple } {
     incr num_colors
     set public(clr,$num_colors) $color
   }
@@ -92,11 +92,11 @@ proc colors { } {
   set num_colors 0
 
   set colors { SeaGreen4 HotPink2 aquamarine3 purple4 cyan4 MediumPurple3 blue 
-               plum3  pgnge3  magenta3  goldenrod2 VioletRed4 yellow  
+               plum3  orange3  magenta3  goldenrod2 VioletRed4 yellow  
                firebrick3 OliveDrab3   tomato1 SpringGreen3   
              } 
   set colors { aquamarine3  cyan4  blue purple4 MediumPurple3 
-               plum3 magenta3 HotPink2 VioletRed4 firebrick3 tomato1 pgnge3 
+               plum3 magenta3 HotPink2 VioletRed4 firebrick3 tomato1 orange3 
                goldenrod2  yellow OliveDrab3 SpringGreen3 SeaGreen4
              } 
   foreach color $colors {
@@ -1737,7 +1737,8 @@ proc outputsetup { output } {
     set   output    $public(ash,output_frame).txt
     frame $output   -bd 0  -relief flat -bg $public(bgt)
     frame $output.f
-    text $output.w  -yscrollcommand "$output.scrolly set" \
+    text $output.w  -background white \
+    		    -yscrollcommand "$output.scrolly set" \
                     -xscrollcommand "$output.scrollx set" \
                     -width $public(cols) -height 26    \
                     -wrap word \
