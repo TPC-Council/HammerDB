@@ -2936,7 +2936,9 @@ proc set_pgcursors {} {
       to_char(current_timestamp,'J') as last_day, to_char(min(ash_time),'J') as first_day 
     from ash group by samples,sample_id,wait_event_type,ash_time,bucket order by ash_time;"
 
-  set public(sql,ash_sqltxt) "select distinct query from pg_active_session_history where \$public(ash,sqlid);"
+    #set public(sql,ash_sqltxt) "select distinct query from pg_active_session_history where \$public(ash,sqlid);"
+    #Query can have multiple rows for the same SQL with different predicates, limit to the most recent in the ASH
+  set public(sql,ash_sqltxt) "select query from pg_active_session_history where \$public(ash,sqlid) order by xact_start desc limit 1;"
 
   set public(sql,ash_sqlplanx) ""
   
