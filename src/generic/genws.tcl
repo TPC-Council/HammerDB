@@ -8,6 +8,10 @@ namespace eval ttk {
 variable currentTheme "black"
 proc scrollbar { args } { ; }
 	}
+proc putscli { output } {
+puts $output
+TclReadLine::print "\r"
+ }
 # Pure Tcl implementation of [string insert] command.
 proc ::tcl::string::insert {string index insertString} {
     # Convert end-relative and TIP 176 indexes to simple integers.
@@ -41,8 +45,9 @@ proc ::tcl::string::insert {string index insertString} {
 namespace ensemble configure string -map [dict replace\
         [namespace ensemble configure string -map]\
         insert ::tcl::string::insert]
+
 proc {} { args } { ; }
-proc canvas { args } { ; } 
+proc canvas { args } { ; }
 proc pack { args } { ; }
 proc .ed_mainFrame { args } { ; }
 proc .ed_mainFrame.notebook { args } { ; }
@@ -56,9 +61,27 @@ proc .ed_mainFrame.buttons.test { args } { ; }
 proc .ed_mainFrame.buttons.runworld { args } { ; }
 proc ed_lvuser_button { args } { ; }
 proc .ed_mainFrame.editbuttons.test { args } { ; }
+proc .ed_mainFrame.editbuttons.distribute { args } { ; }
+proc destroy { args } { ; }
+proc ed_edit { args } { ; }
+proc applyctexthighlight { args } { ; }
 proc winfo { args } { return "false" }
 proc even x {expr {($x % 2) == 0}}
 proc odd  x {expr {($x % 2) != 0}}
+
+proc strip_html { htmlText } {
+    regsub -all {<[^>]+>} $htmlText "" newText
+    return $newText
+    }
+
+proc bgerror {{message ""}} {
+      global errorInfo
+    if {[string match {*threadscreated*} $errorInfo]} {
+      #puts stderr "Background Error ignored - Threads Killed"
+        } else {
+        puts stderr "Unmatched Background Error - $errorInfo"
+        }
+}
 
 proc configtable {} {
 global vustatus threadscreated virtual_users maxvuser table ntimes thvnum totrun AVUC
@@ -80,11 +103,47 @@ dict set vustatus [ expr $vuser + 1 ] "WAIT IDLE"
 set totrun [ expr $maxvuser * $ntimes ]
 }
 
+proc find_current_dict {} {
+global rdbms bm
+upvar #0 dbdict dbdict
+foreach { key } [ dict keys $dbdict ] {
+set dictname config$key
+if { [ dict get $dbdict $key name ] eq $rdbms } {
+        upvar #0 config$key config$key
+set posswkl  [ split  [ dict get $dbdict $key workloads ]]
+set ind [lsearch $posswkl $bm]
+if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
+if { [ llength $wkltoremove ] > 1 } { 
+putscli "Error printing dict format more than 2 workloads" 
+return
+} else {
+set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
+set tmpdictforpt [ dict remove [ subst \$config$key ] $bmdct ]
+          }
+        }
+return $tmpdictforpt
+    }
+  }
+}
+
+proc jobmain { jobid } {
+global rdbms bm
+set query [ hdb eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid} ]
+if { $query eq 0 } {
+set tmpdictforpt [ find_current_dict ]
+hdb eval {INSERT INTO JOBMAIN(jobid,db,bm,jobdict) VALUES($jobid,$rdbms,$bm,$tmpdictforpt)}
+return 0
+	} else {
+return 1
+	}
+
+}
+
 proc runninguser { threadid } { 
 global table threadscreated thvnum inrun AVUC vustatus jobid
 set AVUC "run"
 set message [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ]
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "RUNNING"
  }
 
@@ -93,17 +152,17 @@ global vustatus table threadscreated thvnum succ fail totrun totcount inrun AVUC
 incr totcount
 if { $result == 0 } {
 set message [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ]
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH SUCCESS"
 } else {
 set message [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ]
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
 dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH FAILED"
 }
 if { $totrun == $totcount } {
 set AVUC "complete"
 if { [ info exists inrun ] } { unset inrun }
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
 refreshscript
     }
 }
@@ -116,7 +175,7 @@ set message "tk_messageBox with unknown message"
  } else {
 set message [ lindex $args [expr $messind + 1] ]
 }
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
 set typeind [ lsearch $args yesno ]
 if { $typeind eq -1 } { set yesno "false" 
 	} else {
@@ -131,19 +190,23 @@ return
 rename myerrorproc _myerrorproc
 proc myerrorproc { id info } {
 global threadsbytid jobid
+if { ![ info exists jobid ] } { set jobid 0 }
 if { ![string match {*index*} $info] } {
 if { [ string length $info ] == 0 } {
 set message "Warning: a running Virtual User was terminated, any pending output has been discarded"
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+putscli [ subst {{"warning": {"message": "a running Virtual User was terminated, any pending output has been discarded"}}} ]
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
 } else {
 if { [ info exists threadsbytid($id) ] } {
 set vuser [expr $threadsbytid($id) + 1]
 set info "Error: $info"
-hdb eval {INSERT INTO JOBS VALUES($jobid, $vuser, $info)}
+putscli [ subst {{"error": {"message": "$info"}}} ]
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
         }  else {
     if {[string match {*.tc*} $info]} {
-set message "Warning: Transaction Counter stopped, connection message not displayed"
-hdb eval {INSERT INTO JOBS VALUES($jobid, 0, $message)}
+#set message "Warning: Transaction Counter stopped, connection message not displayed"
+putscli [ subst {{"error": {"message": "$info"}}} ]
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $info)}
         } else {
                 ;
 #Background Error from Virtual User suppressed
@@ -158,12 +221,12 @@ proc Log {id msg lastline} {
 global tids threadsbytid jobid 
 set vuser [expr $threadsbytid($id) + 1]
 set lastline [ string trimright $lastline ]
-hdb eval {INSERT INTO JOBS VALUES($jobid, $vuser, $lastline)}
+hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
 }
 
 rename logtofile _logtofile
 proc logtofile { id msg } {
-puts "Warning: File Logging disabled in web service mode"
+puts "Warning: File Logging disabled in web service mode, use jobs command to reretrieve output"
 }
 
 proc ed_edit_clear {} {
@@ -298,7 +361,7 @@ return false
 	}
 }}
 
-proc clearscript {} {
+proc clearscript2 {} {
 global bm _ED
 set _ED(package) ""
 if { [ string length $_ED(package) ] eq 0 } { 
@@ -341,17 +404,6 @@ run_virtual
 	}
 }
 
-proc vurun {} {
-	global _ED
-if { [ string length $_ED(package) ] > 0 } { 
-	if { [ catch {run_virtual} message ] } {
-	puts "Error: $message"
-	}
-	} else {
-puts "Error: There is no workload to run because the Script is empty"
-	}
-}
-
 proc loadtpcc {} {
 upvar #0 dbdict dbdict
 global _ED rdbms lprefix
@@ -378,11 +430,15 @@ set db_async_scale "false"
         }
 if { $db_allwarehouse } { shared_tpcc_functions "allwarehouse" $db_async_scale }
         }
+upvar #0 genericdict genericdict
+if {[dict exists $genericdict timeprofile profiler]} {
+set profiler [ dict get $genericdict timeprofile profiler]
+        }
+if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "ettimeprofile" }
 set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
 if { $timep != "" } {
 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
-#Always run ettimeprofile in WS as the extended timeprofile uses a separate log
-if { $db_timeprofile } { shared_tpcc_functions "ettimeprofile" "false" }
+if { $db_timeprofile } { shared_tpcc_functions $profile_func "false" }
         }
 break
     }
@@ -450,261 +506,19 @@ proc wapp-default {} {
     <meta content=\"text/html;charset=ISO-8859-1\" http-equiv=\"Content-Type\">
     <title>HammerDB Web Service</title>
     <h1>HammerDB Web Service</h1>
-    <p>See the <a href='%html($B)/env'>HammerDB Web Service Environment</a></p>
+    <p><a href='%html($B)/env'>HammerDB Web Service Environment</a></p>
+    <p><a href='%html($B)/help'>HammerDB Web Service API</a></p>
   </head>
   <body>
-    <h2>HAMMERDB REST/HTTP API</h2>
-    <pre><b>GET db</b>: Show the configured database.
-get http://localhost:8080/print?db / get http://localhost:8080/db
-{
-  \"current\": \"Oracle\",
-  \"ora\": \"Oracle\",
-  \"mssqls\": \"MSSQLServer\",
-  \"db2\": \"Db2\",
-  \"mysql\": \"MySQL\",
-  \"pg\": \"PostgreSQL\",
-  \"redis\": \"Redis\"
-}
-    <br>
-<b>GET bm</b>: Show the configured benchmark.
-get http://localhost:8080/print?bm / get http://localhost:8080/bm
-{\"benchmark\": \"TPC-C\"}
-    <br>
-<b>GET dict</b>: Show the dictionary for the current database ie all active variables.
-get http://localhost:8080/print?dict /  http://localhost:8080/dict
-{
-  \"connection\": {
-    \"system_user\": \"system\",
-    \"system_password\": \"manager\",
-    \"instance\": \"oracle\",
-    \"rac\": \"0\"
-  },
-  \"tpcc\": {
-    \"count_ware\": \"1\",
-    \"num_vu\": \"1\",
-    \"tpcc_user\": \"tpcc\",
-    \"tpcc_pass\": \"tpcc\",
-    \"tpcc_def_tab\": \"tpcctab\",
-    \"tpcc_ol_tab\": \"tpcctab\",
-    \"tpcc_def_temp\": \"temp\",
-    \"partition\": \"false\",
-    \"hash_clusters\": \"false\",
-    \"tpcc_tt_compat\": \"false\",
-    \"total_iterations\": \"1000000\",
-    \"raiseerror\": \"false\",
-    \"keyandthink\": \"false\",
-    \"checkpoint\": \"false\",
-    \"ora_driver\": \"test\",
-    \"rampup\": \"2\",
-    \"duration\": \"5\",
-    \"allwarehouse\": \"false\",
-    \"timeprofile\": \"false\"
-  }
-}
-<br> 
-<b>GET script</b>: Show the loaded script.
-get http://localhost:8080/print?script / http://localhost:8080/script
-{\"script\": \"#!\/usr\/local\/bin\/tclsh8.6\n#EDITABLE OPTIONS##################################################\nset library Oratcl ;# Oracle OCI Library\nset total_iterations 1000000 ;# Number of transactions before logging off\nset RAISEERROR \\"false\\" ;# Exit script on Oracle error (true or false)\nset KEYANDTHINK \\"false\\" ;# Time for user thinking and keying (true or false)\nset CHECKPOINT \\"false\\" ;# Perform Oracle checkpoint when complete (true or false)\nset rampup 2;  # Rampup time in minutes before first snapshot is taken\nset duration 5;  # Duration in minutes before second AWR snapshot is taken\nset mode \\"Local\\" ;# HammerDB operational mode\nset timesten \\"false\\" ;# Database is TimesTen\nset systemconnect system\/manager@oracle ;# Oracle connect string for system user\nset connect tpcc\/new_password@oracle ;# Oracle connect string for tpc-c user\n#EDITABLE OPTIONS##################################################\n#LOAD LIBRARIES AND MODULES &#8230;. \n\"}
-<br> 
-<b>GET vuconf</b>: Show the virtual user configuration.
-get http://localhost:8080/print?vuconf / http://localhost:8080/vuconf
-{
-  \"Virtual Users\": \"1\",
-  \"User Delay(ms)\": \"500\",
-  \"Repeat Delay(ms)\": \"500\",
-  \"Iterations\": \"1\",
-  \"Show Output\": \"1\",
-  \"Log Output\": \"0\",
-  \"Unique Log Name\": \"0\",
-  \"No Log Buffer\": \"0\",
-  \"Log Timestamps\": \"0\"
-}
-<br> 
-<b>GET vucreate</b>: Create the virtual users. Equivalent to the Virtual User Create option in the graphical interface. Use vucreated to see the number created, vustatus to see the status and vucomplete to see whether all active virtual users have finished the workload. A script must be loaded before virtual users can be created.
-get http://localhost:8080/vucreate
-{\"success\": {\"message\": \"4 Virtual Users Created\"}}
-<br> 
-<b>GET vucreated</b>: Show the number of virtual users created.
-get http://localhost:8080/print?vucreated / get http://localhost:8080/vucreated
-{\"Virtual Users created\": \"10\"}
-<br> 
-<b>GET vustatus</b>: Show the status of virtual users, status will be \"WAIT IDLE\" for virtual users that are created but not running a workload,\"RUNNING\" for virtual users that are running a workload, \"FINISH SUCCESS\" for virtual users that completed successfully or \"FINISH FAILED\" for virtual users that encountered an error.
-get http://localhost:8080/print?vustatus / get http://localhost:8080/vustatus
-{\"Virtual User status\": \"1 {WAIT IDLE} 2 {WAIT IDLE} 3 {WAIT IDLE} 4 {WAIT IDLE} 5 {WAIT IDLE} 6 {WAIT IDLE} 7 {WAIT IDLE} 8 {WAIT IDLE} 9 {WAIT IDLE} 10 {WAIT IDLE}\"}
-<br> 
-<b>GET datagen</b>: Show the datagen configuration
-get http://localhost:8080/print?datagen /  get http://localhost:8080/datagen
-{
-  \"schema\": \"TPC-C\",
-  \"database\": \"Oracle\",
-  \"warehouses\": \"1\",
-  \"vu\": \"1\",
-  \"directory\": \"\/tmp\\"\"
-}
-<br> 
-<b>GET vucomplete</b>: Show if virtual users have completed. returns \"true\" or \"false\" depending on whether all virtual users that started a workload have completed regardless of whether the status was \"FINISH SUCCESS\" or \"FINISH FAILED\".
-get http://localhost:8080/vucomplete
-{\"Virtual Users complete\": \"true\"}
-<br> 
-<b>GET vudestroy</b>: Destroy the virtual users. Equivalent to the Destroy Virtual Users button in the graphical interface that replaces the Create Virtual Users button after virtual user creation.
-get http://localhost:8080/vudestroy
-{\"success\": {\"message\": \"vudestroy success\"}}
-<br> 
-<b>GET loadscript</b>: Load the script for the database and benchmark set with dbset and the dictionary variables set with diset. Use print?script to see the script that is loaded. Equivalent to loading a Driver Script in the Script Editor window in the graphical interface. Driver script must be set to timed for the script to be loaded. Test scripts should be run in the GUI environment.  
-get http://localhost:8080/loadscript
-{\"success\": {\"message\": \"script loaded\"}}
-<br> 
-<b>GET clearscript</b>: Clears the script. Equivalent to the \"Clear the Screen\" button in the graphical interface.
-get http://localhost:8080/clearscript
-{\"success\": {\"message\": \"Script cleared\"}}
-<br> 
-<b>GET vurun</b>: Send the loaded script to the created virtual users for execution. Equivalent to the Run command in the graphical interface. Creates a job id associated with all output. 
-get http://localhost:8080/vurun
-{\"success\": {\"message\": \"Running Virtual Users: JOBID=5CEFBFE658A103E253238363\"}}
-<br>
-<b>GET datagenrun</b>: Run Data Generation. Equivalent to the Generate option in the graphical interface. Not supported in web service. Generate data using GUI or CLI. 
-<br>
-<b>GET buildschema</b>: Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface. Creates a job id associated with all output. 
-get http://localhost:8080/buildschema
-{\"success\": {\"message\": \"Building 6 Warehouses with 4 Virtual Users, 3 active + 1 Monitor VU(dict value num_vu is set to 3): JOBID=5CEFA68458A103E273433333\"}}
-<br>
-<b>GET jobs</b>: Show the job ids, output, status and results of jobs created by buildschema and vurun. Job output is equivalent to the output viewed in the graphical interface or command line.
-GET http://localhost:8080/jobs: Show all job ids
-get http://localhost:8080/jobs
-\[
-  \"5CEE889958A003E203838313\",
-  \"5CEFA68458A103E273433333\"
-\]
-GET http://localhost:8080/jobs?jobid=TEXT: Show output for the specified job id.
-get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333
-\[
-  \"0\",
-  \"Ready to create a 6 Warehouse Oracle TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
-  \"0\",
-  \"Vuser 1:RUNNING\",
-  \"1\",
-  \"Monitor Thread\",
-  \"1\",
-  \"CREATING TPCC SCHEMA\",
-...
-  \"1\",
-  \"TPCC SCHEMA COMPLETE\",
-  \"0\",
-  \"Vuser 1:FINISHED SUCCESS\",
-  \"0\",
-  \"ALL VIRTUAL USERS COMPLETE\"
-\]
-GET http://localhost:8080/jobs?jobid=TEXT&amp;vu=INTEGER: Show output for the specified job id and virtual user.
-get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333&amp;vu=1
-\[
-  \"1\",
-  \"Monitor Thread\",
-  \"1\",
-  \"CREATING TPCC SCHEMA\",
-  \"1\",
-  \"CREATING USER tpcc\",
-  \"1\",
-  \"CREATING TPCC TABLES\",
-  \"1\",
-  \"Loading Item\",
-  \"1\",
-  \"Loading Items - 50000\",
-  \"1\",
-  \"Loading Items - 100000\",
-  \"1\",
-  \"Item done\",
-  \"1\",
-  \"Monitoring Workers...\",
-  \"1\",
-  \"Workers: 3 Active 0 Done\"
-\]
-GET http://localhost:8080/jobs?jobid=TEXT&amp;status: Show status for the specified job id. Equivalent to virtual user 0.
-get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333&amp;status
-\[
-  \"0\",
-  \"Ready to create a 6 Warehouse Oracle TPC-C schema\nin database VULPDB1 under user TPCC in tablespace TPCCTAB?\",
-  \"0\",
-  \"Vuser 1:RUNNING\",
-  \"0\",
-  \"Vuser 2:RUNNING\",
-  \"0\",
-  \"Vuser 3:RUNNING\",
-  \"0\",
-  \"Vuser 4:RUNNING\",
-  \"0\",
-  \"Vuser 4:FINISHED SUCCESS\",
-  \"0\",
-  \"Vuser 3:FINISHED SUCCESS\",
-  \"0\",
-  \"Vuser 2:FINISHED SUCCESS\",
-  \"0\",
-  \"Vuser 1:FINISHED SUCCESS\",
-  \"0\",
-  \"ALL VIRTUAL USERS COMPLETE\"
-\]
-GET http://localhost:8080/jobs?jobid=TEXT&amp;result: Show the test result for the specified job id. If job is not a test job such as build job then no result will be reported. 
-get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333&amp;result
-\[
-  \"5CEFA68458A103E273433333\",
-  \"Jobid has no test result\"
-\]
-GET http://localhost:8080/jobs?jobid=TEXT&amp;delete: Delete all output for the specified jobid.
-get http://localhost:8080/jobs?jobid=5CEFA68458A103E273433333&amp;delete
-{\"success\": {\"message\": \"Deleted Jobid 5CEFA68458A103E273433333\"}} 
-<br>
-<b>GET killws</b>: Terminates the webservice and reports message to the console.
-get http://localhost:8080/killws
-Shutting down HammerDB Web Service
-<br>
-<b>POST dbset</b>: Usage: dbset \[db|bm\] value. Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu in the graphical interface. Database value is set by the database prefix in the XML configuration.
-set body { \"db\": \"ora\" }
-rest::post http://localhost:8080/dbset $body
-<br>
-<b>POST diset</b>: Usage: diset dict key value. Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use print?dict to see what these variables are and diset to change.
-set body { \"dict\": \"tpcc\", \"key\": \"rampup\", \"value\": \"0\" }
-rest::post http://localhost:8080/diset $body
-set body { \"dict\": \"tpcc\", \"key\": \"duration\", \"value\": \"1\" }
-rest::post http://localhost:8080/diset $body
-<br>
-<b>POST vuset</b>: Usage: vuset \[vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps\]. Configure the virtual user options. Equivalent to the Virtual User Options window in the graphical interface.
-set body { \"vu\": \"4\" }
-rest::post http://localhost:8080/vuset $body
-<br>
-<b>POST customscript</b>: Load an external script. Equivalent to the \"Open Existing File\" button in the graphical interface. Script must be converted to JSON format before post as shown in the example:
-set customscript \"testscript.tcl\"
-set _ED(file) $customscript
-if {$_ED(file) == \"\"} {return}
-    if {!\[file readable $_ED(file)\]} {
-        puts \"File \[$_ED(file)\] is not readable.\"
-        return
-    }
-if {\[catch \"open \\"$_ED(file)\\" r\" fd\]} {
-      puts \"Error while opening $_ED(file): \[$fd\]\"
-        } else {
- set _ED(package) \"\[read $fd\]\"
- close $fd
-	}
-set huddleobj \[ huddle compile {string} \"$_ED(package)\" \]
-set jsonobj \[ huddle jsondump $huddleobj \]
-set body \[ subst { {\"script\": $jsonobj}} \]
-set res \[ rest::post http://localhost:8080/customscript $body \] 
-<br>
-<b>POST dgset</b>: Usage: dgset \[vu|ware|directory\]. Set the Datagen options. Equivalent to the Datagen Options dialog in the graphical interface.
-set body { \"directory\": \"/home/oracle\" }
-rest::post http://localhost:8080/dgset $body 
-<br>
-<b>DEBUG</b>
-<b>GET dumpdb</b>: Dumps output of the SQLite database to the console.
-GET http://localhost:8080/dumpdb
-***************DEBUG***************
-5CEE889958A003E203838313 0 {Ready to create a 6 Warehouse Oracle TPC-C schema
-in database VULPDB1 under user TPCC in tablespace TPCCTAB?} 5CEE889958A003E203838313 0 {Vuser 1:RUNNING} 5CEE889958A003E203838313 1 {Monitor Thread} 5CEE889958A003E203838313 1 {CREATING TPCC SCHEMA} 5CEE889958A003E203838313 0 {Vuser 2:RUNNING} 5CEE889958A003E203838313 2 {Worker Thread} 5CEE889958A003E203838313 2 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 1 {Error: ORA-12541: TNS:no listener} 5CEE889958A003E203838313 0 {Vuser 1:FINISHED FAILED} 5CEE889958A003E203838313 0 {Vuser 3:RUNNING} 5CEE889958A003E203838313 3 {Worker Thread} 5CEE889958A003E203838313 3 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 0 {Vuser 4:RUNNING} 5CEE889958A003E203838313 4 {Worker Thread} 5CEE889958A003E203838313 4 {Waiting for Monitor Thread...} 5CEE889958A003E203838313 2 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 2:FINISHED SUCCESS} 5CEE889958A003E203838313 3 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 3:FINISHED SUCCESS} 5CEE889958A003E203838313 4 {Monitor failed to notify ready state} 5CEE889958A003E203838313 0 {Vuser 4:FINISHED SUCCESS} 5CEE889958A003E203838313 0 {ALL VIRTUAL USERS COMPLETE}
-***************DEBUG***************</pre>
-    <br>
   </body>
 </html>
-
 	}
+}
+
+proc env {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/env "" ]
+putscli [ strip_html $res ]
 }
 
 proc wapp-page-env {} {
@@ -734,23 +548,15 @@ wapp-2-json 1 $bmdict
 }
 
 proc wapp-page-dict {} {
-global rdbms bm wapp
-upvar #0 dbdict dbdict
-foreach { key } [ dict keys $dbdict ] {
-set dictname config$key
-if { [ dict get $dbdict $key name ] eq $rdbms } {
-        upvar #0 config$key config$key
-set posswkl  [ split  [ dict get $dbdict $key workloads ]]
-set ind [lsearch $posswkl $bm]
-if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
-if { [ llength $wkltoremove ] > 1 } { puts "Error printing dict format more than 2 workloads" } else {
-set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
-set tmpdictforpt [ dict remove [ subst \$config$key ] $bmdct ]
-          }
-        }
+global wapp
+set tmpdictforpt [ find_current_dict ] 
 wapp-2-json 2 $tmpdictforpt
-    }
-  }
+}
+
+proc loadscript {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/loadscript "" ]
+putscli $res
 }
 
 proc wapp-page-loadscript {} {
@@ -792,6 +598,32 @@ wapp-2-json 1 $scriptdict
         }
 }
 
+proc print { args } {
+global ws_port
+set res [rest::get http://localhost:$ws_port/print $args ]
+putscli $res
+}
+
+proc wapp-page-echo {} {
+if [catch {set huddlecontent [ huddle::json2huddle [list [wapp-param CONTENT]]]} message ] {
+dict set jsondict error message [ subst {$message} ]
+wapp-2-json 2 $jsondict
+} else {
+if {[ huddle llength $huddlecontent ] != 6} {
+dict set jsondict error message "Incorrect number of parameters to echo"
+wapp-2-json 2 $jsondict
+return
+}
+foreach {type key value} [ huddle keys $huddlecontent ] break
+	set type2 [ huddle get_stripped $huddlecontent $type ]
+	set key2 [ huddle get_stripped $huddlecontent $key ]
+	set val [ huddle get_stripped $huddlecontent $value ]
+dict set jsondict $type2 $key2 "$val"
+wapp-2-json 2 $jsondict
+	}
+}
+
+
 proc wapp-page-print {} {
 switch [ wapp-param QUERY_STRING ] {
 db { wapp-page-db }
@@ -802,6 +634,7 @@ vuconf { wapp-page-vuconf }
 vucreated { wapp-page-vucreated }
 vustatus { wapp-page-vustatus }
 datagen { wapp-page-datagen }
+tcconf { wapp-page-tcconf }
 default {
 dict set scriptdict usage message "print?option"
 wapp-2-json 2 $scriptdict
@@ -822,6 +655,10 @@ dict append vucreateddict "Virtual Users created" [expr [ llength [ thread::name
 wapp-2-json 1 $vucreateddict
 }
 
+proc vustatus {} {
+print vustatus
+}
+
 proc wapp-page-vustatus {} {
 global vustatus
 if { ![info exists vustatus] } {
@@ -837,6 +674,11 @@ dict append vucompletedict "Virtual Users complete" [ vucomplete ]
 wapp-2-json 1 $vucompletedict
 }
 
+proc wapp-page-tcconf {} {
+upvar #0 genericdict genericdict
+dict with genericdict { wapp-2-json 1 $transaction_counter }
+}
+
 proc wapp-page-datagen {} {
 global rdbms gen_count_ware gen_scale_fact gen_directory gen_num_vu bm
 if {  ![ info exists gen_count_ware ] } { set gen_count_ware "1" }
@@ -850,6 +692,56 @@ set vudgendict [ dict create schema $bm database $rdbms warehouses $gen_count_wa
 set vudgendict [ dict create schema $bm database $rdbms scale_factor $gen_scale_fact vu $gen_num_vu directory $gen_directory" ]
 	}
 wapp-2-json 1 $vudgendict
+}
+
+proc librarycheck {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/librarycheck "" ]
+putscli $res
+}
+
+proc wapp-page-librarycheck {} {
+upvar #0 dbdict dbdict
+dict for {database attributes} $dbdict {
+dict with attributes {
+lappend dbl $name
+lappend prefixl $prefix
+lappend libl $library
+        }
+}
+foreach db $dbl library $libl {
+if { [ llength $library ] > 1 } {
+        set version [ lindex $library 1 ]
+        set library [ lindex $library 0 ]
+set cmd "package require $library $version"
+                } else {
+set cmd "package require $library"
+                }
+if [catch {eval $cmd} message] {
+lappend joboutput "error: failed to load $library for $db - $message"
+} else {
+lappend joboutput "success ... loaded library $library for $db"
+                }
+        }
+        set huddleobj [ huddle compile {list} $joboutput ]
+        wapp-mimetype application/json
+        wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
+}
+
+proc diset { args } {
+global ws_port rdbms opmode
+if {[ llength $args ] != 3} {
+set body { "type": "error", "key": "message", "value": "Incorrect number of parameters to diset dict key value" } 
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+} else {
+        set dct [ lindex $args 0 ]
+        set key2 [ lindex $args 1 ]
+        set val [ lindex $args 2 ]
+set body [ subst { "dict": "$dct", "key": "$key2", "value": "$val" } ]
+set res [rest::post http://localhost:$ws_port/diset $body ]
+putscli $res
+	}
 }
 
 proc wapp-page-diset {} {
@@ -884,7 +776,7 @@ if { [ dict get $dbdict $key name ] eq $rdbms } {
 	if { $val != "test" && $val != "timed" } {	
 	dict set jsondict error message "Error: Driver script must be either \"test\" or \"timed\""
 	} else {
-	if { [ clearscript ] } {
+	if { [ clearscript2 ] } {
 	if { [catch {dict set $dictname $dct $key2 $val } message]} {
 	dict set jsondict error message "Failed to set Dictionary value: $message"
 		} else {
@@ -913,14 +805,112 @@ dict set jsondict success message "Set driver script to $val, clearing Script, r
 	}
 }}}}}
 
+proc tcset { args } {
+global ws_port
+if {[ llength $args ] != 2} {
+set body { "type": "error", "key": "message", "value": "Incorrect number of parameters to tcset key value" }
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+} else {
+set opt [ lindex [ split  $args ]  0 ]
+set val [ lindex [ split  $args ]  1 ]
+set body [ subst { "$opt": "$val" } ]
+set res [rest::post http://localhost:$ws_port/tcset $body ]
+putscli $res
+        }
+}
+
+proc wapp-page-tcset {} {
+if [catch {set huddlecontent [ huddle::json2huddle [list [wapp-param CONTENT]]]} message ] {
+dict set jsondict error message [ subst {$message} ]
+        wapp-2-json 2 $jsondict
+} else {
+if {[ huddle llength $huddlecontent ] != 2} {
+dict set jsondict error message "Incorrect number of parameters to tcset key value"
+        wapp-2-json 2 $jsondict
+return
+} else {
+set key [ huddle keys $huddlecontent ]
+set val [ huddle get_stripped $huddlecontent $key ]
+set ind [ lsearch {refreshrate} $key ]
+if { $ind eq -1 } {
+dict set jsondict error message "Invalid option to tcset key value"
+        wapp-2-json 2 $jsondict
+return
+        }
+upvar #0 genericdict genericdict
+switch  $key {
+refreshrate { 
+set refreshrate $val
+if { ![string is integer -strict $refreshrate] } {
+dict set jsondict error message "Refresh rate must be an integer more than 0 secs and less than 60 secs"
+        wapp-2-json 2 $jsondict
+        set refreshrate 10
+	return
+        } else {
+	if { ($refreshrate >= 60) || ($refreshrate <= 0)  } { 
+dict set jsondict error message "Refresh rate must be more than 0 secs and less than 60 secs"
+        wapp-2-json 2 $jsondict
+        set refreshrate 10 
+	return
+	}
+   }
+if { [catch {dict set genericdict transaction_counter tc_refresh_rate $refreshrate}] } {
+dict set jsondict error message "Failed to set Transaction Counter refresh rate"
+        wapp-2-json 2 $jsondict
+	return
+} else {
+dict set jsondict success message "Transaction Counter refresh rate set to $refreshrate"
+        wapp-2-json 2 $jsondict
+	return
+}
+}
+default {
+#default option should not be reached as earlier index lsearch only looks for refreshrate
+#switch statement retained in case of adding additional parameters in future
+dict set jsondict error message "Invalid option to tcset key value"
+        wapp-2-json 2 $jsondict
+	return
+	}
+}}}}
+
+proc clearscript {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/clearscript "" ]
+putscli $res
+}
 
 proc wapp-page-clearscript {} {
-if { [ clearscript ] } { 
+if { [ clearscript2 ] } { 
 dict set jsondict success message "Script cleared"
 	} else {
 dict set jsondict error message "Error:script failed to clear"
 	}
 	wapp-2-json 2 $jsondict
+}
+
+proc dbset { args } {
+global ws_port rdbms bm opmode
+if {[ llength $args ] != 2} {
+set body { "type": "error", "key": "message", "value": "Usage: dbset [db|bm] value" }
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+return
+} else {
+set option [ lindex [ split  $args ]  0 ]
+set ind [ lsearch {db bm} $option ]
+if { $ind eq -1 } {
+set body { "type": "error", "key": "message", "value": "Usage: dbset [db|bm] value" }
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+return
+        }
+set opt [ lindex [ split  $args ]  0 ]
+set val [ lindex [ split  $args ]  1 ]
+set body [ subst { "$opt": "$val" } ]
+set res [rest::post http://localhost:$ws_port/dbset $body ]
+putscli $res
+        }
 }
 
 proc wapp-page-dbset {} {
@@ -993,6 +983,21 @@ puts {Usage: dbset [db|bm|config] value}
 	}
       }
 }}}
+
+proc vuset { args } {
+global ws_port
+if {[ llength $args ] != 2} {
+set body { "type": "error", "key": "message", "value": "Incorrect number of parameters to vuset key value" } 
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+} else {
+set opt [ lindex [ split  $args ]  0 ]
+set val [ lindex [ split  $args ]  1 ]
+set body [ subst { "$opt": "$val" } ]
+set res [rest::post http://localhost:$ws_port/vuset $body ]
+putscli $res
+	}
+}
 
 proc wapp-page-vuset {} {
 global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps
@@ -1161,6 +1166,21 @@ dict set jsondict error message "Invalid option to vuset key value"
 	}
 }}}}
 
+proc dgset { args } {
+global ws_port
+if {[ llength $args ] != 2} {
+set body { "type": "error", "key": "message", "value": "Incorrect number of parameters to dgset key value" } 
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+} else {
+set opt [ lindex [ split  $args ]  0 ]
+set val [ lindex [ split  $args ]  1 ]
+set body [ subst { "$opt": "$val" } ]
+set res [rest::post http://localhost:$ws_port/dgset $body ]
+putscli $res
+	}
+}
+
 proc wapp-page-dgset {} {
 global rdbms bm gen_count_ware gen_scale_fact gen_directory gen_num_vu maxvuser virtual_users lprefix
 if {  ![ info exists gen_count_ware ] } { set gen_count_ware "1" }
@@ -1271,6 +1291,29 @@ set gen_directory $tmp
 wapp-2-json 2 $jsondict
 }}}}}
 
+proc customscript { scriptname } {
+global ws_port
+set _ED(file) $scriptname
+if {$_ED(file) == ""} {return}
+    if {![file readable $_ED(file)]} {
+set body [ subst { "type": "error", "key": "message", "value": "File $scriptname is not readable." } ]
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+        return
+    }
+if {[catch "open \"$_ED(file)\" r" fd]} {
+set body [subst { "type": "error", "key": "message", "value": "Error while opening $scriptname: $fd" } ]
+        } else {
+ set _ED(package) "[read $fd]"
+    close $fd
+	}
+set huddleobj [ huddle compile {string} "$_ED(package)" ]
+set jsonobj [ huddle jsondump $huddleobj ]
+set body [ subst { {"script": $jsonobj}} ]
+set res [ rest::post http://localhost:$ws_port/customscript $body ]
+puts $res
+}
+
 proc wapp-page-customscript {} {
 global _ED
 if [catch {set huddlecontent [ huddle::json2huddle [wapp-param CONTENT]]} message ] {
@@ -1289,38 +1332,59 @@ dict set jsondict success message "Set custom script"
         wapp-2-json 2 $jsondict
 }}}
 
+proc vudestroy {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/vudestroy "" ]
+putscli $res
+}
+
 proc wapp-page-vudestroy {} {
-	global threadscreated vustatus AVUC
-	if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
-	tsv::set application abort 1
-	if { [catch {ed_kill_vusers} message]} {
-dict set jsondict error message "Virtual Users remain running in background or shutting down, retry"
+        global threadscreated threadsbytid vustatus AVUC opmode
+        if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
+        tsv::set application abort 1
+        if { [catch {ed_kill_vusers} message]} {
+	dict set jsondict error message "Virtual Users remain running in background or shutting down, retry"
         wapp-2-json 2 $jsondict
-	} else {
-	set x 0
-	set checkstop 0
-	while {!$checkstop} {
-	incr x
-	after 1000
-	update
-	if {[expr [ llength [ thread::names ] ] - 1 ] eq 0} {
-	set checkstop 1
-dict set jsondict success message "vudestroy success"
+        } else {
+        #remote_command [ concat vudestroy ]
+        set x 0
+        set checkstop 0
+        while {!$checkstop} {
+        incr x
+        after 1000
+        update
+        if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
+        set checkstop 1
+	dict set jsondict success message "vudestroy success"
         wapp-2-json 2 $jsondict
-	unset -nocomplain AVUC
-	unset -nocomplain vustatus
-		} 
-	if { $x eq 20 } { 
-	set checkstop 1 
-dict set jsondict error message "Virtual Users remain running in background or shutting down, retry"
+        unset -nocomplain AVUC
+        unset -nocomplain vustatus
+                }
+        if { $x eq 20 } {
+        set checkstop 1
+	dict set jsondict error message "Virtual Users remain running in background or shutting down, retry"
         wapp-2-json 2 $jsondict
-		}
-	    }
-	}	
+                }
+            }
+        }
     } else {
-dict set jsondict error message "No virtual users found to destroy"
+        if { $opmode eq "Replica" } {
+#In Primary Replica Mode ed_kill_vusers may have already been called from Primary so thread::names is 1
+        unset -nocomplain AVUC
+        unset -nocomplain vustatus
+	dict set jsondict error message "vudestroy from Primary, Replica status clean up"
         wapp-2-json 2 $jsondict
+           } else {
+	dict set jsondict error message "No virtual users found to destroy"
+        wapp-2-json 2 $jsondict
+        }
     }
+}
+
+proc vucreate {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/vucreate "" ]
+putscli $res
 }
 
 proc wapp-page-vucreate {} {
@@ -1351,6 +1415,12 @@ dict set jsondict success message "[expr [ llength [ thread::names ] ] - 1 ] Vir
     }
 }
 
+proc buildschema {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/buildschema "" ]
+putscli $res
+}
+
 proc wapp-page-buildschema {} {
 global virtual_users maxvuser rdbms bm threadscreated jobid 
 if { [ info exists threadscreated ] } {
@@ -1359,6 +1429,11 @@ dict set jsondict error message "Cannot build schema with Virtual Users active, 
 return
         }
 set jobid [guid]
+if { [jobmain $jobid] eq 1 } {
+dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        wapp-2-json 2 $jsondict
+return
+        }
 upvar #0 dbdict dbdict
 foreach { key } [ dict keys $dbdict ] {
 if { [ dict get $dbdict $key name ] eq $rdbms } {
@@ -1386,7 +1461,7 @@ dict set jsondict error message "Build virtual users must be less than or equal 
 	if { $buildvu eq 1 } {
 	set maxvuser 1
 	set virtual_users 1
-	clearscript
+	clearscript2
 	if { [ catch {build_schema} message ] } {
 dict set jsondict error message "$message"
         wapp-2-json 2 $jsondict
@@ -1399,7 +1474,7 @@ dict set jsondict success message "Building $buildcw Warehouses(s) with 1 Virtua
 	} else {
 	set maxvuser [ expr $buildvu + 1 ]
 	set virtual_users $maxvuser
-	clearscript
+	clearscript2
 	if { [ catch {build_schema} message ] } {
 	dict set jsondict error message "$message"
         wapp-2-json 2 $jsondict
@@ -1432,7 +1507,7 @@ if { $buildvu eq 1 } { set maxvuser 1 } else {
 	set maxvuser [ expr $buildvu + 1 ]
 	}
 	set virtual_users $maxvuser
-	clearscript
+	clearscript2
 	if { [ catch {build_schema} message ] } {
 	dict set jsondict error message "$message"
         wapp-2-json 2 $jsondict
@@ -1443,6 +1518,80 @@ dict set jsondict success message "Building Scale Factor $buildsf with $maxvuser
             }
 }
 
+proc jobs { args } {
+global ws_port
+switch [ llength $args ] {
+0 {
+#Query all jobs
+set res [rest::get http://localhost:$ws_port/jobs "" ]
+return $res
+}
+1 {
+set param [ lindex [ split  $args ]  0 ]
+#List results for all jobs
+if [ string equal $param "result" ] {
+	set alljobs [ rest::format_json [ jobs ]]
+	foreach jobres $alljobs {
+set res [rest::get http://localhost:$ws_port/jobs?jobid=$jobres&result "" ]
+putscli $res
+	}
+	} elseif [ string equal $param "timestamp" ] {
+	set alljobs [ rest::format_json [ jobs ]]
+	foreach jobres $alljobs {
+set res [rest::get http://localhost:$ws_port/jobs?jobid=$jobres&timestamp "" ]
+putscli $res
+	}	
+} else {
+#Query one jobid
+set jobid $param
+set res [rest::get http://localhost:$ws_port/jobs?jobid=$jobid "" ]
+putscli $res
+	}
+}
+2 {
+#Query status, result, vu number or delete job data for one jobid
+#jobs?jobid=TEXT&status param is status
+#iobs?jobid=TEXT&result param is result
+#jobs?jobid=TEXT&delete param is delete
+#jobs?jobid=TEXT&timestamp param is timestamp
+#jobs?jobid=TEXT&dict param is dict
+#jobs?jobid=TEXT&timing param is timing
+#jobs?jobid=TEXT&db param is db
+#jobs?jobid=TEXT&bm param is bm
+#jobs?jobid=TEXT&tcount param is tcount
+#jobs?jobid=TEXT&vu=INTEGER param is an INTEGER identifying the vu number
+set jobid [ lindex [ split  $args ]  0 ]
+set cmd [ lindex [ split  $args ]  1 ]
+if [ string is entier $cmd ] { set cmd "vu=$cmd" }
+set res [rest::get http://localhost:$ws_port/jobs?jobid=$jobid&$cmd "" ]
+putscli $res
+}
+3 {
+#jobs?jobid=TEXT&timing&vu param is timing
+set jobid [ lindex [ split  $args ]  0 ]
+set cmd [ lindex [ split  $args ]  1 ]
+set vusel [ lindex [ split  $args ]  2 ]
+if { $cmd != "timing" } {
+set body { "type": "error", "key": "message", "value": "Jobs Three Parameter Usage: jobs?jobid=JOBID&timing&vu=VUID" } 
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+	} else {
+#Three arguments 2nd parameter is timing
+if [ string is entier $vusel ] { set vusel "vu=$vusel" }
+set res [rest::get http://localhost:$ws_port/jobs?jobid=$jobid&$cmd&$vusel "" ]
+putscli $res
+	}
+}
+default {
+set body { "type": "error", "key": "message", "value": "Usage: jobs?query=parameter" } 
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+	}
+    }
+}
+
+interp alias {} job {} jobs
+
 proc wapp-page-jobs {} {
 global bm
 set query [ wapp-param QUERY_STRING ]
@@ -1450,34 +1599,65 @@ set params [ split $query & ]
 set paramlen [ llength $params ]
 #No parameters list jobids
 if { $paramlen eq 0 } {
-set joboutput [ hdb eval {SELECT DISTINCT JOBID FROM JOBS} ]
+set joboutput [ hdb eval {SELECT DISTINCT JOBID FROM JOBMAIN} ]
 	set huddleobj [ huddle compile {list} $joboutput ]
 	wapp-mimetype application/json
 	wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
 	return
 	} else {
-if { $paramlen >= 1 && $paramlen <= 2 } {
+if { $paramlen >= 1 && $paramlen <= 3 } {
 foreach a $params {
 lassign [split $a =] key value
 dict append paramdict $key $value
                 }
-        } else {
+          } else {
 dict set jsondict error message "Usage: jobs?query=parameter"
 wapp-2-json 2 $jsondict
 return
-        }
+		}
+if { $paramlen eq 3 } {
+if { [ dict keys $paramdict ] != "jobid timing vu" } {
+dict set jsondict error message "Jobs Three Parameter Usage: jobs?jobid=JOBID&timing&vu=VUID"
+wapp-2-json 2 $jsondict
+return
+		} else {
+#3 parameter case of 1-jobid 2-timing 3-vu
+set jobid [ dict get $paramdict jobid ]
+set vuid [ dict get $paramdict vu ]
+if [ string is entier $vuid ] {
+unset -nocomplain jobtiming
+set jobtiming [ dict create ]
+hdb eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and VU=$vuid and SUMMARY=0 ORDER BY RATIO_PCT DESC}  {
+set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
+dict append jobtiming $procname $timing
+}
+if { ![ dict size $jobtiming ] eq 0 } {
+wapp-2-json 2 $jobtiming
+return
+} else {
+dict set jsondict error message "No Timing Data for VU $vuid for JOB $jobid: jobs?jobid=JOBID&timing&vu=VUID"
+wapp-2-json 2 $jsondict
+return
+}
+			} else {
+dict set jsondict error message "Jobs Three Parameter Usage: jobs?jobid=JOBID&timing&vu=VUID"
+wapp-2-json 2 $jsondict
+return
+			}
+		}
+       }
 }
 #1 parameter
 if { $paramlen eq 1 } {
 if { [ dict keys $paramdict ] eq "jobid" } {
 set jobid [ dict get $paramdict jobid ]
-set query [ hdb eval {SELECT COUNT(*) FROM JOBS WHERE JOBID=$jobid} ]
+set query [ hdb eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid} ]
 if { $query eq 0 } {
-dict set jsondict error message "Jobid $jobid for jobstatus does not exist"
+dict set jsondict error message "Jobid $jobid does not exist"
 wapp-2-json 2 $jsondict
 return
           } else {
-set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBS WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
         set huddleobj [ huddle compile {list} $joboutput ]
         wapp-mimetype application/json
         wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
@@ -1487,9 +1667,9 @@ dict set jsondict error message "Jobs One Parameter Usage: jobs?jobid=TEXT"
 wapp-2-json 2 $jsondict
 return
         }
-#2 parameters
+#2 or more parameters
       } else {
-if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid delete" } {
+if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" } {
 set jobid [ dict get $paramdict jobid ]
 if { [ dict keys $paramdict ] eq "jobid vu" } {
 set vuid [ dict get $paramdict vu ]
@@ -1500,56 +1680,125 @@ set vuid 1
 set vuid 0
 	}
     }
-set query [ hdb eval {SELECT COUNT(*) FROM JOBS WHERE JOBID=$jobid AND VU=$vuid} ]
+set query [ hdb eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
 if { $query eq 0 } {
 dict set jsondict error message "Jobid $jobid for virtual user $vuid does not exist"
 wapp-2-json 2 $jsondict
 return
 	  } else {
 if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" } {
-set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBS WHERE JOBID=$jobid AND VU=$vuid} ]
+set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
 	set huddleobj [ huddle compile {list} $joboutput ]
 	wapp-mimetype application/json
 	wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
 	return
 	}
 if { [ dict keys $paramdict ] eq "jobid delete" } {
-set joboutput [ hdb eval {DELETE FROM JOBS WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
 dict set jsondict success message "Deleted Jobid $jobid"
      wapp-2-json 2 $jsondict
 	} else {
 if { [ dict keys $paramdict ] eq "jobid result" } {
 if { $bm eq "TPC-C" } { 
-set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBS WHERE JOBID=$jobid AND VU=$vuid} ]
+set tstamp ""
+set tstamp [ join [ hdb eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
 set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
 	} else {
-set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBS WHERE JOBID=$jobid} ]
+set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
 set result [ lsearch -all -glob -inline $joboutput "Completed*" ]
 	}
 if { $result eq {} } {
 set joboutput [ list $jobid "Jobid has no test result" ]
 		} else {
-set joboutput [ list $jobid $result ]
+if { $activevu eq {} } {
+set joboutput [ list $jobid $tstamp $result ]
+	} else {
+set joboutput [ list $jobid $tstamp $activevu $result ]
+	}
 		}
 	} else {
+if { [ dict keys $paramdict ] eq "jobid timing" } {
+unset -nocomplain jobtiming
+set jobtiming [ dict create ]
+hdb eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and SUMMARY=1 ORDER BY RATIO_PCT DESC}  {
+set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
+dict append jobtiming $procname $timing
+}
+if { ![ dict size $jobtiming ] eq 0 } {
+wapp-2-json 2 $jobtiming
+return
+} else {
+dict set jsondict error message "No Timing Data for JOB $jobid: jobs?jobid=JOBID&timing"
+wapp-2-json 2 $jsondict
+return
+		}
+	} else {
+if { [ dict keys $paramdict ] eq "jobid timestamp" } {
+set joboutput [ hdb eval {SELECT jobid, timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]
+wapp-2-json 2 $joboutput
+return
+	} else {
+if { [ dict keys $paramdict ] eq "jobid dict" } {
+set joboutput [ join [ hdb eval {SELECT jobdict FROM JOBMAIN WHERE JOBID=$jobid} ]]
+wapp-2-json 2 $joboutput
+return
+	} else {
+if { [ dict keys $paramdict ] eq "jobid tcount" } {
+set jobheader [ hdb eval {select distinct(db), metric from JOBTCOUNT, JOBMAIN WHERE JOBTCOUNT.JOBID=$jobid AND JOBMAIN.JOBID=$jobid} ]
+set joboutput [ hdb eval {select counter, JOBTCOUNT.timestamp from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
+dict append jsondict $jobheader $joboutput 
+wapp-2-json 2 $jsondict
+return
+	} else {
+if { [ dict keys $paramdict ] eq "jobid db" } {
+set joboutput [ join [ hdb eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	} else {
+if { [ dict keys $paramdict ] eq "jobid bm" } {
+set joboutput [ join [ hdb eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	} else {
 set joboutput [ list $jobid "Cannot find Jobid output" ]
-	}
+		}
+	}}}}}}
 	set huddleobj [ huddle compile {list} $joboutput ]
 	wapp-mimetype application/json
 	wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
-	  }
+	}
   }
 	} else {
-dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&status or jobs?jobid=TEXT&result or jobs?jobid=TEXT&delete"
+dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&status or jobs?jobid=TEXT&db or jobs?jobid=TEXT&bm or jobs?jobid=TEXT&timestamp or jobs?jobid=TEXT&dict or jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&result or jobs?jobid=TEXT&timing or jobs?jobid=TEXT&delete" 
 wapp-2-json 2 $jsondict
 return
         }
     }
 }
 
+interp alias {} wapp-page-job {} wapp-page-jobs
+
+proc vurun {} {
+global ws_port jobid
+unset -nocomplain jobid
+set res [rest::get http://localhost:$ws_port/vurun "" ]
+putscli $res
+if { [ info exists jobid ] } {
+return $jobid
+	} else {
+return
+	}
+}
+
 proc wapp-page-vurun {} {
 	global _ED jobid
 	set jobid [guid]
+if { [jobmain $jobid] eq 1 } {
+dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        wapp-2-json 2 $jsondict
+return
+        }
 if { [ string length $_ED(package) ] > 0 } { 
 	if { [ catch {run_virtual} message ] } {
 dict set jsondict error message "Error running virtual users: $message"
@@ -1566,9 +1815,10 @@ unset -nocomplain jobid
 	}
 }
 
-proc wapp-page-librarycheck {} {
-dict set jsondict error message "librarycheck is not supported in hammerdbws, verify libraries with hammerdbcli"
-        wapp-2-json 2 $jsondict
+proc datagenrun {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/datagenrun "" ]
+putscli $res
 }
 
 proc wapp-page-datagenrun {} {
@@ -1576,19 +1826,193 @@ dict set jsondict error message "datagenrun is not supported in hammerdbws, run 
         wapp-2-json 2 $jsondict
 }
 
-proc wapp-page-dumpdb {} {
-set dbdump [ hdb eval {SELECT * FROM JOBS} ]
-puts "***************DEBUG***************"
-puts $dbdump
-puts "***************DEBUG***************"
+proc switchmode {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/switchmode "" ]
+putscli $res
+}
+
+proc wapp-page-switchmode {} {
+dict set jsondict error message "Primary, replica modes not supported in hammerdbws, run remote modes with hammerdb or hammerdbcli"
+        wapp-2-json 2 $jsondict
+}
+
+proc steprun {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/steprun "" ]
+putscli $res
+}
+
+proc wapp-page-steprun {} {
+dict set jsondict error message "Steprun not supported in hammerdbws, run steprun with hammerdbcli"
+        wapp-2-json 2 $jsondict
+}
+
+proc _dumpdb {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/_dumpdb "" ]
+putscli $res
+}
+
+proc wapp-page-_dumpdb {} {
+set jmdump [ concat [ hdb eval {SELECT * FROM JOBMAIN} ] ]]
+set jtdump [ concat [ hdb eval {SELECT * FROM JOBTIMING} ]]
+set jcdump [ concat [ hdb eval {SELECT * FROM JOBTCOUNT} ]]
+set jodump [ concat [ hdb eval {SELECT * FROM JOBOUTPUT} ]]
+set joboutput [ list $jmdump $jtdump $jcdump $jodump ]
+	set huddleobj [ huddle compile {list} $joboutput ]
+	wapp-mimetype application/json
+	wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
 	}
 
-proc wapp-page-killws {} {
-puts "Shutting down HammerDB Web Service"
+proc quit {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/quit "" ]
+putscli $res
+}
+
+proc wapp-page-quit {} {
+putscli "Shutting down HammerDB Web Service"
 exit
 	}
 
-proc start_webservice {} {
+proc runtimer { seconds } {
+global ws_port
+upvar elapsed elapsed
+upvar timevar timevar
+proc runtimer_loop { seconds } {
+global ws_port
+upvar elapsed elapsed
+incr elapsed
+upvar timevar timevar
+set rcomplete [vucomplete]
+  if { ![ expr {$elapsed % 60} ] } {
+  set y [ expr $elapsed / 60 ]
+set body [ subst { "type": "success", "key": "message", "value": "Timer: $y minutes elapsed" } ]
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+  }
+if {!$rcomplete && $elapsed < $seconds } {
+;#Neither vucomplete or time reached, reschedule loop
+catch {after 1000 runtimer_loop $seconds }} else {
+set body [ subst { "type": "success", "key": "message", "value": "runtimer returned after $elapsed seconds" } ]
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+set elapsed 0
+set timevar 1
+        }
+}
+set elapsed 0
+set timevar 0
+runtimer_loop $seconds
+vwait timevar
+return
+}
+
+proc tcstart {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/tcstart "" ]
+putscli $res
+}
+
+proc wapp-page-tcstart {} {
+global tc_threadID
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+dict set jsondict error message "Transaction Counter thread already running with threadid:$tc_threadID"
+wapp-2-json 2 $jsondict
+return
+} else {
+dict set jsondict error message "Transaction Counter thread already running with threadid"
+wapp-2-json 2 $jsondict
+return
+}
+} else {
+#Start transaction counter
+transcount
+return
+}
+}
+
+proc tcstatus {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/tcstatus "" ]
+putscli $res
+}
+
+proc wapp-page-tcstatus {} {
+global ws_port
+global tc_threadID
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+dict set jsondict success message "Transaction Counter thread running with threadid:$tc_threadID"
+wapp-2-json 2 $jsondict
+return
+} else {
+dict set jsondict success message "Transaction Counter thread running"
+wapp-2-json 2 $jsondict
+return
+}
+} else {
+dict set jsondict success message "Transaction Counter is not running"
+wapp-2-json 2 $jsondict
+return
+}
+}
+
+proc tcstop {} {
+global ws_port
+set res [rest::get http://localhost:$ws_port/tcstop "" ]
+putscli $res
+}
+
+proc wapp-page-tcstop {} {
+global tc_threadID ws_port
+set tclist [ thread::names ]
+if { [ info exists tc_threadID ] } {
+set idx [ lsearch $tclist $tc_threadID ]
+if { $idx != -1 } {
+dict set jsondict success message "Transaction Counter thread running with threadid:$tc_threadID"
+wapp-2-json 2 $jsondict
+ed_kill_transcount
+return
+} else {
+dict set jsondict success message "Transaction Counter thread running"
+wapp-2-json 2 $jsondict
+ed_kill_transcount
+return
+}
+} else {
+dict set jsondict success message "Transaction Counter is not running"
+wapp-2-json 2 $jsondict
+return
+}
+}
+
+proc waittocomplete {} {
+global ws_port
+proc wait_to_complete_loop {} {
+global ws_port
+upvar wcomplete wcomplete
+set wcomplete [vucomplete]
+if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else {
+set body { "type": "success", "key": "message", "value": "waittocomplete called script exit" }
+set res [rest::post http://localhost:$ws_port/echo $body ]
+putscli $res
+exit
+}
+}
+set wcomplete "false"
+wait_to_complete_loop
+vwait forever
+}
+
+proc start_webservice { args } {
+global ws_port
 upvar #0 genericdict genericdict
 if {[dict exists $genericdict webservice ws_port ]} {
 set ws_port [ dict get $genericdict webservice ws_port ]
@@ -1607,7 +2031,7 @@ set tmpdir [ findtempdir ]
 if { $tmpdir != "notmpdir" } {
 set sqlite_db [ file join $tmpdir hammerdb.DB ]
         } else {
-puts "Error Database Directory set to TMP but coundn't find temp directory"
+puts "Error Database Directory set to TMP but couldn't find temp directory"
 	}
      }
   } else {
@@ -1617,34 +2041,68 @@ if [catch {sqlite3 hdb $sqlite_db} message ] {
 puts "Error initializing SQLite database : $message"
 return
         } else {
+catch {hdb timeout 30000}
+#hdb eval {PRAGMA foreign_keys=ON}
 if { $sqlite_db eq ":memory:" } {
-catch {hdb eval {DROP TABLE JOBS}}
-if [catch {hdb eval {CREATE TABLE JOBS(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
-puts "Error creating JOBS table in SQLite in-memory database : $message"
+catch {hdb eval {DROP TABLE JOBMAIN}}
+catch {hdb eval {DROP TABLE JOBTIMING}}
+catch {hdb eval {DROP TABLE JOBTCOUNT}}
+catch {hdb eval {DROP TABLE JOBOUTPUT}}
+if [catch {hdb eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+puts "Error creating JOBMAIN table in SQLite in-memory database : $message"
 return
-	} else {
-puts "Initialized new SQLite in-memory database"
-	} 
-} else {
-if [catch {set tblname [ hdb eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBS'}]} message ] {
-puts "Error querying  JOBS table in SQLite on-disk database : $message"
+	} elseif [ catch {hdb eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+puts "Error creating JOBTIMING table in SQLite in-memory database : $message"
+	} elseif [ catch {hdb eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
 return
-        }  else {
-if { $tblname eq "" } {
-if [catch {hdb eval {CREATE TABLE JOBS(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
-puts "Error creating JOBS table in SQLite on-disk database : $message"
+	} elseif [ catch {hdb eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+puts "Error creating JOBOUTPUT table in SQLite in-memory database : $message"
 return
         } else {
+catch {hdb eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
+catch {hdb eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
+catch {hdb eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+catch {hdb eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
+puts "Initialized new SQLite in-memory database"
+	}
+} else {
+if [catch {set tblname [ hdb eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
+puts "Error querying  JOBOUTPUT table in SQLite on-disk database : $message"
+return
+        } else {
+if { $tblname eq "" } {
+     if [catch {hdb eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+puts "Error creating JOBMAIN table in SQLite in-memory database : $message"
+return
+	} elseif [ catch {hdb eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+puts "Error creating JOBTIMING table in SQLite in-memory database : $message"
+return
+	} elseif [ catch {hdb eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
+return
+        } elseif [catch {hdb eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
+puts "Error creating JOBOUTPUT table in SQLite on-disk database : $message"
+return
+        } else {
+catch {hdb eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
+catch {hdb eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
+catch {hdb eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+catch {hdb eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
 puts "Initialized new SQLite on-disk database"
 	}
      } else {
-puts "Initialized SQLite on-disk database using existing JOBS table"
+puts "Initialized SQLite on-disk database using existing tables"
 	}
     }
 }
+tsv::set webservice wsport $ws_port
+tsv::set webservice sqldb $sqlite_db
 puts "Starting HammerDB Web Service on port $ws_port"
-if [catch {wapp-start [ list --server $ws_port ]} message ] {
+if [catch {wapp-start [ list --server $ws_port $args ]} message ] {
 puts "Error starting HammerDB webservice on port $ws_port : $message"
+		} else {
+#Readline::interactws called from main script
 		}
         }
 }

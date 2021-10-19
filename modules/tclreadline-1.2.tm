@@ -776,6 +776,11 @@ proc TclReadLine::restore {} {
     rename ::_unknown ::unknown
 }
 
+proc TclReadLine::interactws {} {
+variable PROMPT "hammerws>"
+TclReadLine::interact
+}
+
 proc TclReadLine::interact {} {
     rename ::unknown ::_unknown
     rename TclReadLine::unknown ::unknown

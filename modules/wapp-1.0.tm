@@ -137,19 +137,19 @@ proc wappInt-enc-unsafe {txt} {
   return $txt
 }
 proc wappInt-enc-url {s} {
-  if {[regsub -all {[^-{}@~?=#_.:/a-zA-Z0-9]} $s {[wappInt-%HHchar {&}]} s]} {
+  if {[regsub -all {[^-{}\\@~?=#_.:/a-zA-Z0-9]} $s {[wappInt-%HHchar {&}]} s]} {
     set s [subst -novar -noback $s]
   }
-  if {[regsub -all {[{}]} $s {[wappInt-%HHchar \\&]} s]} {
+  if {[regsub -all {[\\{}]} $s {[wappInt-%HHchar \\&]} s]} {
     set s [subst -novar -noback $s]
   }
   return $s
 }
 proc wappInt-enc-qp {s} {
-  if {[regsub -all {[^-{}_.a-zA-Z0-9]} $s {[wappInt-%HHchar {&}]} s]} {
+  if {[regsub -all {[^-{}\\_.a-zA-Z0-9]} $s {[wappInt-%HHchar {&}]} s]} {
     set s [subst -novar -noback $s]
   }
-  if {[regsub -all {[{}]} $s {[wappInt-%HHchar \\&]} s]} {
+  if {[regsub -all {[\\{}]} $s {[wappInt-%HHchar \\&]} s]} {
     set s [subst -novar -noback $s]
   }
   return $s
@@ -331,7 +331,7 @@ proc wapp-content-security-policy {val} {
 #
 proc wapp-safety-check {} {
   set res {}
-  foreach p [info procs] {
+  foreach p [info command] {
     set ln 0
     foreach x [split [info body $p] \n] {
       incr ln
@@ -476,7 +476,11 @@ proc wappInt-http-readable-unsafe {chan} {
     } elseif {$n==0} {
       # We have reached the blank line that terminates the header.
       global argv0
-      set a0 [file normalize $argv0]
+      if {[info exists ::argv0]} {
+        set a0 [file normalize $argv0]
+      } else {
+        set a0 /
+      }
       dict set W SCRIPT_FILENAME $a0
       dict set W DOCUMENT_ROOT [file dir $a0]
       if {[wappInt-parse-header $chan]} {
@@ -493,7 +497,7 @@ proc wappInt-http-readable-unsafe {chan} {
       } else {
         # There is no query content, so handle the request immediately
         set wapp $W
-        wappInt-handle-request $chan 0
+        wappInt-handle-request $chan
       }
     }
   } else {
@@ -505,7 +509,7 @@ proc wappInt-http-readable-unsafe {chan} {
     if {[dict get $W .toread]<=0} {
       # Handle the request as soon as all the query content is received
       set wapp $W
-      wappInt-handle-request $chan 0
+      wappInt-handle-request $chan
     }
   }
 }
@@ -611,10 +615,35 @@ proc wappInt-decode-query-params {} {
 # Invoke application-supplied methods to generate a reply to
 # a single HTTP request.
 #
-# This routine always runs within [catch], so handle exceptions by
-# invoking [error].
+# This routine uses the global variable ::wapp and so must not be nested.
+# It must run to completion before the next instance runs.  If a recursive
+# instances of this routine starts while another is running, the the
+# recursive instance is added to a queue to be invoked after the current
+# instance finishes.  Yes, this means that WAPP IS SINGLE THREADED.  Only
+# a single page rendering instance my be running at a time.  There can
+# be multiple HTTP requests inbound at once, but only one my be processed
+# at a time once the request is full read and parsed.
 #
-proc wappInt-handle-request {chan useCgi} {
+set wappIntPending {}
+set wappIntLock 0
+proc wappInt-handle-request {chan} {
+  global wappIntPending wappIntLock
+  fileevent $chan readable {}
+  if {$wappIntLock} {
+    # Another instance of request is already running, so defer this one
+    lappend wappIntPending [list wappInt-handle-request $chan]
+    return
+  }
+  set wappIntLock 1
+  catch [list wappInt-handle-request-unsafe $chan]
+  set wappIntLock 0
+  if {[llength $wappIntPending]>0} {
+    # If there are deferred requests, then launch the oldest one
+    after idle [lindex $wappIntPending 0]
+    set wappIntPending [lrange $wappIntPending 1 end]
+  }
+}
+proc wappInt-handle-request-unsafe {chan} {
   global wapp
   dict set wapp .reply {}
   dict set wapp .mimetype {text/html; charset=utf-8}
@@ -691,7 +720,7 @@ proc wappInt-handle-request {chan useCgi} {
   wappInt-trace
   set mname [dict get $wapp PATH_HEAD]
   if {[catch {
-    if {$mname!="" && [llength [info proc wapp-page-$mname]]>0} {
+    if {$mname!="" && [llength [info command wapp-page-$mname]]>0} {
       wapp-page-$mname
     } else {
       wapp-default
@@ -709,6 +738,7 @@ proc wappInt-handle-request {chan useCgi} {
     }
     dict unset wapp .new-cookies
   }
+  wapp-before-reply-hook
 
   # Transmit the HTTP reply
   #
@@ -766,36 +796,20 @@ proc wappInt-handle-request {chan useCgi} {
 #
 proc wapp-before-dispatch-hook {} {return}
 
+# This routine runs after the request-handler dispatch and just
+# before the reply is generated.  The default implementation is
+# a no-op, but applications can override to do validation and security
+# checks on the reply, such as verifying that no sensitive information
+# such as an API key or password is accidentally included in the
+# reply text.
+#
+proc wapp-before-reply-hook {} {return}
+
 # Process a single CGI request
 #
 proc wappInt-handle-cgi-request {} {
   global wapp env
-  foreach key {
-    CONTENT_LENGTH
-    CONTENT_TYPE
-    DOCUMENT_ROOT
-    HTTP_ACCEPT_ENCODING
-    HTTP_COOKIE
-    HTTP_HOST
-    HTTP_REFERER
-    HTTP_USER_AGENT
-    HTTPS
-    PATH_INFO
-    QUERY_STRING
-    REMOTE_ADDR
-    REQUEST_METHOD
-    REQUEST_URI
-    REMOTE_USER
-    SCRIPT_FILENAME
-    SCRIPT_NAME
-    SERVER_NAME
-    SERVER_PORT
-    SERVER_PROTOCOL
-  } {
-    if {[info exists env($key)]} {
-      dict set wapp $key $env($key)
-    }
-  }
+  foreach key [array names env {[A-Z]*}] {dict set wapp $key $env($key)}
   set len 0
   if {[dict exists $wapp CONTENT_LENGTH]} {
     set len [dict get $wapp CONTENT_LENGTH]
@@ -806,7 +820,7 @@ proc wappInt-handle-cgi-request {} {
   }
   dict set wapp WAPP_MODE cgi
   fconfigure stdout -translation binary
-  wappInt-handle-request stdout 1
+  wappInt-handle-request-unsafe stdout
 }
 
 # Process new text received on an inbound SCGI request
@@ -847,7 +861,7 @@ proc wappInt-scgi-readable-unsafe {chan} {
       # There is no query content, so handle the request immediately
       dict set W SERVER_ADDR [dict get $W .remove_addr]
       set wapp $W
-      wappInt-handle-request $chan 0
+      wappInt-handle-request $chan
     }
   } else {
     # If .toread is set, that means we are reading the query content.
@@ -859,7 +873,7 @@ proc wappInt-scgi-readable-unsafe {chan} {
       # Handle the request as soon as all the query content is received
       dict set W SERVER_ADDR [dict get $W .remove_addr]
       set wapp $W
-      wappInt-handle-request $chan 0
+      wappInt-handle-request $chan
     }
   }
 }

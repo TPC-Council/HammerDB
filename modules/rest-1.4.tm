@@ -3,8 +3,6 @@
 # A framework for RESTful web services
 #
 # Copyright (c) 2009 Aaron Faupell
-#
-# RCS: @(#) $Id: rest.tcl,v 1.7 2009/10/14 16:28:18 afaupell Exp $
 
 package require Tcl 8.5
 package require http 2.7
@@ -12,7 +10,7 @@ package require json
 #package require tdom
 #package require base64
 
-package provide rest 1.3.1
+package provide rest 1.4
 
 namespace eval ::rest {
     namespace export create_interface parameters parse_opts save \
@@ -74,7 +72,7 @@ proc ::rest::simple {url query args} {
     } else {
         set error_body 0
     }
- 
+
     set result [::rest::_call {} $headers $url $query $body $error_body]
 
     # if a format was specified then convert the data, but dont do any auto formatting
@@ -92,11 +90,33 @@ interp alias {} ::rest::patch  {} ::rest::simple
 interp alias {} ::rest::post   {} ::rest::simple
 interp alias {} ::rest::put    {} ::rest::simple
 
+proc ::rest::CheckLevel {loc} {
+#if called with autoload script frame level needs to be -2 at first command
+#if called from prompt frame level needs to be -4
+#This proc checks first call and hard codes frame level
+#Incorrect level gives unable to determine rest::simple method
+global flevel
+if {![info exists flevel]} {
+if {[dict get $loc cmd] eq {source $autostart::autoloadscript}} {
+    set flevel -2
+	    } else {
+    set flevel -4
+	}
+	}
+return $flevel
+}
+
 proc ::rest::DetermineMethod {cv} {
+    global flevel
     upvar 1 $cv config
     if {[dict exists $config method]} return
-
-    set loc [info frame -2]
+if { ![info exists flevel] } {
+    set loc [info frame -4]
+set loclev [ ::rest::CheckLevel $loc ]
+    set loc [info frame $loclev]
+	} else {
+set loc [info frame $flevel]
+	}
     if {![dict exists $loc cmd]} {
 	return -code error "Unable to determine rest::simple method in the current context ([dict get $loc type]). Please specify it explicitly."
     }
@@ -109,7 +129,7 @@ proc ::rest::DetermineMethod {cv} {
 	# TODO: Quoted literal.
 	regexp {^([^ ]+).*$} $cmd -> cmd
     }
-    set cmd [namespace tail $cmd]    
+    set cmd [namespace tail $cmd]
     if {$cmd eq "simple"} { set cmd get }
     if {$cmd ni {get delete head post put patch}} {
 	return -code error "Unable to determine rest::simple method, found \"$cmd\". Please specify it explicitly."
@@ -134,7 +154,7 @@ proc ::rest::DetermineMethod {cv} {
 #
 proc ::rest::create_interface {name} {
     upvar $name in
-    
+
     # check if any defined calls have https urls and automatically load and register tls
     #if {[catch {package present tls}]} {
     #    foreach x [array names in] {
@@ -160,7 +180,7 @@ proc ::rest::create_interface {name} {
         if {[dict exists $config content-type]} {
             dict set config headers content-type [dict get $config content-type]
         }
-        
+
         lappend proc "set config \{$config\}"
         lappend proc "set headers \{\}"
 
@@ -192,8 +212,13 @@ proc ::rest::create_interface {name} {
             } elseif {[string match mime_multi* [lindex [dict get $config body] 0]]} {
                 lappend proc {if {$body == ""} { return -code error "wrong # args: should be \"[lindex [info level 0] 0] ?options? string\"" }}
                 lappend proc {set b [::rest::mime_multipart body $body]}
-                lappend proc {dict set config headers content-type "multipart/related; boundary=$b"}
-            }
+                if {[regexp {/(.+)$} [lindex [dict get $config body] 0] dummy match]} {
+                    set content_type "multipart/$match"
+                } else {
+                    set content_type "multipart/related"
+                }
+                lappend proc "dict set config headers content-type \"$content_type; boundary=\$b\""
+	    }
         }
         if {[dict exists $config error-body]} {
             set error_body [dict get $config error-body]
@@ -226,9 +251,9 @@ proc ::rest::create_interface {name} {
         if {[dict exists $config auth] && [lindex [dict get $config auth] 0] == "sign"} {
             lappend proc "set query \[::${name}::[lindex [dict get $config auth] 1] \$query]"
         }
-        
+
         lappend proc {set query [::http::formatQuery {*}$query]}
-        
+
         # if this is an async call (has defined a callback)
         # then end the main proc here by returning the http token
         # the rest of the normal result processing will be put in a _callback_NAME
@@ -242,7 +267,7 @@ proc ::rest::create_interface {name} {
         } else {
             lappend proc {set result [::rest::_call {} $headers $url $query $body $error_body]}
         }
-        
+
         # process results
         _transform $name $call $config proc pre_transform result
         if {[dict exists $config result]} {
@@ -275,9 +300,9 @@ proc ::rest::create_interface {name} {
         variable static_args
         set static_args $args
     }
-    
+
     set ::${name}::static_args {}
-    
+
     # print the contents of all the dynamic generated procs
     if {0} {
         foreach x [info commands ::${name}::*] {
@@ -373,7 +398,7 @@ package require tls
 ::http::register https 443 [list ::tls::socket]
 }
     }
-    
+
     puts $fh "namespace eval ::$name \{\}\n"
     foreach x {_call _callback parse_opts _addopts substitute _check_result \
             format_auto format_raw format_xml format_json format_discard \
@@ -436,7 +461,7 @@ proc ::rest::_call {callback headers url query body error_body} {
     #puts "_call [list $callback $headers $url $query $body $error_body]"
     # get the settings from the calling proc
     upvar config config
-    
+
     set method GET
     if {[dict exists $config method]} { set method [string toupper [dict get $config method]] }
 
@@ -595,7 +620,7 @@ proc ::rest::parse_opts {static required optional options} {
             break
         }
         set opt [string range $opt 1 end]
-        
+
         if {[set i [lsearch $optional $opt:*]] > -1} {
             lappend query $opt [lindex $args 1]
             set args [lreplace $args 0 1]
@@ -613,7 +638,7 @@ proc ::rest::parse_opts {static required optional options} {
             return -code error "bad option \"$opt\""
         }
     }
-    
+
     foreach opt $optional {
         if {[set i [lsearch -regexp $static ^-?$opt$]] >= 0} {
             lappend query $opt [lindex $static [expr {$i+1}]]
