@@ -335,6 +335,16 @@ proc reset_ticks { } {
   }
 }
 
+proc ashempty_fetch { args } {
+  global public
+  set parent $public(parent)
+  set cur_proc ashempty_fetch
+   set public(ashrowcount) [ join [string map {\" {}} [ lindex $args 1 ]]]
+   #uncomment toreport how many rows 
+   #thread::send $parent "putsm \"Ash has $public(ashrowcount) rows...\""
+  unlock public(thread_actv) $cur_proc
+}
+
 proc ashtime_fetch { args } {
   global public
   set cur_proc ashtime_fetch
@@ -2314,14 +2324,36 @@ proc version_fetch { args } {
 }
 
 proc mon_init { } {
-  global public
+  global public 
   set cur_proc mon_init 
   set public(visible) ""
   mon_execute days
   mon_execute version
-  #mon_execute cpucount
-  get_cpucount
+  #####
+  #Check to see if there is data in the ASH
+  #Need to set public(run) here for mon_execute ash_empty
+  #This is also set later
   set public(run) 1
+  set public(ashrowcount) 0
+  mon_execute ashempty
+  if { [ expr $public(ashrowcount) eq 0 ] } {
+  #There is no data in the Active Session History
+  puts "Metrics Error: No rows found in pg_active_session_history,run a workload to populate metrics"
+  #reset the GUI
+  ed_kill_metrics
+  ed_metrics_button
+  #Deactive the metrics button
+  .ed_mainFrame.buttons.dashboard config -image [ create_image dashboard icons ] -command "metrics"
+  set public(run) 0
+  return
+  ########
+  } else {
+  puts "Metrics found [ join $public(ashrowcount) ] rows in pg_active_session_history"
+  puts "Metrics initializing"
+  }
+  #mon_execute cpucount
+  #cpucount cannot be retrieved by PostgreSQL. Cpucount is limited to running in the client. 
+  get_cpucount
   mon_loop
   ash_init 1
 }
@@ -2628,6 +2660,11 @@ proc set_pg_waits {} {
   set public(waits,oldserxid) LWLock
   set public(waits,OldSerXidLock) LWLock
   set public(waits,OldSnapshotTimeMap) LWLock
+  set public(waits,WALInsert) LWLock
+  set public(waits,XactBuffer) LWLock
+  set public(waits,XactSLRU) LWLock
+  set public(waits,XactTruncation) LWLock
+  set public(waits,XidGen) LWLock
 
   set public(waits,BaseBackupThrottle) Timeout
   set public(waits,PgSleep) Timeout
@@ -2873,6 +2910,12 @@ proc set_pg_events {} {
   set public(events,RecoveryApplyDelay) "Waiting to apply WAL during recovery because of a delay setting."
   set public(events,RecoveryRetrieveRetryInterval) "Waiting during recovery when WAL data is not available from any source (pg_wal, archive or stream)."
   set public(events,VacuumDelay) "Waiting in a cost-based vacuum delay point."
+
+  set public(events,WALInsert) "Waiting to insert WAL data into a memory buffer."
+  set public(events,XactBuffer) "Waiting for I/O on a transaction status SLRU buffer."
+  set public(events,XactSLRU) "Waiting to access the transaction status SLRU cache."
+  set public(events,XactTruncation) "Waiting to execute pg_xact_status or update the oldest transaction ID available to it."
+  set public(events,XidGen) "Waiting to allocate a new transaction ID."
 }
 
 proc get_event_type { event } {
@@ -2899,6 +2942,8 @@ proc set_pgcursors {} {
   global public
 
   set public(sql,cpucount) ""
+
+  set public(sql,ashempty) "select count(*) from pg_active_session_history;"
   
   set public(sql,version) "SELECT version();"
   
