@@ -417,6 +417,13 @@ proc ses_tbl { win ncols nrows cols } {
       $public(ash,sestbl) configure -selectforeground  black 
       $public(ash,output) delete 0.0 end
       #$public(ash,output) insert  insert "   working ... "
+      pack forget $public(ash,details_buttons).sql
+      pack forget $public(ash,output_frame).f
+      pack forget $public(ash,output_frame).sv
+      pack forget $public(ash,output_frame).stats
+      pack $public(ash,output_frame).txt -side left -anchor nw
+      pack $public(ash,details_buttons).wait -side left
+
       $public(ash,output) insert  insert "Statistic of wait events for the process $id\n\n"
       $public(ash,output) insert  insert "CPU:\t\t$CPU \nBCPU:\t\t$BCPU \nIO:\t\t$IO \nSystem_IO:\t\t$System_IO \nTimeout:\t\t$Timeout \nLWLock:\t\t$LWLock \nLock:\t\t$Lock \nBufferPin:\t\t$BufferPin \nActivity:\t\t$Activity \nExtension:\t\t$Extension \nClient:\t\t$Client \nIPC:\t\t$IPC \n"
       update idletasks
@@ -1900,7 +1907,11 @@ proc wait_analysis { id } {
   set cur_proc wait_analysis
   if { [ catch {
     pack forget $public(ash,details_buttons).sql 
-    pack        $public(ash,details_buttons).wait -side left
+    pack forget $public(ash,output_frame).f
+    pack forget $public(ash,output_frame).sv
+    pack forget $public(ash,output_frame).stats
+    pack $public(ash,output_frame).txt -side left -anchor nw
+    pack $public(ash,details_buttons).wait -side left
     $public(ash,output) delete 0.0 end
     $public(ash,output) insert insert "Event: ${id} \n"
     set event_type [ get_event_type $id ]
