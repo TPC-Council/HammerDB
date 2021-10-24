@@ -2347,7 +2347,7 @@ proc mon_init { } {
   set public(run) 1
   set public(ashrowcount) 0
   mon_execute ashempty
-  if { [ expr $public(ashrowcount) eq 0 ] } {
+  if { [ concat $public(ashrowcount) ] eq 0  || $public(ashrowcount) eq "" } {
   #There is no data in the Active Session History
   puts "Metrics Error: No rows found in pg_active_session_history,run a workload to populate metrics"
   #reset the GUI
@@ -2360,7 +2360,7 @@ proc mon_init { } {
   ########
   } else {
   puts "Metrics found [ join $public(ashrowcount) ] rows in pg_active_session_history"
-  puts "Metrics initializing"
+  puts "Metrics Connected"
   }
   #mon_execute cpucount
   #cpucount cannot be retrieved by PostgreSQL. Cpucount is limited to running in the client. 
