@@ -2671,6 +2671,8 @@ proc set_pg_waits {} {
   set public(waits,oldserxid) LWLock
   set public(waits,OldSerXidLock) LWLock
   set public(waits,OldSnapshotTimeMap) LWLock
+  set public(waits,ProcArray) LWLock
+  set public(waits,SharedTidBitMap) LWLock
   set public(waits,WALInsert) LWLock
   set public(waits,XactBuffer) LWLock
   set public(waits,XactSLRU) LWLock
@@ -2927,6 +2929,8 @@ proc set_pg_events {} {
   set public(events,XactSLRU) "Waiting to access the transaction status SLRU cache."
   set public(events,XactTruncation) "Waiting to execute pg_xact_status or update the oldest transaction ID available to it."
   set public(events,XidGen) "Waiting to allocate a new transaction ID."
+  set public(events,ProcArray) "Waiting to access the shared per-process data structures (typically, to get a snapshot or report a session's transaction ID)."
+  set public(events,SharedTidBitmap) "Waiting to access a shared TID bitmap during a parallel bitmap index scan."
 }
 
 proc get_event_type { event } {
