@@ -2674,6 +2674,8 @@ proc metricsopts {} {
 global rdbms
 if { $rdbms eq "Oracle" } {
 metoraopts
+	} elseif { $rdbms eq "PostgreSQL" } {
+metpgopts
 	} else {
 metgenopts
 		}

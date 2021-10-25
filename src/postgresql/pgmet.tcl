@@ -25,7 +25,7 @@ proc create_metrics_screen { } {
   set public(p_x) [ expr {round((600/1.333333)*$win_scale_fact)} ]
   set public(p_y) [ expr {round((654/1.333333)*$win_scale_fact)} ]
   if { ![winfo exists .ed_mainFrame.me.m] } {
-    frame $main -background   $public(bg) -borderwidth 0 
+    frame $main -background $public(bg) -borderwidth 0 
     frame $main.f -background $public(bg) -borderwidth 0 ;# frame, use frame to put tiled windows
     pack $main                            -expand true -fill both 
     pack [ ttk::sizegrip $main.grip ]     -side bottom -anchor se
@@ -61,7 +61,7 @@ proc display_only { {name "" } {proc  "" }    } {
 proc colors1 { } {
   global public
   set num_colors 0
-  foreach color { red pgnge yellow green blue purple } {
+  foreach color { red orange yellow green blue purple } {
     incr num_colors
     set public(clr,$num_colors) $color
   }
@@ -92,11 +92,11 @@ proc colors { } {
   set num_colors 0
 
   set colors { SeaGreen4 HotPink2 aquamarine3 purple4 cyan4 MediumPurple3 blue 
-               plum3  pgnge3  magenta3  goldenrod2 VioletRed4 yellow  
+               plum3  orange3  magenta3  goldenrod2 VioletRed4 yellow  
                firebrick3 OliveDrab3   tomato1 SpringGreen3   
              } 
   set colors { aquamarine3  cyan4  blue purple4 MediumPurple3 
-               plum3 magenta3 HotPink2 VioletRed4 firebrick3 tomato1 pgnge3 
+               plum3 magenta3 HotPink2 VioletRed4 firebrick3 tomato1 orange3 
                goldenrod2  yellow OliveDrab3 SpringGreen3 SeaGreen4
              } 
   foreach color $colors {
@@ -335,6 +335,16 @@ proc reset_ticks { } {
   }
 }
 
+proc ashempty_fetch { args } {
+  global public
+  set parent $public(parent)
+  set cur_proc ashempty_fetch
+   set public(ashrowcount) [ join [string map {\" {}} [ lindex $args 1 ]]]
+   #uncomment toreport how many rows 
+   #thread::send $parent "putsm \"Ash has $public(ashrowcount) rows...\""
+  unlock public(thread_actv) $cur_proc
+}
+
 proc ashtime_fetch { args } {
   global public
   set cur_proc ashtime_fetch
@@ -407,6 +417,13 @@ proc ses_tbl { win ncols nrows cols } {
       $public(ash,sestbl) configure -selectforeground  black 
       $public(ash,output) delete 0.0 end
       #$public(ash,output) insert  insert "   working ... "
+      pack forget $public(ash,details_buttons).sql
+      pack forget $public(ash,output_frame).f
+      pack forget $public(ash,output_frame).sv
+      pack forget $public(ash,output_frame).stats
+      pack $public(ash,output_frame).txt -side left -anchor nw
+      pack $public(ash,details_buttons).wait -side left
+
       $public(ash,output) insert  insert "Statistic of wait events for the process $id\n\n"
       $public(ash,output) insert  insert "CPU:\t\t$CPU \nBCPU:\t\t$BCPU \nIO:\t\t$IO \nSystem_IO:\t\t$System_IO \nTimeout:\t\t$Timeout \nLWLock:\t\t$LWLock \nLock:\t\t$Lock \nBufferPin:\t\t$BufferPin \nActivity:\t\t$Activity \nExtension:\t\t$Extension \nClient:\t\t$Client \nIPC:\t\t$IPC \n"
       update idletasks
@@ -1737,7 +1754,8 @@ proc outputsetup { output } {
     set   output    $public(ash,output_frame).txt
     frame $output   -bd 0  -relief flat -bg $public(bgt)
     frame $output.f
-    text $output.w  -yscrollcommand "$output.scrolly set" \
+    text $output.w  -background white \
+    		    -yscrollcommand "$output.scrolly set" \
                     -xscrollcommand "$output.scrollx set" \
                     -width $public(cols) -height 26    \
                     -wrap word \
@@ -1889,7 +1907,11 @@ proc wait_analysis { id } {
   set cur_proc wait_analysis
   if { [ catch {
     pack forget $public(ash,details_buttons).sql 
-    pack        $public(ash,details_buttons).wait -side left
+    pack forget $public(ash,output_frame).f
+    pack forget $public(ash,output_frame).sv
+    pack forget $public(ash,output_frame).stats
+    pack $public(ash,output_frame).txt -side left -anchor nw
+    pack $public(ash,details_buttons).wait -side left
     $public(ash,output) delete 0.0 end
     $public(ash,output) insert insert "Event: ${id} \n"
     set event_type [ get_event_type $id ]
@@ -1904,18 +1926,28 @@ proc wait_analysis { id } {
 }
 
 proc connect_to_postgresql {} {
-  global public masterthread dbmon_threadID
+  global public masterthread dbmon_threadID bm
   upvar #0 configpostgresql configpostgresql
   setlocaltcountvars $configpostgresql 1
   set public(connected) 0
   set public(host) $pg_host
   set public(port) $pg_port
+  set public(sslmode) $pg_sslmode
+  if { $bm eq "TPC-C" } {
   set public(suser) $pg_superuser
   set public(suser_pw) $pg_superuserpass
   set public(default_db) $pg_defaultdbase
   set public(user) $pg_user
   set public(user_pw) $pg_pass
   set public(tproc_db) $pg_dbase
+  } else {
+  set public(suser) $pg_tpch_superuser
+  set public(suser_pw) $pg_tpch_superuserpass
+  set public(default_db) $pg_tpch_defaultdbase
+  set public(user) $pg_tpch_user
+  set public(user_pw) $pg_tpch_pass
+  set public(tproc_db) $pg_tpch_dbase
+  }
 
   if { ! [ info exists dbmon_threadID ] } {
     set public(parent) $masterthread
@@ -1926,7 +1958,7 @@ proc connect_to_postgresql {} {
 
   #Do logon in thread
   set db_type "default"
-  thread::send -async $dbmon_threadID "pg_logon $public(parent) $pg_host $pg_port $pg_superuser $pg_superuserpass $pg_defaultdbase $db_type"
+  thread::send -async $dbmon_threadID "pg_logon $public(parent) $public(host) $public(port) $public(sslmode) $public(suser) $public(suser_pw) $public(default_db) $db_type"
 
   #Do logon for getting sql plan
   #set db_type "tproc"
@@ -1951,12 +1983,12 @@ proc thread_init { } {
     global tpublic
   
     proc just_disconnect { parent } {
-      thread::send $parent "putsm \"Metrics closing down...\""
+      #thread::send $parent "putsm \"Metrics Closing down...\""
       catch {thread::release}
     }
 
-    proc pg_logon { parent host port user password db db_type} {
-      thread::send $parent "putsm \"Metrics connecting to $host $port $user $password $db\""
+    proc pg_logon { parent host port sslmode user password db db_type} {
+      thread::send $parent "putsm \"Metrics Connecting to host:$host port:$port\""
       set cur_proc pg_logon 
       set handle none
       set err "unknown"
@@ -1967,13 +1999,11 @@ proc thread_init { } {
         return
       }
 
-      set handle [ ConnectToPostgres $host $port $user $password $db ]
+      set handle [ ConnectToPostgres $parent $host $port $sslmode $user $password $db ]
       
       if { $handle eq "Failed" } {
-        set $err "error, the database connection to $host could not be established"
-
-        thread::send $parent "::callback_err \"$err\""
-        #thread::send $parent "::callback_mesg \"$cmd\""
+        #set err "error, the database connection to $host could not be established"
+        #thread::send $parent "::callback_err \"$err\""
         just_disconnect $parent
         return
       }
@@ -2000,41 +2030,36 @@ proc thread_init { } {
     }
   
     proc pg_logoff { parent handle } {
-      thread::send $parent "putsm \"Metrics logging off from PostgreSQL...\""
+      thread::send $parent "putsm \"Metrics Disconnect from PostgreSQL...\""
       set cur_proc pg_logoff 
       set err "unknown"
-      
-      if { [ catch {
-        pg_disconnect $handle
-      } err ] } { 
+      if { [ catch { pg_disconnect $handle } err ] } { 
         set err  [ join $err ]
         thread::send -async $parent "::callback_err \"$err\""
-        thread::send -async $parent "::callback_mesg \"pg_disconnect $handle\""
-      }
-      
       just_disconnect $parent
+      } else {
+      just_disconnect $parent
+      	}
     }
 
     #POSTGRES CONNECTION
-    proc ConnectToPostgres { host port user password dbname } {
-      global tcl_platform
-      global public masterthread dbmon_threadID
-    
-      if {[catch {set handle [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]} err]} {
-        set handle "Failed";
-        thread::send -async $parent "::callback_err \"$err\""
-      } else {
-        if {$tcl_platform(platform) == "windows"} {
-          #Workaround for Bug #95 where first connection fails on Windows
-          catch {pg_disconnect $handle}
-          set handle [pg_connect -conninfo [list host = $host port = $port user = $user password = $password dbname = $dbname ]]
+    proc ConnectToPostgres { parent host port sslmode user password dbname } {
+	global tcl_platform public masterthread dbmon_threadID
+	if {[catch {set handle [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} err]} {
+	set handle "Failed" 
+	thread::send -async $parent "::callback_err [ join $err ]"
+ 	} else {
+	if {$tcl_platform(platform) == "windows"} {
+	#Workaround for Bug #95 where first connection fails on Windows
+	catch {pg_disconnect $handle}
+	set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
         }
-        pg_notice_handler $handle puts
-        set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
-        pg_result $result -clear
-      }
-      return $handle
-    }
+	pg_notice_handler $handle puts
+	set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+	pg_result $result -clear
+        }
+	return $handle
+	}
 
     proc pg_sql {parent handle sql} {
       set cur_proc pg_sql 
@@ -2310,14 +2335,36 @@ proc version_fetch { args } {
 }
 
 proc mon_init { } {
-  global public
+  global public 
   set cur_proc mon_init 
   set public(visible) ""
   mon_execute days
   mon_execute version
-  #mon_execute cpucount
-  get_cpucount
+  #####
+  #Check to see if there is data in the ASH
+  #Need to set public(run) here for mon_execute ash_empty
+  #This is also set later
   set public(run) 1
+  set public(ashrowcount) 0
+  mon_execute ashempty
+  if { [ concat $public(ashrowcount) ] eq 0  || $public(ashrowcount) eq "" } {
+  #There is no data in the Active Session History
+  puts "Metrics Error: No rows found in pg_active_session_history,run a workload to populate metrics"
+  #reset the GUI
+  ed_kill_metrics
+  ed_metrics_button
+  #Deactive the metrics button
+  .ed_mainFrame.buttons.dashboard config -image [ create_image dashboard icons ] -command "metrics"
+  set public(run) 0
+  return
+  ########
+  } else {
+  puts "Metrics found [ join $public(ashrowcount) ] rows in pg_active_session_history"
+  puts "Metrics Connected"
+  }
+  #mon_execute cpucount
+  #cpucount cannot be retrieved by PostgreSQL. Cpucount is limited to running in the client. 
+  get_cpucount
   mon_loop
   ash_init 1
 }
@@ -2624,6 +2671,13 @@ proc set_pg_waits {} {
   set public(waits,oldserxid) LWLock
   set public(waits,OldSerXidLock) LWLock
   set public(waits,OldSnapshotTimeMap) LWLock
+  set public(waits,ProcArray) LWLock
+  set public(waits,SharedTidBitMap) LWLock
+  set public(waits,WALInsert) LWLock
+  set public(waits,XactBuffer) LWLock
+  set public(waits,XactSLRU) LWLock
+  set public(waits,XactTruncation) LWLock
+  set public(waits,XidGen) LWLock
 
   set public(waits,BaseBackupThrottle) Timeout
   set public(waits,PgSleep) Timeout
@@ -2869,6 +2923,14 @@ proc set_pg_events {} {
   set public(events,RecoveryApplyDelay) "Waiting to apply WAL during recovery because of a delay setting."
   set public(events,RecoveryRetrieveRetryInterval) "Waiting during recovery when WAL data is not available from any source (pg_wal, archive or stream)."
   set public(events,VacuumDelay) "Waiting in a cost-based vacuum delay point."
+
+  set public(events,WALInsert) "Waiting to insert WAL data into a memory buffer."
+  set public(events,XactBuffer) "Waiting for I/O on a transaction status SLRU buffer."
+  set public(events,XactSLRU) "Waiting to access the transaction status SLRU cache."
+  set public(events,XactTruncation) "Waiting to execute pg_xact_status or update the oldest transaction ID available to it."
+  set public(events,XidGen) "Waiting to allocate a new transaction ID."
+  set public(events,ProcArray) "Waiting to access the shared per-process data structures (typically, to get a snapshot or report a session's transaction ID)."
+  set public(events,SharedTidBitmap) "Waiting to access a shared TID bitmap during a parallel bitmap index scan."
 }
 
 proc get_event_type { event } {
@@ -2895,6 +2957,8 @@ proc set_pgcursors {} {
   global public
 
   set public(sql,cpucount) ""
+
+  set public(sql,ashempty) "select count(*) from pg_active_session_history;"
   
   set public(sql,version) "SELECT version();"
   
@@ -2932,7 +2996,9 @@ proc set_pgcursors {} {
       to_char(current_timestamp,'J') as last_day, to_char(min(ash_time),'J') as first_day 
     from ash group by samples,sample_id,wait_event_type,ash_time,bucket order by ash_time;"
 
-  set public(sql,ash_sqltxt) "select distinct query from pg_active_session_history where \$public(ash,sqlid);"
+    #set public(sql,ash_sqltxt) "select distinct query from pg_active_session_history where \$public(ash,sqlid);"
+    #Query can have multiple rows for the same SQL with different predicates, limit to the most recent in the ASH
+  set public(sql,ash_sqltxt) "select query from pg_active_session_history where \$public(ash,sqlid) order by xact_start desc limit 1;"
 
   set public(sql,ash_sqlplanx) ""
   
@@ -3147,7 +3213,7 @@ proc init_publics {} {
   set public(colors,count) 1
 }
 
-proc post_kill_dbmon_cleanup {} {
+proc pg_post_kill_dbmon_cleanup {} {
   global public dbmon_threadID
   .ed_mainFrame.buttons.dashboard configure -state disabled
   set public(connected) "err"
@@ -3158,8 +3224,8 @@ proc post_kill_dbmon_cleanup {} {
     if { [ info exists dbmon_threadID ]} { 
       if { [ thread::exists $dbmon_threadID ] } {
         if { [ info exists public(handle) ] } {
-          #logoff also calls just_disconnect
-          thread::send  -async $dbmon_threadID "pg_logoff $public(parent) $public(handle)"
+          #logoff also calls just_disconnect so release thread inside and cancel from outside
+          thread::send -async $dbmon_threadID "pg_logoff $public(parent) $public(handle)"
           tsv::set application themonitor "QUIT"
           catch {thread::cancel $dbmon_threadID}
         } else {
@@ -3170,12 +3236,13 @@ proc post_kill_dbmon_cleanup {} {
     }
     #thread logoff and disconnect asynch so may not have closed by this point
     if { ![ thread::exists $dbmon_threadID ] } {
+      puts "Metrics Closed\n"
       unset -nocomplain dbmon_threadID
       tsv::set application themonitor "READY"
       .ed_mainFrame.buttons.dashboard configure -state normal
     } else {
-      puts "Warning: Metrics connection remains active"
-      after 2000 post_kill_dbmon_cleanup
+      #puts "Closing Metrics thread ..."
+      after 2000 pg_post_kill_dbmon_cleanup
     }
   }
 }
@@ -3194,7 +3261,7 @@ proc pgmetrics { } {
         yes { return }
         no {
           set public(connected) "err"
-          post_kill_dbmon_cleanup
+          pg_post_kill_dbmon_cleanup
           return
         }
       }
@@ -3206,6 +3273,5 @@ proc pgmetrics { } {
   ed_status_message -finish "... Starting Metrics ..."
   ed_stop_metrics
   .ed_mainFrame.buttons.dashboard configure -state disabled
-
   connect_to_postgresql
 }
