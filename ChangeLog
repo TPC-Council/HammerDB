@@ -969,3 +969,14 @@ Update to increase TPROC-C Schema Size Limits for Issue #250 (#251)
 Fix for Timing Data Times Out (#248)
 Fix for Issue #242 can't read tc_flog no such variable #242 (#243)
 Add MariaDB as a separate database #54 (#234)
+
+---------------------------------------------------------------------
+
+Version 4.3 Nov 2021
+
+Pull Requests & Issues
+
+Add performance metrics for PostgreSQL #279 (#8)
+Add CLI to Web Service with SQLite repository for output, timing and transactions #278 (#145)
+Update for #264 [TPROC-H] MySQL create FKs after table load #274 (#264)
+Add sslmode support for PostgreSQL database #271
