@@ -379,6 +379,13 @@ foreach {tablelist::W tablelist::x tablelist::y} [tablelist::convEventFields %W 
           $public(ash,sestbl) configure -selectforeground  black 
           $public(ash,output) delete 0.0 end
           #$public(ash,output) insert  insert "   working ... "
+	  pack forget $public(ash,details_buttons).sql
+          pack forget $public(ash,output_frame).f
+          pack forget $public(ash,output_frame).sv
+          pack forget $public(ash,output_frame).stats
+          pack $public(ash,output_frame).txt -side left -anchor nw
+          pack $public(ash,details_buttons).wait -side left
+
           $public(ash,output) insert  insert "   session id $id "
             update idletasks
             clipboard clear
@@ -589,6 +596,8 @@ foreach {tablelist::W tablelist::x tablelist::y} [tablelist::convEventFields %W 
           $public(ash,evttbl) cellselection clear 0,0 end,end
           $public(ash,evttbl) configure -selectbackground  white
           $public(ash,evttbl) configure -selectforeground  black 
+
+
           $public(ash,output) delete 0.0 end
           #$public(ash,output) insert  insert "   working ... "
           $public(ash,output) insert  insert "   session id $id "
@@ -1829,6 +1838,10 @@ global public
    set cur_proc   wait_analysis
    if { [ catch {
       pack forget $public(ash,details_buttons).sql 
+      pack forget $public(ash,output_frame).f
+      pack forget $public(ash,output_frame).sv
+      pack forget $public(ash,output_frame).stats
+      pack $public(ash,output_frame).txt -side left -anchor nw
       pack        $public(ash,details_buttons).wait -side left
       $public(ash,output) delete 0.0 end
       #$public(ash,output) insert  insert "   working ... \n"

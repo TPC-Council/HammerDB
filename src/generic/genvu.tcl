@@ -142,7 +142,8 @@ set thlist [ lreplace $thlist $idx $idx ]
 	}
 }
 #Additional thread for Database Metrics initially Oracle only
-if { $rdbms eq "Oracle" } {
+#Additional thread for Database Metrics PostgreSQL added
+if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" } {
 if { [ info exists dbmon_threadID ] } {
 if { [ thread::exists $dbmon_threadID ] || [ tsv::get application themonitor ] eq "NOWVUSER" } {
 set idx [ lsearch $thlist $dbmon_threadID ]

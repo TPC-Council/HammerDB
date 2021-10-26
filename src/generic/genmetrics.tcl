@@ -163,13 +163,15 @@ proc AdjustBarHeight {cpu usr sys percent} {
 	}
 
 proc metrics {} {
-global rdbms
-if { $rdbms eq "Oracle" } {
-orametrics
-        } else {
-genmetrics
-                }
-        }
+  global rdbms
+  if { $rdbms eq "Oracle" } {
+    orametrics
+  } elseif { $rdbms eq "PostgreSQL" } {
+    pgmetrics
+  } else {
+    genmetrics
+  }
+}
 
 proc genmetrics {} {
 global agent_hostname agent_id metframe
@@ -228,7 +230,11 @@ return
 
 proc ed_kill_metrics {args} {
    global _ED rdbms 
-if { $rdbms == "Oracle" } { post_kill_dbmon_cleanup }
+if { $rdbms == "Oracle" } {
+	post_kill_dbmon_cleanup 
+	} elseif { $rdbms == "PostgreSQL" } {
+	pg_post_kill_dbmon_cleanup 
+	}
    ed_status_message -show "... Stopping Metrics ..."
    ed_metrics_button
 if { [ interp exists metrics_interp ] } {
