@@ -58,7 +58,7 @@
     </datageneration>
     <webservice>
 	   <ws_port>8080</ws_port> 
-	   <sqlite_db>:memory:</sqlite_db> 
+	   <sqlite_db>TMP</sqlite_db> 
     </webservice>
     <timeprofile>
            <profiler>xtprof</profiler>

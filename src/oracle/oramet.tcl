@@ -1,15 +1,9 @@
 #Oracle Database Metrics based on Ashmon v2 by Kyle Hailey
 #All code copied from Ashmon used with permission to modify and release open source under GPLv3 license
-catch { [
-     if { $tcl_version >= 8.0 } {
-          # setup blt and change the namespace so that we don't need to use blt::
-           namespace import comm::*
-           namespace import blt::*
-           namespace import -force blt::tile::*
-        } 
-  ] }
-global firstconnect
-set firstconnect "true"
+namespace eval oramet {
+namespace export create_metrics_screen display_tile display_only colors1 colors2 colors getcolor getlcolor generic_time cur_time secs_fetch days_fetch ash_init reset_ticks ashtime_fetch ses_tbl sql_tbl emptyStr stat_tbl plan_tbl evt_tbl createSesFrame createSqlFrame createevtFrame create_ash_cpu_line ash_bars ash_displayx ash_fetch ash_details ash_sqldetails_fetch ash_sqlsessions_fetch ash_sqltxt ashrpt_fetch ash_sqltxt_fetch ash_sqlstats_fetch ash_sqlplan_fetch ash_sqlevents_fetch sqlovertime_fetch sqlovertime ashsetup vectorsetup addtabs graphsetup outputsetup waitbuttons_setup sqlbuttons_setup cbc_fetch sqlio_fetch io_fetch bbw_fetch hw_fetch txrlc_fetch wait_analysis connect_to_oracle putsm thread_init just_disconnect ora_logon ora_logoff callback_connect callback_set callback_fetch callback_err callback_mesg disconnect ora_exit connect test_connect lock unlock cpucount_fetch version_fetch mon_init mon_loop mon_execute mon_execute_1 set_ora_waits set_oracursors init_publics post_kill_dbmon_cleanup orametrics
+
+variable firstconnect "true"
 
 proc create_metrics_screen { } {
 global public metframe win_scale_fact
@@ -2098,7 +2092,8 @@ global  env
 }
 
 proc test_connect { } {
-global public firstconnect dbmon_threadID
+global public dbmon_threadID
+variable firstconnect
 set cur_proc test_connect 
   if { $public(connected) == "err" } {
 puts "Metrics Connection Failed: Verify Metrics Options"
@@ -3330,11 +3325,12 @@ catch {thread::cancel $dbmon_threadID}
 }
 #thread logoff and disconnect asynch so may not have closed by this point
 if { ![ thread::exists $dbmon_threadID ] } {
+puts "Metrics Closed\n"
 unset -nocomplain dbmon_threadID
 tsv::set application themonitor "READY"
 .ed_mainFrame.buttons.dashboard configure -state normal
 	} else {
-puts "Warning: Metrics connection remains active"
+      puts "Warning: Metrics connection remains active"
       after 2000 post_kill_dbmon_cleanup
     }
 }}
@@ -3371,4 +3367,5 @@ if { [info exists env(ORACLE_HOME)] } {
   set public(ORACLE_HOME) $env(HOME)
         }
 connect_to_oracle
+}
 }

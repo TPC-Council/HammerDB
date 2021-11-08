@@ -2029,7 +2029,7 @@ set sqlite_db [ dict get $genericdict webservice sqlite_db ]
 if { [string toupper $sqlite_db] eq "TMP" || [string toupper $sqlite_db] eq "TEMP" } {
 set tmpdir [ findtempdir ]
 if { $tmpdir != "notmpdir" } {
-set sqlite_db [ file join $tmpdir hammerdb.DB ]
+set sqlite_db [ file join $tmpdir hammer.DB ]
         } else {
 puts "Error Database Directory set to TMP but couldn't find temp directory"
 	}
@@ -2089,10 +2089,10 @@ catch {hdb eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
 catch {hdb eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
 catch {hdb eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
 catch {hdb eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
-puts "Initialized new SQLite on-disk database"
+puts "Initialized new SQLite on-disk database $sqlite_db"
 	}
      } else {
-puts "Initialized SQLite on-disk database using existing tables"
+puts "Initialized SQLite on-disk database $sqlite_db using existing tables"
 	}
     }
 }
