@@ -294,7 +294,7 @@ set threadsbytid($threadID) $vuser
 if { [ info exists tc_threadID ] } { 
 if { $threadID eq $tc_threadID } { unset -nocomplain tc_threadID }
 		}
-if { $rdbms eq "Oracle" && [ info exists dbmon_threadID ] } { 
+if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL") && [ info exists dbmon_threadID ] } { 
 if { $threadID eq $dbmon_threadID } { 
 tsv::set application themonitor "NOWVUSER"
 unset -nocomplain dbmon_threadID

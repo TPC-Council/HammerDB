@@ -1,14 +1,7 @@
-catch { [
-  if { $tcl_version >= 8.0 } {
-    # setup blt and change the namespace so that we don't need to use blt::
-    namespace import comm::*
-    namespace import blt::*
-    namespace import -force blt::tile::*
-  } 
-] }
+namespace eval pgmet {
+namespace export create_metrics_screen display_tile display_only colors1 colors2 colors getcolor geteventcolor getlcolor generic_time cur_time secs_fetch days_fetch ash_init reset_ticks ashempty_fetch ashtime_fetch ses_tbl sql_tbl emptyStr stat_tbl plan_tbl evt_tbl createSesFrame createSqlFrame createevtFrame create_ash_cpu_line ash_bars ash_displayx ash_fetch ash_details ash_sqldetails_fetch ash_sqlsessions_fetch ash_sqltxt ashrpt_fetch ash_sqltxt_fetch ash_sqlstats_fetch ash_sqlplan_fetch ash_eventsqls_fetch ash_sqlevents_fetch sqlovertime_fetch sqlovertime ashsetup vectorsetup addtabs graphsetup outputsetup waitbuttons_setup sqlbuttons_setup cbc_fetch sqlio_fetch wait_analysis connect_to_postgresql putsm pg_dbmon_thread_init just_disconnect pg_logon pg_logoff ConnectToPostgres pg_sql pg_all callback_connect callback_set callback_fetch callback_err callback_mesg test_connect_pg lock unlock cpucount_fetch pg_HowManyProcessorsWindows pg_HowManyProcessorsLinux get_cpucount version_fetch mon_init mon_loop mon_execute set_pg_waits set_pg_events get_event_type get_event_desc set_pgcursors init_publics pg_post_kill_dbmon_cleanup pgmetrics
 
-global firstconnect
-set firstconnect "true"
+variable firstconnect "true"
 
 proc create_metrics_screen { } {
   global public metframe win_scale_fact
@@ -1951,7 +1944,7 @@ proc connect_to_postgresql {} {
 
   if { ! [ info exists dbmon_threadID ] } {
     set public(parent) $masterthread
-    thread_init 
+    pg_dbmon_thread_init 
   } else {
     return 1
   }
@@ -1974,7 +1967,7 @@ proc putsm { message } {
   puts "$message"
 }
 
-proc thread_init { } {
+proc pg_dbmon_thread_init { } {
   global public dbmon_threadID
 
   set public(connected) 0
@@ -2167,7 +2160,8 @@ proc callback_mesg { args } {
 } 
 
 proc test_connect_pg { } {
-  global public firstconnect dbmon_threadID
+  global public dbmon_threadID
+  variable firstconnect
   set cur_proc test_connect_pg
   if { $public(connected) == "err" } {
     puts "Metrics Connection Failed: Verify Metrics Options"
@@ -2248,7 +2242,7 @@ proc cpucount_fetch { args } {
   unlock public(thread_actv) $cur_proc
 }
 
-proc HowManyProcessorsWindows {} {
+proc pg_HowManyProcessorsWindows {} {
   global S cpu_model
   set cpu_model [lindex [twapi::get_processor_info 0 -processorname] 1]
   set ::S(cpus) [twapi::get_processor_count]
@@ -2277,7 +2271,7 @@ proc HowManyProcessorsWindows {} {
   }
 }
 
-proc HowManyProcessorsLinux {} {
+proc pg_HowManyProcessorsLinux {} {
   global S cpu_model
   set fin [open /proc/cpuinfo r]
   set data [read $fin]; list
@@ -2303,11 +2297,11 @@ proc get_cpucount { } {
   
   if { [ catch {
     if {$tcl_platform(platform) == "windows"} {
-      HowManyProcessorsWindows
+      pg_HowManyProcessorsWindows
       #global env
       #set public(cpucount) $env(NUMBER_OF_PROCESSORS)
     } else {
-      HowManyProcessorsLinux
+      pg_HowManyProcessorsLinux
       #set public(cpucount) [ exec grep "processor" /proc/cpuinfo | wc -l ]
     }
     set public(cpucount) $S(cpus)
@@ -2359,8 +2353,7 @@ proc mon_init { } {
   return
   ########
   } else {
-  puts "Metrics found [ join $public(ashrowcount) ] rows in pg_active_session_history"
-  puts "Metrics Connected"
+  puts "Starting Metrics, read [ join $public(ashrowcount) ] rows from pg_active_session_history"
   }
   #mon_execute cpucount
   #cpucount cannot be retrieved by PostgreSQL. Cpucount is limited to running in the client. 
@@ -3241,7 +3234,7 @@ proc pg_post_kill_dbmon_cleanup {} {
       tsv::set application themonitor "READY"
       .ed_mainFrame.buttons.dashboard configure -state normal
     } else {
-      #puts "Closing Metrics thread ..."
+      #puts "Warning: Metrics connection remains active"
       after 2000 pg_post_kill_dbmon_cleanup
     }
   }
@@ -3274,4 +3267,5 @@ proc pgmetrics { } {
   ed_stop_metrics
   .ed_mainFrame.buttons.dashboard configure -state disabled
   connect_to_postgresql
+}
 }

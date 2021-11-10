@@ -164,9 +164,20 @@ proc AdjustBarHeight {cpu usr sys percent} {
 
 proc metrics {} {
   global rdbms
+if { [catch {
+  namespace import comm::*
+  namespace import blt::*
+  } message ] } {
+puts "Metrics error loading comm and blt packages"
+return
+  }
   if { $rdbms eq "Oracle" } {
+    namespace forget pgmet::*
+    namespace import oramet::*
     orametrics
   } elseif { $rdbms eq "PostgreSQL" } {
+    namespace forget oramet::*
+    namespace import pgmet::*
     pgmetrics
   } else {
     genmetrics
