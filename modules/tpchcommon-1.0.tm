@@ -190,7 +190,43 @@ set number [ RandomNumber 1000 9999 ]
 return [ concat $acode-$exchg-$number ]
 }
 #ALPHA STRING
-proc MakeAlphaString { min max chArray chalen } {
+set alphanumArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
+set alphanumLength [ llength $alphanumArray ]
+
+proc CreateListProduct2 { chArray chalen } {
+    for {set i 0} {$i < $chalen} {incr i} {
+        set char1 [ lindex $chArray $i]
+        for {set j 0} {$j < $chalen } {incr j } {
+            set char2 [ lindex $chArray $j] 
+            set combined $char1
+            append combined $char2
+            lappend products $combined
+        }
+    }
+    return $products
+}
+set alphanum2Array [CreateListProduct2 $alphanumArray $alphanumLength ]
+set alphanum2Length [ llength $alphanum2Array ]
+set alphanum2LengthSquared [ expr { $alphanum2Length * $alphanum2Length } ]
+
+
+proc MakeAlphaString { x y ignore1 ignore2} {
+    variable alphanum2Array;
+    variable alphanum2Length;
+    variable alphanum2LengthSquared;
+    set len [ RandomNumber $x $y ]
+    for {set i 0} {$i < $len} {incr i 4} {
+        set randnumFull [ expr {int(rand() * $alphanum2LengthSquared)} ]
+        set randnum1 [ expr {$randnumFull / $alphanum2Length} ]
+        set randnum2 [ expr {$randnumFull % $alphanum2Length} ]
+        append alphastring [lindex $alphanum2Array $randnum1 ]
+        append alphastring [lindex $alphanum2Array $randnum2 ]
+    }
+    return [ string range $alphastring 0 $len-1 ]
+}
+
+#RANDOM STRING
+proc MakeRandomString { min max chArray chalen } {
 set len [ RandomNumber [ expr {round($min)} ] [ expr {round($max)} ] ]
 for {set i 0} {$i < $len } {incr i } {
 append alphastring [lindex $chArray [ expr {int(rand()*$chalen)}]]
@@ -299,7 +335,7 @@ return $sentence
 proc V_STR { avg } {
 set globArray [ list , \  0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
 set chalen [ llength $globArray ]
-return [ MakeAlphaString [ expr {$avg * 0.4} ] [ expr {$avg * 1.6} ] $globArray $chalen ] 
+return [ MakeRandomString [ expr {$avg * 0.4} ] [ expr {$avg * 1.6} ] $globArray $chalen ] 
 }
 #TEXT BUILD
 proc TEXT_1 { avg } {
