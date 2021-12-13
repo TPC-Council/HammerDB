@@ -19,6 +19,7 @@
             <pg_vacuum>false</pg_vacuum>
             <pg_dritasnap>false</pg_dritasnap>
             <pg_oracompat>false</pg_oracompat>
+            <pg_cituscompat>false</pg_cituscompat>
             <pg_storedprocs>false</pg_storedprocs>
             <pg_partition>false</pg_partition>
         </schema>

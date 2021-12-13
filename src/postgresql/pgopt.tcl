@@ -205,7 +205,7 @@ proc configpgtpcc {option} {
     setlocaltpccvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
+    set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
     set whlist [ get_warehouse_list_for_spinbox ]
     if { $pg_oracompat eq "true" } {
         if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -308,17 +308,48 @@ proc configpgtpcc {option} {
     grid $Prompt -column 0 -row 10 -sticky e
     grid $Name -column 1 -row 10 -sticky w
     bind .tpc.f1.e9 <Button> { 
-        if { $pg_oracompat != "true" } {
+        if { $pg_cituscompat == "true" } {
+            # do nothing, button is disabled
+        } elseif { $pg_oracompat != "true" } {
             if { $pg_port eq "5432" } { set pg_port "5444" }
             if { $pg_superuser eq "postgres" } { set pg_superuser "enterprisedb" }
             if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "edb" }
             if { $pg_storedprocs eq "true" } { set pg_storedprocs "false" }
             .tpc.f1.e9a configure -state disabled
+            .tpc.f1.e9c configure -state disabled
         } else {
             if { $pg_port eq "5444" } { set pg_port "5432" }
             if { $pg_superuser eq "enterprisedb" } { set pg_superuser "postgres" }
             if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
             .tpc.f1.e9a configure -state normal
+            .tpc.f1.e9c configure -state normal
+        }
+    }
+    set Prompt $Parent.f1.p9c
+    ttk::label $Prompt -text "Citus Compatible :"
+    set Name $Parent.f1.e9c
+    ttk::checkbutton $Name -text "" -variable pg_cituscompat -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky w
+    bind .tpc.f1.e9c <Button> { 
+        if { $pg_oracompat == "true" } {
+            # do nothing, button is disabled
+        } elseif { $pg_cituscompat != "true" } {
+            if { $pg_superuser eq "postgres" } { set pg_superuser "citus" }
+            if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "citus" }
+            set pg_storedprocs "true"
+            set pg_partition "false"
+            .tpc.f1.e9 configure -state disabled
+            .tpc.f1.e9a configure -state disabled
+            .tpc.f1.e11a configure -state disabled
+        } else {
+            if { $pg_superuser eq "citus" } { set pg_superuser "postgres" }
+            if { $pg_defaultdbase eq "citus" } { set pg_defaultdbase "postgres" }
+            .tpc.f1.e9 configure -state normal
+            .tpc.f1.e9a configure -state normal
+            if { $pg_count_ware > 200 } {
+                .tpc.f1.e11a configure -state normal
+            }
         }
     }
     set Prompt $Parent.f1.p9a
@@ -328,14 +359,14 @@ proc configpgtpcc {option} {
     if {$pg_oracompat == "true" } {
         $Name configure -state disabled
     }
-    grid $Prompt -column 0 -row 11 -sticky e
-    grid $Name -column 1 -row 11 -sticky w
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
     set Prompt $Parent.f1.p9b
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
     set Name $Parent.f1.e9b
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
-    grid $Prompt -column 0 -row 12 -sticky e
-    grid $Name -column 1 -row 12 -sticky w
+    grid $Prompt -column 0 -row 13 -sticky e
+    grid $Name -column 1 -row 13 -sticky w
     if { $option eq "all" || $option eq "build" } {
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Number of Warehouses :"
@@ -348,12 +379,12 @@ proc configpgtpcc {option} {
             if {$pg_count_ware < 200} {
                 .tpc.f1.e11a configure -state disabled
                 set pg_partition "false"
-            } else {
+            } elseif {$pg_cituscompat != "true"} {
                 .tpc.f1.e11a configure -state enabled
             }
         }
-        grid $Prompt -column 0 -row 13 -sticky e
-        grid $Name -column 1 -row 13 -sticky ew
+        grid $Prompt -column 0 -row 14 -sticky e
+        grid $Name -column 1 -row 14 -sticky ew
         set Prompt $Parent.f1.p11
         ttk::label $Prompt -text "Virtual Users to Build Schema :"
         set Name $Parent.f1.e11
@@ -365,14 +396,14 @@ proc configpgtpcc {option} {
         }
         event add <<Any-Button-Any-Key>> <Any-ButtonRelease>
         event add <<Any-Button-Any-Key>> <KeyRelease>
-        grid $Prompt -column 0 -row 14 -sticky e
-        grid $Name -column 1 -row 14 -sticky ew
+        grid $Prompt -column 0 -row 15 -sticky e
+        grid $Name -column 1 -row 15 -sticky ew
         set Prompt $Parent.f1.p11a
         ttk::label $Prompt -text "Partition Order Line Table :"
         set Name $Parent.f1.e11a
         ttk::checkbutton $Name -text "" -variable pg_partition -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 15 -sticky e
-        grid $Name -column 1 -row 15 -sticky w
+        grid $Prompt -column 0 -row 16 -sticky e
+        grid $Name -column 1 -row 16 -sticky w
         if {$pg_count_ware < 200 } {
             $Name configure -state disabled
         }
@@ -381,17 +412,17 @@ proc configpgtpcc {option} {
         if { $option eq "all" } {
             set Prompt $Parent.f1.h3
             ttk::label $Prompt -image [ create_image driveroptlo icons ]
-            grid $Prompt -column 0 -row 16 -sticky e
+            grid $Prompt -column 0 -row 17 -sticky e
             set Prompt $Parent.f1.h4
             ttk::label $Prompt -text "Driver Options"
-            grid $Prompt -column 1 -row 16 -sticky w
+            grid $Prompt -column 1 -row 17 -sticky w
         }
         set Prompt $Parent.f1.p14
         ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
-        grid $Prompt -column 0 -row 17 -sticky e
+        grid $Prompt -column 0 -row 18 -sticky e
         set Name $Parent.f1.r1
         ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable pg_driver
-        grid $Name -column 1 -row 17 -sticky w
+        grid $Name -column 1 -row 18 -sticky w
         bind .tpc.f1.r1 <ButtonPress-1> {
             set pg_vacuum "false"
             set pg_dritasnap "false"
@@ -412,7 +443,7 @@ proc configpgtpcc {option} {
         }
         set Name $Parent.f1.r2
         ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable pg_driver
-        grid $Name -column 1 -row 18 -sticky w
+        grid $Name -column 1 -row 19 -sticky w
         bind .tpc.f1.r2 <ButtonPress-1> {
             .tpc.f1.e19 configure -state normal
             .tpc.f1.e20 configure -state normal
@@ -431,14 +462,14 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p15
         ttk::label $Prompt -text "Total Transactions per User :"
         ttk::entry $Name -width 30 -textvariable pg_total_iterations
-        grid $Prompt -column 0 -row 19 -sticky e
-        grid $Name -column 1 -row 19 -sticky ew
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky ew
         set Prompt $Parent.f1.p16
         ttk::label $Prompt -text "Exit on PostgreSQL Error :"
         set Name $Parent.f1.e16
         ttk::checkbutton $Name -text "" -variable pg_raiseerror -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 20 -sticky e
-        grid $Name -column 1 -row 20 -sticky w
+        grid $Prompt -column 0 -row 21 -sticky e
+        grid $Name -column 1 -row 21 -sticky w
         set Prompt $Parent.f1.p17
         ttk::label $Prompt -text "Keying and Thinking Time :"
         set Name $Parent.f1.e17
@@ -454,14 +485,14 @@ proc configpgtpcc {option} {
                 }
             }
         }
-        grid $Prompt -column 0 -row 21 -sticky e
-        grid $Name -column 1 -row 21 -sticky w
+        grid $Prompt -column 0 -row 22 -sticky e
+        grid $Name -column 1 -row 22 -sticky w
         set Prompt $Parent.f1.p19
         ttk::label $Prompt -text "Vacuum when complete :"
         set Name $Parent.f1.e19
         ttk::checkbutton $Name -text "" -variable pg_vacuum -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 22 -sticky e
-        grid $Name -column 1 -row 22 -sticky w
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23 -sticky w
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -469,8 +500,8 @@ proc configpgtpcc {option} {
         ttk::label $Prompt -text "EnterpriseDB DRITA Snapshots :"
         set Name $Parent.f1.e20
         ttk::checkbutton $Name -text "" -variable pg_dritasnap -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 23 -sticky e
-        grid $Name -column 1 -row 23 -sticky w
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky w
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -478,8 +509,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p21
         ttk::label $Prompt -text "Minutes of Rampup Time :"
         ttk::entry $Name -width 30 -textvariable pg_rampup
-        grid $Prompt -column 0 -row 24 -sticky e
-        grid $Name -column 1 -row 24 -sticky ew
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -487,8 +518,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p22
         ttk::label $Prompt -text "Minutes for Test Duration :"
         ttk::entry $Name -width 30 -textvariable pg_duration
-        grid $Prompt -column 0 -row 25 -sticky e
-        grid $Name -column 1 -row 25 -sticky ew
+        grid $Prompt -column 0 -row 26 -sticky e
+        grid $Name -column 1 -row 26 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -496,8 +527,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p23
         ttk::label $Prompt -text "Use All Warehouses :"
         ttk::checkbutton $Name -text "" -variable pg_allwarehouse -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 26 -sticky e
-        grid $Name -column 1 -row 26 -sticky ew
+        grid $Prompt -column 0 -row 27 -sticky e
+        grid $Name -column 1 -row 27 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -505,8 +536,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p24
         ttk::label $Prompt -text "Time Profile :"
         ttk::checkbutton $Name -text "" -variable pg_timeprofile -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 27 -sticky e
-        grid $Name -column 1 -row 27 -sticky ew
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -514,8 +545,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p25
         ttk::label $Prompt -text "Asynchronous Scaling :"
         ttk::checkbutton $Name -text "" -variable pg_async_scale -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 28 -sticky e
-        grid $Name -column 1 -row 28 -sticky ew
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky ew
         if {$pg_driver == "test" } {
             set pg_async_scale "false"
             $Name configure -state disabled
@@ -539,8 +570,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p26
         ttk::label $Prompt -text "Asynch Clients per Virtual User :"
         ttk::entry $Name -width 30 -textvariable pg_async_client
-        grid $Prompt -column 0 -row 29 -sticky e
-        grid $Name -column 1 -row 29 -sticky ew
+        grid $Prompt -column 0 -row 30 -sticky e
+        grid $Name -column 1 -row 30 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -548,8 +579,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p27
         ttk::label $Prompt -text "Asynch Client Login Delay :"
         ttk::entry $Name -width 30 -textvariable pg_async_delay
-        grid $Prompt -column 0 -row 30 -sticky e
-        grid $Name -column 1 -row 30 -sticky ew
+        grid $Prompt -column 0 -row 31 -sticky e
+        grid $Name -column 1 -row 31 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -557,8 +588,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p28
         ttk::label $Prompt -text "Asynchronous Verbose :"
         ttk::checkbutton $Name -text "" -variable pg_async_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 31 -sticky e
-        grid $Name -column 1 -row 31 -sticky ew
+        grid $Prompt -column 0 -row 32 -sticky e
+        grid $Name -column 1 -row 32 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             set pg_async_verbose "false"
             $Name configure -state disabled
@@ -567,8 +598,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p29
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable pg_connect_pool -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 32 -sticky e
-        grid $Name -column 1 -row 32 -sticky ew
+        grid $Prompt -column 0 -row 33 -sticky e
+        grid $Name -column 1 -row 33 -sticky ew
     }
     #This is the Cancel button variables stay as before
     set Name $Parent.b2
