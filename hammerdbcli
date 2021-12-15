@@ -1,9 +1,9 @@
 #!/bin/sh
 #########################################################################
 ## \
-export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 ## \
-export PATH=./bin:$PATH
+export PATH="./bin:$PATH"
 ## \
 exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 ########################################################################
