@@ -51,7 +51,7 @@ exit
       }
 }
 
-append modulelist { Thread msgcat xml comm tclreadline task }
+append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m
