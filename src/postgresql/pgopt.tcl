@@ -1,4 +1,4 @@
-proc countpgopts { bm } { 
+proc countpgopts { bm } {
     upvar #0 icons icons
     upvar #0 configpostgresql configpostgresql
     upvar #0 genericdict genericdict
@@ -331,7 +331,7 @@ proc configpgtpcc {option} {
     ttk::checkbutton $Name -text "" -variable pg_cituscompat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 11 -sticky e
     grid $Name -column 1 -row 11 -sticky w
-    bind .tpc.f1.e9c <Button> { 
+    bind .tpc.f1.e9c <Button> {
         if { $pg_oracompat == "true" } {
             # do nothing, button is disabled
         } elseif { $pg_cituscompat != "true" } {
@@ -341,14 +341,14 @@ proc configpgtpcc {option} {
             set pg_partition "false"
             .tpc.f1.e9 configure -state disabled
             .tpc.f1.e9a configure -state disabled
-            .tpc.f1.e11a configure -state disabled
+	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state disabled }
         } else {
             if { $pg_superuser eq "citus" } { set pg_superuser "postgres" }
             if { $pg_defaultdbase eq "citus" } { set pg_defaultdbase "postgres" }
             .tpc.f1.e9 configure -state normal
             .tpc.f1.e9a configure -state normal
             if { $pg_count_ware > 200 } {
-                .tpc.f1.e11a configure -state normal
+	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state normal }
             }
         }
     }
