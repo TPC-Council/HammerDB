@@ -1,29 +1,5 @@
 package provide TclReadLine 1.2
 #TclReadLine2 modified to use Expect on Linux and Twapi on Windows
-if {[string match windows $::tcl_platform(platform)]} {
-   package require twapi
-   package require twapi_input
-   twapi::set_console_title "HammerDB Command Line Interface"
-   proc enableRaw {{channel stdin}} {
-   set console_handle [twapi::GetStdHandle -10]
-   set oldmode [twapi::GetConsoleMode $console_handle]
-   set newmode [expr {$oldmode & ~6}] ;# Turn off the echo and line-editing bits
-   twapi::SetConsoleMode $console_handle $newmode
-}
-   proc disableRaw {{channel stdin}} {
-   set console_handle [twapi::GetStdHandle -10]
-   set oldmode [twapi::GetConsoleMode $console_handle]
-   set newmode [expr {$oldmode | 6}] ;# Turn on the echo and line-editing bits
-   twapi::SetConsoleMode $console_handle $newmode
-}
-	} else {
-    package require Expect
-    interp alias {} stty {} exp_stty
-    # Prevent sigint from killing our shell:
-    exp_trap SIG_IGN SIGINT
-    # Handle terminal resize events:
-    exp_trap ::TclReadLine::getColumns SIGWINCH
-	}
 
 namespace eval TclReadLine {
 
@@ -61,6 +37,34 @@ namespace eval TclReadLine {
     variable HISTFILE $::env(HOME)/.tclline_history
     variable  RCFILE $::env(HOME)/.tcllinerc
 }
+
+proc TclReadLine::setup_prompt_requirements {} {
+if {[string match windows $::tcl_platform(platform)]} {
+   package require twapi
+   package require twapi_input
+   twapi::set_console_title "HammerDB Command Line Interface"
+   proc enableRaw {{channel stdin}} {
+   set console_handle [twapi::GetStdHandle -10]
+   set oldmode [twapi::GetConsoleMode $console_handle]
+   set newmode [expr {$oldmode & ~6}] ;# Turn off the echo and line-editing bits
+   twapi::SetConsoleMode $console_handle $newmode
+}
+   proc disableRaw {{channel stdin}} {
+   set console_handle [twapi::GetStdHandle -10]
+   set oldmode [twapi::GetConsoleMode $console_handle]
+   set newmode [expr {$oldmode | 6}] ;# Turn on the echo and line-editing bits
+   twapi::SetConsoleMode $console_handle $newmode
+}
+	} else {
+    package require Expect
+    interp alias {} stty {} exp_stty
+    # Prevent sigint from killing our shell:
+    exp_trap SIG_IGN SIGINT
+    # Handle terminal resize events:
+    exp_trap ::TclReadLine::getColumns SIGWINCH
+	}
+}
+
 
 proc TclReadLine::ESC {} {
     return "\033"
@@ -782,6 +786,7 @@ TclReadLine::interact
 }
 
 proc TclReadLine::interact {} {
+    TclReadLine::setup_prompt_requirements
     rename ::unknown ::_unknown
     rename TclReadLine::unknown ::unknown
     variable RCFILE
