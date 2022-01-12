@@ -1710,28 +1710,22 @@ proc gettimestamp { } {
     return $tstamp
 }
 
+proc getisotimestamp { } {
+    set tstamp [ clock format [ clock seconds ] -format %Y-%m-%dT%H:%M:%S%z ]
+    return $tstamp
+}
+
+
 proc Customer { lda d_id w_id CUST_PER_DIST ora_compatible } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set namearr [list BAR OUGHT ABLE PRI PRES ESE ANTI CALLY ATION EING]
     set chalen [ llength $globArray ]
-    set bld_cnt 1
     set c_d_id $d_id
     set c_w_id $w_id
     set c_middle "OE"
     set c_balance -10.0
     set c_credit_lim 50000
     set h_amount 10.0
-    if { $ora_compatible eq "true" } {
-        proc date_function {} {
-            set df "to_date('[ gettimestamp ]','YYYYMMDDHH24MISS')"
-            return $df
-        }
-    } else {
-        proc date_function {} {
-            set df "to_timestamp('[ gettimestamp ]','YYYYMMDDHH24MISS')"
-            return $df
-        }
-    }
     puts "Loading Customer for DID=$d_id WID=$w_id"
     for {set c_id 1} {$c_id <= $CUST_PER_DIST } {incr c_id } {
         set c_first [ MakeAlphaString 8 16 $globArray $chalen ]
@@ -1751,22 +1745,27 @@ proc Customer { lda d_id w_id CUST_PER_DIST ora_compatible } {
         set disc_ran [ RandomNumber 0 50 ]
         set c_discount [ expr {$disc_ran / 100.0} ]
         set c_data [ MakeAlphaString 300 500 $globArray $chalen ]
-        append c_val_list ('$c_id', '$c_d_id', '$c_w_id', '$c_first', '$c_middle', '$c_last', '[ lindex $c_add 0 ]', '[ lindex $c_add 1 ]', '[ lindex $c_add 2 ]', '[ lindex $c_add 3 ]', '[ lindex $c_add 4 ]', '$c_phone', [ date_function ], '$c_credit', '$c_credit_lim', '$c_discount', '$c_balance', '$c_data', '10.0', '1', '0')
+        append c_csv_rows $c_id,$c_d_id,$c_w_id,$c_first,$c_middle,$c_last,[ lindex $c_add 0 ],[ lindex $c_add 1 ],[ lindex $c_add 2 ],[ lindex $c_add 3 ],[ lindex $c_add 4 ],$c_phone,[ getisotimestamp ],$c_credit,$c_credit_lim,$c_discount,$c_balance,$c_data,10.0,1,0\n
         set h_data [ MakeAlphaString 12 24 $globArray $chalen ]
-        append h_val_list ('$c_id', '$c_d_id', '$c_w_id', '$c_w_id', '$c_d_id', [ date_function ], '$h_amount', '$h_data')
-        if { $bld_cnt<= 999 } { 
-            append c_val_list ,
-            append h_val_list ,
-        }
-        incr bld_cnt
+        append h_csv_rows $c_id,$c_d_id,$c_w_id,$c_w_id,$c_d_id,[getisotimestamp],$h_amount,$h_data\n
         if { ![ expr {$c_id % 1000} ] } {
-            set result [ pg_exec $lda "insert into customer (c_id, c_d_id, c_w_id, c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_since, c_credit, c_credit_lim, c_discount, c_balance, c_data, c_ytd_payment, c_payment_cnt, c_delivery_cnt) values $c_val_list" ]
+            set result [ pg_exec $lda "COPY customer (c_id, c_d_id, c_w_id, c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_since, c_credit, c_credit_lim, c_discount, c_balance, c_data, c_ytd_payment, c_payment_cnt, c_delivery_cnt) FROM STDIN WITH (FORMAT CSV)" ]
+            if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+                error "[pg_result $result -error]"
+            }
+            puts -nonewline $lda $c_csv_rows
+            puts $lda "\\."
             if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
                 error "[pg_result $result -error]"
             } else {
                 pg_result $result -clear
             }
-            set result [ pg_exec $lda "insert into history (h_c_id, h_c_d_id, h_c_w_id, h_w_id, h_d_id, h_date, h_amount, h_data) values $h_val_list" ]
+            set result [ pg_exec $lda "COPY history (h_c_id, h_c_d_id, h_c_w_id, h_w_id, h_d_id, h_date, h_amount, h_data) FROM STDIN WITH (FORMAT CSV)" ]
+            if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+                error "[pg_result $result -error]"
+            }
+            puts -nonewline $lda $h_csv_rows
+            puts $lda "\\."
             if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
                 error "[pg_result $result -error]"
             } else {
@@ -1774,9 +1773,8 @@ proc Customer { lda d_id w_id CUST_PER_DIST ora_compatible } {
             }
             set result [ pg_exec $lda "commit" ]
             pg_result $result -clear
-            set bld_cnt 1
-            unset c_val_list
-            unset h_val_list
+            unset c_csv_rows
+            unset h_csv_rows
         }
     }
     puts "Customer Done"
@@ -1786,18 +1784,6 @@ proc Customer { lda d_id w_id CUST_PER_DIST ora_compatible } {
 proc Orders { lda d_id w_id MAXITEMS ORD_PER_DIST ora_compatible } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
-    set bld_cnt 1
-    if { $ora_compatible eq "true" } {
-        proc date_function {} {
-            set df "to_date('[ gettimestamp ]','YYYYMMDDHH24MISS')"
-            return $df
-        }
-    } else {
-        proc date_function {} {
-            set df "to_timestamp('[ gettimestamp ]','YYYYMMDDHH24MISS')"
-            return $df
-        }
-    }
     puts "Loading Orders for D=$d_id W=$w_id"
     set o_d_id $d_id
     set o_w_id $w_id
@@ -1817,12 +1803,12 @@ proc Orders { lda d_id w_id MAXITEMS ORD_PER_DIST ora_compatible } {
         set o_ol_cnt [ RandomNumber 5 15 ]
         if { $o_id > 2100 } {
             set e "o1"
-            append o_val_list ('$o_id', '$o_c_id', '$o_d_id', '$o_w_id', [ date_function ], null, '$o_ol_cnt', '1')
+            append o_csv_rows $o_id,$o_c_id,$o_d_id,$o_w_id,[getisotimestamp],,$o_ol_cnt,1\n
             set e "no1"
-            append no_val_list ('$o_id', '$o_d_id', '$o_w_id')
+            append no_csv_rows $o_id,$o_d_id,$o_w_id\n
         } else {
             set e "o3"
-            append o_val_list ('$o_id', '$o_c_id', '$o_d_id', '$o_w_id', [ date_function ], '$o_carrier_id', '$o_ol_cnt', '1')
+            append o_csv_rows $o_id,$o_c_id,$o_d_id,$o_w_id,[getisotimestamp],$o_carrier_id,$o_ol_cnt,1\n
         }
         for {set ol 1} {$ol <= $o_ol_cnt } {incr ol } {
             set ol_i_id [ RandomNumber 1 $MAXITEMS ]
@@ -1832,46 +1818,48 @@ proc Orders { lda d_id w_id MAXITEMS ORD_PER_DIST ora_compatible } {
             set ol_dist_info [ MakeAlphaString 24 24 $globArray $chalen ]
             if { $o_id > 2100 } {
                 set e "ol1"
-                append ol_val_list ('$o_id', '$o_d_id', '$o_w_id', '$ol', '$ol_i_id', '$ol_supply_w_id', '$ol_quantity', '$ol_amount', '$ol_dist_info', null)
-                if { $bld_cnt<= 99 } { append ol_val_list , } else {
-                    if { $ol != $o_ol_cnt } { append ol_val_list , }
-                }
+                append ol_csv_rows $o_id,$o_d_id,$o_w_id,$ol,$ol_i_id,$ol_supply_w_id,$ol_quantity,$ol_amount,$ol_dist_info,\n
             } else {
                 set amt_ran [ RandomNumber 10 10000 ]
                 set ol_amount [ expr {$amt_ran / 100.0} ]
                 set e "ol2"
-                append ol_val_list ('$o_id', '$o_d_id', '$o_w_id', '$ol', '$ol_i_id', '$ol_supply_w_id', '$ol_quantity', '$ol_amount', '$ol_dist_info', [ date_function ])
-                if { $bld_cnt<= 99 } { append ol_val_list , } else {
-                    if { $ol != $o_ol_cnt } { append ol_val_list , }
-                }
+                append ol_csv_rows $o_id,$o_d_id,$o_w_id,$ol,$ol_i_id,$ol_supply_w_id,$ol_quantity,$ol_amount,$ol_dist_info,[getisotimestamp]\n
             }
         }
-        if { $bld_cnt<= 99 } {
-            append o_val_list ,
-            if { $o_id > 2100 } {
-                append no_val_list ,
-            }
-        }
-        incr bld_cnt
         if { ![ expr {$o_id % 100} ] } {
             if { ![ expr {$o_id % 1000} ] } {
                 puts "...$o_id"
             }
-            set result [ pg_exec $lda  "insert into orders (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) values $o_val_list" ]
+            set result [ pg_exec $lda  "COPY orders (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) FROM STDIN WITH (FORMAT CSV)" ]
+            if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+                error "[pg_result $result -error]"
+            }
+            puts -nonewline $lda $o_csv_rows
+            puts $lda "\\."
             if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
                 error "[pg_result $result -error]"
             } else {
                 pg_result $result -clear
             }
             if { $o_id > 2100 } {
-                set result [ pg_exec $lda "insert into new_order (no_o_id, no_d_id, no_w_id) values $no_val_list" ]
+                set result [ pg_exec $lda "COPY new_order (no_o_id, no_d_id, no_w_id) FROM STDIN WITH (FORMAT CSV)" ]
+                if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+                    error "[pg_result $result -error]"
+                }
+                puts -nonewline $lda $no_csv_rows
+                puts $lda "\\."
                 if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
                     error "[pg_result $result -error]"
                 } else {
                     pg_result $result -clear
                 }
             }
-            set result [ pg_exec $lda "insert into order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info, ol_delivery_d) values $ol_val_list" ]
+            set result [ pg_exec $lda "COPY order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info, ol_delivery_d) FROM STDIN WITH (FORMAT CSV)" ]
+            if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+                error "[pg_result $result -error]"
+            }
+            puts -nonewline $lda $ol_csv_rows
+            puts $lda "\\."
             if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
                 error "[pg_result $result -error]"
             } else {
@@ -1879,10 +1867,9 @@ proc Orders { lda d_id w_id MAXITEMS ORD_PER_DIST ora_compatible } {
             }
             set result [ pg_exec $lda "commit" ]
             pg_result $result -clear
-            set bld_cnt 1
-            unset o_val_list
-            unset -nocomplain no_val_list
-            unset ol_val_list
+            unset o_csv_rows
+            unset -nocomplain no_csv_rows
+            unset ol_csv_rows
         }
     }
     set result [ pg_exec $lda "commit" ]
@@ -1897,6 +1884,11 @@ proc LoadItems { lda MAXITEMS } {
     puts "Loading Item"
     set result [ pg_exec $lda "begin" ]
     pg_result $result -clear
+
+    set result [ pg_exec $lda "COPY item (i_id, i_im_id, i_name, i_price, i_data) FROM STDIN WITH (FORMAT CSV)" ]
+    if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+        error "[pg_result $result -error]"
+    }
     for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
         set orig($i) 0
     }
@@ -1917,16 +1909,18 @@ proc LoadItems { lda MAXITEMS } {
                 set i_data [ string replace $i_data $first $last "original" ]
             }
         }
-        set result [ pg_exec $lda "insert into item (i_id, i_im_id, i_name, i_price, i_data) VALUES ('$i_id', '$i_im_id', '$i_name', '$i_price', '$i_data')" ]
-        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-            error "[pg_result $result -error]"
-            return
-        } else {
-            pg_result $result -clear
-        }
+        puts $lda $i_id,$i_im_id,$i_name,$i_price,$i_data
         if { ![ expr {$i_id % 10000} ] } {
             puts "Loading Items - $i_id"
         }
+    }
+
+    puts $lda "\\."
+    if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+        error "[pg_result $result -error]"
+        return
+    } else {
+        pg_result $result -clear
     }
     set result [ pg_exec $lda "commit" ]
     pg_result $result -clear
@@ -1937,7 +1931,10 @@ proc LoadItems { lda MAXITEMS } {
 proc Stock { lda w_id MAXITEMS } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
-    set bld_cnt 1
+    set result [ pg_exec $lda "COPY stock (s_i_id, s_w_id, s_quantity, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, s_ytd, s_order_cnt, s_remote_cnt) FROM STDIN WITH (FORMAT CSV)" ]
+    if {[pg_result $result -status] != "PGRES_COPY_IN"} {
+        error "[pg_result $result -error]"
+    }
     puts "Loading Stock Wid=$w_id"
     set s_w_id $w_id
     for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
@@ -1967,26 +1964,20 @@ proc Stock { lda w_id MAXITEMS } {
                 set s_data [ string replace $s_data $first $last "original" ]
             }
         }
-        append val_list ('$s_i_id', '$s_w_id', '$s_quantity', '$s_dist_01', '$s_dist_02', '$s_dist_03', '$s_dist_04', '$s_dist_05', '$s_dist_06', '$s_dist_07', '$s_dist_08', '$s_dist_09', '$s_dist_10', '$s_data', '0', '0', '0')
-        if { $bld_cnt<= 999 } { 
-            append val_list ,
-        }
-        incr bld_cnt
+        append csv_rows $s_i_id,$s_w_id,$s_quantity,$s_dist_01,$s_dist_02,$s_dist_03,$s_dist_04,$s_dist_05,$s_dist_06,$s_dist_07,$s_dist_08,$s_dist_09,$s_dist_10,$s_data,0,0,0\n
         if { ![ expr {$s_i_id % 1000} ] } {
-            set result [ pg_exec $lda "insert into stock (s_i_id, s_w_id, s_quantity, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, s_ytd, s_order_cnt, s_remote_cnt) values $val_list" ]
-            if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-                error "[pg_result $result -error]"
-            } else {
-                pg_result $result -clear
-            }
-            set result [ pg_exec $lda "commit" ]
-            pg_result $result -clear
-            set bld_cnt 1
-            unset val_list
+            puts -nonewline $lda $csv_rows
+            unset csv_rows
         }
         if { ![ expr {$s_i_id % 20000} ] } {
             puts "Loading Stock - $s_i_id"
         }
+    }
+    puts $lda "\\."
+    if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+        error "[pg_result $result -error]"
+    } else {
+        pg_result $result -clear
     }
     set result [ pg_exec $lda "commit" ]
     pg_result $result -clear
@@ -2126,7 +2117,7 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
             LoadItems $lda $MAXITEMS
             puts "Monitoring Workers..."
             set prevactive 0
-            while 1 {  
+            while 1 {
                 set idlcnt 0; set lvcnt 0; set dncnt 0;
                 for {set th 2} {$th <= $totalvirtualusers } {incr th} {
                     switch [tsv::lindex common thrdlst $th] {
@@ -2140,10 +2131,12 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
                 }
                 set prevactive $lvcnt
                 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000 
-            }} else {
+                after 10000
+            }
+        } else {
             LoadItems $lda $MAXITEMS
-    }}
+        }
+    }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
