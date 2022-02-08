@@ -221,9 +221,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             UPDATE customer SET c_balance = c_balance + d_ol_total
             WHERE c_id = d_c_id AND c_d_id = d_d_id AND
             c_w_id = d_w_id;
-            COMMIT;
             DBMS_OUTPUT.PUT_LINE('D: ' || d_d_id || 'O: ' || d_no_o_id || 'time ' || tstamp);
             END LOOP;
+            COMMIT;
             EXCEPTION
             WHEN serialization_failure OR deadlock_detected OR no_data_found
             THEN ROLLBACK;
@@ -407,7 +407,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             FROM customer
             WHERE c_id = os_c_id AND c_d_id = os_d_id AND c_w_id = os_w_id;
             END IF;
-            BEGIN
             SELECT o_id, o_carrier_id, o_entry_d 
             INTO os_o_id, os_o_carrier_id, os_entdate
             FROM
@@ -429,6 +428,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             os_ol_delivery_d(i) := os_c_line.ol_delivery_d;
             i := i+1;
             END LOOP;
+            COMMIT;
             EXCEPTION
             WHEN serialization_failure OR deadlock_detected OR no_data_found
             THEN ROLLBACK;
