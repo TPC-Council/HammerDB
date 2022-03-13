@@ -1,0 +1,13 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# read a single character
+# Author: Don Libes, NIST
+
+stty raw
+expect ?
+send_user $expect_out(buffer)

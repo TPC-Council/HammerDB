@@ -1,0 +1,33 @@
+# Commands covered:  cat (UNIX)
+#
+# This file contains a collection of tests for one or more of the Tcl
+# built-in commands.  Sourcing this file into Tcl runs the tests and
+# generates output for errors.  No output means no errors were found.
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+    package require tcltest
+    # do this in a way that is backward compatible for Tcl 8.3
+    namespace import ::tcltest::test ::tcltest::cleanupTests
+}
+package require Expect
+
+#exp_internal -f /dev/ttyp5 0
+
+catch {unset x}
+
+log_user 0
+
+test cat-1.1 {basic cat operation} {
+	exp_spawn cat -u
+	exp_send "\r"
+	set timeout 10
+	expect \r {set x 1} timeout {set x 0}
+	exp_close
+	exp_wait
+	set x
+} {1}
+
+#exp_internal 0
+
+cleanupTests
+return

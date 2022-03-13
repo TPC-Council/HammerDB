@@ -1,0 +1,82 @@
+This is the pgtcl-ng Source Release README
+Last updated for pgtclng-2.1.1 on 2014-09-12
+The project home page is: http://sourceforge.net/projects/pgtclng/
+-----------------------------------------------------------------------------
+
+OVERVIEW:
+
+Pgtcl is the Tcl interface for the PostgreSQL Database Management System.
+It is a loadable Tcl module implementing commands which allow an
+application to interact with a PostgreSQL database. Pgtcl-ng is the "next
+generation" implementation of Pgtcl.
+
+This is a source release. With appropriate development tools on a compatible
+platform, you can build this on your system.
+
+The full documentation for pgtcl-ng is available at the site listed in the
+header of this file. This source release only contains the minimal
+documentation for building and installing.
+
+A binary release of pgtcl-ng for Windows is available on the site listed in
+the header of this file. If you are using pgtcl on Windows, you should
+consider using the binary release. For more information about the Windows
+binary release and its requirements, see the README.txt file inside the
+release.
+
+
+CONTENTS:
+
+    README ...................  This file
+    COPYRIGHT ................  License file (Open Source)
+    INSTALL ..................  Building and installing instructions
+    NEWS .....................  Release information and new features
+    ChangeLog* ...............  Source change history files
+    README.historical ........  Historical READMEs from project predecessors
+    patches/ .................  Patches for building libpq on Windows (obsolete)
+    extra/ ...................  Directory containing pgtclsh shell sources
+  Plus the source files and configure/build support files.
+
+
+REQUIREMENTS:
+
+Refer to the INSTALL file for details.
+
+This release has been successfully built on Linux with gcc-4.8.2,
+PostgreSQL-9.3.5 and 9.2.9, and Tcl-8.6.1. It was also successfully built
+on Ubuntu Linux with gcc-4.8.2, PostgreSQL libpq-9.3.5, and Tcl-8.5.15.
+
+It was tested against servers running PostgreSQL-9.3.5 and 9.2.9.  It might
+build with other versions of PostgreSQL, and with older versions of Tcl,
+but these are not tested.
+
+This release has been successfully built on Windows XP-SP3 with the MinGW
+development system (gcc-4.8.1), EnterpriseDB PostgreSQL-9.3.4, and
+ActiveState ActiveTcl 8.6.1 and 8.5.15. The result has been tested against
+servers running PostgreSQL-9.3.5 and 9.2.9.  The MinGW-built pgtcl-ng is
+available as a binary release for 32-bit Windows. It was built with Tcl8.5
+and uses the Tcl stubs mechanism, so the resulting DLL should work with
+different versions of Tcl.
+
+
+RELEASE ISSUES - all platforms:
+
++ Refer to the NEWS file included in the release (and available on the
+  pgtclng web site) for important changes and compatibility issues in
+  this release and previous releases.
+
++ If you are looking for the Tcl shells with PostgreSQL extensions (pgtclsh
+  and pgtksh), look in the "extra/" directory. The README file there explains
+  why you might be better off not using them, though.
+
++ This release has not been built or tested on 64-bit systems.
+
+
+RELEASE ISSUES - Windows:
+
++ Changes to the connection control environment variables (such as PGHOST,
+  PGDATABASE) are not seen once the DLL is loaded.
+
++ Only TCP/IP is supported, not Unix Domain Sockets. So a hostname (or IP
+  address) must be provided when connecting. If you are trying to connect
+  to a PostgreSQL server running on your Windows PC, you need to specify
+  host=localhost or host=127.0.0.1 to connect to it.

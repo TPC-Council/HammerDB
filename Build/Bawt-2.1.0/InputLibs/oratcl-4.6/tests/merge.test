@@ -1,0 +1,90 @@
+# oratcl_merge.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oratcl_merge operations
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::merge {
+	namespace import ::tcltest::*
+
+	proc oratcl_merge_begin {} {
+		uplevel 1 {
+			global ora_constr
+			set un_lda [oralogon $ora_constr]
+			set un_stm [oraopen $un_lda]
+			set un_sql {create table oratcl___merge (n varchar2(8), v number)}
+			catch {
+				oraparse $un_stm $un_sql
+				oraexec $un_stm
+				oracommit $un_lda
+			}
+			unset un_sql
+		}
+	}
+
+	proc oratcl_merge_final {} {
+		uplevel 1 {
+			oraparse $un_stm "drop table oratcl___merge"
+			oraexec $un_stm
+			oraclose $un_stm
+			oralogoff $un_lda
+			unset un_stm
+			unset un_lda
+		}
+	}
+
+	oratcl_merge_begin
+
+	test oratcl_merge-1.1 {oratcl: merge oramsg rowcount test} {
+		-setup {
+			set test1(lda) [oralogon $ora_constr]
+			set test1(stm) [oraopen $test1(lda)]
+			set test1(sql1) {insert into oratcl___merge values ('a', 10)}
+			set test1(sql2) { \
+				merge into oratcl___merge t \
+				using (select 'b' n, 20 v from dual) s \
+				on (t.n=s.n) \
+				when matched then update set t.v=t.v+s.v \
+				when not matched then insert values (s.n,s.v) \
+			}
+			#set test1(sql3) {select * from oratcl___merge}
+		}
+		-body {
+			oraparse $test1(stm) $test1(sql1)
+			oraexec $test1(stm)
+			set test1(res1) [oramsg $test1(stm) rows]
+			oraparse $test1(stm) $test1(sql2)
+			oraexec $test1(stm)
+			set test1(res2) [oramsg $test1(stm) rows]
+			#oraparse $test1(stm) $test1(sql3)
+			#oraexec $test1(stm)
+			#while {[orafetch $test1(stm) -datavariable test1(row)] == 0} {
+				#puts $test1(row)
+			#}
+			list $test1(res1) $test1(res2)
+		}
+		-cleanup {
+			oraclose $test1(stm)
+			oralogoff $test1(lda)
+			array unset test1
+		}
+		-result {1 1}
+	}
+
+	oratcl_merge_final
+
+	cleanupTests
+}
+namespace delete ::tcl::test::merge
+return

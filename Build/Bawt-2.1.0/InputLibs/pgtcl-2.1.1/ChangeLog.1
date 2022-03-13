@@ -1,0 +1,54 @@
+This is ChangeLog.1 for pgtclng: the PostgreSQL Tcl Interface Library.
+This is the ChangeLog from the Gborg 'pgtcl' project. This does not
+record all the changes made by that project; notably the addition of
+asynchronous commands, pg_escape_string, and new TEA build.
+-----------------------------------------------------------------------------
+
+Id: ChangeLog,v 1.10 2003/01/14 19:49:01 schwarzkopf Exp
+
+2003-01-14  Brett Schwarz <brett_schwarz@yahoo.com>
+    * added -cmdTuples to pg_result (code submitted by Artur Trzewik)
+
+2002-11-19  Brett Schwarz <brett_schwarz@yahoo.com>
+
+    * Improved the performance of -list a little bit
+
+2002-11-15  Karl Lehenbauer <karl@procplace.com>
+
+    * Tagged for 1.4b3
+
+    * Fix pg_listen.  (callback string wasn't properly terminated)
+      Also made slight performance improvements in pg_listen.
+
+2002-11-15  Brett Schwarz <brett_schwarz@yahoo.com>
+
+    * Cleanup memory leaks in pg_result.
+
+    * Fixed bug in pg_result -assignbyidx
+
+2002-11-15  Karl Lehenbauer <karl@procplace.com>
+
+    * Convert all the "#ifdef TCL_ARRAYS" where tcl_value was called if 
+      defined and not called if not defined to always "call" tcl_value.  
+      In the case where TCL_ARRAYS isn't defined, tcl_value is now defined 
+      as a macro that returns whatever was given to it, making it a no-op.
+
+      This change allows the code to be compiled with TCL_MEM_DEBUG enabled
+      to look for memory leaks.
+
+2002-11-06  Karl Lehenbauer <karl@procplace.com>
+
+    * Tagged for 1.4b2
+
+    * Create the libpgtcl shared library in a way where it can find both 
+      the Postgres shared library it needs (libpq) and the Tcl shared
+      library it needs (libtcl).
+
+2002-11-05  Brett Schwarz <brett_schwarz@yahoo.com>
+
+    * added -list and -llist options to pg_result to return the
+      results as a list and list of lists
+
+2002-11-05  Karl Lehenbauer <karl@procplace.com>
+
+Started the ChangeLog.

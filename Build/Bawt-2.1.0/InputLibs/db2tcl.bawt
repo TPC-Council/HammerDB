@@ -1,0 +1,50 @@
+# Copyright: 2018-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+#MariaDB Client Libraries must be installed to compile mariatcl
+#MariaDB needs the MARIADB_CONFIG environment variable set to the location of the MariaDB mysql_config command
+#Note in MariaDB the config command is still mysql_config and not mariadb_config
+#The output of mysql_config shows where the MariaDB Include and Lib directories are
+#For HammerDB bool has been replaced in generic/mariatcl.c: to _Bool reconnect = 1;
+proc Init_db2tcl { libName libVersion } {
+    SetScriptAuthor    $libName "Steve Shaw" "smshaw@users.sourceforge.net"
+    SetLibHomepage     $libName "https://github.com/memmertoIBM/db2tcl"
+    SetLibDependencies $libName "Tcl" "Tk"
+    SetPlatforms       $libName "All"
+}
+
+proc Build_db2tcl { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+    if { [UseStage "Configure" $libName] } {
+        global env
+	if { [ info exists env(IBM_DB_DIR) ] } {
+#db2profile has been run and configured environment variables
+	} else {
+	ErrorAppend "db2tcl configure error: IBM_DB_DIR environment variable is not set, run the db2profile command to set it" "FATAL"
+	return false
+	}
+}
+        cd $buildDir
+#Run configure with db2 from captured environment
+        TeaConfig $libName $buildDir $instDir "" "--with-ibm-db2=$env(IBM_DB_DIR)" "--bindir=$instDir/bin" "--libdir=$instDir/lib"
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+        MSysBuild $libName $buildDir "mkIndex.tcl"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+puts "doing libfilecopy of $libName to instdir $instDir and devDir $devDir for gettcl [ GetTclDir]"
+        MultiFileCopy "$instDir"  "$devDir/[GetTclDir]/lib/$libName$libVersion"   "*" false 
+        MultiFileCopy "$instDir"  "$distDir/[GetTclDir]/lib/$libName$libVersion"  "*" false 
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

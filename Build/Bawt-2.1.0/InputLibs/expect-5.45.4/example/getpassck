@@ -1,0 +1,37 @@
+#!/bin/sh
+# \
+exec expect "$0" ${1+"$@"}
+#
+# Name: getpassck
+#
+# Description:
+#    This script demonstrates when programs using getpass sometimes
+#    fail.  The reason is that some implementations of getpass prompt
+#    before the pty/tty has completed the switch to no-echo.  This may
+#    not be obvious from examination of the implementation of getpass
+#    itself because the driver itself may cut corners and be
+#    responsible for allowing the call to return prematurely.
+#
+# Directions:
+#   Simply run this script.  It will loop 100 times attempting to
+#   generate the getpass problem.  If the bug cannot be reproduced,
+#   you will see 100 failed attempts to su.  If the bug can be
+#   reproduced, the script exits as soon as it is detected.
+#
+# Author: Don Libes <don@libes.com>
+# Version: 1.0, Wed Mar  9 12:36:12 EST 2005
+# 
+
+for {set i 0} {$i < 100} {incr i} {
+ spawn -noecho su
+ expect ": "      ;# get password prompt as quickly as possible
+ send "X\r"       ;# send password
+ expect X {
+  puts "Password was echoed!  This system has the getpass problem."
+  exit
+ } "orry" {
+  close
+  wait
+ }
+}
+puts "Failed to reproduce getpass problem."

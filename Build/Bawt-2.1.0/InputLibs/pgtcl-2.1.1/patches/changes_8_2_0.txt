@@ -1,0 +1,341 @@
+diff -c -r src.orig/bin/psql/bcc32.mak src/bin/psql/bcc32.mak
+*** src.orig/bin/psql/bcc32.mak	Tue Nov 21 18:26:47 2006
+--- src/bin/psql/bcc32.mak	Tue Jan  9 12:17:48 2007
+***************
+*** 60,66 ****
+  !endif
+  REFDOCDIR=../../../doc/src/sgml/ref
+  
+! CPP_PROJ = -I$(BCB)\include;..\..\include;..\..\interfaces\libpq;..\..\include\port\win32 \
+             -c -D$(USERDEFINES) -DFRONTEND -n"$(INTDIR)" -tWM -tWC -q -5 -a8 -pc -X -w-use \
+  	   -w-par -w-pia -w-csu -w-aus -w-ccc
+  
+--- 60,66 ----
+  !endif
+  REFDOCDIR=../../../doc/src/sgml/ref
+  
+! CPP_PROJ = -I$(BCB)\include;..\..\include;..\..\interfaces\libpq;..\..\include\port\win32;..\..\include\port\win32_msvc;..\pg_dump;..\..\backend \
+             -c -D$(USERDEFINES) -DFRONTEND -n"$(INTDIR)" -tWM -tWC -q -5 -a8 -pc -X -w-use \
+  	   -w-par -w-pia -w-csu -w-aus -w-ccc
+  
+***************
+*** 98,103 ****
+--- 98,104 ----
+  	-@erase "$(INTDIR)\mbprint.obj"
+  	-@erase "$(INTDIR)\print.obj"
+  	-@erase "$(INTDIR)\prompt.obj"
++ 	-@erase "$(INTDIR)\psqlscan.obj"
+  	-@erase "$(INTDIR)\startup.obj"
+  	-@erase "$(INTDIR)\stringutils.obj"
+  	-@erase "$(INTDIR)\tab-complete.obj"
+***************
+*** 105,113 ****
+--- 106,118 ----
+  	-@erase "$(INTDIR)\exec.obj"
+  	-@erase "$(INTDIR)\getopt.obj"
+  	-@erase "$(INTDIR)\getopt_long.obj"
++ 	-@erase "$(INTDIR)\snprintf.obj"
+  	-@erase "$(INTDIR)\path.obj"
++ 	-@erase "$(INTDIR)\strlcpy.obj"
+  	-@erase "$(INTDIR)\pgstrcasecmp.obj"
+  	-@erase "$(INTDIR)\sprompt.obj"
++ 	-@erase "$(INTDIR)\dumputils.obj"
++ 	-@erase "$(INTDIR)\keywords.obj"
+  	-@erase "$(INTDIR)\psql.ilc"
+  	-@erase "$(INTDIR)\psql.ild"
+  	-@erase "$(INTDIR)\psql.tds"
+***************
+*** 138,146 ****
+  	"$(INTDIR)\exec.obj" \
+  	"$(INTDIR)\getopt.obj" \
+  	"$(INTDIR)\getopt_long.obj" \
+  	"$(INTDIR)\path.obj" \
+  	"$(INTDIR)\pgstrcasecmp.obj" \
+! 	"$(INTDIR)\sprompt.obj"
+  
+  !IFDEF DEBUG
+  LINK32_OBJS	= $(LINK32_OBJS) "..\..\interfaces\libpq\Debug\blibpqddll.lib"
+--- 143,155 ----
+  	"$(INTDIR)\exec.obj" \
+  	"$(INTDIR)\getopt.obj" \
+  	"$(INTDIR)\getopt_long.obj" \
++ 	"$(INTDIR)\snprintf.obj" \
+  	"$(INTDIR)\path.obj" \
++ 	"$(INTDIR)\strlcpy.obj" \
+  	"$(INTDIR)\pgstrcasecmp.obj" \
+! 	"$(INTDIR)\sprompt.obj" \
+! 	"$(INTDIR)\dumputils.obj" \
+! 	"$(INTDIR)\keywords.obj" 
+  
+  !IFDEF DEBUG
+  LINK32_OBJS	= $(LINK32_OBJS) "..\..\interfaces\libpq\Debug\blibpqddll.lib"
+***************
+*** 149,155 ****
+  !ENDIF
+  
+  # Have to use \# so # isn't treated as a comment, but MSVC doesn't like this
+! "..\..\port\pg_config_paths.h": win32.mak
+  	echo \#define PGBINDIR "" >$@
+  	echo \#define PGSHAREDIR "" >>$@
+  	echo \#define SYSCONFDIR "" >>$@
+--- 158,164 ----
+  !ENDIF
+  
+  # Have to use \# so # isn't treated as a comment, but MSVC doesn't like this
+! "..\..\port\pg_config_paths.h": bcc32.mak
+  	echo \#define PGBINDIR "" >$@
+  	echo \#define PGSHAREDIR "" >>$@
+  	echo \#define SYSCONFDIR "" >>$@
+***************
+*** 188,198 ****
+--- 197,217 ----
+      $(CPP_PROJ) ..\..\port\getopt_long.c
+  <<
+  
++ "$(INTDIR)\snprintf.obj" : "$(INTDIR)" ..\..\port\snprintf.c
++     $(CPP) @<<
++     $(CPP_PROJ) ..\..\port\snprintf.c
++ <<
++ 
+  "$(INTDIR)\path.obj" : "$(INTDIR)" ..\..\port\path.c
+      $(CPP) @<<
+      $(CPP_PROJ) ..\..\port\path.c
+  <<
+  
++ "$(INTDIR)\strlcpy.obj" : "$(INTDIR)" ..\..\port\strlcpy.c
++     $(CPP) @<<
++     $(CPP_PROJ) ..\..\port\strlcpy.c
++ <<
++ 
+  "$(INTDIR)\pgstrcasecmp.obj" : ..\..\port\pgstrcasecmp.c
+      $(CPP) @<<
+      $(CPP_PROJ) ..\..\port\pgstrcasecmp.c
+***************
+*** 203,208 ****
+--- 222,237 ----
+      $(CPP_PROJ) ..\..\port\sprompt.c
+  <<
+  
++ "$(INTDIR)\dumputils.obj" : "$(INTDIR)" ..\pg_dump\dumputils.c
++     $(CPP) @<<
++     $(CPP_PROJ) ..\pg_dump\dumputils.c
++ <<
++ 
++ "$(INTDIR)\keywords.obj" : "$(INTDIR)" ..\..\backend\parser\keywords.c
++     $(CPP) @<<
++     $(CPP_PROJ) ..\..\backend\parser\keywords.c
++ <<
++ 
+  "sql_help.h": create_help.pl 
+         $(PERL) create_help.pl $(REFDOCDIR) $@
+  
+diff -c -r src.orig/include/c.h src/include/c.h
+*** src.orig/include/c.h	Tue Oct  3 20:30:06 2006
+--- src/include/c.h	Tue Jan  9 12:18:57 2007
+***************
+*** 59,65 ****
+  #include "postgres_ext.h"
+  #include "pg_trace.h"
+  
+! #if defined(__BORLANDC__) || (_MSC_VER >= 1400)
+  #define errcode __msvc_errcode
+  #include <crtdefs.h>
+  #undef errcode
+--- 59,65 ----
+  #include "postgres_ext.h"
+  #include "pg_trace.h"
+  
+! #if _MSC_VER >= 1400
+  #define errcode __msvc_errcode
+  #include <crtdefs.h>
+  #undef errcode
+diff -c -r src.orig/include/port/win32.h src/include/port/win32.h
+*** src.orig/include/port/win32.h	Thu Oct 19 16:03:08 2006
+--- src/include/port/win32.h	Tue Jan  9 13:03:48 2007
+***************
+*** 17,23 ****
+--- 17,25 ----
+  #include <signal.h>
+  #include <errno.h>
+  #include <direct.h>
++ #ifndef __BORLANDC__
+  #include <sys/utime.h>			/* for non-unicode version */
++ #endif
+  #undef near
+  
+  /* Must be here to avoid conflicting with prototype in windows.h */
+***************
+*** 149,156 ****
+--- 151,160 ----
+  #define SIGTTIN				21
+  #define SIGTTOU				22	/* Same as SIGABRT -- no problem, I hope */
+  #define SIGWINCH			28
++ #ifndef __BORLANDC__
+  #define SIGUSR1				30
+  #define SIGUSR2				31
++ #endif
+  
+  struct timezone
+  {
+***************
+*** 259,266 ****
+--- 263,272 ----
+  
+  /* Things that exist in MingW headers, but need to be added to MSVC */
+  #ifdef WIN32_ONLY_COMPILER
++ #ifndef __BORLANDC__
+  typedef long ssize_t;
+  typedef unsigned short mode_t;
++ #endif
+  
+  /*
+   *	Certain "standard edition" versions of MSVC throw a warning
+***************
+*** 271,276 ****
+--- 277,283 ----
+  #define inline __inline
+  #define __inline__ __inline
+  
++ #ifndef __BORLANDC__
+  #define _S_IRWXU	(_S_IREAD | _S_IWRITE | _S_IEXEC)
+  #define _S_IXUSR	_S_IEXEC
+  #define _S_IWUSR	_S_IWRITE
+***************
+*** 280,285 ****
+--- 287,293 ----
+  #define S_IXUSR		_S_IXUSR
+  #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+  #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
++ #endif
+  
+  #define F_OK 0
+  #define W_OK 2
+diff -c -r src.orig/include/port.h src/include/port.h
+*** src.orig/include/port.h	Mon Nov 27 20:12:33 2006
+--- src/include/port.h	Tue Jan  9 12:19:52 2007
+***************
+*** 343,349 ****
+  extern size_t strlcpy(char *dst, const char *src, size_t siz);
+  #endif
+  
+! #ifndef HAVE_RANDOM
+  extern long random(void);
+  #endif
+  
+--- 343,349 ----
+  extern size_t strlcpy(char *dst, const char *src, size_t siz);
+  #endif
+  
+! #if !defined(HAVE_RANDOM) && !defined(__BORLANDC__)
+  extern long random(void);
+  #endif
+  
+diff -c -r src.orig/interfaces/libpq/bcc32.mak src/interfaces/libpq/bcc32.mak
+*** src.orig/interfaces/libpq/bcc32.mak	Tue Nov 21 18:26:47 2006
+--- src/interfaces/libpq/bcc32.mak	Tue Jan  9 13:05:06 2007
+***************
+*** 76,82 ****
+  CLEAN :
+  	-@erase "$(INTDIR)\getaddrinfo.obj"
+  	-@erase "$(INTDIR)\pgstrcasecmp.obj"
+- 	-@erase "$(INTDIR)\strlcpy.obj"
+  	-@erase "$(INTDIR)\thread.obj"
+  	-@erase "$(INTDIR)\inet_aton.obj"
+  	-@erase "$(INTDIR)\crypt.obj"
+--- 76,81 ----
+***************
+*** 99,104 ****
+--- 98,105 ----
+  	-@erase "$(INTDIR)\wchar.obj"
+  	-@erase "$(INTDIR)\encnames.obj"
+  	-@erase "$(INTDIR)\pthread-win32.obj"
++ 	-@erase "$(INTDIR)\snprintf.obj"
++ 	-@erase "$(INTDIR)\strlcpy.obj"
+  	-@erase "$(OUTDIR)\$(OUTFILENAME).lib"
+  	-@erase "$(OUTDIR)\$(OUTFILENAME)dll.lib"
+  	-@erase "$(OUTDIR)\libpq.res"
+***************
+*** 113,119 ****
+  	"$(INTDIR)\win32.obj" \
+  	"$(INTDIR)\getaddrinfo.obj" \
+  	"$(INTDIR)\pgstrcasecmp.obj" \
+- 	"$(INTDIR)\strlcpy.obj" \
+  	"$(INTDIR)\thread.obj" \
+  	"$(INTDIR)\inet_aton.obj" \
+  	"$(INTDIR)\crypt.obj" \
+--- 114,119 ----
+***************
+*** 133,138 ****
+--- 133,140 ----
+  	"$(INTDIR)\pqsignal.obj" \
+  	"$(INTDIR)\wchar.obj" \
+  	"$(INTDIR)\encnames.obj" \
++ 	"$(INTDIR)\snprintf.obj" \
++ 	"$(INTDIR)\strlcpy.obj" \
+  	"$(INTDIR)\pthread-win32.obj"
+  
+  
+***************
+*** 162,168 ****
+  	$(LINK32_FLAGS) +
+  	c0d32.obj $(LINK32_OBJS), +
+  	$@,, +
+! 	"$(OUTDIR)\blibpq.lib" import32.lib cw32mti.lib, +
+  	blibpqdll.def,"$(INTDIR)\libpq.res"
+  <<
+  	implib -w "$(OUTDIR)\blibpqdll.lib" blibpqdll.def $@
+--- 164,170 ----
+  	$(LINK32_FLAGS) +
+  	c0d32.obj $(LINK32_OBJS), +
+  	$@,, +
+! 	"$(OUTDIR)\blibpq.lib" import32.lib cw32mt.lib, +
+  	blibpqdll.def,"$(INTDIR)\libpq.res"
+  <<
+  	implib -w "$(OUTDIR)\blibpqdll.lib" blibpqdll.def $@
+***************
+*** 187,197 ****
+  	$(CPP_PROJ) ..\..\port\pgstrcasecmp.c
+  <<
+  
+- "$(INTDIR)\strlcpy.obj" : ..\..\port\strlcpy.c
+- 	$(CPP) @<<
+- 	$(CPP_PROJ) ..\..\port\strlcpy.c
+- <<
+- 
+  "$(INTDIR)\thread.obj" : ..\..\port\thread.c
+  	$(CPP) @<<
+  	$(CPP_PROJ) ..\..\port\thread.c
+--- 189,194 ----
+***************
+*** 233,237 ****
+--- 230,245 ----
+  	$(CPP_PROJ) /I"." ..\..\backend\utils\mb\encnames.c
+  <<
+  
++ "$(INTDIR)\snprintf.obj" : ..\..\port\snprintf.c
++ 	$(CPP) @<<
++ 	$(CPP_PROJ) /I"." ..\..\port\snprintf.c
++ <<
++ 
++ "$(INTDIR)\strlcpy.obj" : ..\..\port\strlcpy.c
++ 	$(CPP) @<<
++ 	$(CPP_PROJ) ..\..\port\strlcpy.c
++ <<
++ 
++ 
+  .c.obj:
+  	$(CPP) $(CPP_PROJ) $<
+diff -c -r src.orig/interfaces/libpq/win32.mak src/interfaces/libpq/win32.mak
+*** src.orig/interfaces/libpq/win32.mak	Tue Nov 21 18:26:47 2006
+--- src/interfaces/libpq/win32.mak	Tue Jan  9 12:25:03 2007
+***************
+*** 74,81 ****
+  	-@erase "$(OUTDIR)\$(OUTFILENAME)dll.lib"
+  	-@erase "$(OUTDIR)\libpq.res"
+  	-@erase "$(OUTDIR)\$(OUTFILENAME).dll"
+- #	-@erase "*.pch"
+- #	-@erase "$(OUTDIR)\libpq.pch"
+  	-@erase "$(OUTDIR)\$(OUTFILENAME)dll.exp"
+  	-@erase "$(INTDIR)\pg_config_paths.h"
+  
+--- 74,79 ----

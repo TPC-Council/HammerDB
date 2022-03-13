@@ -1,0 +1,468 @@
+# oratcl::code.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oraasync operations
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::async {
+    namespace import ::tcltest::*
+
+	set oratcl___async1 { \
+		create or replace function oratcl___async1 ( \
+			 arg_int number \
+		) return number as \
+			var_int number(10); \
+		begin \
+			var_int := 22 + arg_int; \
+			return var_int;
+		end;}
+
+	global ora_constr
+	set block_lda [oralogon $ora_constr]
+	set block_stm [oraopen $block_lda]
+
+	oraparse $block_stm $oratcl___async1
+	oraexec $block_stm
+
+	proc looping_async_parse { handle statement } {
+		oraparse $handle $statement
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			oraparse $handle $statement
+		}
+	}
+
+	proc looping_async_parse_namespace { handle statement } {
+		::oratcl::oraparse $handle $statement
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			::oratcl::oraparse $handle $statement
+		}
+	}
+
+	proc looping_async_exec { handle } {
+		oraexec $handle
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			oraexec $handle
+		}
+	}
+
+	proc looping_async_exec_namespace { handle } {
+		::oratcl::oraexec $handle
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			::oratcl::oraexec $handle
+		}
+	}
+
+	proc looping_async_fetch { handle } {
+		orafetch $handle -datavariable outvar
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			orafetch $handle -datavariable outvar
+		}
+		return $outvar
+	}
+
+	proc looping_async_fetch_namespace { handle } {
+		::oratcl::orafetch $handle -datavariable outvar
+		while {[oramsg $handle rc] == $::oratcl::codes(OCI_STILL_EXECUTING)} {
+			::oratcl::orafetch $handle -datavariable outvar
+		}
+		return $outvar
+	}
+
+	#
+	# ::oratcl::oraparse section
+	#
+	test oratcl::async_parse-1.1 {::oratcl::oraparse command} {
+		info commands ::oratcl::oraparse
+	} {::oratcl::oraparse}
+
+	test oratcl::async_fetch-1.2 {::oratcl::oraparse command (SQL)} {
+		-setup {
+			set tst12(lda) [oralogon $ora_constr -async]
+			set tst12(stm) [oraopen $tst12(lda)]
+			set tst12(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse_namespace $tst12(stm) $tst12(sql)
+			oramsg $tst12(stm) rc
+		}
+		-cleanup {
+			oraclose $tst12(stm)
+			oralogoff $tst12(lda)
+			array unset tst12
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+
+	test oratcl::async_fetch-1.3 {oraparse command (SQL)} {
+		-setup {
+			set tst13(lda) [oralogon $ora_constr -async]
+			set tst13(stm) [oraopen $tst13(lda)]
+			set tst13(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse $tst13(stm) $tst13(sql)
+			oramsg $tst13(stm) rc
+		}
+		-cleanup {
+			oraclose $tst13(stm)
+			oralogoff $tst13(lda)
+			array unset tst13
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-1.4 {::oratcl::oraparse command (PL/SQL)} {
+		-setup {
+			set tst14(lda) [oralogon $ora_constr -async]
+			set tst14(stm) [oraopen $tst14(lda)]
+			set tst14(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse_namespace $tst14(stm) $tst14(apl)
+			oramsg $tst14(stm) rc
+		}
+		-cleanup {
+			oraclose $tst14(stm)
+			oralogoff $tst14(lda)
+			array unset tst14
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-1.5 {oraparse command (PL/SQL)} {
+		-setup {
+			set tst15(lda) [oralogon $ora_constr -async]
+			set tst15(stm) [oraopen $tst15(lda)]
+			set tst15(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse $tst15(stm) $tst15(apl)
+			oramsg $tst15(stm) rc
+		}
+		-cleanup {
+			oraclose $tst15(stm)
+			oralogoff $tst15(lda)
+			array unset tst15
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	#
+	# ::oratcl::orabind section
+	#
+
+	test oratcl::async_bind-2.1 {::oratcl::orabind command} {
+		info commands ::oratcl::orabind
+	} {::oratcl::orabind}
+
+	test oratcl::async_fetch-2.2 {::oratcl::orabind command (SQL)} {
+		-setup {
+			set tst22(lda) [oralogon $ora_constr -async]
+			set tst22(stm) [oraopen $tst22(lda)]
+			set tst22(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse_namespace $tst22(stm) $tst22(sql)
+			::oratcl::orabind $tst22(stm) :three 3
+			oramsg $tst22(stm) rc
+		}
+		-cleanup {
+			oraclose $tst22(stm)
+			oralogoff $tst22(lda)
+			array unset tst22
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+
+	test oratcl::async_fetch-2.3 {orabind command (SQL)} {
+		-setup {
+			set tst23(lda) [oralogon $ora_constr -async]
+			set tst23(stm) [oraopen $tst23(lda)]
+			set tst23(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse $tst23(stm) $tst23(sql)
+			orabind $tst23(stm) :three 3
+			oramsg $tst23(stm) rc
+		}
+		-cleanup {
+			oraclose $tst23(stm)
+			oralogoff $tst23(lda)
+			array unset tst23
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-2.4 {::oratcl::orabind command (PL/SQL)} {
+		-setup {
+			set tst24(lda) [oralogon $ora_constr -async]
+			set tst24(stm) [oraopen $tst24(lda)]
+			set tst24(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse_namespace $tst24(stm) $tst24(apl)
+			::oratcl::orabind $tst24(stm) :my_result {} :in1 38
+			oramsg $tst24(stm) rc
+		}
+		-cleanup {
+			oraclose $tst24(stm)
+			oralogoff $tst24(lda)
+			array unset tst24
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-2.5 {orabind command (PL/SQL)} {
+		-setup {
+			set tst25(lda) [oralogon $ora_constr -async]
+			set tst25(stm) [oraopen $tst25(lda)]
+			set tst25(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse $tst25(stm) $tst25(apl)
+			orabind $tst25(stm) :my_result {} :in1 38
+			oramsg $tst25(stm) rc
+		}
+		-cleanup {
+			oraclose $tst25(stm)
+			oralogoff $tst25(lda)
+			array unset tst25
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+
+	#
+	# ::oratcl::oraexec section
+	#
+
+	test oratcl::async_exec-3.1 {::oratcl::oraexec command} {
+		info commands ::oratcl::oraexec
+	} {::oratcl::oraexec}
+
+	test oratcl::async_fetch-3.2 {::oratcl::async_fetch command (SQL)} {
+		-setup {
+			set tst32(lda) [oralogon $ora_constr -async]
+			set tst32(stm) [oraopen $tst32(lda)]
+			set tst32(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse_namespace $tst32(stm) $tst32(sql)
+			::oratcl::orabind $tst32(stm) :three 3
+			looping_async_exec_namespace $tst32(stm)
+			oramsg $tst32(stm) rc
+		}
+		-cleanup {
+			oraclose $tst32(stm)
+			oralogoff $tst32(lda)
+			array unset tst32
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_fetch-3.3 {oraasync fetch command (SQL)} {
+		-setup {
+			set tst33(lda) [oralogon $ora_constr -async]
+			set tst33(stm) [oraopen $tst33(lda)]
+			set tst33(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse $tst33(stm) $tst33(sql)
+			orabind $tst33(stm) :three 3
+			looping_async_exec $tst33(stm)
+			oramsg $tst33(stm) rc
+		}
+		-cleanup {
+			oraclose $tst33(stm)
+			oralogoff $tst33(lda)
+			array unset tst33
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-3.4 {::oratcl::async_exec command (PL/SQL)} {
+		-setup {
+			set tst34(lda) [oralogon $ora_constr -async]
+			set tst34(stm) [oraopen $tst34(lda)]
+			set tst34(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse_namespace $tst34(stm) $tst34(apl)
+			::oratcl::orabind $tst34(stm) :my_result {} :in1 38
+			looping_async_exec_namespace $tst34(stm)
+			oramsg $tst34(stm) rc
+		}
+		-cleanup {
+			oraclose $tst34(stm)
+			oralogoff $tst34(lda)
+			array unset tst34
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_exec-3.5 {orasync exec command (PL/SQL)} {
+		-setup {
+			set tst35(lda) [oralogon $ora_constr -async]
+			set tst35(stm) [oraopen $tst35(lda)]
+			set tst35(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse $tst35(stm) $tst35(apl)
+			orabind $tst35(stm) :my_result {} :in1 38
+			looping_async_exec $tst35(stm)
+			oramsg $tst35(stm) rc
+		}
+		-cleanup {
+			oraclose $tst35(stm)
+			oralogoff $tst35(lda)
+			array unset tst35
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+
+	#
+	# ::oratcl::async_fetch section
+	#
+
+	test oratcl::async_fetch-4.1 {::oratcl::orafetch command} {
+		info commands ::oratcl::orafetch
+	} {::oratcl::orafetch}
+
+	test oratcl::async_fetch-4.2 {::oratcl::async_fetch command (SQL)} {
+		-setup {
+			set tst42(lda) [oralogon $ora_constr -async]
+			set tst42(stm) [oraopen $tst42(lda)]
+			set tst42(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse_namespace $tst42(stm) $tst42(sql)
+			::oratcl::orabind $tst42(stm) :three 3
+			looping_async_exec_namespace $tst42(stm)
+			set tst42(res) [looping_async_fetch $tst42(stm)]
+			oramsg $tst42(stm) rc
+		}
+		-cleanup {
+			oraclose $tst42(stm)
+			oralogoff $tst42(lda)
+			array unset tst42
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+
+	test oratcl::async_fetch-4.3 {oraasync fetch command (SQL)} {
+		-setup {
+			set tst43(lda) [oralogon $ora_constr -async]
+			set tst43(stm) [oraopen $tst43(lda)]
+			set tst43(sql) {select * from oratcl___tests where v_number < :three}
+		}
+		-body {
+			looping_async_parse $tst43(stm) $tst43(sql)
+			orabind $tst43(stm) :three 3
+			looping_async_exec $tst43(stm)
+			set tst43(res) [looping_async_fetch $tst43(stm)]
+			oramsg $tst43(stm) rc
+		}
+		-cleanup {
+			oraclose $tst43(stm)
+			oralogoff $tst43(lda)
+			array unset tst43
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_fetch-4.4 {oraasync fetch command (PL/SQL)} {
+		-setup {
+			set tst44(lda) [oralogon $ora_constr -async]
+			set tst44(stm) [oraopen $tst44(lda)]
+			set tst44(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse_namespace $tst44(stm) $tst44(apl)
+			::oratcl::orabind $tst44(stm) :my_result {} :in1 38
+			looping_async_exec_namespace $tst44(stm)
+			set tst44(res) [looping_async_fetch $tst44(stm)]
+			oramsg $tst44(stm) rc
+		}
+		-cleanup {
+			oraclose $tst44(stm)
+			oralogoff $tst44(lda)
+			array unset tst44
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_fetch-4.5 {::oratcl::async_fetch command (PL/SQL)} {
+		-setup {
+			set tst45(lda) [oralogon $ora_constr -async]
+			set tst45(stm) [oraopen $tst45(lda)]
+			set tst45(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse $tst45(stm) $tst45(apl)
+			orabind $tst45(stm) :my_result {} :in1 38
+			looping_async_exec $tst45(stm)
+			set tst45(res) [looping_async_fetch $tst45(stm)]
+			oramsg $tst45(stm) rc
+		}
+		-cleanup {
+			oraclose $tst45(stm)
+			oralogoff $tst45(lda)
+			array unset tst45
+		}
+		-result $::oratcl::codes(OCI_SUCCESS)
+	}
+
+	test oratcl::async_fetch-5.0 {oraasync (PL/SQL) use + reuse} {
+		-setup {
+			set tst50(lda) [oralogon $ora_constr -async]
+			set tst50(stm) [oraopen $tst50(lda)]
+			set tst50(apl) {declare my_result number; begin :my_result := oratcl___async1(:in1); end;}
+		}
+		-body {
+			looping_async_parse $tst50(stm) $tst50(apl)
+			orabind $tst50(stm) :my_result {} :in1 38
+			looping_async_exec $tst50(stm)
+			set tst50(rs1) [looping_async_fetch $tst50(stm)]
+			orabind $tst50(stm) :my_result {} :in1 28
+			looping_async_exec $tst50(stm)
+			set tst50(rs2) [looping_async_fetch $tst50(stm)]
+			list $tst50(rs1) $tst50(rs2)
+		}
+		-cleanup {
+			oraclose $tst50(stm)
+			oralogoff $tst50(lda)
+			array unset tst50
+		}
+		-result {{60 38} {50 28}}
+	}
+
+
+	oraparse $block_stm {drop function oratcl___async1}
+	oraexec $block_stm
+
+	oraclose $block_stm
+	oralogoff $block_lda
+
+	unset block_lda
+	unset block_stm
+	unset oratcl___async1
+
+	cleanupTests
+}
+namespace delete ::tcl::test::async
+return

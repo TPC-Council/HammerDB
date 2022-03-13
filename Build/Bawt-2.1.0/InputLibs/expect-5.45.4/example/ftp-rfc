@@ -1,0 +1,40 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# ftp-rfc <rfc-number>
+# ftp-rfc -index
+
+# retrieves an rfc (or the index) from uunet
+
+exp_version -exit 5.0
+
+if {$argc!=1} {
+	send_user "usage: ftp-rfc \[#] \[-index]\n"
+	exit
+}
+
+set file "rfc$argv.Z"
+
+set timeout 60
+spawn ftp ftp.uu.net
+expect "Name*:"
+send "anonymous\r"
+expect "Password:"
+send "expect@nist.gov\r"
+expect "ftp>"
+send "binary\r"
+expect "ftp>"
+send "cd inet/rfc\r"
+expect "550*ftp>" exit "250*ftp>"
+send "get $file\r"
+expect "550*ftp>" exit "200*226*ftp>"
+close
+wait
+send_user "\nuncompressing file - wait...\n"
+exec uncompress $file
+

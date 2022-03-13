@@ -1,0 +1,285 @@
+# oralong.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise oralong
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oralong {
+        namespace import ::tcltest::*
+
+	testConstraint testoralong [llength [info commands oralong]]
+
+	global ora_constr
+
+	proc long_begin {} {
+		uplevel 1 {
+			set long_lda [oralogon $ora_constr]
+			set long_stm [oraopen $long_lda]
+
+			set long_sql(create_long_table) {
+				create table oratcl_long ( \
+					long_key varchar2(10), \
+					long_fld long \
+				)
+			}
+
+			set long_sql(insert_long_table) { \
+				insert into oratcl_long (long_key) values (:long_key) \
+			}
+
+			set long_sql(select_long_table) { \
+				select rowid from oratcl_long where long_key = :long_key \
+			}
+
+			set long_sql(drop_long_table) {
+				drop table oratcl_long
+			}
+
+			set long_sql(create_longraw_table) {
+				create table oratcl_longraw ( \
+					long_key varchar2(10), \
+					long_fld long raw \
+				)
+			}
+
+			set long_sql(insert_longraw_table) { \
+				insert into oratcl_longraw (long_key) values (:long_key) \
+			}
+
+			set long_sql(select_longraw_table) { \
+				select rowid from oratcl_longraw where long_key = :long_key \
+			}
+
+			set long_sql(drop_longraw_table) {
+				drop table oratcl_longraw
+			}
+
+			catch {
+				oraparse $long_stm $long_sql(drop_long_table)
+				oraexec $long_stm
+			}
+
+			oraparse $long_stm $long_sql(create_long_table)
+			oraexec $long_stm
+
+			oraparse $long_stm $long_sql(insert_long_table)
+			orabindexec $long_stm :long_key l1
+			orabindexec $long_stm :long_key l2
+			oracommit $long_lda
+			oraparse $long_stm $long_sql(select_long_table)
+			orabindexec $long_stm :long_key l1
+			orafetch $long_stm -datavariable rowid1
+			orabindexec $long_stm :long_key l2
+			orafetch $long_stm -datavariable rowid2
+
+			catch {
+				oraparse $long_stm $long_sql(drop_longraw_table)
+				oraexec $long_stm
+			}
+
+			orasql $long_stm $long_sql(create_longraw_table)
+			oraparse $long_stm $long_sql(insert_longraw_table)
+			orabind $long_stm :long_key l3
+			oraexec $long_stm
+			orabind $long_stm :long_key l4
+			oraexec $long_stm
+			oracommit $long_lda
+			oraparse $long_stm $long_sql(select_longraw_table)
+			orabind $long_stm :long_key l3
+			oraexec $long_stm
+			orafetch $long_stm -datavariable rowid3
+			orabind $long_stm :long_key l4
+			oraexec $long_stm
+			orafetch $long_stm -datavariable rowid4
+
+			set chr_data [string repeat 0123456789---------- 10000]
+			set chr_null {}
+			set chr_byte 0
+
+			set fileId [open [info nameofexecutable] r]
+			fconfigure $fileId -translation binary
+			set bin_data [read $fileId]
+			close $fileId
+
+		}
+	}
+
+	proc long_final {} {
+		uplevel 1 {
+			orasql $long_stm $long_sql(drop_long_table)
+			orasql $long_stm $long_sql(drop_longraw_table)
+			oraclose $long_stm
+			oralogoff $long_lda
+		}
+	}
+
+	long_begin
+
+	::tcltest::test oralong-1.0 {oralong: alloc and free long} {
+		-constraints testoralong
+		-setup {
+			set test0(lda) [oralogon $ora_constr]
+			set test0(stm) [oraopen $test0(lda)]
+		}
+		-body {
+			catch {oralong alloc $test0(stm) \
+				-table oratcl_long \
+				-column long_fld \
+				-rowid $rowid1 \
+			} test0(res1)
+			catch {oralong free $test0(res1)} test0(res2)
+			list $test0(res1) $test0(res2)
+		}
+		-cleanup {
+			oraclose $test0(stm)
+			oralogoff $test0(lda)
+			array unset test0
+		}
+		-result {oralong.0 0}
+	}
+
+	::tcltest::test oralong-1.1 {oralong: write long; read long} {
+		-constraints testoralong
+		-setup {
+			set test1(lda) [oralogon $ora_constr]
+			set test1(stm) [oraopen $test1(lda)]
+			oraconfig $test1(stm) longsize [string length $chr_data]
+			set test1(lng) [oralong alloc $test1(stm) \
+				-table oratcl_long \
+				-column long_fld \
+				-rowid $rowid1]
+		}
+		-body {
+			catch {oralong write $test1(lng) -datavariable chr_data}
+			oracommit $test1(lda)
+			catch {oralong read $test1(lng) -datavariable test1(out)}
+			string equal $chr_data $test1(out)
+		}
+		-cleanup {
+			oralong free $test1(lng)
+			oraclose $test1(stm)
+			oralogoff $test1(lda)
+			array unset test1
+		}
+		-result {1}
+	}
+
+	::tcltest::test oralong-1.2 {oralong: write long BYTE ; read long BYTE} {
+		-constraints testoralong
+		-setup {
+			set test2(lda) [oralogon $ora_constr]
+			set test2(stm) [oraopen $test2(lda)]
+			oraconfig $test2(stm) longsize 1000
+			oraconfig $test2(stm) longpsize 10
+			set test2(lng) [oralong alloc $test2(stm) \
+				-table oratcl_long \
+				-column long_fld \
+				-rowid $rowid2]
+		}
+		-body {
+			catch {oralong write $test2(lng) -datavariable chr_byte}
+			oracommit $test2(lda)
+			catch {oralong read $test2(lng) -datavariable test2(out)}
+			string equal $chr_byte $test2(out)
+		}
+		-cleanup {
+			oralong free $test2(lng)
+			oraclose $test2(stm)
+			oralogoff $test2(lda)
+			array unset test2
+		}
+		-result {1}
+	}
+
+	::tcltest::test oralong-1.3 {oralong: write long NULL ; read long NULL} {
+		-constraints testoralong
+		-setup {
+			set test3(lda) [oralogon $ora_constr]
+			set test3(stm) [oraopen $test3(lda)]
+			oraconfig $test3(stm) longsize 1000
+			oraconfig $test3(stm) longpsize 10
+			set test3(lng) [oralong alloc $test3(stm) \
+				-table oratcl_long \
+				-column long_fld \
+				-rowid $rowid1]
+		}
+		-body {
+			catch {oralong write $test3(lng) -datavariable chr_null}
+			oracommit $test3(lda)
+			catch {oralong read $test3(lng) -datavariable test3(out)}
+			string equal $chr_null $test3(out)
+		}
+		-cleanup {
+			oralong free $test3(lng)
+			oraclose $test3(stm)
+			oralogoff $test3(lda)
+			array unset test3
+		}
+		-result {1}
+	}
+
+	::tcltest::test oralong-2.0 {oralong: alloc and free long raw} {
+		-constraints testoralong
+		-setup {
+			set test0(lda) [oralogon $ora_constr]
+			set test0(stm) [oraopen $test0(lda)]
+		}
+		-body {
+			catch {oralong alloc $test0(stm) \
+				-table oratcl_longraw \
+				-column long_fld \
+				-rowid $rowid3} test0(res1)
+			catch {oralong free $test0(res1)} test0(res2)
+			list $test0(res1) $test0(res2)
+		}
+		-cleanup {
+			oraclose $test0(stm)
+			oralogoff $test0(lda)
+			array unset test0
+		}
+		-result {oralong.4 0}
+	}
+
+	::tcltest::test oralong-2.1 {oralong: write long raw ; read long raw} {
+		-constraints testoralong
+		-setup {
+			set test1(lda) [oralogon $ora_constr]
+			set test1(stm) [oraopen $test1(lda)]
+			oraconfig $test1(stm) longsize [string length $bin_data]
+			set test1(lng) [oralong alloc $test1(stm) \
+				-table oratcl_longraw \
+				-column long_fld \
+				-rowid $rowid3]
+		}
+		-body {
+			catch {oralong write $test1(lng) -datavariable bin_data} test1(res)
+			oracommit $test1(lda)
+			catch {oralong read $test1(lng) -datavariable test1(out)}
+			string equal $bin_data $test1(out)
+		}
+		-cleanup {
+			oralong free $test1(lng)
+			oraclose $test1(stm)
+			oralogoff $test1(lda)
+			array unset test1
+		}
+		-result {1}
+	}
+
+	long_final
+
+	cleanupTests
+}
+namespace delete ::tcl::test::oralong
+return

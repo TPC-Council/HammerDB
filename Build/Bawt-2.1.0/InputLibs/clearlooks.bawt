@@ -1,0 +1,28 @@
+# Copyright: 2020-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: Copy
+
+proc Init_clearlooks { libName libVersion } {
+    SetScriptAuthor    $libName "Steve Shaw" "smshaw@users.sourceforge.net"
+    SetLibHomepage     $libName "https://http://chiselapp.com/user/sgolovan/repository/ttk-themes/home/"
+    SetLibDependencies $libName "Tk"
+    SetPlatforms       $libName "All"
+}
+
+proc Build_clearlooks { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        MultiFileCopy "$buildDir"  "$devDir/[GetTclLibDir]/$libName"   "*"  true
+        MultiFileCopy "$buildDir"  "$distDir/[GetTclLibDir]/$libName"  "*"  true
+
+        if { [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName"   "$devDir/[GetTclLibDir]/$libName$libVersion"
+            FileRename "$distDir/[GetTclLibDir]/$libName"  "$distDir/[GetTclLibDir]/$libName$libVersion"
+        }
+    }
+    return true
+}

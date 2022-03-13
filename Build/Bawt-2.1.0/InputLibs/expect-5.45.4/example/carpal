@@ -1,0 +1,26 @@
+# Script to enforce a 10 minute break every half hour from typing - 
+# Written for someone (Uwe Hollerbach) with Carpal Tunnel Syndrome.
+
+# If you type for more than 20 minutes straight, the script rings
+# the bell after every character until you take a 10 minute break.
+
+# Author: Don Libes, NIST
+# Date: Feb 26, '95
+
+spawn $env(SHELL)
+set start [clock seconds]	;# when we started our current typing period
+set stop [clock seconds]	;# when we stopped typing
+
+set typing 1200		;# twenty minutes, max typing time allowed
+set notyping 600	;# ten minutes, min notyping time required
+
+interact -nobuffer -re . {
+    set now [clock seconds]
+
+    if {$now-$stop > $notyping} {
+	set start [clock seconds]
+    } elseif {$now-$start > $typing} {
+	send_user "\007"
+    }
+    set stop [clock seconds]
+}

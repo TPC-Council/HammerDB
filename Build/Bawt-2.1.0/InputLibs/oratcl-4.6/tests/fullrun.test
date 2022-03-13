@@ -1,0 +1,75 @@
+# slaveinterps.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various slave interp operations
+#
+
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+
+namespace eval ::tcl::test::fullrun {
+    namespace import ::tcltest::*
+
+	test varchar2.1 {exercise varchar2} {
+	    -setup {
+		global ora_constr
+		global ora_slda
+		set s [interp create] 
+		$s eval {package require exact Oratcl 4.6}
+		#set ora_slda [$s eval "oralogon $ora_constr"]
+		#set ora_sstm [$s eval "oraopen $ora_slda"]
+		$s eval "set ora_slda [oralogon $ora_constr]"
+		$s eval "set ora_sstm [oraopen $ora_slda]"
+		catch {
+			$s eval {oraparse $ora_sstm {create table oratcl_slave (ssid number(1), ssent varchar2(4000))}}
+			$s eval {oraexec $ora_sstm}
+		}
+	    }
+	    -body {
+		# parse the statement
+		$s eval {oraparse $ora_sstm {insert into oratcl_slave values (:ssid, :ssent)}}
+		# insert empty string
+		$s eval {orabind $ora_sstm :ssid 1 ::ssent {}}
+		$s eval {oraexec $ora_sstm}
+		# insert single char
+		$s eval {orabind $ora_sstm :ssid 2 ::ssent c}
+		$s eval {oraexec $ora_sstm}
+		# insert 128 char
+		$s eval {orabind $ora_sstm :ssid 3 ::ssent [string repeat c 128]}
+		$s eval {oraexec $ora_sstm}
+		# insert 2000 char
+		$s eval {orabind $ora_sstm :ssid 4 ::ssent [string repeat c 2000]}
+		$s eval {oraexec $ora_sstm}
+		# insert 3999 char
+		$s eval {orabind $ora_sstm :ssid 5 ::ssent [string repeat c 3999]}
+		$s eval {oraexec $ora_sstm}
+		# insert 4000 char
+		$s eval {orabind $ora_sstm :ssid 5 ::ssent [string repeat c 4000]}
+		$s eval {oraexec $ora_sstm}
+		$s eval {oracommit $ora_slda}
+		catch {
+			$s eval {oraparse $ora_sstm {drop table oratcl_slave (ssid number(1), ssent varchar2(4000))}}
+			$s eval {oraexec $ora_sstm}
+		}
+		$s eval "oraclose $ora_sstm"
+		$s eval "oralogoff $ora_slda"
+		interp delete $s
+	    }
+	    -result {}
+	}
+
+    cleanupTests
+}
+namespace delete ::tcl::test::fullrun
+return
+

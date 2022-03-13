@@ -1,0 +1,532 @@
+This is the Change Log for pgtcl-ng: the PostgreSQL Tcl Interface Library.
+-----------------------------------------------------------------------------
+See the file ChangeLog.1 in the source distribution for older changes from
+the Gborg project "pgtcl".
+
+See the PostgreSQL release HISTORY file for older changes from the version
+of pgtcl which was bundled with PostgreSQL releases.
+-----------------------------------------------------------------------------
+
+2014-09-12 === Released version 2.1.1 ===
+
+2014-09-11
+    * pgtclCmds.c: Fix for bug #8 "pg_execute returns continue" from
+      Eric Boudaillier.  This only happened if "continue" was used in
+      the last loop iteration of the procedure executed by pg_execute.
+      pg_execute will now correctly return TCL_OK in that case.
+
+2013-10-07 === Released version 2.1.0 ===
+    * pgtclCmds.h: Fix for Tcl-8.6 incompatibility with interp->errorLine.
+      See bug #3 (old bug #3405928 listed below on 2011-09-08). Without
+      this fix, a libpgtcl built with stubs under Tcl8.6 will crash if run
+      under Tcl8.5 if it tries to access the interpreter error line, which
+      it does if the script body in pg_select or pg_execute causes an error.
+      The fix enables a "compatibility" mode when compiling for Tcl8.6, and
+      results in 2 "deprecated" warnings from gcc, but it solves the problem.
+      (The underlying problem is that the Tcl developers deprecated
+      access to interp->errorLine and provided a replacement API in the
+      same release, providing no overlap for transition to the new API or
+      stubs compatibility.)
+
+    * mingw.mak: Fix order of INCLUDES. Tcl must be first, before
+      PostgreSQL, because EnterpriseDB ships a tcl.h in their PostgreSQL
+      incude directory. This was resulting in a hybrid Tcl8.5/8.6 build,
+      resulting in odd behavior with interp->errorLine (see previous item).
+
+    * INSTALL: regenerated from reference manual
+    * extra/Makefile: Updated library version.
+    * README: Updated for version 2.1.0; removed obsolete/redundant info.
+    * NEWS: Add release news for version 2.1.0.
+
+2013-10-05
+    * mingw.mak: Add new feature test symbols for PostgreSQL-9.3 features.
+      Change default symbols to Tcl-8.6.
+      Version is 2.1.0
+    * pgtclres.rc: Update version number for DLL to 2.1.0
+
+2013-10-04
+    Feature Request #8 "Support 2 new libpq escape functions":
+    * configure.in: Add feature test for libpq PQescapeLiteral() (which is
+      also used for PQescapeIdentifier()).
+    * pgtclCmds.h: Declare new function which implements the 2 new commands.
+    * pgtcl.c: Create 2 new Tcl commands: pg_escape_literal and
+      pg_escape_identifier. Both are implemented with Pg_escape_l_i(), using
+      clientData to distinguish.
+    * pgtclCmds.c: Add Pg_escape_l_i() which implements pg_escape_literal
+      and pg_escape_identifier commands.
+
+2013-09-28
+    Feature Request #7 "Support new error message fields":
+    * pgtclCmds.c: Changed pg_result_error_field() to add 5 new field codes,
+      and not upcase a single-character field code. This is not compatible
+      with previous releases, but necessary since PostgreSQL now uses
+      some lower case letters for PG_DIAG_* constants.
+
+2013-09-23
+    Feature Request #6 "Add new forms for connection options":
+    * pgtclCmds.c: Changes to Pg_connect() which implements the pg_connect
+      command. Added "-connlist {list}" form for option parameters.
+      (The syntax is from Flightaware Pgtcl, but the implementation is new,
+      and not completely compatible.) The advantage of using this form is that
+      it does not require quoting or escaping, especially for the password.
+      Also fixed comments, changed usage error messages.
+      Added a stricter usage check on the first argument. Before, if the
+      first argument was not -conninfo, it was taken as a database name for
+      the old-style syntax. Now, if the first argument is not -conninfo nor
+      -connlist, it may not start with a dash, or an error results.
+
+2013-09-22
+    Feature Request #5 "Add 64-bit large object support":
+    Added 64-bit Large Object operations (new at PostgreSQL-9.3):
+    * configure.in: Version 2.1.0. Add feature test for libpq lo_tell64()
+      which will be also used to indicate support for lo_lseek64() and
+      lo_truncate64().
+    * pgtclCmds.h: Declare 3 new functions to support 64-bit large object
+      operations.
+    * pgtcl.c: Create 3 new Tcl commands: pg_lo_tell64, pg_lo_lseek64, and
+      pg_lo_truncate64.
+    * pgtclCmds.c: Implemented 3 new Tcl commands corresponding to new
+      libpq 64-bit Large Object functions: pg_lo_tell64, pg_lo_lseek64, and
+      pg_lo_truncate64.
+  
+
+2011-09-18 === Released version 2.0.0 ===
+    * pgtclres.rc: Update version number for DLL
+    * configure.in: Version is 2.0.0
+    * mingw.mak: Version is 2.0.0
+    * Makefile.in: Removed obsolete pkgIndex.tcl.win32 (used with BCC)
+
+2011-09-15
+    Feature request #3408919 "Access to server PID, notification PID, and
+         server version":
+    * pgtcl.c: Create pg_backend_pid and pg_server_version commands.
+    * pgtclCmds.c:
+      + New function Pg_get_notifies(), moves duplicate code from Pg_listen()
+        and Pg_on_connection_loss().
+      + Pg_listen() checks for -pid option and stores that flag with
+        the notification hash table value, which is now a Pg_notify_command
+        structure (which must be allocated and freed).
+      + New function Pg_backend_pid implements pg_backend_pid command.
+      + New function Pg_server_version implements pg_server_version command.
+    * pgtclCmds.h:
+      + Declare Pg_backend_pid and Pg_server_version functions.
+      + Declare new structure Pg_notify_command. Instead of storing the
+        callback command string in the notification hash table, we now store a
+        Pg_notify_command structure, which holds both the command and a flag
+        indicating if the PID should be passed.
+    * pgtclId.c:
+      + PgDelConnectionId needs to free the new Pg_notify_command struct.
+      + Pg_Notify_EventProc uses the new Pg_notify_command struct, and
+        passes the PID from the notify event to the callback if the flag
+        to do so is set.
+
+2011-09-08
+    Fix for building with Tcl-8.6 beta, bug #3405928, reported by Zbigniew.
+    * pgtclCmds.h: Declare a macro for accessing the errorLine field. For
+      Tcl >= 8.6 it will use the new function Tcl_GetErrorLine(). For older
+      Tcl versions, it will access the field from the interp structure.
+    * pgtclCmds.c: Wrap 2 uses of interp->errorLine in the new macro, so
+      it builds with Tcl-8.6 (beta).
+
+2011-03-28 ljb
+    * README, NEWS, extra/README, patches/README: Changed referenced URLs
+       to point to the new project home on SourceForge.net and remove the
+       pgfoundry.org URLs.
+
+2011-03-21 ljb === Released version 1.9.0 ===
+    * pgtclCmds.c: Add new option to pg_result: -dict. This is only
+       enabled with Tcl-8.5 or higher, as it requires dictionary support.
+    * mingw.mak, pgtclres.rc : Use a resource file to set the version
+       information inside the DLL.
+    * Makefile.in: include new *.rc file in dist target.
+
+2010-10-10 ljb === Released version 1.8.0 ===
+    * pgtclId.c: Add ability to pass a 'payload' with a notification
+      message to a listener command. This is a new capability with
+      PostgreSQL-9.0.0. In Pg_Notify_EventProc, if the event is a notification
+      and includes a non-empty 'extra' (payload), pass that to the
+      listener command as an extra argument.
+
+2010-07-14 ljb === Released version 1.7.2 ===
+
+2010-06-04 ljb
+    * mingw.mak: New file, experimental Makefile to build with MinGW on
+      Windows.
+    * bcc32.mak: Convert to DOS end-of-lines.
+
+2010-06-01 ljb
+    * pgtclCmds.c: Fix for bug 1010835 "Missing symbol when building against
+      old PostgreSQL versions". This affected building with PostgreSQL-8.1.x.
+      Functions added in libpq at PostgreSQL-8.2 will no longer be used when
+      compiled against older versions of libpq.
+
+2009-11-25 === Released version 1.7.1 ===
+    This is being released as a new version because the Windows release
+    is now Tcl stub-enabled, and there was one CVS change since the
+    previous release so the version had to change. (The bug fix below
+    is not significant enough to warrant a new release or upgrade.)
+
+    * pgtcl.c: Removed inactive "stubs mumbo jumbo" conditionals & comments.
+
+2009-09-13 ljb
+    * pgtclCmds.c: Bug fix. In Pg_encrypt_password, must check for error
+      return from PQencryptPassword(). Reproducable on Windows XP only,
+      when using an empty string for the username (which isn't valid).
+
+2009-09-11 === Released version 1.7.0 ===
+
+2009-09-07 ljb
+    * configure.in, Makefile.in: Change to get rid of an autoconfig
+      warning. Now requires autoconfig >= 2.60 to generate 'configure'.
+
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new commands
+      pg_describe_prepared and pg_describe_cursor. These correspond to
+      libpq functions PQdescribePrepared and PQdescribePortal, added
+      in PostgreSQL-8.2.0.
+
+    * pgtclCmds.c: Added new options to pg_result : -paramTypes and -numParams.
+      These are only for use with the new command pg_describe_prepared.
+
+2009-09-03 ljb
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new command pg_lo_truncate,
+      which was added to libpq 8.3.0. This truncates a large object.
+
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new command pg_encrypt_password,
+      which was added to libpq 8.2.0. This is for sending encrypted passwords
+      to commands such as ALTER USER.
+
+    * pgtclCmds.c: Added optional $conn argument to pg_escape_string, pg_quote,
+      and pg_escape_bytea. Supplying a connection handle here results in the
+      use of libpq PQescapeStringConn and PQescapeStringBytea, which were
+      added to PostgreSQL security releases 8.1.4, 8.0.8, etc. to avoid
+      some possible security issues.
+
+2009-09-01 ljb
+    * pgtclCmds.c: Fix over-allocation of memory in pg_select for
+      columnNameObjs.
+      From CVS comments by karl in pgfoundry/projects/pgtcl/
+
+    * pgtclCmds.c: Fix lack of error checking in pg_select.
+      From CVS comments by karl in pgfoundry/projects/pgtcl/.
+      The testable error case was passing a non-array variable in the
+      arrayVar position.  This error is now properly detected.
+
+    * pgtclCmds.c: Minor changes to quiet warnings from gcc.
+
+2007-12-27 === Released version 1.6.2 ===
+
+2007-12-26 ljb
+    * pgtcl: Removed environment setting of PGCLIENTENCODING=UNICODE.
+    * pgtclCmds.c: Use PQsetClientEncoding() to set encoding to UTF8.
+      These two changes fix a problem on Windows when talking to a non-UTF8
+      database. On Windows, the environment variable setting did not work,
+      so encoding translation was not occurring. Using the libpq call
+      to set the encoding is more reliable on all platforms.
+
+    * INSTALL: regenerated with updated build instructions for Windows.
+
+2007-12-25 === Released version 1.6.1 ===
+
+2007-12-25 ljb
+
+    * pgtclCmds.c: Fixes for new Tcl-8.5.0 release. Tcl_ObjSetVar2 now
+      changes the reference count of the object holding the array index,
+      so it is no longer possible to short-cut and just re-use the object.
+      Fixes were made to pg_result -assign, pg_result -assignbyidx. The
+      rest of the code was checked for other cases of similar problems,
+      and a few cases of questionable reference counting were fixed as a
+      preventive measure.
+      These changes will work without problems on older Tcl releases too.
+
+2007-01-01 ljb
+
+    * pgtclCmds.c, pgtcl.c: Added new commands pg_sendquery_prepared and
+      pg_sendquery_params. These follow the syntax of pg_exec_prepared and
+      pg_exec_params respectively, but are asynchronous like pg_sendquery.
+
+    * pgtclCmds.c: Change usage message on pg_exec_prepared and
+      pg_exec_params to indicate that the parameters are optional. That
+      is, the commands work with zero parameters for their queries.
+
+2006-12-31 ljb
+
+    * configure.in: If either --with-postgres-lib or --with-postgres-include
+      were not provided to 'configure', try to find and use pg_config to
+      supply the paths. (In response to mailing list postings pointing out
+      that "configure" alone did not report errors, but then 'make' failed
+      to find the include files.)
+
+    * INSTALL: --with-postgres-* are optional to the configure command,
+      but add a warning about symlink expansion by pg_config.
+
+2006-12-11 ljb
+
+    * pgtclCmds.c: Extended pg_sendquery to take optional arguments, used
+      as parameter substitutions in the SQL query. This supports
+      asynchronous parameterized queries (but text-mode parameters only).
+      Idea copied from Pgtcl project, by Brett Schwarz and Karl Lehenbauer.
+
+2006-12-05 ljb
+
+    * pgtclCmds.c, pgtclId.c, pgtclId.h: Added new command and feature for
+      event-driven asynchronous query results.
+      Suggested by Kyle Bateman (kyleb), with the initial implementation
+      designed and written by Miguel Sofer (msofer).
+      New command: pg_result_callback connection ?callback?
+      The callback command will be executed when a result is ready from
+      pg_sendquery.
+
+    * pgtclCmds.h: Add new members to the connection structure for
+      storing the asynchronous result callback.
+
+    * pgtcl.c: New command pg_result_callback
+
+    * pgtclCmds.c: Moved common checks on connection handle to a new
+      function PgQueryOK.
+
+2006-08-29  ljb
+
+    * pgtclId.c: Bug fix for character set encoding during COPY FROM/TO
+
+2006-06-04  ljb
+
+    * Makefile.in, aclocal.m4, configure.in, tclconfig/*: Updated to newer
+      TEA build system, modified for Pgtcl-ng. This has only been tested
+      on Linux.
+
+    * pgtcl.c: Newer TEA uses PACKAGE_VERSION not VERSION; allow for either.
+
+2006-05-29  ljb
+    * INSTALL: Regenerated from manual; updated Windows build instructions
+      for PostgreSQL-8.1.4
+
+    * aclocal.m4, tclconfig/tcl.m4: Fix bad quote marks on awk commands.
+      See gborg bug # 1500 from tgl.
+
+    * Makefile.in: Add missing dependency of pkgIndex.tcl on the library.
+      See gborg bug # 1117 from tgl.
+
+2004-11-06  ljb (1.5.2)
+
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new commands pg_escape_bytea
+      and pg_unescape_bytea, which wrap the libpq functions PQescapeBytea
+      and PQunescapeBytea. Suggested by levanj.
+
+    * pgtclCmds.c: Changes to pg_result -error/-errorField for Gborg pgtcl
+      compatibility. The -error and -errorField options are now identical:
+      the field code name argument is optional to both. Without a field code
+      name, they work like pg_result -error used to. With a field code name,
+      they work like pg_result -errorField used to. (Adding an optional
+      code name argument to pg_result -error, as Gborg pgtcl did it, is
+      a better way. I'll admit it they got it right and I got it wrong.
+      But they could have at least looked here before implementing
+      a different usage.) Also, field code names are now case insensitive,
+      and the shorter forms used by Gborg pgtcl are accepted (e.g. HINT
+      versus MESSAGE_HINT).
+
+2004-06-07  ljb (1.5.1)
+
+    * pgtclCmds.c: Compiler warning fixes from bcc and gcc -Wall.
+
+2004-06-05  ljb (1.5.1a4)
+
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new command pg_exec_params
+      which executes a parameterized query, binary safe. To share code
+      with pg_exec_prepared, moved several processing steps into their
+      own internal functions.
+
+    * pgtclCmds.c: Added optional args to pg_exec which turns it into a
+      parameterized query. Idea from Gborg pgtcl CVS (karl).
+
+    * pgtclCmds.c: Removed unused variables in pg_escape_string, pg_quote.
+
+2004-05-31 (1.5.1a3)
+
+    * pgtclCmds.c: Fix to pg_execute to pass back other return codes from
+      the executed script, rather than translating them to TCL_ERROR.
+      It now works like pg_select in handling exception returns from the
+      script.  (Problem found when testing a bug in pgintcl.)
+
+
+2004-05-30  ljb (1.5.1a2)
+
+    * pgtcl.c, pgtclCmds.h, pgtclCmds.c: Added new command pg_quote,
+      which is equal to "'[pg_escape_string $s]'". Idea from Gborg pgtcl
+      CVS (karl), but there they also removed pg_escape_string. Both
+      will be supported by pgtcl-ng.
+
+
+2004-04-22  ljb  (1.5.1a1)
+
+    * pgtclCmds.c: Added pg_result -cmdStatus using PQcmdStatus. Idea from
+      levanj.
+
+    * Makefile.in, configure.in: Add EXTRA_LIBS to SHLIB_LD_LIBS to see if
+      it will help some platforms (MacOSX?) where it is necessary to
+      explicitly link in libraries that libpq depends on like libssl.
+
+
+2004-02-29 === Released version 1.5.0 ===
+
+2004-02-23  ljb
+
+    * pgtclCmds.c: Changes from latest Gborg pgtcl CVS:
+      Add some missing "const" on variables used with libpq calls.
+      Add \n separator on "not a valid query result" error message.
+
+2004-02-22  ljb
+
+    * pgtclCmds.c: One compiler fix needed for building with old Tcl-8.3.1.
+
+    * pgtclCmds.c: Forbid pg_execute from starting COPY because it won't
+      work without an external result handle.
+
+    * pgtclCmds.c, pgtclCmds.h, pgtclId.c: Reimplement COPY
+
+      Rewrote COPY routines to use new PostgreSQL-7.4 libpq calls. It was not
+      possible to fix the old version: it was doing broken asynchronous reads
+      and performed really badly, and did not handle large buffers.
+
+      Add 3 new variables to Pg_ConnectionID to hold libpq buffer info
+      during COPY when the libpq data is too big for Tcl's channel buffer
+      and must be returned in multiple chunks.
+
+      Initialize copy overflow buffer in pg_exec when starting COPY.
+
+      PgEndCopy() just does cleanup, doesn't call libpq PQendcopy now.
+      InputProc rewritten to use new function PQgetCopyData, handle overflow
+      between libpq and Tcl buffers.
+      OutputProc rewritten to use new function PQputCopyData.
+      
+
+2004-02-16  ljb
+    * pgtclCmds.c/pg_escape_string: Use Tcl object call for return value.
+    * pgtcl.c: Use VERSION from TEA Makefile when calling pkgProvide,
+      instead of coding the actual version in two places.
+
+2004-02-15  ljb
+
+NOTE: This is an accumulated per-file list of changes from the baseline
+using the Gborg "pgtcl-1.4b3" code until today.
+
+    * libpgtcl.h: Baseline from Gborg pgtcl-1.4b3
+
+    * pgtclCmds.h: Baseline from Gborg pgtcl-1.4b3
+      Update from Gborg CVS: new pg_escape_string.
+      Fixes for compiling with PostgreSQL-7.4: define true/false/TRUE/FALSE
+      if needed.
+      Incorporate changes found in bundled PostgreSQL-7.4 pgtcl:
+      - Fix for CONST84.
+      Declare new commands: pg_transaction_status, pg_parameter_status,
+      pg_exec_prepared, pg_notice_handler.
+      Add 2 fields to connection structure for notice handler: notice_command
+      and interp.
+
+    * pgtclId.h: Baseline from Gborg pgtcl-1.4b3
+      Fix for PostgreSQL-7.4 compiling: replace bool with char.
+      Incorporate changes found in bundled PostgreSQL-7.4 pgtcl:
+      - Add CONST84 to avoid compiler warnings.
+      Add missing header string.h.
+      Fix for copy-in terminator and end of line on Windows, and fix for
+      false detection of copy-in terminator with "\\\\.".
+      Initialize new fields interp and notice_command for notice handler,
+      and free notice_command when freeing a connection ID.
+
+    * pgtclId.c: Baseline from Gborg pgtcl-1.4b3
+      Fixes for compiling with PostgreSQL-7.4: replace bool with char.
+      Incorporate changes found in bundled PostgreSQL-7.4 pgtcl:
+      (Note: Some indents and spacing changes were made to allow comparing
+      the diverging libpgtcl and bundled pgtcl.)
+      - CONST fixes,
+      - Fix for leak on close,
+      - Fix for bad error return from PgSetResultId (Not in PostgreSQL-7.4).
+      Add DLLEXPORT prefix for future win32 build.
+      Remove pg_configure. Add pg_notice_handler.
+      Change package version from 1.4 to 1.5.
+
+    * pgtcl.c: Baseline from Gborg pgtcl-1.4b3
+      Update from Gborg CVS: create new command pg_escape_string.
+      Fix for PostgreSQL-7.4 compiling: Remove need for internal/postgres_fe.h.
+      Incorporate changes found in bundled PostgreSQL-7.4 pgtcl: simpler
+      access to tcl_version.
+      Create new commands: pg_transaction_status, pg_parameter_status,
+      pg_exec_prepared.
+
+    * pgtclCmds.c: Baseline from libpgtcl-1.4b3
+      Update from Gborg CVS: New option pg_result -cmdTuples,
+      new command pg_escape_string.
+      Fix for PostgreSQL-7.4 compile: header file changes - remove
+      "internal/postgres_fe.h" and add <string.h>.
+      Incorporate changes from PostgreSQL-7.4 pgtcl:
+      - CONST84 fixes,
+      - Fix for error return from PgSetResultId(),
+      - Use ByteArray objects for Tcl>=8.1 pg_lo_read, pg_lo_write.
+
+      Remove all TCL_ARRAYS code (was never used), and collapse tcl_value().
+
+      Add 3 new commands:
+      - pg_transaction_status,
+      - pg_parameter_status,
+      - pg_exec_prepared (not done: fails with binary data because other
+        parts of the code are not binary safe yet).
+
+      New internal functions for common code:
+      - result_get_obj() fetches a result value as string or byte-array object,
+      - get_row_list_obj() fetches a result row as a list object.
+      Both are binary safe.
+      Changed all uses of PQgetvalue to use the above new functions.
+      Fix some dubious cases where Tcl object refCount management was missing.
+      Changed some SetVar2 to SetVar2Ex, more object-izing.
+      Fix memory leak in pg_result -list (leak was introduced in post 1.4b3
+      CVS).
+      Rewrote execute_put_values used by pg_execute to use Tcl objects.
+
+      Fix error handling for all pg_lo_* large object calls. They were
+      inconsistent and most gave useless error messages. All except
+      pg_lo_read and pg_lo_write will now throw a Tcl error on error,
+      with the Tcl error message including the PostgreSQL error text.
+      pg_lo_read and pg_lo_write still do not throw errors if the underlying
+      libpq call returns an error, but return -1. This is to stay compatible
+      with the documentation.
+      Removed improper use of interp->result in pg_lo_unlink.
+
+      pg_result: localize per-subfunction vars into the CASE blocks
+      where they are used.
+      pg_result: add -lxAttributes, extended attributes fetch.
+      pg_result: Redo error handling to be more Tcl-standard. Report usage
+      only on unknown switch, not if args are missing.
+      Changes some "const" to CONST (which is conditional on Tcl version).
+
+      New option pg_result -errorField for access to extended error message
+      fields.
+      Trivial change to Tcl_WrongNumArgs: Use NULL not "" for msgs.
+      Add missing check for objc (WrongNumArgs) to pg_result -list, -llist.
+
+      Fix: Check for error from PgSetResultId in pg_getresult.
+
+      Fix pg_result -assignbyidx to use result_get_obj instead of calling
+      PQgetvalue() directly. This was the last use of PQgetvalue outside of
+      result_get_obj. Now all result value fetching goes through one function.
+
+      Replace all uses of Tcl_GetStringFromObj(p, NULL) with Tcl_GetString(p).
+
+      Fixes to avoid compiler warnings, from using Borland BCC and also
+      gcc -Wall -pedantic. Mostly cosmetic but they caught some bugs too.
+      - Cast pointers used with ByteArray calls to unsigned char *.
+      - Removed some unused vars.
+      - Bug fix in Pg_cancel_request: uninitialized 'result', should be using
+      PQerrorMessage(), not PQresultErrorMessage().
+
+      Add pg_result -getNull to return flags indicating if fields are NULL.
+      Don't recalculate PQnfields() or PQntuples() in a loop test:
+      pre-calculate outside the loop (in several places in pg_result).
+      Add PgNoticeProcessor and pg_set_notice_handler.
+      Remove pg_configure command.
+
+      When calling PgGetConnectionId, pass NULL for arg3 if connid isn't needed
+      (3 places).
+      Fix pg_blocking to always return the old/current value, instead of
+      only returning the current value if no new value is supplied. This
+      makes it easier to save/restore.
+
+-----------------------------------------------------------------------------

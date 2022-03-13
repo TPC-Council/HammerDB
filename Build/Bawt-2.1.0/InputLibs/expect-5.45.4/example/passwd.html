@@ -1,0 +1,25 @@
+<HTML>
+<head>
+<title>Change your login password</title>
+</head>
+<body>
+
+This HTML creates a form for letting users change login passwords with
+a browser.  To actually use this form, install the corresponding
+accompanying cgi script and then modify the action value to identify
+where you put the cgi script.  (Also read the comments at the
+beginning of the CGI script.) - Don Libes
+<hr>
+
+<form method=post
+action="http://www-i.cme.nist.gov/cgi-bin/expect/passwd.cgi">
+<h2>Change your login password</h2>
+<br>Username: <input name="name">
+<br>Old password: <input type=password name="old">
+<br>New password: <input type=password name="new1">
+<br>New password: <input type=password name="new2">
+<br>New password must be entered twice to avoid typos.
+<br><input type=submit value="Change password">
+</form>
+</body>
+</html>

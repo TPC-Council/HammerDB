@@ -1,0 +1,270 @@
+# arraydml.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of orabind -arraydml
+#
+
+package require tcltest
+::tcltest::configure -verbose ept
+::tcltest::testConstraint testoraparse [llength [info commands oraparse]]
+::tcltest::testConstraint testorabind [llength [info commands orabind]]
+::tcltest::testConstraint testoraexec [llength [info commands oraexec]]
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+proc oratcl_arraydml_begin {} {
+  uplevel 1 {
+    global ora_constr
+    set ad_lda [oralogon $ora_constr]
+    set ad_stm [oraopen $ad_lda]
+    set ad_sql { \
+      create table oratcl___arraydml ( \
+        v_number number(2), \
+        v_date date, \
+        v_char char(2), \
+	v_varchar2 varchar2(4000) \
+      ) \
+    }
+
+    catch {
+      oraparse $ad_stm $ad_sql
+      oraexec $ad_stm
+      oracommit $ad_stm
+      }
+    unset ad_sql
+  }
+}
+
+proc oratcl_arraydml_final {} {
+        uplevel 1 {
+		oraparse $ad_stm "drop table oratcl___arraydml"
+		oraexec $ad_stm
+		oraclose $ad_stm
+		oralogoff $ad_lda
+		unset ad_stm
+		unset ad_lda
+	}
+}
+
+
+oratcl_arraydml_begin
+
+test arraydml-1.0 {orabind arraydml OCI_STMT_INSERT code == 4} {
+	-constraints {testoraparse testorabind}
+	-setup {
+		set tst1_0(lda) [oralogon $ora_constr]
+		set tst1_0(stm) [oraopen $tst1_0(lda)]
+		set tst1_0(sql) { \
+			insert into oratcl___arraydml \
+				(v_number, v_char, v_varchar2) \
+			values \
+				(:vn, :vc, :v2) \
+		}
+		oraparse $tst1_0(stm) $tst1_0(sql)
+		set tst1_0(vnl) [list 100 101 102 103 104 105 106 107 108 109]
+		set tst1_0(vcl) [list aaa bbb ccc ddd eee fff ggg hhh iii jjj]
+		set tst1_0(v2l) [list AAA BBB CCC DDD EEE FFF GGG HHH III JJJ]
+	}
+	-body {
+		set tst1_0(res) [ \
+			orabind $tst1_0(stm) -arraydml \
+				:vn $tst1_0(vnl) \
+				:vc $tst1_0(vcl) \
+				:v2 $tst1_0(v2l) \
+		]
+	}
+	-cleanup {
+		oraclose $tst1_0(stm)
+		oralogoff $tst1_0(lda)
+		array unset tst1_0
+		array unset vn_list
+		array unset vc_list
+	}
+	-result {0}
+}
+
+test arraydml-1.1 {orabind arraydml OCI_STMT_INSERT code == 4} {
+	-constraints {testoraparse testorabind}
+	-setup {
+		set tst1_1(lda) [oralogon $ora_constr]
+		set tst1_1(stm) [oraopen $tst1_1(lda)]
+		set tst1_1(sql) { \
+			insert into oratcl___arraydml \
+				(v_number, v_char, v_varchar2) \
+			values \
+				(:vn, :vc, :v2) \
+		}
+		set tst1_1(sel) { \
+			select * from oratcl___arraydml \
+			where v_number between 10 and 19 \
+		}
+		oraparse $tst1_1(stm) $tst1_1(sql)
+		set tst1_1(vnl) [list 10 11 12 13 14 15 16 17 18 19]
+		set tst1_1(vcl) [list aa bb cc dd ee ff gg hh ii jj]
+		set tst1_1(v2l) [list AA BB CC DD EE FF GG HH II JJ]
+	}
+	-body {
+		set tst1_1(res) [ \
+			orabind $tst1_1(stm) -arraydml \
+				:vn $tst1_1(vnl) \
+				:vc $tst1_1(vcl) \
+				:v2 $tst1_1(v2l) \
+		]
+		set tst1_1(res) [oraexec $tst1_1(stm)]
+		oraparse $tst1_1(stm) $tst1_1(sel)
+		oraexec $tst1_1(stm)
+		while {[orafetch $tst1_1(stm) -datavariable row] == 0} {
+			# null statment
+		}
+		oramsg $tst1_1(stm) rows
+	}
+	-cleanup {
+		oraclose $tst1_1(stm)
+		oralogoff $tst1_1(lda)
+		array unset tst1_1
+	}
+	-returnCodes { ok }
+	-result {10}
+}
+
+test arraydml-1.2 {orabind arraydml OCI_STMT_INSERT code == 4} {
+	-constraints {testoraparse testorabind}
+	-setup {
+		set tst1_2(lda) [oralogon $ora_constr]
+		set tst1_2(stm) [oraopen $tst1_2(lda)]
+		set tst1_2(sql) { \
+			insert into oratcl___arraydml \
+				(v_number, v_char, v_varchar2) \
+			values \
+				(:vn, :vc, :v2) \
+		}
+		oraparse $tst1_2(stm) $tst1_2(sql)
+		set tst1_2(vnl) [list 100 101 102 103 104 105 106 107 108 109]
+		set tst1_2(vcl) [list aaa bbb ccc ddd eee fff ggg hhh iii jjj]
+		set tst1_2(v2l) [list AAA BBB CCC DDD EEE FFF GGG HHH III JJJ]
+	}
+	-body {
+		set tst1_2(res) [ \
+			orabind $tst1_2(stm) -arraydml \
+				:vn $tst1_2(vnl) \
+				:vc $tst1_2(vcl) \
+				:v2 $tst1_2(v2l) \
+		]
+		set tst1_2(res) [oraexec $tst1_2(stm)]
+	}
+	-cleanup {
+		oraclose $tst1_2(stm)
+		oralogoff $tst1_2(lda)
+		array unset tst1_2
+	}
+	-returnCodes { error }
+	-result {ORA-24381: error(s) in array DML}
+}
+
+# test arraydml with autocommit
+test arraydml-1.4 {orabind arraydml and autocommit} {
+	-constraints {testoraparse testorabind}
+	-setup {
+		set tst1_4(lda1) [oralogon $ora_constr]
+		set tst1_4(lda2) [oralogon $ora_constr]
+		oraautocom $tst1_4(lda1) true
+		set tst1_4(stm1) [oraopen $tst1_4(lda1)]
+		set tst1_4(stm2) [oraopen $tst1_4(lda2)]
+		set tst1_4(sql1) { \
+			insert into oratcl___arraydml \
+				(v_number, v_char, v_varchar2) \
+			values \
+				(:vn, :vc, :v2) \
+		}
+		set tst1_4(sql2) { \
+			select * from oratcl___arraydml \
+			where v_number between 90 and 99 \
+		}
+		oraparse $tst1_4(stm1) $tst1_4(sql1)
+		oraparse $tst1_4(stm2) $tst1_4(sql2)
+		set tst1_4(vnl) [list 90 91 92 93 94 95 96 97 98 99]
+		set tst1_4(vcl) [list aa bb cc dd ee ff gg hh ii jj]
+		set tst1_4(v2l) [list AA BB CC DD EE FF GG HH II JJ]
+	}
+	-body {
+		orabind $tst1_4(stm1) -arraydml \
+			:vn $tst1_4(vnl) \
+			:vc $tst1_4(vcl) \
+			:v2 $tst1_4(v2l)
+		oraexec $tst1_4(stm1)
+		# rollback should do nothing
+		oraroll $tst1_4(lda1)
+		# check table rows using another connection
+		oraexec $tst1_4(stm2)
+		while {[orafetch $tst1_4(stm2) -datavariable row] == 0} {
+			# null statment
+		}
+		oramsg $tst1_4(stm2) rows
+	}
+	-cleanup {
+		oraclose $tst1_4(stm1)
+		oraclose $tst1_4(stm2)
+		oralogoff $tst1_4(lda1)
+		oralogoff $tst1_4(lda2)
+		array unset tst1_4
+	}
+	-returnCodes { ok }
+	-result {10}
+}
+
+test arraydml-1.5 {orabind arraydml OCI_STMT_INSERT code == 4} {
+	-constraints {testoraparse testorabind}
+	-setup {
+		set tst1_5(lda) [oralogon $ora_constr]
+		set tst1_5(stm) [oraopen $tst1_5(lda)]
+		set tst1_5(sql) { \
+			insert into oratcl___arraydml \
+				(v_number, v_char, v_varchar2) \
+			values \
+				(:vn, :vc, :v2) \
+		}
+		set tst1_5(sel) { \
+			select * from oratcl___arraydml \
+			where v_number between 50 and 59 \
+		}
+		oraparse $tst1_5(stm) $tst1_5(sql)
+		set tst1_5(vnl) [list 50 51 52 53 54 55 56 57 58 59]
+		set tst1_5(vcl) [list aa bb cc dd ee ff gg hh ii jj]
+		set tst1_5(v2l) [list AA BB CC DD EE FF GG HH II JJ]
+	}
+	-body {
+		set tst1_5(res) [ \
+			orabind $tst1_5(stm) -arraydml \
+				:vn $tst1_5(vnl) \
+				:vc $tst1_5(vcl) \
+				:v2 $tst1_5(v2l) \
+		]
+		set tst1_5(res) [oraexec $tst1_5(stm)]
+		set tst1_5(res) [oraexec $tst1_5(stm)]
+		oraparse $tst1_5(stm) $tst1_5(sel)
+		oraexec $tst1_5(stm)
+		while {[orafetch $tst1_5(stm) -datavariable row] == 0} {
+			# null statment
+		}
+		oramsg $tst1_5(stm) rows
+	}
+	-cleanup {
+		oraclose $tst1_5(stm)
+		oralogoff $tst1_5(lda)
+		array unset tst1_5
+	}
+	-returnCodes { ok }
+	-result {20}
+}
+
+oratcl_arraydml_final
+
+::tcltest::configure -verbose b
+::tcltest::cleanupTests
+return
+
+

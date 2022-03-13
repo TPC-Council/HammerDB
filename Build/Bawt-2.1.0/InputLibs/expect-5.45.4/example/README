@@ -1,0 +1,144 @@
+This file is example/README.  It contains brief descriptions of the
+examples in this directory.  Also listed are scripts from the Expect
+archive at ftp.cme.nist.gov (See Expect's README for how to retrieve
+these from).  You are welcome to send me additional scripts.  A number
+of Expect scripts are also available in the Tcl archive, available via
+anonymous ftp at harbor.ecn.purdue.edu
+
+Note that on some systems, some of the scripts (notably kibitz and
+dislocate) require that Expect be installed.  (Merely compiling the
+expect binary is not enough.)
+
+--------------------
+Expect scripts (See next section for example Tk scripts)
+--------------------
+Entries marked with "m" have their own man page.
+Entries marked with "a" live in the Expect archive (see above).
+
+	archie - mails back response after talking to archie ftp-catalog.
+   m	autoexpect - generate an Expect script from watching a session
+	autopasswd - runs passwd non-interactively for superuser.
+   a	bc - Uses bc to do arbitrary precision math.
+	beer.exp - 99 Bottles of Beer On The Wall, Expect-style.
+	beer.exp.out - sample output from beer.exp (but you really have to
+		run it to see the timing aspect).
+   a	bonfield.exp - solve Jim Bonfield's puzzle that won the 1991 Obfuscated
+		C Code contest.
+	carpal - warn about typing for too long without a break.
+	chess.exp - has two chess games play each other.
+   m	cryptdir - encrypt all files in a directory.
+   m    decryptdir - decrypt all files in a directory.
+   m	dislocate - allow disconnection/reconnection to background processes.
+	dvorak - dvorak keyboard.
+   a	eftp - ftp client with miscellaneous frills (also see rftp below).
+	expectd.proto - telnet daemon.
+	ftp-inband - does file transfer over telnet, rlogin, etc.
+	ftp-rfc - retrieve a DoD RFC from uunet via anonymous ftp.
+	ftp-talk-radio - gets "Internet Talk Radio" files from a host.
+	gethostbyaddr - translates internet address to name (with a higher
+		success rate than nslookup).  Easier to use, too.
+	getpassck - test for presence of bug in getpass.
+	irsh - run interactive commands via rsh
+   m	kibitz - lets two people control a program at the same time.
+		Lots of uses.  I.e., You can help another person remotely.
+		Can run an editor and log a transcript of a conversation.
+   a	libro-II - connect to Libro-II, the NIST library catalog.
+	lpunlock - unhangs a printer which says it is "waiting for lock".
+   a	mirror_file - mirror a file from another ftp site, copying file only
+		if changed.
+   a	mirror_dir - mirror a directory from another ftp site, copying only
+		files which have changed.
+   m	multixterm - drive several xterms simultaneously.
+   m	mkpasswd - generates good passwords, optionally runs passwd with them.
+   a	mx - return any MX records for the given host.
+   a	noidle - run a shell which avoids being 'autologged out'.
+   a	pager.alpha - sends a message to a (Alpha brand) pager.
+   a	pager.mercury - sends a message to a (Mercury brand) pager.
+   m	passmass - sets passwd on many machines simultaneously.
+        passwd.html - form to change a login passwd
+	passwd.cgi - CGI script to respond to passwd.html form
+	passwdprompt - Prompt from stdin and echo *'s.
+   a	ping-and-page - Ping list of hosts.  If any down, page system admin.
+	read1char - read a single character for the shell, Perl, etc.
+	reprompt - like timed-read but reprompt after given amount of time.
+	rlogin-cwd - rlogin giving you same current working directory.
+		(Compare to telnet-cwd and xrlogin.)
+	robohunt - plays the game of hunt (from Berkeley).
+		It's more of a wild player than good, but amusing to watch.
+		Fun to throw against people who don't know about it.
+	rogue.exp - finds a good game of rogue.
+	rftp - recursive ftp (assumes UNIX-style ftpd at other end).
+   a	s-key-rlogin - 	Automate rlogin (or telnet) using s/key
+   a	scripttoggle - Like UNIX script command, but allow enabling/disabling
+		of recording.
+   a	slip.shar - scripts to keep your SLIP link alive.
+	su.exp - start up an 'su' and run the argument.
+	telnet-cwd - telnet giving you same current working directory.
+	telnet-in-bg - put telnet (or any program) in bg, saving all remaining
+		output to a logfile.
+   a	term-rlogin - run Term over rlogin.  Good for traversing PPP/SLIP or
+		firewall rlogin connections.
+   a	term-start - start up Term (a sophisticated UNIX-to-UNIX serial line
+		handler).
+   a	timed-choice - offer user a timed choice of responses.
+	timed-read - a timed read for the shell, Perl, etc.  Compare with
+		reprompt example.
+   m	timed-run - run a program for only a given amount of time.
+   a	try-phone-list - automate logging in to remote system, trying numbers
+		from a list until finding one that works.
+   m	unbuffer - disables output buffering that normally occurs when
+		programs are redirected.
+	virterm - example of terminal emulation and expect operations on
+		character graphics using arrays (compare to term_expect
+		(below) which uses Tk widget).
+	vrfy - verifies an email address using SMTP/VRFY to remote site.
+   a	waste-collection - Contact NIST service for hazardous waste pickup.
+	weather - retrieves weather forecasts.
+   m	xkibitz - similar to kibitz but uses X Window System for handling
+		communication.  Also, allows users to be added dynamically.
+	xrlogin - rlogin giving you same DISPLAY.  (Compare to rlogin-cwd.)
+
+To run, for example, chess.exp, type:
+
+	expect chess.exp
+
+If expect is installed and your system supports the #! magic you can
+invoke it as:
+
+	chess.exp
+
+Each of these examples necessarily depends upon other binaries in the
+system.  For example, chess.exp depends upon the "usual" UNIX chess
+program being present.  If any of these programs are different,
+it may cause the associated script to misbehave.
+
+Please use the ".exp" extension on scripts that might otherwise have
+names that could be confused with the real program, such as "rogue.exp".
+Scripts that have unique names do not need the extension, such as "rftp".
+
+--------------------
+Sample Expectk scripts
+--------------------
+Entries marked with "m" have their own man page.
+
+	term_expect - template for doing expect operations on character
+		graphics.
+   m	tknewsbiff - pops up a window (or plays sounds, etc) when news
+		arrives in selected newsgroups.
+   	tkpasswd - Tk GUI for changing passwords.
+	tkterm - Tk terminal emulator in a Tk text widget.
+	xpstat - provide an X window front end to the xpilot game.
+
+--------------------
+Sample C and C++ programs that use the Expect library
+--------------------
+
+	chesslib.c - same thing as chess.exp, but in C.
+	chesslib2.c - ditto, but uses popen and stream-style I/O.
+	chesslib++.c - ditto, but for C++.
+   m	unbuffer.c - same as unbuffer example but standalone
+
+You may change the value of CC or CPLUSPLUS in the Makefile, to
+compile under gcc or other compilers.  However, you may have to edit
+the lines defining where the libraries are.
+

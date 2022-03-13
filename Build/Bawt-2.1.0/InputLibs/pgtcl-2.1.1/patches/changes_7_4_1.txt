@@ -1,0 +1,14 @@
+Change file for PostgreSQL-7.4.1 build of libpq with Borland BCC
+-----------------------------------------------------------------------------
+
+
+In the source directory src\port
+edit the file thread.c and change the line:
+
+#if defined(WIN32) && defined(_MSC_VER)
+
+to:
+
+#if defined(WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__))
+
+-----------------------------------------------------------------------------

@@ -1,0 +1,36 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# simulate a dvorak keyboard
+# Actually just the lowercase letters are mapped to show the basic idea.
+# Really, uppercase and control should probably be mapped too.
+# But this isn't really what expect is all about.  It just demonstrates
+# the mapping ability of 'interact'.
+
+proc rot {} {
+	interact {
+		q {send '}  w {send ,}  e {send .}  r {send p}
+		t {send y}  y {send f}  u {send g}  i {send c}
+		o {send r}  p {send l}  s {send o}  d {send e}
+		f {send u}  g {send i}  h {send d}  j {send h}
+		k {send t}  l {send n}  \; {send s}  ' {send -- -}
+		z {send \;}  x {send q}  c {send j}  v {send k}
+		b {send x}  n {send b}  , {send w}  . {send v}
+		/ {send z}  ~q {return} ~d {} ~e {}
+		-o eof exit
+	}
+}
+
+log_user 0
+spawn $env(SHELL)
+log_user 1
+send_user "~d for dvorak input\n"
+send_user "~q for qwerty input (default)\n"
+send_user "~e for expect interpreter\n"
+send_user "Enter ~ sequences using qwerty keys\n"
+interact ~d rot ~q {} ~e {interpreter -eof exit}

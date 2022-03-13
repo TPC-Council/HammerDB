@@ -1,0 +1,73 @@
+# Commands covered:  spawn
+#
+# This file contains a collection of tests for one or more of the Tcl
+# built-in commands.  Sourcing this file into Tcl runs the tests and
+# generates output for errors.  No output means no errors were found.
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+    package require tcltest
+    # do this in a way that is backward compatible for Tcl 8.3
+    namespace import ::tcltest::test ::tcltest::cleanupTests
+}
+package require Expect
+
+log_user 0
+
+#exp_internal -f /dev/ttyp5 0
+
+test spawn-1.1 {basic spawn operation} {
+	set x [catch {exp_spawn cat}]
+	set first_spawn_id $spawn_id; # save for later test
+	exp_close;exp_wait
+	set x
+} {0}
+
+test spawn-1.2 {spawn cat, then simple send/expect sequence} {
+    set cat [exp_spawn -noecho cat -u]
+    exp_send "a\r"
+    expect "a" {set x 1} timeout {set x 0}
+    exp_close;exp_wait
+    set x
+} {1}
+
+test spawn-1.3 {spawn two processes simultaneously} {
+    exp_spawn -noecho cat; set cat $spawn_id
+    exp_spawn -noecho cat; set cat2 $spawn_id
+    set x [expr {0!=[string compare [exp_pid -i $cat2] [exp_pid -i $cat]]}]
+    exp_close -i $cat;exp_wait -i $cat;exp_close -i $cat2;exp_wait -i $cat2
+    set x
+} {1}
+
+test spawn-1.4 {spawn open file} {
+	set x 0
+	set y 0
+
+	set file [open /tmp/[pid] w]
+	puts $file "testing expect's spawn -open"
+	exp_close $file
+	set pid [exp_spawn -open [open /tmp/[pid]]]
+	expect "testing expect's spawn -open" {set x 1}
+	expect eof {set y 1}
+	exec rm /tmp/[pid]
+	exp_wait
+	list $x $y $pid
+} {1 1 0}
+
+test spawn-1.5 {spawn with no fd leak} {
+	exp_spawn cat
+	set x [expr {"$first_spawn_id"=="$spawn_id"}]
+	exp_close; exp_wait
+	set x
+} {1}	
+
+# looks to be some control-char problem
+#ftest spawn-1.6 {spawn with echo} {
+#	exp_spawn cat
+#} {spawn cat}
+	
+#ftest spawn-1.7 {spawn with -noecho} {
+#	exp_spawn -noecho cat
+#} {}
+
+cleanupTests
+return

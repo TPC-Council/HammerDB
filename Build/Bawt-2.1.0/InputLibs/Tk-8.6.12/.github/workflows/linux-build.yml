@@ -1,0 +1,155 @@
+name: Linux
+on: [push]
+defaults:
+  run:
+    shell: bash
+    working-directory: tk/unix
+env:
+  ERROR_ON_FAILURES: 1
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        compiler:
+          - "gcc"
+          - "clang"
+        symbols:
+          - "no"
+          - "mem"
+        disables:
+          - ""
+          - "--disable-shared"
+          - "--disable-xft"
+          - "--disable-xss"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: tk
+      - name: Checkout Tcl
+        uses: actions/checkout@v2
+        with:
+          repository: tcltk/tcl
+          ref: core-8-6-branch
+          path: tcl
+      - name: Setup Environment (compiler=${{ matrix.compiler }})
+        run: |
+          sudo apt-get install tcl8.6-dev libxss-dev
+          mkdir "$HOME/install dir"
+          touch tk/doc/man.macros tk/generic/tkStubInit.c
+          echo "CFGOPT=$CFGOPT --with-tcl=/usr/lib/tcl8.6" >> $GITHUB_ENV
+          echo "CC=$COMPILER" >> $GITHUB_ENV
+          echo "TOOL_DIR=$(cd tcl/tools;pwd)" >> $GITHUB_ENV
+          echo "BUILD_CONFIG_ID=$OPTS" >> $GITHUB_ENV
+        working-directory: "."
+        env:
+          CFGOPT: --enable-symbols=${{ matrix.symbols }} ${{ matrix.disables }}
+          COMPILER: ${{ matrix.compiler }}
+          OPTS: ${{ matrix.compiler }}-${{ matrix.symbols }}${{ matrix.disables }}
+      - name: Configure (symbols=${{ matrix.symbols }} opts=${{ matrix.disables }})
+        run: |
+          ./configure $CFGOPT "--prefix=$HOME/install dir" || {
+            cat config.log
+            echo "::error::Failure during Configure"
+            exit 1
+          }
+      - name: Build
+        run: |
+          make binaries libraries || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Build Test Harness
+        run: |
+          make tktest || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Test-Drive Installation
+        run: |
+          make install || {
+            echo "::error::Failure during Install"
+            exit 1
+          }
+      - name: Create Distribution Package
+        run: |
+          make dist || {
+            echo "::error::Failure during Distribute"
+            exit 1
+          }
+      - name: Convert Documentation to HTML
+        run: |
+          make html-tk TOOL_DIR=$TOOL_DIR || {
+            echo "::error::Failure during Distribute"
+            exit 1
+          }
+      - name: Discover Version ID
+        if: ${{ env.BUILD_CONFIG_ID == 'gcc-no' }}
+        run: |
+          cd /tmp/dist
+          echo "VERSION=`ls -d tk* | sed 's/tk//'`" >> $GITHUB_ENV
+      - name: Upload Source Distribution
+        if: ${{ env.BUILD_CONFIG_ID == 'gcc-no' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Tk ${{ env.VERSION }} Source distribution (snapshot)
+          path: |
+            /tmp/dist/tk*
+            !/tmp/dist/tk*/html/**
+      - name: Upload Documentation Distribution
+        if: ${{ env.BUILD_CONFIG_ID == 'gcc-no' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Tk ${{ env.VERSION }} HTML documentation (snapshot)
+          path: /tmp/dist/tk*/html
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        compiler:
+          - "gcc"
+        symbols:
+          - "no"
+          - "mem"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: tk
+      - name: Setup Environment (compiler=${{ matrix.compiler }})
+        run: |
+          sudo apt-get install tcl8.6-dev libxss-dev xvfb
+          mkdir "$HOME/install dir"
+          touch tk/doc/man.macros tk/generic/tkStubInit.c
+          echo "CFGOPT=$CFGOPT --with-tcl=/usr/lib/tcl8.6" >> $GITHUB_ENV
+          echo "CC=$COMPILER" >> $GITHUB_ENV
+        working-directory: "."
+        env:
+          CFGOPT: --enable-symbols=${{ matrix.symbols }}
+          COMPILER: ${{ matrix.compiler }}
+      - name: Configure (symbols=${{ matrix.symbols }})
+        run: |
+          ./configure $CFGOPT "--prefix=$HOME/install dir" || {
+            cat config.log
+            echo "::error::Failure during Configure"
+            exit 1
+          }
+      - name: Build
+        run: |
+          make binaries libraries tktest || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Run Tests
+        run: |
+          xvfb-run --auto-servernum make test-classic | tee out-classic.txt
+          xvfb-run --auto-servernum make test-ttk | tee out-ttk.txt
+          grep -q "Failed	0" out-classic.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+          grep -q "Failed	0" out-ttk.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }

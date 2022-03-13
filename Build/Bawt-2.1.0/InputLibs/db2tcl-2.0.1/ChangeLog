@@ -1,0 +1,113 @@
+2004-02-10 20:04  sergeybe
+
+	* tcl.m4: Clean macros
+
+2004-02-10 20:00  sergeybe
+
+	* .cvsignore: [no log message]
+
+2004-02-10 19:59  sergeybe
+
+	* configure.in, tcl.m4, src/Makefile.am, src/db2tclcmds.c,
+	src/db2tclcmds.h, tests/test4.tcl: Patch from Valerio Gionco
+	<Valerio.Gionco@most.it>
+	
+	Changes are: - a small patch to "ibmdb2.m4", needed because 
+	"db2_prefix" and "ibm-db2" were oddly mixed. Note that	
+	"configure" should be rebuilt with autoconf/automake after the	
+	change.  - the number of arguments to db2_execute is 3, not 2.
+	Wonder	 how it worked before.	- missing fields for Db2_ConnType
+	initialized to NULL.  - SQLGetData() returns only garbage if last
+	field is NULL.	  Don't know if this is a Linux-specific bug in IBM
+	libraries or	what, but passing an "int *" solved the issue.	-
+	some "CONST" added to avoid warnings here and there.
+
+2004-02-09 15:57  sergeybe
+
+	* .cvsignore: [no log message]
+
+2004-02-08 16:06  sergeybe
+
+	* tests/test1.tcl: Added test transaction.
+
+2004-02-08 15:58  sergeybe
+
+	* README, aclocal.m4, autogen.sh, config.h.in, configure.in,
+	ibmdb2.m4, tcl.m4, src/Makefile.am, src/db2tcl.c, src/db2tclcmds.c,
+	src/db2tclcmds.h: Added transaction support.  Clearup code Clearup
+	buid scripts.
+
+2004-02-06 16:05  sergeybe
+
+	* tests/test1.tcl: Fix catch statement.
+
+2004-02-06 15:17  sergeybe
+
+	* .cvsignore, Makefile.in, aclocal.m4, autogen.sh, config.guess,
+	config.sub, configure, db2tcl.spec, depcomp, install-sh, ltconfig,
+	ltmain.sh, missing, mkinstalldirs, stamp-h.in, doc/.cvsignore,
+	doc/Makefile.in, src/.cvsignore, src/Makefile.in, tests/.cvsignore,
+	tests/Makefile.in: Cleanup build scripts.
+
+2002-12-27 18:23  sergeybe
+
+	* Makefile.in, configure.in: Removed revision macros from
+	configure.in.
+
+2002-12-27 18:01  sergeybe
+
+	* Makefile.in, aclocal.m4, config.guess, config.h.in, config.sub,
+	configure, configure.in, depcomp, install-sh, ltmain.sh, missing,
+	mkinstalldirs, doc/Makefile.in, src/Makefile.in, src/db2tclcmds.c,
+	tests/Makefile.in: Fix some error in db2_connect and db2_exec
+	command.  Migrate to new automake and autoconf.
+
+2002-12-16 18:44  sergeybe
+
+	* db2tcl.spec, db2tcl.spec.in: Fix path to man directory.
+
+2002-12-09 14:35  sergeybe
+
+	* db2tcl.spec, db2tcl.spec.in: Fix in spec file inn section %clean.
+
+2002-12-09 14:22  sergeybe
+
+	* .cvsignore, AUTHORS, COPYING, Makefile.am, Makefile.in, README,
+	README.in, acinclude.m4, aclocal.m4, configure, configure.in,
+	db2tcl.spec, db2tcl.spec.in, ibmdb2.m4, mkIndex.tcl.in, tcl.m4,
+	doc/.cvsignore, doc/Makefile.in, src/.cvsignore, src/Makefile.in,
+	src/db2tcl.c, src/db2tclcmds.c, src/db2tclcmds.h, tests/.cvsignore,
+	tests/Makefile.am, tests/Makefile.in, tests/test5.tcl: Added spec
+	file for RedHat based distributions Split m4 macro to two files Fix
+	minor bugs Fix building scripts Prepare for version 0.0.2
+
+2002-09-06 16:53  sergeybe
+
+	* db2tcl-0.0.1.tar.gz: Clear CVS tree.
+
+2002-09-06 15:55  sergeybe
+
+	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, Makefile.in,
+	NEWS, README.in, TODO, acinclude.m4, aclocal.m4, config.guess,
+	config.h.in, config.sub, configure, configure.in, install-sh,
+	ltconfig, ltmain.sh, missing, mkinstalldirs, stamp-h.in,
+	db2tcl-0.0.1.tar.gz, doc/Makefile.am, doc/Makefile.in,
+	doc/db2tclsh.1, doc/db2tksh.1, src/Makefile.am, src/Makefile.in,
+	src/db2tcl.c, src/db2tcl.h, src/db2tclcmds.c, src/db2tclcmds.h,
+	src/db2tclsh.c, src/db2wish.c, tests/Makefile.am,
+	tests/Makefile.in, tests/test1.tcl, tests/test2.tcl,
+	tests/test3.tcl, tests/test4.tcl: Initial revision
+
+2002-09-06 15:55  sergeybe
+
+	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, Makefile.in,
+	NEWS, README.in, TODO, acinclude.m4, aclocal.m4, config.guess,
+	config.h.in, config.sub, configure, configure.in, install-sh,
+	ltconfig, ltmain.sh, missing, mkinstalldirs, stamp-h.in,
+	db2tcl-0.0.1.tar.gz, doc/Makefile.am, doc/Makefile.in,
+	doc/db2tclsh.1, doc/db2tksh.1, src/Makefile.am, src/Makefile.in,
+	src/db2tcl.c, src/db2tcl.h, src/db2tclcmds.c, src/db2tclcmds.h,
+	src/db2tclsh.c, src/db2wish.c, tests/Makefile.am,
+	tests/Makefile.in, tests/test1.tcl, tests/test2.tcl,
+	tests/test3.tcl, tests/test4.tcl: Initial release
+

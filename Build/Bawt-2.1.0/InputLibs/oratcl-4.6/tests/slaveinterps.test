@@ -1,0 +1,143 @@
+# slaveinterps.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various slave interp operations
+#
+
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+
+namespace eval ::tcl::test::slaveinterps {
+    namespace import ::tcltest::*
+
+
+	test slaveinterp-1.1 {slaveinterp: load package into slave interp} {
+		set s1 [interp create] 
+		$s1 eval {package require -exact Oratcl 4.6}
+	} {4.6}
+
+	testConstraint testinterp1 [interp exists $s1]
+	testConstraint testoralogon1 [llength [$s1 eval {info commands oralogon}]]
+	testConstraint testoralogoff1 [llength [$s1 eval {info commands oralogoff}]]
+
+	test slaveinterp-1.2 {slaveinterp: oralogon} {
+ 	    -constraints {
+		testinterp1
+		testoralogon1
+	    }
+	    -body {
+		global ora_constr
+		global ora_slda
+		set ora_slda [$s1 eval "oralogon $ora_constr"]
+	    } 
+	    -result oratcl0
+	}
+
+	test slaveinterp-1.3 {slaveinterp: oralogoff} {
+ 	    -constraints {
+		testinterp1
+		testoralogoff1
+	    }
+	    -body {
+		global ora_slda
+		$s1 eval "oralogoff $ora_slda"
+	    } 
+	    -result 0
+	}
+
+	test slaveinterp-1.4 {delete interp} {
+ 	    -constraints {
+		testinterp1
+	    }
+	    -body {
+		interp delete $s1
+	    }
+	    -result {}
+	}
+
+	test slaveinterp-2.1 {slaveinterp: load package into slave interp} {
+		set s2 [interp create] 
+		$s2 eval {package require -exact Oratcl 4.6}
+	} {4.6}
+
+	testConstraint testinterp2 [interp exists $s2]
+	testConstraint testoralogon2 [llength [$s2 eval {info commands oralogon}]]
+	testConstraint testoralogoff2 [llength [$s2 eval {info commands oralogoff}]]
+	testConstraint testoraopen2 [llength [$s2 eval {info commands oraopen}]]
+	testConstraint testoraclose2 [llength [$s2 eval {info commands oraclose}]]
+
+	test slaveinterp-2.2 {slaveinterp: oralogon} {
+ 	    -constraints {
+		testinterp2
+		testoralogon2
+	    }
+	    -body {
+		global ora_constr
+		global ora_slda
+		set ora_slda [$s2 eval "oralogon $ora_constr"]
+	    } 
+	    -result oratcl0
+	}
+
+	test slaveinterp-2.3 {slaveinterp: oraopen} {
+ 	    -constraints {
+		testinterp2
+		testoraopen2
+	    }
+	    -body {
+		global ora_sstm
+		global ora_slda
+		set ora_sstm [$s2 eval "oraopen $ora_slda"]
+	    } 
+	    -result oratcl0.0
+	}
+
+	test slaveinterp-2.4 {slaveinterp: oraclose} {
+ 	    -constraints {
+		testinterp2
+		testoraclose2
+	    }
+	    -body {
+		global ora_sstm
+		$s2 eval "oraclose $ora_sstm"
+	    } 
+	    -result 0
+	}
+
+	test slaveinterp-2.5 {slaveinterp: oralogoff} {
+ 	    -constraints {
+		testinterp2
+		testoralogoff2
+	    }
+	    -body {
+		global ora_slda
+		$s2 eval "oralogoff $ora_slda"
+	    } 
+	    -result 0
+	}
+
+	test slaveinterp-2.6 {delete interp} {
+ 	    -constraints {
+		testinterp2
+	    }
+	    -body {
+		interp delete $s2
+	    }
+	    -result {}
+	}
+
+    cleanupTests
+}
+namespace delete ::tcl::test::slaveinterps
+return
+

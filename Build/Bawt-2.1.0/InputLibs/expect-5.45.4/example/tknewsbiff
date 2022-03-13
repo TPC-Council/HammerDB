@@ -1,0 +1,521 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+package require Tk
+
+# Name: tknewsbiff
+# Author: Don Libes
+# Version: 1.2b
+# Written: January 1, 1994
+
+# Description: When unread news appears in your favorite groups, pop up
+# a little window describing which newsgroups and how many articles.
+# Go away when articles are no longer unread.
+# Optionally, run a UNIX program (to play a sound, read news, etc.)
+
+# Default config file in ~/.tknewsbiff[-host]
+
+# These two procedures are needed because Tk provides no command to undo
+# the "wm unmap" command.  You must remember whether it was iconic or not.
+# PUBLIC
+proc unmapwindow {} {
+	global _window_open
+
+	switch [wm state .] \
+	iconic {
+		set _window_open 0
+	} normal {
+		set _window_open 1
+	}
+	wm withdraw .
+}
+unmapwindow
+# window state starts out as "iconic" before it is mapped, Tk bug?
+# make sure that when we map it, it will be open (i.e., "normal")
+set _window_open 1
+
+# PUBLIC
+proc mapwindow {} {
+	global _window_open
+
+	if {$_window_open} {
+		wm deiconify .
+	} else {
+		wm iconify .
+	}
+}
+
+proc _abort {msg} {
+	global argv0
+
+	puts "$argv0: $msg"
+	exit 1
+}
+
+if {[info exists env(DOTDIR)]} {
+	set home $env(DOTDIR)
+} else {
+	set home [glob ~]
+}
+
+set delay		  60
+set width		  27
+set height		  10
+set _default_config_file  $home/.tknewsbiff
+set _config_file	  $_default_config_file
+set _default_server	  news
+set server		  $_default_server
+set server_timeout	  60
+
+log_user 0
+
+listbox .list -yscroll ".scrollbar set" -font "*-m-*" -setgrid 1
+scrollbar .scrollbar -command ".list yview" -relief raised
+.list config -highlightthickness 0 -border 0
+.scrollbar config -highlightthickness 0
+pack .scrollbar -side left -fill y
+pack .list -side left -fill both -expand 1
+
+while {[llength $argv]>0} {
+	set arg [lindex $argv 0]
+
+	if {[file readable $arg]} {
+		if {0==[string compare active [file tail $arg]]} {
+			set active_file $arg
+			set argv [lrange $argv 1 end]
+		} else {
+			# must be a config file
+			set _config_file $arg
+			set argv [lrange $argv 1 end]
+		}
+	} elseif {[file readable $_config_file-$arg]} {
+		# maybe it's a hostname suffix for a newsrc file?
+		set _config_file $_default_config_file-$arg
+		set argv [lrange $argv 1 end]
+	} else {
+		# maybe it's just a hostname for regular newsrc file?
+		set server $arg
+		set argv [lrange $argv 1 end]
+	}
+}
+
+proc _read_config_file {} {
+	global _config_file argv0 watch_list ignore_list
+
+	# remove previous user-provided proc in case user simply
+	# deleted it from config file
+	proc user {} {}
+
+	set watch_list {}
+	set ignore_list {}
+
+	if {[file exists $_config_file]} {
+		# uplevel allows user to set global variables
+		if {[catch {uplevel source $_config_file} msg]} {
+			_abort "error reading $_config_file\n$msg"
+		}
+	}
+
+	if {[llength $watch_list]==0} {
+		watch *
+	}
+}
+
+# PUBLIC
+proc watch {args} {
+	global watch_list
+
+	lappend watch_list $args
+}
+
+# PUBLIC
+proc ignore {ng} {
+	global ignore_list
+
+	lappend ignore_list $ng
+}
+
+# get time and server
+_read_config_file
+
+# if user didn't set newsrc, try ~/.newsrc-server convention.
+# if that fails, fall back to just plain ~/.newsrc
+if {![info exists newsrc]} {
+	set newsrc $home/.newsrc-$server
+	if {![file readable $newsrc]} {
+		set newsrc $home/.newsrc
+		if {![file readable $newsrc]} {
+			_abort "cannot tell what newgroups you read
+found neither $home/.newsrc-$server nor $home/.newsrc"
+		}
+	}
+}
+
+# PRIVATE
+proc _read_newsrc {} {
+	global db newsrc
+
+	if {[catch {set file [open $newsrc]} msg]} {
+		_abort $msg
+	}
+	while {-1 != [gets $file buf]} {
+		if {[regexp "!" $buf]} continue
+		if {[regexp "(\[^:]*):.*\[-, ](\[0-9]+)" $buf dummy ng seen]} {
+			set db($ng,seen) $seen
+		}
+		# only way 2nd regexp can fail is on lines
+		# that have a : but no number
+	}
+	close $file
+}
+
+proc _unknown_host {} {
+	global server _default_server
+
+	if {0==[string compare $_default_server $server]} {
+		puts "tknewsbiff: default server <$server> is not known"
+	} else {
+		puts "tknewsbiff: server <$server> is not known"
+	}
+
+	puts "Give tknewsbiff an argument - either the name of your news server
+or active file.  I.e.,
+
+	tknewsbiff news.nist.gov
+	tknewsbiff /usr/news/lib/active
+
+If you have a correctly defined configuration file (.tknewsbiff),
+an argument is not required.  See the man page for more info."
+	exit 1
+}
+
+# read active file
+# PRIVATE
+proc _read_active {} {
+	global db server active_list active_file
+	upvar #0 server_timeout timeout
+
+	set active_list {}
+
+	if {[info exists active_file]} {
+		spawn -open [open $active_file]
+	} else {
+		spawn telnet $server nntp
+		expect {
+			"20*\n" {
+				# should get 200 or 201
+			} "NNTP server*\n" {
+				puts "tknewsbiff: unexpected response from server:"
+				puts "$expect_out(buffer)"
+				return 1
+			} "unknown host" {
+				_unknown_host
+			} timeout {
+				close
+				wait
+				return 1
+			} eof {
+				# loadav too high probably
+				wait
+				return 1
+			}
+		}
+		exp_send "list\r"
+		expect "list\r\n"	;# ignore echo of "list" command
+		expect -re "215\[^\n]*\n" ;# skip "Newsgroups in form" line
+	}
+	
+	expect {
+		-re "(\[^ ]*) 0*(\[^ ]+) \[^\n]*\n" {
+			set ng $expect_out(1,string)
+			set hi $expect_out(2,string)
+			lappend active_list $ng
+			set db($ng,hi) $hi
+			exp_continue
+		}
+		".\r\n" close
+		".\r\r\n" close
+		timeout close
+		eof
+	}
+
+	wait
+	return 0
+}
+
+# test in various ways for good newsgroups
+# return 1 if good, 0 if not good
+# PRIVATE
+proc _isgood {ng threshold} {
+	global db seen_list ignore_list
+
+	# skip if we don't subscribe to it
+	if {![info exists db($ng,seen)]} {return 0}
+
+	# skip if the threshold isn't exceeded
+	if {$db($ng,hi) - $db($ng,seen) < $threshold} {return 0}
+
+	# skip if it matches an ignore command
+	foreach igpat $ignore_list {
+		if {[string match $igpat $ng]} {return 0}
+	}
+
+	# skip if we've seen it before
+	if {[lsearch -exact $seen_list $ng]!=-1} {return 0}
+
+	# passed all tests, so remember that we've seen it
+	lappend seen_list $ng
+	return 1
+}
+
+# return 1 if not seen on previous turn
+# PRIVATE
+proc _isnew {ng} {
+	global previous_seen_list
+
+	if {[lsearch -exact $previous_seen_list $ng]==-1} {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+# schedule display of newsgroup in global variable "newsgroup"
+# PUBLIC
+proc display {} {
+	global display_list newsgroup
+
+	lappend display_list $newsgroup
+}
+
+# PRIVATE
+proc _update_ngs {} {
+	global watch_list active_list newsgroup
+
+	foreach watch $watch_list {
+		set threshold 1
+		set display display
+		set new {}
+
+		set ngpat [lindex $watch 0]
+		set watch [lrange $watch 1 end]
+
+		while {[llength $watch] > 0} {
+			switch -- [lindex $watch 0] \
+			-threshold {
+				set threshold [lindex $watch 1]
+				set watch [lrange $watch 2 end]
+			} -display {
+				set display [lindex $watch 1]
+				set watch [lrange $watch 2 end]
+			} -new {
+				set new [lindex $watch 1]
+				set watch [lrange $watch 2 end]
+			} default {
+				_abort "watch: expecting -threshold -display or -new but found: [lindex $watch 0]"
+			}
+		}
+
+		foreach ng $active_list {
+			if {[string match $ngpat $ng]} {
+				if {[_isgood $ng $threshold]} {
+					if {[llength $display]} {
+						set newsgroup $ng
+						uplevel $display
+					}
+					if {[_isnew $ng]} {
+						if {[llength $new]} {
+							set newsgroup $ng
+							uplevel $new
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# initialize display
+
+set min_reasonable_width 8
+
+wm minsize . $min_reasonable_width 1
+wm maxsize . 999 999
+if {0 == [info exists active_file] && 
+    0 != [string compare $server $_default_server]} {
+	wm title . "news@$server"
+	wm iconname . "news@$server"
+}
+
+# PRIVATE
+proc _update_window {} {
+	global server display_list height width min_reasonable_width
+
+	if {0 == [llength $display_list]} {
+		unmapwindow
+		return
+	}
+
+	# make height correspond to length of display_list or
+	# user's requested max height, whichever is smaller
+	
+	if {[llength $display_list] < $height} {
+		set current_height [llength $display_list]
+	} else {
+		set current_height $height
+	}
+
+	# force reasonable min width
+	if {$width < $min_reasonable_width} {
+		set width $min_reasonable_width
+	}
+
+	wm geometry . ${width}x$current_height
+	wm maxsize . 999 [llength $display_list]
+
+	_display_ngs $width
+
+	if {[string compare [wm state .] withdrawn]==0} {
+		mapwindow
+	}
+}
+
+# actually write all newsgroups to the window
+# PRIVATE
+proc _display_ngs {width} {
+	global db display_list
+
+	set str_width [expr $width-7]
+
+	.list delete 0 end
+	foreach ng $display_list {
+		.list insert end [format \
+			"%-$str_width.${str_width}s %5d" $ng \
+			[expr $db($ng,hi) - $db($ng,seen)]]
+	}
+}
+
+# PUBLIC
+proc help {} {
+	catch {destroy .help}
+	toplevel .help
+	message .help.text -aspect 400 -text \
+{tknewsbiff - written by Don Libes, NIST, 1/1/94
+
+tknewsbiff displays newsgroups with unread articles based on your .newsrc\
+and your .tknewsbiff files.\
+If no articles are unread, no window is displayed.
+
+Click mouse button 1 for this help,\
+button 2 to force display to query news server immediately,\
+and button 3 to remove window from screen until the next update.
+
+Example .tknewsbiff file:}
+	message .help.sample -font "*-r-normal-*-m-*" \
+	-relief raised -aspect 10000 -text \
+{set width	30		;# max width, defaults to 27
+set height	17		;# max height, defaults to 10
+set delay	120		;# in seconds, defaults to 60
+set server	news.nist.gov	;# defaults to "news"
+set server_timeout 60		;# in seconds, defaults to 60
+set newsrc	~/.newsrc	;# defaults to ~/.newsrc
+				;# after trying ~/.newsrc-$server
+# Groups to watch.
+watch comp.lang.tcl
+watch dc.dining		-new "play yumyum"
+watch nist.security	-new "exec red-alert"
+watch nist.*
+watch dc.general	-threshold 5
+watch *.sources.*	-threshold 20
+watch alt.howard-stern	-threshold 100 -new "play robin"
+
+# Groups to ignore (but which match patterns above).
+# Note: newsgroups that you don't read are ignored automatically.
+ignore *.d
+ignore nist.security
+ignore nist.sport
+
+# Change background color of newsgroup list
+.list config -bg honeydew1
+
+# Play a sound file
+proc play {sound} {
+	exec play /usr/local/lib/sounds/$sound.au
+}}
+	message .help.end -aspect 10000 -text \
+"Other customizations are possible.  See man page for more information."
+
+	button .help.ok -text "ok" -command {destroy .help}
+	pack .help.text
+	pack .help.sample
+	pack .help.end -anchor w
+	pack .help.ok -fill x -padx 2 -pady 2
+}
+
+spawn cat -u; set _cat_spawn_id $spawn_id
+set _update_flag 0
+
+# PUBLIC
+proc update-now {} {
+	global _update_flag _cat_spawn_id
+
+	if {$_update_flag} return	;# already set, do nothing
+	set _update_flag 1
+
+	exp_send -i $_cat_spawn_id "\r"
+}
+
+bind .list <1> help
+bind .list <2> update-now
+bind .list <3> unmapwindow
+bind .list <Configure> {
+	scan [wm geometry .] "%%dx%%d" w h
+	_display_ngs $w
+}
+
+# PRIVATE
+proc _sleep {timeout} {	
+	global _cat_spawn_id _update_flag
+
+	set _update_flag 0
+
+	# restore to idle cursor
+	.list config -cursor ""; update
+
+	# sleep for a little while, subject to click from "update" button
+	expect -i $_cat_spawn_id -re "...."	;# two crlfs
+
+	# change to busy cursor
+	.list config -cursor watch; update
+}
+
+set previous_seen_list {}
+set seen_list {}
+
+# PRIVATE
+proc _init_ngs {} {
+	global display_list db
+	global seen_list previous_seen_list
+
+	set previous_seen_list $seen_list
+
+	set display_list {}
+	set seen_list {}
+
+	catch {unset db}
+}
+
+for {} {1} {_sleep $delay} {
+	_init_ngs
+
+	_read_newsrc
+	if {[_read_active]} continue
+	_read_config_file
+
+	_update_ngs
+	user
+	_update_window
+}

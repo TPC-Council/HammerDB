@@ -1,0 +1,415 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# allow another user to share a shell (or other program) with you
+# See kibitz(1) man page for complete info.
+# Author: Don Libes, NIST
+# Date written: December 5, 1991
+# Date last editted: October 19, 1994
+# Version: 2.11
+exp_version -exit 5.0
+
+# if environment variable "EXPECT_PROMPT" exists, it is taken as a regular
+# expression which matches the end of your login prompt (but does not other-
+# wise occur while logging in).
+
+set prompt "(%|#|\\$) $"	;# default prompt
+set noproc 0
+set tty ""			;# default if no -tty flag
+set allow_escape 1		;# allow escapes if true
+set escape_char \035		;# control-right-bracket
+set escape_printable "^\]"
+set verbose 1			;# if true, describe what kibitz is doing
+
+set kibitz "kibitz"		;# where kibitz lives if some unusual place.
+				;# this must end in "kibitz", but can have
+				;# things in front (like directory names).
+#set proxy "kibitz"		;# uncomment and set if you want kibitz to use
+				;# some other account on remote systems
+
+# The following code attempts to intuit whether cat buffers by default.
+# The -u flag is required on HPUX (8 and 9) and IBM AIX (3.2) systems.
+if {[file exists $exp_exec_library/cat-buffers]} {
+    set catflags "-u"
+} else {
+    set catflags ""
+}
+# If this fails, you can also force it by commenting in one of the following.
+# Or, you can use the -catu flag to the script.
+#set catflags ""
+#set catflags "-u"
+
+# Some flags must be passed onto the remote kibitz process.  They are stored
+# in "kibitz_flags".  Currently, they include -tty and -silent.
+set kibitz_flags ""
+
+while {[llength $argv]>0} {
+	set flag [lindex $argv 0]
+	switch -- $flag \
+	"-noproc" {
+		set noproc 1
+		set argv [lrange $argv 1 end]
+	} "-catu" {
+		set catflags "-u"
+		set argv [lrange $argv 1 end]
+	} "-tty" {
+		set tty [lindex $argv 1]
+		set argv [lrange $argv 2 end]
+		set kibitz_flags "$kibitz_flags -tty $tty"
+	} "-noescape" {
+		set allow_escape 0
+		set argv [lrange $argv 1 end]
+	} "-escape" {
+		set escape_char [lindex $argv 1]
+		set escape_printable $escape_char
+		set argv [lrange $argv 2 end]
+	} "-silent" {
+		set verbose 0
+		set argv [lrange $argv 1 end]
+		set kibitz_flags "$kibitz_flags -silent"
+	} "-proxy" {
+		set proxy [lindex $argv 1]
+		set argv [lrange $argv 2 end]
+	} default {
+		break
+	}
+}
+
+if {([llength $argv]<1) && ($noproc==0)} {
+	send_user "usage: kibitz \[args] user \[program ...]\n"
+	send_user "   or: kibitz \[args] user@host \[program ...]\n"
+	exit
+}
+
+log_user 0
+set timeout -1
+
+set user [lindex $argv 0]
+if {[string match -r $user]} {
+	send_user "KRUN"	;# this tells user_number 1 that we're running
+				;# and to prepare for possible error messages
+	set user_number 3
+	# need to check that it exists first!
+	set user [lindex $argv 1]
+} else {
+	set user_number [expr 1+(0==[string first - $user])]
+}
+
+# at this point, user_number and user are correctly determined
+# User who originated kibitz session has user_number == 1 on local machine.
+# User who is responding to kibitz has user_number == 2.
+# User who originated kibitz session has user_number == 3 on remote machine.
+
+# user 1 invokes kibitz as "kibitz user[@host]"
+# user 2 invokes kibitz as "kibitz -####" (some pid).
+# user 3 invokes kibitz as "kibitz -r user".
+
+# uncomment for debugging: leaves each user's session in a file: 1, 2 or 3
+#exec rm -f $user_number
+#exp_internal -f $user_number 0
+
+set user2_islocal 1	;# assume local at first
+
+# later move inside following if $user_number == 1
+# return true if x is a prefix of xjunk, given that prefixes are only
+# valid at . delimiters
+# if !do_if0, skip the whole thing - this is here just to make caller simpler
+proc is_prefix {do_if0 x xjunk} {
+	if 0!=$do_if0 {return 0}
+	set split [split $xjunk .]
+	for {set i [expr [llength $split]-1]} {$i>=0} {incr i -1} {
+		if {[string match $x [join [lrange $split 0 $i] .]]} {return 1}
+	}
+	return 0
+}
+
+# get domainname.  Unfortunately, on some systems, domainname(1)
+# returns NIS domainname which is not the internet domainname.
+proc domainname {} {
+    # open pops stack upon failure
+    set rc [catch {open /etc/resolv.conf r} file]
+    if {$rc==0} {
+	while {-1!=[gets $file buf]} {
+	    if 1==[scan $buf "domain %s" name] {
+		close $file
+		return $name
+	    }
+	}
+	close $file
+    }
+
+    # fall back to using domainname
+    if {0==[catch {exec domainname} name]} {return $name}
+
+    error "could not figure out domainname"
+}
+
+if $user_number==1 {
+    if $noproc==0 {
+	if {[llength $argv]>1} {
+	    set pid [eval spawn [lrange $argv 1 end]]
+	} else {
+	    # if running as CGI, shell may not be set!
+	    set shell /bin/sh
+	    catch {set shell $env(SHELL)}
+	    set pid [spawn $shell]
+	}
+	set shell $spawn_id
+    }
+
+    # is user2 remote?
+    regexp (\[^@\]*)@*(.*) $user ignore tmp host
+    set user $tmp
+    if ![string match $host ""] {
+	set h_rc [catch {exec hostname}	hostname]
+	set d_rc [catch domainname 	domainname]
+
+	if {![is_prefix $h_rc $host $hostname]
+	&& ![is_prefix $d_rc $host $hostname.$domainname]} {
+	    set user2_islocal 0
+	}
+    }
+
+    if !$user2_islocal {
+	if $verbose {send_user "connecting to $host\n"}
+
+	if ![info exists proxy] {
+	    proc whoami {} {
+		global env
+		if {[info exists env(USER)]} {return $env(USER)}
+		if {[info exists env(LOGNAME)]} {return $env(LOGNAME)}
+		if {![catch {exec whoami} user]} {return $user}
+		if {![catch {exec logname} user]} {return $user}
+		# error "can't figure out who you are!"
+	    }
+	    set proxy [whoami]
+	}
+	spawn rlogin $host -l $proxy -8
+	set userin $spawn_id
+	set userout $spawn_id
+
+	catch {set prompt $env(EXPECT_PROMPT)}
+
+	set timeout 120
+	expect {
+	    assword: {
+		stty -echo
+		send_user "password (for $proxy) on $host: "
+		set old_timeout $timeout; set timeout -1
+		expect_user -re "(.*)\n"
+		send_user "\n"
+		set timeout $old_timeout
+		send "$expect_out(1,string)\r"
+		# bother resetting echo?
+		exp_continue
+	    } incorrect* {
+		send_user "invalid password or account\n"
+		exit
+	    } "TERM = *) " {
+		send "\r"
+		exp_continue
+	    } timeout {
+		send_user "connection to $host timed out\n"
+		exit
+	    } eof {
+		send_user "connection to host failed: $expect_out(buffer)"
+		exit
+	    } -re $prompt
+	}
+	if {$verbose} {send_user "starting kibitz on $host\n"}
+	# the kill protects user1 from receiving user3's
+	# prompt if user2 exits via expect's exit.
+	send "$kibitz $kibitz_flags -r $user;kill -9 $$\r"
+
+	expect {
+	    -re "kibitz $kibitz_flags -r $user.*KRUN" {}
+	    -re "kibitz $kibitz_flags -r $user.*(kibitz\[^\r\]*)\r" {
+		send_user "unable to start kibitz on $host: \"$expect_out(1,string)\"\n"
+		send_user "try rlogin by hand followed by \"kibitz $user\"\n"
+		exit
+	    }
+	    timeout {
+		send_user "unable to start kibitz on $host: "
+		set expect_out(buffer) "timed out"
+		set timeout 0; expect -re .+
+		send_user $expect_out(buffer)
+		exit
+	    }
+	}
+	expect {
+	    -re ".*\n" {
+		# pass back diagnostics
+		# should really strip out extra cr
+		send_user $expect_out(buffer)
+		exp_continue
+	    }
+	    KABORT exit
+	    default exit
+	    KDATA
+	}
+    }
+}
+
+if {$user_number==2} {
+    set pid [string trimleft $user -]
+}
+
+set local_io [expr ($user_number==3)||$user2_islocal]
+if {$local_io||($user_number==2)} {
+    if {0==[info exists pid]} {set pid [pid]}
+
+    set userinfile /tmp/exp0.$pid
+    set useroutfile /tmp/exp1.$pid
+}
+
+proc prompt1 {} {
+    return "kibitz[info level].[history nextid]> "
+}
+
+set esc_match {}
+if {$allow_escape} {
+   set esc_match {
+      $escape_char {
+	send_user "\nto exit kibitz, enter: exit\n"
+	send_user "to suspend kibitz, press appropriate job control sequence\n"
+	send_user "to return to kibitzing, enter: return\n"
+	interpreter
+	send_user "returning to kibitz\n"
+      }
+   }
+}
+
+proc prompt1 {} {
+    return "kibitz[info level].[history nextid]> "
+}
+
+set timeout -1
+
+# kibitzer executes following code
+if {$user_number==2} {
+    # for readability, swap variables
+    set tmp $userinfile
+    set userinfile $useroutfile
+    set useroutfile $tmp
+
+    if ![file readable $userinfile] {
+	send_user "Eh?  No one is asking you to kibitz.\n"
+	exit -1
+    }
+    spawn -open [open "|cat $catflags < $userinfile" "r"]
+    set userin $spawn_id
+
+    spawn -open [open $useroutfile w]
+    set userout $spawn_id
+    # open will hang until other user's cat starts
+
+    stty -echo raw
+    if {$allow_escape} {send_user "Escape sequence is $escape_printable\r\n"}
+
+    # While user is reading message, try to delete other fifo
+    catch {exec rm -f $userinfile}
+
+    eval interact $esc_match \
+	    -output $userout \
+	    -input $userin
+
+    exit
+}
+
+# only user_numbers 1 and 3 execute remaining code
+
+proc abort {} {
+    # KABORT tells user_number 1 that user_number 3 has run into problems
+    # and is exiting, and diagnostics have been returned already
+    if {$::user_number==3} {send_user KABORT}
+    exit
+}
+
+if {$local_io} {
+    proc mkfifo {f} {
+	if 0==[catch {exec mkfifo $f}] return		;# POSIX
+	if 0==[catch {exec mknod $f p}] return
+	# some systems put mknod in wierd places
+	if 0==[catch {exec /usr/etc/mknod $f p}] return	;# Sun
+	if 0==[catch {exec /etc/mknod $f p}] return	;# AIX, Cray
+	puts "Couldn't figure out how to make a fifo - where is mknod?"
+	abort
+    }
+
+    proc rmfifos {} {
+	global userinfile useroutfile
+	catch {exec rm -f $userinfile $useroutfile}
+    }
+
+    trap {rmfifos; exit} {SIGINT SIGQUIT SIGTERM}
+
+    # create 2 fifos to communicate with other user
+    mkfifo $userinfile
+    mkfifo $useroutfile
+    # make sure other user can access despite umask
+    exec chmod 666 $userinfile $useroutfile
+
+    if {$verbose} {send_user "asking $user to type:  kibitz -$pid\n"}
+
+    # can't use exec since write insists on being run from a tty!
+    set rc [catch {
+		   system echo "Can we talk?  Run: \"kibitz -$pid\"" | \
+			write $user $tty
+		}
+	]
+    if {$rc} {rmfifos;abort}
+
+    spawn -open [open $useroutfile w]
+    set userout $spawn_id
+    # open will hang until other user's cat starts
+
+    spawn -open [open "|cat $catflags < $userinfile" "r"]
+    set userin $spawn_id
+    catch {exec rm $userinfile}
+}
+
+stty -echo raw
+
+if {$user_number==3} {
+    send_user "KDATA"	;# this tells user_number 1 to send data
+
+    interact {
+	-output $userout
+	-input $userin eof {
+	    wait -i $userin
+	    return -tcl
+	} -output $user_spawn_id 
+    }
+} else {
+    if {$allow_escape} {send_user "Escape sequence is $escape_printable\r\n"}
+
+    if {$noproc} {
+	interact {
+	    -output $userout
+	    -input $userin eof {wait -i $userin; return}
+	    -output $user_spawn_id
+	}
+    } else {
+	eval interact $esc_match {
+	    -output $shell \
+		    -input $userin eof {
+		wait -i $userin
+		close -i $shell
+		return
+	    } -output $shell \
+		    -input $shell eof {
+		close -i $userout
+		wait -i $userout
+		return
+	    } -output "$user_spawn_id $userout"
+	}
+	wait -i $shell
+    }
+}
+
+if {$local_io} rmfifos

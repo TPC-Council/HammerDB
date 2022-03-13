@@ -1,0 +1,118 @@
+
+Msqltcl --   Tcl interface to the Mini SQL (mSQL) database server
+             by David J. Hughes
+
+Author:      Hakan Soderstrom, hs@soderstrom.se
+Affiliation: Soderstrom Programvaruverkstad AB, Bandhagsvagen 51,
+             S-122 42 Enskede, Sweden
+
+-------------------------------------------
+Copyright (c) 1994, 1995 Hakan Soderstrom and Tom Poindexter
+Additional details at end of this file.
+-------------------------------------------
+
+
+VERSIONS, PORTS
+
+This is release 1.50 of msqltcl. It has been tested with Tcl 7.3,
+Tk 3.6p1, TclX 7.3a-p2; Tcl 7.4b2, Tk 4.0b2, TclX 7.4a-b2, mSQL 1.0.6
+under SunOS 4.1.3. Successful ports to several other platforms have
+been reported. I would expect msqltcl to run wherever Tcl/Tk and mSQL
+succeed.
+
+
+WHAT IS MSQLTCL?
+
+Msqltcl is an extension to the Tool Command Language (Tcl) that
+provides high-level access to a Mini SQL (mSQL) database server. Mini
+SQL (mSQL) is a freely available, lightweight database engine.
+
+Msqltcl features:
+   -- supports multiple connections to one or more database servers,
+   -- supports all Mini-SQL statements,
+   -- returns SELECT query results either as Tcl lists, or iterates
+      a script over the resulting rows,
+   -- accesses information about databases, tables, columns.
+
+The package also contains a useful Mini-Monitor (mmon) written in
+Tcl/Tk. It requires TclX and is currently limited to pre-4.0 Tk.
+
+
+ACKNOWLEDGEMENTS
+
+Obviously msqltcl is just a small addition to a much greater work done
+by John Ousterhout (Tcl/Tk) and David J. Hughes (mSQL).
+
+Msqltcl is derived from work by Tom Poindexter (tpoindex@nyx.cs.du.edu)
+whose Sybtcl and Oratcl are useful patterns for Tcl database extensions.
+
+
+DOCUMENTATION
+
+Yes, a decent man page.
+
+
+REQUIREMENTS
+
+You must have Tcl/Tk and Mini SQL.
+
+** Tcl/Tk by John Ousterhout is available from numerous FTP sites. For
+one-stop retrieval, look in ftp.aud.alcatel.com:/tcl. You will find
+the Tcl/Tk distribution in /tcl/ftp.cs.berkeley.edu, extensions (one
+of which is msqltcl) in /tcl/extensions. You may want to get the file
+/tcl/MIRRORS to discover a mirror site near you.
+
+The Tcl/Tk Book is "Tcl and the Tk Toolkit" by John K. Ousterhout,
+Addison-Wesley 1994, ISBN 0-201-63337-X.
+
+** Mini SQL (mSQL) is a freely available, lightweight database engine
+developed by David J. Hughes, Bond University, Australia. The source
+code can be obtained by FTP from Bond.edu.au:/pub/Minerva/msql.
+
+There is an mSQL mailing list. Join it by sending a message to
+msql-list-request@Bond.edu.au.
+
+
+INSTALLATION
+
+See the file INSTALL.
+
+
+BUG REPORTS
+
+Although I have made a conscientious effort to provide zero-defect
+software and documentation, this release of msqltcl may still contain
+blunders of varying magnitudes.
+
+Comments, suggestions, bug reports (maybe even encouragement!) should be
+mailed to me at the E-mail address above. Please include some
+information about your environment (platform, OS version, Tcl/Tk
+version, mSQL version, msqltcl version). Please include enough
+information for me to be able to reproduce any suspect behaviour. If you
+have a solution to a problem, please include a patch.
+
+I can't guarantee that I will fix your bug, but I'll do my best.
+
+
+COPYRIGHT & LICENSE
+
+Copyright (c) 1994, 1995 Hakan Soderstrom, Enskede, Sweden
+and Tom Poindexter, Denver, Colorado
+
+Permission to use, copy, modify, distribute, and sell this software
+and its documentation for any purpose is hereby granted without fee,
+provided that the above copyright notice and this permission notice
+appear in all copies of the software and related documentation.
+
+THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
+EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
+WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+IN NO EVENT SHALL HAKAN SODERSTROM OR SODERSTROM PROGRAMVARUVERKSTAD
+AB BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL
+DAMAGES OF ANY KIND, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER OR NOT ADVISED OF THE POSSIBILITY
+OF DAMAGE, AND ON ANY THEORY OF LIABILITY, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+$Revision: 1.1.1.1 $

@@ -1,0 +1,6 @@
+{
+	global:
+		Tls_Init;
+	local:
+		*;
+};

@@ -1,0 +1,14 @@
+# Please Edit the 2 lines below 
+# end set correct paths
+# paths to -> tcl.h mysql.h 
+INCLUDE=-I/usr/include -I/usr/include/mysql
+# path to .> libmysqclient.so
+LIBS=-L/usr/lib/mysql
+
+ALL:libmysqltcl.so 
+
+mysqltcl.o:mysqltcl.c
+	gcc -c -Wall -DVERSION=\"0.21\" mysqltcl.c ${INCLUDE} 
+
+libmysqltcl.so:mysqltcl.o
+	gcc  -fPIC -shared -o $@ $< ${LIBS} -lmysqlclient 

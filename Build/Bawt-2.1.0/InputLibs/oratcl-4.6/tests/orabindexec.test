@@ -1,0 +1,158 @@
+# orabindexec.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various calls to orabindexec
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::orabindexec {
+        namespace import ::tcltest::*
+
+	testConstraint testoraplexec [llength [info commands oraplexec]]
+
+	test orabindexec-1.1 {orabindexec: one bind value} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set sql {select v_number \
+					from oratcl___tests \
+					where v_char = :n1}
+			oraparse $stm $sql
+		}
+		-body {
+			orabindexec $stm :n1 {10}
+			orafetch $stm -datavariable res
+			set res
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {10}
+	}
+
+	test orabindexec-1.2 {orabindexec: bind values :: success code} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set sql {select v_number \
+					from oratcl___tests \
+					where v_char = :n1 \
+					and v_number = :n2 \
+					and v_varchar2 like :n3}
+			oraparse $stm $sql
+		}
+		-body {
+			set res [orabindexec $stm :n1 {10} :n2 {10} :n3 {10%}]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {0}
+	}
+
+	test orabindexec-1.3 {orabindexec: multiple bind values} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set sql {select v_number \
+					from oratcl___tests \
+					where v_char = :n1 \
+					and v_number = :n2 \
+					and v_varchar2 like :n3}
+			oraparse $stm $sql
+		}
+		-body {
+			orabindexec $stm :n1 {10} :n2 {10} :n3 {10%}
+			orafetch $stm -datavariable res
+			set res
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {10}
+	}
+
+	test orabindexec-1.4 {orabindexec: too few bind values :: result} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set sql {select v_number \
+					from oratcl___tests \
+					where v_char = :n1 \
+					and v_number = :n2 \
+					and v_varchar2 like :n3}
+			oraparse $stm $sql
+		}
+		-body { 
+			  orabindexec $stm :n1 {10} :n2 {10}
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {ORA-01008: not all variables bound}
+		-returnCodes {1}
+	} 
+
+
+	test orabindexec-1.5 {orabindexec: too few bind values :: error code} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set sql {select v_number \
+					from oratcl___tests \
+					where v_char = :n1 \
+					and v_number = :n2 \
+					and v_varchar2 like :n3}
+			oraparse $stm $sql
+		}
+		-body { 
+			catch {orabindexec $stm :n1 {10} :n2 {10}}
+			oramsg $stm rc
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result 1008
+	}
+
+	test orabindexec-1.6 {orabindexec: no prior parse :: error code} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+		}
+		-body { 
+			catch {set rs1 [orabindexec $stm :n1 {10} :n2 {10}]}
+			oramsg $stm rc
+		} 
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result 1036
+	}
+
+	cleanupTests
+}
+namespace delete ::tcl::test::orabindexec
+return

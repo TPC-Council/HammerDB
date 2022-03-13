@@ -1,0 +1,219 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# share an xterm with other users
+# See xkibitz(1) man page for complete info.
+# Compare with kibitz.
+# Author: Don Libes, NIST
+# Version: 1.2
+
+proc help {} {
+    puts "Commands          Meaning"
+    puts "--------          -------"
+    puts "return            return to program"        
+    puts "=                 list"
+    puts "+ <display>       add"
+    puts "- <tag>           drop"
+    puts "where <display> is an X display name such as nist.gov or nist.gov:0.0"
+    puts "and <tag> is a tag from the = command."
+    puts "+ and - require whitespace before argument."
+    puts {return command must be spelled out ("r", "e", "t", ...).}
+}
+
+proc prompt1 {} {
+    return "xkibitz> "
+}
+
+proc h {} help
+proc ? {} help
+
+# disable history processing - there seems to be some incestuous relationship
+# between history and unknown in Tcl 8.0
+proc history {args} {}
+proc unknown {args} {
+    puts "$args: invalid command"
+    help
+}
+
+set tag2pid(0)			[pid]
+set pid2tty([pid])		"/dev/tty"
+if {[info exists env(DISPLAY)]} {
+    set pid2display([pid])	$env(DISPLAY)
+} else {
+    set pid2display([pid])	""
+}
+
+# small int allowing user to more easily identify display
+# maxtag always points at highest in use
+set maxtag 0
+
+proc + {display} {
+    global ids pid2display pid2tag tag2pid maxtag pid2sid
+    global pid2tty env
+
+    if {![string match *:* $display]} {
+	append display :0.0
+    }
+
+    if {![info exists env(XKIBITZ_XTERM_ARGS)]} {
+	set env(XKIBITZ_XTERM_ARGS) ""
+    }
+
+    set dummy1 [open /dev/null]
+    set dummy2 [open /dev/null]
+    spawn -pty -noecho
+    close $dummy1
+    close $dummy2
+
+    stty raw -echo < $spawn_out(slave,name)
+    # Linux needs additional stty, sounds like a bug in its stty to me.
+    # raw should imply this stuff, no?
+    stty -icrnl -icanon < $spawn_out(slave,name)
+
+    regexp ".*(.)(.)" $spawn_out(slave,name) dummy c1 c2
+    if {[string compare $c1 "/"] == 0} {
+	# On Pyramid and AIX, ttynames such as /dev/pts/1
+	# requre suffix to be padded with a 0
+	set c1 0
+    }
+
+    set pid [eval exec xterm \
+	    -display $display \
+	    -geometry [stty columns]x[stty rows] \
+	    -S$c1$c2$spawn_out(slave,fd) \
+	    $env(XKIBITZ_XTERM_ARGS) &]
+    close -slave
+
+    # xterm first sends back window id, discard
+    log_user 0
+    expect {
+	eof {wait;return}
+	\n
+    }
+    log_user 1
+
+    lappend ids $spawn_id
+    set pid2display($pid) $display
+    incr maxtag
+    set tag2pid($maxtag) $pid
+    set pid2tag($pid) $maxtag
+    set pid2sid($pid) $spawn_id
+    set pid2tty($pid) $spawn_out(slave,name)
+    return
+}
+
+proc = {} {
+    global pid2display tag2pid pid2tty
+
+    puts "Tag  Size Display"
+    foreach tag [lsort -integer [array names tag2pid]] {
+	set pid $tag2pid($tag)
+	set tty $pid2tty($pid)
+	
+	puts [format "%3d [stty columns < $tty]x[stty rows < $tty] $pid2display($pid)" $tag]
+    }
+}
+
+proc - {tag} {
+    global tag2pid pid2tag pid2display maxtag ids pid2sid
+    global pid2tty
+
+    if {![info exists tag2pid($tag)]} {
+	puts "no such tag"
+	return
+    }
+    if {$tag == 0} {
+	puts "cannot drop self"
+	return
+    }
+
+    set pid $tag2pid($tag)
+
+    # close and remove spawn_id from list
+    set spawn_id $pid2sid($pid)
+    set index [lsearch $ids $spawn_id]
+    set ids [lreplace $ids $index $index]
+
+    exec kill -9 $pid
+    close
+    wait
+
+    unset tag2pid($tag)
+    unset pid2tag($pid)
+    unset pid2display($pid)
+    unset pid2sid($pid)
+    unset pid2tty($pid)
+
+    # lower maxtag if possible
+    while {![info exists tag2pid($maxtag)]} {
+	incr maxtag -1
+    }
+}
+
+rename exit exitReal
+
+proc exit {} {
+    global pid2display
+
+    unset pid2display([pid])	;# avoid killing self
+
+    foreach pid [array names pid2display] {
+	catch {exec kill -9 $pid}
+    }
+    exitReal
+}
+
+trap exit HUP
+
+trap {
+    set r [stty rows]
+    set c [stty columns]
+    stty rows $r columns $c < $app_tty
+    foreach pid [array names pid2tty] {
+	if {$pid == [pid]} continue
+	stty rows $r columns $c < $pid2tty($pid)
+    }
+} WINCH
+
+set escape \035		;# control-right-bracket
+set escape_printable "^\]"
+
+while {[llength $argv]>0} {
+    set flag [lindex $argv 0]
+    switch -- $flag \
+	    "-escape" {
+	set escape [lindex $argv 1]
+	set escape_printable $escape
+	set argv [lrange $argv 2 end]
+    } "-display" {
+	+ [lindex $argv 1]
+	set argv [lrange $argv 2 end]
+    } default {
+	break
+    }
+}
+
+if {[llength $argv]>0} {
+    eval spawn -noecho $argv
+} else {
+    spawn -noecho $env(SHELL)
+}
+set prog $spawn_id
+set app_tty $spawn_out(slave,name)
+
+puts "Escape sequence is $escape_printable"
+
+interact {
+    -input $user_spawn_id -reset $escape {
+	puts "\nfor help enter: ? or h or help"
+	interpreter -eof exit
+    } -output $prog
+    -input ids -output $prog
+    -input $prog eof exit -output $user_spawn_id -output ids
+}
+

@@ -1,0 +1,151 @@
+# oraexec.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of oraexec
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oraexec {
+	namespace import ::tcltest::*
+
+	test oraexec-1.1 {oraexec OCI_STMT_SELECT code == 1} {
+		set sql {select * from oratcl___tests where v_number = :num}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :num 0
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.2 {oraexec OCI_STMT_UPDATE code == 2} {
+		set sql {update oratcl___tests set v_number = :sn where v_number = :wn}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :sn 0 :wn 0
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.3 {oraexec OCI_STMT_INSERT code == 4} {
+		set sql {insert into oratcl___tests (v_number) values (:vn)}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :vn 50
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.4 {oraexec OCI_STMT_DELETE code == 3} {
+		set sql {delete from oratcl___tests where v_number = :wn}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :wn 50
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.5 {oraexec OCI_STMT_ALTER code == 7} {
+		set sql {alter session set nls_date_format = 'DD-MM-YYYY'}
+		oraparse $ora_cur $sql
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.8 {oraexec OCI_STMT_BEGIN code == 8} {
+		set sql {begin dbms_output.put_line(:parm); end;}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :parm 30
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test oraexec-1.9 {oraexec OCI_STMT_DECLARE code == 9} {
+		set sql {declare x number(3); begin dbms_output.put_line(:parm); end;}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :parm 30
+		oraexec $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	oraroll $ora_lda
+
+	oraplexec $ora_cur {
+	CREATE OR REPLACE TRIGGER oratcl___tests
+	BEFORE INSERT ON oratcl___tests
+	FOR EACH ROW
+	DECLARE
+
+	   OCI_CONTINUE             EXCEPTION;
+	   OCI_ERROR                EXCEPTION;
+	   OCI_INVALID_HANDLE       EXCEPTION;
+	   OCI_STILL_EXECUTING      EXCEPTION;
+
+	   PRAGMA EXCEPTION_INIT(OCI_CONTINUE,-24200);
+	   PRAGMA EXCEPTION_INIT(OCI_ERROR,-1);
+	   PRAGMA EXCEPTION_INIT(OCI_INVALID_HANDLE,-2);
+	   PRAGMA EXCEPTION_INIT(OCI_STILL_EXECUTING,-3123);
+
+	   notToBeFound oratcl___tests.v_varchar2%TYPE;
+
+	BEGIN
+
+	   CASE :new.v_varchar2
+	       WHEN 'OCI_CONTINUE'        THEN RAISE OCI_CONTINUE;
+	       WHEN 'OCI_ERROR'           THEN RAISE OCI_ERROR;
+	       WHEN 'OCI_INVALID_HANDLE'  THEN RAISE OCI_INVALID_HANDLE;
+	       WHEN 'OCI_STILL_EXECUTING' THEN RAISE OCI_STILL_EXECUTING;
+	       WHEN 'OCI_NO_DATA' THEN
+		BEGIN
+		   SELECT v_varchar2
+		   INTO notToBeFound
+		   FROM oratcl___tests
+		   WHERE v_varchar2='####';
+		END;
+	       WHEN 'OCI_NEED_DATA' THEN NULL;
+	       WHEN 'OCI_RESERVED_FOR_INT_USE' THEN NULL;
+	       WHEN 'OCI_SUCCESS' THEN NULL;
+	       WHEN 'OCI_SUCCESS_WITH_INFO' THEN NULL;
+	   END CASE;
+	END;
+	}
+
+	test oraexec-2.1 {oraexec OCI_CONTINUE} {
+	    set sql {insert into oratcl___tests (v_varchar2) values ('OCI_CONTINUE')}
+	    oraparse $ora_cur $sql
+	    catch {oraexec $ora_cur}
+	    return [oramsg $ora_cur rc]
+	} {24200}
+
+	test oraexec-2.2 {oraexec OCI_ERROR} {
+	    set sql {insert into oratcl___tests (v_varchar2) values ('OCI_ERROR')}
+	    oraparse $ora_cur $sql
+	    catch {oraexec $ora_cur}
+	    return [oramsg $ora_cur rc]
+	} {1}
+
+	test oraexec-2.3 {oraexec OCI_INVALID_HANDLE} {
+	    set sql {insert into oratcl___tests (v_varchar2) values ('OCI_INVALID_HANDLE')}
+	    oraparse $ora_cur $sql
+	    catch {oraexec $ora_cur}
+	    return [oramsg $ora_cur rc]
+	} {2}
+
+	test oraexec-2.4 {oraexec OCI_NO_DATA} {
+	    set sql {insert into oratcl___tests (v_varchar2) values ('OCI_NO_DATA')}
+	    oraparse $ora_cur $sql
+	    catch {oraexec $ora_cur}
+	    return [oramsg $ora_cur rc]
+	} {1403}
+
+	oraplexec $ora_cur "DROP TRIGGER oratcl___tests"
+
+    cleanupTests
+}
+namespace delete ::tcl::test::oraexec
+return

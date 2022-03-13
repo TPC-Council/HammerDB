@@ -1,0 +1,453 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN"> 
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="Copyright" content="1999 Matt Newman / 2004 Starfish Systems">
+<title>TLS (SSL) Tcl Commands</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<dl>
+    <dd><a href="#NAME">NAME</a> <dl>
+            <dd><strong>tls</strong> - binding to <strong>OpenSSL</strong>
+                toolkit.</dd>
+        </dl>
+    </dd>
+    <dd><a href="#SYNOPSIS">SYNOPSIS</a> </dd>
+    <dd><dl>
+            <dd><b>package require Tcl </b><em>?8.4?</em></dd>
+            <dd><b>package require tls </b><em>?1.7.22?</em></dd>
+            <dt>&nbsp;</dt>
+            <dd><b>tls::init </b><i>?options?</i> </dd>
+            <dd><b>tls::socket </b><em>?options? host port</em></dd>
+            <dd><b>tls::socket</b><em> ?-server command?
+                ?options? port</em></dd>
+            <dd><b>tls::handshake</b><em> channel</em></dd>
+            <dd><b>tls::status </b><em>?-local? channel</em></dd>
+            <dd><b>tls::import</b><em> channel ?options?</em></dd>
+            <dd><b>tls::unimport</b><em> channel</em></dd>
+            <dd><b>tls::ciphers </b><em>protocol ?verbose?</em></dd>
+            <dd><b>tls::version</b></dd>
+        </dl>
+    </dd>
+    <dd><a href="#COMMANDS">COMMANDS</a></dd>
+    <dd><a href="#CALLBACK OPTIONS">CALLBACK OPTIONS</a></dd>
+    <dd><a href="#HTTPS EXAMPLE">HTTPS EXAMPLE</a></dd>
+    <dd><a href="#SEE ALSO">SPECIAL CONSIDERATIONS</a></dd>
+    <dd><a href="#SEE ALSO">SEE ALSO</a></dd>
+</dl>
+
+<hr>
+
+<h3><a name="NAME">NAME</a></h3>
+
+<p><strong>tls</strong> - binding to <strong>OpenSSL</strong>
+toolkit.</p>
+
+<h3><a name="SYNOPSIS">SYNOPSIS</a></h3>
+
+<p><b>package require Tcl 8.4</b><br>
+<b>package require tls 1.7.22</b><br>
+<br>
+<a href="#tls::init"><b>tls::init </b><i>?options?</i><br>
+</a><a href="#tls::socket"><b>tls::socket </b><em>?options? host
+port</em><br>
+<b>tls::socket</b><em> ?-server command? ?options? port</em><br>
+</a><a href="#tls::status"><b>tls::status </b><em>?-local? channel</em><br>
+</a><a href="#tls::handshake"><b>tls::handshake</b><em> channel</em></a><br>
+<br>
+<a href="#tls::import"><b>tls::import </b><i>channel ?options?</i></a><br>
+<a href="#tls::unimport"><b>tls::unimport </b><i>channel</i></a><br>
+<a href="#tls::ciphers protocol ?verbose?"><strong>tls::ciphers</strong>
+<em>protocol ?verbose?</em></a><br>
+<a href="#tls::version"><b>tls::version</b></a>
+</p>
+
+<h3><a name="DESCRIPTION">DESCRIPTION</a></h3>
+
+<p>This extension provides a generic binding to <a
+href="http://www.openssl.org/">OpenSSL</a>, utilizing the
+<strong>Tcl_StackChannel</strong>
+API for Tcl 8.2 and higher. The sockets behave exactly the same
+as channels created using Tcl's built-in <strong>socket</strong>
+command with additional options for controlling the SSL session.
+To use TLS with an earlier version of Tcl than 8.4, please obtain
+TLS 1.3.
+</p>
+
+<h3><a name="COMMANDS">COMMANDS</a></h3>
+
+<p>Typically one would use the <strong>tls::socket </strong>command
+which provides compatibility with the native Tcl <strong>socket</strong>
+command. In such cases <strong>tls::import</strong> should not be
+used directly.</p>
+
+<dl>
+    <dt><a name="tls::init"><b>tls::init </b><i>?options?</i></a></dt>
+    <dd>This routine sets the default options used by <strong>tls::socket</strong>
+        and is <em>optional</em>. If you call <strong>tls::import</strong>
+        directly this routine has no effect. Any of the options
+        that <strong>tls::socket</strong> accepts can be set
+        using this command, though you should limit your options
+        to only TLS related ones.</dd>
+    <dt>&nbsp;</dt>
+    <dt><a name="tls::socket"><b>tls::socket </b><em>?options?
+        host port</em></a></dt>
+    <dt><b>tls::socket</b><em> ?-server command? ?options? port</em></dt>
+    <dd>This is a helper function that utilizes the underlying
+        commands (<strong>tls::import</strong>). It behaves
+        exactly the same as the native Tcl <strong>socket</strong>
+        command except that the options can include any of the
+        applicable <a href="#tls::import"><strong>tls:import</strong></a>
+        options with one additional option:
+<blockquote>
+    <dl>
+        <dt><strong>-autoservername</strong> <em>bool</em></dt>
+        <dd>Automatically send the -servername as the <em>host</em> argument
+            (<strong>default</strong>: <em>false</em>)</dd>
+    </dl>
+</blockquote>
+    <dt>&nbsp;</dt>
+    <dt><a name="tls::handshake"><strong>tls::handshake</strong> <em>channel</em></a></dt>
+    <dd>Forces handshake to take place, and returns 0 if
+        handshake is still in progress (non-blocking), or 1 if
+        the handshake was successful. If the handshake failed
+        this routine will throw an error.</dd>
+    <dt>&nbsp;</dt>
+    <dt><a name="tls::status"><strong>tls::status</strong>
+    <em>?-local? channel</em></a></dt>
+    <dd>Returns the current security status of an SSL channel. The
+        result is a list of key-value pairs describing the
+        connected peer. If the result is an empty list then the
+        SSL handshake has not yet completed.
+        If <em>-local</em> is given, then the certificate information
+        is the one used locally.</dd>
+</dl>
+
+<blockquote>
+    <dl>
+        <dt><strong>issuer</strong> <em>dn</em></dt>
+        <dd>The distinguished name (DN) of the certificate
+            issuer.</dd>
+        <dt><strong>subject</strong> <em>dn</em></dt>
+        <dd>The distinguished name (DN) of the certificate
+            subject.</dd>
+        <dt><strong>notBefore</strong> <em>date</em></dt>
+        <dd>The begin date for the validity of the certificate.</dd>
+        <dt><strong>notAfter</strong> <em>date</em></dt>
+        <dd>The expiry date for the certificate.</dd>
+        <dt><strong>serial</strong> <em>n</em></dt>
+        <dd>The serial number of the certificate.</dd>
+        <dt><strong>cipher</strong> <em>cipher</em></dt>
+        <dd>The current cipher in use between the client and
+            server channels.</dd>
+        <dt><strong>sbits</strong> <em>n</em></dt>
+        <dd>The number of bits used for the session key.</dd>
+        <dt><strong>certificate</strong> <em>n</em></dt>
+        <dd>The PEM encoded certificate.</dd>
+        <dt><strong>version</strong> <em>value</em></dt>
+        <dd>The protocol version used for the connection:
+	  SSLv2, SSLv3, TLSv1, TLSv1.1, TLSv1.2, unknown</dd>
+    </dl>
+</blockquote>
+
+<dl>
+    <dt><a name="tls::import"><b>tls::import </b><i>channel
+        ?options?</i></a></dt>
+    <dd>SSL-enable a regular Tcl channel - it need not be a
+        socket, but must provide bi-directional flow. Also
+        setting session parameters for SSL handshake.</dd>
+</dl>
+
+<blockquote>
+    <dl>
+        <dt><strong>-cadir</strong> <em>dir</em></dt>
+        <dd>Provide the directory containing the CA certificates.</dd>
+        <dt><strong>-cafile </strong><em>filename</em></dt>
+        <dd>Provide the CA file.</dd>
+        <dt><strong>-certfile</strong> <em>filename</em></dt>
+        <dd>Provide the name of a file containing certificate to use.</dd>
+        <dt><strong>-cert</strong> <em>filename</em></dt>
+        <dd>Provide the contents of a certificate to use, as a DER encoded binary value (X.509 DER).</dd>
+        <dt><strong>-cipher </strong><em>string</em></dt>
+        <dd>Provide the cipher suites to use. Syntax is as per
+            OpenSSL.</dd>
+        <dt><strong>-command</strong> <em>callback</em></dt>
+        <dd>If specified, this callback will be invoked at several points
+            during the OpenSSL handshake.  It can pass errors and tracing
+            information, and it can allow Tcl scripts to perform
+            their own validation of the certificate in place of the
+            default validation provided by OpenSSL.
+            <br>
+            See <a href="#CALLBACK OPTIONS">CALLBACK OPTIONS</a> for
+            further discussion.</dd>
+        <dt><strong>-dhparams </strong><em>filename</em></dt>
+        <dd>Provide a Diffie-Hellman parameters file.</dd>
+        <dt><strong>-keyfile</strong> <em>filename</em></dt>
+        <dd>Provide the private key file. (<strong>default</strong>:
+            value of -certfile)</dd>
+        <dt><strong>-key</strong> <em>filename</em></dt>
+        <dd>Provide the private key to use as a DER encoded value (PKCS#1 DER)</dd>
+        <dt><strong>-model</strong> <em>channel</em></dt>
+        <dd>This will force this channel to share the same <em><strong>SSL_CTX</strong></em>
+            structure as the specified <em>channel</em>, and
+            therefore share callbacks etc.</dd>
+        <dt><strong>-password</strong> <em>callback</em></dt>
+        <dd>If supplied, this callback will be invoked when OpenSSL needs
+            to obtain a password, typically to unlock the private key of
+	    a certificate.
+            The callback should return a string which represents the
+            password to be used.
+            <br>
+            See <a href="#CALLBACK OPTIONS">CALLBACK OPTIONS</a> for
+            further discussion.</dd>
+        <dt><strong>-request </strong><em>bool</em></dt>
+        <dd>Request a certificate from peer during SSL handshake.
+            (<strong>default</strong>: <em>true</em>)</dd>
+        <dt><strong>-require</strong> <em>bool</em></dt>
+        <dd>Require a valid certificate from peer during SSL
+            handshake. If this is set to true then <strong>-request</strong>
+            must also be set to true. (<strong>default</strong>: <em>false</em>)</dd>
+        <dt><strong>-server</strong> <em>bool</em></dt>
+        <dd>Handshake as server if true, else handshake as
+            client.(<strong>default</strong>: <em>false</em>)</dd>
+        <dt><strong>-servername</strong> <em>host</em></dt>
+        <dd>Only available if the OpenSSL library the package is linked
+	    against supports the TLS hostname extension for 'Server Name
+	    Indication' (SNI). Use to name the logical host we are talking
+	    to and expecting a certificate for</dd>
+        <dt><strong>-ssl2</strong> <em>bool</em></dt>
+        <dd>Enable use of SSL v2. (<strong>default</strong>: <em>false</em>)</dd>
+        <dt><strong>-ssl3 </strong><em>bool</em></dt>
+        <dd>Enable use of SSL v3. (<strong>default</strong>: <em>false</em>)</dd>
+        <dt>-<strong>tls1</strong> <em>bool</em></dt>
+        <dd>Enable use of TLS v1. (<strong>default</strong>: <em>true</em>)</dd>
+        <dt>-<strong>tls1.1</strong> <em>bool</em></dt>
+        <dd>Enable use of TLS v1.1 (<strong>default</strong>: <em>true</em>)</dd>
+        <dt>-<strong>tls1.2</strong> <em>bool</em></dt>
+        <dd>Enable use of TLS v1.2 (<strong>default</strong>: <em>true</em>)</dd>
+        <dt>-<strong>tls1.3</strong> <em>bool</em></dt>
+        <dd>Enable use of TLS v1.3 (<strong>default</strong>: <em>true</em>)</dd>
+    </dl>
+</blockquote>
+
+<dl>
+    <dt><a name="tls::unimport"><b>tls::unimport </b><i>channel</i></a></dt>
+    <dd>Provided for symmetry to <strong>tls::import</strong>, this
+      unstacks the SSL-enabling of a regular Tcl channel.  An error
+      is thrown if TLS is not the top stacked channel type.</dd>
+</dl>
+
+<dl>
+    <dt><a name="tls::ciphers protocol ?verbose?"><strong>tls::ciphers</strong>
+        <em>protocol ?verbose?</em></a></dt>
+    <dd>Returns list of supported ciphers based on the <em>protocol</em>
+        you supply, which must be one of <em>ssl2, ssl3, or tls1</em>.
+        If <em>verbose</em> is specified as true then a verbose,
+        semi-human readable list is returned providing additional
+        information on the nature of the cipher support. In each
+        case the result is a Tcl list.</dd>
+</dl>
+
+<dl>
+    <dt><a name="tls::version"><strong>tls::version</strong></a></dt>
+    <dd>Returns the version string defined by OpenSSL.</dd>
+</dl>
+
+<h3><a name="CALLBACK OPTIONS">CALLBACK OPTIONS</a></h3>
+
+<p>
+As indicated above, individual channels can be given their own callbacks
+to handle intermediate processing by the OpenSSL library, using the
+<em>-command</em> and <em>-password</em> options passed to either of
+<strong>tls::socket</strong> or <strong>tls::import</strong>.
+</p>
+
+<blockquote>
+<dl>
+
+    <dt><strong>-command</strong> <em>callback</em></dt>
+    <dd>
+	Invokes the specified <em>callback</em> script at
+	several points during the OpenSSL handshake.
+	Except as indicated below, values returned from the
+	callback are ignored.
+	Arguments appended to the script upon callback take one of the
+	following forms:
+
+	<br>
+	<br>
+
+	<dl>
+
+<!--	This form of callback is disabled.
+
+	<dt>
+	  <strong>error</strong> <em>channel message</em>
+	</dt>
+	<dd>
+	  The <em>message</em> argument contains an error message generated
+	  by the OpenSSL function
+	  <code>ERR_reason_error_string()</code>.
+	</dd>
+
+	<br>
+-->
+
+	<dt>
+	  <strong>info</strong> <em>channel major minor message</em>
+	</dt>
+	<dd>
+	  This form of callback is invoked by the OpenSSL function
+	  <code>SSL_CTX_set_info_callback()</code>.
+	  <br>
+	  The <em>major</em> and <em>minor</em> arguments are used to
+	  represent the state information bitmask.
+	  <dl>
+	  <dt>Possible values for <em>major</em> are:</dt>
+	  <dd><code>handshake, alert, connect, accept</code>.</dd>
+	  <dt>Possible values for <em>minor</em> are:</dt>
+	  <dd><code>start, done, read, write, loop, exit</code>.</dd>
+	  </dl>
+	  The <em>message</em> argument is a descriptive string which may
+	  be generated either by
+	  <code>SSL_state_string_long()</code> or by
+	  <code>SSL_alert_desc_string_long()</code>,
+	  depending on context.
+	</dd>
+
+	<br>
+
+	<dt>
+	  <strong>verify</strong> <em>channel depth cert status error</em>
+	</dt>
+	<dd>
+	  This form of callback is invoked by the OpenSSL function
+	  <code>SSL_set_verify()</code>.
+	  <br>
+	  The <em>depth</em> argument is an integer representing the
+	  current depth on the certificate chain, with
+	  <code>0</code> as the subject certificate and higher values
+	  denoting progressively more indirect issuer certificates.
+	  <br>
+	  The <em>cert</em> argument is a list of key-value pairs similar
+	  to those returned by
+	  <a href="#tls::status"><strong>tls::status</strong></a>.
+	  <br>
+	  The <em>status</em> argument is an integer representing the
+	  current validity of the certificate.
+	  A value of <code>0</code> means the certificate is deemed invalid.
+	  A value of <code>1</code> means the certificate is deemed valid.
+	  <br>
+	  The <em>error</em> argument supplies the message, if any, generated
+	  by
+	  <code>X509_STORE_CTX_get_error()</code>.
+	  <br>
+	  <br>
+	  The callback may override normal validation processing by explicitly
+	  returning one of the above <em>status</em> values.
+	</dd>
+
+	</dl>
+    </dd>
+
+    <br>
+
+    <dt><strong>-password</strong> <em>callback</em></dt>
+    <dd>
+	Invokes the specified <em>callback</em> script when OpenSSL needs to
+	obtain a password.  The callback should return a string which
+	represents the password to be used.
+	No arguments are appended to the script upon callback.
+    </dd>
+</dl>
+</blockquote>
+
+<p>
+Reference implementations of these callbacks are provided in the
+distribution as <strong>tls::callback</strong> and
+<strong>tls::password</strong> respectively.  Note that these are
+<em>sample</em> implementations only.  In a more realistic deployment
+you would specify your own callback scripts on each TLS channel
+using the <em>-command</em> and <em>-password</em> options.
+</p>
+
+<p>
+The default behavior when the <em>-command</em> option is not specified is for
+TLS to process the associated library callbacks internally.
+The default behavior when the <em>-password</em> option is not specified is for
+TLS to process the associated library callbacks by attempting to call
+<strong>tls::password</strong>.
+The difference between these two behaviors is a consequence of maintaining
+compatibility with earlier implementations.
+</p>
+
+<p>
+The <strong>tls::debug</strong> variable provides some additional
+control over these reference callbacks.  Its value is zero by default.
+Higher values produce more diagnostic output, and will also force the
+verify method in <strong>tls::callback</strong> to accept the
+certificate, even when it is invalid.
+</p>
+
+<p>
+<em>
+The use of the reference callbacks <strong>tls::callback</strong> and
+<strong>tls::password</strong> is not recommended.  They may be removed
+from future releases.
+</em>
+</p>
+
+<p>
+<em>
+The use of the variable <strong>tls::debug</strong> is not recommended.
+It may be removed from future releases.
+</em>
+</p>
+
+<h3><a name="HTTPS EXAMPLE">HTTPS EXAMPLE</a></h3>
+
+<p>This example uses a sample server.pem provided with the TLS release,
+courtesy of the <strong>OpenSSL</strong> project.</p>
+
+<pre><code>
+package require http
+package require tls
+
+http::register https 443 [list ::tls::socket -autoservername true -require true -cadir /etc/ssl/certs]
+
+set tok [http::geturl https://www.tcl.tk/]
+</code></pre>
+
+<h3><a name="SPECIAL CONSIDERATIONS">SPECIAL CONSIDERATIONS</a></h3>
+
+<p>The capabilities of this package can vary enormously based
+upon how your OpenSSL library was configured and built. At the
+most macro-level OpenSSL supports a &quot;no patents&quot; build,
+which disables RSA, IDEA, RC(2,4,5) and SSL2 - if your OpenSSL is
+configured this way then you will need to build TLS with the
+-DNO_PATENTS option - and the resultant module will function
+correctly and also support ADH certificate-less encryption,
+however you will be unable to utilize this to speak to normal Web
+Servers, which typically require RSA support. Please see <a
+href="http://www.openssl.org/">http://www.openssl.org/</a> for
+more information on the whole issue of patents and US export
+restrictions. </p>
+
+<h3><a name="SEE ALSO">SEE ALSO</a></h3>
+
+<p><strong>socket</strong>, <strong>fileevent, </strong><a
+href="http://www.openssl.org/"><strong>OpenSSL</strong></a></p>
+
+<hr>
+
+<pre>
+Copyright &copy; 1999 Matt Newman.
+Copyright &copy; 2004 Starfish Systems.
+</pre>
+</body>
+</html>

@@ -1,0 +1,348 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# Name: autoexpect - generate an Expect script from watching a session
+#
+# Description:
+#
+# Given a program name, autoexpect will run that program.  Otherwise
+# autoexpect will start a shell.  Interact as desired.  When done, exit
+# the program or shell.  Autoexpect will create a script that reproduces
+# your interactions.  By default, the script is named script.exp.
+# See the man page for more info.
+#
+# Author: Don Libes, NIST
+# Date: June 30 1995
+# Version: 1.4b
+
+set filename "script.exp"
+set verbose 1
+set conservative 0
+set promptmode 0
+set option_keys ""
+
+proc check_for_following {type} {
+	if {![llength [uplevel set argv]]} {
+		puts "autoexpect: [uplevel set flag] requires following $type"
+		exit 1
+	}
+}
+
+while {[llength $argv]>0} {
+	set flag [lindex $argv 0]
+	if {0==[regexp "^-" $flag]} break
+	set argv [lrange $argv 1 end]
+	switch -- $flag \
+	  "-c" {
+		set conservative 1
+	} "-C" {
+		check_for_following character
+		lappend option_keys [lindex $argv 0] ctoggle
+		set argv [lrange $argv 1 end]
+	} "-p" {
+		set promptmode 1
+	} "-P" {
+		check_for_following character
+		lappend option_keys [lindex $argv 0] ptoggle
+		set argv [lrange $argv 1 end]
+	} "-Q" {
+		check_for_following character
+		lappend option_keys [lindex $argv 0] quote
+		set argv [lrange $argv 1 end]
+	} "-f" {
+		check_for_following filename
+		set filename [lindex $argv 0]
+		set argv [lrange $argv 1 end]
+	} "-quiet" {
+		set verbose 0
+	} default {
+		break
+	}
+}
+
+#############################################################
+# Variables	Descriptions
+#############################################################
+# userbuf	buffered characters from user
+# procbuf	buffered characters from process
+# lastkey	last key pressed by user
+#		if undefined, last key came from process
+# echoing	if the process is echoing
+#############################################################
+
+# Handle a character that came from user input (i.e., the keyboard)
+proc input {c} {
+	global userbuf lastkey
+
+	send -- $c
+	append userbuf $lastkey
+	set lastkey $c
+}
+
+# Handle a null character from the keyboard
+proc input_null {} {
+	global lastkey userbuf procbuf echoing
+
+	send -null
+
+	if {$lastkey == ""} {
+		if {$echoing} {
+			sendcmd "$userbuf"
+		}
+		if {$procbuf != ""} {
+			expcmd "$procbuf"
+		}
+	} else {
+		sendcmd "$userbuf"
+		if {$echoing} {
+			expcmd "$procbuf"
+			sendcmd "$lastkey"
+		}
+	}
+	cmd "send -null"
+	set userbuf ""
+	set procbuf ""
+	set lastkey ""
+	set echoing 0
+}
+
+# Handle a character that came from the process
+proc output {s} {
+	global lastkey procbuf userbuf echoing
+
+	send_user -raw -- $s
+
+	if {$lastkey == ""} {
+		if {!$echoing} {
+			append procbuf $s
+		} else {
+			sendcmd "$userbuf"
+			expcmd "$procbuf"
+			set echoing 0
+			set userbuf ""
+			set procbuf $s
+		}
+		return
+	}
+
+	regexp (.)(.*) $s dummy c tail
+	if {$c == $lastkey} {
+		if {$echoing} {
+			append userbuf $lastkey
+			set lastkey ""
+		} else {
+			if {$procbuf != ""} {
+				expcmd "$procbuf"
+				set procbuf ""
+			}
+			set echoing 1
+		}
+		append procbuf $s
+
+		if {[string length $tail]} {
+			sendcmd "$userbuf$lastkey"
+			set userbuf ""
+			set lastkey ""
+			set echoing 0
+		}
+	} else {
+		if {!$echoing} {
+			expcmd "$procbuf"
+		}
+		sendcmd "$userbuf$lastkey"
+		set procbuf $s
+		set userbuf ""
+		set lastkey ""
+		set echoing 0
+	}
+}
+
+# rewrite raw strings so that can appear as source code but still reproduce
+# themselves.
+proc expand {s} {
+	regsub -all "\\\\" $s "\\\\\\\\" s
+	regsub -all "\r" $s "\\r"  s
+	regsub -all "\"" $s "\\\"" s
+	regsub -all "\\\[" $s "\\\[" s
+	regsub -all "\\\]" $s "\\\]" s
+	regsub -all "\\\$" $s "\\\$" s
+
+	return $s
+}
+
+# generate an expect command
+proc expcmd {s} {
+	global promptmode
+
+	if {$promptmode} {
+		regexp ".*\[\r\n]+(.*)" $s dummy s
+	}
+
+	cmd "expect -exact \"[expand $s]\""
+}
+
+# generate a send command
+proc sendcmd {s} {
+	global send_style conservative
+
+	if {$conservative} {
+		cmd "sleep .1"
+	}
+
+	cmd "send$send_style -- \"[expand $s]\""
+}
+
+# generate any command
+proc cmd {s} {
+	global fd
+	puts $fd "$s"
+}
+
+proc verbose_send_user {s} {
+	global verbose
+
+	if {$verbose} {
+		send_user -- $s
+	}
+}
+
+proc ctoggle {} {
+	global conservative send_style
+
+	if {$conservative} {
+		cmd "# conservative mode off - adding no delays"
+		verbose_send_user "conservative mode off\n"
+		set conservative 0
+		set send_style ""
+	} else {
+		cmd "# prompt mode on - adding delays"
+		verbose_send_user "conservative mode on\n"
+		set conservative 1
+		set send_style " -s"
+	}
+}
+
+proc ptoggle {} {
+	global promptmode
+
+	if {$promptmode} {
+		cmd "# prompt mode off - now looking for complete output"
+		verbose_send_user "prompt mode off\n"
+		set promptmode 0
+	} else {
+		cmd "# prompt mode on - now looking only for prompts"
+		verbose_send_user "prompt mode on\n"
+		set promptmode 1
+	}
+}
+
+# quote the next character from the user
+proc quote {} {
+	expect_user -re .
+	send -- $expect_out(buffer)
+}
+	
+
+if {[catch {set fd [open $filename w]} msg]} {
+	puts $msg
+	exit
+}
+exec chmod +x $filename
+verbose_send_user "autoexpect started, file is $filename\n"
+
+# calculate a reasonable #! line
+set expectpath /usr/local/bin		;# prepare default
+foreach dir [split $env(PATH) :] {	;# now look for real location
+	if {[file executable $dir/expect] && ![file isdirectory $dir/expect]} {
+		set expectpath $dir
+		break
+	}
+}
+
+cmd "#![set expectpath]/expect -f
+#
+# This Expect script was generated by autoexpect on [timestamp -format %c]
+# Expect and autoexpect were both written by Don Libes, NIST."
+cmd {#
+# Note that autoexpect does not guarantee a working script.  It
+# necessarily has to guess about certain things.  Two reasons a script
+# might fail are:
+#
+# 1) timing - A surprising number of programs (rn, ksh, zsh, telnet,
+# etc.) and devices discard or ignore keystrokes that arrive "too
+# quickly" after prompts.  If you find your new script hanging up at
+# one spot, try adding a short sleep just before the previous send.
+# Setting "force_conservative" to 1 (see below) makes Expect do this
+# automatically - pausing briefly before sending each character.  This
+# pacifies every program I know of.  The -c flag makes the script do
+# this in the first place.  The -C flag allows you to define a
+# character to toggle this mode off and on.
+
+set force_conservative 0  ;# set to 1 to force conservative mode even if
+			  ;# script wasn't run conservatively originally
+if {$force_conservative} {
+	set send_slow {1 .1}
+	proc send {ignore arg} {
+		sleep .1
+		exp_send -s -- $arg
+	}
+}
+
+#
+# 2) differing output - Some programs produce different output each time
+# they run.  The "date" command is an obvious example.  Another is
+# ftp, if it produces throughput statistics at the end of a file
+# transfer.  If this causes a problem, delete these patterns or replace
+# them with wildcards.  An alternative is to use the -p flag (for
+# "prompt") which makes Expect only look for the last line of output
+# (i.e., the prompt).  The -P flag allows you to define a character to
+# toggle this mode off and on.
+#
+# Read the man page for more info.
+#
+# -Don
+
+}
+
+cmd "set timeout -1"
+if {$conservative} {
+	set send_style " -s"
+	cmd "set send_slow {1 .1}"
+} else {
+	set send_style ""
+}
+
+if {[llength $argv]>0} {
+	eval spawn -noecho $argv
+	cmd "spawn $argv"
+} else {
+	spawn -noecho $env(SHELL)
+	cmd "spawn \$env(SHELL)"
+}
+
+cmd "match_max 100000"
+
+set lastkey ""
+set procbuf ""
+set userbuf ""
+set echoing 0
+
+remove_nulls 0
+
+eval interact $option_keys {
+    -re . {
+	input $interact_out(0,string)
+    } -o -re .+ {
+	output $interact_out(0,string)
+    } eof {
+	cmd "expect eof"
+	return
+    }
+}
+
+close $fd
+verbose_send_user "autoexpect done, file is $filename\n"

@@ -1,0 +1,28 @@
+Package Oratcl 4.6
+Meta platform        linux-glibc2.12-x86_64
+Meta as::author      {Todd Helfter}
+Meta as::author      {Tom Poindexter}
+Meta as::origin      http://sourceforge.net/projects/oratcl
+Meta category        Database interface
+Meta description     Tcl interface to Oracle database, versions 8i, 9i, 10g, 11g
+Meta entryload       libOratcl4.6.so
+Meta excluded        *.a *.tap *.lib oratcl_utils.tcl
+Meta license         BSD
+Meta require         {Tcl 8.6}
+Meta subject         oracle sql database
+Meta summary         Tcl interface to Oracle database
+
+
+Package Oratcl::utils 4.6
+Meta platform        tcl
+Meta as::author      {Todd Helfter}
+Meta as::origin      http://sourceforge.net/projects/oratcl
+Meta category        Database interface
+Meta description     Utility package to Oratcl, the tcl interface to
+Meta description     Oracle database, versions 8i, 9i, 10g and 11g.
+Meta entrysource     oratcl_utils.tcl
+Meta license         BSD
+Meta require         {Tcl 8.6}
+Meta require         {Oratcl 4.6}
+Meta subject         oracle sql database utilities
+Meta summary         Utilities to the tcl interface to Oracle database

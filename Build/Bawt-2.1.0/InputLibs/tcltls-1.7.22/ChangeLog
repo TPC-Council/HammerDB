@@ -1,0 +1,521 @@
+TclTLS 1.7.22
+==========
+
+Release Date: Mon Oct 12 15:40:16 CDT 2020
+
+https://tcltls.rkeene.org/
+
+2015-05-01  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in: Bump to version 1.6.5.
+	* win/makefile.vc:
+	* configure: regen with ac-2.59
+	* tls.c: Accepted SF TLS [bug/patch #57](https://sourceforge.net/p/tls/bugs/57/).
+	* tlsIO.c: Accepted core Tcl patch in [ticket](http://core.tcl.tk/tcl/tktview/0f94f855cafed92d0e174b7d835453a02831b4dd).
+
+2014-12-05  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in: Bump to version 1.6.4.
+	* win/makefile.vc:
+	* configure: regen with ac-2.59
+	* tls.c: Accepted SF TLS patches #12 and #13 implementing
+	* tls.htm: support for SNI, and TLS 1.1 + 1.2
+	* tlsInt.h:
+	* tlsIO.c: This also accepted patch for bug #53.
+	* tls.tcl: Patch available since June, now committed.
+
+2012-07-09  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in: Bump to version 1.6.3.
+	* win/makefile.vc:
+	* configure: regen with ac-2.59
+
+	* tls.c (MiscObjCmd): Fixed non-static string array used in call
+	  of Tcl_GetIndexFromObj(). Memory smash waiting to happen. Thanks
+	  to Brian Griffin for alerting us all to the problem. 
+
+2012-06-01  Andreas Kupries  <andreask@activestate.com>
+
+	* tls.c: Applied Jeff's patch from
+	  http://www.mail-archive.com/aolserver@listserv.aol.com/msg12356.html
+
+	* configure.in: Bump to version 1.6.2.
+	* win/makefile.vc:
+	* configure: regen with ac-2.59
+	
+2010-08-11  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	*** TLS 1.6.1 TAGGED ***
+
+	* configure: regen with ac-2.59
+	* win/makefile.vc, configure.in: bump version to 1.6.1
+	* tclconfig/tcl.m4: updated to TEA 3.8
+
+	* tls.c (StatusObjCmd): memleak: free peer if loaded. [Bug 3041925]
+
+2010-07-27  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.tcl (tls::socket): some socket implementations have a -type
+	support (e.g. for inet6).
+
+2009-04-23  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.tcl (tls::initlib): add support for Windows starpack
+	operation that unbundles any constituent libraries. [AS Bug 82888]
+
+2008-06-18  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* tests/ciphers.test: Fix for different openssl versions.
+	* win/makefile.vc:    Updates to support tests.
+	* win/rules.vc:
+	* win/nmakehlp.c:
+
+2008-03-19  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	*** TLS 1.6 TAGGED ***
+
+	* Makefile.in (dist): update to include win/ and file.srl
+
+	* win/makefile.vc: bump version to 1.6
+	* configure.in: use -L and -R where necessary. [Bug 1742859]
+
+	* aclocal.m4: improve --with-ssl-dir check.
+
+	* tests/tlsIO.test (tlsIO-14.*):   Add tls::unimport for symmetry
+	* tls.htm, tls.c (UnimportObjCmd): to tls::import. [Bug 1203273]
+
+	* tls.c (Tls_Clean, ImportObjCmd): Fix cleanup mem leak [Bug 1414045]
+	Use better Eval APIs, cleaner Tcl_Obj-handling.
+
+2008-03-19  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* win/Makefile.vc  Updated the nmake build files with MSVC9 support
+	* win/rules.vc:    and fixed to run the test-suite properly.
+	* win/nmakehlp.c:
+	* tls.tcl (tls::initlib): Corrected namespace handling.
+	* tls.c: Applied #1890223 to fix handshake on non-blocking sockets
+
+2008-03-17  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.tcl (tls::initlib):     load tls.tcl first and call
+	* Makefile.in (pkgIndex.tcl): tls::initlib to load library to
+	handle cwd changes. [Bug 1888113]
+
+2007-09-06  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* tls.c:           Silence 64 bit integer conversion warnings
+	* win/nmakehlp.c:  Update build system to support AMD64 target
+	* win/makefile.vc: with MSVC8
+	* win/rules.vc:
+
+2007-06-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tlsIO.c (TlsInputProc, TlsOutputProc, TlsWatchProc): 
+	* tls.c (VerifyCallback): add an state flag in the verify callback
+	that prevents possibly recursion (on 'update'). [Bug 1652380]
+
+	* tests/ciphers.test: reworked to make test output cleaner to
+	understand missing ciphers (if any)
+
+	* Makefile.in, tclconfig/tcl.m4: update to TEA 3.6
+	* configure, configure.in:       using autoconf-2.59
+
+2007-02-28  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* win/makefile.vc: Rebase the DLL sensibly. Additional libs for 
+	static link of openssl.
+	* tls.tcl: bug #1579837 - TIP 278 bug (possibly) - fixed.
+
+2006-03-30  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* tclconfig/*:  Updated to TEA 3.5 in response to bug 1460491
+	* configure*:   Regenerated configure.
+
+2005-02-08  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in, tclconfig/tcl.m4: update to TEA 3.2
+	* configure, configure.in:       using autoconf-2.59
+
+2004-12-23  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* Makefile.in:      Removed spurious copying of tls.tcl into the
+	                    build directory.
+
+2004-12-22  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* configure.in:     Incremented minor version to 1.5.1
+	* configure:        
+
+2004-12-17  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* win/makefile.vc:  Added the MSVC build system (from the Tcl
+	* win/rules.vc:     sampleextension).
+	* win/nmakehlp.c:
+	* win/tls.rc        Added Windows resource file.
+	
+	* tls.tcl:          From patch #948155, added support for
+	                    alternate socket commands.
+	* tls.c:            Quieten some MSVC warnings. Prefer ckalloc
+	                    over Tcl_Alloc. (David Graveraux).
+
+2004-06-29  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* tls.c:            Fixup to build against tcl 8.3.3. Handle
+	* tlsIO.c:          8.4 constification.
+
+	* tlsInt.h:         Added headers required with MSVC on Win32.
+	* tlsX509.c:        undef min and max if defined (win32).
+
+	* Makefile.in:      Fixed to build on win32 using msys with
+	* aclocal.m4:       MSVC. Also fixed the test target.
+	* configure.in:
+	* configure:        Regenerated.
+	* tclconfig/tcl.m4: Updated to most recent version.
+
+2004-03-23  Dan Razzell <research@starfishsystems.ca>
+	* tls.c:
+	* tlsBIO.c:
+	* tlsIO.c:
+	* tlsInt.h:	Fixed type match warnings.
+
+2004-03-19  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.c (Tls_Init):   replaced older TEA config with newer
+	* config/* (removed):
+	* pkgIndex.tcl.in, strncasecmp.c (removed):
+	* Makefile.in, aclocal.m4, configure, configure.in:
+	* tclconfig/README.txt, tclconfig/install-sh, tclconfig/tcl.m4:
+
+2004-03-17  Dan Razzell <research@starfishsystems.ca>
+
+	* tlsX509.c:	Add support for long serial numbers per RFC 3280.
+			Format is now hexadecimal. 
+			[Request #915313]
+			Correctly convert certificate Distinguished Names
+			to Tcl string representation.  Eliminates use of
+			deprecated OpenSSL function.  Format is now compliant
+			with RFC 2253.  [Request #915315]
+
+2004-02-17  Dan Razzell <research@starfishsystems.ca>
+
+	TLS 1.5.0 RELEASE
+
+2004-02-12  Dan Razzell	<research@starfishsystems.ca>
+
+	* tls.c:	Allow verify callback to return empty result.
+	* tls.htm:	Document callback behaviors.
+
+2004-02-11  Dan Razzell	<research@starfishsystems.ca>
+
+	* tests/tlsIO.test:
+	* remote.tcl:	Complete private key name changes from 2001-06-21.
+
+2004-02-03  Dan Razzell <research@starfishsystems.ca>
+
+	* Makefile.in:	Removed circular dependency.
+	* tlsInt.h:	Make function declarations explicit.
+	* tls.c:	Fix type match and unused variable warnings.
+	* tlsBIO.c:	Fix type match warning.
+
+2003-12-15  Dan Razzell	<research@starfishsystems.ca>
+
+	* pkgIndex.tcl.in:
+	* tls.htm:
+	* tests/tlsIO.test: updated version to 1.5.
+
+2003-10-07  Dan Razzell	<research@starfishsystems.ca>
+
+	* tests/ciphers.test: updated list of tested ciphers to correspond
+	* with those available from OpenSSL. [Request #811981]
+
+2003-10-07  Dan Razzell <research@starfishsystems.ca>
+
+	* tls.c: added CONST with intent similar to those from 2002-02-04.
+	[Request #811911]
+
+2003-07-07  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.c (Tls_Init):   added tls::misc command provided by
+	* tlsX509.c:          Wojciech Kocjan (wojciech kocjan.org)
+	* tests/keytest1.tcl: to expose more low-level SSL commands
+	* tests/keytest2.tcl:
+
+2003-05-15  Dan Razzell	<research@starfishsystems.ca> 
+
+	* tls.tcl:
+	* tlsInt.h:
+	* tls.c: add support for binding a password callback to the socket.
+	Now each socket can have its own command and password callbacks instead
+	of being forced to have all password management pass through a common
+	procedure.  The common password procedure is retained for compatibility
+	but its use should be DEPRECATED.
+	Add version command to return OpenSSL version string.
+	Remove unstable workarounds needed for verify in obsolete versions of
+	OpenSSL.
+	Fix memory leak. [Request #640660]
+	More casts to eliminate compiler warnings.
+
+	* tls.htm: document password callback.
+	Correct technical and typographic errors.
+
+	* README.txt: identify versions of OpenSSL which fix known problems.
+	General warning of security problems in older versions of OpenSSL.
+
+2002-02-04  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tls.htm:
+	* tls.c: added support for local certificate status check, as well
+	as returning the # of bits in the session key. [Patch #505698] (rose)
+
+	* tls.c:
+	* tlsIO.c:
+	* tlsBIO.c: added CONSTs to satisfy Tcl 8.4 sources.  This may
+	give warnings when compiled against 8.3, but they can be ignored.
+
+	* tests/simpleClient.tcl:
+	* tests/simpleServer.tcl: point to updated client/server key files.
+
+	* tests/tlsIO.test:
+	* tests/ciphers.test: updated to load tls from build dir.
+
+	* Makefile.in: removed strncasecmp from default object set.  This
+	is only needed on the Mac, and Tcl stubs provides it.
+
+	* configure: regen'ed.
+	* configure.in: updated to 1.5.0 for next release.
+	Changed default openssl location to /usr/local/ssl (this is where
+	openssl 0.9.6c installs by default).
+	Changed to use public Tcl headers (private not needed).
+
+2001-06-21  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	TLS 1.4.1 RELEASE
+
+	* configure: added configure to CVS
+	* configure.in: moved to patchlevel 1.4.1
+
+	* Makefile.in: corrected 'dist' target
+
+	* tests/certs/file.srl:
+	* tests/certs/ca.pem:
+	* tests/certs/client.key:
+	* tests/certs/client.pem:
+	* tests/certs/client.req:
+	* tests/certs/privkey.pem:
+	* tests/certs/server.key:
+	* tests/certs/server.pem:
+	* tests/certs/server.req:
+	* tests/certs/cacert.pem: replaced by new ca.pem
+	* tests/certs/skey.pem: replaced by new server.key
+	* tests/certs/ckey.pem: replaced by new client.key
+	* tests/certs/README.txt: new set of test certificates with some
+	README info on their generation.
+
+	* tests/ciphers.test: updated ciphers expected with default
+	openssl build.
+
+	* tests/tclIO.test: updated to use new names for certs/keys.
+
+2001-03-14  Jeff Hobbs  <jeffh@gimlet.activestate.com>
+
+	* tls.c (Tls_Init): add do/while for random number initialization
+	to work around some OSes quirks.  (Ralph.Billes@teltech.com.au)
+
+2000-09-07  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tlsIO.c (Tls_ChannelType): set typeName field of channel type to
+	"tls" (this got lost in move to dynamic version compatability
+	checking).
+
+2000-08-23  Jeff Hobbs  <hobbs@scriptics.com>
+
+	TLS 1.4 RELEASED
+
+	* Makefile.in (dist): create dist target for archive distributions
+
+	* tests/tlsIO.test (tlsIO-8.1): added a delay on the accept close
+	to make the test work with OpenSSL on Windows (doesn't affect
+	other builds).
+
+	* tls.htm: updated with notes for 1.4.
+
+2000-08-21  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tests/tlsIO.test: require at least tls1.4 in test suite.
+
+2000-08-18  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tls.c (Tls_Init): added call to RAND_seed to seed the SSL random
+	number generator.  Without this, OpenSSL 0.9.5 chokes, and in any
+	case it is a big security hole to do without it.
+
+	* configure.in (OPENSSL): added NO_IDEA and NO_RC5 defines by
+	default when compiling with OpenSSL.
+
+	* tlsInt.h: added err.h include
+
+	* tlsBIO.c:
+	* tlsIO.c: corrected pedantic cast errors.
+
+2000-08-16  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tests/ciphers.test: improved ability to change constraint
+	setting for whether user compiled against RSA or OpenSSL libs.
+
+	* tls.c (Tls_Init): corrected interpretation of version number
+	(patchlevel and release/serial were swapped).
+
+2000-08-15  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* README.txt: added notes about need to use 8.2.0+.
+
+	* tlsInt.h:
+	* tls.c:
+	* tlsIO.c: corrected structure initialization to work when
+	compiling with 8.2.  Now compiles with 8.2+ and tested to work
+	with 8.2+ and dynamically adjust to the version of Tcl it was
+	loaded into.  TLS will fail the test suite with Tcl 8.2-8.3.1.
+
+	* tests/all.tcl: added catch around ::tcltest::normalizePath
+	because it doesn't exist in pre-8.3 tcltest.
+
+	* tests/simpleClient.tcl: 
+	* tests/simpleServer.tcl: added simple client/server test scripts
+	that use test certs and can do simple stress tests.
+
+2000-08-14  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tlsInt.h:
+	* tlsIO.c:
+	* tlsBIO.c:
+	* tls.c: changed around to only working with 8.2.0+ (8.3.2+
+	preferred), with runtime checks for pre- and post-io-rewrite.
+
+	* tls.c (Tls_Init): changed it to require 8.3.2 when Tcl_InitStubs
+	was called because we don't want people using TLS with the
+	original stacked channel implementation.
+
+2000-07-26  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* merged all changes from tls-1-3-io-rewrite back into main branch
+
+	* tests/tlsIO.test: updated comments, fixed a pcCrash case that
+	was due to debug assertion in Windows SSL.
+
+	* tls.c (ImportObjCmd): removed unnecessary use of 'bio' arg.
+	(Tls_Init): check return value of SSL_library_init.  Also lots of
+	whitespace cleanup (more like Tcl Eng style guide), but not all
+	code was cleaned up.
+
+	* tlsBIO.c: minor whitespace cleanup
+
+	* tlsIO.c: minor whitespace cleanup.
+	(TlsInputProc, TlsOutputProc): Added ERR_clear_error before calls
+	to BIO_read or BIO_write, because we could otherwise end up
+	pulling an error off the stack that didn't belong to us.  Also
+	cleanup up excessive use of gotos.
+
+2000-07-20  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tests/tlsIO.test: corrected various tests to be correct for TLS
+	stacked channels (as opposed to the standard sockets the test
+	suite was adopted from).  Key differences are that TLS cannot
+	operate in one process without all channels being non-blocking, or
+	the handshake will block, and handshaking must be forced in some
+	cases.  Also, handshakes don't seem to complete unless the client
+	has placed at least one byte for the server to read in the channel.
+
+	* tests/remote.tcl: corrected the finding of tests certificates
+
+	* tlsIO.c (TlsCloseProc): removed deleting of timer handler as
+	that is handled by Tls_Clean.
+
+	* tls.tcl (tls::_accept): corrected the internal _accept to
+	trickle callback errors to the user.
+
+	* Makefile.in: made the install-binaries target regenerate the
+	pkgIndex.tcl correctly.  The test target probably shouldn't screw
+	it up, but this is to be on the safe side.
+
+2000-07-17  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* pkgIndex.tcl.in:
+	* configure.in: updated version to 1.4
+
+2000-07-13  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tests/tlsIO.test: enabled tests 2.10, 7.[1245] (there is no 3),
+	which now pass.  Added some comments to other failing tests.
+
+2000-07-11  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tlsIO.c: changed all the channel procs to start with Tls* for
+	better parity when comparing with Transform channel procs.
+	Rewrote TlsWatchProc, added TlsNotifyProc according to the new
+	channel design, which also leaves TlsChannelHandler unused.
+
+	* tlsBIO.c (BioCtrl): changed BIO_CTRL_FLUSH case to use
+	Tcl_WriteRaw instead of Tcl_Flush (to operate on correct channel
+	in the stack instead of starting at the top again).  Would
+	otherwise cause a recursive stack bomb when implicit handshaking
+	took effect.
+
+	* tests/tlsIO.test: removed changes made to test suite (all tests
+	that ran before now pass correctly), and changed some accept proc
+	args to reflect that a sock is an arg, not a file.
+
+2000-07-10  Jeff Hobbs  <hobbs@scriptics.com>
+
+	* tlsBIO.c (BioWrite, BioRead): changed Tcl_Read/Write to
+	Tcl_ReadRaw/TclWriteRaw.
+
+	* tls.c: added use of Tcl_GetTopChannel after Tcl_GetChannel and
+	got return value from Tcl_StackChannel.
+
+	* tests/tlsIO.test: added some handshaking that shouldn't be
+	necessary, but we crash otherwise (needs more testing).
+
+	* tlsIO.c: added support for "corrected" stacked channels.  All
+	the above channels are in TCL_CHANNEL_VERSION_2 #ifdefs.
+
+2000-06-05  Scott Stanton  <stanton@ajubasolutions.com>
+
+	* Makefile.in: Fixed broken test target.
+
+	* tlsInt.h: 
+	* tls.c: Cleaned up declarations of Tls_Clean to avoid errors on
+	Windows (lint).
+
+2000-06-05  Brent Welch <welch@ajubasolutions.com>
+
+	* tls.c, tlsIO.c:  Split Tls_Free into Tls_Clean, which does
+	the SSL cleanup, and the Tcl_Free call.  It is important to shutdown
+	the SSL state "synchronously" during a stacked flush.
+
+2000-06-01  Scott Stanton  <stanton@ajubasolutions.com>
+
+	* tlsIO.c: Restored call to Tcl_NotifyChannel from ChannelHandler
+	to ensure that events propagate from the lower driver.  This may
+	result in an infinite loop in some cases, so this is not a total
+	fix.  This may be sufficient for now, however. [Bug: 5623]
+
+2000-06-01  Scott Stanton  <stanton@scriptics.com>
+
+	* tlsIO.c: Restore the previous version.  Fixed the CloseProc so
+	it unregisters the channel handler on the superceded channel
+	instead of the upper channel. Also removed the call to
+	Tcl_NotifyChannel in the ChannelHandler because this will result
+	in an infinite loop if data is ever buffered in the BIO
+	structure. [Bug: 5623]
+
+2000-05-31  Brent Welch <welch@scriptics.com>
+
+	* tls.c: Change the ChannelHandler to be registered on the main
+	channel as oppsed to the "parent", or superceeded, channel.  This
+	is because the socket driver notifies the main channel, and there
+	are times with the main channel gets closed, but the superceded
+	one is not yet closed.  If the channel handler gets triggered in
+	this half-open state it is associated with the superceeded
+	channedl, but uses its private pointer to the main channel, which
+	is mostly destroyed.  Eliminated the redundant call to
+	Tcl_NotifyChannel from TlsWatchProc. [Bug: 5623]

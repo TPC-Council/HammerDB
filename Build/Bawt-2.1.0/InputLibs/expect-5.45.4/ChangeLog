@@ -1,0 +1,1581 @@
+2018-02-04  Nils Carlson <nils.carlson@ludd.ltu.se>
+
+	* exp_inter.c: [https://sourceforge.net/p/expect/patches/22/]
+	Fix interact bug - handle reads of 0 length on
+	non-blocking channels by explicitly checking if the channel
+	is non-blocking. Fix by Jack Bates.
+
+	* expect.c: [https://sourceforge.net/p/expect/patches/21/]
+	Fix eof bug introduced with previous bug fix - ensure that data
+	received just before an eof is processed. Fix by Sergei Golovan.
+
+2014-05-01  Andreas Kupries <andreask@activestate.com>
+
+	* exp_main_sub.c: Updated EXP_VERSION to 5.45.3
+	* configure, configure.in: Updated expect to version 5.45.3
+
+	* expect.man [http://sourceforge.net/p/expect/bugs/86/]. Report
+	  and fix by Vitezlav Crhonek.
+
+	* expect.c [http://sourceforge.net/p/expect/bugs/76/]. Report and
+	  fix by Mutsuhito Iikura. On finding a full buffer during
+	  matching the sliding window mechanism slides too far, truncating
+	  the whole buffer and preventing matches across the boundary. Fix
+	  is shortening the slide distance (slide only one 1/3).
+
+	* expect.c: [http://sourceforge.net/p/expect/patches/18/]. Report
+	  and fix both by Nils Carlson <nils.carlson@ludd.ltu.se>.
+	  Replaced a cc==0 check with proper Tcl_Eof() check.
+
+2013-11-04  Andreas Kupries  <andreask@activestate.com>
+
+	* tclconfig/tcl.m4: [http://sourceforge.net/p/expect/patches/17/]
+	* configure: Extended Tcl header detection for OS X Mountain Lion.
+
+	* exp_main_sub.c: Updated EXP_VERSION to 5.45.2
+	* configure, configure.in: Updated expect to version 5.45.2
+
+	* expect.c: [http://sourceforge.net/p/expect/patches/16/]. Report
+	  and fix both by Per Cederqvist. Replaced a memcpy with memmove
+	  as the latter properly handles overlapping memory, whereas the
+	  original code does not.
+
+2012-08-15  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_main_sub.c: Updated EXP_VERSION to 5.45.1
+	* configure, configure.in: Updated expect to version 5.45.1
+
+	* exp_chan.c: Applied patch sent in by Ogawa Hirofumi
+	  <hirofumi@mail.parknet.co.jp>. The patch fixes a problem when
+	  talking a tty where the writer has died. Some operating systems
+	  report the condition as EIO with nothing read, while this
+	  actually an EOF. Without the patch the returned data is
+	  incomplete due to the error reported immediately and dropping
+	  data in buffers.
+
+2012-05-16  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_chan.c: [Bug 3526461]: Applied patch by Michael Cleverly
+	  <cleverly@users.sourceforge.net> fixing a problem with the
+	  iteration over the expect channel list where the loop code may
+	  modify the list, breaking the iterator.
+
+	* exp_chan.c: [Bug 3526707]: Applied patch by Michael Cleverly
+	* exp_command.h: <cleverly@users.sourceforge.net> fixing problem
+	* expect.c: with an insufficient test for a lost channel in
+	  exp_background_channelhandler.
+
+2010-10-26  Andreas Kupries  <andreask@activestate.com>
+
+	* expect.c: [Bug 3095935]: Convert #bytes information to #chars to
+	  prevent later code to fail when copying strings around and
+	  miscalculating how much to copy, for strings containing
+	  non-ASCII utf chars.
+
+2010-09-30  Andreas Kupries  <andreask@activestate.com>
+
+	* example/autopasswd: Updated to use tclsh in PATH, and 'package
+	* example/chess.exp: require Expect'. Obsoletes fixline1.
+	* example/cryptdir:
+	* example/decryptdir:
+	* example/dislocate:
+	* example/dvorak:
+	* example/ftp-inband:
+	* example/ftp-rfc:
+	* example/gethostbyaddr:
+	* example/kibitz:
+	* example/lpunlock:
+	* example/mkpasswd:
+	* example/multixterm:
+	* example/passmass:
+	* example/read1char:
+	* example/rftp:
+	* example/rlogin-cwd:
+	* example/robohunt:
+	* example/rogue.exp:
+	* example/telnet-cwd:
+	* example/timed-read:
+	* example/timed-run:
+	* example/unbuffer:
+	* example/virterm:
+	* example/weather:
+	* example/xkibitz:
+	* example/xpstat:
+
+	* Makefile.in: Continued work on the 'make dist' target (config.{sub,guess})
+	* install.sh: Removed unused file.
+	* mkinstalldirs: Removed unused file.
+	* tclconfig/README.txt: Removed unused file.
+	* testsuite/config/: Removed contents of unused directory.
+	* test/.Sanitize: Removed unused file.
+
+2010-09-17  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in: improved make dist target to include the necessary
+	files, and remove old dist_orig.
+	Enable Makefile regen target
+
+2010-09-16  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure: regen with ac-2.59
+	* tclconfig/tcl.m4: update for correct LDFLAGS on HP-UX
+	* Makefile.in (expect): use TEA LDFLAGS instead of tclConfig.sh to
+	build expect executable
+
+2010-09-01  Andreas Kupries  <andreask@activestate.com>
+
+	* Makefile.in: [Bug 865278] Semi-applied Don Porter's patch adding
+	code which prevents the package from registering with Tcl
+	interpreters which cannot load it, i.e. below the version it was
+	compiled against. Semi because the pkgIndex.in in his patch is
+	not used, the pkgIndex.tcl is generated by the Makefile(.in).
+	* pkgIndex.in: Removed. File not used.
+
+2010-08-31  Andreas Kupries <andreask@activestate.com>
+
+	* Various cleanups, local patches of ActiveState.
+	* exp_clib.c: Remove local copy of Tcl_ErrnoMsg().
+	* exp_inter.c: Hack access to TCL_REG_BOSONLY when not present,
+	became private with Tcl 8.5 and higher.
+	* expect.h: Remove the local fiddling with the memory allocation
+	and panic macros.
+
+	* Dbg.c: [Bug 2972727]: Applied the parts of Larry Virden's patch
+	  which were still current. Most of it applied to the partially
+	  ansified sources we had in trunk for a time and where errors in
+	  that set of changes, thus out of date now.
+
+	* example/unbuffer: [Bug 2949748]: Applied patch by Vitezslav
+	  Crhonek <vcrhonek@users.sourceforge.net> to prevent unbuffer
+	  from eating the exit code of the command it ran (regular mode
+	  only, not -p). Slightly modified, I removed the superfluous
+	  'eval' used to invoke 'wait', invoking it directly.
+
+2010-08-27  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* retoglob.c: Fail if the generated glob contains more than
+	two asterisks.  Fixes [Expect SF Bug 3010684] (cederqvist)
+
+	* exp_main_sub.c: add return to silence compiler warning.
+	Updated EXP_VERSION to 5.45.0
+
+	* config.guess, config.sub, expect.m4 (removed):
+	* configure, configure.in, tclconfig/tcl.m4: Update to TEA 3.9
+	* Makefile.in, aclocal.m4: Partial cleanup of the build system.
+	* testsuite/Makefile.in:   Remove unused EXP_ from configure.in
+	* testsuite/aclocal.m4:    and no longer use Tk.
+	* testsuite/configure:     Update testsuite bits to use TEA info.
+	* testsuite/configure.in:
+	Update expect to version 5.45
+
+	* Dbg.c: account for removal of tcldbgcf.h
+	* DbgMkfl.in, Dbgconfig.in, Dbgconfigure, DbgpkgInd.in (removed):
+	* tcldbgcf.h.in (removed): removed Dbg debugger subcomponent as it
+	no longer built and debugger functionality is included in expect
+	library and binary
+
+	* pty_termios.c: add HAVE_STRING_H include string.h
+	* exp_trap.c: add HAVE_STRING_H include string.h
+
+	* expectk.man, exp_main_tk.c (removed): expectk no longer
+	built. Use tclsh with package require Tk and Expect instead.
+
+	* tests/all.tcl: add package require Expect
+
+	* example/archie, example/autoexpect: minor code cleanup
+	* example/tkpasswd, example/tknewsbiff, example/tkterm: use
+	package require statements in lieu of expectk
+
+2009-11-03  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_command.c (Exp_SpawnObjCmd): [Expect SF Bug 2891422]. Fixed
+	  error message when the command to spawn could not be executed.
+	  Tried to use a Tcl_Obj* as argument for a %s. Replaced with the
+	  correct char* variable. Thanks to Elchonon Edelson
+	  <eee@users.sourceforge.net> for the report.
+	  [Expect SF Bug 2891563] Ditto for the same type of bug when
+	  emitting error 'usage: -ignore unknown signal name'. The
+	  remainder of the exp_error calls are ok however.
+
+	* configure.in: Bumped version to 5.44.1.15.
+	* configure: Regen'd, autoconf 2.59.
+
+2009-07-14  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_clib.c (TclRegComp): Fixed memory leak reported by
+	  <ettlmartin@users.sourceforge.net> in [Expect SF Bug 2814263].
+
+2009-06-22  Andreas Kupries  <andreask@activestate.com>
+
+	* pty_unicos.c (pty_stty): Fixed missing double-quotes for sprint
+	  formatting strings. Thanks to <ettlmartin@users.sourceforge.net>
+	  for the report, i.e. [Expect SF Bug 2809496].
+
+2009-06-18  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_command.c (Exp_LogFileObjCmd): Fix argument parsing logic
+	  error in the log_file command breaking the use of options -open
+	  and -leaveopen. Applied patch supplied by Andy Belsey
+	  <Andrew.Belsey@Sun.COM>. With thanks for both the analysis of
+	  the problem and the patch.
+
+	* configure.in: Bumped version to 5.44.1.14.
+	* configure: Regen'd, autoconf 2.59.
+
+2009-05-27  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_tty.c (Exp_SttyCmd, Exp_SystemCmd): Applied patch by
+	  Reinhard Max (max@suse.de) fixing buffer-overflows in the 'stty'
+	  command due to an off-by-one error in the buffer size. See the
+	  bugs https://bugzilla.novell.com/show_bug.cgi?id=506873
+	  and  https://bugzilla.novell.com/show_bug.cgi?id=501291
+
+	* configure.in: Bumped version to 5.44.1.13.
+	* configure: Regen'd, autoconf 2.59.
+
+2009-05-06  Andreas Kupries  <andreask@activestate.com>
+
+	* retoglob.c: Accepted the patch by Mike Cumings
+	  <mcumings@users.sourceforge.net> fixing [Expect SF Bug 13179].
+	  The updated code checks a (?...) sequence that it contains only
+	  ARE options before processing it as such. This prevents the
+	  misinterpretation of non-capturing paren groups as ARe options
+	  with subsequent segmentation fault.
+
+	* configure.in: Bumped version to 5.44.1.12.
+	* configure: Regen'd, autoconf 2.59.
+
+2008-09-30  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in: Bumped version to 5.44.1.11.
+	* configure: Regen'd, autoconf 2.59.
+
+	* exp_command.c (Exp_OverlayObjCmd): Fixed [Expect SF Bug 2127456]
+	  reported by <eee@users.sourceforge.net>, with thanks. Changed
+	  retrieval of command from objv[0] (== 'overlay' itself), to
+	  objv[i] containing the actual user command.
+
+	* expect.c (string_case_first, string_first, eval_case_string):
+	  Applied patch supplied by Andy Belsey <Andrew.Belsey@Sun.COM>
+	  fixing the seg.fault in 'expect -exact'. With thanks for both
+	  the analysis of the problem and the patch. See also [Expect SF
+	  Bug 2114547].
+
+2008-08-28  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_trap.c (tophalf): Fixed inverted condition setting the
+	  interpreter used for trap handling to NULL, causing a crash when
+	  trying to handle ^C. This fixes [SF Bug 1757471] reported by
+	  Matthias Kraft <matzek@users.sourceforge.net>.
+	* configure.in: Bumped version to 5.44.1.10.
+	* configure: Regen'd, autoconf 2.59.
+
+2008-08-18  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* exp_main_sub.c (exp_interpreter): cleaner handling of commandPtr
+	to prevent crash. (das)
+
+2008-06-03  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_glob.c (Exp_StringCaseMatch2): Fixed bug in the handling of
+	  glob classes, see [SF Bug 1873404]. The code tried to match the
+	  closing bracket of a class in the input because it was not
+	  properly skipped after the class was matched successfully.
+	  Additional trace output added.
+	* configure.in: Bumped version to 5.44.1.9.
+	* configure: Regen'd, autoconf 2.59.
+
+2008-05-05  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_pty.c: Minimal ansification of function definitions to match
+	  them to their prototypes where promoted types are otherwise
+	  causing a mismatch for some compilers, like AIX in 64bit mode.
+	* configure.in: Bumped version to 5.44.1.8.
+	* configure: Regen'd, autoconf 2.59.
+
+2008-04-03  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in: Bumped version to 5.44.1.7.
+	* configure: Regen'd, autoconf 2.59.
+
+	* The following set of changes was sent our way by Reinhard Max
+	  <max@tclers.tk>.
+
+	* exp_command.c: Fixed more compiler warnings, and started
+	* exp_command.h: to ansify the code base, beginning with
+	* exp_inter.c: the introduction of proper function prototypes.
+	* exp_main_exp.c:
+	* exp_pty.h:
+	* exp_tty.c:
+	* exp_tty.h:
+	* exp_win.c:
+	* expect.c:
+	* pty_termios.c:
+	* retoglob.c:
+
+2008-04-03  Andreas Kupries   <andreask@activestate.com>
+
+	* configure.in: Bumped version to 5.44.1.6.
+	* configure: Regen'd, autoconf 2.59.
+
+	* The following set of changes was sent our way by Reinhard Max
+	  <max@tclers.tk>.
+
+	* configure.in: Fixed checking of stty on linux, do not restrict
+	  to specific cpu's. Further try with stdin, and stdin redirected
+	  to /dev/tty when determining if stdout is read.
+
+	* testsuite/configure.in: Brought up to TEA 3.5.
+	* testsuite/aclocal.m4: New file, to import the TEA definitions.
+
+	* Dbg.c: Added missed CONST in declaration and definition of
+	  'debugger_trap'.
+
+	* exp_command.c: Fixed pointer aliasing trouble with
+	  'Tcl_DetachPids', and added the missing initialization of the
+	  command string in the 'overlay' command.
+
+	* expect.c: Fixed missing initialization of 'simple_start' element
+	  of 'ecase'.
+
+	* exp_inter.c: Fixed bogus use of 'slen' in 'intMatch'. The
+	  relevant string is Tcl_Unichar, not Utf.
+
+	* Makefile.in: Replaced bogus INSTALL_ROOT with DESTDIR, and added
+	  missing DESTDIR references to the target for the installation of
+	  the manpages.
+
+2008-02-27  Andreas Kupries  <andreask@activestate.com>
+
+	* expect.c: Fixed refcounting error when parsing a single expect
+	* configure.in: argument into a list of patterns and
+	* configure: actions. Updated the version number to 5.44.1.5.
+	* Dbg.c: Added missing 'return TCL_OK' to debugger_trap.
+
+2007-12-13  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* exp_log.c (expStdoutLogU): correct which buf is output.
+
+	* exp_command.c (Exp_SendLogObjCmd): fix '--' handling
+	(Exp_SendObjCmd): fix '--' handling to expect last argument
+
+2007-09-24  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_inter.c: Changed inclusion of tcl.h to tclInt.h to get the
+	* expect.c: definition of TCL_REG_BOSONLY, which was moved to that
+	  header in Tcl 8.5. Ditto for expect.c, for the macro
+	  TclUtfToUniChar (was a function in 8.4). Expect now compiles
+	  again for both Tcl 8.4 and 8.5.
+
+	* configure.in: Bumped version to 5.44.1.4.
+	* configure: Regenerated.
+
+2007-09-19  Andreas Kupries  <andreask@activestate.com>
+
+	* retoglob.c (EMITC): Keep the characters '^' and '$' quoted as
+	  well, we do not wish to invoke their special interpretation by
+	  the Expect glob matcher.
+	* configure.in: Bumped version to 5.44.1.3.
+	* configure: Regenerated.
+
+2007-08-09  Andreas Kupries  <andreask@activestate.com>
+
+	* retoglob.c: We had ExpChopNested and ExpBackslash locally
+	  ansified (prototypes) to avoid a compiler error on AIX (type
+	  promotion trouble). This now integrated into the mainline
+	  sources, conditional to AIX.
+
+	* expect.c (Exp_TimestampObjCmd): Fixed argument processing broken
+	  by objc,objv conversion. Tried to use command name as the
+	  argument for -seconds. Also did not detect when one argument to
+	  many was specified.
+
+	* configure.in: Bumped version to 5.44.1.2.
+	* configure: Regenerated.
+
+2007-07-17  Andreas Kupries <andreask@activestate.com>
+
+	* expect.c: Circumvented problems with the C compiler by use of a
+	  temporary variable to hold the unicode pointer of a glob
+	  pattern. The computed pattern length given to
+	  Exp_StringCaseMatch was bogus.
+
+	* exp_glob.c: Added tracing of the glob matcher internals (Can be
+	  enabled by define EXP_INTERNAL_TRACE_GLOB). Fixed bug in a guard
+	  condition in the optimized handling of '*'. The bad condition
+	  caused the code to miss possible matches at the beginning of the
+	  input (first char).
+
+	* tests/expect.test: Added tests which check the glob matcher and
+	  RE gate keeping.
+
+	* configure.in: Bumped to 5.44.1.1 to separate this from the
+	  regular 5.44.1 sources.
+	* configure: Regenerated.
+
+2007-07-12  Andreas Kupries  <andreask@activestate.com>
+
+	* expect.c: Found bugs mismanaging input and pattern in the
+	* exp_glob.c: updated glob matcher. We cannot check for '\0'
+	  anymore to find the end of the string, these are counted
+	  arrays now. Rewritten to use sentinel pointers.
+
+2007-07-11  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_chan.c: Converted the buffering system from UTF-8 in Tcl_Obj
+	* exp_command.h: to UTF-16 C-array, to avoid the repeated conversion
+	* expect.c: of the input from utf-8 to utf-16. Updated the glob
+	* exp_glob.c: matching code to use the same tricks for speed which
+	* exp_inter.c: are used by the Tcl core. Extended the regexp
+	* exp_log.c: matching path with a glob matcher which uses a gate
+	* exp_log.h: keeper glob pattern to weed out most non-candidates
+	* retoglob.c (New file): in a speedy manner. Regexp matching now
+	  has to be done only for the small number of candidates
+	  identified by the gate keeper. Overall speed improvement as glob
+	  matching is faster than regexp matching. Added code translating
+	  regular expressions into their gate keeper glob pattern.
+
+	* Dbg.c: Converted the lot of argc,argv based command
+	* exp_command.c: implementations over to objc,objv.
+	* expect.c:
+	* exp_main_sub.c:
+
+	* Dbg.c: Cleaned up the direct access to interp->result,
+	* exp_command.c: replaced with the proper functions and
+	* expect.c: Tcl_Obj's.
+	* exp_main_exp.c:
+	* exp_main_sub.c:
+	* exp_main_tk.c:
+	* exp_prog.h:
+	* exp_trap.c:
+	* exp_tty.c:
+	* exp_win.c:
+	* exp_win.h:
+
+	* tests/cat.test: Added proper 'package require Expect'
+	* tests/expect.test: to the test setup code (JeffH).
+	* tests/logfile.test:
+	* tests/pid.test:
+	* tests/send.test:
+	* tests/spawn.test:
+	* tests/stty.test:
+
+	* exp_command.c: Reformatted overlong lines, whitespace,
+	* expect.c: comments. Added braces to some if-constructs.
+	* exp_inter.c: Reworked if-constructs interleaved with
+	* exp_tty.c: #if for better formatting in emacs.
+
+	* Dbg.c: Added note about unhandled cases in a switch.
+	* exp_chan.c: Added code to suppress unhandled warning for
+	  unreachable code.
+	* exp_command.c: Removed unused variable.
+	* expect.c: Removed unused static function, added code to suppress
+	  unhandled warning for unreachable code.
+
+	* exp_command.c: Fixed typo in comment.
+
+2007-06-28  Andreas Kupries <andreask@activestate.com>
+
+	* Merged changes from the official version 5.44.1 of expect into
+	  the SF sources. See the details below.
+
+	  --------------------
+	  Marius Schamsula <marius173@mchsi.xcom> reported tclconfig
+	  missing, evidentally for new TEA.
+
+	  Lots of massaging to fix TEAification of Makefile and configure
+	  including that version numbers will now be full three part.
+
+	  Daniel Wong <danielwong@berkeley.xedu> noted the home page
+	  should note that Wikipedia has a very readable entry for Expect.
+
+	  Andre Alves <aalves@escloyalty.xcom> noted passmass needed some
+	  fixes to handle Solaris 9 passwd prompt changes.
+
+	  Andreas fixed several things: changes to better support TEA, fix
+	  debugger interaction with nonblocking mode, and probably other
+	  things I'm overlooking.
+
+	  Martin Dietze <di@fh-wedel.xde> noted that autoconf 2.59 is
+	  confused by C comment after undefs in expect_cf.h.in.
+
+	  Added additional code to unbuffer -p so that if a process
+	  earlier in the pipeline exits, unbuffer attempts to recover any
+	  remaining output from the spawned proc before unbuffer itself
+	  exits.
+
+	  Jeffrey Hobbs noted that once stty was called, a bg'd script
+	  would be suspended at exit.  Turned out to be overaggressive
+	  code in stty that recorded what 'damage' the user might have
+	  caused when calling stty in the first place.
+
+	  Jens Petersen provided patch to make setpgrp configure better on
+	  some Linux systems.
+
+	  Added example/getpassck script to test for getpass bug.
+
+	  multixterm had debugging stuff leftover ("hello").
+	  --------------------
+
+2006-02-27  Andreas Kupries <andreask@activestate.com>
+
+	* exp_main_sub.c: Added command 'exp_configure' for magic configuration.
+	* exp_command.c:  Accepts option -strictwrite. Default is 0, ignoring
+	* exp_chan.c:     write errors (compatible to 5.41). Setting to 1 re-
+	* expect_tcl.h:   activates 5.42 behaviour.
+
+2006-01-25  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tclconfig/tcl.m4, configure: Fix LD_SEARCH_FLAGS setting in tcl.m4
+
+	* example/unbuffer: whitespace police
+
+	* example/beer.exp: brace exprs
+
+	* expect.man: use clock instead of exec date, minor nroff fixes.
+
+2006-01-24  Andreas Kupries <andreask@activestate.com>
+
+	* tclconfig/tcl.m4: Updated to TEA 3.5
+	* configure.in:     Ditto.
+	* configure:        Regenerated.
+
+2006-01-10  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tests/expect.test: ensure iso8859-1 for /tmp/null (steffen).
+
+2005-09-19  Andreas Kupries <andreask@activestate.com>
+
+	* exp_chan.c (ExpOutputProc): Added guard to intercept and ignore
+	  empty write operations, i.e. operations trying to write zero
+	  bytes.
+
+2005-09-09  Andreas Kupries <andreask@activestate.com>
+
+	* exp_chan.c (ExpBlockModeProc): No, stdin is not ok (See last
+	  entry). Fixed.
+
+2005-07-07  Andreas Kupries <andreask@activestate.com>
+
+	* exp_chan.c (ExpBlockModeProc): [Expect SF Bug 1108551]. Excluded
+	  manipulation of the blocking status for stdin/stderr. This is
+	  handled by the Tcl core itself and we must absolutely not pull
+	  the rug out from under it. The standard setting to non-blocking
+	  will mess with the core which had them set to blocking, and
+	  makes all its decisions based on that assumption. Setting to
+	  non-blocking can cause hangs and crashes. Stdin is ok however,
+	  apparently.
+
+	  This problem was introduced at '2004-06-14'.
+
+2005-06-22  Andreas Kupries <andreask@activestate.com>
+
+	* exp_chan.c:    Fixed bug causing crash of expect on exit when a
+	* exp_command.c: Tcl channel is used with -(leave)open more than
+	* exp_command.h: once. It tried to close such channels multiple
+	  times, going through already freed memory. Added data structures
+	  to track and refcount all such channels, to close them only when
+	  the last user goes away.
+
+2005-06-09  Andreas Kupries <andreask@activestate.com>
+
+	* Makefile.in:  Upgraded build system to TEA 3.2.
+	* configure.in:
+	* config.guess:
+	* config.sub
+	* exp_main_sub.c:
+	* aclocal.m4:
+
+2005-03-29  Andreas Kupries <andreask@activestate.com>
+
+	* exp_chan.c: Fixed problem with debugger introduced at '2004-06-14'.
+	* tcldbg.h:   For a nonblocking stdin the debugger blowed up on the
+	* Dbg.c:      empty reads it could get, exiting the application. I
+	              guess that this was an implicit 'panic'. Fix:
+
+		      - Split ExpBlockmodeProc into high- and lowlevel
+		        code, the latter for use by the debugger. The
+		        high-level code tells the debugger which state
+		        stdin is in (doing this explicitly because if
+		        FIONBIO is used it is not possible to query the fd
+		        directly, and I saw no reason to #ifdef for fcntl
+		        which can).
+
+		      - Debugger now exports a function for use by the
+		        blockmode proc, and in each interaction it checks
+		        for nonblocking input, forces blocking if
+		        necessary. At the end of each interaction the true
+		        mode is restored. Both operations use the
+		        low-level blockmode code.
+
+2005-03-07  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* exp_tty.c (Exp_SttyCmd): fix from Libes that controlling
+	terminal check example (book p372) by restricting set of
+	exp_ioctled_devtty variable.
+
+2005-02-15  Andreas Kupries <andreask@activestate.com>
+
+	* Merged changes from the official versions 5.42.1 and 5.43.0 of
+	  expect into the SF sources. See the details below.
+
+	  --------------------
+	  Martin Forssen <maf@tkrat.xorg> fixed bug in ExpOutputProc
+	  that caused misbehavior during partial writes.
+
+	  Someone noted that gets stdin behaves differently (returns -1
+	  immediately) from tclsh because with 5.42, stdin is unblocked by
+	  defaults.
+
+	  Robroy Gregg <robroy@armory.xcom> noted that expect_background
+	  ignores timeouts.  Added to documentation.
+
+	  Jens Peterson <peterson@redhat.xcom> provided patch for
+	  "mkpasswd -vo".
+
+	  Gary Bliesener <gary.bliesener@nextel.xcom> noted that
+	  multixterm failed on his system which had an old Tk that didn't
+	  support the Tk package.
+
+	  Removed beta designation.
+
+	  Daniel A. Steffen <steffen@ics.mq.edu.xau> provided patch for
+	  MacOS to avoid panic-redefinition.
+	  --------------------
+
+2005-01-21  Andreas Kupries <andreask@activestate.com>
+
+	* exp_inter.c: Changed all uses of 'time(3)' to Tcl_GetTime. IOW
+	* expect.c:    go through the abstract core API instead of
+	               directly acessing OS time. This makes the code
+	               dependent on Tcl 8.4, as Tcl_GetTime was not public
+	               before. See TIP #73 for its introduction into the
+	               public API. As for the reason behind _this_ change
+	               see TIP #233. Our change here now causes Expect to
+	               be automatically in sync with any virtualization
+	               set up in the core.
+
+2004-08-19  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_chan.c (ExpOutputProc): Added code posted by Don on
+	  c.l.t. to handle interrupted system calls (EAGAIN).
+
+2004-07-15  Andreas Kupries  <andreask@activestate.com>
+
+	* Merged changes from the official version 5.42b0 of expect into
+	  the SF sources. See details below.
+
+	  --------------------
+	  Alexander Doktorovich <alexander.doktorovich@ericsson.xcom>
+	  wanted to use Expect as a filter.  This is possible but 'too
+	  hard'.  To make it easier, added close_on_eof command to control
+	  whether expect/interact automatically close the channel on eof.
+	  This should simplify/enable other scripts.
+
+	  Kurt Heberlein <kurth@3pardata.xcom> noted that Expect would
+	  hang. Andreas tracked it down to a change in Tcl such that when
+	  Tcl had data left in its buffers, it would check for more data
+	  rather than returning what it had to Expect first.  If no data
+	  was forthcoming then Tcl would hang because the pty driver runs
+	  in blocked mode.  Recoded to use nonblocking mode.
+
+	  Yi Luo <yluo@brocade.xcom> noted that multixterm xterms were
+	  reporting the parent's X window ids (via the WINDOWID env
+	  variable) instead of the new ones.
+
+	  Dick Van Deun <dirk@dinf.vub.ac.xbe> noted that kibitz expects
+	  to find write in /bin but it is in /usr/bin on Slackware.  Seems
+	  safe to drop the prefix.
+
+	  Steve Lee <steve@tuxsoft.xcom> noted that building Expect failed
+	  on Linux when built from scratch because stty ends up in
+	  /usr/local/bin rather than the assumed /bin.  Added code to
+	  support this.
+	  --------------------
+
+2004-06-14  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_chan.c: Integrated the block mode proc I got by mail from
+	  Don Libes into the channel driver. This fixes an error with
+	  expect hanging on some input if the situation is just
+	  right^Hwrong. Basically if the buffers in driver, Tcl IO core
+	  and Expect itself are aligned just so it can cause Expect to
+	  block in all call to the OS for more data even if all the data
+	  it needs is in ts buffers. Because the driver is blocking and
+	  the Tcl core was told that it can run in non-blocking mode. with
+	  the block mode proc in place the driver knows that it should be
+	  non-blocking and is able to tell this to the OS as well. The
+	  call to the OS still happens, but is not blocking anymore, and
+	  so the problem is gone.
+
+	  A number of incompat changes in the Tcl IO core to work around
+	  this problem in Expect will be removed now.
+
+2004-06-03  Andreas Kupries  <andreask@activestate.com>
+
+	* aclocal.m4 (TCLHDIRDASHI): Extended with path to unix headers as
+	  well.
+	* expect_tcl.h: Added inclusion of <stdio.h>.
+	  Both changes required for Expect to compile against Tcl 8.5
+	  after the header reform.
+	* configure: Regenerated.
+
+2004-05-19  Andreas Kupries  <andreask@activestate.com>
+
+	* Merged changes from the official version 5.41 of expect into the
+	  SF sources. See details below.
+
+	  --------------------
+	  Simon Taylor <simon@unisolve.com.xau> provided fix for interact
+	  -o which was completely broken by 5.40.1.
+
+	  Added scroll support to official tkterm.  Copied all fixes
+	  from/to term_expect to/from tkterm.
+
+	  Kiran Madabhushi <maskiran@hotmail.xcom> encountered interact
+	  diagnostics incorrectly pointing to expect_background.  Also,
+	  found multiple -o flags behaving unexpectedly.  Added diag.
+
+	  Kristoffer Eriksson <ske@pkmab.xse> noted typo in SIMPLE code in
+	  exp_inter.c.  However, this is extremely unlikely to affect any
+	  machines.
+
+	  Reinhard Max <max@suse.xcom> noted that "make test" failed when
+	  run in the background.  The log testcase was testing the
+	  send_tty command.  Added code in both Expect and in the test to
+	  handle this.
+	  --------------------
+
+2004-02-25  Andreas Kupries  <andreask@activestate.com>
+
+	* Merged changes from the official version 5.40 of expect into the
+	  SF sources. See details below. Partially already done (Rich
+	  Kennedy's patch).
+
+	  --------------------
+	  Eric Raymond <esr@snark.thyrsus.xcom> provided troff-related
+	  fixes for the expect, lib, and dislocate man pages.
+
+	  Rich Kennedy <rickenne@cisco.xcom> noted a bug having to do
+	  with our caching of whether we have registered a filehandler.
+	  This broke when Tcl was setting a handler on the same file.
+
+	  Ken Pizzini <ken.pizzini@explicate.xorg> provided patch for
+	  leak in spawn error handling.
+
+	  Pete Lancashire <plancashire@columbia.xcom> noted autopasswd
+	  example broke on Solaris which capitalized prompts.
+	  --------------------
+
+2003-10-20  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_event.c (exp_get_next_event): Applied a patch made by Don
+	  Libes in response to a bug report posted to news:comp.lang.tcl
+	  by Rich Kennedy <rickenne@cisco.com>. Patch was posted to c.l.t
+	  too.
+
+	  > Subject: Re: 2nd interact does not grab stdin
+	  > Date: 17 Oct 2003 15:33:38 -0400
+	  > From: Don Libes <libes@nist.gov>
+	  > Organization: National Institute of Standards and Technology
+	  > Newsgroups: comp.lang.tcl
+	  > References: <3F86D6F8.E535CBDE@cisco.com>
+
+	  > It's a bug - some overaggressive caching regarding stdin.  A fix
+	  > appears below.  (You should also be able to avoid the problem by
+	  > replacing the gets with expect_user.)
+
+	  > Don
+
+	  > Rich Kennedy <rickenne@cisco.com> writes:
+
+	  > > Hi,
+	  > >
+	  > >  The following little expect script gets in trouble with second
+	  > >  'interact' statement. The 'less' program does not get stdin
+	  > >  so it doesn't respond to typed characters...
+	  > >
+	  > >  Is there something that must be done after the 1st interact to
+	  > >  allow the second to work correctly? (Note, you have to run
+	  > >  as a script because it works correctly if you type the commands
+	  > >  interactively to expect)
+	  > >
+	  > > 	#!/usr/local/bin/expect
+	  > >
+	  > > 	gets stdin a
+	  > > 	spawn less file1
+	  > > 	interact
+	  > >  	wait
+	  > > 	gets stdin junk
+	  > > 	spawn less file2
+	  > > 	interact
+	  > >         wait
+	  > >
+	  > >  Thanks
+	  > >
+	  > > Rich Kennedy
+
+2003-09-05  Andreas Kupries  <andreask@activestate.com>
+
+	* Merged changes from the official version 5.39 of expect into the
+	  SF sources. See details below. Partially already done.
+
+	  --------------------
+	  Poorva Gupta <poorva@cup.hp.xcom> noted that grantpt/unlockpt
+	  order was backward.  Strange that this was never a prob before!
+
+	  Eric Raymond <esr@snark.thyrsus.xcom> provided a troff-related
+	  fix for the multixterm man page.
+
+	  Nicolas Roeser <n-roeser@gmx.xnet> noted confusion with md5 so I
+	  made the Expect page more explicit about which file that hash
+	  was based on.
+
+	  Josh Purinton noted that earlier fix wasn't quite right.  Exit
+	  on INT/TERM should cause Expect to exit with signal embedded in
+	  status.  He also requested I obfuscate email addresses in this
+	  file.
+
+	  Guido Ostkamp <Guido.Ostkamp@t-online.xde> and Igor Sobrado
+	  <sobrado@string1.ciencias.uniovi.xes> noted that fixline1
+	  rewrote scripts to be expect scripts even if they were expectk
+	  scripts.
+
+	  Dirk Petera <dirkpetera@yahoo.xcom> noted that any_spawn_id used
+	  to work but did no longer.  Looks like a bug left over from the
+	  the I18L conversion.  Fixed.
+
+	  Steve Szabo noted exp_log_file -open channel failed.  Fixed.
+
+	  Fixed bug from 5.31 that prevent stty from returning messages
+	  from underlying program.
+
+	  Thomas Dickey <dickey@herndon4.his.xcom> noted that ncurses
+	  ignores 2-char term names because of, well, poor assumptions and
+	  coding.  Changed tkterm to use longer names.
+
+	  Heath Moore <hmoore@systran.xcom> noted that exp_clib could lock
+	  up if remtime happened to be precisely 0.  Recoded to avoid.
+
+	  At request of Per Otterholm <otterholm@telia.xcom>, wrote script
+	  to read from stdin and echo passwords (exercise 9 in Tk chapter
+	  of Expect book).  Added to example directory as passwdprompt.
+
+	  Josh Purinton <josh@purinton.xorg> pointed out that by default,
+	  SIGINT/TERM should cause expect's return status to be 1, not 0.
+
+	  Paul Reithmuller <paul.reithmuller@eng.sun.xcom> noted that
+	  unbuffer shouldn't postprocess its output.  Added stty_init.
+
+	  Mordechai T. Abzug <morty@sanctuary.arbutus.md.xus> noted that
+	  log_file wasn't recording -append status.
+
+	  James Kelly <macubergeek@comcast.xnet> noted weather example
+	  needed new source.
+
+	  Dimitar Haralanov <mitko@tahoenetworks.xcom> noted that interact
+	  dumped core with interact { timeout 1 }
+	  --------------------
+
+2003-06-16  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_command.c: Applied patch provided on c.l.t., by Don Libes
+	  <libes@nist.gov> in response to a bug report by Dirk Petera
+	  <dirkpetera@yahoo.com> in same place. See thread reference
+	  below:
+
+	  http://groups.google.ca/groups?threadm=4791f5a6.0305250619.1a660299%40posting.google.com
+
+2003-05-08  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_clib.c (expectv): Applied patch provided on c.l.t., by Don
+	  Libes <libes@nist.gov> in response to a bug report by "Heath
+	  Moore" <hmoore@systran.com> in same place:
+
+	  > Regarding expect 5.38...
+	  >
+	  > I'm using libexpect on RedHat 8.0 to communicate via telnet,
+	  > and am having problems with it locking up instead of timing
+	  > out.  Causing traffic during the lockup breaks the lockup.  I
+	  > looked at the sources, and think I may have found the reason.
+	  >
+	  > It appears as though i_read can be called with remtime== 0,
+	  > which means do > one read() and return without using alarm(),
+	  > even when exp_timeout is non-zero.  This would happen if
+	  > i_read were to return after receiving non-matching data when
+	  > end_time == current_time.  The subsequent i_read would then
+	  > wait until it received data.
+
+2003-02-17  Andreas Kupries  <andreask@activestate.com>
+
+	* Makefile.in:
+	* configure.in: Removed the check of configure against
+	  configure.in and Makefile.in. It is a hassle to deal with when
+	  trying to build straight from CVS, making unsupervised automatic
+	  builds difficult
+
+2003-02-14  Andreas Kupries  <andreask@activestate.com>
+
+	* configure.in:   Made expect aware of tcl stubs. Derived from the
+	* exp_command.h:  patches to expect done by Steve Landers
+	* exp_command.c:  <stevel@digital-smarties.com>. Modifications:
+	* exp_main_sub.c  No global cmdinfo structures for 'close' and
+	* exp_main_exp.c: 'return'. Made this per-interpreter information
+	* exp_main_tk.c:  as it should be. Using interp assoc data for this.
+
+	NOTE: stubs is not default, but has to be activated via '--enable-stubs'.
+
+	* configure:      Regenerated.
+
+2003-02-14  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_chan.c (exp_close_all): Save the nextPtr in a local variable
+	  before calling 'exp_close' as 'expStateFree' can be called from
+	  it under some circumstances, possibly causing the memory
+	  allocator to smash the value in 'esPtr'.
+
+2003-02-03  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_log.c (expLogChannelOpen): Fixed the bug reported on
+	  comp.lang.tcl by Mordechai T. Abzug
+	  <morty@sanctuary.arbutus.md.us>. The bugfix itself was provided
+	  by Don Libes.
+
+2002-10-09  Andreas Kupries  <andreask@activestate.com>
+
+	* exp_command.c (Exp_SpawnCmd): Tcl_GetChannelHandle expected a
+	  ClientData*, but got an int*. sizeof(int) != sizeof(ClientData)
+	  on 64bit platforms. Crashed the command on a PA-RISC 2.0 machine
+	  with --enable-64bit set. Fix: Use temp. variables of type
+	  ClientData to retrieve the fd's, and copy this into the actual
+	  variables, with a cast to int.
+
+2002-09-25  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure: regen'ed
+	* configure.in: use tcl_libdir in EXP_LIB_SPEC instead of
+	${INSTALL_ROOT}${exec_prefix}/lib (steffen)
+
+	* exp_main_tk.c (Tk_Init2): don't call XSynchronize on OS X.
+
+2002-08-08  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* Merged changes from the official version 5.38 of expect into the
+	  SF sources. See details below.
+
+	* Makefile.in: Added generation of MD5 checksum for distributed
+	  archive.
+	* rftp:         Bugfix by Curt Schroeder, see HISTORY
+	* HISTORY:      Updated with new info.
+	* configure:    Updated version info.
+	* configure.in: Updated version info.
+
+2002-06-26  David Gravereaux <davygrvy@pobox.com>
+
+	* example/weather: Updated script to use rainmaker.wunderground.com
+	instead of cirrus.sprl.umich.edu.  The old service is closed.
+	Added Larry Virden's notes about how rainmaker needs reverse DNS
+	from the peer making the connection or no data can retrieved.
+	This appears to be a blind error condition.
+
+2002-06-17  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* exp_main_tk.c: #ifdef'd definition of "matherr". This hack is
+	  not required for 8.4 anymore. But still for 8.3.
+
+2002-03-25  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* exp_main_sub.c: Fixed typo in merge of #459646. Thanks to Hemang Lavana.
+
+ 	* exp_log.c (expStdoutLogU): Merged fix for SF Bug #513382 into
+	  the HEAD (The source of the patch is "expect-sf418892-sf439042-branch").
+
+	  Use Tcl_WriteChars/Tcl_Flush instead of 'fwrite' for tcl 8.1 and
+	  beyond to enforce correct conversion of the internal UTF/8 into
+	  the external representation.
+
+	* Merged fix for SF Bug #459646 into the HEAD (The source of the
+	  patch is "expect-sf418892-sf439042-branch").
+
+	* Merged fix for SF Bug #439042 into the HEAD (The source of the
+	  patch is "expect-sf418892-sf439042-branch").
+
+	* Merged fix for SF Bug #418892 into the HEAD (The source of the
+	  patch is "expect-sf418892-sf439042-branch").
+
+2002-03-23  Don Libes  <libes@users.sourceforge.net>
+
+	* Andreas Kupries mods to provide CONST support per TIP 27 (Fixed
+	  SF Patch #525074).
+
+2002-02-25  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* expect.c: Applied patch by Don Libes fixing improper
+	  internationalization.
+
+2002-02-21  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* expect.man: Changed the paragraph about [exp_continue] to
+	  contain information about the flag "-continue_timer". This fixes
+	  the bug SF #520630.
+
+2002-02-08  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* expect.man: Changed abbreviation of "-notransfer" from "-n" to
+	  "-not". "-n" is no longer unique due to the addition of
+	  "-nocase". This fixes the bug SF #514994.
+
+2002-02-07  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* Applied patch for SF #514590 to correct behaviour of expect when
+	  expecting and send from and to bogus spawn id's.
+
+2002-01-16  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* Resynchronization of SourceForge with Don's sources to Expect
+	  version 5.34. The changes are
+
+	  Don Porter <don.porter@nist.gov> provided package-related fixes
+	  for test suite.
+
+	  Brian Theado <brian.theado@usa.net> noted that interact's -re
+	  support broke when offsets kicked in.  Turned out that the
+	  regexp engine supports them during execution but the results are
+	  delivered RELATIVE to the offset.  (I suspect this was done
+	  due to expediency.)
+
+2001-12-05  Andreas Kupries  <andreas_kupries@users.sourceforge.net>
+
+	* exp_inter.c: Applied patch posted by Don libes to c.l.t. on his
+	  behalf to keep the SF repository in sync with his changes. Don's
+	  notes: I obviously missed the fact that although
+	  "Tcl_RegExpExecObj" supports offsets, they aren't delivered to
+	  "Tcl_RegExpGetInfo".
+
+2001-09-12  David Gravereaux <davygrvy@pobox.com>
+
+	* 'telco-tec-win32-branch' branch created.
+
+2001-08-01  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Dbg.c (Dbg_On): fixed handling of stepping. [Bug: #446412]
+
+2000-04-26  Rob Savoye  <rob@welcomehome.org>
+
+	* pty_termios.h: Only include stropts.h if it exists, rather than
+	deciding it exists based on HAVE_PTMX.
+	* configure.in: Make sure libpt exists, rather than blindly using
+	it for all our configure tests, which then all fail. Also assume
+	our svr4 style ptys are broken, if /dev/ptmx exists, but stropts.h
+	doesn't exist.
+
+1999-08-31  Jennifer Hom  <jenn@scriptics.com>
+
+	* Makefile.in: Changed test target to source tests/all.tcl instead
+	of tests/all
+
+	* tests/README: Modified documentation to reflect the change from
+	usage of a defs file to the use of package tcltest to run the tests
+
+	* tests/all:
+	* tests/defs:
+	* tests/all.tcl:
+	* tests/cat.test:
+	* tests/expect.test:
+	* tests/logfile.test:
+	* tests/pid.test:
+	* tests/send.test:
+	* tests/spawn.test
+	* tests/stty.test: Modified test files to use package tcltest,
+	removed tests/all and tests/defs, and added tests/all.tcl
+
+1999-06-22    <stanton@scriptics.com>
+
+	* expect.c: Fixed bug in token parsing where index was not being
+	incremented properly.
+
+	* configure.in: Changed version number to 5.31.
+
+	* aclocal.m4: Fixed CY_AC_LOAD_TKCONFIG so it tests for Tk_Init
+	instead of Tk_Main (which is only a macro in 8.1 and later).  Also
+	added TCL_BUILD_LIB_SPEC to the set of flags used in this test to
+	avoid linker errors.
+
+	* Dbgconfig.in: move CY_*_TCLCONFIG tests below AC_PROG_CC so it
+	will work with gcc
+
+Thu Mar 20 14:27:45 1997  Geoffrey Noer  <noer@cygnus.com>
+
+	* configure.in: don't check if stty reads stdout for
+	i[[3456]]86-*-sysv4.2MP during config; hard code instead
+
+Tue Nov 19 09:22:08 1996  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in (install_shared_lib): Put else clause onto each if.
+
+Fri Nov 15 11:23:43 1996  Tom Tromey  <tromey@cygnus.com>
+
+	* Makefile.in (XCFLAGS): Use EXP_SHLIB_CFLAGS, not
+	TCL_SHLIB_CFLAGS.
+	(TCL_SHLIB_CFLAGS): Define.
+
+	* configure.in: Allow arguments to --enable-blah to work.
+	Compute and AC_SUBST EXP_SHLIB_CFLAGS.
+	Added missing AC_MSG_CHECKING.
+
+Wed Oct  2 10:13:37 1996  Tom Tromey  <tromey@cygnus.com>
+
+	* configure: Regenerated.
+	* configure.in (stty_reads_stdout): /bin/stty on DG/UX fails.
+
+Fri Sep 27 10:15:48 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* expect.c (exp_i_read): Pass interp as first arg to exp_error.
+	* configure.in (stty_reads_stdout): /bin/stty on OSF2.0, OSF3.2,
+	HPUX 9.X, HPUX 10.X guesses wrong, so set value explicitly.
+
+Mon Sep  9 10:29:32 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* configure: Regenerated.
+	* configure.in: Added code to actually handle --with-x.
+
+	* configure: Regenerated.
+	* configure.in: Don't bother looking for Tk if --with-x=no
+	specified.
+
+Thu Sep  5 11:01:09 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* configure: Regenerated.
+	* configure.in (stty_reads_stdout): AIX fails "stty" test in
+	background, so set explicitly.  Ditto HPUX 9 and 10.
+
+Thu Aug 29 17:04:55 1996  Michael Meissner  <meissner@tiktok.cygnus.com>
+
+	* configure.in (i[345]86-*-*): Recognize i686 for pentium pro.
+	* configure: Regenerate.
+
+Mon Aug  5 12:55:06 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* Makefile.in (XCFLAGS): New macro.
+	(CFLAGS): Define to just @CFLAGS@.
+	(CFLAGS_INT): Use $(XCFLAGS).
+	(expect, expect_installed, expect.tc, expectk, expectk_installed,
+	expectk.tc): Use $(XCFLAGS).
+
+Mon Feb 12 23:11:38 1996  Rob Savoye  <rob@chinadoll>
+
+	* aclocal.m4: Fix typo of ac_cv_tkh to be ac_cv_tclh so it works
+	on all systems.
+	* configure, DBGconfigure, testsuite/configure: Regenerated with
+	autoconf 2.7.
+
+Tue Feb  6 11:48:05 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* exp_clib.c, exp_printify.c, expect_comm.h: For Tcl 7.5 and
+	greater, use ../compat/stdlib.h, not compat/stdlib.h.
+
+Tue Jan 30 12:21:37 1996  Fred Fish  <fnf@kalessin.cygnus.com>
+
+	* exp_regexp.c (regmatch, regrepeat): Only declare strchr if it is not
+ 	a macro.
+
+Mon Jan 22 11:17:06 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* configure.in: Check for -lieee, -ldl, and -ldld.
+
+	* Makefile.in (OFILES): Include @LIBOBJS@.
+	(strerror.o): New target.
+
+	* strerror.c: New file.
+
+	* configure.in: Test for strerror.
+
+Fri Jan 19 11:08:11 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* Makefile.in (install, ${SCRIPT_LIST}, test): Find new Tcl libraries.
+
+Thu Jan 18 13:43:13 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* Most files: Update to expect 5.19.
+
+Fri Jan 12 16:22:12 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* exp_closetcl.c (exp_close_tcl_files): Skip stdin, stdout,
+	stderr.
+	* expect_comm.h: Declare exp_close_files_interp.
+	* exp_command.c (exp_init_most_cmds): Set exp_close_files_interp.
+
+Thu Jan 11 09:43:14 1996  Tom Tromey  <tromey@creche.cygnus.com>
+
+	* exp_closetcl.c (exp_close_files_interp): New variable for Tcl
+	7.5.
+	(exp_close_tcl_files): Updated for Tcl 7.5.
+
+	Prototype and varargs changes:
+	* expect.c: Don't include <varargs.h>.
+	* Dbg.c: Copied in many defines from expect_comm.h.
+	(print): Use new varargs defines.
+	* exp_clib.c (exp_fexpectl): Use EXP_VARARGS_START.
+	* expect_comm.h: Include "tclInt.h".
+	* exp_console.c (exp_console_manipulation_failed): First arg to
+	errorlog is char*, not FILE*.
+	* exp_log.c (debuglog): Pass name of last argument to
+	EXP_VARARGS_START.
+	* expect_cf.h.in (tcl_AsyncReady): Removed define.
+	* expect.c (Exp_ExpectGlobalCmd): Added cast.
+	* exp_command.c (exp_i_update): First arg to exp_debuglog is
+	* exp_poll.c (exp_get_next_event): Likewise.
+	char*, not Tcl_Interp*.
+	* exp_log.h: Use prototypes everywhere.  Include "expect_comm.h".
+	* expect_tcl.h: Use EXP_VARARGS, not VARARGS.
+	(tcl_AsyncReady): New define for Tcl 7.5.
+
+	* aclocal.m4 (CY_AC_PATH_TCLH): Handle Tcl 7.5 and greater.
+	(CY_AC_PATH_TCLLIB): Handle Tcl 7.5 and greater.
+	(CY_AC_PATH_TKH): Handle Tk 4.1 and greater.
+	(CY_AC_PATH_TKLIB): Handle Tk 4.1 and greater.  Properly quote
+	argument to AC_REQUIRE.
+	* configure: Regenerated.
+
+Tue Jan  9 16:26:47 1996  Rob Savoye  <rob@chinadoll.cygnus.com>
+
+	* Makefile.in: Change SHORT_BINDIR to $prefix, rather than
+	exec_prefix. This is only used to store the platform independant
+	expect scripts.
+
+Dec 18 17:22:05 1995  Brendan Kehoe  <brendan@lisa.cygnus.com>
+
+        * configure.in, configure: For a solaris2 machine doing a static
+        build, add `-ldl -lw' to avoid unresolved refs using the
+        OpenWindows libraries.
+
+Wed Nov 22 08:49:01 1995  Rob Savoye  <rob@chinadollchinadoll.cygnus.com>
+
+	* Most files: Update to expect 5.18.1.
+
+Fri Nov 17 17:31:55 1995  Rob Savoye  <rob@chinadoll.cygnus.com>
+
+	* configure.in: Add support for SCO OpenServer. It doesn't like
+	the trap either.
+
+Thu Nov 16 09:28:53 1995  Rob Savoye  <rob@chinadoll.cygnus.com>
+
+	* configure.in: Use $host to get the OS type rather than trying to
+	get the host name ourselves. Use the $host to set the
+	STTY_READS_STDOUT for hosts were the test is known to fail. It
+	also now configures in the background.
+	* configure.in, Dbgconfig.in, testsuite/configure.in: Use
+	AC_PROG_CC again since Cygnus configure now does the sames thing.
+
+Mon Oct 30 18:16:48 1995  Jason Molenda  (crash@phydeaux.cygnus.com)
+
+	* configure.in (no_tk): zero out X_PROGS if we can't find tk
+	libraries.
+
+Tue Oct 24 18:25:09 1995  Jason Molenda  (crash@phydeaux.cygnus.com)
+
+	* Makefile.in (X11HDIR): Changed to X11_CFLAGS.
+	(X11_LIB_FLAGS): Changed to X11_LDFLAGS.
+	(X11_LIB): Changed to X11_LIBS.
+	(CPPFLAGS_SIMPLE): Use X11_CFLAGS.
+	(expectk, expectk.tc, tk): use X11_LDFLAGS & X11_LIBS.
+
+	* configure.in (X11HDIR, X11_LIB_FLAGS, X11_LIB): Use X11_CFLAGS,
+	X11_LDFLAGS, X11_LIBS.  Link X11 statically on Solaris, SunOS and
+	HPUX.
+
+Thu Oct 19 20:55:54 1995  Fred Fish  <fnf@cygnus.com>
+
+	* Makefile.in: Remove extraneous tabs and blanks in otherwise
+	empty lines.  That confuses older non-GNU versions of "make".
+
+Mon Oct  9 20:58:50 1995  Jason Molenda  (crash@phydeaux.cygnus.com)
+
+	* testsuite/aclocal.m4: New file.  Include ../aclocal.m4.
+
+Thu Aug 31 00:16:26 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* HISTORY, Makefile.in, aclocal.m4, exp_command.h, exp_inter.c,
+	exp_main_tk.c, exp_pty.c, expect.c, tests/all,
+	testsuite/Makefile.in. Update to the 5.18.0 release. Minor
+	changes.
+
+Thu Aug 17 18:47:21 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* Most files: Update to the 5.17.7 release.
+
+Thu Aug  3 22:47:36 1995  Jeff Law  (law@snake.cs.utah.edu)
+
+	* pty_termios.c (HAVE_PTMX): Undefine if both HAVE_PTYM and
+	HAVE_PTMX are defined (as happens for hpux10).
+
+Thu Jul 27 16:31:23 1995  J.T. Conklin  <jtc@cygnus.com>
+
+	* Makefile.in (configure): Removed rule that automatically
+	rebuilds configure script.  Users might not have autoconf.
+
+Tue Jul 18 23:15:03 1995  Fred Fish  <fnf@fishbowl>
+
+	* expect.c (Exp_ExpectGlobalCmd):  Cast ckrealloc first arg to char*.
+
+Sun Jun 18 13:02:41 1995  Fred Fish  <fnf@amigalib.com>
+
+	* configure, configure.in (XLIBS):  When adding -lX11, also preserve
+	the previous libraries that we went to the trouble of finding.
+
+Sun Jun 18 12:15:44 1995  Fred Fish  <fnf@amigalib.com>
+
+	* Makefile.in (exp_clib.o): Add dependencies.
+
+Mon May  1 16:50:22 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* configure.in: Also set XINCLUDES in the Makefile.
+
+Fri Apr 28 18:56:02 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* aclocal.m4: Create a clone of AC_C_CROSS called CY_C_CROSS that
+	has better error handling in case the native compiler is hosed.
+	* aclocal.m4: Look for tcl and tk directories as just tcl (and tk)
+	or tcl[0-9] (and tk[0-9)] so it doesn't match the tclX
+	release. Print an error and exit if any of the --with-{tcl,tk}*
+	options are used and point to bogus paths. Based Tcl header search
+	on tclInt./h rather than tcl.h.
+	* Makefile.in: Add dependancies for back in for configure and
+	Dbgconfigure targets.
+
+Mon Apr 24 16:46:01 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* exp_command.c, exp_event.h, exp_inter.c, exp_main_tk.c,
+	exp_poll.c, exp_select.c, exp_simple.c, exp_tk.c, exp_trap.c,
+	exp_tty.c, FAQ, README, HISTORY: Update to expect 5.16.3.
+
+Fri Apr 14 12:00:39 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* configure.in: Copy Dbg_cf.h to objdir, not srcdir.
+
+Tue Apr 11 18:52:24 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* aclocal.m4: Split the macros so header and library searches are
+	seperate macros. AC_PATH_{TCL,TK} nows only calls the macros. Lots
+	of optimization to the AC_PATH_T* macros. Supports the use of
+	--with-tclinclude, --with-tcllib, --with-tkinclude, --with-tklib
+	to specify alternative search dirs for tcl and tk stuff.
+	* Makefile.in, testsuite/Makefile.in: Re-write targets for
+	configure, Dbgconfigure so they work in an unconfigured srcdir.
+	* configure.in: Put AC_PATH_X before AC_PATH_TK and make the TK
+	test conditional. Fix how Dbgconfigure gets passed the Tcl header
+	dir to use --with-PACKAGE which is much simpler. Removed the test
+	for user override of X search paths since AC_PATH_X uses.
+	--x-includes and --x-libraries instead.
+	* Dbgconfig.in: Use AC_PATH_TCLH to find just the headers, and
+	test for LynxOS.
+	* debugger/: Remove directory. Recursive configuring is so much
+	easier...
+	* DbgMkfl.in, Dbg_cf.h.in, Dbg.c, Dbg.h, Dbgconfigure,
+	Dbgconfig.in: Sigh, moved back to the top-level expect directory.
+
+Wed Apr  5 17:25:45 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* configure.in: Add a trap so the configure runs in the
+	background.
+
+Thu Mar 16 16:56:08 1995  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* debugger: New directory for the Tcl debugger.
+	* debugger/Dbg.c, debugger/Dbg.h, debugger/Dbg_cf.h.in: Moved from
+	the top level expect directory so it builds standalone.
+	* DbgMkfl.in, debugger/Makefile.in: Moved to debugger dir and
+	renamed.
+	* install-sh, mkinstalldirs: New files borrowed from the autoconf
+	distribution.
+	* aclocal.m4: New autoconf macros.
+	* Makefile.in: Tweaked so it's recursive.
+	* configure.in: Use new macros in aclocal.m4 rather than hunting
+	for the Tcl and Tk stuff ourseleves.
+	* debugger/Makefile.in: Build debugger standalone.
+	* testsuite/Makefile.in, testsuite/configure.in: New files for
+	autoconf support.
+	* exp_test.c, testsuite/exp_test.c: Move test file.
+
+Fri Jan 13 15:30:30 1995  Ian Lance Taylor  <ian@sanguine.cygnus.com>
+
+	* Makefile.in (check): Pass EXPECT correctly to runtest.
+
+Thu Oct 20 18:04:06 1994  Rob Savoye  <rob@darkstar.cygnus.com>
+
+	* Makefile.in: Add X11_INCLUDE_FLAGS so top level flags get used
+	too.
+
+Tue Jun 14 12:32:07 1994  David J. Mackenzie  (djm@rtl.cygnus.com)
+
+	* aclocal.m4: Copy from TCL directory.
+	* configure.in: Improve checks for installed Tcl and Tk.
+	* configure: Rebuilt.
+
+Tue Jun  7 13:52:34 1994  Ian Lance Taylor  (ian@tweedledumb.cygnus.com)
+
+	* Makefile.in (mostlyclean, realclean): New targets.
+
+Wed May 18 12:21:06 1994  Ian Lance Taylor  (ian@tweedledumb.cygnus.com)
+
+	* Makefile.in (install): Add another ``else true''.
+
+Fri Apr 29 16:49:36 1994  Ian Lance Taylor  (ian@tweedledumb.cygnus.com)
+
+	* Makefile.in (install): Always use else in if conditional to
+	avoid Ultrix sh bug.
+
+Mon Apr 11 15:22:12 1994  Rob Savoye  (rob@cirdan.cygnus.com)
+
+	* Upgrade to the new "official" beta release of expect 5.7.
+
+Wed Mar 30 17:15:28 1994  Rob Savoye  (rob@cirdan.cygnus.com)
+
+	* testsuite/expect.tests/expect-test.exp: Just run the new expect
+	tests and format the outout under DejaGnu.
+
+Mon Mar 28 14:33:55 1994  Rob Savoye  (rob@cirdan.cygnus.com)
+
+	* Upgrade to expect 5.6.3.
+
+Thu Dec  2 16:26:54 1993  Rob Savoye  (rob@darkstar.cygnus.com)
+
+	* configure.in: Add tests to find Tcl and Tk headers and
+	libraries.
+
+Thu Aug 19 18:26:49 1993  Rob Savoye  (rob@darkstar.cygnus.com)
+
+	* upgraded to version 4.7.6, add OSF/1 patches in again.
+
+Wed Aug 18 20:10:16 1993  Rob Savoye  (rob@rtl.cygnus.com)
+
+        * upgraded to version 4.7.4, add OSF/1 patches in again.
+
+Tue Aug 17 20:17:40 1993  Rob Savoye  (rob@darkstar.cygnus.com)
+
+	* pty_termios.c, exp_command.c, configure.in: Add support for
+	using ptmx_bsd's if they exist. Only found on OSF/1. (patch
+	applied from Gregory Depp <depp@osf.org>
+
+Thu Jun 10 11:36:09 1993  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* exp_main.h: fix prototype for exp_cook
+
+Fri Jun  4 08:55:22 1993  Ian Lance Taylor  (ian@cygnus.com)
+
+	* Makefile.in (TCLLIB): If ../tcl/libtcl.a does not exist, use
+	-ltcl.
+
+Tue May 25 14:45:12 1993  Rob Savoye  (rob@darkstar.cygnus.com)
+
+	* Makefile.in, configure.in: Add some support for autoconfiguring
+	for X.
+
+Sun May 23 22:32:09 1993  Rob Savoye  (rob at darkstar.cygnus.com)
+
+	* exp_command.c: Fix so send_log still works when master is out of
+	bounds. (ok since it doesn't get used).
+
+Mon May 17 19:51:52 1993  Rob Savoye  (rob@cygnus.com)
+
+	* configure.in: Change test for ranlib so it kicks out "true"
+	rather than "@:" if it can't be found.
+
+Thu Apr 15 14:11:50 1993  Rob Savoye  (rob@cygnus.com)
+
+	* configure.in, Makefile.in: If using ptmx's (SVR4 style pty's)
+	then check for libpt.a too.
+
+Thu Apr  8 17:13:39 1993  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* Makefile.in: all doesn't depend on $(SCRIPTS).  When building
+	$(SCRIPTS) using fixline & sources in $(srcdir), not the current
+	directory.  When installing manpages, install from $(srcdir).
+	Don't install like "install foo $(bindir)" but rather "install foo
+	$(bindir)/foo".
+
+Mon Mar 22 23:56:29 1993  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* Makefile.in: add check & installcheck targets
+
+Tue Mar  2 20:28:30 1993  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* configure.in, configure: declare SETUID to be @: instead of echo
+
+	* pty_termios.c: declare ptynum
+
+	* Makefile.in: a number of changes, including use of the AR and
+	ARFLAGS variables, the appropriate variables for X11 (as passed
+	down from the top level Makefile), clean up some doc lines
+
+Mon Mar  1 15:05:40 1993  Rob Savoye  (rob at darkstar.cygnus.com)
+
+	* configure.in, defs.h.in: Fixed problem for systems that think
+	getpty() should be _getpty().
+
+Thu Feb 25 15:34:34 1993  Rob Savoye  (rob at darkstar.cygnus.com)
+
+	* exp_tty.h: Defines portable tty macros.
+	* pty_termios.c: New file, slightly based on pty_usg.c. Uses
+	portable macros and also supports termio.
+	* pty_sgttyb.c: Was pty_bsd.c.
+	* configure.in, Makefile.in, configure: autoconf support for
+	expect.
+
+Sun Feb 21 17:42:28 1993  Rob Savoye  (rob at darkstar.cygnus.com)
+
+	* exp_tty.h: Removed and renamed the macros to use configure's.
+
+Wed Feb 17 18:56:36 1993  Rob Savoye  (rob at darkstar.cygnus.com)
+
+	* expect.c, Makefile.in: Changed SIG_FN_RETURN to RETSIGTYPE
+	since that's what autoconf kicks out.
+
+Thu Dec 24 15:07:32 1992  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* Makefile.in: added dummy dvi target
+
+Wed Dec 16 11:26:16 1992  Ian Lance Taylor  (ian@cygnus.com)
+
+	* inter_select.c (init_interact): if SCO is defined, use sysconf
+	to get maxfds, rather than getdtablesize.
+	* configure.in (*-*-sco*): Use mh-sco.
+	* mh-sco: New file; like mh-sysv, but pass -DSCO in HDEFS.
+
+Tue Nov 17 14:28:20 1992  david d `zoo' zuhn  (zoo at cirdan.cygnus.com)
+
+	* config/mh-{hpux,aix,irix4,sysv*}: updated with appropriate
+	values for the host machine (HDEFS, RANLIB, etc)
+
+	* configure.in: use that
+
+	* Makefile.in: use $(HDEFS) in compiling C files
+
+Sun Nov 15 21:46:16 1992  Fred Fish  (fnf@cygnus.com)
+
+	* Update to base 3.24.0 release, merging back in changes made
+	by cygnus to 3.22.12 release.
+
+Sat Nov 14 20:16:26 1992  Fred Fish  (fnf@cygnus.com)
+
+	* Makefile.in (CFLAGS):  Rework use of CFLAGS to fit in better with
+	cygnus configuration standard.
+	* config/mh-svr4:  Removed.
+	* config/mh-sysv4:  New file, renamed from mh-svr4.
+	* configure.in (*-sysv4):  New configuration.
+	* configure.in (*-sun-solaris2, *-sysv4):  Use mh-sysv4.
+	* expect.c (sigwinch_handler):  Fix #if without any condition.
+	* command.c, expect.c, global.h, lib_exp.c, main.c, term.h:
+	Test for SYSV4 as well as SYSV3.
+	* inter_select.c (sys/sysconfig.h):  Include when SYSV4 defined.
+	* inter_select.c (init_interact):  Add sysconf call for SYSV4.
+	* pty_svr4.c (ptsname):  Declare for SYSV4.
+
+Thu Oct 22 17:35:07 1992  Rob Savoye  (rob@cygnus.com)
+
+	* command.c: Added a "send_log" command. It only writes to a log
+	file if one was opened by the "log_file" command.
+
+	* main.c: Added setbuf commands for stdin, stdout, stderr to turn
+	off buffering.
+

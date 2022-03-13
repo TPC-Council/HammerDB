@@ -1,0 +1,639 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# Name: virterm - terminal emulator using Expect, v1.0, December, 1994
+# Author: Adrian Mariano <adrian@cam.cornell.edu>
+#
+# Derived from Done Libes' tkterm
+
+# This is a program for interacting with applications that use terminal
+# control sequences.  It is a subset of Don Libes' tkterm emulator
+# with a compatible interface so that programs can be written to work 
+# under both.  
+# 
+# Internally, it uses arrays instead of the Tk widget.  Nonetheless, this
+# code is not as fast as it should be.  I need an Expect profiler to go
+# any further.
+#
+# standout mode is not supported like it is in tkterm.  
+# the only terminal widget operation that is supported for the user
+# is the "get" operation.  
+###############################################
+# Variables that must be initialized before using this:
+#############################################
+set rows 24		;# number of rows in term
+set cols 80		;# number of columns in term
+set term myterm		;# name of text widget used by term
+set termcap 1		;# if your applications use termcap
+set terminfo 0		;# if your applications use terminfo
+			;# (you can use both, but note that
+			;# starting terminfo is slow)
+set term_shell $env(SHELL) ;# program to run in term
+
+#############################################
+# Readable variables of interest
+#############################################
+# cur_row		;# current row where insert marker is
+# cur_col		;# current col where insert marker is
+# term_spawn_id		;# spawn id of term
+
+#############################################
+# Procs you may want to initialize before using this:
+#############################################
+
+# term_exit is called if the associated proc exits
+proc term_exit {} {
+	exit
+}
+
+# term_chars_changed is called after every change to the displayed chars
+# You can use if you want matches to occur in the background (a la bind)
+# If you want to test synchronously, then just do so - you don't need to
+# redefine this procedure.
+proc term_chars_changed {} {
+}
+
+# term_cursor_changed is called after the cursor is moved
+proc term_cursor_changed {} {
+}
+
+# Example tests you can make
+#
+# Test if cursor is at some specific location
+# if {$cur_row == 1 && $cur_col == 0} ...
+#
+# Test if "foo" exists anywhere in line 4
+# if {[string match *foo* [$term get 4.0 4.end]]}
+#
+# Test if "foo" exists at line 4 col 7
+# if {[string match foo* [$term get 4.7 4.end]]}
+#
+# Return contents of screen
+# $term get 1.0 end
+
+#############################################
+# End of things of interest
+#############################################
+
+set blankline ""
+set env(LINES) $rows
+set env(COLUMNS) $cols
+
+set env(TERM) "tt"
+if {$termcap} {
+    set env(TERMCAP) {tt:
+	:cm=\E[%d;%dH:
+	:up=\E[A:
+	:cl=\E[H\E[J:
+	:do=^J:
+	:so=\E[7m:
+	:se=\E[m:
+	:nd=\E[C:
+    }
+}
+
+if {$terminfo} {
+    set env(TERMINFO) /tmp
+    set ttsrc "/tmp/tt.src"
+    set file [open $ttsrc w]
+
+    puts $file {tt|textterm|Don Libes' tk text widget terminal emulator,
+	cup=\E[%p1%d;%p2%dH,
+	cuu1=\E[A,
+	cuf1=\E[C,
+	clear=\E[H\E[J,
+	ind=\n,
+	cr=\r,
+	smso=\E[7m,
+	rmso=\E[m,
+    }
+    close $file
+
+    set oldpath $env(PATH)
+    set env(PATH) "/usr/5bin:/usr/lib/terminfo"
+    if {1==[catch {exec tic $ttsrc} msg]} {
+	puts "WARNING: tic failed - if you don't have terminfo support on"
+	puts "your system, change \"set terminfo 1\" to \"set terminfo 0\"."
+	puts "Here is the original error from running tic:"
+	puts $msg
+    }
+    set env(PATH) $oldpath
+
+    exec rm $ttsrc
+}
+
+log_user 0
+
+# start a shell and text widget for its output
+set stty_init "-tabs"
+eval spawn $term_shell
+stty rows $rows columns $cols < $spawn_out(slave,name)
+set term_spawn_id $spawn_id
+
+proc term_replace {reprow repcol text} {
+  global termdata
+  set middle $termdata($reprow) 
+  set termdata($reprow) \
+     [string range $middle 0 [expr $repcol-1]]$text[string \
+       range $middle [expr $repcol+[string length $text]] end]
+}
+
+
+proc parseloc {input row col} {
+  upvar $row r $col c
+  global rows
+  switch -glob -- $input \
+    end { set r $rows; set c end } \
+    *.* { regexp (.*)\\.(.*) $input dummy r c
+           if {$r == "end"} { set r $rows }
+        }
+}
+
+proc myterm {command first second args} {
+  global termdata
+  if {[string compare get $command]} { 
+    send_error "Unknown terminal command: $command\r"
+  } else {
+    parseloc $first startrow startcol
+    parseloc $second endrow endcol
+    if {$endcol != "end"} {incr endcol -1}
+    if {$startrow == $endrow} { 
+      set data [string range $termdata($startrow) $startcol $endcol]
+    } else {
+      set data [string range $termdata($startrow) $startcol end]
+      for {set i [expr $startrow + 1]} {$i < $endrow} {incr i} {
+        append data $termdata($i)
+      }
+      append data [string range $termdata($endrow) 0 $endcol]
+    }
+    return $data
+  }
+}
+
+
+proc scrollup {} {
+  global termdata blankline
+  for {set i 1} {$i < $rows} {incr i} {
+    set termdata($i) $termdata([expr $i+1]) 
+  }
+  set termdata($rows) $blankline
+}
+
+
+proc term_init {} {
+	global rows cols cur_row cur_col term termdata blankline
+        
+	# initialize it with blanks to make insertions later more easily
+	set blankline [format %*s $cols ""]\n
+	for {set i 1} {$i <= $rows} {incr i} {
+             set termdata($i) "$blankline"
+	}
+
+	set cur_row 1
+	set cur_col 0
+}
+
+
+proc term_down {} {
+	global cur_row rows cols term
+
+	if {$cur_row < $rows} {
+		incr cur_row
+	} else {
+                scrollup
+	}
+}
+
+
+proc term_insert {s} {
+	global cols cur_col cur_row term
+
+	set chars_rem_to_write [string length $s]
+	set space_rem_on_line [expr $cols - $cur_col]
+
+	##################
+	# write first line
+	##################
+
+	if {$chars_rem_to_write <= $space_rem_on_line} {
+           term_replace $cur_row $cur_col \
+              [string range $s 0 [expr $space_rem_on_line-1]]
+           incr cur_col $chars_rem_to_write
+           term_chars_changed
+           return
+        }
+
+	set chars_to_write $space_rem_on_line
+	set newline 1
+
+        term_replace $cur_row $cur_col\
+            [string range $s 0 [expr $space_rem_on_line-1]]
+
+	# discard first line already written
+	incr chars_rem_to_write -$chars_to_write
+	set s [string range $s $chars_to_write end]
+	
+	# update cur_col
+	incr cur_col $chars_to_write
+	# update cur_row
+	if {$newline} {
+		term_down
+	}
+
+	##################
+	# write full lines
+	##################
+	while {$chars_rem_to_write >= $cols} {
+                term_replace $cur_row 0 [string range $s 0 [expr $cols-1]]
+
+		# discard line from buffer
+		set s [string range $s $cols end]
+		incr chars_rem_to_write -$cols
+
+		set cur_col 0
+		term_down
+	}
+
+	#################
+	# write last line
+	#################
+
+	if {$chars_rem_to_write} {
+                term_replace $cur_row 0 $s
+		set cur_col $chars_rem_to_write
+	}
+
+	term_chars_changed
+}
+
+term_init
+
+expect_before {
+	-i $term_spawn_id
+	-re "^\[^\x01-\x1f]+" {
+		# Text
+		term_insert $expect_out(0,string)
+		term_cursor_changed
+	} "^\r" {
+		# (cr,) Go to to beginning of line
+		set cur_col 0
+		term_cursor_changed
+	} "^\n" {
+		# (ind,do) Move cursor down one line
+		term_down
+		term_cursor_changed
+	} "^\b" {
+		# Backspace nondestructively
+		incr cur_col -1
+		term_cursor_changed
+	} "^\a" {
+		# Bell, pass back to user
+		send_user "\a"
+	} "^\t" {
+		# Tab, shouldn't happen
+		send_error "got a tab!?"
+	} eof {
+		term_exit
+	} "^\x1b\\\[A" {
+		# (cuu1,up) Move cursor up one line
+		incr cur_row -1
+		term_cursor_changed
+	} "^\x1b\\\[C" {
+		# (cuf1,nd) Nondestructive space
+		incr cur_col
+		term_cursor_changed
+	} -re "^\x1b\\\[(\[0-9]*);(\[0-9]*)H" {
+		# (cup,cm) Move to row y col x
+		set cur_row [expr $expect_out(1,string)+1]
+		set cur_col $expect_out(2,string)
+		term_cursor_changed
+	} "^\x1b\\\[H\x1b\\\[J" {
+		# (clear,cl) Clear screen
+		term_init
+		term_cursor_changed
+	} "^\x1b\\\[7m" { # unsupported
+		# (smso,so) Begin standout mode
+		# set term_standout 1
+	} "^\x1b\\\[m" {  # unsupported
+		# (rmso,se) End standout mode
+		# set term_standout 0
+	}
+}
+
+
+proc term_expect {args} {
+        global cur_row cur_col  # used by expect_background actions
+
+	set desired_timeout [
+	    uplevel {
+		if {[info exists timeout]} {
+			set timeout
+		} else {
+			uplevel #0 {
+				if {[info exists timeout]} {
+					set timeout
+				} else {
+					expr 10
+				}
+			}
+		}
+	    }
+	]
+
+        set timeout $desired_timeout
+
+        set timeout_act {}
+
+	set argc [llength $args]
+	if {$argc%2 == 1} {
+		lappend args {}
+		incr argc
+	}
+
+	for {set i 0} {$i<$argc} {incr i 2} {
+		set act_index [expr $i+1]
+		if {[string compare timeout [lindex $args $i]] == 0} {
+			set timeout_act [lindex $args $act_index]
+			set args [lreplace $args $i $act_index]
+			incr argc -2
+			break
+		}
+	}
+
+        set got_timeout 0
+        
+        set start_time [timestamp]
+
+	while {![info exists act]} {
+                expect timeout {set got_timeout 1}
+                set timeout [expr $desired_timeout - [timestamp] + $start_time]
+                if {! $got_timeout} \
+                {
+			for {set i 0} {$i<$argc} {incr i 2} {
+				if {[uplevel [lindex $args $i]]} {
+					set act [lindex $args [incr i]]
+					break
+				}
+			}
+		} else { set act $timeout_act }
+
+                if {![info exists act]} {
+
+                }
+	}
+
+	set code [catch {uplevel $act} string]
+	if {$code >  4} {return -code $code $string}
+	if {$code == 4} {return -code continue}
+	if {$code == 3} {return -code break}
+	if {$code == 2} {return -code return}
+	if {$code == 1} {return -code error -errorinfo $errorInfo \
+				-errorcode $errorCode $string}
+	return $string
+}	
+
+
+# ======= end of terminal emulator ========
+
+# The following is a program to interact with the Cornell Library catalog
+
+
+proc waitfornext {} {
+  global cur_row cur_col term
+  term_expect {expr {$cur_col==15 && $cur_row == 24 &&
+                         " NEXT COMMAND:  " == [$term get 24.0 24.16]}} {}
+}
+
+proc sendcommand {command} {
+  global cur_col
+  exp_send $command
+  term_expect {expr {$cur_col == 79}} {}
+}
+
+proc removespaces {intext} {
+  regsub -all " *\n" $intext \n intext
+  regsub "\n+$" $intext \n intext
+  return $intext
+}
+
+proc output {text} {
+  exp_send_user $text
+}
+
+
+
+proc connect {} {
+  global term
+  term_expect {regexp {.*[>%]} [$term get 1.0 3.end]}
+  exp_send "tn3270 notis.library.cornell.edu\r"
+  term_expect {regexp "desk" [$term get 19.0 19.end]} {
+                  exp_send "\r"
+  	} 
+  waitfornext
+  exp_send_error "connected.\n\n"
+}
+
+
+proc dosearch {search} {
+  global term
+  exp_send_error "Searching for '$search'..."
+  if {[string match ?=* "$search"]} {set typ ""} else {set typ "k="}
+  sendcommand "$typ$search\r"
+  waitfornext
+  set countstr [$term get 2.17 2.35]
+  if {![regsub { Entries Found *} $countstr "" number]} {
+    set number 1
+    exp_send_error "one entry found.\n\n"
+    return 1
+  }
+  if {$number == 0} {
+    exp_send_error "no matches.\n\n"
+    return 0
+  }
+  exp_send_error "$number entries found.\n"
+  if {$number > 250} {
+    exp_send_error "(only the first 250 can be displayed)\n"
+  }
+  exp_send_error "\n"
+  return $number
+}
+
+
+proc getshort {count} {
+  global term
+  output [removespaces [$term get 5.0 19.0]]
+  while {[regexp "CONTINUED on next page" [$term get 19.0 19.end]]} {
+    sendcommand "for\r"
+    waitfornext
+    output [removespaces [$term get 5.0 19.0]]
+  }
+}
+
+proc getonecitation {} {
+  global term
+  output [removespaces [$term get 4.0 19.0]]
+  while {[regexp "FORward page" [$term get 20.0 20.end]]} {
+    sendcommand "for\r"
+    waitfornext
+    output [removespaces [$term get 5.0 19.0]]
+  }
+}
+
+
+proc getcitlist {} {
+  global term
+  getonecitation
+  set citcount 1
+  while {[regexp "NEXt record" [$term get 20.0 21.end]]} {
+    sendcommand "nex\r"
+    waitfornext
+    getonecitation
+    incr citcount
+    if {$citcount % 10 == 0} {exp_send_error "$citcount.."}
+  }
+}
+
+proc getlong {count} {
+  if {$count != 1} {
+    sendcommand "1\r"
+    waitfornext
+  }
+  sendcommand "lon\r"
+  waitfornext
+  getcitlist
+}
+
+proc getmed {count} {
+  if {$count != 1} {
+    sendcommand "1\r"
+    waitfornext
+  }
+  sendcommand "bri\r"
+  waitfornext
+  getcitlist
+}
+  
+#################################################################
+#
+set help {
+libsearch version 1.0 by Adrian Mariano (adrian@cam.cornell.edu)
+
+Invocation: libsearch [options] search text
+
+ -i      : interactive
+ -s      : short listing
+ -l      : long listing
+ -o file : output file (default stdout)
+ -h      : print out list of options and version number
+ -H      : print terse keyword search help
+
+The search will be a keyword search.  
+Example:  libsearch -i sound and arabic
+
+}
+
+#################################################################
+
+proc searchhelp {} {
+  send_error {
+? truncation wildcard            default operator is AND
+
+AND - both words appear in record
+OR  - one of the words appears
+NOT - first word appears, second words does not
+ADJ - words are adjacent
+SAME- words appear in the same field (any order)
+
+.su. - subject   b.fmt. - books    eng.lng. - English  
+.ti. - title     m.fmt. - music    spa.lng. - Spanish
+.au. - author    s.fmt. - serials  fre.lng. - French
+
+.dt. or .dt1. -- limits to a specific publication year.  E.g., 1990.dt.
+
+}
+}
+
+proc promptuser {prompt} {
+  exp_send_error "$prompt"
+  expect_user -re "(.*)\n"
+  return "$expect_out(1,string)"
+}
+
+
+set searchtype 1  
+set outfile ""
+set search ""
+set interactive 0
+
+while {[llength $argv]>0} {
+  set flag [lindex $argv 0]
+  switch -glob -- $flag \
+   "-i" { set interactive 1; set argv [lrange $argv 1 end]} \
+   "-s" { set searchtype 0; set argv [lrange $argv 1 end] } \
+   "-l" { set searchtype 2; set argv [lrange $argv 1 end] } \
+   "-o" { set outfile [lindex $argv 1]; set argv [lrange $argv 2 end] } \
+   "-H" { searchhelp; exit } \
+   "-h" { send_error "$help"; exit } \
+   "-*" { send_error "\nUnknown option: $flag\n$help";exit }\
+   default { set search [join $argv]; set argv {};}
+}  
+if { "$search" == "" } {
+  send_error "No search specified\n$help"
+  exit
+}
+
+exp_send_error "Connecting to the library..."
+
+set timeout 200
+
+trap { log_user 1;exp_send "\003";
+       expect_before
+       expect tn3270 {exp_send "quit\r"}
+       expect "Connection closed." {exp_send "exit\r"}
+       expect eof ; send_error "\n"; 
+       exit} SIGINT
+
+
+connect
+
+set result [dosearch $search]
+
+if {$interactive} {
+  set quit 0
+  while {!$quit} {
+    if {!$result} {
+      switch "[promptuser {(h)elp (n)ewsearch (q)uit? }]" {
+        n { }
+        h { searchhelp }
+        q { set quit 1}
+      }
+    } else {
+   switch "[promptuser {(s)hort (m)ed (l)ong (h)elp (n)ewsearch (q)uit? }]" {
+        s { getshort $result; ;}
+        l { getlong $result; ;}
+        m { getmed $result; ; }
+        n { research; }
+        h { searchhelp }
+        q { set quit 1; }
+      }
+    }
+  }
+} else {
+  if {$result} {
+    switch $searchtype {
+      0 { getshort $result} 
+      1 { getmed $result  } 
+      2 { getlong $result }
+    }
+  }
+}
+
+
+
+
+
+

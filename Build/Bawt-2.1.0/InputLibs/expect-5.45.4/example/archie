@@ -1,0 +1,41 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# archie
+
+# Log in to the archie ftp-catalog at McGill University, and mail back results
+# Brian P. Fitzgerald
+# Department of Mechanical Engineering
+# Rensselaer Polytechnic Institute
+
+set CINTR \003	;# ^C
+set CSUSP \032	;# ^Z
+
+set timeout -1
+spawn telnet quiche.cs.mcgill.ca
+
+expect_after eof exit	;# archie logs us out if too many people are logged in
+
+expect {
+	login:		{send archie\r}
+	"unknown"	{exit 1}
+	"unreachable"	{exit 1}
+}
+
+expect	"archie>" {send "set pager\r"}
+expect	"archie>" {send "set maxhits 20\r"}
+expect	"archie>" {send "set term vt100\r"}
+expect	"archie>" {send "set sortby time\r"}
+expect	"archie>" {
+	send "set mailto [exec whoami]@[exec hostname].[exec domainname]\r"
+}
+
+send_user "type ^C to exit, ^Z to suspend\n"
+interact {
+	-reset	$CSUSP  {exec kill -STOP [pid]}
+		$CINTR  {exit 0}
+}

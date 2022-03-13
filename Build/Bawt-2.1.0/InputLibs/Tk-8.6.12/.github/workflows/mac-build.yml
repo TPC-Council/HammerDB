@@ -1,0 +1,161 @@
+name: macOS
+on: [push]
+env:
+  ERROR_ON_FAILURES: 1
+jobs:
+  xcode:
+    runs-on: macos-11
+    defaults:
+      run:
+        shell: bash
+        working-directory: tk/macosx
+    steps:
+      - name: Check out Tk
+        uses: actions/checkout@v2
+        with:
+          path: tk
+      - name: Check out Tcl
+        uses: actions/checkout@v2
+        with:
+          repository: tcltk/tcl
+          ref: core-8-6-branch
+          path: tcl
+      - name: Prepare checked out repositories
+        run: |
+          touch tk/generic/tkStubInit.c
+          mkdir build
+          echo "BUILD_DIR=`cd build && pwd`" >> $GITHUB_ENV
+          echo "DESTDIR=`cd build && pwd`" >> $GITHUB_ENV
+        working-directory: .
+      - name: Build Tcl
+        run: |
+          make all
+        working-directory: tcl/macosx
+      - name: Build
+        run: |
+          make all install || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Run Tests
+        run: |
+          make test | tee out.txt
+          nmatches=$( grep -c "Failed	0" out.txt )
+          if [ $nmatches -lt 4 ]
+          then
+            echo "::error::Failure during Test"
+            exit 1
+          fi
+  clang:
+    runs-on: macos-11
+    strategy:
+      matrix:
+        symbols:
+          - 'no'
+          - 'mem'
+        options:
+          - '--enable-aqua'
+          - '--disable-aqua'
+    defaults:
+      run:
+        shell: bash
+        working-directory: tk/unix
+    steps:
+      - name: Check out Tk
+        uses: actions/checkout@v2
+        with:
+          path: tk
+      - name: Check out Tcl
+        uses: actions/checkout@v2
+        with:
+          repository: tcltk/tcl
+          ref: core-8-6-branch
+          path: tcl
+      - name: Prepare checked out repositories
+        env:
+          SET_DISPLAY: ${{ contains(matrix.options, '--disable-aqua') }}
+        run: |
+          touch ../generic/tkStubInit.c ../doc/man.macros
+          mkdir "$HOME/install dir"
+          echo "USE_XVFB=$SET_DISPLAY" >> $GITHUB_ENV
+      - name: Add X11 (if required)
+        if: ${{ env.USE_XVFB == 'true' }}
+        run: |
+          brew install --cask xquartz
+          sudo /opt/X11/libexec/privileged_startx || true
+        working-directory: .
+      - name: Build Tcl
+        # Note that macOS is always a 64 bit platform
+        run: |
+          ./configure --enable-64bit ${CFGOPT} "--prefix=$HOME/install dir" || {
+            cat config.log
+            echo "::error::Failure during Tcl Configure"
+            exit 1
+          }
+          make all || {
+            echo "::error::Failure during Tcl Build"
+            exit 1
+          }
+          make install || {
+            echo "::error::Failure during Tcl Install"
+            exit 1
+          }
+        working-directory: tcl/unix
+        env:
+          CFGOPT: --enable-symbols=${{ matrix.symbols }}
+      - name: Configure (symbols=${{ matrix.symbols }} ${{matrix.options }})
+        # Note that macOS is always a 64 bit platform
+        run: |
+          ./configure --enable-64bit ${CFGOPT} "--prefix=$HOME/install dir" || {
+            cat config.log
+            echo "::error::Failure during Configure"
+            exit 1
+          }
+        env:
+          CFGOPT: --enable-symbols=${{ matrix.symbols }} ${{matrix.options }}
+      - name: Build
+        run: |
+          make binaries libraries tktest || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Run Tests
+        run: |
+          if [ $USE_XVFB == true ]; then
+            function runXvfb {
+              PATH=$PATH:/opt/X11/bin
+              Xvfb $1 &
+              XVFB_PID=$!
+              echo Launched Xvfb $1 as process $XVFB_PID >&2
+              trap "echo killing process $XVFB_PID... >&2; kill $XVFB_PID" 0
+              export DISPLAY=$1
+              sleep 2
+            }
+          else
+            function runXvfb {
+              echo Xvfb not used, this is a --enable-aqua build
+            }
+          fi
+          ( runXvfb :0; make test-classic; exit $? ) | tee out-classic.txt || {
+            echo "::error::Failure during Test (classic)"
+            exit 1
+          }
+          ( runXvfb :0; make test-ttk; exit $? ) | tee out-ttk.txt || {
+            echo "::error::Failure during Test (ttk)"
+            exit 1
+          }
+          cat out-classic.txt | grep -q "Failed	0" || {
+            echo "::error::Failure in classic test results"
+            exit 1
+          }
+          cat out-ttk.txt | grep -q "Failed	0" || {
+            echo "::error::Failure in ttk test results"
+            exit 1
+          }
+      - name: Carry out trial installation
+        run: |
+          make install || {
+            cat config.log
+            echo "::error::Failure during Install"
+            exit 1
+          }

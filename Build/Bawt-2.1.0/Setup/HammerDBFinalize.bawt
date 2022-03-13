@@ -1,0 +1,75 @@
+# Example script for user supplied Finalize procedure.
+#
+# The procedure copies the generated Tcl distribution
+# from the Development folder into a folder specified
+# in your Path environment variable.
+#
+# You have to adapt the installation paths (tclRootDir)
+# according to your needs.
+#
+# To execute the Finalize procedure, the name of this file
+# must be specified on the BAWT command line with option
+# "--finalizefile".
+proc grep {pattern args} {
+    if {[llength $args] == 0} {
+        grep0 "" $pattern stdin
+    } else {
+        foreach filename $args {
+            set file [open $filename r]
+            set result [ grep0 ${filename}: $pattern $file ]
+            close $file
+	    return $result
+        }
+    }
+}
+proc grep0 {prefix pattern handle} {
+    set lnum 0
+    while {[gets $handle line] >= 0} {
+        incr lnum
+        if {[regexp $pattern $line]} {
+            return "$prefix${lnum}:${line}"
+        }
+    }
+}
+
+proc Finalize {} {
+    Log "Finalize HammerDB Build"
+
+    if { [IsWindows] } {
+        set tclRootDir "C:/opt"
+    } elseif { [IsLinux] } {
+        set tclRootDir "~/opt"
+    } elseif { [IsDarwin] } {
+        set tclRootDir "~/opt"
+    } else {
+        ErrorAppend "Finalize: Cannot determine operating system" "FATAL"
+    }
+
+set HammerDBsrcDirIn [ file join {*}[ lreplace [ file split [GetInputRootDir]] end-1 end ]]
+set HammerDBsrcDirOut [ file join {*}[ lreplace [ file split [GetOutputRootDir]] end-1 end ]]
+if { $HammerDBsrcDirIn != $HammerDBsrcDirOut } {
+        ErrorAppend "Finalize: Mismatch in finding HammerDB source directory" "FATAL"
+	} else {
+#bin, lib include will only be present if built
+if { [ file isdirectory [ file join [file nativename [GetOutputDistDir]] HammerDB bin ]] && [ file isdirectory [ file join [file nativename [GetOutputDistDir]] HammerDB lib ]] && [ file isdirectory [ file join [file nativename [GetOutputDistDir]] HammerDB include ]] } { set bli true } else { set bli false }
+    Log "Copying HammerDB source from $HammerDBsrcDirIn"
+set zipProg [Get7ZipProg]
+exec -ignorestderr {*}$zipProg u [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] -y -bd $HammerDBsrcDirIn -xr\!Build -xr\!DocBook -xr!.git* -xr!*.bat
+if { [ file tail $HammerDBsrcDirIn ] != "HammerDB" } {
+puts "exec -ignorestderr {*}$zipProg rn [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] [ file tail $HammerDBsrcDirIn ] HammerDB"
+exec -ignorestderr {*}$zipProg rn [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] [ file tail $HammerDBsrcDirIn ] HammerDB
+	}
+    Log "Extracting HammerDB source to [file nativename [GetOutputDistDir]]"
+exec -ignorestderr {*}$zipProg x [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] -y -bd -o[file nativename [GetOutputDistDir]]
+file delete -force [file join [GetOutputDistDir] HammerDBLinSrc.7z ]
+	} 
+set version_number [ string trimleft [ lindex [ grep set\ hdb_version [file join [GetOutputDistDir] HammerDB hammerdb ]] end ] v ]
+if { !$bli } {
+    Log "Copying bin lib include from [GetOutputDevDir] to [GetOutputDistDir] for rebuild"
+MultiFileCopy [ file join [GetOutputDevDir] HammerDB include ] [ file join [file nativename [GetOutputDistDir]] HammerDB include ] "*"  true
+MultiFileCopy [ file join [GetOutputDevDir] HammerDB bin ] [ file join [file nativename [GetOutputDistDir]] HammerDB bin ] "*"  true
+MultiFileCopy [ file join [GetOutputDevDir] HammerDB lib ] [ file join [file nativename [GetOutputDistDir]] HammerDB lib ] "*"  true
+}
+FileRename [ file join [file nativename [GetOutputDistDir]] HammerDB ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number ]
+TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number ]
+}

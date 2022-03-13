@@ -1,0 +1,42 @@
+.TH CRYPTDIR 1 "1 January 1993"
+.SH NAME
+cryptdir \- encrypt/decrypt all files in a directory
+.SH SYNOPSIS
+.B cryptdir
+[
+.I dir
+]
+.br
+.B decryptdir
+[
+.I dir
+]
+.SH INTRODUCTION
+.B cryptdir
+encrypts all files in the current directory (or the given directory
+if one is provided as an argument).  When called as decryptdir
+(i.e., same program, different name), all files are decrypted.
+
+.SH NOTES
+When encrypting, you are prompted twice for the password as a
+precautionary measure.  It would be a disaster to encrypt files a
+password that wasn't what you intended.
+
+In contrast, when decrypting, you are only prompted once.  If it's the
+wrong password, no harm done.
+
+Encrypted files have the suffix .crypt appended.  This prevents files
+from being encrypted twice.  The suffix is removed upon decryption.
+Thus, you can easily add files to an encrypted directory and run
+cryptdir on it without worrying about the already encrypted files.
+.SH BUGS
+
+The man page is longer than the program.
+
+.SH SEE ALSO
+.I
+"Exploring Expect: A Tcl-Based Toolkit for Automating Interactive Programs"
+\fRby Don Libes,
+O'Reilly and Associates, January 1995.
+.SH AUTHOR
+Don Libes, National Institute of Standards and Technology

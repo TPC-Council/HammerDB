@@ -1,0 +1,5 @@
+#
+# Tcl package index file
+#
+package ifneeded db2tcl @PACKAGE_VERSION@ \
+    [list load [ file join $dir @PACKAGE_LIB@ ] @PACKAGE_NAME@]

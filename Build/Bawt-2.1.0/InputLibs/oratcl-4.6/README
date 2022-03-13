@@ -1,0 +1,105 @@
+
+Oratcl -  Tcl interface to Oracle database server
+
+WHAT IS ORATCL?
+
+Oratcl is an extension to Tool Command Language (Tcl) that provides access
+to a Oracle Database server.  Oratcl adds additional Tcl commands that 
+login to an Oracle Server, pass SQL code, read results, etc.  Oratcl was 
+inspired by similar tools written for Perl (sybperl, oraperl) but was written 
+from scratch instead of borrowing on the work of either Perl extension.
+
+Oratcl was based on (Tom Poindexter's) earlier effort with Sybtcl.  
+
+Oratcl features:
+  -supports multiple connections to the same or different Oracle Servers
+  -sends Sql code or anonymous PL blocks to the server
+  -caches return rows from the server for efficiency
+  -converts results to strings and returns rows as Tcl lists
+  -allows cursor variables to be returned from PL/SQL (Oracle 7.2+)
+  -allows user defined null values to be returned
+  -Version 7 stored procedures can be executed and return values accessed
+  -accesses column names, lengths, and datatypes of rows & return values
+  -provides feedback of Oracle messages and codes
+  -reads/writes long columns
+  -commit, rollback, and autocommit options
+
+Oratcl 3.* features:
+  -describe tables (names, lengths, datatypes)
+  -reads/writes lob values (binary and character)
+  -more configuration optioins
+
+Oratcl is explained in greater detail in "Tcl/Tk Tools", edited by Mark 
+Harrison, and published by O'Reilly and Associates.  "Tcl/Tk Tools" is 
+a new book that covers many of the popular Tcl extensions, written by
+the authors of each extension (Tom wrote the chapters on Sybtcl and Oratcl.)
+1st Edition published September 1997, ISBN: 1-56592-218-2
+See your local bookstore, or try: 
+	http://www.softpro.com
+	http://www.amazon.com
+	http://www.ora.com
+	http://www.barnesandnoble.com
+
+
+BUG REPORTS
+
+Comments, suggestions, et.al., should be mailed to me at the above email
+address, or posted to comp.lang.tcl if general enough nature.  
+Hell, you can even mail to me if you like Oratcl!
+
+Mail bug reports to:	tmh@users.sourceforge.net
+
+If you post a question or bug report to comp.lang.tcl, I may not see it,
+so please copy me also.
+
+Please ALWAYS include: 
+        -version of Oratcl
+        -version of Tcl, Tk
+        -version of Oracle server and OCI libary
+        -version of your operating system
+	-switches used with configure (see config.status)
+        -compiler used, stock cc or Gcc
+        -samples of SQL or Oratcl code causing problems
+        -relevant database table definitions, views, procedures
+
+ORATCL WWW PAGE
+ 
+	http://oratcl.sourceforge.net
+
+TCL DATABASE MAILING LIST
+
+A mailing list is available for specific discussions about using Tcl with
+databases, including Oratcl, Sybtcl, etc.  Feel free to join and mail to the
+list.  The list is hosted by De Clarke.
+
+To subscribe to this list send mail to
+ 
+        listserv@ucolick.org
+ 
+and in the body of the message write
+ 
+        subscribe tcldb
+ 
+To unsubscribe... (well, you get the idea).
+ 
+Please remember to write to tcldb-owner with problems about the
+list itself, or to postmaster@ucolick.org if you have difficulties
+getting through to the tcldb-owner address.  Please do not send
+subscribe and unsubscribe messages to the list itself.
+
+ 
+INSTALLATION
+ 
+Quickie install instructions:
+ 
+        ./configure --prefix=/same/prefix/path/as/with/tcl/configure  \
+                    --exec-prefix=/same/exec-prefix/path/as/with/tcl/configure 
+        make
+        make install
+ 
+Didn't work? You'll have to read the INSTALL file.  Maybe you should read it
+anyway.
+
+See the file ChangeLog for changes in versions of Oratcl.
+
+-finis-

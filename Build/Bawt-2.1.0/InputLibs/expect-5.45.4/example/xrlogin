@@ -1,0 +1,22 @@
+#!/depot/path/expect --
+# xrlogin - rlogin but with current DISPLAY
+#
+# You can extend this idea to save any arbitrary information across rlogin
+# Don Libes -  Oct 17, 1991.
+
+if {[llength $argv] != 1} {
+	puts "usage: xrlogin remotehost"
+	exit
+}
+
+set prompt "(%|#|\\$) $"		;# default prompt
+catch {set prompt $env(EXPECT_PROMPT)}
+
+set timeout -1
+eval spawn rlogin $argv
+expect eof exit -re $prompt
+if {[string match "unix:0.0" $env(DISPLAY)]} {
+	set env(DISPLAY) "[exec hostname].[exec domainname]:0.0\r"
+}
+send "setenv DISPLAY $env(DISPLAY)\r"
+interact

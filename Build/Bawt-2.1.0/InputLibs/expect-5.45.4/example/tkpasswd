@@ -1,0 +1,612 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+package require Tk
+
+# tkpasswd - Change passwords using Expectk
+# Author: Don Libes, NIST, October 1, 1993
+# Version: 1.8 - Added support for Tk 4.1
+
+# There is no man page.  However, there is some on-line help when you run
+# the program.  Technical details and insights are described in the
+# O'Reilly book "Exploring Expect".
+
+proc prog_exists {prog} {
+    return [llength [auto_execok $prog]]
+}
+
+frame .type -relief raised -bd 1
+
+radiobutton .passwd -text passwd -variable passwd_cmd \
+	-value {passwd {cat /etc/passwd}} \
+	-anchor w -command get_users -relief flat
+pack .passwd -in .type -fill x
+
+if {[prog_exists yppasswd]} {
+    radiobutton .yppasswd -text yppasswd -variable passwd_cmd \
+	    -value {yppasswd {ypcat passwd}} \
+	    -anchor w -command get_users -relief flat
+    pack .yppasswd -in .type -fill x
+}
+
+if {[prog_exists nispasswd]} {
+    radiobutton .nispasswd -text nispasswd -variable passwd_cmd \
+	    -value {nispasswd {niscat passwd}} \
+	    -anchor w -command get_users -relief flat
+    pack .nispasswd -in .type -fill x
+}
+pack .type -fill x
+
+frame .sort -relief raised -bd 1
+radiobutton .unsorted -text unsorted -variable sort_cmd -value " " \
+	-anchor w -relief flat -command get_users
+radiobutton .name -text name -variable sort_cmd -value "| sort" \
+	-anchor w -relief flat -command get_users
+radiobutton .uid -text uid -variable sort_cmd -value "| sort -t: -n +2" \
+	-anchor w -relief flat -command get_users
+pack .unsorted .name .uid -in .sort -fill x
+pack .sort -fill x
+
+frame .users -relief raised -bd 1
+# has to be wide enough for 8+1+5=14
+text .names -yscrollcommand ".scroll set" -width 14 -height 1 \
+    -font {Courier 12 bold} -setgrid 1
+.names tag configure nopassword -relief raised
+.names tag configure selection -relief raised
+
+set iscolor 0
+if {[winfo depth .] > 1} {
+    set iscolor 1
+}
+
+if {$iscolor} {
+    .names tag configure nopassword -background red
+    .names tag configure selection -background green
+} else {
+    .names tag configure nopassword -background  black -foreground white
+    .names tag configure selection -background white -foreground black
+}
+scrollbar .scroll -command ".names yview" -relief raised
+pack .scroll -in .users -side left -fill y
+pack .names  -in .users -side left -fill y
+pack .users -expand 1 -fill y
+
+wm minsize . 14 1
+wm maxsize . 14 999
+wm geometry . 14x10
+
+frame .password_frame -relief raised -bd 1
+entry .password -textvar password -relief sunken -width 1
+focus .password
+bind .password <Return> password_set
+label .prompt -text "Password:" -bd 0
+button .password_set -text "set" -command password_set
+button .generate_button -text "generate" -command password_generate
+pack .prompt .password -in .password_frame -fill x -padx 2 -pady 2
+pack .password_set .generate_button -in .password_frame -side left -expand 1 -fill x -padx 2 -pady 2
+pack .password_frame -fill x
+
+set dict_loaded 0
+checkbutton .dict -text "test dictionary" -variable dict_check \
+	-command {if {!$dict_loaded} load_dict} \
+	-anchor w
+pack .dict -fill x -padx 2 -pady 2
+
+
+button .quit -text quit -command exit
+button .help_button -text help -command help
+pack .quit .help_button -side left -expand 1 -fill x -padx 2 -pady 2
+
+proc help {} {
+    if {[catch {toplevel .help}]} return
+    message .help.text -text \
+"tkpasswd - written by Don Libes, NIST, 10/1/93.
+
+Click on passwd (local users) or yppasswd (NIS users).\
+Select user using mouse (or keys - see below).\
+Enter password or press ^G to generate a random password.\
+(Press ^A to adjust the generation parameters.)\
+Press return to set the password.\
+If the dictionary is enabled and the password is in it,\
+the password is rejected.
+
+You must be root to set local passwords besides your own.\
+If you are not root, you must also enter an old password\
+when requested.
+
+You do not have to move mouse into password field(s) to enter password.\
+^U clears password field.\
+^N and ^P select next/previous user.\
+M-n and M-p select next/previous user with no password.\
+(Users with no passwords are highlighted.)"
+
+    button .help.ok -text "ok" -command {destroy .help}
+    pack .help.text
+    pack .help.ok -fill x -padx 2 -pady 2
+}
+
+# get list of local users
+proc get_users {} {
+    global sort_cmd passwd_cmd
+    global nopasswords	;# line numbers of entries with no passwords
+    global last_line	;# last line of text box
+    global selection_line
+
+    .names delete 1.0 end
+
+    set file [open "|[lindex $passwd_cmd 1] $sort_cmd"]
+    set last_line 1
+    set nopasswords {}
+    while {[gets $file buf] != -1} {
+	set buf [split $buf :]
+	if {[llength $buf]>2} {
+	    # normal password entry
+	    .names insert end "[format "%-8.8s %5d" [lindex $buf 0] [lindex $buf 2]]\n"
+	    if {0==[string compare [lindex $buf 1] ""]} {
+		.names tag add nopassword \
+			{end - 2 line linestart} \
+			{end - 2 line lineend}
+		lappend nopasswords $last_line
+	    }
+	} else {
+	    # +name style entry
+	    .names insert end "$buf\n"
+	}
+	incr last_line
+    }
+    incr last_line -1
+    close $file
+    set selection_line 0
+}
+
+proc feedback {msg} {
+    global password
+
+    set password $msg
+    .password select from 0
+    .password select to end
+    update
+}
+
+proc load_dict {} {
+    global dict dict_loaded
+
+    feedback "loading dictionary..."
+
+    if {0==[catch {open /usr/dict/words} file]} {
+	foreach w [split [read $file] "\n"] {set dict($w) ""}
+	close $file
+	set dict_loaded 1
+	feedback "dictionary loaded"
+    } else {
+	feedback "dictionary missing"
+	.dict deselect
+    }
+}
+
+# put whatever security checks you like in here
+proc weak_password {password} {
+    global dict dict_check
+
+    if {$dict_check} {
+	feedback "checking password"
+
+	if {[info exists dict($password)]} {
+	    feedback "sorry - in dictionary"
+	    return 1
+	}
+    }
+    return 0
+}
+
+proc password_set {} {
+    global password passwd_cmd selection_line
+
+    set new_password $password
+
+    if {$selection_line==0} {
+	feedback "select a user first"
+	return
+    }
+    set user [lindex [.names get selection.first selection.last] 0]
+
+    if {[weak_password $password]} return
+
+    feedback "setting password . . ."
+
+    set cmd [lindex $passwd_cmd 0]
+    spawn -noecho $cmd $user
+    log_user 0
+    set last_msg "error in $cmd"
+    while {1} {
+	expect {
+	    -nocase "old password:" {
+		exp_send "[get_old_password]\r"
+	    } "assword*:" {
+		exp_send "$new_password\r"
+	    } -re "(.*)\r\n" {
+		set last_msg $expect_out(1,string)
+	    } eof break
+	}
+    }
+    set status [wait]
+    if {[lindex $status 3]==0} {
+	feedback "set successfully"
+    } else {
+	feedback $last_msg
+    }
+}
+
+# defaults for generating passwords
+set length 9
+set minnum 2
+set minlower 5
+set minupper 2
+set distribute 0
+
+proc parameter_filename {} {
+    set file .tkpasswd.rc
+    if {[info exists env(DOTDIR)]} {
+	set file "$env(DOTDIR)/$file"
+    }
+    return ~/$file
+}
+
+catch {source [parameter_filename]}
+
+# save parameters in a file
+proc save_parameters {} {
+    global minnum minlower minupper length
+
+    if {[catch {open [parameter_filename] w} f]} {
+	# should never happen, so don't bother with window code
+	puts "tkpasswd: could not write [parameter_filename]"
+	return
+    }
+    puts $f "# This is the .tkpasswd.rc file.  Do not edit it by hand as"
+    puts $f "# it is automatically maintained by tkpasswd.  Any manual"
+    puts $f "# modifications will be lost."
+    puts $f ""
+    puts $f "set length $length"
+    puts $f "set minnum $minnum"
+    puts $f "set minupper $minupper"
+    puts $f "set minlower $minlower"
+    close $f
+}
+
+# insert char into password at a random position
+proc insert {pvar char} {
+    upvar $pvar p
+
+    set p [linsert $p [rand [expr 1+[llength $p]]] $char]
+}
+
+# given a size, distribute between left and right hands
+# taking into account where we left off
+proc psplit {max lvar rvar} {
+    upvar $lvar left $rvar right
+    global isleft
+
+    if {$isleft} {
+	set right [expr $max/2]
+	set left [expr $max-$right]
+	set isleft [expr !($max%2)]
+    } else {
+	set left [expr $max/2]
+	set right [expr $max-$left]
+	set isleft [expr $max%2]
+    }
+}
+
+proc password_generate {} {
+    global password length minnum minlower minupper
+    global lpass rpass initially_left isleft
+    global distribute
+
+    if {$distribute} {
+	set lkeys {q w e r t a s d f g z x c v b}
+	set rkeys {y u i o p h j k l n m}
+	set lnums {1 2 3 4 5 6}
+	set rnums {7 8 9 0}
+    } else {
+	set lkeys {a b c d e f g h i j k l m n o p q r s t u v w x y z}
+	set rkeys {a b c d e f g h i j k l m n o p q r s t u v w x y z}
+	set lnums {0 1 2 3 4 5 6 7 8 9}
+	set rnums {0 1 2 3 4 5 6 7 8 9}
+    }
+    set lkeys_length [llength $lkeys]
+    set rkeys_length [llength $rkeys]
+    set lnums_length [llength $lnums]
+    set rnums_length [llength $rnums]
+
+    # if there is any underspecification, use additional lowercase letters
+    set minlower [expr $length - ($minnum + $minupper)]
+
+
+    set lpass ""		;# password chars typed by left hand
+    set rpass ""		;# password chars typed by right hand
+    set password ""		;# merged password
+
+    # choose left or right starting hand
+    set initially_left [set isleft [rand 2]]
+
+    psplit $minnum left right
+    for {set i 0} {$i<$left} {incr i} {
+	insert lpass [lindex $lnums [rand $lnums_length]]
+    }
+    for {set i 0} {$i<$right} {incr i} {
+	insert rpass [lindex $rnums [rand $rnums_length]]
+    }
+
+    psplit $minlower left right
+    for {set i 0} {$i<$left} {incr i} {
+	insert lpass [lindex $lkeys [rand $lkeys_length]]
+    }
+    for {set i 0} {$i<$right} {incr i} {
+	insert rpass [lindex $rkeys [rand $rkeys_length]]
+    }
+
+    psplit $minupper left right
+    for {set i 0} {$i<$left} {incr i} {
+	insert lpass [string toupper [lindex $lkeys [rand $lkeys_length]]]
+    }
+    for {set i 0} {$i<$right} {incr i} {
+	insert rpass [string toupper [lindex $rkeys [rand $rkeys_length]]]
+    }
+
+    # merge results together
+    if {$initially_left} {
+	regexp "(\[^ ]*) *(.*)" "$lpass" x password lpass
+	while {[llength $lpass]} {
+	    regexp "(\[^ ]*) *(.*)" "$password$rpass" x password rpass
+	    regexp "(\[^ ]*) *(.*)" "$password$lpass" x password lpass
+	}
+	if {[llength $rpass]} {
+	    append password $rpass
+	}
+    } else {
+	regexp "(\[^ ]*) *(.*)" "$rpass" x password rpass
+	while {[llength $rpass]} {
+	    regexp "(\[^ ]*) *(.*)" "$password$lpass" x password lpass
+	    regexp "(\[^ ]*) *(.*)" "$password$rpass" x password rpass
+	}
+	if {[llength $lpass]} {
+	    append password $lpass
+	}
+    }
+}
+
+proc rand {m} {
+    expr {int($m*rand())}
+}
+
+proc gen_bad_args {msg} {
+    if {![llength [info commands .parameters.errmsg]]} {
+	message .parameters.errmsg -aspect 300
+	pack .parameters.errmsg
+    }
+    .parameters.errmsg configure -text "$msg\
+	    Please adjust the password generation arguments."
+}
+
+
+# tell tab what window to move between
+set parm_tabList {}
+
+# The procedure below is invoked in response to tabs in the entry
+# windows.  It moves the focus to the next window in the tab list.
+# Arguments:
+#
+# list -	Ordered list of windows to receive focus
+
+proc Tab {list} {
+    set i [lsearch $list [focus]]
+    if {$i < 0} {
+	set i 0
+    } else {
+	incr i
+	if {$i >= [llength $list]} {
+	    set i 0
+	}
+    }
+    focus [lindex $list $i]
+}
+
+# adjust args used in password generation
+proc adjust_parameters {} {
+    global parm_tabList
+    set parm_tabList {}
+
+    toplevel [set w .parameters]
+
+    message $w.text -aspect 300 -text \
+"These parameters control generation of random passwords.
+
+It is not necessary to move the mouse into this window to operate it.\
+Press <tab> to move to the next entry.\
+Press <return> or click the <ok> button when you are done."
+
+    foreach desc {
+	{length {total length}}
+	{minnum {minimum number of digits}}
+	{minupper {minimum number of uppercase letters}}
+	{minlower {minimum number of lowercase letters}}} {
+	    set name [lindex $desc 0]
+	    set text [lindex $desc 1]
+	    frame $w.$name -bd 1
+	    entry $w.$name.entry -relief sunken -width 2 -textvar $name
+	    bind $w.$name.entry <Tab> "Tab \$parm_tabList"
+	    bind $w.$name.entry <Return> "destroy_parm_window"
+	    label $w.$name.text -text $text
+	    pack $w.$name.entry -side left
+	    pack $w.$name.text -side left
+	    lappend parm_tabList $w.$name.entry
+    }
+    frame $w.2 -bd 1
+    checkbutton $w.2.cb -text "alternate characters across hands" \
+	    -relief flat -variable distribute
+    pack $w.2.cb -side left
+
+    button $w.ok -text "ok" -command "destroy_parm_window"
+    pack $w.text -expand 1 -fill x
+    pack $w.length $w.minnum $w.minupper $w.minlower $w.2 -expand 1 -fill x
+    pack $w.ok -side left -fill x -expand 1 -padx 2 -pady 2
+
+    set oldfocus [focus]
+    tkwait visibility $w.length.entry
+    focus $w.length.entry
+    tkwait window $w
+    focus $oldfocus
+    save_parameters
+}
+
+proc isnumber {n} {
+    regexp "^\[0-9\]+$" $n
+}
+
+# destroy parm window IF all values are legal
+proc destroy_parm_window {} {
+    global minnum minlower minupper length
+
+    set mustbe "must be a number greater than or equal to zero."
+
+    # check all variables
+    if {![isnumber $length]} {
+	gen_bad_args "The total length $mustbe"
+	return
+    }
+    if {![isnumber $minlower]} {
+	gen_bad_args "The minimum number of lowercase characters $mustbe"
+	return
+    }
+    if {![isnumber $minupper]} {
+	gen_bad_args "The minimum number of uppercase characters $mustbe"
+	return
+    }
+    if {![isnumber $minnum]} {
+	gen_bad_args "The minimum number of digits $mustbe"
+	return
+    }
+
+    # check constraints
+    if {$minnum + $minlower + $minupper > $length} {
+	gen_bad_args \
+		"It is impossible to generate a $length-character password with\
+		$minnum number[pluralize $minnum],\
+		$minlower lowercase letter[pluralize $minlower], and\
+		$minupper uppercase letter[pluralize $minupper]."
+	return
+    }
+
+    destroy .parameters
+}
+
+# return appropriate ending for a count of "n" nouns
+proc pluralize {n} {
+    expr $n!=1?"s":""
+}
+
+
+proc get_old_password {} {
+    global old
+
+    toplevel .old
+    label .old.label -text "Old password:"
+    catch {unset old}
+    entry .old.entry -textvar old -relief sunken -width 1
+
+    pack .old.label
+    pack .old.entry -fill x -padx 2 -pady 2
+
+    bind .old.entry <Return> {destroy .old}
+    set oldfocus [focus]
+    focus .old.entry
+    tkwait visibility .old
+    grab .old
+    tkwait window .old
+    focus $oldfocus
+    return $old
+}
+
+.unsorted select
+.passwd invoke
+
+proc make_selection {} {
+    global selection_line last_line
+
+    .names tag remove selection 0.0 end
+
+    # don't let selection go off top of screen
+    if {$selection_line < 1} {
+	set selection_line $last_line
+    } elseif {$selection_line > $last_line} {
+	set selection_line 1
+    }
+    .names yview -pickplace [expr $selection_line-1]
+    .names tag add selection $selection_line.0 [expr 1+$selection_line].0
+}
+
+proc select_next_nopassword {direction} {
+    global selection_line last_line nopasswords
+
+    if {0==[llength $nopasswords]} {
+	feedback "no null passwords"
+	return
+    }
+
+    if {$direction==1} {
+	# is there a better way to get last element of list?
+	if {$selection_line>=[lindex $nopasswords [expr [llength $nopasswords]-1]]} {
+	    set selection_line 0
+	}
+	foreach i $nopasswords {
+	    if {$selection_line<$i} break
+	}
+    } else {
+	if {$selection_line<=[lindex $nopasswords 0]} {
+	    set selection_line $last_line
+	}
+	set j [expr [llength $nopasswords]-1]
+	for {} {$j>=0} {incr j -1} {
+	    set i [lindex $nopasswords $j]
+	    if {$selection_line>$i} break
+	}
+    }
+    set selection_line $i
+    make_selection
+}
+
+proc select {w coords} {
+    global selection_line
+
+    $w mark set insert "@$coords linestart"
+    $w mark set anchor insert
+    set first [$w index "anchor linestart"]
+    set last [$w index "insert lineend + 1c"]
+    scan $first %d selection_line
+
+    $w tag remove selection 0.0 end
+    $w tag add selection $first $last
+}
+
+bind Text <1> {select %W %x,%y}
+bind Text <Double-1> {select %W %x,%y}
+bind Text <Triple-1> {select %W %x,%y}
+bind Text <2> {select %W %x,%y}
+bind Text <3> {select %W %x,%y}
+bind Text <B1-Motion> {}
+bind Text <Shift-1> {}
+bind Text <Shift-B1-Motion> {}
+bind Text <B2-Motion> {}
+
+bind .password <Control-n>	{incr selection_line 1;	make_selection}
+bind .password <Control-p>	{incr selection_line -1;make_selection}
+bind .password <Meta-n>	{select_next_nopassword 1}
+bind .password <Meta-p>	{select_next_nopassword -1}
+bind .password <Control-g>	{password_generate}
+bind .password <Control-a>	{adjust_parameters}
+bind .password <Control-u>	{set password ""}
+bind Entry <Control-c>		{exit}

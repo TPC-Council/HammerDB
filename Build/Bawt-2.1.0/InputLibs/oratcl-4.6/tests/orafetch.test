@@ -1,0 +1,44 @@
+# orafetch.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of orafetch
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::orafetch {
+	namespace import ::tcltest::*
+
+	test orafetch-1.1 {orafetch OCI_STMT_SELECT code == 1} {
+		set sql {select * from oratcl___tests where v_number = :num}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :num 0
+		oraexec $ora_cur
+		orafetch $ora_cur
+		oramsg $ora_cur rc
+	} {0}
+
+	test orafetch-1.2 {orafetch OCI_STMT_SELECT code == 1} {
+		set sql {select * from oratcl___tests where v_number = :num}
+		oraparse $ora_cur $sql
+		orabind $ora_cur :num 0
+		oraexec $ora_cur
+		set rc [orafetch $ora_cur]
+		set rc
+	} {0}
+
+	oraroll $ora_lda
+
+        cleanupTests
+}
+namespace delete ::tcl::test::orafetch
+return

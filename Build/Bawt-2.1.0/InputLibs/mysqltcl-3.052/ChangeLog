@@ -1,0 +1,104 @@
+Release 3.052
+-- fix multiresult bug (column number)  (patch from Thikrallah I.Shreah)
+Release 3.051
+-- add connection option -reconnect (patch from david cluytens)
+Release 3.05
+-- applied path from Björn König to support compilation with mysql3.20 (with help of #if)
+-- some addaption and bug fixes for mysql 5 for handling mutiple result queries. In case of mustiple statement mysql::exec return a list of results.
+Release 3.04
+-- bug fix for mysql::state (check for argument lenght). Thanks to Snyper for bug fix
+Release 3.03
+-- patch for file mysqltcl.c to adapt mysql column comands for mysql5 was applied. This accept 
+new columns  types: newdecimal, bit and geometry. Thanks to Joerg Mehring.
+Release 3.02
+-- bug in mysql::map and mysql::recieve removed (occurs only for one column evalated in global context)
+-- TEA upgrated
+Release 3.01
+-- bug in mysql::state then no proper handle fixed
+-- bug in mysql::nextresult fixed
+-- bug in man format doc fixed
+-- new command mysql::encoding
+-- new ssl connection options -sslkey -sslcert -sslca -sslcapath -sslciphers using of mysql_ssl_set
+-- new command option mysq::info state
+-- removed c-header installation section from Makefile.in
+Release 3.00
+-- all comands are defined in ::mysql namespace 
+-- commands are renamed after pattern mysqlconnect mysql::connect
+-- needs mysql 4.1 or higher
+-- mysqlnext was renamed to mysql::fetch
+-- new commands in mysql namespace: autocommit, commit, rollback, nextresult, moreresult, warningcoumt, isnull, newnull, setserveroption, shutdown
+-- new connection options: -multistatement, -multiresult, -localfiles, -foundrows, -interactive
+-- special null handling. The DB null is returned as new special Tcl type
+-- man pages defined with tcllib doctools
+Release 2.51
+-- new command mysqlreceive that use mysql_use_result and do not cache result on client machine
+Release 2.50
+-- bug in handle managment by subinterpreters was removed be refactoring
+Release 2.41
+-- Remove email from Tobias Rizau on his desire (not more up to date)
+-- conditional compiling dependent on mysql version causing ignore mysql 3.23.49 bug
+-- small source refactoring for hide same compiler warnings
+-- remove typos and out of date information from README file
+Release 2.40
+-- mysqltcl is now thread safe. The hashtable is hold separated for each thread
+Release 2.31
+-- bug in mysqlescape $handle $string fixed (Thanks to Olav Vitters)
+Release 2.30
+-- new connection options -ssl -odbc -noschema -compress
+-- mysqlescape can take also handle as argument to use mysql_real_escape_string and respect character setting
+-- new command mysqlbaseinfo -connectparameters | -clientversion that return all suported connect parameters or version of client C-API library
+-- new command mysqlping for checking and refresh of connection
+-- new command mysqlchangeuser for change user and database
+Release 2.20
+-- mysqlconnect was extended with option -encoding. Similar behavior to fconfigure. (initial patch written by Alexander Schoepe) The Version is not full compatible with oldier version. The differences are be reading date from mysql. Now the date are converted from External to Utf. See documentation for more information.
+Release 2.14
+-- configuration has new future for static linking with mysqlclient library
+Release 2.12
+-- refactoring (options for GetIndexFromObject are defined localy like in Tcl-core)
+-- removing unused variables
+-- some casts to avoid warnings messages
+-- bug in reading options from my.cnf was removed (It have not work earlier)
+-- use Tcl_Preserve and Tcl_Release instead of internal reference count
+Release 2.11
+-- memory leak removed
+Release 2.1
+-- new commands mysqlquerry mysqlendquerry
+-- refactoring
+Release 2.0rc14
+-- using mysql_option to read option group mysqltcl from my.cnf file
+
+Release 2.0
+-- unlimitet number of connections 
+-- Support of UNI-coded strings (All Stings are converted 
+   to external representation before sending to database) 
+-- thread safe ready (no tested, need to use Tcl_LockMutex by using global 
+   variables not implementet yet) 
+-- Rewritten all the commands using the Tcl_Obj interface
+-- The handles are full-featured Tcl objects, so that they're not converted
+   anymore to and from strings every time a command is called
+-- Improved argument checking
+-- Mysqltcl is now a Tcl package, loadable with 'package require'
+-- Added mysqlescape, for support to binary data.
+-- Mysqlstate has a syntax in accord with other commands (handle first)
+   *** POTENTIAL INCOMPATIBILITY ***
+-- Added -db -port -socket options to mysqlconnect.
+-- Mysqlconnect needs -host to specify the optional hostname
+   *** POTENTIAL INCOMPATIBILITY ***
+-- Added -list and -flatlist options to mysqlselect
+-- Mysqlstatus(code) is set to mysql error code on server error
+-- Mysql 3.22 is needed
+-- Removed unneeded mysql field from MysqlTclHandle struct
+
+Release 1.53
+-- Added all(?) MySQL types to the mysqlcol command (however, it would 
+   recommend using the "SHOW COLUMNS..." command instead
+-- Updated the documentation. Changed som mysql back to msql...
+
+Release 1.52
+-- Support for dynamic libraries
+-- Added possibility to set user and password at connection time
+-- Changed all msql to mysql in the man-page
+
+Release 1.51
+-- Support for Tcl/Tk 8.0 all older support was removed
+-- The files were restructured and the makefile rewritten

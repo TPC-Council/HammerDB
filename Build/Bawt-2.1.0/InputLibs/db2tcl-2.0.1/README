@@ -1,0 +1,119 @@
+WHAT IS DB2TCL?
+===============
+
+DB2TCL is an extension to the Tool Command Language (TCL) that
+provides access to a IBM UDB DB2 database server. 
+
+DB2TCL features:
+-- supports multiple connections to one or more database servers,
+-- supports all IBM DB2 statements,
+-- returns SELECT query results either as TCL lists, or iterates
+   a script over the resulting rows,
+-- supports database transactions.
+
+WHERE TO GET DB2TCL?
+====================
+
+http://sourceforge.net/projects/db2tcl/
+
+
+INSTALLATION
+============
+
+Quick install instructions:
+
+- Untar db2tcl tarball
+$ tar xzvf db2tcl-X.Y.Z.tar.gz
+- Change dir to db2tcl-X.Y.Z
+$ cd db2tcl-X.Y.Z
+- run configure script
+$ ./configure
+- run make
+$ make
+- ckeck
+$ make check
+- to install switch to root
+$ su -c 'make install'
+
+
+REQUIREMENTS
+============
+
+Since DB2TCL is an extension to Tcl, you should already have Tcl, or be
+prepared to get it via FTP:
+
+    ftp://ftp.scriptics.com/pub/tcl/
+
+If you want compile Tk interface for IBM DB2 you must have 
+Tk library also. 
+
+Of course, you must also have access to a IBM DB2 system. Additionally,
+you must have the IBM DB2 SDK package that provides header files and
+object libraries. See IBM DB2 homepage:
+
+    http://www-3.ibm.com/software/data/db2/udb/
+
+DB2TCL supports building a dynamic load library on systems that support
+dynamic loading.  If you build static libraries and executables, 
+I recommend building with Extended Tcl.
+
+
+BRIEF COMMAND REFERENCE
+=======================
+
+db2_connect dbname ?username? ?password?
+
+    Connect to database dbname with username and password. Function
+    return database handle.
+
+db2_disconnect db_handle
+
+    Disconnect from database and free database handle.
+
+db2_select db_handle sql_commands
+
+    Execute select SQL command for given handle.
+    Return statement handle.
+
+db2_execute db_handle sql_commands
+
+    Execute SQL command a database non-SELECT statement like INSERT,
+    DELETE, UPDATE.
+
+db2_bind db2_handle sql_commands varibles
+
+    Bind varibles to data.
+
+db2_fetchrow statement_handle ?number?
+
+    Fetch one row from dataset. If number  is specified, returns a  data
+    of this number column.
+
+db2_finish statement_handle
+
+    Finish and free statement handle.
+
+db2_getnumrow statement_handle
+
+    Return number column in statement.
+
+db2_begin_transaction db_handle
+
+    Start transaction
+
+db2_commit_transaction db_handle
+
+    Commit transaction
+
+db2_rollback_transaction db_handle
+
+    Rollback transaction
+    
+    
+NOTE
+====
+
+DB2TCL tested only on Linux 2.4.x systems and Solaris 8!
+
+Sergey N. Belinsky
+sergeybe@users.sourceforge.net

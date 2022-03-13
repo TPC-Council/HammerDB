@@ -1,0 +1,87 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# Synopsis
+#    robohunt player-name [-nodisplay]
+
+# Plays hunt automatically.  Optional "-nodisplay" argument disables output.
+
+# by Don Libes
+
+expect_version -exit 5.0
+
+set timeout 1
+
+proc random {} {
+    global ia ic im jran
+    
+    set jran [expr ($jran*$ia + $ic) % $im]
+    return $jran
+}
+
+set ia 7141
+set ic 54773
+set im 259200
+set jran [pid]
+
+# given a direction and number, moves that many spaces in that direction
+proc mv {dir num} {
+    # first try firing a bullet (what the hell...open some walls to move!)
+    send "f"
+    for {set i 0} {$i<$num} {incr i} {
+	send $dir
+    }
+}
+
+# move a random distance/direction
+
+# 31 is arbitrarily used as a max distance to move in any one direction
+# this is a compromise between long horizontal and vertical moves
+# but since excess movement is good for stabbing, this is reasonable
+proc move {} {
+    set num [random]
+    set mask [expr $num&3]
+    set num [expr $num&31]
+    if $mask==0 {send "H"; mv "h" $num; return}
+    if $mask==1 {send "L"; mv "l" $num; return}
+    if $mask==2 {send "K"; mv "k" $num; return}
+                 send "J"; mv "j" $num; return
+}
+
+if {2==$argc} { set output 0 } {set output 1}
+if {1>$argc}  { send_user "usage: robohunt name \[-nodisplay\]\n"; exit}
+spawn hunt -b -c -n [lindex $argv 0]
+expect "team"
+send "\r"
+
+set several_moves 5
+
+expect "Monitor:"
+after 1000
+expect ;# flush output
+log_user 0
+# output is turned off so that we can first strip out ^Gs before they
+# are sent to the tty.  It seems to drive xterms crazy - because our
+# rather stupid algorithm off not checking after every move can cause
+# the game to send a lot of them.
+
+for {} {1} {} {
+    # make several moves at a time, before checking to see if we are dead
+    # this is a compromise between just ignoring our status after each move
+    # and looking at our status after each move
+    for {set j $several_moves} {$j} {incr j -1} {
+	move
+    }
+
+    expect {
+	-re ^\007+ {exp_continue}
+	-re "\\? " {send y}
+	-re .+
+    }	
+    if $output {send_user -raw $expect_out(buffer)}
+}

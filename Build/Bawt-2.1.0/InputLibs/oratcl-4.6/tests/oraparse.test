@@ -1,0 +1,95 @@
+# oraparse.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of oraparse
+#
+
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oraparse {
+    namespace import ::tcltest::*
+
+    testConstraint testoraparse  [llength [info commands oraparse]]
+
+    # OCI_STMT_SELECT  == 1
+    # OCI_STMT_UPDATE  == 2
+    # OCI_STMT_DELETE  == 3
+    # OCI_STMT_INSERT  == 4
+    # OCI_STMT_CREATE  == 5
+    # OCI_STMT_DROP    == 6
+    # OCI_STMT_ALTER   == 7
+    # OCI_STMT_BEGIN   == 8
+    # OCI_STMT_DECLARE == 9
+
+    test oraparse-1.1 {oraparse 9 sql types} {
+	-constraints testoraparse
+	-setup {
+		set tst(lda) [oralogon $ora_constr]
+		set tst(stm) [oraopen $tst(lda)]
+		set tst(res) {}
+		set tst(1) {select * from oratcl___tests where v_number = 0}
+		set tst(2) {update oratcl___tests set v_number = 0 where v_number = 0}
+		set tst(3) {delete from oratcl___tests where v_number = 0}
+		set tst(4) {insert into oratcl___tests (v_number) values (20)}
+		set tst(5) {create table oratcl___tests (v_number number(2))}
+		set tst(6) {drop table oratcl___tests}
+		set tst(7) {alter session set nls_date_format = 'DD-MON-YYYY'}
+		set tst(8) {begin bogus_package; end;}
+		set tst(9) {declare x number(3); begin bogus_package; end;}
+	}
+	-body {
+		for {set n 1} {$n <= 9} {incr n} {
+			oraparse $tst(stm) $tst($n)
+			lappend tst(res) [oramsg $tst(stm) sqltype]
+		}
+		set tst(res)
+	}
+	-cleanup {
+                oraclose $tst(stm)
+                oralogoff $tst(lda)
+		array unset tst
+	}
+	-result {1 2 3 4 5 6 7 8 9}
+    }
+
+    # ORA-00923: FROM keyword not found where expected
+    # ORA-00933: SQL command not properly ended
+    # TMH - should not have to CATCH the oraparse, it should provide a return code
+    test oraparse-2.1 {oraparse bad sql} {
+	-constraints testoraparse
+	-setup {
+		set tst(lda) [oralogon $ora_constr]
+		set tst(stm) [oraopen $tst(lda)]
+		set tst(res) {}
+		set tst(1) {select * oratcl___tests where v_number = 0}
+		set tst(2) {select * from oratcl___tests v_number = 0}
+	}
+	-body {
+		for {set n 1} {$n <= 2} {incr n} {
+			catch {oraparse $tst(stm) $tst($n)}
+			lappend tst(res) [oramsg $tst(stm) rc]
+		}
+		set tst(res)
+	}
+	-cleanup {
+                oraclose $tst(stm)
+                oralogoff $tst(lda)
+		array unset tst
+	}
+	-result {923 933}
+    }
+
+    cleanupTests
+}
+namespace delete ::tcl::test::oraparse
+return

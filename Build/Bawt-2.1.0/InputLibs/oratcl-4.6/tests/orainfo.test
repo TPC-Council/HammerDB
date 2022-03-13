@@ -1,0 +1,111 @@
+# orainfo.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise orainfo
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+    source [file join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::orainfo {
+    namespace import ::tcltest::*
+
+    testConstraint testorainfo     [llength [info commands orainfo]]
+
+    #orainfo version
+    test orainfo-1.0 {orainfo: version} {
+	-constraints testorainfo
+	-body {
+		catch {orainfo version} res
+		set res
+	}
+	-cleanup {
+		unset res
+	}
+	-result 4.6
+    }
+
+    test orainfo-1.1 {orainfo: server} {
+	-constraints testorainfo
+	-setup {
+		set info_lda [oralogon $ora_constr]
+	}
+	-body {
+		catch {orainfo server $info_lda} res
+		set word [string range $res 0 5]
+		string equal $word Oracle
+	}
+	-cleanup {
+		oralogoff $info_lda
+		unset info_lda
+		unset word
+		unset res
+	}
+	-result 1
+    }
+
+    test orainfo-1.2 {orainfo: status} {
+	-constraints testorainfo
+	-setup {
+		set info_lda [oralogon $ora_constr]
+	}
+	-body {
+		set res [orainfo status $info_lda]
+	}
+	-cleanup {
+		oralogoff $info_lda
+		unset info_lda
+		unset res
+	}
+	-result 1
+    }
+
+    test orainfo-1.3 {orainfo: logonhandle} {
+	-constraints testorainfo
+	-setup {
+		set info_lda [oralogon $ora_constr]
+		set info_stm [oraopen $info_lda]
+	}
+	-body {
+		catch {orainfo logonhandle $info_stm} res
+		string equal $res $info_lda
+	}
+	-cleanup {
+		oraclose $info_stm
+		oralogoff $info_lda
+		unset info_stm
+		unset info_lda
+		unset res
+	}
+	-result 1
+    }
+
+    test orainfo-1.4 {orainfo: client} {
+	-constraints testorainfo
+	-setup {
+		set info_lda [oralogon $ora_constr]
+	}
+	-body {
+		catch {orainfo client} res
+		regexp {\d.\d.\d.\d.\d} $res
+	}
+	-cleanup {
+		oralogoff $info_lda
+		unset info_lda
+		unset res
+	}
+	-result 1
+    }
+
+    cleanupTests
+}
+namespace delete ::tcl::test::orainfo
+return

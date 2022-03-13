@@ -1,0 +1,30 @@
+# vgrindefs for Expect
+# Author: Brian Fitzgerald <fitz@mml0.meche.rpi.edu>
+#	  Department of Mechanical Engineering
+#	  Rensselaer Polytechnic Institute
+# Date: Sat, 12 Oct 91 13:41:36 EDT
+#
+# To install this file, append it to /usr/lib/vgrindefs
+#
+# vgrind is a troff pretty-printer.  For example, to use it on a Sun with the
+# Adobe Transcript package, install this file and do:
+#
+#		setenv TROFF ptroff
+#		vgrind -lexpect file
+#
+expect|tcl:\
+	:pb=(^|;)\d?proc\d\p\d:\
+	:id=!$%&'()*+,-./\:<=>?@^_`|}~:\
+	:bb={:be=}:\
+	:cb=#:ce=$:\
+	:sb=":se=\e":\
+	:kw=debug disconnect exit\
+	expect expect_user expect_before expect_after expect_version\
+	fork\
+	interact log_file log_user overlay\
+	send send_spawn send_user send_log send_error\
+	spawn system trace trap wait\
+	break case catch concat continue error eval exec expr file for foreach\
+	format glob global history if then else index info length list print\
+	proc range rename return scan set source string time uplevel upvar:
+

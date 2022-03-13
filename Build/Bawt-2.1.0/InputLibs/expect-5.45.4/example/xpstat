@@ -1,0 +1,274 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# This script acts as a front-end for xpilot.  Run it in the background,
+# and it will pop up a window for each server it finds running.  After
+# you run it, press the "?" button for more info.
+
+# Store the filename of your xpilot client in the following variable.
+set xpilot /usr/local/bin/xpilot
+
+# Author: Don Libes, NIST, 12/29/92
+
+# I never have figured out how to get the alias out of xrdb.  For now, just
+# read it ourselves out of .Xdefaults - ugh.
+
+log_user 0
+
+set timeout 60
+
+proc probe {} {
+	global max db hosts world
+
+	set timeout -1
+
+	expect_before eof {wait;return 0}
+
+	expect -re "Server on (.*). Enter command> " {
+			exp_send "S\r"
+			set host $expect_out(1,string)
+			# replace dots in hostnames by underscores
+			regsub -all . $host _ host
+			# force lowercase to avoid Tk widget name problems
+			set host [string tolower $host]
+			lappend hosts $host
+	}
+	expect -re "WORLD\[^:]*: (\[^\r]*)\r" {
+		set worldtmp $expect_out(1,string)
+	}
+	expect -re "AUTHOR\[^:]*: (\[^\r]*)\r" {
+		set author $expect_out(1,string)
+	}
+	set world($host) "$worldtmp by $author"
+
+	# skip over junk to get players
+	expect {
+		-re -+ {}
+		-re "Enter command> " {
+			set max($host) 0
+			display $host
+			return 1
+		}
+	}
+	set i 0
+	expect {
+		-re "\\.\\.\\. .  (................)   (...) *(\[^ ]*) *(\[^\r]*)\r" {
+			# strip trailing blanks
+			set alias [string trimright $expect_out(1,string)]
+			set db($host,$i,alias) $alias
+			
+			# strip leading zeros
+			scan $expect_out(2,string) %d db($host,$i,life)
+
+			set db($host,$i,score) $expect_out(3,string)
+
+			set db($host,name,$alias) $expect_out(4,string)
+
+			incr i
+			exp_continue
+		}
+		-re "Enter command>"
+
+	}
+	set max($host) $i
+	display $host
+
+	return 1
+}
+
+proc resize {w a b} {
+	# 27 is a guess at a fixed-width sufficiently comfortable for
+	# the variable-width font.  I don't know how to do better.
+	$w configure -width 27
+}
+
+proc play {host} {
+	global xpilot alias
+
+	exec xhost $host
+	catch {exec $xpilot -name $alias($host) -join $host} status
+}
+
+proc show-help {x y msg} {
+	catch {destroy .help}
+	toplevel .help
+	wm geometry .help +$x+$y
+
+	message .help.text -text $msg
+
+	button .help.ok -text "ok" -command {destroy .help}
+	pack .help.text 
+	pack .help.ok -fill x
+}
+
+# pop up window with alias
+proc show-alias {host seln x y} {
+	global db
+
+	catch {destroy .alias}
+	toplevel .alias
+	wm geometry .alias +$x+$y
+	wm transient .alias .
+
+	regexp "(.*\[^ ]) +\[-0-9]+ +\[0-9]+$" $seln discard alias
+
+	button .alias.b -text "$db($host,name,$alias)" -command {
+		destroy .alias
+	}
+	.alias.b config -padx 1 -pady 1 -highlightthickness 0
+	pack .alias.b
+}
+
+proc help {x y} {
+	show-help $x $y "xpstat - written by Don Libes, NIST, December 29, 1992
+
+This script acts as a front-end for xpilot.  Run it in the background, and it will pop up a window for each server it finds running.  Press the \"?\" button for this info.
+
+This program polls each xpilot server once a minute.  To make it poll immediately, press \"update\".  Press \"play as\" to enter the current game with the alias to the right.  Edit to taste.  (Your alias is initialized from the value of xpilot.name in ~/.Xdefaults.)
+
+Double-click the left button on an alias to see the real user name.  To remove the user name window, click on it with the left button.
+
+Pan the world/author text, player list, or your own alias by holding the middle mouse button down and moving the mouse."
+}
+
+# if user presses "update" try to update screen immediately
+proc prod {x y} {
+	global cat_spawn_id updateflag
+
+	if {$updateflag} {
+		show-help $x $y "I heard you, gimme a break.  I'm waiting for the xpilot server to respond..."
+	}
+	set updateflag 1
+
+	exp_send -i $cat_spawn_id "\r"
+}
+
+proc display {host} {
+	global world db alias max env
+
+	set w .$host
+	if {![winfo exists $w]} {	
+
+		# window does not exist, create it
+
+		toplevel $w -class xpstat
+		wm minsize $w 1 1
+		wm title $w "xpilot@$host"
+		wm iconname $w "$host xpilot stats"
+		entry $w.world -state disabled -textvar world($host)
+
+		listbox $w.players -yscroll "resize $w.players" -font 7x13bold
+		$w.players config -highlightthickness 0 -border 0
+		$w.world config -highlightthickness 0
+
+		bind $w.players <Double-Button-1> {
+			scan %W ".%%\[^.]" host
+			show-alias $host [selection get] %X %Y
+		}
+
+		message $w.msg -text "no players" -aspect 1000 -justify center
+
+		button $w.help -text ? -command {
+			help 10 20
+		}
+
+		button $w.update -text "update"
+		bind $w.update <1> {
+			after 1 prod %X %Y
+		}
+
+		button $w.play -text "play as"
+		bind $w.play <1> {
+			scan %W ".%%\[^.]" host
+			after 1 play $host
+		}
+
+		entry $w.alias -textvar alias($host) -width 10
+		set alias($host) $env(USER)
+
+		bind $w.alias <Return> {
+			scan %W ".%%\[^.]" host
+			play $host
+		}
+
+		$w.play config -padx 1 -pady 1 -highlightthickness 0
+		$w.update config -padx 1 -pady 1 -highlightthickness 0
+		$w.help config -padx 1 -pady 1 -highlightthickness 0
+		$w.alias config -highlightthickness 0
+
+		pack $w.world -expand 1 -fill x
+		pack $w.msg
+		pack $w.help $w.update $w.play -side left
+		pack $w.alias -side left -expand 1 -fill x
+		set max($host,was) 0
+	}
+
+	if {$max($host)==0} {
+		# put up "no players" message?
+		if {$max($host,was)>0} {
+			pack $w.msg -after $w.world -fill x -side top
+			pack forget $w.world
+		}
+	} else {
+		# remove "no players" message?
+		if {$max($host,was)==0} {
+			pack $w.players -after $w.world -side top
+			pack forget $w.msg
+		}
+	}		
+
+	$w.players delete 0 end
+
+	for {set i 0} {$i<$max($host)} {incr i} {
+		$w.players insert end [format "%-17s %4d %d" \
+			$db($host,$i,alias) \
+			$db($host,$i,score) \
+			$db($host,$i,life) \
+					]
+	}
+
+	set max($host,was) $max($host)
+}
+
+wm withdraw .
+set oldhosts {}
+
+set updateflag 0		;# 1 if user pressed "update" button
+
+# look for desired alias in the .Xdefaults file
+set status [catch {exec egrep "xpilot.name:" [glob ~/.Xdefaults]} output]
+if {$status==0} {
+	regexp "xpilot.name:\[ \t]*(\[^\r]*)" $output dummy env(USER)
+}
+
+spawn cat -u; set cat_spawn_id $spawn_id
+
+while {1} {
+	global xpilot hosts
+
+	set hosts {}
+
+	eval spawn $xpilot $argv
+	while {[probe]} {exp_send "N\r"}
+	catch {expect_before}	;# disable expect_before from inside probe
+
+	# clean up hosts that no longer are running xpilots
+
+	foreach host $oldhosts {
+		# if host not in hosts
+		if {-1==[lsearch $hosts $host]} {
+			destroy .$host
+		}
+	}
+	set oldhosts $hosts
+
+	set updateflag 0
+
+	# sleep for a little while, subject to click from "update" button
+	expect -i $cat_spawn_id -re "...."	;# two crlfs
+}

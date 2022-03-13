@@ -1,0 +1,26 @@
+# usertype.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise user defined types
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::usertype {
+        namespace import ::tcltest::*
+
+	cleanupTests
+}
+
+namespace delete ::tcl::test::usertype
+return
+

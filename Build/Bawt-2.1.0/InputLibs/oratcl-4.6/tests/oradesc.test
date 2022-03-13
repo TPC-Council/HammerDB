@@ -1,0 +1,267 @@
+# oradesc.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise oradesc
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+        source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oradesc {
+        namespace import ::tcltest::*
+
+	global ora_constr
+	global ora_userid
+
+	set desc_usr $ora_userid
+	set desc_lda [oralogon $ora_constr]
+	set desc_stm [oraopen $desc_lda]
+
+	
+	#
+	# it is possible to log into oracle with OS credentials
+	#
+	if {[string equal $desc_usr  {}]} {
+		oraparse $desc_stm {SELECT sys_context('USERENV', 'CURRENT_SCHEMA') FROM dual}
+		oraexec $desc_stm
+		if {[orafetch $desc_stm -datavariable current_schema] == 0} {
+			set desc_usr  $current_schema
+		}
+	}
+
+	testConstraint oratcl_desc_usr [expr {[string length $desc_usr] > 0}]
+
+	# describe tbl_1 result
+	set desc_tbl_1 [list [list DESC_CHAR 10 CHAR 0 0 1] \
+			     [list DESC_FLOAT 22 NUMBER 6 3 1] \
+			     [list DESC_NUMBER 22 NUMBER 5 0 1] \
+			     [list DESC_VARCHAR2 10 VARCHAR2 0 0 1] \
+			     [list DESC_CLOB 86 CLOB 0 0 1] \
+			     [list DESC_BLOB 86 BLOB 0 0 1] ]
+
+	# describe tbl_2 result
+	set desc_tbl_2 [list [list DESC_CHAR 10 CHAR 0 0 1] ]
+
+	#
+	# run SQL to create objects and set up a testConstraint for each
+	#
+	proc ora_create_objects {stm obj sql} {
+		oraparse $stm $sql
+		set cres [catch {oraexec $stm}]
+		if {$cres} {
+			puts stderr "[string repeat - 70]"
+			puts stderr "[string trim $sql]"
+			puts stderr "[lindex [oramsg $stm error] 0]"
+			puts stderr "[string repeat - 70]\n"
+			testConstraint $obj false
+		} else {
+			testConstraint $obj true	
+		}
+	}
+
+	# create tbl_1
+	ora_create_objects $desc_stm oratcl_desc_tbl_1 \
+	  {create table oratcl_desc_tbl_1 ( \
+		desc_char	char(10), \
+		desc_float	number(6,3), \
+		desc_number	number(5), \
+		desc_varchar2	varchar2(10), \
+		desc_clob	clob default empty_clob(), \
+		desc_blob	blob default empty_blob())}
+
+	# create tbl_2
+	ora_create_objects $desc_stm oratcl_desc_tbl_2 \
+		{create table oratcl_desc_tbl_2 (desc_char char(10))}
+
+	# create a private synonym for tbl_1
+	ora_create_objects $desc_stm oratcl_desc_syn_1 \
+	    {create synonym oratcl_desc_syn_1 for oratcl_desc_tbl_1}
+
+	# create a private synonym for tbl_2
+	ora_create_objects $desc_stm oratcl_desc_syn_2 \
+	    {create synonym oratcl_desc_syn_2 for oratcl_desc_tbl_2}
+
+	# create a (nested) private synonym
+	ora_create_objects $desc_stm oratcl_desc_syn_2_2 \
+	    {create synonym oratcl_desc_syn_2_2 for oratcl_desc_syn_2}
+
+	# create a public synonym for tbl_1 -- if failure, skip tests
+	ora_create_objects $desc_stm oratcl_public_syn_1 \
+	    {create public synonym oratcl_public_syn_1 for oratcl_desc_tbl_1}
+
+	#
+	# create oratcl_desc_view_1 -- if failure, skip tests
+	#
+	ora_create_objects $desc_stm oratcl_desc_view_1 \
+	    {create view oratcl_desc_view_1 as select * from oratcl_desc_tbl_1}
+
+
+	#
+	# a simple function to compare two nested lists.
+	#
+	proc test_list {arg1 arg2} { 
+		upvar $arg1 lst1
+		upvar $arg2 lst2
+
+		if {[llength $lst1] != [llength $lst2]} {
+			puts "\tnumber of columns [llength $lst1] != [llength $lst2]"
+			return 0
+		}
+
+		foreach slst1 $lst1 slst2 $lst2 {
+			if {[llength $slst1] != [llength $slst2]} {
+				return 0
+			}
+			foreach sslst1 $slst1 sslst2 $slst2 {
+				if {! [string equal $sslst1 $sslst2]} {
+					puts "\tcolumn :: [list $slst1] != [list $slst2]"
+					puts "\tvalues :: $sslst1 != $sslst2"
+					return 0
+				}
+			}
+		}
+
+		return 1
+	}
+
+	test oradesc-1.0 {oradesc: describe table} {
+		-constraints oratcl_desc_tbl_1
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_tbl_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	test oradesc-1.1 {oradesc: describe table} {
+		-constraints oratcl_desc_tbl_2
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_tbl_2]
+			set test_res [test_list desc_res desc_tbl_2]
+		}
+		-result 1
+	}
+
+	test oradesc-1.2 {oradesc: describe schema.table} {
+		-constraints {oratcl_desc_usr oratcl_desc_tbl_1}
+		-body {
+			set desc_res [oradesc $desc_lda ${desc_usr}.oratcl_desc_tbl_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	test oradesc-1.3 {oradesc: describe schema.table} {
+		-constraints {oratcl_desc_usr oratcl_desc_tbl_2}
+		-body {
+			set desc_res [oradesc $desc_lda ${desc_usr}.oratcl_desc_tbl_2]
+			set test_res [test_list desc_res desc_tbl_2]
+		}
+		-result 1
+	}
+
+	test oradesc-2.0 {oradesc: describe non-existent table} {
+		-body {
+			oradesc $desc_lda ORATCL_NOEXIST_TBL_1
+		}
+                -returnCodes {1}
+                -result "ORA-04043: object ORATCL_NOEXIST_TBL_1 does not exist"
+	}
+
+	test oradesc-2.1 {oradesc: describe non-existent schema.table} {
+		-constraints oratcl_desc_usr
+		-body {
+			oradesc $desc_lda ${desc_usr}.ORATCL_NOEXIST_TBL_1
+		}
+                -returnCodes {1}
+                -result "ORA-04043: object ${desc_usr}.ORATCL_NOEXIST_TBL_1 does not exist"
+	}
+
+	test oradesc-3.0 {oradesc: describe private synonym} {
+		-constraints oratcl_desc_syn_1
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_syn_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	test oradesc-3.1 {oradesc: describe private synonym} {
+		-constraints oratcl_desc_syn_2
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_syn_2]
+			set test_res [test_list desc_res desc_tbl_2]
+		}
+		-result 1
+	}
+	
+
+	test oradesc-3.2 {oradesc: describe schema.synonym} {
+		-constraints {oratcl_desc_usr oratcl_desc_syn_1}
+		-body {
+			set desc_res [oradesc $desc_lda ${desc_usr}.oratcl_desc_syn_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	test oradesc-3.3 {oradesc: describe schema.synonym} {
+		-constraints oratcl_desc_syn_2
+		-body {
+			set desc_res [oradesc $desc_lda ${desc_usr}.oratcl_desc_syn_2]
+			set test_res [test_list desc_res desc_tbl_2]
+		}
+		-result 1
+	}
+
+	test oradesc-3.4 {oradesc: describe nested private synonym} {
+		-constraints oratcl_desc_syn_2_2
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_syn_2_2]
+			set test_res [test_list desc_res desc_tbl_2]
+		}
+		-result 1
+	}
+
+	test oradesc-4.0 {oradesc: describe public synonym} {
+		-constraints oratcl_public_syn_1
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_public_syn_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	test oradesc-5.0 {oradesc: describe view} {
+		-constraints oratcl_desc_view_1
+		-body {
+			set desc_res [oradesc $desc_lda oratcl_desc_view_1]
+			set test_res [test_list desc_res desc_tbl_1]
+		}
+		-result 1
+	}
+
+	# cleanup.
+	catch {orasql $desc_stm {drop public synonym oratcl_public_syn_1}}
+	catch {orasql $desc_stm {drop synonym oratcl_desc_syn_1}}
+	catch {orasql $desc_stm {drop synonym oratcl_desc_syn_2}}
+	catch {orasql $desc_stm {drop synonym oratcl_desc_syn_2_2}}
+	catch {orasql $desc_stm {drop table oratcl_desc_tbl_1}}
+	catch {orasql $desc_stm {drop table oratcl_desc_tbl_2}}
+	catch {orasql $desc_stm {drop view oratcl_desc_view_1}}
+
+	oraclose $desc_stm
+	oralogoff $desc_lda
+
+        cleanupTests
+}
+
+namespace delete ::tcl::test::oradesc

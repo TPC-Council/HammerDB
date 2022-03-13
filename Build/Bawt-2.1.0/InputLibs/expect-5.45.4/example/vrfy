@@ -1,0 +1,27 @@
+#!/depot/path/expect -f
+
+
+# separate address into user and host
+regexp (.*)@(.*) $argv ignore user host
+
+log_user 0
+set timeout -1
+
+# host might be an mx record, convert to a real host via nslookup
+spawn nslookup
+expect "> "
+send "set query=mx\r"
+expect "> "
+send "$host\r"
+expect {
+	"No mail exchanger" {}
+	-re "mail exchanger = (\[^\r]*)" {
+		set host $expect_out(1,string)
+	}
+}
+
+spawn telnet $host smtp
+expect "220*\r\n"
+send "vrfy $user\r"
+expect	"250" {send_user "GOOD\n"} \
+	"550" {send_user "BAD\n"}

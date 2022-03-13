@@ -1,0 +1,80 @@
+#!/depot/tcl/src/expect/e --
+# Description: Simple fragment to begin a telnet daemon
+# For more information, see Chapter 17 of "Exploring Expect"
+# Author: Don Libes, NIST
+
+set IAC   "\xff"
+set DONT  "\xfe"
+set DO    "\xfd"
+set WONT  "\xfc"
+set WILL  "\xfb"
+set SB    "\xfa"		;# subnegotation begin
+set SE    "\xf0"		;# subnegotation end
+set TTYPE "\x18"
+set SGA   "\x03"
+set ECHO  "\x01"
+set SEND  "\x01"
+
+send "$IAC$WILL$ECHO"
+send "$IAC$WILL$SGA"
+send "$IAC$DO$TTYPE"
+
+remove_nulls 0
+
+expect_before {
+	-re "^$IAC$DO$ECHO" {
+		# treat as acknowledgement and ignore
+		exp_continue
+	}
+	-re "^$IAC$DO$SGA" {
+		# treat as acknowledgement and ignore
+		exp_continue
+	}
+	-re "^$IAC$DO\(.)" {
+		# refuse anything else
+		send_user "$IAC$WONT$expect_out(1,string)"
+		exp_continue
+	}
+	-re "^$IAC$WILL$TTYPE" {
+		# respond to acknowledgement
+		send_user "$IAC$SB$TTYPE$SEND$IAC$SE"
+		exp_continue
+	}
+	-re "^$IAC$WILL$SGA" {
+		send_user "$IAC$DO$SGA"
+		exp_continue
+	}
+	-re "^$IAC$WILL\(.)" {
+		# refuse anything else
+		send_user "$IAC$DONT$expect_out(1,string)"
+		exp_continue
+	}
+	-re "^$IAC$SB$TTYPE" {
+		expect_user null
+		expect_user -re "(.*)$IAC$SE"
+		set env(TERM) [string tolower $expect_out(1,string)]
+		# no continue!
+	}
+	-re "^$IAC$WONT$TTYPE" {
+		# treat as acknowledgement and ignore
+		set env(TERM) vt100
+		# no continue!
+	}
+}
+
+# do negotations up to terminal type
+# expect
+
+##############################
+# your code goes after this point here
+
+# spawn something			;# typically spawn something
+# expect ...			;# typically do some expects, sends, etc.
+# send ...
+# expect ...
+# send ...
+
+# expect_before			;# remove all protocol nonsense
+
+# let user interact
+# interact -re "\r" {send "\r";	expect_user \n {} null}

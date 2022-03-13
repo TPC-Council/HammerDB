@@ -1,0 +1,19 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# telnet-cwd - telnet but with same directory
+#
+# You can extend this idea to save any arbitrary information across telnet
+# Don Libes -  Oct 17, 1991.
+
+set prompt "(%|#|\\$) $"		;# default prompt
+catch {set prompt $env(EXPECT_PROMPT)}
+
+eval spawn telnet $argv
+interact -o -nobuffer -re $prompt return
+send "cd [pwd]\r"
+interact

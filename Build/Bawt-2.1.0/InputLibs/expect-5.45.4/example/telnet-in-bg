@@ -1,0 +1,18 @@
+# Start telnet and when you press ^Z, put telnet in background and save any
+# remaining output in "telnet.log".  You can actually apply this technique
+# to any interactive program - I just chose telnet here.
+
+# Author: Don Libes, NIST, 1/5/95
+
+spawn -ignore HUP telnet $argv		;# start telnet
+interact \032 return			;# interact until ^Z
+
+if {[fork]} exit				;# disconnect from terminal
+disconnect
+
+set log [open logfile w]		;# open logfile
+expect -re .+ {				;# and record everything to it
+	puts -nonewline $log $expect_out(buffer)
+	exp_continue
+}
+

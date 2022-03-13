@@ -1,0 +1,20 @@
+#!/depot/path/expect --
+
+# Name: reprompt
+# Description: reprompt every so often until user enters something
+# Usage: reprompt timeout prompt
+# Author: Don Libes, NIST
+
+foreach {timeout prompt} $argv {}
+
+send_error $prompt
+expect {
+    timeout {
+	send_error "\nwake up!!\a"
+	send_error \n$prompt
+	exp_continue
+    }
+    -re .+ {
+	send_user $expect_out(buffer)
+    }
+}

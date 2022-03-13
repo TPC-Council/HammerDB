@@ -1,0 +1,302 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# ftp-inband - copy files over a telnet/rlogin/etc link
+# Author: Don Libes, NIST
+# Date: Jan 11, 1993
+
+# Program follows usual conventions and is otherwise self-documenting.
+# Assumes standard UNIX conventions on both sides.  It uses "compress"
+# which can be replaced with gzip or removed totally - it's just there
+# for efficiency.
+# Assumes error-free transmission (i.e., MNP modems), telnet links, etc.
+# Assumes remote shell does not reset tty modes after each command.
+
+# Note, there is very little error checking.  This script was written
+# primarily as an exercise - just to demonstrate Expect.
+
+set prompt "(%|#|\\\$) $"		;# default prompt
+catch {set prompt $env(EXPECT_PROMPT)}
+
+set timeout -1
+set verbose_flag 0
+
+proc send_verbose {msg} {
+	global verbose_flag
+
+	if {$verbose_flag} {
+		send_user $msg
+	}
+}
+
+proc get {infile outfile} {
+	global prompt verbose_flag
+
+	if {!$verbose_flag} {
+		log_user 0
+	}
+
+	send_verbose "disabling echo: "
+	send "stty -echo\r"
+	expect -re $prompt
+
+	send_verbose "remote pid is "
+	send "echo $$\r"
+	expect -re "(.*)\r\n.*$prompt" {set rpid $expect_out(1,string)}
+
+	set pid [pid]
+	# pid is local pid, rpid is remote pid
+
+	set infile_plain	"/tmp/$rpid"
+	set infile_compressed	"$infile_plain.Z"
+	set infile_encoded	"$infile_compressed.uu"
+
+	set outfile_plain	"/tmp/$pid"
+	set outfile_compressed	"$outfile_plain.Z"
+	set outfile_encoded	"$outfile_compressed.uu"
+
+	set out [open $outfile_encoded w]
+
+	send_verbose "compressing\n"
+	send "compress -fc $infile > $infile_compressed\r"
+	expect -re $prompt
+
+	# use label corresponding to temporary name on local system
+	send_verbose "uuencoding\n"
+	send "uuencode $infile_compressed $outfile_compressed > $infile_encoded\r"
+	expect -re $prompt
+
+	send_verbose "copying\n"
+	send "cat $infile_encoded\r"
+
+	log_user 0
+
+	expect {
+		-re "^end\r\n" {
+			puts $out "end"
+			close $out
+		} -re "^(\[^\r]*)\r\n" {
+			puts $out $expect_out(1,string)
+			send_verbose "."
+			exp_continue
+		}
+	}
+
+	if {$verbose_flag} {
+		send_user "\n"		;# after last "."
+		log_user 1
+	}
+
+	expect -re $prompt			;# wait for prompt from cat
+
+	send_verbose "deleting temporary files\n"
+	send "rm -f $infile_compressed $infile_encoded\r"
+	expect -re $prompt
+
+	send_verbose "switching attention to local system\nuudecoding\n"
+	exec uudecode $outfile_encoded
+
+	send_verbose "uncompressing\n"
+	exec uncompress -f $outfile_compressed
+
+	send_verbose "renaming\n"
+	if {[catch "exec cp $outfile_plain $outfile" msg]} {
+		send_user "could not move file in place, reason: $msg\n"
+		send_user "left as $outfile_plain\n"
+		exec rm -f $outfile_encoded
+	} else {
+		exec rm -f $outfile_plain $outfile_encoded
+	}
+
+	# restore echo and serendipitously reprompt
+	send "stty echo\r"
+
+	log_user 1
+}	
+
+proc put {infile outfile} {
+	global prompt verbose_flag
+
+	if {!$verbose_flag} {
+		log_user 0
+	}
+
+	send_verbose "disabling echo: "
+	send "stty -echo\r"
+	expect -re $prompt
+
+	send_verbose "remote pid is "
+	send "echo $$\r"
+	expect -re "(.*)\r\n.*$prompt" {set rpid $expect_out(1,string)}
+
+	set pid [pid]
+	# pid is local pid, rpid is remote pid
+
+	set infile_plain	"/tmp/$pid"
+	set infile_compressed	"$infile_plain.Z"
+	set infile_encoded	"$infile_compressed.uu"
+
+	set outfile_plain	"/tmp/$rpid"
+	set outfile_compressed	"$outfile_plain.Z"
+	set outfile_encoded	"$outfile_compressed.uu"
+
+	set out [open $outfile_encoded w]
+
+	send_verbose "compressing\n"
+	exec compress -fc $infile > $infile_compressed
+
+	# use label corresponding to temporary name on local system
+	send_verbose "uuencoding\n"
+	exec uuencode $infile_compressed $outfile_compressed > $infile_encoded
+
+	send_verbose "copying\n"
+	send "cat > $outfile_encoded\r"
+
+	log_user 0
+
+	set fp [open $infile_encoded r]
+	while {1} {
+		if {-1 == [gets $fp buf]} break
+		send_verbose "."
+		send -- "$buf\r"
+	}
+
+	if {$verbose_flag} {
+		send_user "\n"			;# after last "."
+		log_user 1
+	}
+
+	send "\004"				;# eof
+	close $fp
+
+	send_verbose "deleting temporary files\n"
+	exec rm -f $infile_compressed $infile_encoded
+
+	send_verbose "switching attention to remote system\n"
+
+	expect -re $prompt			;# wait for prompt from cat
+
+	send_verbose "uudecoding\n"
+	send "uudecode $outfile_encoded\r"
+	expect -re $prompt
+
+	send_verbose "uncompressing\n"
+	send "uncompress -f $outfile_compressed\r"
+	expect -re $prompt
+
+	send_verbose "renaming\n"
+	send "cp $outfile_plain $outfile\r"
+	expect -re $prompt
+
+	send_verbose "deleting temporary files\n"
+	send "rm -f $outfile_plain $outfile_encoded\r"
+	expect -re $prompt
+
+	# restore echo and serendipitously reprompt
+	send "stty echo\r"
+
+	log_user 1
+}	
+
+proc get_main {} {
+	stty -raw echo
+	send_user "g\nget remote file \[localfile]: "
+	expect_user {
+		-re "(\[^ ]+) +(\[^ ]+)\n" {
+			send_user "copying (remote) $expect_out(1,string) to (local) $expect_out(2,string)\n"
+			get $expect_out(1,string) $expect_out(2,string)
+		} -re "(\[^ ]+)\n" {
+			send_user "copying $expect_out(1,string)\n"
+			get $expect_out(1,string) $expect_out(1,string)
+		} -re "\n" {
+			send_user "eh?\n"
+		}
+	}
+	stty raw -echo
+}
+
+proc put_main {} {
+	stty -raw echo
+	send_user "p\nput localfile \[remotefile]: "
+	expect_user {
+		-re "(\[^ ]+) +(\[^ ]+)\n" {
+			send_user "copying (local) $expect_out(1,string) to (remote) $expect_out(2,string)\n"
+			put $expect_out(1,string) $expect_out(2,string)
+		} -re "(\[^ ]+)\n" {
+			send_user "copying $expect_out(1,string)\n"
+			put $expect_out(1,string) $expect_out(1,string)
+		} -re "\n" {
+			send_user "eh?\n"
+		}
+	}
+	stty raw -echo
+}
+
+proc chdir {} {
+	stty -raw echo
+	send_user "c\n"
+	send_user "current directory is [pwd], new directory: "
+	expect_user -re "(.*)\n" {
+		cd $expect_out(1,string)
+	}
+	stty raw -echo
+}
+
+proc verbose {} {
+	global verbose_flag
+
+	set verbose_flag [expr !$verbose_flag]
+	send_user "verbose [verbose_status]\r\n"
+}
+
+proc verbose_status {} {
+	global verbose_flag
+
+	if {$verbose_flag} {
+		return "on"
+	} else {
+		return "off"
+	}
+}
+
+proc cmd {} {
+	set CTRLZ \032
+
+	send_user "command (g,p,? for more): "
+	expect_user {
+		g get_main
+		p put_main
+		c chdir
+		v verbose
+		~ {send "~"}
+		"\\?" {
+			send_user "?\n"
+			send_user "~~g  get file from remote system\n"
+			send_user "~~p  put file to remote system\n"
+			send_user "~~c  change/show directory on local system\n"
+			send_user "~~~  send ~~ to remote system\n"
+			send_user "~~?  this list\n"
+			send_user "~~v  verbose mode toggle (currently [verbose_status])\n"
+			send_user "~~^Z suspend\n"
+		}
+		$CTRLZ {
+			stty -raw echo
+			exec kill -STOP [pid]
+			stty raw -echo
+		}
+		-re . {send_user "unknown command\n"}
+	}
+	send_user "resuming session...\n"
+}
+
+spawn -noecho $env(SHELL)
+
+send_user "Once logged in, cd to directory to transfer to/from and press: ~~\n"
+send_user "One moment...\n"
+interact ~~ cmd
+

@@ -1,0 +1,79 @@
+# Copyright: 2017-2021 Alexander Schoepe, Bochum, DE (schoepe@users.sourceforge.net)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+# Changes to source code (manual additions):
+# File gen_dh_params: Rewrote sed command in function openssl_dhparam.
+
+proc Init_tcltls { libName libVersion } {
+    SetScriptAuthor    $libName "Alexander Schoepe" "schoepe@users.sourceforge.net"
+    SetLibHomepage     $libName "http://core.tcl-lang.org/tcltls/"
+    SetLibDependencies $libName "Tcl" "libressl"
+    SetPlatforms       $libName "All"
+    SetWinCompilers    $libName "gcc"
+}
+
+proc Build_tcltls { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+        if { [IsLinux] } {
+            ReplaceLine "$buildDir/configure" \
+                        "SAVE_LIBS=\"\$\{LIBS\}\"" \
+                        "SAVE_LIBS=\"\$\{LIBS\} -lpthread\""
+        }
+        if { [IsWindows] } {
+            ReplaceLine "$buildDir/configure" \
+                        "SAVE_LIBS=\"\$\{LIBS\}\"" \
+                        "SAVE_LIBS=\"\$\{LIBS\} -lws2_32\""
+        }
+    }
+
+    if { [UseStage "Configure" $libName] } {
+	set devDirMSys [MSysPath [GetOutputDevDir]]
+
+        set flags ""
+        if { [IsWindows] || [IsLinux] } {
+            append flags "CC='gcc -static-libgcc' "
+        }
+        append flags "CFLAGS=\"-DNO_SSL2=1 -DNO_SSL3=1\" "
+
+        TeaConfig $libName $buildDir $instDir \
+                  "$flags" \
+                  "--with-openssl-dir=$devDirMSys" \
+                  "--with-ssl=libressl" \
+                  "--enable-static-ssl"
+    }
+
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        StripLibraries "$instDir"
+        LibFileCopy "$instDir"  "$devDir/[GetTclDir]"   "*"  true
+        LibFileCopy "$instDir"  "$distDir/[GetTclDir]"  "*"  true
+        # Copy the init file tls.tcl into the library directory,
+        # as this is missing from the Makefile.
+        SingleFileCopy "$buildDir/tls.tcl" "$devDir/[GetTclLibDir]/$libName$libVersion"
+        SingleFileCopy "$buildDir/tls.tcl" "$distDir/[GetTclLibDir]/$libName$libVersion"
+
+        if { [IsWindows] } {
+            # tcltls is compiled with -fstack-protector-all, which needs the libssp-0.dll library.
+            # Copy this library into the Tcl/bin directory.
+            set libssp [file join [GetOutputToolsDir] [GetMingwDir] [GetMingwSubDir] "bin" "libssp-0.dll"]
+            if { [file exists $libssp] } {
+                SingleFileCopy $libssp "$devDir/[GetTclBinDir]"
+                SingleFileCopy $libssp "$distDir/[GetTclBinDir]"
+            } else {
+                ErrorAppend "$libName: No stack protection library found ($libssp)" "Error"
+            }
+        }
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

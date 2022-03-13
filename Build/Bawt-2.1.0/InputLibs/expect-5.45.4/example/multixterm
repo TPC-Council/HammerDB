@@ -1,0 +1,993 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+#
+# NAME
+#	multixterm - drive multiple xterms separately or together
+#
+# SYNOPSIS
+#	multixterm [-xa "xterm args"]
+#		   [-xc "command"]
+#		   [-xd "directory"]
+#		   [-xf "file"]
+#		   [-xn "xterm names"]
+#		   [-xv] (enable verbose mode)
+#		   [-xh] or [-x?] (help)
+#		   [xterm names or user-defined args...]
+#
+# DESCRIPTION
+#	Multixterm creates multiple xterms that can be driven together
+#	or separately.
+#
+#	In its simplest form, multixterm is run with no arguments and
+#	commands are interactively entered in the first entry field.
+#	Press return (or click the "new xterm" button) to create a new
+#	xterm running that command.
+#
+#	Keystrokes in the "stdin window" are redirected to all xterms
+#	started by multixterm.  xterms may be driven separately simply
+#	by focusing on them.
+#
+#	The stdin window must have the focus for keystrokes to be sent
+#	to the xterms.  When it has the focus, the color changes to
+#	aquamarine.  As characters are entered, the color changes to
+#	green for a second.  This provides feedback since characters
+#	are not echoed in the stdin window.
+#
+#	Typing in the stdin window while holding down the alt or meta
+#	keys sends an escape character before the typed characters.
+#	This provides support for programs such as emacs.
+#
+# ARGUMENTS
+#	The optional -xa argument indicates arguments to pass to
+#	xterm.
+#
+#	The optional -xc argument indicates a command to be run in
+#	each named xterm (see -xn).  With no -xc argument, the command
+#	is the current shell.
+#
+#	The optional -xd argument indicates a directory to search for
+#	files that will appear in the Files menu.  By default, the
+#	directory is: ~/lib/multixterm
+#
+#	The optional -xf argument indicates a file to be read at
+#	startup.  See FILES below for more info.
+#
+#	The optional -xn argument indicates a name for each xterm.
+#	This name will also be substituted for any %n in the command
+#	argument (see -xc).
+#
+#	The optional -xv flag puts multixterm into a verbose mode
+#	where it will describe some of the things it is doing
+#	internally.  The verbose output is not intended to be
+#	understandable to anyone but the author.
+#
+#	Less common options may be changed by the startup file (see
+#	FILES below).
+#
+#	All the usual X and wish flags are supported (i.e., -display,
+#	-name).  There are so many of them that to avoid colliding and
+#	make them easy to remember, all the multixterm flags begin
+#	with -x.
+#
+#	If any arguments do not match the flags above, the remainder
+#	of the command line is made available for user processing.  By
+#	default, the remainder is used as a list of xterm names in the
+#	style of -xn. The default behavior may be changed using the
+#	.multixtermrc file (see DOT FILE below).
+#
+# EXAMPLE COMMAND LINE ARGUMENTS
+#	The following command line starts up two xterms using ssh to
+#	the hosts bud and dexter.
+#
+#		multixterm -xc "ssh %n" bud dexter
+#
+# FILES
+#	Command files may be used to drive or initialize multixterm.
+#	The File menu may be used to invoke other files.  If files
+#	exist in the command file directory (see -xd above), they will
+#	appear in the File menu.  Files may also be loaded by using
+#	File->Open.  Any filename is acceptable but the File->Open
+#	browser defaults to files with a .mxt suffix.
+#
+#	Files are written in Tcl and may change any variables or
+#	invoke any procedures.  The primary variables of interest are
+#	'xtermCmd' which identifies the command (see -xc) and
+#	'xtermNames' which is a list of names (see -xn).  The
+#	procedure xtermStartAll, starts xterms for each name in the
+#	list.  Other variables and procedures may be discovered by
+#	examining multixterm itself.
+#
+# EXAMPLE FILE
+#	The following file does the same thing as the earlier example
+#	command line:
+#
+#		# start two xterms connected to bud and dexter
+#		set xtermCmd "ssh %n"
+#		set xtermNames {bud dexter}
+#		xtermStartAll
+#
+# DOT FILE
+#	At startup, multixterm reads ~/.multixtermrc if present.  This
+#	is similar to the command files (see FILES above) except that
+#	.multixtermrc may not call xtermStartAll.  Instead it is
+#	called implicitly, similar to the way that it is implicit in
+#	the command line use of -xn.
+#
+#	The following example .multixtermrc file makes every xterm run
+#	ssh to the hosts named on the command line.
+#
+#		set xtermCmd "ssh %n"
+#
+#	Then multixterm could be called simply:
+#
+#		multixterm bud dexter
+#
+#	If any command-line argument does not match a multixterm flag,
+#	the remainder of the command line is made available to
+#	.multixtermrc in the argv variable.  If argv is non-empty when
+#	.multixtermrc returns, it is assigned to xtermNames unless
+#	xtermNames is non-empty in which case, the content of argv is
+#	ignored.
+#
+#	Commands from .multixtermrc are evaluated early in the
+#	initialization of multixterm.  Anything that must be done late
+#	in the initialization (such as adding additional bindings to
+#	the user interface) may be done by putting the commands inside
+#	a procedure called "initLate".
+#
+# MENUS
+#	Except as otherwise noted, the menus are self-explanatory.
+#	Some of the menus have dashed lines as the first entry.
+#	Clicking on the dashed lines will "tear off" the menus.
+#
+# USAGE SUGGESTION - ALIASES AND COMMAND FILES
+#	Aliases may be used to store lengthy command-line invocations.
+#	Command files can be also be used to store such invocations
+#	as well as providing a convenient way to share configurations.
+#
+#	Tcl is a general-purpose language.  Thus multixterm command
+#	files can be extremely flexible, such as loading hostnames
+#	from other programs or files that may change from day-to-day.
+#	In addition, command files can be used for other purposes.
+#	For example, command files may be used to prepared common
+#	canned interaction sequences.  For example, the command to
+#	send the same string to all xterms is:
+#
+#	    xtermSend "a particularly long string"
+#
+#	The File menu (torn-off) makes canned sequences particularly
+#	convenient.  Interactions could also be bound to a mouse
+#	button, keystroke, or added to a menu via the .multixtermrc
+#	file.
+#
+# USAGE SUGGESTION - HANDLING MANY XTERMS BY TILING
+#	The following .multixtermrc causes tiny xterms to tile across
+#	and down the screen.  (You may have to adjust the parameters
+#	for your screen.)  This can be very helpful when dealing with
+#	large numbers of xterms.
+#
+#	    set yPos 0
+#	    set xPos 0
+#
+#	    trace variable xtermArgs r traceArgs
+#
+#	    proc traceArgs {args} {
+#	        global xPos yPos
+#	        set ::xtermArgs "-geometry 80x12+$xPos+$yPos -font 6x10"
+#	        if {$xPos} {
+#		    set xPos 0
+#		    incr yPos 145
+#		    if {$yPos > 800} {set yPos 0}
+#	        } else {
+#		    set xPos 500
+#	        }
+#	    }
+#
+#	The xtermArgs variable in the code above is the variable
+#	corresponding to the -xa argument.
+#
+#	xterms can be also be created directly.  The following command
+#	file creates three xterms overlapped horizontally:
+#
+#	    set xPos 0
+#
+#	    foreach name {bud dexter hotdog} {
+#	        set ::xtermArgs "-geometry 80x12+$xPos+0 -font 6x10"
+#	        set ::xtermNames $name
+#	        xtermStartAll
+#	        incr xPos 300
+#	    }
+#
+# USAGE SUGGESTION - SELECTING HOSTS BY NICKNAME
+#	The following .multixtermrc shows an example of changing the
+#	default handling of the arguments from hostnames to a filename
+#	containing hostnames:
+#
+#		set xtermNames [exec cat $argv]
+#
+#	The following is a variation, retrieving the host names from
+#	the yp database:
+#
+#		set xtermNames [exec ypcat $argv]
+#
+#	The following hardcodes two sets of hosts, so that you can
+#	call multixterm with either "cluster1" or "cluster2":
+#
+#		switch $argv {
+#		    cluster1 {
+#			set xtermNames "bud dexter"
+#		    }
+#		    cluster2 {
+#			set xtermNames "frank hotdog weiner"
+#		    }
+#		}
+#
+# COMPARE/CONTRAST
+#	It is worth comparing multixterm to xkibitz.  Multixterm
+#	connects a separate process to each xterm.  xkibitz connects
+#	the same process to each xterm.
+#
+# LIMITATIONS
+#	Multixterm provides no way to remotely control scrollbars,
+#	resize, and most other window system related functions.
+#
+#	Multixterm can only control new xterms that multixterm itself
+#	has started.
+#
+#	As a convenience, the File menu shows a limited number of
+#	files.  To show all the files, use File->Open.
+#
+# FILES
+#	$DOTDIR/.multixtermrc   initial command file
+#	~/.multixtermrc         fallback command file
+#	~/lib/multixterm/       default command file directory
+#
+# BUGS
+#	If multixterm is killed using an uncatchable kill, the xterms
+#	are not killed.  This appears to be a bug in xterm itself.
+#
+#	Send/expect sequences can be done in multixterm command files.
+#	However, due to the richness of the possibilities, to document
+#	it properly would take more time than the author has at present.
+#
+# REQUIREMENTS
+#	Requires Expect 5.36.0 or later.
+#	Requires Tk 8.3.3 or later.
+#
+# VERSION
+#!	$::versionString
+#	The latest version of multixterm is available from
+#	http://expect.nist.gov/example/multixterm .  If your version of Expect
+#	and Tk are too old (see REQUIREMENTS above), download a new version of
+#	Expect from http://expect.nist.gov
+#
+# DATE
+#!	$::versionDate
+#
+# AUTHOR
+#	Don Libes <don@libes.com>
+#
+# LICENSE
+#	Multixterm is in the public domain; however the author would
+#	appreciate acknowledgement if multixterm or parts of it or ideas from
+#	it are used.
+
+######################################################################
+# user-settable things - override them in the ~/.multixtermrc file
+#			 or via command-line options
+######################################################################
+
+set palette       #d8d8ff   ;# lavender
+set colorTyping   green
+set colorFocusIn  aquamarine
+
+set xtermNames    {}
+set xtermCmd      $env(SHELL)
+set xtermArgs     ""
+set cmdDir	  ~/lib/multixterm
+set inputLabel    "stdin window"
+
+set fileMenuMax   30     ;# max number of files shown in File menu
+set tearoffMenuMin 2     ;# min number of files needed to enable the File
+			 ;# menu to be torn off
+
+proc initLate {} {}      ;# anything that must be done late in initialization
+			 ;# such as adding/modifying bindings, may be done by
+			 ;# redefining this
+
+######################################################################
+# end of user-settable things
+######################################################################
+
+######################################################################
+# sanity checking
+######################################################################
+
+set versionString 1.8
+set versionDate "2004/06/29"
+
+package require Tcl
+catch {package require Tk} ;# early versions of Tk had no package
+package require Expect
+
+proc exit1 {msg} {
+    puts "multixterm: $msg"
+    exit 1
+}
+
+exp_version -exit 5.36
+
+proc tkBad {} {
+    exit1 "requires Tk 8.3.3 or later but you are using	Tk $::tk_patchLevel."
+}
+
+if {$tk_version < 8.3} {
+    tkBad
+} elseif {$tk_version == 8.3} {
+    if {[lindex [split $tk_patchLevel .] 2] < 3} tkBad
+}
+
+######################################################################
+# process args - has to be done first to get things like -xv working ASAP
+######################################################################
+
+# set up verbose mechanism early
+
+set verbose 0
+proc verbose {msg} {
+    if {$::verbose} {
+	if {[info level] > 1} {
+	    set proc [lindex [info level -1] 0]
+	} else {
+	    set proc main
+	}
+	puts "$proc: $msg"
+    }
+}
+
+# read a single argument from the command line
+proc arg_read1 {var args} {
+    if {0 == [llength $args]} {
+	set argname -$var
+    } else {
+	set argname $args
+    }
+
+    upvar argv argv
+    upvar $var v
+
+    verbose "$argname"
+    if {[llength $argv] < 2} {
+	exit1 "$argname requires an argument"
+    }
+
+    set v [lindex $argv 1]
+    verbose "set $var $v"
+    set argv [lrange $argv 2 end]
+}
+
+proc xtermUsage {{msg {}}} {
+    if {![string equal $msg ""]} {
+	puts "multixtermrc: $msg"
+    }
+    puts {usage: multixterm [flags] ... where flags are:
+	[-xa "xterm args"]
+	[-xc "command"]
+	[-xd "directory"]
+	[-xf "file"]
+	[-xn "xterm names"]
+	[-xv] (enable verbose mode)
+	[-xh] or [-x?] (help)
+	[xterm names or user-defined args...]}
+    exit
+}
+
+while {[llength $argv]} {
+    set flag [lindex $argv 0]
+    switch -- $flag -x? - -xh {
+	xtermUsage
+    } -xc {
+	arg_read1 xtermCmd -xc
+    } -xn {
+	arg_read1 xtermNames -xn
+    } -xa {
+	arg_read1 xtermArgs -xa
+    } -xf {
+	arg_read1 cmdFile -xf
+	if {![file exists $cmdFile]} {
+	    exit1 "can't read $cmdFile"
+	}
+    } -xd {
+	arg_read1 cmdDir -xd
+	if {![file exists $cmdDir]} {
+	    exit1 "can't read $cmdDir"
+	}
+    } -xv {
+	set argv [lrange $argv 1 end]
+	set verbose 1
+	puts "main: verbose on"
+    } default {
+	verbose "remaining args: $argv"
+	break	;# let user handle remaining args later
+    }
+}
+
+######################################################################
+# determine and load rc file -  has to be done now so that widgets
+# 	can be affected
+######################################################################
+
+# if user has no $DOTDIR, fall back to home directory
+if {![info exists env(DOTDIR)]} {
+    set env(DOTDIR) ~
+}
+# catch bogus DOTDIR, otherwise glob will lose the bogus directory
+# and it won't appear in the error msg
+if {[catch {glob $env(DOTDIR)} dotdir]} {
+    exit1 "$env(DOTDIR)/.multixtermrc can't be found because $env(DOTDIR) doesn't exist or can't be read"
+} 
+set rcFile $dotdir/.multixtermrc
+
+set fileTypes {
+    {{Multixterm Files} *.mxt}
+    {{All Files} *}
+}
+
+proc openFile {{fn {}}} {
+    verbose "opening $fn"
+    if {[string equal $fn ""]} {
+	set fn [tk_getOpenFile \
+		    -initialdir $::cmdDir \
+		    -filetypes $::fileTypes \
+		    -title "multixterm file"]
+	if {[string match $fn ""]} return
+    }
+    uplevel #0 source [list $fn]
+    verbose "xtermNames = \"$::xtermNames\""
+    verbose "xtermCmd = $::xtermCmd"
+}
+
+if {[file exists $rcFile]} {
+    openFile $rcFile
+} else {
+    verbose "$rcFile: not found"
+}
+
+if {![string equal "" $argv]} {
+    if {[string equal $xtermNames ""]} {
+	set xtermNames $argv
+    }
+}
+
+######################################################################
+# Describe and initialize some important globals
+######################################################################
+
+# ::activeList and ::activeArray both track which xterms to send
+# (common) keystrokes to.  Each element in activeArray is connected to
+# the active menu.  The list version is just a convenience making the
+# send function easier/faster.
+
+set activeList {}
+
+# ::names is an array of xterm names indexed by process spawn ids.
+
+set names(x) ""
+unset names(x)
+
+# ::xtermSid is an array of xterm spawn ids indexed by process spawn ids.
+# ::xtermPid is an array of xterm pids indexed by process spawn id.
+
+######################################################################
+# create an xterm and establish connections
+######################################################################
+
+proc xtermStart {cmd name} {
+    verbose "starting new xterm running $cmd with name $name"
+
+    ######################################################################
+    # create pty for xterm
+    ######################################################################
+    set pid [spawn -noecho -pty]
+    verbose "spawn -pty: pid = $pid, spawn_id = $spawn_id"
+    set sidXterm $spawn_id
+    stty raw -echo < $spawn_out(slave,name)
+
+    regexp ".*(.)(.)" $spawn_out(slave,name) dummy c1 c2
+    if {[string compare $c1 "/"] == 0} {
+	set c1 0
+    }
+
+    ######################################################################
+    # prepare to start xterm by making sure xterm name is unique
+    # X doesn't care but active menu won't make sense unless names are unique
+    ######################################################################
+    set unique 1
+    foreach oldName [array names ::names] {
+	if {[string match "$name" $::names($oldName)]} {
+	    set unique 0
+	}
+    }
+    verbose "uniqueness of $name: $unique"
+
+    set safe [safe $name]
+
+    # if not unique, look at the numerical suffixes of all matching
+    # names, find the biggest and increment it
+    if {!$unique} {
+	set suffix 2
+	foreach oldName [array names ::names] {
+	    verbose "regexp ^[set safe](\[0-9]+)$ $::names($oldName) X num"
+	    if {[regexp "^[set safe](\[0-9]+)$" $::names($oldName) X num]} {
+		verbose "matched, checking suffix"
+		if {$num >= $suffix} {
+		    set suffix [expr $num+1]
+		    verbose "new suffix: $suffix"
+		}
+	    }
+	}
+	append name $suffix
+	verbose "new name: $name"
+    }
+
+    ######################################################################
+    # start new xterm
+    ######################################################################
+    set xtermpid [eval exec xterm -name [list $name] -S$c1$c2$spawn_out(slave,fd) $::xtermArgs &]
+    verbose "xterm: pid = $xtermpid"
+    close -slave
+
+    # xterm first sends back window id, save in environment so it can be
+    # passed on to the new process
+    log_user 0
+    expect {
+	eof {wait;return}
+	-re (.*)\n {
+	    # convert hex to decimal
+	    # note quotes must be used here to avoid diagnostic from expr
+	    set ::env(WINDOWID) [expr "0x$expect_out(1,string)"]
+	}
+    }
+
+    ######################################################################
+    # start new process
+    ######################################################################
+    set pid [eval spawn -noecho $cmd]
+    verbose "$cmd: pid = $pid, spawn_id = $spawn_id"
+    set sidCmd $spawn_id
+    lappend ::activeList $sidCmd
+    set ::activeArray($sidCmd) 1
+
+    ######################################################################
+    # link everything back to spawn id of new process
+    ######################################################################
+    set ::xtermSid($sidCmd) $sidXterm
+    set ::names($sidCmd)    $name
+    set ::xtermPid($sidCmd) $xtermpid
+
+    ######################################################################
+    # connect proc output to xterm output
+    # connect xterm input to proc input
+    ######################################################################
+    expect_background {
+	-i $sidCmd
+	-re ".+" [list sendTo $sidXterm]
+	eof [list xtermKill $sidCmd]
+	-i $sidXterm
+	-re ".+" [list sendTo $sidCmd]
+	eof [list xtermKill $sidCmd]
+    }
+
+    .m.e entryconfig Active -state normal
+    .m.e.active add checkbutton -label $name -variable activeArray($sidCmd) \
+	-command [list xtermActiveUpdate $sidCmd]
+    set ::activeArray($sidCmd) 1
+}
+
+proc xtermActiveUpdate {sid} {
+    if {$::activeArray($sid)} {
+	verbose "activating $sid"
+    } else {
+	verbose "deactivating $sid"
+    }
+    activeListUpdate
+}
+
+proc activeListUpdate {} {
+    set ::activeList {}
+    foreach n [array names ::activeArray] {
+	if {$::activeArray($n)} {
+	    lappend ::activeList $n
+	}
+    }
+}
+
+# make a string safe to go through regexp
+proc safe {s} {
+    string map {{[} {\[} {*} {\*} {+} {\+} {^} {\^} {$} {\\$}} $s
+}
+
+# utility to map xterm name to spawn id
+# multixterm doesn't use this but a user might want to
+proc xtermGet {name} {
+    foreach sid [array names ::names] {
+	if {[string equal $name $::names($sid)]} {
+	    return $sid
+	}
+    }
+    error "no such term with name: $name"
+}
+
+# utility to activate an xterm
+# multixterm doesn't use this but a user might want to
+proc xtermActivate {sid} {
+    set ::activeArray($sid) 1
+    xtermActiveUpdate $sid
+}
+
+# utility to deactivate an xterm
+# multixterm doesn't use this but a user might want to
+proc xtermDeactivate {sid} {
+    set ::activeArray($sid) 0
+    xtermActiveUpdate $sid
+}
+
+# utility to do an explicit Expect
+# multixterm doesn't use this but a user might want to
+proc xtermExpect {args} {
+    # check if explicit spawn_id in args
+    for {set i 0} {$i < [llength $args]} {incr i} {
+	switch -- [lindex $args $i] "-i" {
+	    set sidCmd [lindex $args [incr i]]
+	    break
+	}
+    }
+
+    if {![info exists sidCmd]} {
+	# nothing explicit, so get it from the environment
+
+	upvar spawn_id spawn_id
+
+	# mimic expect's normal behavior in obtaining spawn_id
+	if {[info exists spawn_id]} {
+	    set sidCmd $spawn_id
+	} else {
+	    set sidCmd $::spawn_id
+	}
+    }
+
+    # turn off bg expect, do fg expect, then re-enable bg expect
+
+    expect_background -i $sidCmd	;# disable bg expect
+    eval expect $args			;# fg expect
+					;# reenable bg expect
+    expect_background {
+	-i $sidCmd
+	-re ".+" [list sendTo $::xtermSid($sidCmd)]
+	eof [list xtermKill $sidCmd]
+    }
+}
+
+######################################################################
+# connect main window keystrokes to all xterms
+######################################################################
+proc xtermSend {A} {
+    if {[info exists ::afterId]} {
+	after cancel $::afterId
+    }
+    .input config -bg $::colorTyping
+    set ::afterId [after 1000 {.input config -bg $colorCurrent}]
+
+    exp_send -raw -i $::activeList -- $A
+}
+
+proc sendTo {to} {
+    exp_send -raw -i $to -- $::expect_out(buffer)
+}
+
+# catch the case where there's no selection
+proc xtermPaste {} {catch {xtermSend [selection get]}}
+
+######################################################################
+# clean up an individual process death or xterm death
+######################################################################
+proc xtermKill {s} {
+    verbose "killing xterm $s"
+
+    if {![info exists ::xtermPid($s)]} {
+	verbose "too late, already dead"
+	return
+    }
+
+    catch {exec /bin/kill -9 $::xtermPid($s)}
+    unset ::xtermPid($s)
+
+    # remove sid from activeList
+    verbose "removing $s from active array"
+    catch {unset ::activeArray($s)}
+    activeListUpdate
+
+    verbose "removing from background handler $s"
+    catch {expect_background -i $s}
+    verbose "removing from background handler $::xtermSid($s)"
+    catch {expect_background -i $::xtermSid($s)}
+    verbose "closing proc"
+    catch {close -i $s}
+    verbose "closing xterm"
+    catch {close -i $::xtermSid($s)}
+    verbose "waiting on proc"
+    wait -i $s
+    wait -i $::xtermSid($s)
+    verbose "done waiting"
+    unset ::xtermSid($s)
+
+    # remove from active menu
+    verbose "deleting active menu entry $::names($s)"
+
+    # figure out which it is
+    # avoid using name as an index since we haven't gone to any pains to
+    # make it safely interpreted by index-pattern code.  instead step
+    # through, doing the comparison ourselves
+    set last [.m.e.active index last]
+    # skip over tearoff
+    for {set i 1} {$i <= $last} {incr i} {
+	if {![catch {.m.e.active entrycget $i -label} label]} {
+	    if {[string equal $label $::names($s)]} break
+	}
+    }
+    .m.e.active delete $i
+    unset ::names($s)
+
+    # if none left, disable menu
+    # this leaves tearoff clone but that seems reasonable
+    if {0 == [llength [array names ::xtermSid]]} {
+	.m.e entryconfig Active -state disable
+    }
+}
+
+######################################################################
+# create windows
+######################################################################
+tk_setPalette $palette
+
+menu .m -tearoff 0
+.m add cascade -menu .m.f    -label "File" -underline 0
+.m add cascade -menu .m.e    -label "Edit" -underline 0
+.m add cascade -menu .m.help -label "Help" -underline 0
+set files [glob -nocomplain $cmdDir/*]
+set filesLength [llength $files]
+if {$filesLength >= $tearoffMenuMin} {
+    set filesTearoff 1
+} else {
+    set filesTearoff 0
+}
+menu .m.f    -tearoff $filesTearoff -title "multixterm files"
+menu .m.e    -tearoff 0
+menu .m.help -tearoff 0
+.m.f    add command -label Open -command openFile -underline 0
+
+if {$filesLength} {
+    .m.f add separator
+    set files [lsort $files]
+    set files [lrange $files 0 $fileMenuMax]
+    foreach f $files {
+	.m.f add command -label $f -command [list openFile $f]
+    }
+    .m.f add separator
+}
+
+.m.f    add command -label "Exit"     -command exit       -underline 0
+.m.e    add command -label "Paste"    -command xtermPaste -underline 0
+.m.e	add cascade -label "Active"   -menu .m.e.active   -underline 0
+.m.help add command -label "About"    -command about      -underline 0
+.m.help add command -label "Man Page" -command help       -underline 0
+. config -m .m
+
+menu .m.e.active -tearoff 1 -title "multixterm active"
+.m.e entryconfig Active -state disabled
+# disable the Active menu simply because it looks goofy seeing an empty menu
+# for consistency, though, it should be enabled
+
+entry  .input -textvar inputLabel -justify center -state disabled
+entry  .cmd   -textvar xtermCmd
+button .exec  -text "new xterm" -command {xtermStart $xtermCmd $xtermCmd}
+
+grid .input -sticky ewns
+grid .cmd   -sticky ew
+grid .exec  -sticky ew -ipadx 3 -ipady 3
+
+grid columnconfigure . 0 -weight 1
+grid    rowconfigure . 0 -weight 1  ;# let input window only expand
+
+bind .cmd   <Return>        {xtermStart $xtermCmd $xtermCmd}
+
+# send all keypresses to xterm 
+bind .input <KeyPress>         {xtermSend %A ; break}
+bind .input <Alt-KeyPress>     {xtermSend \033%A; break}
+bind .input <Meta-KeyPress>    {xtermSend \033%A; break}
+bind .input <<Paste>>          {xtermPaste ; break}
+bind .input <<PasteSelection>> {xtermPaste ; break}
+
+# arrow keys - note that if they've been rebound through .Xdefaults
+# you'll have to change these definitions.
+bind .input <Up>    {xtermSend \033OA; break}
+bind .input <Down>  {xtermSend \033OB; break}
+bind .input <Right> {xtermSend \033OC; break}
+bind .input <Left>  {xtermSend \033OD; break}
+# Strange: od -c reports these as \033[A et al but when keypad mode
+# is initialized, they send \033OA et al.  Presuming most people
+# want keypad mode, I'll go with the O versions.  Perhaps the other
+# version is just a Sun-ism anyway.
+
+set colorCurrent [.input cget -bg]
+set colorFocusOut $colorCurrent
+
+# change color to show focus
+bind .input <FocusOut> colorFocusOut
+bind .input <FocusIn>  colorFocusIn
+proc colorFocusIn  {} {.input config -bg [set ::colorCurrent $::colorFocusIn]}
+proc colorFocusOut {} {.input config -bg [set ::colorCurrent $::colorFocusOut]}
+
+# convert normal mouse events to focusIn
+bind .input <1>       {focus .input; break}
+bind .input <Shift-1> {focus .input; break}
+
+# ignore all other mouse events that might make selection visible
+bind .input <Double-1>  break
+bind .input <Triple-1>  break
+bind .input <B1-Motion> break
+bind .input <B2-Motion> break
+
+set scriptName [info script] ;# must get while it's active
+
+proc about {} {
+    set w .about
+    if {[winfo exists $w]} {
+	wm deiconify $w
+	raise $w
+	return
+    }
+    toplevel     $w
+    wm title     $w "about multixterm"
+    wm iconname  $w "about multixterm"
+    wm resizable $w 0 0
+
+    button $w.b -text Dismiss -command [list wm withdraw $w]
+
+    label $w.title -text "multixterm" -font "Times 16" -borderwidth 10 -fg red
+    label $w.version -text "Version $::versionString, Released $::versionDate"
+    label $w.author -text "Written by Don Libes <don@libes.com>"
+    label $w.using -text "Using Expect [exp_version],\
+                                Tcl $::tcl_patchLevel,\
+                                Tk $::tk_patchLevel"
+    grid $w.title
+    grid $w.version
+    grid $w.author
+    grid $w.using
+    grid $w.b -sticky ew
+}
+
+proc help {} {
+    if {[winfo exists .help]} {
+	wm deiconify .help
+	raise .help
+	return
+    }
+    toplevel    .help
+    wm title    .help "multixterm help"
+    wm iconname .help "multixterm help"
+
+    scrollbar .help.sb -command {.help.text yview}
+    text .help.text -width 74 -height 30 -yscroll {.help.sb set} -wrap word
+
+    button .help.ok -text Dismiss -command {destroy .help} -relief raised
+    bind .help <Return> {destroy .help;break}
+    grid .help.sb   -row 0 -column 0     -sticky ns
+    grid .help.text -row 0 -column 1     -sticky nsew
+    grid .help.ok   -row 1 -columnspan 2 -sticky ew -ipadx 3 -ipady 3
+
+    # let text box only expand
+    grid rowconfigure    .help 0 -weight 1
+    grid columnconfigure .help 1 -weight 1
+
+    set script [auto_execok $::scriptName]
+    if {[llength $script] == 0} {
+	set script /depot/tcl/bin/multixterm     ;# fallback
+    }
+    if {[catch {open $script} fid]} {
+	.help.text insert end "Could not open help file: $script"
+    } else {
+	# skip to the beginning of the actual help (starts with "NAME")
+	while {-1 != [gets $fid buf]} {
+	    if {1 == [regexp "NAME" $buf]} {
+		.help.text insert end "\n NAME\n"
+		break
+	    }
+	}
+	
+	while {-1 != [gets $fid buf]} {
+	    if {0 == [regexp "^#(.?)(.*)" $buf X key buf]} break
+	    if {$key == "!"} {
+		set buf [subst -nocommands $buf]
+		set key " "
+	    }
+	    .help.text insert end $key$buf\n
+	}
+    }
+
+    # support scrolling beyond Tk's built-in Next/Previous
+    foreach w {"" .sb .text .ok} {
+	set W .help$w
+	bind $W <space> 	{scrollPage  1}  ;#more
+	bind $W <Delete> 	{scrollPage -1}  ;#more
+	bind $W <BackSpace> 	{scrollPage -1}  ;#more
+	bind $W <Control-v>	{scrollPage  1}  ;#emacs
+	bind $W <Meta-v>	{scrollPage -1}  ;#emacs
+	bind $W <Control-f>	{scrollPage  1}  ;#vi
+	bind $W <Control-b>	{scrollPage -1}  ;#vi
+	bind $W <F35>		{scrollPage  1}  ;#sun
+	bind $W <F29>		{scrollPage -1}  ;#sun
+	bind $W <Down>	        {scrollLine  1}
+	bind $W <Up>		{scrollLine -1}
+    }
+}
+
+proc scrollPage {dir} {
+    tkScrollByPages .help.sb v $dir
+    return -code break
+}
+
+proc scrollLine {dir} {
+    tkScrollByUnits .help.sb v $dir
+    return -code break
+}
+
+######################################################################
+# exit handling
+######################################################################
+
+# xtermKillAll is not intended to be user-callable.  It just kills
+# the processes and that's it. A user-callable version would update
+# the data structures, close the channels, etc.
+
+proc xtermKillAll {} {
+    foreach sid [array names ::xtermPid] {
+	exec /bin/kill -9 $::xtermPid($sid)
+    }
+}
+
+rename exit _exit
+proc exit {{x 0}} {xtermKillAll;_exit $x}
+
+wm protocol . WM_DELETE_WINDOW exit
+trap exit SIGINT
+
+######################################################################
+# start any xterms requested
+######################################################################
+proc xtermStartAll {} {
+    verbose "xtermNames = \"$::xtermNames\""
+    foreach n $::xtermNames {
+	regsub -all "%n" $::xtermCmd $n cmdOut
+	xtermStart $cmdOut $n
+    }
+    set ::xtermNames {}
+}
+
+initLate
+
+# now that xtermStartAll and its accompanying support has been set up
+# run it to start anything defined by rc file or command-line args.
+
+xtermStartAll     ;# If nothing has been requested, this is a no-op.
+
+# finally do any explicit command file
+if {[info exists cmdFile]} {
+    openFile $cmdFile
+}
+

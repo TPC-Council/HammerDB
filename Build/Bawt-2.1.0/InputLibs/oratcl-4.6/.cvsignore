@@ -1,0 +1,9 @@
+Makefile
+config.log
+config.status
+pkgIndex.tcl
+oratcl.o
+oralob.o
+oralong.o
+libOratcl4.4.so
+teapot.txt

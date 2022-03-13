@@ -1,0 +1,68 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# Name: cryptdir
+# Author: Don Libes, NIST
+#
+# Synopsis:
+#	  cryptdir [dir]
+#	decryptdir [dir]
+#
+# Encrypt or decrypts the current directory or named directory if given.
+
+if {[llength $argv] > 0} {
+    cd $argv
+}
+
+# encrypt or decrypt?
+set decrypt [regexp "decrypt" $argv0]
+
+set timeout -1
+stty -echo
+send "Password:"
+expect -re "(.*)\n"
+send "\n"
+set passwd $expect_out(1,string)
+
+# Wouldn't want to encrypt/decrypt files with mistyped password!
+send "Again:"
+expect -re "(.*)\n"
+send "\n"
+if {![string match $passwd $expect_out(1,string)]} {
+    send_user "mistyped password?\n"
+    stty echo
+    exit
+}
+stty echo
+
+log_user 0
+foreach f [glob *] {
+    # strip shell metachars from filename to avoid problems
+    if {[regsub -all {[]['`~<>:-]} $f "" newf]} {
+	exec mv $f $newf
+	set f $newf
+    }
+
+    set strcmp [string compare .crypt [file extension $f]]
+    if {$decrypt} {
+	# skip files that don't end with ".crypt"
+	if {0!=$strcmp} continue
+	spawn sh -c "exec crypt < $f > [file root $f]"
+    } else {
+	# skip files that already end with ".crypt"
+	if {0==$strcmp} continue
+	spawn sh -c "exec crypt < $f > $f.crypt"
+    }
+    expect "key:"
+    send "$passwd\r"
+    expect
+    wait
+    exec rm -f $f
+    send_tty "."
+}
+send_tty "\n"

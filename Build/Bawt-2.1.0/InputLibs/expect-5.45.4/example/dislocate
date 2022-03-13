@@ -1,0 +1,355 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# dislocate - allow disconnection and reconnection to a background program
+# Author: Don Libes, NIST
+
+exp_version -exit 5.1
+
+# The following code attempts to intuit whether cat buffers by default.
+# The -u flag is required on HPUX (8 and 9) and IBM AIX (3.2) systems.
+if {[file exists $exp_exec_library/cat-buffers]} {
+    set catflags "-u"
+} else {
+    set catflags ""
+}
+# If this fails, you can also force it by commenting in one of the following.
+# Or, you can use the -catu flag to the script.
+#set catflags ""
+#set catflags "-u"
+
+set escape \035			;# control-right-bracket
+set escape_printable "^\]"
+
+set pidfile "~/.dislocate"
+set prefix "disc"
+set timeout -1
+set debug_flag 0
+
+while {$argc} {
+    set flag [lindex $argv 0]
+    switch -- $flag \
+	    "-catu" {
+	set catflags "-u"
+	set argv [lrange $argv 1 end]
+	incr argc -1
+    } "-escape" {
+	set escape [lindex $argv 1]
+	set escape_printable $escape
+	set argv [lrange $argv 2 end]
+	incr argc -2
+    } "-debug" {
+	log_file [lindex $argv 1]
+	set debug_flag 1
+	set argv [lrange $argv 2 end]
+	incr argc -2
+    } default {
+	break
+    }
+}
+
+# These are correct from parent's point of view.
+# In child, we will reset these so that they appear backwards
+# thus allowing following two routines to be used by both parent and child
+set  infifosuffix ".i"
+set outfifosuffix ".o"
+
+proc infifoname {pid} {
+    return "/tmp/$::prefix$pid$::infifosuffix"
+}
+
+proc outfifoname {pid} {
+    return "/tmp/$::prefix$pid$::outfifosuffix"
+}
+
+proc pid_remove {pid} {
+    say "removing $pid $::proc($pid)"
+
+    unset ::date($pid)
+    unset ::proc($pid)
+}
+
+# lines in data file look like this:
+# pid#date-started#argv
+
+# allow element lookups on empty arrays
+set date(dummy) dummy;	unset date(dummy)
+set proc(dummy) dummy;	unset proc(dummy)
+
+proc say {msg} {
+    if {!$::debug_flag} return
+
+    if {[catch {puts "parent: $msg"}]} {
+	send_log "child: $msg\n"
+    }
+}
+
+# load pidfile into memory
+proc pidfile_read {} {
+    global date proc pidfile
+
+    say "opening $pidfile"
+    if {[catch {open $pidfile} fp]} return
+
+    #
+    # read info from file
+    #
+
+    say "reading pidfile"
+    set line 0
+    while {[gets $fp buf]!=-1} {
+	# while pid and date can't have # in it, proc can
+	if {[regexp "(\[^#]*)#(\[^#]*)#(.*)" $buf junk pid xdate xproc]} {
+	    set date($pid) $xdate
+	    set proc($pid) $xproc
+	} else {
+	    puts "warning: inconsistency in $pidfile line $line"
+	}
+	incr line
+    }
+    close $fp
+    say "read $line entries"
+
+    #
+    # see if pids and fifos are still around
+    #
+
+    foreach pid [array names date] {
+	if {$pid && [catch {exec /bin/kill -0 $pid}]} {
+	    say "$pid no longer exists, removing"
+	    pid_remove $pid
+	    continue
+	}
+
+	# pid still there, see if fifos are
+	if {![file exists [infifoname $pid]] || ![file exists [outfifoname $pid]]} {
+	    say "$pid fifos no longer exists, removing"
+	    pid_remove $pid
+	    continue
+	}
+    }
+}
+
+proc pidfile_write {} {
+    global pidfile date proc
+
+    say "writing pidfile"
+
+    set fp [open $pidfile w]
+    foreach pid [array names date] {
+	puts $fp "$pid#$date($pid)#$proc($pid)"
+	say "wrote $pid#$date($pid)#$proc($pid)"
+    }
+    close $fp
+}
+
+proc fifo_pair_remove {pid} {
+    global date proc prefix
+
+    pidfile_read
+    pid_remove $pid
+    pidfile_write
+
+    file delete -force [infifoname $pid] [outfifoname $pid]
+}
+
+proc fifo_pair_create {pid argdate argv} {
+    global prefix date proc
+
+    pidfile_read
+    set date($pid) $argdate
+    set proc($pid) $argv
+    pidfile_write
+
+    mkfifo [infifoname $pid]
+    mkfifo [outfifoname $pid]
+}
+
+proc mkfifo {f} {
+    if {[file exists $f]} {
+	say "uh, fifo already exists?"
+	return
+    }
+
+    if {0==[catch {exec mkfifo $f}]} return		;# POSIX
+    if {0==[catch {exec mknod $f p}]} return
+    # some systems put mknod in wierd places
+    if {0==[catch {exec /usr/etc/mknod $f p}]} return	;# Sun
+    if {0==[catch {exec /etc/mknod $f p}]} return	;# AIX, Cray
+    puts "Couldn't figure out how to make a fifo - where is mknod?"
+    exit
+}
+
+proc child {argdate argv} {
+    global infifosuffix outfifosuffix
+
+    disconnect
+    # these are backwards from the child's point of view so that
+    # we can make everything else look "right"
+    set  infifosuffix ".o"
+    set outfifosuffix ".i"
+    set pid 0
+
+    eval spawn $argv
+    set proc_spawn_id $spawn_id
+
+    while {1} {
+	say "opening [infifoname $pid] for read"
+	
+	set catfid [open "|cat $::catflags < [infifoname $pid]" "r"]
+	set ::catpid $catfid
+	spawn -open $catfid
+	set in $spawn_id
+
+	say "opening [outfifoname $pid] for write"
+	spawn -open [open [outfifoname $pid] w]
+	set out $spawn_id
+
+	fifo_pair_remove $pid
+
+	say "interacting"
+	interact {
+	    -u $proc_spawn_id eof exit
+	    -output $out
+	    -input $in
+	}
+
+	# parent has closed connection
+	say "parent closed connection"
+	catch {close -i $in}
+	catch {wait -i $in}
+	catch {close -i $out}
+	catch {wait -i $out}
+
+	# switch to using real pid
+	set pid [pid]
+	# put entry back
+	fifo_pair_create $pid $argdate $argv
+    }
+}
+
+proc escape {} {
+    # export process handles so that user can get at them
+    global in out
+
+    puts "\nto disconnect, enter: exit (or ^D)"
+    puts "to suspend, press appropriate job control sequence"
+    puts "to return to process, enter: return"
+    interpreter -eof exit
+    puts "returning ..."
+}
+
+# interactively query user to choose process, return pid
+proc choose {} {
+    while {1} {
+	send_user "enter # or pid: "
+	expect_user -re "(.*)\n" {set buf $expect_out(1,string)}
+	if {[info exists ::index($buf)]} {
+	    set pid $::index($buf)
+	} elseif {[info exists ::date($buf)]} {
+	    set pid $buf
+	} else {
+	    puts "no such # or pid"
+	    continue
+	}
+	return $pid
+    }
+}
+
+if {$argc} {
+    # initial creation occurs before fork because if we do it after
+    # then either the child or the parent may have to spin retrying
+    # the fifo open.  Unfortunately, we cannot know the pid ahead of
+    # time so use "0".  This will be set to the real pid when the
+    # parent does its initial disconnect.  There is no collision
+    # problem because the fifos are deleted immediately anyway.
+
+    set datearg [clock format [clock seconds]]
+
+    fifo_pair_create 0 $datearg $argv
+
+    # to debug by faking child, comment out fork and set pid to a
+    # non-zero int, then you can read/write to pipes manually
+
+    set pid [fork]
+    say "after fork, pid = $pid"
+    if {$pid==0} {
+	child $datearg $argv
+    }
+
+    # parent thinks of child as pid==0 for reason given earlier
+    set pid 0
+}
+
+say "examining pid"
+
+if {![info exists pid]} {
+    global fifos date proc
+
+    say "pid does not exist"
+
+    pidfile_read
+
+    set count 0
+    foreach pid [array names date] {
+	incr count
+    }
+
+    if {$count==0} {
+	puts "no connectable processes"
+	exit
+    } elseif {$count==1} {
+	puts "one connectable process: $proc($pid)"
+	puts "pid $pid, started $date($pid)"
+	send_user "connect? \[y] "
+	expect_user -re "(.*)\n" {set buf $expect_out(1,string)}
+	if {$buf!="y" && $buf!=""} exit
+    } else {
+	puts "connectable processes:"
+	set count 1
+	puts " #   pid      date started      process"
+	foreach pid [array names date] {
+	    puts [format "%2d %6d  %.19s  %s" \
+		    $count $pid $date($pid) $proc($pid)]
+	    set index($count) $pid
+	    incr count
+	}
+	set pid [choose]
+    }
+}
+
+say "opening [outfifoname $pid] for write"
+spawn -noecho -open [open [outfifoname $pid] w]
+set out $spawn_id
+
+say "opening [infifoname $pid] for read"
+set catfid [open "|cat $catflags < [infifoname $pid]" "r"]
+set catpid [pid $catfid]
+spawn -noecho -open $catfid
+set in $spawn_id
+
+puts "Escape sequence is $escape_printable"
+
+proc prompt1 {} {
+    return "$::argv0[history nextid]> "
+}
+
+rename exit exitReal
+
+proc exit {} {
+    exec /bin/kill $::catpid
+    exitReal
+}
+
+interact {
+    -reset $escape escape
+    -output $out
+    -input $in
+}
+
+

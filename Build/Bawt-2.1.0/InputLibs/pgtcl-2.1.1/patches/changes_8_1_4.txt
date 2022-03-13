@@ -1,0 +1,30 @@
+Change file for PostgreSQL-8.1.4 build of libpq with Borland BCC
+-----------------------------------------------------------------------------
+
+
+1)
+In the source directory src\include
+edit the file pg_config.h.win32 (which will be copied to pg_config.h,
+or edit pg_config.h itself after copying).
+
+In the block that is conditional on the Borland compiler, add an empty
+definition of inline so the file looks like this:
+
+      #ifdef __BORLANDC__
+      #define inline
+      ...
+
+
+2)
+
+In the source directory interfaces\libpq, edit the file bcc32.mak to change
+the creation of the pg_config_paths.h file so the line looks like this:
+
+      pg_config_paths.h: bcc32.mak
+          echo \#define SYSCONFDIR "" > pg_config_paths.h
+
+
+Notes:
+  Change #2 is known to have been fixed in PostgreSQL-8.1.5
+
+-----------------------------------------------------------------------------

@@ -1,0 +1,41 @@
+# Copyright: 2018-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+# Manual changes to source code:
+# Added several missing includes and prototypes as needed by C99 (Darwin).
+
+proc Init_expect { libName libVersion } {
+    SetScriptAuthor    $libName "Paul Obermeier" "obermeier@tcl3d.org"
+    SetLibHomepage     $libName "https://sourceforge.net/projects/expect/"
+    SetLibDependencies $libName "Tcl"
+    SetPlatforms       $libName "Linux" "Darwin"
+}
+
+proc Build_expect { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+
+    if { [UseStage "Configure" $libName] } {
+        TeaConfig $libName $buildDir $instDir
+    }
+
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        LibFileCopy "$instDir"  "$devDir/[GetTclDir]"   "*"  true
+        LibFileCopy "$instDir"  "$distDir/[GetTclDir]"  "*"  true
+        SingleFileCopy "$instDir/bin/expect[GetExeSuffix]" "$devDir/[GetTclBinDir]"
+        SingleFileCopy "$instDir/bin/expect[GetExeSuffix]" "$distDir/[GetTclBinDir]"
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

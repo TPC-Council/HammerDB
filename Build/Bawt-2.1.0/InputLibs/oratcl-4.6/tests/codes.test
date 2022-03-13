@@ -1,0 +1,116 @@
+# oratcl::code.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oraasync operations
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+        source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::codes {
+        namespace import ::tcltest::*
+	
+	testConstraint tc_OCI_INVALID_HANDLE [info exists ::oratcl::codes(OCI_INVALID_HANDLE)]
+	testConstraint tc_OCI_ERROR [info exists ::oratcl::codes(OCI_ERROR)] 
+	testConstraint tc_OCI_SUCCESS [info exists ::oratcl::codes(OCI_SUCCESS)]
+	testConstraint tc_OCI_SUCCESS_WITH_INFO [info exists ::oratcl::codes(OCI_SUCCESS_WITH_INFO)]
+	testConstraint tc_OCI_NEED_DATA [info exists ::oratcl::codes(OCI_NEED_DATA)]
+	testConstraint tc_OCI_NO_DATA [info exists ::oratcl::codes(OCI_NO_DATA)]
+	testConstraint tc_OCI_STILL_EXECUTING [info exists ::oratcl::codes(OCI_STILL_EXECUTING)]
+
+	test oratcl::codes-1.1 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_INVALID_HANDLE
+		}
+		-body {
+			set ::oratcl::codes(OCI_INVALID_HANDLE)
+		}
+		-cleanup {
+		}
+		-result {-2}
+	}
+
+	test oratcl::codes-1.2 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_ERROR
+		}
+		-body {
+			set ::oratcl::codes(OCI_ERROR)
+		}
+		-cleanup {
+		}
+		-result {-1}
+	}
+
+	test oratcl::codes-1.3 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_SUCCESS
+		}
+		-body {
+			set ::oratcl::codes(OCI_SUCCESS)
+		}
+		-cleanup {
+		}
+		-result {0}
+	}
+
+	test oratcl::codes-1.4 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_SUCCESS_WITH_INFO
+		}
+		-body {
+			set ::oratcl::codes(OCI_SUCCESS_WITH_INFO)
+		}
+		-cleanup {
+		}
+		-result {1}
+	}
+
+	test oratcl::codes-1.5 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_NEED_DATA
+		}
+		-body {
+			set ::oratcl::codes(OCI_NEED_DATA)
+		}
+		-cleanup {
+		}
+		-result {99}
+	}
+
+	test oratcl::codes-1.6 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_NO_DATA
+		}
+		-body {
+			set ::oratcl::codes(OCI_NO_DATA)
+		}
+		-cleanup {
+		}
+		-result {100}
+	}
+
+	test oratcl::codes-1.7 {::oratcl::codes array} {
+		-constraints {
+			tc_OCI_STILL_EXECUTING
+		}
+		-body {
+			set ::oratcl::codes(OCI_STILL_EXECUTING)
+		}
+		-cleanup {
+		}
+		-result {-3123}
+	}
+
+        cleanupTests
+}
+namespace delete ::tcl::test::codes
+return

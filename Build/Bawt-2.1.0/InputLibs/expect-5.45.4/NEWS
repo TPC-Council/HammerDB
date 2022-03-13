@@ -1,0 +1,715 @@
+This file is the NEWS file from the Expect distribution.
+
+======================================================================
+======================================================================
+
+Date: 08/01/00
+
+** SUMMARY
+
+Expect 5.32 is being released in conjuction with Tcl 8.3.2.
+This is a fairly minor update with no feature changes but with
+a number of useful bug fixes in the way expects uses the new
+regular expression engine and the UTF-8 features of Tcl.
+Details are in the HISTORY and ChangeLog files.
+
+======================================================================
+======================================================================
+
+Date: 10/22/99
+
+** SUMMARY
+
+Expect 5.31 now works with Tcl 8.2.  Expect 5.31 does NOT work with
+prior releases of Tcl.  Thanks to an incredible amount of work by
+Scott Stanton, Henry Spencer, Melissa Hirschl, and funding from
+Scriptics for making this possible.
+
+** NEW FEATURES
+
+What?  You mean that working with Tcl 8.2 isn't enough?????
+
+Expect supports Tcl's new regexp engine.
+
+Expect supports null bytes in strings directly.  (You no longer have
+to use the "null" keyword to send or match nulls.  Of course, the
+"null" keyword will continue to be supported.)  Null removal (on
+input) is still enabled by default since nulls are almost never
+intended for end-user consumption in interactive dialogues.
+
+** CHANGES IN BEHAVIOR (POTENTIAL INCOMPATIBILITIES)
+
+The interpreter command used to exit upon eof.  Now it uses "-eof
+script" to control this behavior.  The default behavior is to return.
+(This change was required because Expect now gives control to Tcl upon
+exit and Tcl waits (potentially forever) for all processes to die on
+exit.)  Explicit calls to interpreter are almost non-existent.
+However, you should look for *implicit* calls via interact commands
+with a pattern but no action.  This required changes in the examples:
+dislocate, dvorak, kibitz, and xkibitz.
+
+Indirect variables can no longer start with "exp".  Such variables
+will be interpreted as channel names.
+
+Old-style regexps may need conversion.  If you have been protecting
+regexps containing backslashes with {}, then you need to examine all
+your backslashes since the new regexp engine interprets backslash
+sequences (such as \n) itself.  For example:
+
+	expect "\n"         (works the same in Tcl 8.0 and 8.1)
+	expect {\n}         (works differently in Tcl 8.0 and 8.1)
+
+Scriptics has also created a new-regexp-features page which you should
+read: http://www.scriptics.com/support/howto/regexp81.html.  Some of
+the new features allow much more efficient regexps than before.  For
+example, non-greedy quantifiers can replace [split] looping
+constructions with a single regexp, enabling Tcl to parse very
+efficiently.  For the whole story, read the re_syntax man page.
+
+The interact command's regexp matching no longer skips nulls.  (I'd be
+surprised if anyone misses this.  At least I hope ....)
+
+Expect's C library now reports failures in spawn's underlying exec
+directly (by returning -1) rather than the way it used to (as data in
+the pty).  This makes user code more robust.  However, it requires you
+to simplify your code, alas.  See the chesslib.c example.
+
+Linking with Expect's C library no longer requires the Tcl library
+(unless, of course, you make Tcl calls yourself).  Tcl is still
+required to build the library in the first place, however.
+
+** CHANGES IN BEHAVIOR (SHOULD NOT CAUSE INCOMPATIBILITIES)
+
+The match_max command now controls by bytes, not chars.  This won't
+cause problems unless your existing scripts are interacting using
+sizeable chunks of multibyte characters.  (If you don't know what I'm
+talking about, ignore this.)
+
+The Make/configure suite now corresponds to the TEA conventions (at
+least in theory; the conventions are changing regularly so it's hard
+to be less vague on this point).  Significantly, this means that you
+should be able to use the same configure flags as when compiling Tcl
+or any other TEA-compatible extension.  (See the INSTALL file.)
+
+The values of special variables such as exp_spawn_id_any have changed.
+(The values were never documented so you shouldn't have been using
+them anyway.)
+
+Spawn ids now appear as "exp...".  (They used to be small integers.)
+Do not assume that spawn ids will continue to be represented in any
+particular way (other than unique strings).
+
+** OTHER NOTES
+
+Expect uses channels.  There is an Expect channel type.  It is
+possible to use Tcl's channel commands, such as fconfigure, to change
+the encoding.  However, Expect layers its own buffering system on top
+of Tcl's channel handler so don't expect intuitive behavior when using
+commands such as gets and puts.  Unless you know what you're doing, I
+recommend manipulating the Expect channels only with the expect
+commands.
+
+Some effort was made to make Expect support threads, however it is not
+complete.  You can compile Expect with threads enabled but don't run
+Expect in multiple threads just yet.
+
+So much code has changed, there are bound to be bugs in dark corners.
+Please let me know of such cases.  The best response will come by
+supplying a simple test case that can be added to Expect's test suite.
+
+In places where the behavior of Expect was not precisely documented,
+full advantage was taken to do something different :-)
+
+Several esoteric bugs were fixed.
+
+Although Expect itself uses Henry Spencer's new regexp engine,
+Expect's C library still uses his original regexp engine.
+
+No testing has been done of the poll and non-event subsystems.  (These
+are used on systems which don't support select on ptys or ttys.  Some
+minor work needs to be done on them (because the event subsystem was
+rewritten) which I'll probably do only if anyone requests it.
+
+Many deprecated features (deprecated for many years!) have been
+removed.  All such features were deprecated prior to Exploring Expect
+so if that's how you learned Expect, you have nothing to worry about.
+For example, Expect's getpid command predates Tcl's pid command and
+it's been deprecated for, oh.... 6 years - wow!  Other deprecated features
+include:
+  expect -timestamp (flag only; behavior itself was removed years ago)
+  expect -iwrite (flag only; behavior occurs all the time)
+  expect_version (use "exp_version" command)
+  expect_library (use "exp_library" global variable)
+  interact -eof (use "eof" keyword)
+  interact -timeout (use "timeout" keyword)
+  interact -timestamp (use "clock" command)
+  getpid (use "pid" command)
+  system stty (use "stty" command)
+
+With this release, the following are deprecated:
+  timestamp (use "clock" command)
+  debugger (use a different one; there are very nice replacements
+     around.  Fortunately the Expect debugger is not something anyone
+     is wiring into their scripts, so for now, consider it on the
+     endangered species list.  Anyone still want this debugger?)
+
+From now on, the most current snapshots of Expect will be found in the
+Scriptics CVS repository.  Not all snapshots are official releases.
+
+======================================================================
+======================================================================
+
+Date: 8/18/96
+
+Expect now works with Tcl 8.0.
+
+No changes were made to take advantage of 8.0 features such as
+namespaces.  (If you want to put the Expect commands in a namespace,
+declare a namespace before loading them in.)
+
+Even though Tcl allows embedded nulls in commands, Expect still does
+not.  Tcl still doesn't support embedded in patterns and regexps.
+I'll wait til Tcl supports that before rewriting Expect's null
+support.
+
+
+======================================================================
+======================================================================
+
+Date: 9/28/96
+
+There is now an Expect FAQ and home page.  Feedback is encouraged.
+You can get to the FAQ from the home page and vice versa, so you only
+need to remember one of the links, but here are both for completeness:
+
+home page: http://expect.nist.gov
+FAQ:       http://expect.nist.gov/FAQ.html
+
+
+
+======================================================================
+======================================================================
+This section describes the changes to Expect 5, many due to changes
+from Tcl 7.4 to 7.5.
+
+Improvements
+==============================
+
+You can now use expect_background from Tcl along with all the
+Tcl-based event stuff such as "after".  You can also do fun things
+such as have "after" actions run while expect is waiting for input.
+It's worth comparing the difference between commands such as expect
+(which waits in the event loop) and gets (which doesn't).
+
+Incompatibilities
+==============================
+
+libexpectk is gone.  Because of the event loop was moved into Tcl,
+this is no longer necessary.  Just use the regular Expect library.
+This only affects you if are hand-linking.
+
+The name of the static C library now has the extension on the end -
+just like Tcl.  This only affects you if are hand-linking.
+
+
+==============================
+Some obvious questions and answers
+
+Nothing in the user interface has changed.  All your old scripts
+should run.  Tcl now has commands that replace Expect functionality in
+the area of version control and date handling.  I encourage you to use
+Tcl's support rather than Expect's for any new scripts that you write.
+However, I won't be removing Expect's commands, so don't worry about
+having to convert old scripts.
+
+It is my understand that shared/dl libs work.  (I say "it is my
+understanding", because my own environment doesn't handle it, sigh.
+My system admins tell me that they're working on it.)  So I've had to
+guess on some things - in fact, I've talked to a number of people and
+I get the feeling that a lot of people are guessing on shared/dl libs.
+I have yet to talk to anyone that REALLY understands this stuff (by
+"understand", I mean "can write the configure/Makefile portably and
+correctly".  So much for my griping.  In theory, the shared/dl support
+is pretty much a freebie because Tcl itself provides all the support
+for this.  (There is some reorganization that could be done to improve
+shared library memory use - I'll get to it eventually - it shouldn't
+affect most people.)  Don't send me complaints about shared/dl libs
+unless you are *positive* it is something that I am responsible for.
+Even if Tcl works and Expect fails, it is likely to be a Tcl error (or
+more precisely, a configuration problem that is more appropriately
+fixed from the Tcl distribution).
+
+For Tcl-package purposes, Expect is called "Expect".  (Duh...)
+
+Expect's multiple interpreter support is minimal.  It should work for
+most things, serendipitously.  I haven't spent any time making this
+perfect.
+
+No, this release isn't portable to Windows or Mac.  Let me know if
+you're seriously interested in a lot of work.  I'm not saying it's not
+possible.  It's definitely possible and the porting working at Sun has
+made it easier than before.  But it's still not a weekend hack.
+
+==============================
+Building the code
+==============================
+
+Expect builds as usual.  (See the INSTALL file for details.)
+
+The only significant change is that Expect now has to find the
+tclConfig.sh file (and tkConfig.sh if you want).  So if you like to
+store Tcl where Expect can't find it, you'll need to use even more
+configure flags than you used to.
+
+Shared/dl Expect libraries are built if you configured Tcl for
+shared/dl libraries.
+
+All support for earlier versions of Tcl and Tk have been removed from
+Expect.  For example, if you're still using Tcl 7.4 (or earlier),
+don't bother to install this release.
+
+======================================================================
+======================================================================
+This section describes the changes from Expect 4 to Expect 5.
+
+The changes that people will find most interesting or annoying are as
+follows.  Some of them may seem rather arbitrary but fix inconsistencies
+leading to much cleaner coding both internally and externally.
+
+
+-- Expect version 5.20 and above is designed to work with Tcl 7.5 and
+Tk 4.1.  Expect 5.20 and above will not work with earlier versions.
+
+-- Glob-style patterns do longest-possible matches (from the earliest
+possible position) just like regexps.  Previously, they matched the
+shortest-possible strings.  However, the documentation didn't actually
+say this (it didn't say anything)
+
+-- Exact patterns are now supported from expect.  Use the "-ex" flag.
+Exact patterns work just like those in interact.  No special handling
+is made of *, ^, etc.
+
+-- The new command "expect_background" registers patterns that are to
+be tested against spawned process output whenever it appears (i.e.,
+asynchronously).  This only works in the Tk environment.  The
+arguments are the same as the expect command.
+
+-- expect_before and expect_after now handle their arguments like
+expect_background.  Previously, a command such as "expect_before"
+with no arguments deleted patterns for all spawn ids.  Now, it only
+deletes patterns for the current spawn id.  Similarly with the "-i"
+form.
+
+-- expect_background/before/after support an -info flag to query what
+the current patterns are.  The results are returned in such a way that
+they can be re-used by a new expect command.
+
+The -info flag must be the first flag in the command.  With no other
+arguments, it returns the setting for the current spawn id.  With a -i
+descriptor, information is returned for that spawn id.  The argument
+-noindirect may be used to suppress indirects which also match a
+direct spawn id.  Only a single -i specification may be given with
+-info.  With the argument "-all", all spawn id specifications are
+reported.
+
+-- There is now a sleep command.  It understands decimal values such as
+
+	sleep .5
+
+Interrupts and other asynchronous events are processed while Expect sleeps.
+
+-- Traps now use Tcl's "Async" support.  This has advantages and
+disadvantages.  One advantage is that traps have no chance of screwing
+up the Tcl internals.  One disadvantage is that trap handlers are
+delayed at certain specific times and places.  For example, a handler
+cannot occur inside another handler.  While one handler is running,
+all other handlers are blocked.  This is probably the most noticable
+place where handlers are blocked.  Others are generally small windows,
+so you shouldn't notice the delay in executing the handlers.
+
+Several traps are initially defined:
+
+	trap exit {SIGINT SIGTERM}
+
+If you use the -D flag to start the debugger, the following trap is
+defined:
+
+	trap {exp_debug 1} SIGINT
+
+You can, of course, override these.  In particular, if you have your
+own "trap exit SIGINT", this will override the debugger trap.  Because
+SIGINT is tied to exit (see above) by default anyway, you should
+remove your own "trap exit SIGINT" unless you specifically do not want
+to be able to get to the debugger by ^C.
+
+If you want to define your own trap on SIGINT but still trap to the
+debugger when it is running, use:
+
+	if ![exp_debug] {trap mystuff SIGINT}
+
+Alternatively, you can trap to the debugger using some other signal.
+
+The ONEXIT trap is no longer available.  Instead, say "exit -onexit ..."
+
+Traps are now deleted by using the empty ({}) handler.  The current
+handler is returned if no action is supplied.  With no arguments, trap
+returns the signal number of the trap command currently being executed.
+
+-- The wait command now returns a four element list if a valid child
+was waited on.
+Element 1: pid
+Element 2: spawn id
+Element 3: 0 (or -1 if there was an OS error)
+Element 4: status (or errno if element 3 == -1)
+
+-- expect and interact notes:
+
+The timeout and eof patterns were initially named "-timeout" and
+"-eof" but have been renamed "timeout" and "eof" to match those of
+expect.  The ability to define default timeout/eof actions has been
+removed.  (You can do this more easily by grouping spawn ids.)
+
+expect and interact now support a "null" keyword to match an ASCII 0.
+send supports -null and -break keywords.
+
+Since a large number of special keywords have been added to interact,
+a new keyword "-ex" for "exact" was added descriptive of its default
+treatment of patterns.  This protects the next token from being
+misinterpreted as a keyword.  The expect command provides "-gl" for
+"glob" for analogous reasons.
+
+Any string starting with "-" should be protected by the "-ex" or "-gl"
+flag, even those that are not keywords currently.  (All strings
+starting with "-" are reserved for future options.)
+
+String start/end indices are no longer written to expect_out and
+interact_out unless the -indices flag is given.
+
+expect_out(spawn_id) is set to the spawn id associated with the spawn
+id that produced the last output in an expect command.  For example,
+you can use this to delete files that have closed, by removing this
+element from an indirect spawn ids spec.  The same effect is
+reproducable with interact (and interact_out(spawn_id)) but for
+efficiency reasons, it requires the -iwrite flag before each pattern.
+
+Expect's -i and interact's -i, -u, -input, and -output flags can now
+describe a list of spawn ids.  So you can say things like:
+
+	interact -input "$id1 $id2 $id3" .... -output "$id1 $id2" ...
+
+In this case, id1, 2, 3 would be sent to id1, and 2.
+
+The spawn id may be given as a global variable name (called an
+"indirect spawn id specification"), in which case, the variable
+contains the list of spawn ids.  Whenever the variable is changed, the
+new list of spawn ids is automatically used.  This is particularly
+useful with any long running expect command such as expect_before,
+expect_after, expect_background, and interact.
+
+The -update flag was removed.  Use indirect spawn ids (see previous
+paragraph).
+
+-- interact notes:
+
+Interact now support -input and -output flags that provide very
+flexible means of moving data from/to multiple spawn ids in complex
+ways (but very quickly).  It is possible to write most expect loops
+using a simple interact statement.  For instance, the three way
+interaction inside kibitz (between two users and a process) is written
+this way:
+
+	interact {
+		-output $shell
+		-input $userin eof { . . . } -output $shell
+		-input $shell -output "$user_spawn_id $userout"
+	}
+
+-- send command notes:
+
+It is possible to send a break by using the "-break" flag.
+
+Any string starting with "-" should be protected by preceding it with
+the "--" flag, even those that are not keywords currently.  (All
+strings starting "-" are reserved for future options.)
+
+-- The spawn command now takes an "-open" flag which in turns takes a
+Tcl file as an argument.  This lets you treat raw devices, files, and
+pipelines as spawned processes without using a pty.
+
+This was actually in Expect 4, but I forgot to document it.  Oops!
+
+-- The old "debug" command (which describes what Expect is doing
+internally) was renamed "exp_internal".  "debug" (and "exp_debug") now
+invoke the interactive debugger.
+
+-- The new command "stty" now takes over the job of "system stty".  It
+works much better, allowing POSIX-style redirection to affect other
+ttys.  It otherwise takes arguments as "system stty" did.
+
+-- The "-tcl" option to "return" has gone away.  (This was dangerous
+to anyone that actually happened to return the value "-tcl".)
+Instead, use inter_return.
+
+-- Added exp_timestamp command to produce very fast timestamps.
+
+-- Added exp_pid command to return pid of given spawn id.
+
+-- The close command now takes an argument of "-onexec" with a following
+0 or non-zero value.  For example, the follow command stops the
+current spawn id from being closed when another process is exec'd or
+spawn'd.
+
+	close -onexec 0
+
+While "-onexec 1" returns it to the default condition where it will be
+closed upon exec or spawn.
+
+-- log_user now returns previous value.  It is acceptable to call now,
+without arguments just to get the value.
+
+-- The following forms are deprecated.  They will be allowed
+indefinitely but not advertised or supported if they break.
+
+	-eof, -timeout in interact (reason: didn't match expect.
+		Instead, use eof or timeout.)
+
+	-- in expect or interact (reason: no easier to read.
+		Instead, use -gl in expect or -ex in interact.)
+
+	continue -expect (reason: when mixing in extensions, you have
+		to use exp_continue, so -expect becomes irrelevant.
+		Instead, use exp_continue.)
+
+	getpid (reason: Tcl now supplies same functionality as "pid".
+		Instead, use pid.)
+
+	expect_version and expect_library (reason: the name implies
+		they have something to do with the expect command,
+		which they doesn't.
+		Instead, use exp_version and exp_library.)
+
+	-timestamp for obtaining tm and ctime in expect and interact
+		(reason: separate command now exists for this purpose.
+		Instead, use exp_timestamp.)
+
+	system stty (reason: bad interaction with redirection.
+		Instead, use stty.)
+
+-- New examples have been added:
+
+"dislocate" lets you disconnect and reconnect to processes.
+
+"tkpasswd" illustrates passwd embedded in a GUI.
+
+They may not be overwhelmingly useful, but run them once to see what
+they do.  If you ever need to do anything similar, you can look back
+at them.
+
+"tknewsbiff" pops up a window or plays a audio clip when you have
+unread news.
+
+-- Changes to the Expect libraries:
+
+The expect-tcl library (libexpectcl.a) has been integrated with the
+expect library (libexpect.a).  So references to libexpectcl.a should
+be removed.
+
+The Expect C library now supports buffering, multiplexing, null
+matching, full buffer matching.  Basically, all of the features in
+Expect are now in the library.
+
+Buffering and multiplexing has caused the biggest change to the
+library.  Previously, exp_match contained the entire buffer that
+matched.  Now exp_match just points to where in the buffer the match
+started.  exp_buffer points to the beginning of the buffer.
+Previously, the previous buffer was thrown away at the beginning of
+each expect function call.  Now, previously unmatched characters are
+eligible for matching.
+
+To match on different file descriptors, exp_match, exp_match_end,
+exp_buffer_end must be restored to their previous values.  Initially,
+they should be zero.
+
+The meaning of timeout == 0 in the Expect library has been changed.
+See the man page for more info.
+
+======================================================================
+======================================================================
+This file describes the changes from Expect 3 to Expect 4.
+
+The improvements that people will find most interesting are:
+
+1) Expect version 4 is designed to work with Tcl 6.7 and Tk 3.2.
+   (Earlier versions of Expect will not work with Tcl 6.7)
+   Expect can now be layered in with any Tcl program.  
+   Note that in Tk, Expect's send command is called "exp_send".
+   (It used to be called "send_spawn" but this bit the dust.)
+2) A debugger is provided.
+3) The interact command has been totally rewritten and supports regular
+   expressions, timeout/eof patterns, and a number of other new things.
+4) The default behavior of ^C (SIGINT) is exit whether or not you are in
+   a read.
+5) Expect uses "sane" terminal parameters by default, allowing scripts
+   to work the same whether inside emacs shell mode or not.  (See man
+   page on "spawn" for more info.)
+6) All the hard parts of the installation process are automated.  This
+   was done primarily by Rob Savoye at Cygnus.  Thank you, Rob!
+7) It is now possible to buy a support contract for Expect from Cygnus.
+
+The changes that people will find most annoying are:
+
+1) send now only sends a single string.  (It used to send any number of
+   strings with spaces jammed in between.)
+2) getpid was renamed pid.
+3) interact's -flush was renamed -nobuffer (much more descriptive).
+4) interact now runs all actions in raw mode unless the flag -reset
+   is used.  -f and -F are ignored.  send automatically understands
+   how to do the right thing.  The most likely thing to watch out for
+   are actions like "exec kill -STOP 0" which almost certainly need
+   the -reset flag.
+5) argv0 is initialized to script name.  argv no longer contains it.
+   argc is initialized [llength $argv].  This follows new Tcl style.
+
+All differences are described in the man page.  Some of the less
+significant differences are described in the HISTORY file.  The
+debugger is described in a separate document (see the README).
+
+This version also introduces one incompatibility that may require
+changes to scripts.  While this may initially annoy you, the final
+result will simplify the process of writing scripts.  Namely:
+
+In version 3, the expect command accepted lists of glob-style patterns
+such as:
+
+	expect "a\ b c" action
+
+where "a b" or "c" would cause action to be executed.  The problem
+with this is that the pattern list is hard to write and hard to read.
+Patterns with control-characters, backslashes and dollar signs were
+very difficult to deal with.
+
+Regular-expression patterns provide a much simpler solution.  Via the
+alternation feature (using a "|") the above pattern can be written as:
+
+	expect -re "a b|c" action
+
+I was concerned about people having a significant investment in code
+that depended on the old syntax but responders to a comp.lang.tcl poll
+about such a change in pattern handling were 100% in favor of it.  (I
+even proposed hooks for backward compatibility, but there was no
+interest in it.)
+
+Fortunately, most simple things will work as before including:
+
+	expect foobar
+	expect {foobar}
+	expect "foobar"
+	expect "foo\ bar"
+
+However, some things won't work as before.  For example, the following
+will behave differently - now the braces will be considered as part of
+the pattern.
+
+	expect "{foo bar}"
+
+Here are examples of patterns in my own code that I had to change:
+
+	was				changed to
+	Version 3 pattern list		Version 4 pattern
+
+	{Whois:\ }			"Whois: "
+	{No\ match}			"No match"
+	{250*ftp>* 200*ftp>*}		-re "2(5|0)0.*ftp>.*"
+	{{Press Return to continue*}}	"Press Return to continue*"
+	{*\r\n*\\\\\r\n}		"\r\n*\\\r\n"
+
+
+
+Future Change Alert
+
+John Ousterhout has pre-announced a future change in Tcl that may
+affect you.  In particular, backslash sequences other than those
+explicitly listed in the Tcl documentation will be handled as if the
+backslash was not present.
+
+The likely place this arises is when quoting characters that are
+special to the pattern matcher but not to Tcl.
+
+For example in Tcl 6.7, the following command matches a period.
+
+	expect -re "\."
+
+In Tcl 7.0, it will match any character, because Tcl will throw away
+the backslash.  If you want to match a period, you will have to say:
+
+	expect -re "\\."
+or
+	expect -re {\.}
+
+The following command will find occurrences of this.  (It may find
+other things, but it will at least find the problem cases.)
+
+	egrep '(\\$)|(\\[^][bfnrtv\0-9{}$ ;"])' *.exp
+
+======================================================================
+======================================================================
+This section describes the changes from Expect 2 to Expect 3.
+
+If you used to use Expect version 2 (any version written before
+September '91) you will find that the current version of Expect (3)
+introduced minor but significant incompatibilities.
+
+The HISTORY file describes these briefly.  They are described at
+length in the man page.
+
+I'm sorry if you feel annoyed at the incompatibilities, but Expect has
+been out for a year and a half, Tcl even longer.  Both Tcl and Expect
+are using this as a last chance to make significant changes, so that
+we will not disturb even more users in the future.
+
+There is no automated conversion procedure (although see note below)
+for Expect or even raw Tcl.  For now, I suggest that you not bother
+fixing things that already work - just keep the old Expect around.
+The binary isn't very big after all.  If you do write a translation
+script, let me know.  Thanks.
+
+Of course, I felt obligated to convert the examples distributed with
+expect.  I did this by hand while writing the new version itself,
+partly as an aid but mostly to test lots of variations.  In 90% of the
+scripts, all I had to do was change:
+
+(changes due to Tcl)
+	'index' to 'lindex'
+	'range' to 'lrange'
+	'length' to 'llength'
+	'print' to 'send_user' or 'puts' depending on how you use it
+	'function .... c' with '[join [function [split string ""]] ""]'
+(changes due to Expect)
+	'expect_match' to 'expect_out(buffer)'
+	'set match_max' to 'match_max' (perhaps with -d flag)
+	'*' to '-re .+'
+
+If anyone wants to write a script to do this, note the pitfalls:
+
+1) functions and variables do not share the same namespace, so it is a
+inappropriate to just globally rename things.
+
+A number of optimizations can be made:
+
+1) If you are doing multiple split/joins, you should probably cache the
+split string.
+
+2) Virtually all uses of scan are unnecessary now, due to exec's automatic
+stripping of terminating newlines, and expect's support of regexps.
+
+3) String manipulation can be reduced or avoided entirely if you use
+expect -re.
+
+4) exec is no longer necessary to retrieve environment variables, since
+they can now be retrieved from $env.
+
+5) If you have been really careful about testing for timeout and eof,
+you can dramatically reduce the size of your scripts by using
+expect_before and expect_after.  This is more efficient, as well,
+since those actions are only parsed once.
+

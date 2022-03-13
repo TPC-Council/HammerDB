@@ -1,0 +1,58 @@
+# Copyright: 2018-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+#MySQL Client Libraries must be installed to compile mysqltcl
+#MySQL needs the MYSQL_CONFIG environment variable set to the location of the mysql_config command
+#The output of mysql_config shows where the MySQL Include and Lib directories are
+#For HammerDB my_bool has been replaced in generic/mysqltcl.c: to _Bool reconnect = 1;
+proc Init_mysqltcl { libName libVersion } {
+    SetScriptAuthor    $libName "Steve Shaw" "smshaw@users.sourceforge.net"
+    SetLibHomepage     $libName "http://www.xdobry.de/mysqltcl/"
+    SetLibDependencies $libName "Tcl"
+    SetPlatforms       $libName "All"
+}
+
+proc Build_mysqltcl { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+    if { [UseStage "Configure" $libName] } {
+        global env
+#Look for the MYSQL_CONFIG environment variable
+        if [ info exists env(MYSQL_CONFIG) ] { 
+#Run mysql_config and put the output in a dict called mysql_config
+	dict set mysql_config INCLUDEDIR [ exec $env(MYSQL_CONFIG)/mysql_config --variable=pkgincludedir ]
+	dict set mysql_config LIBDIR [ exec $env(MYSQL_CONFIG)/mysql_config --variable=pkglibdir ]
+#Check that we have INCLUDEDIR and LIBDIR in the config and these are valid directories
+	if {!([ dict exists $mysql_config INCLUDEDIR ] && [dict exists $mysql_config LIBDIR ] && [ file isdirectory [dict get $mysql_config INCLUDEDIR ]] && [ file isdirectory [dict get $mysql_config LIBDIR ]])} {
+	ErrorAppend "mysqltcl configure error: Cannot find include or lib directories from mysql_config" "FATAL"
+	return false
+	} else {
+#MySQL Build environment has been found
+	;
+	}
+	} else {
+	ErrorAppend "mysql configure error: MYSQL_CONFIG environment variable is not set to location of mysql_config command" "FATAL"
+	return false
+	}
+        cd $buildDir
+#Run configure with mysql include and lib options from captured environment
+        TeaConfig $libName $buildDir $instDir "" "--with-mysql-include=[dict get $mysql_config INCLUDEDIR ]" "--with-mysql-lib=[dict get $mysql_config LIBDIR ]"
+    }
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        LibFileCopy "$instDir"  "$devDir/[GetTclDir]"   "*"  true
+        LibFileCopy "$instDir"  "$distDir/[GetTclDir]"  "*"  true
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

@@ -1,0 +1,145 @@
+# oralogon.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise oralogon and oralogoff
+# 09/21/2009 - upgraded to tcltest 2.0
+# 09/21/2017 - update tests to regexp error codes
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+    source [file join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oralogon {
+    namespace import ::tcltest::*
+
+    testConstraint testoralogon      [llength [info commands oralogon]]
+    testConstraint testoralogoff     [llength [info commands oralogoff]]
+
+    # test oralogon with no arguments
+    test oralogon-1.0 {oralogon: no arguments} {
+        -constraints testoralogon
+        -body {
+            catch {oralogon} res
+            set res
+        }
+        -result {wrong # args: should be "oralogon connect_string ?-async?"}
+    }
+
+    # test database connection with credentials
+    test oralogon-1.1 {oralogon: all arguments} {
+        -constraints {
+            testoralogon
+            testoralogoff
+        }
+        -body {
+            catch {oralogon $ora_constr} res
+            set res
+        }
+        -cleanup {
+            catch {oralogoff $lda}
+        }
+        -result oratcl1
+    }
+
+    # test oralogon with bad credentials
+    test oralogon-1.2 {oralogon: bad credentials} {
+        -constraints testoralogon
+        -body {
+            set tres 1
+            catch {oralogon foo/bar} res
+	    if {[regexp {^ORA-[0-9]*:} $res]} {
+                set tres 0
+            }
+            set tres
+        }
+        -result {0}
+    }
+
+    # test oralogon with bad tnsnames
+    test oralogon-1.3 {oralogon: bad tnsnames} {
+        -constraints {
+            testoralogon
+            testoralogoff
+        }
+        -body {
+            set tres 1
+            catch {oralogon foo/bar@oratcl} res
+	    if {[regexp {^ORA-[0-9]*:} $res]} {
+                set tres 0
+            }
+            set tres
+        }
+        -result {0}
+    }
+
+    # test oralogoff with no arguments
+    test oralogon-2.0 {oralogoff: no arguments} {
+        -constraints testoralogon
+        -body {
+            catch {oralogoff} res
+            set res
+        }
+        -result {wrong # args: should be "oralogoff lda_handle"}
+    }
+
+
+    # test oralogoff with valid login-handle
+    test oralogon-2.1 {oralogoff: all arguments} {
+        -constraints {
+            testoralogon
+            testoralogoff
+        }
+        -setup {
+            set lda [oralogon $ora_constr]
+        }
+        -body {
+            set rc [oralogoff $lda]
+        }
+        -result 0
+    }
+
+
+    # excercise oralogon and oralogoff for many connections
+    test oralogon-3.1 {oralogon: many connections} {
+        -constraints {
+            testoralogon
+            testoralogoff
+        }
+        -setup {
+            set lda_list {}
+        }
+        -body {
+            for {set n 0} {$n < 35} {incr n} {
+                set cr [catch {set lda [oralogon $ora_constr]}]
+                if {$cr == 0} {
+                    lappend lda_list $lda
+                } else {
+                    break
+                }
+            }
+            llength $lda_list
+        }
+        -cleanup {
+            foreach lda $lda_list {
+                catch {oralogoff $lda}
+            }
+            unset lda
+            unset lda_list
+            unset cr
+            unset res
+        }
+        -result 35
+    }
+
+    cleanupTests
+}
+namespace delete ::tcl::test::oralogon
+return

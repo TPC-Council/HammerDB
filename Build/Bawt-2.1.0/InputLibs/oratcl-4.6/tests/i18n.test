@@ -1,0 +1,210 @@
+# ora11i18n.test
+#
+# Tests internationalization of Oratcl
+#
+# This file contains a collection of tests for one or more of the Tcl
+# built-in commands.  Sourcing this file into Tcl runs the tests and
+# generates output for errors.  No output means no errors were found.
+# 
+# This file creates a temporary table in the database  and inserts
+# unicode characters into it as column data. It then retrieves that
+# unicode data to check if it is the correct data i.e. it has not been
+# converted to a non UTF-8 character set.
+#
+# Copyright (c) 1998-1999 by Scriptics Corporation.
+# All rights reserved.
+
+if {[info exists ora_lda] == 0} {
+        source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+set env(NLS_LANG) American_America.UTF8
+
+proc test_string {res_bytes res_length tst_bytes tst_length} {
+   if {$res_bytes == $res_length} {
+       set return_msg "error: num bytes equal num chars"
+       return $return_msg
+   }
+   if {$res_bytes == $tst_bytes && $res_length == $tst_length} {
+       set return_msg "test passed"
+   }
+}
+
+test oratcl-1.0 {Oracle I18n test 1} { 
+    catch {orasql $ora_cur "create table internat (name varchar(20), id int)"}
+    if {[oramsg $ora_cur rc] == 0} {
+	    set x \u592a
+	    set x_length [string length $x]
+	    set x_bytes [string bytelength $x]
+	    set str "insert into internat (name, id) values ('$x', 1)"
+	    orasql $ora_cur $str
+    }
+
+    orasql $ora_cur "select name from internat where id = 1"
+    orafetch $ora_cur -datavariable result
+    orasql $ora_cur "drop table internat"
+    set result [string trimright $result]
+    set result_bytes [string bytelength $result]
+    set result_length [string length $result]
+    string compare $result $x
+} {0}
+
+
+test oratcl-2.0 {Oracle I18n test 2} {
+    test_string $result_bytes $result_length 3 1
+} {test passed}
+
+
+test oratcl-3.0 {Oracle I18n test 3} { 
+    catch {orasql $ora_cur "create table internat (name varchar(20), id int)"}
+    if {[oramsg $ora_cur rc] == 0} {
+	    set x  \u0043\u0061\u0066\u00c3\u00a9
+	    set x_length [string length $x]
+	    set x_bytes [string bytelength $x]
+	    set str "insert into internat (name, id) values ('$x', 1)"
+	    orasql $ora_cur $str
+    }
+
+    orasql $ora_cur "select name from internat where id = 1"
+    orafetch $ora_cur -datavariable result
+    orasql $ora_cur "drop table internat"
+    set result [string trimright $result]
+    set result_bytes [string bytelength $result]
+    set result_length [string length $result]
+    string compare $result $x
+} {0}
+
+test oratcl-4.0 {Oracle I18n test 4} {
+    test_string $result_bytes $result_length 7 5
+} {test passed}
+
+
+set tclstr \u592a\u9177
+
+
+test i18n-1.0 {test creating i18n column} {
+    set str "create table testi18n3 (\"$tclstr\" varchar(15))"
+    catch {orasql $ora_cur $str}
+    orasql $ora_cur "select * from testi18n3"
+    orafetch $ora_cur
+    set result1 [oracols $ora_cur]
+    set resbytes [string bytelength $result1]
+    set reslength [string length $result1]
+    if {[string compare $result1 $tclstr] == 0 && $reslength == 2 && $resbytes == 6} {
+       set passed "test passed"
+    } else {
+       set passed "test failed"
+    }
+    unset result1
+    set test_result $passed
+}   {test passed}
+
+
+test i18n-2.0 {test creating i18n table} {
+  set str "create table \"$tclstr\" (name varchar(10))"
+  orasql $ora_cur $str
+  set str2 "insert into \"$tclstr\" (name) values ('apple')"
+  orasql $ora_cur $str2
+  orasql $ora_cur "select * from \"$tclstr\""
+  orafetch $ora_cur -datavariable result
+  set result
+} {apple}
+
+
+orasql $ora_cur "drop table testi18n3"
+
+
+test i18n-3.0 {test dropping i18n table} {
+   orasql $ora_cur "drop table \"$tclstr\""
+} {0}
+
+set pl_proc {
+  create procedure total_salary
+    (job_type in varchar2,
+     tot_sal out number)
+  as
+    tot_fixed NUMBER;
+
+   begin
+    select sum(sal) into tot_fixed
+     from test_int
+     where job = job_type;
+   tot_sal := tot_fixed;
+   end;
+}
+
+set anon_pl {
+   begin
+    total_salary (:type, :total);
+   end;
+}
+
+set x \u00c3\u00a9
+test i18n-oraplex-int {test of i18n on oraplexec} {
+    orasql $ora_cur "create table test_int (name varchar2(20), sal int, job varchar2(15))"
+    orasql $ora_cur "insert into test_int (name, sal, job) values ('Joe', 100, '$x')"
+    orasql $ora_cur "insert into test_int (name, sal, job) values ('Joe', 200, '$x')"
+    orasql $ora_cur "insert into test_int (name, sal, job) values ('Joe', 300, '$x')"
+    oraplexec $ora_cur $pl_proc
+    oraplexec $ora_cur $anon_pl :type $x :total 0
+    orafetch $ora_cur -datavariable result
+    set result
+} "$x 600"
+
+orasql $ora_cur "drop table test_int"
+orasql $ora_cur "drop procedure  total_salary"
+
+test i18n-orafetchtest {test oratcl cmd orafetch} {
+	catch {
+		oraparse $ora_cur {create table test_ofetchi18n (name varchar2(15))}
+		oraexec $ora_cur
+	}
+    set unistr \uc3\ua9
+    set str "insert into test_ofetchi18n (name) values ('$unistr')"
+    oraparse $ora_cur $str
+    oraexec $ora_cur
+    oraparse $ora_cur {insert into test_ofetchi18n (name) values ('Joe')}
+    oraexec $ora_cur
+    oraparse $ora_cur {insert into test_ofetchi18n (name) values ('Jane')}
+    oraexec $ora_cur
+    oraparse $ora_cur $str
+    oraexec $ora_cur
+    oraparse $ora_cur {insert into test_ofetchi18n (name) values ('Bob')}
+    oraexec $ora_cur
+    oraparse $ora_cur {select name from test_ofetchi18n}
+    oraexec $ora_cur
+
+	set match_rows 0
+	orafetch $ora_cur -datavariable name
+	while {[oramsg $ora_cur rc] == 0} {
+		if {[string compare $name $unistr] == 0} {
+			# name equal to test string then increment match_rows
+			incr match_rows
+		}
+		if {$match_rows == 2} {
+			break
+		}
+		orafetch $ora_cur -datavariable name
+	}
+   
+   orasql $ora_cur {drop table test_ofetchi18n}
+   unset unistr
+   set match_rows
+} {2}
+
+test i18n-orabindexec-1.0 {tests oratcl orabindex cmd} {
+     set unistr \u00c3\u00a9
+     set str {create table test_obindexi18n (ename varchar2(15), id int)}
+     catch {orasql $ora_cur $str} error
+     set str "insert into test_obindexi18n (ename, id) values ('$unistr', 100)"
+     catch {orasql $ora_cur $str} error
+     catch {oraparse $ora_cur {select id from test_obindexi18n where ename = :name}} error
+     catch {orabindexec $ora_cur :name $unistr} error
+     orafetch $ora_cur -datavariable res
+     orasql $ora_cur {drop table test_obindexi18n}
+     unset unistr
+     set res
+} {100}
+
+::tcltest::cleanupTests
+return

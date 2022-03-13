@@ -1,0 +1,74 @@
+This is the pgtcl-ng Source Patches README
+Last updated for pgtclng-2.0.0 on 2011-09-18
+The project home page is: http://sourceforge.net/projects/pgtclng/
+-----------------------------------------------------------------------------
+
+This directory contains source patches or source change notes files for
+for PostgreSQL releases. These patches or changes must be applied to
+PostgreSQL in order to build the PostgreSQL library libpq on Windows
+using the Borland BCC compiler.
+
+  Important: These are only used when building PostgreSQL libpq
+  on Windows, using Borland BCC, for use with pgtcl-ng. They are
+  not used on any Linux or Unix-like platform (although they will
+  not do any harm if applied).
+
+Before PostgreSQL-8.2.0, changes were included in the Pgtcl-Ng Reference
+Manual. Starting with the 2007-01-15 release of the manual, the necessary
+changes are documented in this directory instead.
+
+Why are changes to some PostgreSQL releases needed in order to build libpq
+with BCC? Since BCC is not a compiler supported for use by the PostgreSQL
+Group, they do not test BCC builds before releasing.  As a result,
+PostgreSQL releases sometimes contain changes to the source code which
+breaks the BCC build. When this occurs, patches and changes are developed
+for use with pgtcl-ng, and are submitted to the PostgreSQL group for
+inclusion in the next release.
+
+-----------------------------------------------------------------------------
+Details by PostgreSQL release:
+
+PostgreSQL-7.4.0 and older:
+  You cannot build pgtcl-ng with these releases.
+
+PostgreSQL-7.4.1:
+  See changes_7_4_1.txt
+
+PostgreSQL-7.4.2:
+  No patches needed.
+
+PostgreSQL-7.4.3 and up for 7.4.x:
+  Unknown.
+
+PostgreSQL-8.1.4:
+  See changes_8_1_4.txt
+
+PostgreSQL-8.1.5 and up for 8.1.x:
+  Unknown, but try the first of 2 changes in changes_8_1_4.txt.
+
+PostgreSQL-8.2.0 and PostgreSQL-8.2.1:
+  See changes_8_2_0.txt
+  Note: This is a patch file. You need the patch program to apply it.
+
+PostgreSQL-8.2.2:
+  Unknown, but the changes in changes_8_2_0.txt were expected to
+  have been already applied.
+
+PostgreSQL-8.2.4 through PostgreSQL-8.2.9:
+  Unknown; only built with PostgreSQL-8.2.5 and no patches were needed.
+
+PostgreSQL-8.3.0 through PostgreSQL-8.3.3:
+  Unknown but probably builds without patches.
+
+PostgreSQL-8.3.4 through PostgreSQL-8.3.7:
+  See changes_8_3_7.txt
+
+PostgreSQL-8.4.0 through PostgreSQL-8.4.4
+  No patches needed, thanks to Pavel Golub who submitted patches
+  to the PostgreSQL developers.
+    http://pgolub.wordpress.com/2009/04/13/building-postgresql-client-library-using-borland-c-compiler-bcc-under-winxp/
+
+PostgreSQL-9.0.0 and up:
+  Does not build with BCC and no patches are available.
+
+-----------------------------------------------------------------------------

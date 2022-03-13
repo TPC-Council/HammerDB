@@ -1,0 +1,21 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# rlogin-cwd - rlogin but with same directory
+#
+# You can extend this idea to save any arbitrary information across rlogin
+# Don Libes -  Oct 17, 1991.
+
+set prompt "(%|#|\\$) $"		;# default prompt
+catch {set prompt $env(EXPECT_PROMPT)}
+
+eval spawn rlogin $argv
+set timeout 60
+expect eof exit timeout {send_user "timed out\n"; exit} -re $prompt
+send "cd [pwd]\r"
+interact

@@ -1,0 +1,1989 @@
+Expect FAQ (Frequently Asked Questions)
+
+An HTML version of this FAQ can be found in http://expect.nist.gov/FAQ.html
+
+This FAQ lists common questions, usually about subjects that didn't
+fit well in the book for one reason or another (or weren't
+indexed sufficiently well so that people can't find the answers easily
+enough).  In some cases, I've left the original questions.  I suppose
+I could've stripped off the headers, but it seems more realistic to
+see actual people who've asked the questions.  Thanks to everyone who
+asked.
+
+The man page and the papers listed in the README file should
+also be consulted for highly technical or philosophical discussion of
+the implementation, design, and practical application of Expect.
+
+Don
+
+======================================================================
+
+		Here is the list of questions.  You can search for the corresponding
+		answer by searching for the question number.  For example searching
+		for "#3." will get you that answer.
+
+
+**** General **** 
+
+#1. I keep hearing about Expect.  So what is it?
+#2. How do you pronounce "Ousterhout" anyway?  (Or "Libes" for that matter?)
+
+#3. Why should I learn yet another language (Tcl) instead of
+writing my interaction in <a language I already know>?
+#4. What about Perl?
+#5. Do we need to pay or ask for permission to distribute Expect?
+#6. Since Expect is free, can we give you a gift?
+#7. Are there any hidden dangers in using Expect?
+
+**** Book, newsgroup, FAQ, README, ... **** 
+
+#8. Why is this FAQ so short?
+#9. How was this FAQ created?
+#10. The background makes the FAQ hard to read.
+#11. Why isn't there an Expect mailing list?
+#12. Why isn't overlay covered in Exploring Expect?
+#13. Is the front cover of your book a self portrait (ha ha)?
+#14. Why don't the examples in your USENIX papers work?
+#15. Can you put the examples in your book into an anonymous ftp site?
+#16. Do you have ideas for more articles on Expect?
+
+**** Can Expect do this? **** 
+
+#17. Can Expect automatically generate a script from watching a session?
+#18. Can Expect understand screen-oriented (Curses) programs?
+#19. Can Expect be run as a CGI script?
+#20. Can Expect act like a browser and retrieve pages or talk to a CGI script?
+#21. Can Expect be run from cron?
+#22. Why does my Expect script not work under inetd?
+
+**** Compilation or porting questions **** 
+
+#23. Why can't I compile Expect with Tcl 8.0?
+#24. Does Expect 5.26 work with Tcl/Tk 8.0.3?
+#25. Why can't I compile Expect with Tcl/Tk 8.1aX?
+#26. Why can't I compile Expect with Tcl/Tk 8.0b1?
+#27. Why does Expect need to be setuid root on Cray?
+#28. Does Expect run on VMS?
+#29. Is it possible to use Expect and TclX together?
+#30. Is it possible to use Expect and <lots of random extensions> together?
+#31. Why does configure complain about "cross-compiling"?
+#32. Why are make/configure looping endlessly?
+#33. Why does compile fail with: Don't know how to make pty_.c?
+#34. Does Expect run on MSDOS, Win95, WinNT, MacOS, etc...?
+#35. Why does Expect dump core?  Why can I run Expect as root but not as myself?
+
+**** Other... **** 
+
+#36. Is it possible to prevent Expect from printing out its interactions?
+#37. Why does it send back the same string twice?
+#38. Why can't I send the line "user@hostname\r"?
+#39. How do I hide the output of the send command?
+#40. Why don't I see pauses between characters sent with send -s?
+#41. Why does "talk" fail with "Who are you?  You have no entry utmp" or
+	"You don't exist.  Go away"?
+#42. Why does . match a newline?
+#43. Why doesn't Expect kill telnet (or other programs) sometimes?
+#44. How come I get "ioctl(set): Inappropriate ..., bye recursed"?
+#45. How come there's no interact function in the Expect library?
+#46. Can't you make tkterm understand any terminal type?
+#47. Trapping SIGCHLD causes looping sometimes
+#48. Why do I get "invalid spawn id"?
+#49. Could you put a version number in the filename of the Expect archive?
+#50. Why does Expect work as root, but say "out of ptys" when run as myself?
+#51. Why does spawn fail with "sync byte ...."?
+#52. Why does Expect fail on RedHat 5.0?
+#53. Why does Expect fail on RedHat 5.1?
+#54. Is Expect Y2K compliant?
+
+
+*
+* Questions and Answers
+*
+
+
+
+**** General **** 
+
+
+#1. I keep hearing about Expect.  So what is it?
+
+From: libes (Don Libes)
+To: Charles Hymes <chymes@crew.umich.edu>
+Subject: I keep hearing about Expect.  So what is it?
+
+Charles Hymes writes:
+>
+>So, what is Expect?
+
+Expect is a tool primarily for automating interactive applications
+such as telnet, ftp, passwd, fsck, rlogin, tip, etc.  Expect really
+makes this stuff trivial.  Expect is also useful for testing these
+same applications.  Expect is described in many books, articles,
+papers, and FAQs.  There is an entire book on it available from
+O'Reilly.
+
+Expect is free and in the public domain.  Download instructions can
+be found in the Expect homepage.
+
+Don
+
+======================================================================
+
+#2. How do you pronounce "Ousterhout" anyway?  (Or "Libes" for that matter?)
+
+
+From: ouster@sprite.Berkeley.EDU (John Ousterhout)
+To: libes@cme.nist.gov
+Subject: Re: pronunciation?
+Date: Tue, 29 May 90 21:26:10 PDT
+
+Those of us in the family pronounce it "OH-stir-howt", where the
+first syllable rhymes with "low", the second with "purr", and the
+third with "doubt".  Unfortunately this isn't the correct Dutch
+pronounciation for a name spelled this way (someplace along
+the line it got misspelled:  it was originally "Oosterhout"), nor
+is it what you'd guess if you use common sense.  So, we've gotten
+used to responding to almost anything.
+
+					-John-
+
+I suppose I should say something in kind.  "Libes" is pronounced
+"Lee-bis" with stress on the first syllable.  Like John though, I've
+gotten used to responding to anything close.
+
+By the way, notice the date on this message.  I had only written
+the first cut of Expect four months earlier.  I asked John how to
+pronounce his name because I had already got a paper accepted into
+USENIX and needed to be able to say his name correctly while giving
+the talk!
+
+Don
+
+======================================================================
+
+#3. Why should I learn yet another language (Tcl) instead of
+writing my interaction in <a language I already know>?
+
+From: libes (Don Libes)
+Subject: Re: Expect, Tcl, programmed dialogue etc.
+Date: Mon, 2 Sep 91 15:47:14 EDT
+
+>>>A friend told me about "Expect". But then, I have to know the
+>>>idiocies of "tcl". I would like to know if there is an alternative
+>>>to Expect that is also useful in other places, so that I do not
+>>>have to spend time getting used to tcl for just this one tool.
+>
+>>Your reasoning is shortsighted.  Tcl is a language that can be used in
+>>other applications.  It won't be a waste of your time to learn it.
+>
+>I have nothing against tcl as such.
+>The reluctance to learn it comes mainly from the feeling that half my
+>life seems to be spent learning new languages that differ very little
+>from existing ones, and differ in annoying little details at that.
+>To add to the misery, every implementation has its own
+>idiosyncracies...:-(
+
+Ironically, Tcl was written specifically to halt this very problem.
+
+The author recognized that every utility seems to have its own
+idiosyncratic .rc file or programming language.  Tcl was designed as a
+general-purpose language that could be included with any utility, to
+avoid having everyone hack up their own new language.
+
+ In this context, your statements do Tcl a great disservice.  
+
+Don
+
+======================================================================
+
+#4. What about Perl?
+
+From: libes (Don Libes)
+To: Joe McGuckin <joe@ns.via.net>
+Subject: Re: Need Perl examples
+Date: Sun, 22 Jan 95 20:17:39 EST
+
+Joe McGuckin writes:
+>
+>Yeah, I've scanned through your book a couple of times in the last
+>week, trying to make up my mind if I should buy it.
+
+I spent three years writing it - so I'm glad to hear you're spending a
+little time considering its merit!
+
+>Pro:
+>   Looks like implementing some sort of telnet daemon would be trivial.
+
+Once you see it as an Expect script, you'll realize how trivial
+these things can really be.
+
+>Con:
+>   Yet another language to learn. I know perl reasonably well & would
+>   like to stick with it.
+
+Good point.  While I'm not a Perl guru, I've used it quite a bit
+and it's nice for many things.  But I wouldn't have bothered writing
+Expect in the first place if I thought Perl was ideal.  And many Perl
+experts agree - I know a lot of them who call out to Expect scripts
+rather than do this stuff in Perl - it's that much easier with Expect.
+Expect is also much more mature.  It's portable, stable, robust, and
+it's fully documented - with lots of examples and a complete tutorial,
+too.
+
+In response to someone complaining about how difficult it was to do
+something in Perl, Larry Wall once remarked: "The key to using
+Perl is to focus on its strengths and avoid its weaknesses."  That
+definitely applies here.
+
+Even if you do proceed with Perl, you will find the book
+helpful.  Automating interactive applications has unique pitfalls to
+it and many of the descriptions and solutions in the book transcend
+the choice of language that you use to implement them.
+
+Don
+
+======================================================================
+
+#5. Do we need to pay or ask for permission to distribute Expect?
+
+From: libes (Don Libes)
+To: Mohammad Reza Jahanbin <mrj@CIS.Prime.COM>
+Subject: Copyright Question.
+Date: Tue, 26 Jan 93 23:46:24 EST
+
+Mohammad Reza Jahanbin writes:
+>Before anything let me thank you on behalf of ComputeVision R&D for
+>putting so much effort into Expect. Part of CV has been using Expect
+>for the past two years or so to build variety of tools including an
+>automated testbed for a product.
+>
+>CV is currently considering shipping the automated testbed to some of its
+>retailers, to enable them to perform their own tests before distributing
+>the product.
+>
+>The Question is, are we allowed to ship Expect? Do we need to ask
+>anyone for permission? Do we need to say or write anything in the
+>documentation? Do we need to pay for it?
+>
+>I have not been able to find any copyright (or indeed copyleft) notices
+>in the usual Expect distribution. Would you be able to clarify our position.
+
+It is my understanding that you are allowed to do just about anything
+with Expect.  You can even sell it.  You need not ask our permission.
+You need not pay for it.  (Your tax dollars, in effect, already have
+paid for it.)
+
+You should not claim that you wrote it (since this would be a lie), nor
+should you attempt to copyright it (this would be fruitless as it is a
+work of the US government and therefore not subject to copyright).
+
+NIST would appreciate any credit you can give for this work.  One line
+may suffice (as far as I'm concerned) although there should be
+something to the effect that this software was produced for research
+purposes.  No warantee, guarantee, or liability is implied.
+
+My management is always interested in feedback on our work.  If you
+would like to send letters of praise describing how Expect has helped
+your business, we would be delighted.  Letters (on letterhead please)
+are strong evidence used by policy makers when deciding where every
+dollar goes.  If you want to send these letters to NIST directly, you
+may send them to the following individuals:
+
+Robert Hebner, Director
+NIST
+Admin Bldg, Rm A-1134
+Gaithersburg, MD 20899
+
+Ric Jackson, Manufacturing Engineering Laboratory
+NIST
+Bldg 220, Rm B-322
+Gaithersburg, MD 20899
+
+Steve Ray, Manufacturing Systems Integration Division
+NIST
+Bldg 220, Rm A-127
+Gaithersburg, MD 20899
+
+Amy Knutilla, Manufacturing Collaboration Technologies Group
+NIST
+Bldg 220, Rm A-127
+Gaithersburg, MD 20899
+
+In case you're wondering about the uninformative titles, Robert Hebner
+is the director of all of NIST (about 3000 people) and
+Amy Knutilla (way down there at the bottom) is my immediate supervisor.
+
+I hope this has answered your questions.  Let me know if you have
+further questions.
+
+Don
+
+======================================================================
+
+#6. Since Expect is free, can we give you a gift?
+
+This is not an actual letter but represents the gist of several
+that I've received.
+
+>>>Expect has saved us many thousands of dollars.  We'd like to send
+>>>you a free copy of our product.
+>>
+>>Thanks, but please don't.  As a federal employee, I'm not
+>>allowed to accept gifts of any significant value.
+>
+>But, what if it is for personal use (like at home)? I assume
+>that would be okay.
+
+It doesn't matter (much).  What the rules address is whether a gift
+might cause me to make an official decision differently.  This is
+especially a concern because I may very well have to decide whether or
+not to buy products from your company in the future.
+
+There is a clause that says "you may accept gifts from friends,
+regardless of value ... but you should be careful to avoid accepting
+gifts which may create an appearance of impropriety, even if permitted
+as an exception to the gift rules."
+
+I'm still permitted to accept small token gifts, such as a t-shirt
+or reasonably-priced dinner (under $20 per gift to a maximum of $50
+per year from any person or company) - so things are not totally
+ridiculous.  Although the precise values in the gift rules seem rather
+arbitrary, I actually like the gift rules.  They stop a lot of the
+nonsense that used to go on involving gifts.
+
+Don
+
+======================================================================
+
+#7. Are there any hidden dangers in using Expect?
+
+From: Charlton Henry Harrison <charlton@cs.utexas.edu>
+To: libes@NIST.GOV
+Date: Fri, 27 Jan 1995 23:30:56 -0600
+
+>>>Dear Don:
+>>>
+>>>	I've been a fan of Expect ever since I first learned of UNIX back
+>>>in late '93. I'm young and don't have my CS degree just yet, but I worked
+>>>a while back at Texas Instruments in their Telecom Customer Support dept.
+>>>I started in late '93 (and hence, that's where I first started exploring
+>>>the UNIX environment) and immediately forsaw the need of automating a lot
+>>>of my redundant and mindless duties, but I didn't know how since we were
+>>>working over a heterogeneous LAN with multiple OSs.
+>>>	Then I found out about Expect. I automated everything! My boss didn't
+>>>like hearing that I was working on something else in order to get out of
+>>>work, and I got tired of explaining it to him.
+>>>	Although I accomplished all the aspects of my duties, I was infamous
+>>>for being the laziest person at work, and it showed (I made my job SO easy).
+>>>I got a new boss after a while, and he hated me from the start and fired
+>>>me soon after. Oh well, I guess my mentality didn't click with theirs. 
+>>>	There are a lot of people like that: they believe life is putting
+>>>in a hard day's work to get by. I hate that.
+>>>	So the point is, thank you for the wonderful 'Expect'. I bought
+>>>your book and now I have the most recent version of it on my Linux system
+>>>at home. Needless to say I'm looking for another job, though.
+>>>
+>>>							Charlton
+>>> 
+>> Thanks very much for your nice letter.  Sorry to hear about your
+>> automating yourself out of a job.  Actually, I think most computer
+>> scientists have to face this dilemma.  In some ways, it's a
+>> self-defeating occupation.
+>>
+>> Don
+>
+>Yeah, I'd be interested in hearing if you have a personal philosophy on
+>how to handle this kind of thing. I plan on pursuing a career in Artificial
+>Intelligence for similar reason of making life easier for everyone (me
+>in particular!)  What the future holds in this category is a great
+>mystery.
+
+I'm glad you asked.  My personal philosophy on this kind of thing is:
+Find someone really rich and marry them.
+
+Don
+
+======================================================================
+
+**** Book, newsgroup, FAQ, README, ... **** 
+
+
+#8. Why is this FAQ so short?
+
+From: libes (Don Libes)
+To: Wade Holst <wade@cs.ualberta.ca>
+Subject: Expect question
+
+Wade Holst writes:
+>
+> 1) Is there a more up-to-date version of the FAQ than what
+>    comes with expect-5.5?  (For such a useful application, I
+>    would expect more than 12 questions).
+
+I know that a lot of other packages have *huge* FAQs but I
+have always believed that this is an indication that their regular
+documentation sucks.  As questions arise that are not addressed well
+by the original docs, the docs themselves should be fixed rather than
+new ones created.
+
+In contrast, I believe that an FAQ should literally be a list of
+frequently asked questions and little else.  An FAQ should not be a
+replacement for good documentation.
+
+In that sense, I have tried to use this FAQ as a second place to
+look rather than a first place.  The place you should always look
+first is Exploring Expect.  At over 600 pages, the book is very
+comprehensive, well-organized, and includes three indices and two
+tables-of-contents to make it very easy to find what you want to know.
+
+The book was not a rush job.  During the three years I spent
+writing it, virtually every question I was asked became incorporated
+as subject material for the book.  I wanted to make sure that the book
+wouldn't need much of an FAQ!
+
+It would not make sense to try and distill the entire book into an
+FAQ (that is actually comprehensive rather that truly frequently asked
+questions).  There's simply too much material there.
+
+So this FAQ is short.  It really tries to stick just to *truly*
+frequently asked questions.
+
+Don
+
+======================================================================
+
+#9. How was this FAQ created?
+
+The Expect FAQ is regularly recreated by a Tcl script which
+produces either text or HTML depending on how it is called.  Using Tcl
+has two nice results:
+   +  I didn't have to choose one format and worry about
+converting it to the other.  (Remember that the FAQ appears in HTML on
+the web and it appears in text in the Expect distribution.)  The more
+common approach - doing conversions in either direction - is really
+painful - plus, it's now easy to generate other formats, too.
+   +  It's much, much easier to keep track of questions and
+answers.  For example, when I add a new question, I don't have to add
+it twice (once at the top and again later with the answer), nor do I
+have to worry about making the links between them.  All this and a lot
+of other stuff is handled automatically - and the source is much more
+readable than the actual HTML.
+(see "FAQbuilder")
+
+You can read about these ideas in a paper that appeared at Tcl '96
+called Writing CGI Scripts in Tcl.  (CGI scripts are the primary focus of the
+paper, but it also spends time on HTML generation for other purposes -
+including the example of highly stylized documents like FAQs.)
+
+I encourage you to examine the source to this FAQ - it
+comes in two parts:
+   +  Expect-specific FAQ source
+   +  Generic FAQ Builder source
+
+The generic FAQ builder has also been used to build several other
+FAQs (unrelated to Expect).
+
+Don
+
+======================================================================
+
+#10. The background makes the FAQ hard to read.
+
+To: bonneau@mudd.csap.af.mil (Allen Bonneau)
+Subject: FAQ background colors
+Date: Wed, 10 Apr 96 10:24:52 EDT
+
+Allen Bonneau writes:
+>... the white and gray background makes the FAQ difficult to read.
+
+It's not white and gray.  It's several very close shades of gray.
+It's supposed to be very subtle.  Sounds like you have your browser in
+a mode where it is mishandling colors.  Turn on dithering and
+restart your browser.
+
+Don
+
+======================================================================
+
+#11. Why isn't there an Expect mailing list?
+
+From: libes (Don Libes)
+To: dclark@nas.nasa.gov (David R. Clark)
+Subject: Mailing list for Expect
+Date: Mon, 23 Sep 91 18:21:28 EDT
+
+>Would be nice if their were an Expect mailing list.  I would use it more
+>often, and be made aware of other users.
+
+Perhaps I'm too myopic, but I don't see the need for it.  Most of
+the questions about Expect posted to Usenet every day can be found in
+the various FAQs or in the book, so it's pretty easy getting
+answers to them.
+
+For one reason or another (occasionally a bug fix, but often, just
+adding a neat example), I update Expect every couple of weeks.
+Personally, I'd hate being on the other end of something like this.
+Who needs patches every two weeks for problems that are likely not
+even relevant to you?  (Most patches these days are either extremely
+esoteric or are related to porting Expect to some unusual machine.)
+
+>It would be helpful, too, if this served as an area for swapping programs.
+>Many of the things that I want to do are done by others already.
+
+NIST doesn't distribute software written by other people but if
+you've got relatively small scripts that show off unique ideas and
+techniques that would be educational for the Expect community, I can
+include your script with Expect or put it in a publicly accessible
+directory so other people can get it.  I'm also willing to list links
+in Expect's home page to other web pages about projects that use
+Expect.
+
+There is a Tcl newsgroup, comp.lang.tcl, which many Expect users
+read.  It's pretty good for asking questions about Tcl, and many of
+the readers use Expect so Expect questions are encouraged.  The
+newsgroup is gatewayed to a mailing list (tcl@sprite.berkeley.edu)
+which is further described in the Tcl documentation.
+
+Don
+
+======================================================================
+
+#12. Why isn't overlay covered in Exploring Expect?
+
+To: spaf@cs.purdue.edu
+
+Gene Spafford writes:
+>I'm curious as to why the "overlay" command is not mentioned anywhere
+>in the book.  Is that a recent addition?  A deprecated feature?  I
+>ended up using it in one of my scripts....
+
+The overlay command has been in Expect for a long time.  In all that
+time no one has ever asked me about it and I have never used it.
+Well, I used it once but I really didn't like the result, and so I
+rewrote the script to not use it.  I left the overlay command in
+Expect because it seemed like an interesting idea, but I never really
+finished it - in the sense that I believe it needs some more options
+and controls.  In comparison, the interact command is very flexible
+and makes the need for overlay pretty moot.
+
+Don
+
+======================================================================
+
+#13. Is the front cover of your book a self portrait (ha ha)?
+
+From: libes (Don Libes)
+To: pkinz@cougar.tandem.com (kinzelman_paul)
+Subject: the cover?
+
+kinzelman paul writes:
+>The book finally came in. I tried to buy 4 copies but they had only 2
+>left and they came in last Saturday. Move over Stephen King! :-)
+
+4 copies!?  Wow.  That's more than my mother bought!
+
+>I was discussing your book with somebody who stopped in and we began
+>to speculate about the monkey on the cover. I don't suppose it's a
+>self portrait? :-)
+
+There is some real humor here.  There seems to be considerable
+debate over what the creature is!  The colophon at the end of the book
+says that it is a chimpanzee.  I like that idea much more than a
+monkey which is what it looks like to me.  My wife, who has a degree
+in zoology, explained to me that chimps are actually the second
+smartest of primates (humans are the smartest).  Chimps are very
+intelligent and can do many things (but not everything) that humans
+do.  Perfect for describing Expect.  Anyway, she says I should be
+honored to have it grace the cover - even in theory.
+
+I remarked to Edie (the cover designer at O'Reilly) that even though
+the cover was nice looking, everyone was going to stare at it and say,
+"Gee, but it looks like a monkey."  She replied "The purpose of the
+cover is just to get people to pick the book up. This cover will do
+that. Don't worry. If you get any rude comments from anyone, at least
+you know they are paying attention."
+
+[After being inundated by people pointing out that the animal
+really is a monkey, O'Reilly subsequently decided to acquiesce and has
+changed the colophon to admit that yes it is a rhesus monkey.
+Evidentally, the book from which O'Reilly has been taking those
+pictures from was wrong on this one.]
+
+Don
+
+======================================================================
+
+#14. Why don't the examples in your USENIX papers work?
+
+From: libes (Don Libes)
+To: Will Smith (AC) <william@ritchie.acomp.usf.edu>
+Subject: Expect
+
+Will Smith (AC) writes:
+>I just entered some scripts from a USENIX paper that my boss had.  I get
+>errors about my quotes in the script.  Also, it doesn't seem to know
+>about expect_match.  Thanks in advance for any insight you could offer.
+
+The USENIX papers are old and out-of-date as far as quoting goes.  A
+couple years ago, I cleaned up and simplified this aspect of Expect.
+Similarly, expect_out is now where the results of expect's pattern
+matching are saved.
+
+The man page is always the best reference on what Expect currently
+supports.  Alternatively, you can read the CHANGES files.  These files
+document the changes from one major version to another.
+
+Don
+
+======================================================================
+
+#15. Can you put the examples in your book into an anonymous ftp site?
+
+From: libes (Don Libes)
+To: pren@cs.umass.edu
+Subject: Examples in your book "Exploring Expect"
+
+Peifong Ren writes:
+>
+>Hi,
+>
+>I bought your book "Exploring Expect" from O'Reilly.
+>I wonder can you put the eamples in your book into an anonymous ftp
+>site?
+
+All of the substantive examples come with recent versions of Expect.
+Just look in the example directory.  
+
+The remaining 50 or so examples are short enough that typing them
+in only takes a minute or two.  If I put them online, you'd spend more
+time looking for them (reading my online catalog, figuring out what
+the online descriptions meant, mapping them back to the file, etc.)
+then it would take to type them in.  And since you're likely to want
+to change the examples anyway, there's nothing to be gained for short
+ones.
+
+Don
+
+======================================================================
+
+#16. Do you have ideas for more articles on Expect?
+
+From: libes (Don Libes)
+To: faught@zeppelin.convex.com (Danny R. Faught)
+Cc: libes
+Subject: Re: SQA Quarterly articles
+Date: Thu, 21 Dec 95 13:31:01 EST
+
+Danny R. Faught writes:
+>I just arranged to write an article on automating interactive
+>processes for an issue early next year.  You have so many good pieces
+>on expect out there, it's going to be hard to add anything original.
+
+One thing I've never written is a good mini-tutorial.  Magazine
+editors love these types of pieces and there's certainly a need for
+it.  So I'd encourage that type of article.
+
+Another possibility is an article on how you or your colleagues
+personally applied Expect to solve your particular problem. Application-
+oriented papers are the kind that necessarily have to be written by
+people in the field who are applying the technology.  People love this
+kind of practical paper.  For example, a good paper might be "Writing
+a pager".  This is a nice topic because you can start with a simple
+5-line script that solves the problem and then show progressive
+refinements that handle different twists on the same problem.  (And
+"how to write a pager" is a very frequently asked question on Usenet.)
+
+Don
+
+======================================================================
+
+**** Can Expect do this? **** 
+
+
+#17. Can Expect automatically generate a script from watching a session?
+
+From: libes (Don Libes)
+To: pete@willow24.cray.com
+Subject: Expect
+Date: Fri, 12 Oct 90 17:16:47 EDT
+
+>I like "Expect" and am thinking of using it to help automate the
+>testing of interactive programs.  It would be useful if Expect had a
+>"watch me" mode, where it "looks over the shoulder" of the user and
+>records his keystrokes for later use in an Expect script.
+>
+>(Red Ryder and other Macintosh telecommunications packages offer this
+>sort of thing.  You log onto Compuserve once in "watch me" mode, and
+>RR keeps track of the keystrokes/prompts.  When you're done you have a
+>script that can be used to log onto Compuserve automatically.)   
+>
+>Before I look into adding a "watch me" feature, I thought I should
+>ask: has this been done already?
+>
+>I'll say again that I like the tool a lot--nice work!  There are other
+>people here using it for things like the testing of ksh, which
+>responds differently to signals when not used interactively.
+>
+>-- Pete
+
+The autoexpect script in Expect's example directory does what you
+want.
+
+Don
+
+======================================================================
+
+#18. Can Expect understand screen-oriented (Curses) programs?
+
+Yes, it can - with a little clever scripting.  Look at the
+term_expect script for an example.  It uses a Tk text widget to
+support screen-oriented Expect commands.  This technique is described
+very thoroughly in Chapter 19 of Exploring Expect.
+
+Adrian Mariano (adrian@cam.cornell.edu) converted the term_expect
+code (see above) so that it runs without Tk (exercise 4 in Chapter
+19!)  Both term_expect and virterm can be found in the example
+directory that comes with Expect.
+
+An alternative approach to screen-handling was demonstrated by Mark
+Weissman (weissman@gte.com) and Christopher Matheus who modified a
+version of Expect to include a built-in Curses emulator.  It can be
+ftp'd from the Tcl archive as expecTerm1.0beta.tar.Z.  (Note that
+Expecterm does not run with the current version of Expect.)
+
+I like the idea of keeping the curses emulator outside of Expect
+itself.  It leaves the interface entirely defineable by the user.  And
+you can do things such as define your own terminal types if you want.
+For these reasons and several others, I'm not likely to return to
+Expecterm.
+
+Don
+
+======================================================================
+
+#19. Can Expect be run as a CGI script?
+
+Expect scripts work fine as CGI scripts.  A couple pointers might
+help to get you going:
+
+Many Expect scripts can be run directly with one change - the
+following line should be inserted before any other output:
+
+puts "Content-type: text/html\n"
+
+Be sure not to forget that extra newline at the end of the puts.
+
+Next, make sure you invoke external programs using full paths.  For
+example, instead of "spawn telnet", use "spawn /usr/ucb/telnet" (or
+whatever).  Remember that the PATH and other environment variables are
+going to be different than what you are used to.  This is very similar
+to dealing with cron and you can get other good tips and advice from
+reading the Background chapter in the book.
+
+ Another tip: If a script runs fine by hand but not from CGI, just
+log in as "nobody" to the host on which your CGI script runs.  Then
+try running it by hand.  This generally makes it very obvious what's
+going on.  (If you can't log in to the server or can't log in as
+"nobody", use the kibitz trick described in the Background chapter.)
+
+You may find it helpful to use cgi.tcl, a nice collection of
+CGI support utilities for Tcl scripts.  It includes an Expect example
+among many others.  The package includes just about everything:
+tables, frames, cookies, file upload, etc...., with some nice
+debugging support.  It's pure Tcl, no C code - so it's very easy to
+try out and use.
+
+Don
+
+======================================================================
+
+#20. Can Expect act like a browser and retrieve pages or talk to a CGI script?
+
+From: jasont@netscape.com (Jason Tu)
+Date: Sat, 02 Nov 1996 09:51:03 -0800
+
+I read your book "Exploring Expect" and find Expect is just the tool
+to test Netscape's enterprise server product, since it is very easy to
+use and quick to develop. I figured I would use telnet to send HTTP
+protocol dialog to a HTTP server and simulate how it behaves.  But I
+couldn't get it to work at all.  I am wondering that there might be a
+quick example that you can share with me.
+
+Yes, this is a useful way of testing HTTP servers and running CGI
+scripts (and winning Web contests :-).  You can add error checking and
+other stuff, but here's the minimum your script should have to read a
+web page: 
+
+match_max 100000
+set timeout -1
+spawn telnet $host 80
+expect "Escape character is *\n"
+send "GET $page\r\n"
+expect
+puts "$expect_out(buffer)"
+
+If you want to communicate information to a CGI script, you'll want
+more.  One way to see what needs to be sent is to load a real browser
+with the form and then send it to a fake daemon such as this one:
+
+#!/bin/sh
+/bin/cat -u > /tmp/catlog
+
+Enable this by adding this service to inetd.  Then save the form in
+a temporary file, modify the form's host and port to correspond to
+your own host and whatever port you've chosen to associate with your
+fake daemon.  Now fill out the form and you'll find the form data in
+/tmp/catlog.  Using this, you can determine exactly how to amend your
+Expect script to behave like your browser.  
+
+Don
+
+======================================================================
+
+#21. Can Expect be run from cron?
+
+Expect itself works fine from cron - however, you can cause
+problems if you do things that don't make sense in cron - such as
+assume that there is a terminal type predefined.  There are a number
+of other pitfalls to watch out for.  The list and explanations aren't
+short - which is why there's a whole chapter ("Background") on the
+subject in the book.
+
+Here's one that someone tried to stump me with recently: They told
+me that their program started up and then Expect immediately exited.
+We spent a lot of time tracking this down (Was the spawned program
+really starting up but then hanging - which would indicate a bug in
+the program; or was the program NOT starting up - which would indicate
+a bug in the environment; etc.)  Turned out that Expect wasn't even
+running their program.  They had assumed cron honored the #! line
+(which it doesn't) and so the first line in their script (exec date)
+was being interpreted by the shell and of course, the script did
+nothing after that - because that's what the shell's exec is supposed
+to do!)
+
+Don
+
+======================================================================
+
+#22. Why does my Expect script not work under inetd?
+
+From: dpm@bga.com (David P. Maynard)
+Subject: Re: Tcl/Expect, inetd service, and no echo password
+Date: 24 Oct 1996 13:34:57 -0500
+
+In article <54ocsh$9i1@urchin.bga.com> dpm@bga.com (David P. Maynard) writes:
+   I am fairly new to expect, so hopefully this isn't too obvious.  I also
+   confess to not having looked in "Exploring Expect" becuase I haven't
+   found it in stock at a local bookstore yet.
+
+   I want to write an expect script that runs as a service from inetd.
+   (Actually, I plan to use the tcpd 'twist' command to launch the
+   binary, but that doesn't seem to affect the problem.)  The script will
+   prompt the user for a password.  The supplied password is used as a
+   key to decrypt some passwords stored online.  The script then fires
+   off a telnet session to a remote box and does some fairly simple
+   things that require the decrypted passwords.
+
+   I have all of this working when I run the script from a UNIX prompt.
+   However, when I run it out of inetd, the 'stty -echo' commands that
+   turn off character echo when the user types the password fail with the
+   following error:
+
+   stty: impossible in this context
+   are you disconnected or in a batch, at or cron script?
+   stty: ioctl(user): Bad file descriptor
+
+   I can understand the cause of the message (no associated tty), but I
+   can't think of an easy solution.  If I use 'gets' or 'expect_user,'
+   the user's input is always echoed.  I tried a few variations on the
+   stty command, but didn't have any luck.
+
+   Any suggestions?
+
+Yes, read Exploring Expect, Chapter 17 (Background Processing).  In
+the section "Expect as a Daemon", there's a very thorough discussion
+of this problem and how to solve it.
+
+ 
+In short, there's no tty when you run a process from inetd.  Echoing
+is controlled by the telnet protocol, so you must send and expect
+telnet protocol packets to solve the problem.  Even knowing this, the
+actual implementation is very non-obvious which is why the book goes
+into it in such detail.  
+
+Don
+
+======================================================================
+
+**** Compilation or porting questions **** 
+
+
+#23. Why can't I compile Expect with Tcl 8.0?
+
+Sounds like you have an old version of Expect.  Get a a new version of Expect.
+
+Don
+
+======================================================================
+
+#24. Does Expect 5.26 work with Tcl/Tk 8.0.3?
+
+To: aspi@cisco.com
+Subject: Re: Expect 5.26 and TCL 8.0
+Aspi Siganporia writes:
+>
+>Hi Don,
+>
+>We are looking at upgrading Expect. Our last version was Expect5.22
+>
+>I see that Expect5.26 supports TCL 8.0.
+>
+>The question is, 
+>
+>Will it work with TCL8.0.3?
+>
+>Thanks
+>Aspi
+
+It might.  8.0.3 broke a couple of the more esoteric configurations.
+If you find that you can't compile using 5.26, get 5.27.
+
+Don
+
+======================================================================
+
+#25. Why can't I compile Expect with Tcl/Tk 8.1aX?
+
+Historically, I've rarely found the time to port Expect to alphas
+and betas.  I recommend you stick with 8.0 unless you're willing to do
+a little work.
+
+Don
+
+======================================================================
+
+#26. Why can't I compile Expect with Tcl/Tk 8.0b1?
+
+I don't see the point in supporting an old beta.  Upgrade to the
+production release of Tcl/Tk 8.0.
+
+Don
+
+======================================================================
+
+#27. Why does Expect need to be setuid root on Cray?
+
+From: libes (Don Libes)
+To: u70217@f.nersc.gov (Lori Wong)
+Subject: setuid in Expect
+Date: Thu, 24 Oct 91 16:15:20 EDT
+
+>     I have been running Expect now under UNICOS 6.1 and CSOS 1.0 (Cray
+>Computer Corporation's OS).  The two machines that I am running Expect
+>on have stringent security features, one of which is to limit setuid
+>privileges to specific individuals.  I was wondering if you would be
+>kind enough to explain the purpose of the setuid that is needed by Expect
+>and whether it could be compiled to run without having to have setuid
+>privilege?  I know it has to do with spawning and communicating with
+>the various spawned tasks, but don't know enough of the details to be
+>able to explain why Expect specifically needs setuid and whether or not
+>it could cause a security problem (could someone use it to enter into
+>the system and wreak havoc, for example?).  Right now, I've limited
+>the access of Expect to my group, but need to know what the security
+>implications are if I open it to all users.  I'd appreciate any light
+>you can shed on this subject...
+
+Root-access is needed to open a pty under Unicos.  Thus, all programs
+accessing ptys must be setuid root.  If you do an "ls -l" of programs
+like "script", "xterm", etc, you'll see this.
+
+I have no idea why this is.  The requirement was probably for security
+reasons to begin with, but it has the ironic effect of making more
+programs require setuid and therefore greater possibility of errant
+setuid programs.
+
+In fact, there is one known Unicos bug relating to the way uids are
+switched at exec time which requires further special coding.  If you
+search for "Cray" in the Expect source you will see significant chunks
+of code to get around the problem.
+
+I don't know if this reassures you any.  All I can tell you is that a
+number of Cray experts have looked into the situation and are happy
+with the current implementation of Expect.
+
+Don
+
+======================================================================
+
+#28. Does Expect run on VMS?
+
+From: libes (Don Libes)
+To: Cameron Laird <claird@Starbase.NeoSoft.COM>
+Subject: VMS question.
+
+Cameron Laird writes:
+>Do you know of anyone working with Expect and VMS?
+>I'd like not to re-invent wheels, but, if I'm to be
+>the first one, I want others to benefit.
+
+No, I'm not aware of anyone doing it.  Since VMS claims POSIX
+conformance, it shouldn't be that hard - Expect uses the POSIX calls
+if it can.  Probably the hardest part will just be modifying the Makefile
+and the configure script!
+
+However, that there might be a simpler solution.  The neat thing
+about Expect is that you can control other computers easily.  Run
+Expect on your UNIX box and have it log in to the VMS box and do its
+thing.  (You can bypass the login garbage by using an inet daemon.)
+We've done exactly this to a number of weird pieces of hardware we
+have around the lab (robots, Lisp machines, embedded controllers, and,
+of course, a VAX running VMS).  It saves time porting!
+
+Don
+
+======================================================================
+
+#29. Is it possible to use Expect and TclX together?
+
+Is it possible to use Expect and TclX together?
+From: bfriesen@iphase.com (Bob Friesenhahn)
+Date: 20 Jul 1994 04:09:43 GMT
+Organization: Interphase Corporation, Dallas TX - USA
+
+Jeffery A. Echtenkamp (echtenka@michigan.nb.rockwell.com) wrote:
+: Do Expect and tclX work together? If so, must anything special be done to 
+: get them to work together?
+
+This answer courtesy of Bob Friesenhahn, Interphase (bfriesen@iphase.com):
+
+They work fine together.  However, you should prepend "exp_" to your Expect
+command names.  This will ensure that there are no conflicts between Expect
+commands and tclX commands of the same name (like wait).
+
+Just pick up the "make-a-wish" package, follow the instructions, and you will
+be all set.  I have built a wish based on tcl, tk, Expect, tclX, and dp using
+this technique with no observed problems.
+
+Bob
+
+[If you need additional information, please read Chapter 22
+("Expect as Just Another Tcl Extension") of Exploring Expect.  Its
+sole focus is how to make Expect work with other extensions. - Don]
+======================================================================
+
+#30. Is it possible to use Expect and <lots of random extensions> together?
+
+From: libes (Don Libes)
+To: Frank Winkler <winkler@eas.iis.fhg.de>
+Subject: Q Expect + TkSteal
+
+Frank Winkler writes:
+>Hi don,
+>
+>a short question considering installation of Expectk.
+>
+>Is it possible to build an Expectk-binary, which uses 
+>the features of BLT, TkSteal and Expect ?
+
+I've never done it, but I know it must be possible because the tgdb
+package in the Tcl archive uses all of those extensions with Expect.
+
+Expect is a "well-behaved extension" in the sense that it requires no
+changes to the Tcl core.  So Expect should work with any other Tcl
+extensions.  You just need to add the usual Exp_Init call to main() or
+the other _Init calls to Expect's main.
+
+>If yes, which of them should be build first, second ... ?
+
+Order doesn't matter.
+
+I've done this kind of thing by hand.  It's pretty simple.  But people
+tell me the make-a-wish package in the Tcl archive automates the
+creation of multi-extension Tcl applications.
+
+[Also see the answer to the previous FAQ answer.]
+
+Don
+
+======================================================================
+
+#31. Why does configure complain about "cross-compiling"?
+
+From: libes (Don Libes)
+To: morton@hendrix.jci.tju.edu (Dan Morton)
+Subject: Re: Sorry to bother you, but...
+
+Dan Morton writes:
+>Don,
+>
+>I've posted an inquiry to comp.lang.tcl about my configure problems with
+>expect, but I've not yet gotten a reply.  Perhaps you can nudge me in the
+>right direction?
+>
+>I'm running HP-UX 9.0 on a 735, and I've snagged the latest versions of Tcl
+>and expect from NIST (7.4 and 5.18 respectively).  My gcc is v2.6.  Tcl
+>configured and built out of the box, but I can't get expect to configure
+>properly.  No matter what I do, it thinks it wants to cross-compile.  I
+>think it's failing that little snippet of eval code.  It gets further if I
+>specify --host=HP, but still complains about cross compiling.  Here's the
+>result without options:
+>
+>{hendrix:~/expect-5.18:8} ./configure
+>checking for gcc... gcc
+>checking whether we are using GNU C... yes
+>checking whether gcc accepts -g... no
+>checking how to run the C preprocessor... gcc -E
+>checking whether cross-compiling... yes
+>checking whether cross-compiling... (cached) configure: error: You need to
+>specify --target to cross compile,
+>        or the native compiler is broken
+
+I guess the error message has to be clearer.  The message:
+
+	"or the native compiler is broken"
+
+means that configure tried to compile a simple program and it failed.
+Here's the program it tries to compile:
+
+	main() {
+		return(0);
+	}
+
+The configure output that you showed me says that it found gcc.
+Perhaps it was misinstalled or is just a placeholder and doesn't
+actually do anything?  Try compiling a tiny C program yourself from
+the command line.
+
+Don
+
+======================================================================
+
+#32. Why are make/configure looping endlessly?
+
+To: Xiaorong Qu <aqu@cisco.com>
+Subject: Make message for Expect
+--text follows this line--
+Xiaorong Qu writes:
+>Don, 
+>
+>The following is the output of make, you can find 
+>that the process repeated three times.
+
+I bet what's going on is that your system clock is set to some
+ridiculous time such as last year.  "Make" is sensitive to your clock.
+Please fix your clock.  Then check that all the files are "older"
+than the current time.  (If not, "touch" them all.)
+
+Don
+
+======================================================================
+
+#33. Why does compile fail with: Don't know how to make pty_.c?
+
+From: libes (Don Libes)
+To: wren@io.nosc.mil
+Subject: Compile fails with: Don't know how to make pty_.c
+
+>   I'm trying to compile Expect on hpux 9.01, 
+>   downloaded from ftp.cme.nist.gov expect.tar
+
+>   after running config
+>   the make fails with  "Don't know how to make pty_.c. (compile fails)
+>   I see three versions pty_sgttyb.c, pty_termios.c and pty_unicos.c in
+>   the load, but the configure picked none of them.
+>   I tried forcing to pty_termios.c but that failed with other compile errors.
+
+I've seen this happen because gcc was partially installed.  configure
+finds the gcc stub and uses gcc for all the tests.  But because the
+compiler doesn't work, every test fails so configure doesn't select
+any of the choices.
+
+So either finish installing gcc or delete the stub.
+
+(And if it's not that, then something similar is wrong with whatever
+compiler you've got.  Look closely at the output from configure, it
+will tell you what compiler it is trying to use.)
+
+By the way, Expect compiles fine on my HP (A.09.05 E 9000/735).
+
+Don
+
+======================================================================
+
+#34. Does Expect run on MSDOS, Win95, WinNT, MacOS, etc...?
+
+Gordon Chaffee has ported Expect to NT.  I would like to unify the
+UNIX and NT code but I probably won't have the time to do this
+personally.  Volunteers are welcome.
+
+I have no plans to do other ports.  Feel free to volunteer.
+
+Don
+
+======================================================================
+
+#35. Why does Expect dump core?  Why can I run Expect as root but not as myself?
+
+From: Wayne Tcheng <wmt@visi.net>
+Subject: Expect on Solaris
+Date: Wed, 2 Apr 97 21:34:50 EST
+
+I've compiled Expect 5.21 with Tcl 7.6 and Tk 4.2.  Whenever I run Expect
+as a non-root user, it core dumps.  When I am root, I can run it
+successfully.  However, if I "su - wmt" to my own id, I can also run it
+without a problem.  I've tried making the expect binary suid root, but
+that does not help either.  I'm on Solaris 2.5.  Any ideas?
+
+Sounds like something on your system is misconfigured.  Everytime
+I've had reports like this (works as root, not as user), it's turned
+out to be /tmp was unwriteable or something equally improbable.
+
+The easiest way to find out is to use the debugger and tell me where
+Expect is dumping core.  (If you don't understand this statement, ask
+a local C or C++ programmer.)
+
+As an aside, you should be using the most recent version of Expect
+(currently 5.22.1).  But I don't know of any problems in 5.21 that
+caused core dumps, so it's certainly worth trying the debugger
+approach before retrieving the latest version.  But if you do find a
+bug in Expect, before reporting it, please verify that it still exists
+in the current version.
+
+Don
+
+======================================================================
+
+**** Other... **** 
+
+
+#36. Is it possible to prevent Expect from printing out its interactions?
+
+From: libes (Don Libes)
+To: Sunanda Iyengar <sunanda@simvax.labmed.umn.edu>
+Subject: Disabling display from Expect
+
+Sunanda Iyengar writes:
+>Is it possible to have Expect interact with a process and not print-out
+>the results of interaction? In my application, I need it to go into a 
+>silent mode, communicate with a process without reporting to the user, and
+>then come back to normal mode and  put the process into interactive mode.
+
+Use the following command:
+
+	log_user 0
+
+To restore output:
+
+	log_user 1
+
+See the Expect man page for more details or page 175 of Exploring
+Expect for details and examples.
+
+Don
+
+======================================================================
+
+#37. Why does it send back the same string twice?
+
+From: Don Libes
+To: yusufg@himalaya.cc.gatech.edu (Yusuf Goolamabbas)
+Subject: Duplicate pattern matches in Expectk
+--text follows this line--
+   Hi, I am trying to do a very simple thing in expectk
+
+   spawn cat
+   expect_background -re ".+" {
+	   send $expect_out(0,string)
+   }
+   exp_send "Hello World\n"
+
+   Now the display in the text widget looks like this
+   Hello World\r
+   Hello World\r
+
+   whereas I was expecting only one line 
+   Hello World\r
+
+   Thanks in advance, Yusuf
+   -- 
+   Yusuf Goolamabbas                               yusufg@cc.gatech.edu
+   Graphics, Visualization, & Usability Center     (O) 404.894.8791
+   College of Computing Georgia Tech          
+   http://www.cc.gatech.edu/grads/g/Yusuf.Goolamabbas/home.html
+
+This is correct behavior.  The first "Hello World" is echoed by the
+terminal driver.  The second is echoed by cat.  This behavior has
+nothing to do with Expectk (or Expect for that matter).  You can see
+this same thing if you type to cat interactively.
+
+% cat
+Hello World
+Hello World
+
+In the example above, I typed "cat" at the shell prompt and pressed
+return.  Then I entered "Hello World" and pressed return.  Looking at
+the output I *see* "Hello World" twice even though I only entered it
+once.
+
+You can account for this behavior in your patterns.  Alternatively,
+just turn off the echo.  In your particular case though, it's doing
+the right thing, showing you the result of an interactive cat just as
+if you had typed it yourself.
+
+In practice, this kind of problem doesn't arise - because programs
+like cat aren't spawned (except in very special situations).  I assume
+that cat was just something you chose to experiment with.
+
+Don
+
+======================================================================
+
+#38. Why can't I send the line "user@hostname\r"?
+
+From: libes (Don Libes)
+To: bt@nadine.hpl.hp.com
+Subject: Re: [Q] Expect, ftp and '@'
+
+>   I am attempting to use Expect to perform anonymous ftp gets without
+>my having to type all the stuff --- I mean, waaaiiiting for the
+>prompt, entering a-n-o-n-y-m-o-u-s with my fat fingers, and the rest.
+>
+>   But I have a probleme: as I set the password to be my e-mail address:
+>   set password "bt@hplb.hpl.hp.com"
+
+> the ftp servers seem not to receive neither my login name nor the
+>at-sign. Some of them do not care, some others say "ok, but don't do
+>that again", and the last ones throw me off.
+
+The short answer is to upgrade to Expect 5.20 or later.  If you
+don't feel like doing this, here's the explanation for older versions
+of Expect:
+
+spawn initializes the terminal by using your current parameters and
+then forces them to be "sane".  Unfortunately, on your system, "sane"
+says to interpret the "@" as the line-kill character.
+
+The most sensible thing to do is change "sane" in your Makefile to
+something that makes sense.  (Since you work at HP, you might also
+suggest that they modernize stty!)
+
+Here's an example of a replacement line for the Makefile:
+
+	STTY = -DDFLT_STTY=\""sane kill ^U"\"
+
+Other alternatives are: quote the @, or use the -nottyinit flag, or
+set the stty_init variable.
+
+Don
+
+======================================================================
+
+#39. How do I hide the output of the send command?
+
+From: tim@mks.com (Timothy D. Prime)
+Subject: Re: hide the text of expect's send command?
+Date: 29 Mar 1996 15:41:02 GMT
+
+In article <khughesDoy1yH.5zo@netcom.com>, Kirby Hughes <khughes@netcom.com> wrote:
+> I don't want to see (on the screen) the text sent by a "send" command.  Is
+> there a way to hide it?  "log_user 0" works for text coming back to me, but
+> doesn't (seem to) work for sending...
+> 
+> #!/usr/local/bin/expect --
+> log_user 0
+> spawn telnet proxy
+> expect Command
+> send "c [lrange $argv 0 1]\n"
+> log_user 1
+> interact
+
+This answer courtesy of Timothy Prime, Mortice Kern Systems (tim@mks.com):
+
+The output you are seeing wasn't printed by the send command.
+(I.e., the log_user command is working just fine.)  The output you see
+is from the interact command.  The interact command found program
+output and thus wrote it to the terminal so that you could see it.
+That's what the interact command is supposed to do!
+
+Although the expanation might take a little thought, the solution is
+easy.  Simply put an expect command in before the command "log_user 1".
+Match against the last characters that you wish to suppress.
+======================================================================
+
+#40. Why don't I see pauses between characters sent with send -s?
+
+From: jcarney@mtl.mit.edu (John C. Carney)
+Newsgroups: comp.lang.tcl
+Date: 12 Aug 1996 17:32:54 GMT
+Organization: Massachvsetts Institvte of Technology
+
+I am trying to use expect to spawn the kermit program. It then
+is supposed to dial the modem and procede.
+
+When I run kermit from the shell, it has no problem dialing the
+modem. However, when kermit is spawned by expect, it will not dial.
+
+I thought perhaps the input stream was too fast for kermit and tried
+send -s. I do see a long delay before the dial message is sent, but it
+still won't dial. Also, I would expect (no pun) that I would see the
+characters sent as follows:
+
+a<pause>t<pause>d<pause>t<pause> ...
+
+But instead I see:
+
+<long_pause>atdt ...
+
+What am I doing wrong?
+
+Thanks for you help.
+
+John Carney
+jcarney@garcon.mit.edu
+
+The send command doesn't wait for responses.  The echoing you see
+is from an expect command running after send has run.  At that point,
+all the characters have been echoed already - thus, you see the long
+pause (while send is running) and the rush of characters (while expect
+is running).
+
+Before you ask, no, it doesn't make sense to have send pause
+briefly and wait for echoing.  Sometimes there is no echoing.  And
+sometimes things aren't echoed in an intuitive way.  So how could send
+possibly know what to wait for and how long?
+
+The solution is to use the expect background command:
+   expect_background -re .+
+
+Just put this after your spawn command and before you start sending
+things.
+
+Don
+
+======================================================================
+
+#41. Why does "talk" fail with "Who are you?  You have no entry utmp" or
+	"You don't exist.  Go away"?
+
+From: libes (Don Libes)
+To: Will Smith (AC) <william@ritchie.acomp.usf.edu>
+Subject: Expect
+
+Will Smith (AC) writes:
+>Hi there.  I was wondering if you had any ideas to why i am getting
+>this problem running an Expect script which tries to spawn a talk
+>process to myself on another machine. Would it have anything to do
+>with the fact that the executables are NOT installed in /usr/local/bin
+>or because it wasnt installed by ROOT or what. This is what my Expect
+>script looks like.
+>
+>#! /home/ritchie/ops/william/test/expect -f
+>
+>spawn talk william@curiac.acomp
+>set timeout 200
+>expect {*established*}
+>set send_human {.1 .3 1 .05 2}
+>send -h "This is only a test.. I swear \ Please don't bust me with expect \n  >expect "{*\r*}"
+>expect "{*\r*}"
+>exec sleep 5
+>send -h "Ok, well see ya tomorrow you idiot \n"
+>exec sleep 3
+>
+>The error i get is that it returns this when i run the script.
+>
+>  Who are you? You have no entry in /etc/utmp! Aborting...
+
+On most systems, Expect does not automatically make a utmp entry.  (A
+utmp entry normally indicates login information which seems kind of
+pointless for Expect scripts.)  This allows Expect to run non-setuid.
+
+Normally, this lack of utmp entries doesn't mean much.  However, a few
+programs actually refuse to run without a utmp entry.  Fortunately,
+there are workarounds:
+
+Program-dependent solutions:
+
+"talk" is the only program I'm aware of that falls into this category.
+One solution is to get ytalk.  ytalk doesn't have this problem plus it
+fixes many other bugs in talk, such as being able to communicate with
+both old and new talk.
+
+Program-independent solutions:
+
+Use a program specifically intended to create utmp entries.  Such
+programs are easy to write or get if you don't have them already.  For
+instance, sessreg is one which comes with the xdm distribution.  And
+Solaris uses utmp_update.  I like this approach because it isolates
+the setuid code in a small single system utility rather than in every
+program on the system that needs this ability.
+
+Tod Olson <tao@stone.lib.uchicago.edu> sent in the following
+example of how to use sessreg.  He says: sessreg works nicely.  Here
+is a fragment showing how we invoke sessreg on our Linux machines.
+Note: sessreg must be able to write utmp.  We decided to make utmp
+work writable, since it's a kinda bogus creature anyhow, rather than
+make sessreg suid root (or whatever).
+
+...
+spawn $shell
+expect $prompt
+send "sessreg -w /var/run/utmp -a $user\r"
+expect $prompt
+======================================================================
+
+#42. Why does . match a newline?
+
+From: libes (Don Libes)
+To: xipr@alv.teli.se (Ivan Prochazka)
+Subject: Why does . match a newline?
+Ivan Prochazka writes:
+>
+>Hello Don.
+>
+>In my opinion(and emacs) the regexp-symbol "." stands for all
+>characters except newline(\n). 
+>This is not the case in Expect 5.2.
+
+Yes, there are some packages that follow this convention, but I don't
+think it is appropriate for Expect.  Unlike emacs, most Expect
+patterns don't look for full lines - more often they look for prompts
+which *don't* end with newlines.
+
+I find that I actually write the [^\n] pattern very rarely.  And
+if I write it frequently in a script, then the expect itself probably
+ought to be in a subroutine.
+
+In fact, the more common line-terminating sequence in Expect is \r\n,
+so that might make a more likely argument.  In any case, Expect
+defines . the way POSIX does.  So I feel pretty good about the
+definition of . being what it is.
+
+Don
+
+======================================================================
+
+#43. Why doesn't Expect kill telnet (or other programs) sometimes?
+
+From: libes (Don Libes)
+To: Karl.Sierka@Labyrinth.COM
+Subject: Re: need help running telnet Expect script from cron on sunos 4.1.3
+
+karl.sierka@labyrinth.com writes:
+>       The only problem I am still having with the script I wrote is that
+>    the telnet does not seem to die on it's own, unless I turn on debugging.
+
+Actually, Expect doesn't explicitly kill processes at all.  Generally,
+processes kill themselves after reading EOF on input.  So it just seems
+like Expect kills all of its children.
+
+>    I was forced to save the pid of the spawned telnet, and kill it with an
+>    'exec kill $pid' in a proc that is hopefully called before the script
+>    exits. This seems to work fine, but it makes me nervous since omnet
+>    charges for connect time, and leaving a hung telnet lying around could
+>    get expensive. I warned the rest of the staff so that they will also be
+>    on the lookout for any possible hung telnets to omnet.
+
+The problem is that telnet is not recognizing EOF.  (This is quite
+understandable since real users can't actually generate one from the
+telnet user interface.)  The solution is to either 1) explicitly drive
+telnet to kill itself (i.e., a graceful logout) followed by "expect
+eof" or 2) "exec kill" as you are doing.
+
+This is described further in Exploring Expect beginning on page 103.
+
+Don
+
+======================================================================
+
+#44. How come I get "ioctl(set): Inappropriate ..., bye recursed"?
+
+From: libes (Don Libes)
+To: james@Solbourne.COM (James B. Davis)
+Subject: How come I get "ioctl(set): Inappropriate ..., bye recursed" ...
+Date: Tue, 10 Dec 91 10:47:21 MST
+
+>Every time I ^C out of a Expect script run I get:
+>
+>ioctl(set): Inappropriate ioctl for device
+>bye recursed
+>
+>james@solbourne.com
+
+This answer courtesy of Michael Grant (mgrant@xdr.ncsl.nist.gov):
+
+You (or whoever installed gcc) forgot to run the fixincludes shell
+script while installing gcc.  Recompiled gcc with itself, then run the
+fixincludes script - and the messages will go away.  
+
+Michael Grant
+======================================================================
+
+#45. How come there's no interact function in the Expect library?
+
+From: libes (Don Libes)
+To: Djamal SIMOHAND <djamal@lyohp5.in2p3.fr>
+Subject: Re: exp_expectl
+Date: Wed, 3 Jan 96 12:17:01 EST
+
+Djamal SIMOHAND writes:
+>I have already used the Expect program to write a script to connect by
+>telnet on my machine.  Now I made a graphic interface in C and I need
+>the expect in C in order to have a coherent executable.
+>
+>I've already written most of the C already, but the connection is
+>closed just after my program is finished.  Then I have no opportunity
+>to work on my machine.  It seems I need of the equivalent of
+>"interact" in C.  Is there such a function in the C library?
+>
+>Thanks for your help,
+>                                                      Djamal
+
+No, there is no interact-like function in the C library.  The reason
+is three-fold:
+
+1) It is simple enough to write your own.  It's just a loop after
+all:
+
+	while 1 {
+		select/poll()
+		read()
+		write()
+	}
+
+2) There's no way I could possibly provide all the options you might
+need.  In Expect, it's not a problem because the environment is very
+controlled, but in C, it's impossible to control what you might want
+to do.  For example, you mention that you're embedding your code in a
+graphics application.  Graphics packages typically have their own
+event manager, so you wouldn't want a monolithic interact function.
+
+3) The library is intended for embedding in other applications, where
+it rarely makes sense to give the user direct control of a spawned
+process.  That kind of thing makes so much more sense to handle with
+an Expect script than a C program.  The C library was not intended as
+a replacement for Expect.  Expect is really the tool of choice for
+interaction problems, not C.  
+
+In summary, there's very little payoff for the library to supply an
+interact function.  A simple one would only satisfy people who should
+be using Expect anyway - and it's impossible to create one that would
+do everything that everyone wants.  It's easier just to let people
+create their own.  
+
+Don
+
+======================================================================
+
+#46. Can't you make tkterm understand any terminal type?
+
+From: swig@teleport.com (Scott Swigart)
+Newsgroups: comp.lang.tcl
+Date: Tue, 13 Aug 1996 18:50:22 GMT
+
+I looked at tkterm, and it is promising, but it's missing some
+critical features.  For one, I need something that understands various
+terminal types, and can get it's escape sequences from something like
+termcap or terminfo, instead of having them hard coded.  Also, I
+question the ability of an Expect script to keep up if it had 50 or so
+types of escape sequences to parse.  Actual C code would probably have
+to be created to do the parsing, and if you're going to go that far,
+why not just create a terminal widget so you could do something like:
+
+terminal .myterm -type vt220
+
+which is more along the lines of what I was originally looking for.
+
+Yes, that would be divine.  But terminal emulators are horribly
+complex and very little of that complexity can be discerned from the
+termcap file.  For example, compare xterm's human-readable docs (63k
+man page + 18k appendix) to its termcap entry (654 bytes).  Now
+consider the other hundreds of terminals in termcap each with their
+own weird extensions.  I can't imagine what kind of ".myterm configure"
+interface you'd present to the user.  What would you allow the user to
+change?  The nice thing about tkterm is that everything is accessible
+to the user, but I can't imagine doing that through a widget
+interface.
+
+Unfortunately, like everyone else, I don't have the time...
+
+Me neither.  Call me lazy.
+
+As an aside, I wonder why you want the ability for a terminal emulator
+to read termcap/info.  Turns out that it's useless (unless what you
+are doing is testing termcap itself).  Because if your app is using
+termcap in the first place, then it doesn't care what terminal type
+you choose - so why not choose the one that tkterm does?  (And if your
+app isn't using termcap, then you have the converse problem.)
+
+Actually, I and several other people did a fair amount of
+experimentation (i.e., wrote a lot of C code) to do a universal
+terminal emulator - turns out that it's not possible in a general
+sense.  To support any terminal type, you are going to be forced to go
+beyond what termcap/info offers.  I.e., you'll have to handedit the
+definition or add new ones and/or accept certain limitations.
+
+After many revisions, Software - Practice & Experience is
+publishing a paper on tkterm.  The paper includes more insights on the
+difficulties I've mentioned here.  You can get a draft of the paper
+at: http://www.cme.nist.gov/msid/pubs/libes96d.ps
+
+Don
+
+======================================================================
+
+#47. Trapping SIGCHLD causes looping sometimes
+
+From: Bryan Kramer <bryan.kramer@hydro.on.ca>
+Sender: kramer@hydro.on.ca
+Cc: libes@NIST.GOV
+Subject: Problem with trap in expect on Solaris
+Date: Tue, 17 Sep 1996 11:09:50 -0400
+
+I'm getting an infinite loop running the attached script foo.tcl on my
+solaris machine (Ultra Sparc, SunOS 5.5).  This does not happen when I
+run the version of the same expect that I compiled on a Sparc 20 with
+SunOS 4.1.3UI (even though I am running it on the Solaris 5.5. ultra).
+
+trap {
+    if {[catch {
+	puts stderr "CALL TRAP [trap -number] [trap -name]"
+	wait -i 1
+    } output]} {
+	puts stderr "TRAP $output"
+	return
+    }
+    puts "TRAP DONE"
+} SIGCHLD
+
+
+if {[catch {exec trivial} msg]} {
+    puts stderr "Error $msg"
+}
+
+
+Please let me know if there is an immediate work around.
+
+Thanks
+-- 
+|Bryan M. Kramer, Ph.D.	      416-592-8865, fax 416-592-8802|
+|Ontario Hydro, 700 University Avenue, H12-C1               |
+|Toronto, Ontario, Canada      M5G 1X6			    |
+<A href="http://www.cs.toronto.edu/~kramer">B. Kramer Home Page</A>
+
+I haven't analyzed your script in depth, but this sounds like a
+problem I've seen before - it's due to an implementation deficiency in
+Tcl.  The problem is that when an exec'd process finishes, it raises
+SIGCHLD.  Expect's "wait" sees that it is Tcl's process.
+Unfortunately, there is no way to wait for one of Tcl's processes and
+tell Tcl that you've done so, nor is there any way to have Tcl wait
+itself.  So Expect's wait just returns.  On some systems alas, this
+just causes SIGCHLD to be reraised.
+
+The solution is multipart:
+   1  Tell John he needs to fix this problem.  (I've told him this but he
+didn't agree with me that it's a problem.)  Tcl needs to provide a new
+interface - either to clean up its process or to allow extensions to
+do the wait and pass the status back to Tcl so that it can have it
+later when needed.
+   2  Don't call exec while you are trapping SIGCHLD.  Since this is a
+severe limitation, I recommend you avoid the problem by using
+"expect_before eof" to effectively trap the same event.  If you're not
+already using expect, well, call it every so often anyway.
+
+Don
+
+======================================================================
+
+#48. Why do I get "invalid spawn id"?
+
+Subject: Why do I get "invalid spawn id"
+In article <53ggqe$hag@hole.sdsu.edu> khumbert@mail.sdsu.edu writes:
+      I am trying to write a general looping procedure that will handle
+   many cases that have similar prompt sequences.  The function and one 
+   call are below.  
+      The problem is that when the "looping" function is called I get an
+   "invalid spawn id(5) while executing "expect $exp1 {send -s "$send1}   
+   timeout  {continue}".  I only have one spawn in the entire program
+   (a telnet session).  I've tried setting a spawn_id variable for the
+   telnet spawn and then setting spawn_id to that variable in "looping",
+   but no dice, same error.
+
+      Any ideas?  Thanks in advance for any suggestions!!!
+
+      Kelly Humbert
+
+   proc looping {exp1 exp2 send1 send2} {
+      global max_tries  ### 5 ###
+      set tries 0
+      set connected 0
+      set timeout 60
+
+      while {$tries <= $max_tries && $connected == 0}  {
+	 incr tries
+	 expect {
+	    $exp1   {send -s $send1}
+	    timeout {continue}
+	    }
+	 expect {
+	    ">? "   {send -s "\n"}
+	    timeout {continue}
+	    }
+	 expect {
+	    $exp2   {incr connected;send -s $send2}
+	    timeout {continue}
+	    } 
+	}
+      return $tries
+   };
+
+What's going on is that the spawned process has closed the
+connection.  When Expect detects this, it matches the "eof" pattern,
+and the spawn id is marked "invalid".  However, you aren't testing for
+"eof", so the next command in your script finds the invalid spawn id,
+hence the complaint.
+
+If you want to find out where the eof is occurring, enable Expect's
+diagnostic mode - Expect will get very chatty about what it is doing
+internally.
+
+You can handle eof in all your expect statements by add a single
+expect_before/after command to your script.
+
+Don
+
+======================================================================
+
+#49. Could you put a version number in the filename of the Expect archive?
+
+From: "Nelson H. F. Beebe" <beebe@math.utah.edu>
+Date: Mon, 23 Dec 1996 08:46:57 -0700 (MST)
+
+It would be helpful for the expect distribution to contain its version
+number, e.g. expect-5.21.6.tar.gz; I had an earlier version called
+5.21, and it took some diffing to verify that the expect.tar.gz I
+fetched from ftp://ftp.cme.nist.gov/pub/subject/expect/expect.tar.gz
+really was newer.
+
+I don't name the file with a version number because I make new
+distributions so frequently.  I realize that many other distributions
+include version numbers in them, but constantly changing filenames
+really annoys the heck out of people.  I've been packaging Expect this
+way for five years and I've only gotten this question twice before.
+In contrast, I'm responsible for a number of other files on our ftp
+server that do occasionally change names, and I get no end of
+questions from people about where such and such a file has gone or why
+their ftp request fails.
+
+So that people don't have to download the distribution only to find
+it hasn't changed, there is a HISTORY file in the distribution
+directory.  It's relatively short and has the latest version number at
+the top (with any changes listed immediately after).
+
+Don
+
+======================================================================
+
+#50. Why does Expect work as root, but say "out of ptys" when run as myself?
+
+Expect works fine as root, but when I run it as myself it says "out of
+ptys" (which I know isn't true).  Any ideas?
+
+Sounds like a misconfiguration problem on your system.  For
+example, once I saw this on a Digital system where the system
+administrator had decided to remove setuid from all programs ("I heard
+that setuid is a security risk, right?").  On that particular system,
+Expect uses a system library function that internally calls an
+external program chgpt which exists solely for the purpose of managing
+ptys.  Needless to say, it must be setuid.  Unfortunately, the library
+function doesn't do enough error checking, and there's no way for Expect
+to know that, so there's nothing I can do to give a better diagnostic
+explaining how your system is misconfigured.
+
+Don
+
+======================================================================
+
+#51. Why does spawn fail with "sync byte ...."?
+
+When I spawned a process using Expect, I got the following
+message:
+
+parent: sync byte read: bad file number
+child: sync byte write: bad file number
+
+This is one of these "should not happen" errors.  For example, the
+following question in this FAQ mentions that it could be the fault of
+the C library.  Another possibility is that you've run out of some
+system resource (file descriptors).  The most likely reason is that
+you're calling spawn in a loop and have neglected to call close and
+wait.
+
+Don
+
+======================================================================
+
+#52. Why does Expect fail on RedHat 5.0?
+
+Lots of people have reported the following error from Expect on
+RedHat 5.0:
+
+failed to get controlling terminal using TIOCSCTTY
+parent sync byte write: broken pipe
+
+Martin Bly <ussc@star.rl.ac.uk> reports that:
+
+The fault is/was in the GNU libc (aka glibc) provided by Red Hat
+Software.  Our sysadmin updated the version of the C libraries we have
+installed and both problems have vanished - in the case of the expect
+test, without a rebuild.
+======================================================================
+
+#53. Why does Expect fail on RedHat 5.1?
+
+People have reported the following error from Expect on RedHat
+5.1:
+
+failed to get controlling terminal using TIOCSCTTY
+parent sync byte write: broken pipe
+
+If there are any people
+who have some debugging experience and can reproduce that error on
+RedHat 5.1, read on:
+
+First look in the man page (or perhaps diff the 5.1 and pre-5.1 man
+pages) governing TIOCSTTY and let me know what you find.
+Alternatively look at the source to xterm (or some other program that
+must allocate a pty) and see how it is allocating a pty.
+
+If anyone else is wondering if the problem has been fixed by the time
+you read this, just check the FAQ again.  I'll update it as soon as
+the problem has been successfully diagnosed.
+
+Don
+
+======================================================================
+
+#54. Is Expect Y2K compliant?
+
+The short answer is: Yes, if you're using a modern version of Tcl
+(7.6p2 or later).
+
+Longer answer: Tcl 7.5 and 7.6p0/1 had bugs that caused them to be
+noncompliant with regard to how POSIX defines 2-character years.  If
+your scripts use 2-character years, you should upgrade to a modern
+version of Tcl.  If your scripts use 4-character years, than you have
+nothing to worry about.
+
+Don
+
+======================================================================
+
+
+Names of companies and products, and links to commercial pages are
+provided in order to adequately specify procedures and equipment used.
+In no case does such identification imply recommendation or
+endorsement by the National Institute of Standards and Technology, nor
+does it imply that the products are necessarily the best available for
+the purpose.
+
+Last edited: Tue Sep 22 17:52:23 EDT 1998 by Don Libes

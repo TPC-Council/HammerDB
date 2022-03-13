@@ -1,0 +1,59 @@
+# Copyright: 2018-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+#MariaDB Client Libraries must be installed to compile mariatcl
+#MariaDB needs the MARIADB_CONFIG environment variable set to the location of the MariaDB mysql_config command
+#Note in MariaDB the config command is still mysql_config and not mariadb_config
+#The output of mysql_config shows where the MariaDB Include and Lib directories are
+#For HammerDB bool has been replaced in generic/mariatcl.c: to _Bool reconnect = 1;
+proc Init_mariatcl { libName libVersion } {
+    SetScriptAuthor    $libName "Steve Shaw" "smshaw@users.sourceforge.net"
+    SetLibHomepage     $libName "https://github.com/Jiang-Hua/mariatcl"
+    SetLibDependencies $libName "Tcl"
+    SetPlatforms       $libName "All"
+}
+
+proc Build_mariatcl { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+    if { [UseStage "Configure" $libName] } {
+        global env
+#Look for the MARIADB_CONFIG environment variable
+        if [ info exists env(MARIADB_CONFIG) ] { 
+#Run mysql_config and put the output in a dict called mariadb_config
+	dict set mariadb_config INCLUDEDIR [ exec $env(MARIADB_CONFIG)/mysql_config --variable=pkgincludedir ]
+	dict set mariadb_config LIBDIR [ exec $env(MARIADB_CONFIG)/mysql_config --variable=pkglibdir ]
+#Check that we have INCLUDEDIR and LIBDIR in the config and these are valid directories
+	if {!([ dict exists $mariadb_config INCLUDEDIR ] && [dict exists $mariadb_config LIBDIR ] && [ file isdirectory [dict get $mariadb_config INCLUDEDIR ]] && [ file isdirectory [dict get $mariadb_config LIBDIR ]])} {
+	ErrorAppend "mariatcl configure error: Cannot find include or lib directories from mysql_config" "FATAL"
+	return false
+	} else {
+#MariaDB Build environment has been found
+	;
+	}
+	} else {
+	ErrorAppend "mariatcl configure error: MARIADB_CONFIG environment variable is not set to location of MariaDB mysql_config command" "FATAL"
+	return false
+	}
+        cd $buildDir
+#Run configure with mysql include and lib options from captured environment
+        TeaConfig $libName $buildDir $instDir "" "--with-mysql-include=[dict get $mariadb_config INCLUDEDIR ]" "--with-mysql-lib=[dict get $mariadb_config LIBDIR ]"
+    }
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        LibFileCopy "$instDir"  "$devDir/[GetTclDir]"   "*"  true
+        LibFileCopy "$instDir"  "$distDir/[GetTclDir]"  "*"  true
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

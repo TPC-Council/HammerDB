@@ -1,0 +1,160 @@
+name: Windows
+on: [push]
+env:
+  ERROR_ON_FAILURES: 1
+jobs:
+  msvc:
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: powershell
+        working-directory: tk/win
+    # Using powershell means we need to explicitly stop on failure
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: tk
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: tcltk/tcl
+          ref: core-8-6-branch
+          path: tcl
+      - name: Init MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Make Install Location
+        working-directory: tcl
+        run: |
+          echo "TCLDIR=`pwd`" >> $GITHUB_ENV
+          cd ..
+          mkdir install
+          cd install
+          echo "INSTALLDIR=`pwd`" >> $GITHUB_ENV
+      - name: Build Tcl
+        run: |
+          &nmake -f makefile.vc release install
+          if ($lastexitcode -ne 0) {
+             throw "nmake exit code: $lastexitcode"
+          }
+        working-directory: tcl/win
+      - name: Build
+        run: |
+          &nmake -f makefile.vc all
+          if ($lastexitcode -ne 0) {
+             throw "nmake exit code: $lastexitcode"
+          }
+      - name: Build Test Harness
+        run: |
+          &nmake -f makefile.vc tktest
+          if ($lastexitcode -ne 0) {
+             throw "nmake exit code: $lastexitcode"
+          }
+      - name: Run Tests
+        run: |
+          nmake -f makefile.vc test-classic | tee out-classic.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+          nmake -f makefile.vc test-ttk | tee out-ttk.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+          grep -q "Failed	0" out-classic.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+          grep -q "Failed	0" out-ttk.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+        env:
+          CI_BUILD_WITH_MSVC: 1
+        shell: bash
+      - name: Build Help
+        run: |
+          &nmake -f makefile.vc htmlhelp
+          if ($lastexitcode -ne 0) {
+             throw "nmake exit code: $lastexitcode"
+          }
+      - name: Install
+        run: |
+          &nmake -f makefile.vc install
+          if ($lastexitcode -ne 0) {
+             throw "nmake exit code: $lastexitcode"
+          }
+  gcc:
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: msys2 {0}
+        working-directory: win
+    strategy:
+      matrix:
+        symbols:
+          - "no"
+          - "mem"
+          - "all"
+    steps:
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: git mingw-w64-x86_64-toolchain make
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: tcltk/tcl
+          ref: core-8-6-branch
+          path: tcl
+      - name: Prepare
+        run: |
+          touch tkStubInit.c
+          touch "${HOME}/forWinDialog-5.12.7"
+          mkdir "${HOME}/install_dir"
+          echo "INSTALL_DIR=${HOME}/install_dir" >> $GITHUB_ENV
+        working-directory: generic
+      - name: Configure and Build Tcl
+        run: |
+          ./configure ${CFGOPT} "--prefix=$INSTALL_DIR" || {
+            cat config.log
+            echo "::warning::Failure during Tcl Configure"
+            exit 1
+          }
+          make all install  || {
+            echo "::warning::Failure during Tcl Build"
+            exit 1
+          }
+          echo "TCL_CONFIG_PATH=`pwd`" >> $GITHUB_ENV
+        env:
+          CFGOPT: --enable-64bit --enable-symbols=${{ matrix.symbols }}
+        working-directory: tcl/win
+      - name: Configure (symbols=${{ matrix.symbols }})
+        run: |
+          ./configure ${CFGOPT} "--prefix=$HOME/INSTALL_DIR" "--with-tcl=$TCL_CONFIG_PATH" || {
+            cat config.log
+            echo "::error::Failure during Configure"
+            exit 1
+          }
+        env:
+          CFGOPT: --enable-64bit --enable-symbols=${{ matrix.symbols }}
+      - name: Build
+        run: |
+          make all tktest || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Run Tests
+        run: |
+          make test-classic | tee out-classic.txt
+          make test-ttk | tee out-ttk.txt
+          grep -q "Failed	0" out-classic.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+          grep -q "Failed	0" out-ttk.txt || {
+            echo "::error::Failure during Test"
+            exit 1
+          }

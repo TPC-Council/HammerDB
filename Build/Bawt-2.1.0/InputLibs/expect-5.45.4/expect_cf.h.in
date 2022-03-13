@@ -1,0 +1,127 @@
+/*
+ * Check for headers
+ */
+#ifndef __EXPECT_CF_H__
+#define __EXPECT_CF_H__
+
+#undef NO_STDLIB_H
+#undef NO_UNION_WAIT
+#undef HAVE_STDARG_H
+#undef HAVE_VARARGS_H
+#undef HAVE_STROPTS_H
+#undef HAVE_SYSCONF_H
+#undef HAVE_SYS_FCNTL_H
+#undef HAVE_SYS_WAIT_H
+#undef HAVE_SYS_BSDTYPES_H
+#undef HAVE_SYS_SELECT_H
+#undef HAVE_SYS_TIME_H
+#undef HAVE_SYS_PTEM_H
+#undef HAVE_STRREDIR_H
+
+/* old-style Dynix ptys need this */
+#undef HAVE_STRPTY_H
+
+#undef HAVE_UNISTD_H
+#undef HAVE_SYSMACROS_H
+#undef HAVE_INTTYPES_H
+#undef HAVE_TIOCGWINSZ_IN_TERMIOS_H
+#undef HAVE_TCGETS_OR_TCGETA_IN_TERMIOS_H
+
+#undef pid_t
+#undef RETSIGTYPE
+
+/* ok to include both time.h and sys/time.h */
+#undef TIME_WITH_SYS_TIME
+
+/* if setpgrp takes 0 args */
+#undef SETPGRP_VOID
+
+/*
+ * This section is for compile macros needed by
+ * everything else.
+ */
+
+/*
+ * Check for functions
+ */
+#undef HAVE_MEMCPY
+#undef HAVE_SYSCONF
+#undef SIMPLE_EVENT
+#undef HAVE_STRFTIME
+#undef HAVE_MEMMOVE
+
+/* timezone() a la Pyramid */
+#undef HAVE_TIMEZONE
+
+#undef HAVE_SIGLONGJMP
+#undef HAVE_STRCHR
+
+#ifndef HAVE_STRCHR
+#define strchr(s,c) index(s,c)
+#endif /* HAVE_STRCHR */
+
+/*
+ * timezone
+ */
+#undef HAVE_SV_TIMEZONE
+
+/*
+ * wait status type
+ */
+#undef NO_UNION_WAIT
+
+#undef WNOHANG_REQUIRES_POSIX_SOURCE
+
+/*
+ * Signal stuff. Setup the return type
+ * and if signals need to be re-armed.
+ */
+/*#ifndef RETSIGTYPE*/
+/*#define RETSIGTYPE void*/
+/*#endif*/
+#undef REARM_SIG
+
+/*
+ * Generate correct type for select mask
+ */
+#ifndef SELECT_MASK_TYPE
+#define SELECT_MASK_TYPE fd_set
+#endif
+
+/*
+ * Check how stty works
+ */
+#undef STTY_READS_STDOUT
+
+/*
+ * Check for tty/pty functions and structures
+ */
+#undef POSIX
+#undef HAVE_TCSETATTR
+#undef HAVE_TERMIO
+#undef HAVE_TERMIOS
+#undef HAVE_SGTTYB
+#undef HAVE__GETPTY
+#undef HAVE_GETPTY
+#undef HAVE_OPENPTY
+#undef HAVE_PTC
+#undef HAVE_PTC_PTS
+#undef HAVE_PTYM
+#undef HAVE_PTYTRAP
+#undef HAVE_PTMX
+#undef HAVE_PTMX_BSD
+#undef HAVE_SCO_CLIST_PTYS
+
+/*
+ * Special hacks
+ */
+#undef CONVEX
+#undef SOLARIS
+
+#ifdef SOLARIS
+#define __EXTENSIONS__
+#endif /* SOLARIS */
+
+#undef WNOHANG_BACKUP_VALUE
+
+#endif	/* __EXPECT_CF_H__ */

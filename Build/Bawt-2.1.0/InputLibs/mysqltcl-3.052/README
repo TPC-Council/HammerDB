@@ -1,0 +1,68 @@
+Tcl/Tk 8.0 interface to MySQL
+============================= 
+
+This is a rewrite of a patched version of Hakan Soderlund's
+msqltcl-1.50. I removed all support for older versions of Tcl. If you
+are going to use older versions of Tcl, the patch (for msqltcl) found
+at http://www.tcx.se will do the job for you.
+
+The interface can be used as tcl package that is dynamically linked
+shared library.
+
+For copyright and licensing information, look in the README-msqltcl
+file. The same condition holds, but don't forget to mention me ;)
+
+Compilation
+===========
+The system has been compiled on
+- SunOS 5.5.1 sparc
+- SunOS 5.6 sparc
+- Linux 2.0.32 i586
+
+The settings for these systems are all in the Makefile. Take a look at
+the paths at the beginning, and adjust them for your system. The code
+is written in "close-to-ansi-c", so it should be straight forward to
+compile the static version. It could however be troublesome to compile
+the dynamic library, because of the anti-standard of shared
+libraries... :( Some experiments with the flags and paths might just
+do the trick!
+
+Set the SHARED variable to compile the shared library. The PLATFORM
+variable should be set to something similar to 
+`uname -prs | sed 's/ /-/g'` for your system. If there are no preset
+configuration for your system, it is time to do some testing ;)
+
+Please report any successful compilations under new configurations
+to me, so that I can rewrite the makefile.
+
+New features
+============
+The package is already full of nice features. I added the possibility
+to set user and password at connection time and support for all(?)
+MySQL types in mysqlcol. However, I would recommend using the "SHOW
+COLUMNS..." command for new code.  The port can (as always) be set
+using an environment variable (see MySQL documentation.)
+
+
+Use and abuse this software as much as you want as long as you follow
+the license agreement in the README-msqltcl file.
+
+Tobias Ritzau
+
+VERSION 2.0
+
+Version 2.0 supports all Tcl8.0 features, uni-code strings and is
+faster than old versions.
+Compilation and Installation is made by using 
+./configure scripts based on TEA
+It was internal redesigned to support unlimited connection number and
+is multi thread safe
+
+New mysqltcl Homepage 
+
+http://www.xdobry.de/mysqltcl
+
+Contact:
+Mail to both:
+Tobias Ritzau configure script support
+Artur Trzewik <mail@xdobry.de> code support

@@ -1,0 +1,335 @@
+# oraplexec.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oraplexec operations
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oraplexec {
+        namespace import ::tcltest::*
+
+        testConstraint testoraplexec [llength [info commands oraplexec]]
+
+	proc oraplexec_begin {} {
+		uplevel 1 {
+			global ora_constr
+			set pl_lda [oralogon $ora_constr]
+			set pl_stm [oraopen $pl_lda]
+
+			set pl_sql {
+				create or replace function oratcl___test1 (
+					arg_x number,
+					arg_y char
+				) return date as
+				nres number(10);
+				dres date;
+				cursor cur_tests(arg_x number, arg_y char)
+					is select v_number, v_date from oratcl___tests
+						where v_number = arg_x
+						and v_char = arg_y;
+				begin
+					open cur_tests(arg_x, arg_y);
+					fetch cur_tests into nres, dres;
+					close cur_tests;
+					return dres;
+				end;
+			}
+			oraparse $pl_stm $pl_sql
+			oraexec $pl_stm
+
+			set pl_sql {
+				create or replace function oratcl___test2 (
+					arg_x number
+				) return boolean as
+				begin
+					if (arg_x = 5) then
+						return TRUE;
+					else
+						return FALSE;
+					end if;
+				end;
+			}
+			oraparse $pl_stm $pl_sql
+			oraexec $pl_stm
+
+			set pl_sql {
+				CREATE OR REPLACE PACKAGE oratcl___test_pkg AS
+					TYPE CurType IS REF CURSOR RETURN oratcl___tests%ROWTYPE;
+					PROCEDURE open_ref_cur (ref_cur IN OUT CurType);
+				END;
+			}
+			oraparse $pl_stm $pl_sql
+			oraexec $pl_stm
+
+			set pl_sql {
+				CREATE OR REPLACE PACKAGE BODY oratcl___test_pkg AS
+					PROCEDURE open_ref_cur (ref_cur IN OUT CurType) IS
+					BEGIN
+						OPEN ref_cur FOR SELECT * FROM oratcl___tests
+							WHERE v_number is not null;
+					END open_ref_cur;
+				END;
+			}
+			oraparse $pl_stm $pl_sql
+			oraexec $pl_stm
+
+			unset pl_sql
+		}
+	}
+
+	proc oraplexec_final {} {
+		uplevel 1 {
+			oraparse $pl_stm "drop function oratcl___test1"
+			oraexec $pl_stm
+			oraparse $pl_stm "drop function oratcl___test2"
+			oraexec $pl_stm
+			oraparse $pl_stm "drop package oratcl___test_pkg"
+			oraexec $pl_stm
+			oraclose $pl_stm
+			oralogoff $pl_lda
+			unset pl_stm
+			unset pl_lda
+		}
+	}
+
+	oraplexec_begin
+
+	test oraplexec-1.1 {oraplexec: :bind = function(val, val)} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pl1 {declare my_result date; begin :my_result := oratcl___test1(22, '22'); end;}
+			oraparse $stm {alter session set nls_date_format = 'DD-MON-YYYY'}
+			oraexec $stm
+		}
+		-body {
+			oraplexec $stm $pl1 :my_result {}
+			orafetch $stm -datavariable rv1
+			set rv2 [string toupper [clock format [clock seconds] -format {%d-%b-%Y}]]
+			list [string equal $rv1 $rv2]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oraplexec-1.2 {oraplexec: :bind = function(:bindval, val)} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pl2 {declare my_result date; begin :my_result := oratcl___test1(:in1, '22'); end;}
+			oraparse $stm {alter session set nls_date_format = 'DD-MON-YYYY'}
+			oraexec $stm
+		}
+		-body {
+			oraplexec $stm $pl2 :my_result {} :in1 22
+			orafetch $stm -datavariable rv1
+			set rv2 [list [string toupper [clock format [clock seconds] -format {%d-%b-%Y}]] 22]
+			list [string equal $rv1 $rv2]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oraplexec-1.3 {oraplexec: :bind = function(:bindval, :bindval)} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pl3 {declare my_result date; begin :my_result := oratcl___test1(:in1, :in2); end;}
+			oraparse $stm {alter session set nls_date_format = 'DD-MON-YYYY'}
+			oraexec $stm
+		}
+		-body {
+			oraplexec $stm $pl3 :my_result {} :in1 22 :in2 {22}
+			orafetch $stm -datavariable rv1
+			set rv2 [list [string toupper [clock format [clock seconds] -format {%d-%b-%Y}]] 22 22]
+			list [string equal $rv1 $rv2]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oraplexec-1.4 {oraplexec:d bind pairs :: result} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pl4 {declare my_result date; begin :my_result := oratcl___test1(:in1, :in2); end;}
+		}
+		-body {
+			oraplexec $stm $pl4 :my_result {} :in1 22 :in2
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {ORA-01008: not all variables bound}
+		-returnCodes {1}
+	}
+
+	test oraplexec-2.0 {oramsg : error} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pls {declare my_result date; begin :my_result := oratcl___test1(:in1, :in2); end;}
+		}
+		-body {
+			catch {
+				oraplexec $stm $pls :my_result {} :in1 22 :in2
+			}
+			oramsg $stm error
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {{ORA-01008: not all variables bound}}
+		-returnCodes {0}
+	}
+
+	test oraplexec-2.1 {oramsg : rc} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pls {declare my_result date; begin :my_result := oratcl___test1(:in1, :in2); end;}
+		}
+		-body {
+			catch {
+				oraplexec $stm $pls :my_result {} :in1 22 :in2
+			}
+			oramsg $stm rc
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {1008}
+		-returnCodes {0}
+	}
+
+	test oraplexec-2.2 {oramsg : error} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pls {declare my_result date; begin :my_result := oratcl___test(:in1, :in2); end;}
+		}
+		-body {
+			catch {
+				oraplexec $stm $pls :my_result {} :in1 22 :in2 22
+			}
+			string equal \
+				[oramsg $stm error] \
+				[format "ORA-06550: line 1, column 45:\nPLS-00201: identifier 'ORATCL___TEST' must be declared"]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {0}
+		-returnCodes {0}
+	}
+
+	test oraplexec-2.3 {oramsg : error} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pls {declare my_result date; begin :my_result := oratcl___test(:in1, :in2); end;}
+		}
+		-body {
+			catch {
+				oraplexec $stm $pls :my_result {} :in1 22 :in2 22
+			}
+			oramsg $stm rc
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {6550}
+		-returnCodes {0}
+	}
+
+	test oraplexec-2.4 {oramsg : error} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			set pls {declare my_result boolean; begin :my_result := oratcl___test2(5); end;}
+		}
+		-body {
+			catch {
+				oraplexec $stm $pls :my_result {}
+			}
+			string equal \
+				[oramsg $stm error] \
+				[format "%s\n%s\n%s\n%s" \
+					{ORA-06550: line 1, column 48:} \
+					{PLS-00382: expression is of wrong type} \
+					{ORA-06550: line 1, column 34:} \
+					{PL/SQL: Statement ignored}]
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {0}
+		-returnCodes {0}
+	}
+
+	test oraplexec-3.0 {oraplexec bind :ref_cursor} {
+		-constraints testoraplexec
+		-setup {
+			set lda [oralogon $ora_constr]
+			set st1 [oraopen $lda]
+			set st2 [oraopen $lda]
+			set pls {begin oratcl___test_pkg.open_ref_cur(:ret_cur); end;}
+		}
+		-body {
+			oraplexec $st1 $pls :ret_cur $st2
+			set cnt 0
+			while {[orafetch $st2] == 0} {
+				incr cnt
+			}
+			set cnt
+		}
+		-cleanup {
+			oraclose $st1
+			oraclose $st2
+			oralogoff $lda
+		}
+		-result {30}
+		-returnCodes {0}
+	}
+
+	oraplexec_final
+
+        cleanupTests
+}
+namespace delete ::tcl::test::oraplexec
+return

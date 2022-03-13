@@ -1,0 +1,5 @@
+Hakan Soderlund - primary Author of msql interface 
+Gregory Gulik - mysqltcl 1.50
+Tobias Ritzau (tobri@ida.liu.se) Version 1.53 and 2.0 
+Paolo Brutti (Paolo.Brutti@tlsoft.it) Tcl8 Object support. 
+Artur Trzewik (mail@xdobry.de) UNI-Char Support, new internal design (no 15 connection limitation) 

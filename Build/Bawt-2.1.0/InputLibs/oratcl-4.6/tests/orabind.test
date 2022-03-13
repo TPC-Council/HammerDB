@@ -1,0 +1,254 @@
+# orabind.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of orabind
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::orabind {
+	namespace import ::tcltest::*
+
+	testConstraint testoraparse [llength [info commands oraparse]]
+	testConstraint testorabind [llength [info commands orabind]]
+
+	test orabind-1.1 {orabind OCI_STMT_SELECT code == 1} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_1(lda) [oralogon $ora_constr]
+			set tst1_1(stm) [oraopen $tst1_1(lda)]
+			set tst1_1(sql) {select * from oratcl___tests where v_number = :num}
+			oraparse $tst1_1(stm) $tst1_1(sql)
+		}
+		-body {
+			set tst1_1(res) [orabind $tst1_1(stm) :num 0]
+		}
+		-cleanup {
+			oraclose $tst1_1(stm)
+			oralogoff $tst1_1(lda)
+			array unset tst1_1
+		}
+		-result {0}
+	}
+
+	test orabind-1.2 {orabind OCI_STMT_UPDATE code == 2} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_2(lda) [oralogon $ora_constr]
+			set tst1_2(stm) [oraopen $tst1_2(lda)]
+			set tst1_2(sql) {update oratcl___tests set v_number = :sn where v_number = :wn}
+			oraparse $tst1_2(stm) $tst1_2(sql)
+		}
+		-body {
+			set tst1_2(res) [orabind $tst1_2(stm) :sn 0 :wn 0]
+		}
+		-cleanup {
+			oraclose $tst1_2(stm)
+			oralogoff $tst1_2(lda)
+			array unset tst1_2
+		}
+		-result {0}
+	}
+
+	test orabind-1.3 {orabind OCI_STMT_DELETE code == 3} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_3(lda) [oralogon $ora_constr]
+			set tst1_3(stm) [oraopen $tst1_3(lda)]
+			set tst1_3(sql) {delete from oratcl___tests where v_number = :wn}
+			oraparse $tst1_3(stm) $tst1_3(sql)
+		}
+		-body {
+			set tst1_3(res) [orabind $tst1_3(stm) :wn 0]
+		}
+		-cleanup {
+			oraclose $tst1_3(stm)
+			oralogoff $tst1_3(lda)
+			array unset tst1_3
+		}
+		-result {0}
+	}
+
+	test orabind-1.4 {orabind OCI_STMT_INSERT code == 4} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_4(lda) [oralogon $ora_constr]
+			set tst1_4(stm) [oraopen $tst1_4(lda)]
+			set tst1_4(sql) {insert into oratcl___tests (v_number) values (:vn)}
+			oraparse $tst1_4(stm) $tst1_4(sql)
+		}
+		-body {
+			set tst1_4(res) [orabind $tst1_4(stm) :vn 20]
+		}
+		-cleanup {
+			oraclose $tst1_4(stm)
+			oralogoff $tst1_4(lda)
+			array unset tst1_4
+		}
+		-result {0}
+	}
+
+	# ORA-01036: illegal variable name/number
+	test orabind-1.7 {orabind OCI_STMT_ALTER code == 7} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_7(lda) [oralogon $ora_constr]
+			set tst1_7(stm) [oraopen $tst1_7(lda)]
+			set tst1_7(sql) {insert into oratcl___tests (v_number) values (:vn)}
+			set tst1_7(sql) {alter session set nls_date_format = :dateformat}
+			oraparse $tst1_7(stm) $tst1_7(sql)
+		}
+		-body {
+			orabind $tst1_7(stm) :dateformat DD-MON-YYYY
+		}
+		-cleanup {
+			oraclose $tst1_7(stm)
+			oralogoff $tst1_7(lda)
+			array unset tst1_7
+		}
+		-returnCodes {1}
+		-result {ORA-01036: illegal variable name/number}
+	}
+
+	test orabind-1.8 {orabind OCI_STMT_BEGIN code == 8} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_8(lda) [oralogon $ora_constr]
+			set tst1_8(stm) [oraopen $tst1_8(lda)]
+			set tst1_8(sql) {insert into oratcl___tsts (v_number) values (:vn)}
+			set tst1_8(sql) {begin bogus_package(:parm); end;}
+			oraparse $tst1_8(stm) $tst1_8(sql)
+		}
+		-body {
+			orabind $tst1_8(stm) :parm 30
+		}
+		-cleanup {
+			oraclose $tst1_8(stm)
+			oralogoff $tst1_8(lda)
+			array unset tst1_8
+		}
+		-returnCodes {0}
+		-result {0}
+	}
+
+	test orabind-1.9 {orabind OCI_STMT_DECLARE code == 9} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst1_9(lda) [oralogon $ora_constr]
+			set tst1_9(stm) [oraopen $tst1_9(lda)]
+			set tst1_9(sql) {insert into oratcl___tsts (v_number) values (:vn)}
+			set tst1_9(sql) {declare x number(3); begin bogus_package(:parm); end;}
+			oraparse $tst1_9(stm) $tst1_9(sql)
+		}
+		-body {
+			orabind $tst1_9(stm) :parm 30
+		}
+		-cleanup {
+			oraclose $tst1_9(stm)
+			oralogoff $tst1_9(lda)
+			array unset tst1_9
+		}
+		-returnCodes {0}
+		-result {0}
+	}
+
+	# ORA-01036: illegal variable name/number
+	test orabind-2.1 {orabind too many binds} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst2_1(lda) [oralogon $ora_constr]
+			set tst2_1(stm) [oraopen $tst2_1(lda)]
+			set tst2_1(sql) {select * from oratcl___tests where v_number = :wn}
+			set tst2_1(sql) {alter session set nls_date_format = :dateformat}
+			oraparse $tst2_1(stm) $tst2_1(sql)
+		}
+		-body {
+			orabind $tst2_1(stm) :wn 0 :str {}
+		}
+		-cleanup {
+			oraclose $tst2_1(stm)
+			oralogoff $tst2_1(lda)
+			array unset tst2_1
+		}
+		-returnCodes {1}
+		-result {ORA-01036: illegal variable name/number}
+	}
+
+	# this currently does not return an error, only pairs get bound
+	test orabind-2.2 {orabind unbalanced binds} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst2_2(lda) [oralogon $ora_constr]
+			set tst2_2(stm) [oraopen $tst2_2(lda)]
+			set tst2_2(sql) {select * from oratcl___tests where v_number = :wn}
+			set tst2_2(sql) {alter session set nls_date_format = :dateformat}
+			oraparse $tst2_2(stm) $tst2_2(sql)
+		}
+		-body {
+			orabind $tst2_2(stm) :wn
+		}
+		-cleanup {
+			oraclose $tst2_2(stm)
+			oralogoff $tst2_2(lda)
+			array unset tst2_2
+		}
+		-returnCodes {0}
+		-result {0}
+	}
+
+	test orabind-2.3 {orabind missing : delimiter} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst2_3(lda) [oralogon $ora_constr]
+			set tst2_3(stm) [oraopen $tst2_3(lda)]
+			set tst2_3(sql) {select * from oratcl___tests where v_number = :wn}
+			set tst2_3(sql) {alter session set nls_date_format = :dateformat}
+			oraparse $tst2_3(stm) $tst2_3(sql)
+		}
+		-body {
+			orabind $tst2_3(stm) num 0
+		}
+		-cleanup {
+			oraclose $tst2_3(stm)
+			oralogoff $tst2_3(lda)
+			array unset tst2_3
+		}
+		-returnCodes {1}
+		-result {orabind: bind variable 'num' does not begin with ':'}
+	}
+
+	# this currently does not return an error, only pairs get bound
+	test orabind-2.4 {orabind misnamed bind variable} {
+		-constraints {testoraparse testorabind}
+		-setup {
+			set tst2_4(lda) [oralogon $ora_constr]
+			set tst2_4(stm) [oraopen $tst2_4(lda)]
+			set tst2_4(sql) {select * from oratcl___tests where v_number = :wn}
+			set tst2_4(sql) {alter session set nls_date_format = :dateformat}
+			oraparse $tst2_4(stm) $tst2_4(sql)
+		}
+		-body {
+			orabind $tst2_4(stm) :bad 3
+		}
+		-cleanup {
+			oraclose $tst2_4(stm)
+			oralogoff $tst2_4(lda)
+			array unset tst2_4
+		}
+		-returnCodes {1}
+		-result {ORA-01036: illegal variable name/number}
+	}
+
+	cleanupTests
+}
+namespace delete ::tcl::test::orabind
+return

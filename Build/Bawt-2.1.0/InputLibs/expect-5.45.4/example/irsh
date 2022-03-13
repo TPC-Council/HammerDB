@@ -1,0 +1,11 @@
+#!/depot/path/expect --
+
+# Do rsh interactively.  For example, consider the following command:
+#    rsh <remote> ls -l "|" more
+# where it would be nice to get a listing page by page
+
+spawn -noecho rlogin [lindex $argv 0]
+set timeout -1
+expect "% "      ;# customize appropriately
+send "[lrange $argv 1 end];exit\r"
+interact

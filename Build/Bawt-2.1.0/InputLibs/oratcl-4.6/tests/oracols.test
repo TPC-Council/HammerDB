@@ -1,0 +1,67 @@
+# oracols.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oracols
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oracols {
+	namespace import ::tcltest::*
+
+	testConstraint testoracols [llength [info commands oracols]]
+
+	test oracols-1.1 {oracols: all options after oraparse} {
+		-constraints testoracols
+		-setup {
+			set tst(lda) [oralogon $ora_constr]
+			set tst(stm) [oraopen $tst(lda)]
+			set tst(sql) {select v_number, v_date, v_char, v_varchar2 from oratcl___tests}
+			set tst(res) {}
+			set tst(rs1) [list V_NUMBER V_DATE V_CHAR V_VARCHAR2]
+			set tst(rs2) [list 22 7 2 36]
+			set tst(rs3) [list NUMBER DATE CHAR VARCHAR2]
+			set tst(rs4) [list 2 {} {} {}]
+			set tst(rs5) [list 0 {} {} {}]
+			set tst(rs6) [list 1 1 1 1]
+			set tst(rs7) [list {V_NUMBER 22 NUMBER 2 0 1} {V_DATE 7 DATE {} {} 1} {V_CHAR 2 CHAR {} {} 1} {V_VARCHAR2 36 VARCHAR2 {} {} 1}]
+		}
+		-body {
+			oraparse $tst(stm) $tst(sql)
+			set tst(cl1) [oracols $tst(stm)]
+			set tst(cl2) [oracols $tst(stm) size]
+			set tst(cl3) [oracols $tst(stm) type]
+			set tst(cl4) [oracols $tst(stm) precision]
+			set tst(cl5) [oracols $tst(stm) scale]
+			set tst(cl6) [oracols $tst(stm) nullok]
+			set tst(cl7) [oracols $tst(stm) all]
+			set tst(res) [expr {([string compare $tst(cl1) $tst(rs1)] == 0) +
+					    ([string compare $tst(cl2) $tst(rs2)] == 0) +
+					    ([string compare $tst(cl3) $tst(rs3)] == 0) +
+					    ([string compare $tst(cl4) $tst(rs4)] == 0) +
+					    ([string compare $tst(cl5) $tst(rs5)] == 0) +
+					    ([string compare $tst(cl6) $tst(rs6)] == 0) +
+					    ([string compare $tst(cl7) $tst(rs7)] == 0)}]
+			set tst(res)
+		}
+		-cleanup {
+			oraclose $tst(stm)
+			oralogoff $tst(lda)
+			array unset tst
+		}
+		-result {7}
+	}
+
+	cleanupTests
+}
+namespace delete ::tcl::test::oracols
+return

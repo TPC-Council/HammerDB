@@ -1,0 +1,3 @@
+09/27/2000 rename the test files and add oralob.test.
+09/27/2000 add test for orainfo command.
+08/25/2000 converted to use new _oramsg_ command

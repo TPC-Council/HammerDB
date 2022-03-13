@@ -1,0 +1,374 @@
+This is the pgtcl-ng Source Release NEWS file
+Last updated for pgtclng-2.1.1 on 2014-09-12
+The project home page is: http://sourceforge.net/projects/pgtclng/
+-----------------------------------------------------------------------------
+
+* 2014-09-12    pgtcl-ng 2.1.1 Released
+
+This version contains 1 bug fix.
+
+Fixed Bug #8 "pg_execute returns continue":
+
+If the command body for pg_execute used "continue" in the last loop
+iteration, pg_execute returned TCL_CONTINUE instead of TCL_OK which would
+cause a Tcl error. This has now been fixed.
+
+
+* 2013-10-07    pgtcl-ng 2.1.0 Released
+
+This version adds 5 new commands, new pg_connect options, and new error
+field codes for pg_result. The following 4 Feature Requests are implemented
+in this release:
+
+
+Feature request #5 "Add 64-bit large object support":
+
++ New commands pg_lo_lseek64, pg_lo_tell64, and pg_lo_truncate64 use Tcl
+  Wide Integers (64-bit) for offsets or lengths. These are only available
+  when pgtclng was built with a PostgreSQL-9.3.0 or higher libpq, and only
+  work when connected to a PostgreSQL-9.3.0 or higher server.
+
+
+Feature request #6 "Add new forms for connection options":
+
++ Added "pg_connect -connlist {list}" to specify the connection options
+  as a Tcl list.  (The syntax is from Flightaware Pgtcl, but the
+  implementation is new, and not completely compatible.) The advantage of
+  using this form is that it does not require quoting or escaping, especially
+  for the password.
+
++ pg_connect -conninfo now accepts a PostgreSQL URI for a connection string,
+  as described in the PostgreSQL manual, for example:
+     pg_connect -conninfo postgresql://myuser:secretd@host.example.com/dbname
+  This only works when pgtclng was built with a PostgreSQL-9.2.0 or higher
+  libpq (independent of the server version).
+
+
+Feature request #7 "Support new error message fields":
+
++ pg_result -error and -errorField now support 5 new field codes.  These
+  provide access to the schema, table, column, and constraint name specific
+  to the error. To get message data using these error fields, pgtclng must
+  be built with a PostgreSQL-9.3.0 or higher libpq, and connected to a
+  PostgreSQL-9.3.0 or higher server.
+
+  Single-character codes for error message fields are now case sensitive.
+  This is not compatible with previous releases. See Compatibility Warning
+  below.
+
+
+Feature request #8 "Support 2 new libpq escape functions":
+
++ New commands pg_escape_literal, which is an alternative to pg_quote, and
+  pg_escape_identifier, for escaping SQL identifiers.
+
+
+Compatibility Warning:
+
+PostgreSQL-9.2.0 started using lower case letters as the value of the new
+PG_DIAG_* symbols which are used to select error message fields to retrieve.
+This conflicts with case insensitive field codes in previous versions of
+pgtclng [pg_result -errorField] and [pg_result -error] commands.
+
+Starting with pgtclng-2.1.0, field code single-character abbreviations are now
+case sensitive. This will require changes to scripts, if they used
+single-character lower case letters as field codes.  The full field code names
+remain case insensitive.
+
+For example:
+  Both of these worked before, and continue to work:
+       pg_result $res -errorField SEVERITY
+       pg_result $res -errorField severity
+  The single-character code for SEVERITY is 'S'. Starting with this release,
+  an upper case 'S' must be used, as 's' is now used for SCHEMA_NAME.
+       pg_result $res -errorField s
+          Returned the error severity in previous releases.
+          Returns the error object schema name in this release.
+
+-----------------------------------------------------------------------------
+
+* 2011-09-18    pgtcl-ng 2.0.0 Released
+
+This release includes two new commands and one new command option. It also
+includes a fix for building with Tcl-8.6 (currently in beta).
+
+This is the first release after rehosting on Sourceforge.net. Documentation
+and information files have been updated accordingly.
+
+Feature request #3408919 "Access to server PID, notification PID, and
+        server version":
++ New command pg_backend_pid to get the backend process ID.
++ New command pg_server_version to get the server version as an intger.
++ New -pid option to pg_listen, to pass the notifying client's backend
+  process ID to the notification callback.
+
+Fixed bug #3405928, building fails with Tcl-8.6 beta, reported by Zbigniew:
+Pgtcl-ng will now compile with Tcl-8.6beta, avoiding access to the errorLine
+structure element which is now hidden.  The correct access method is detected
+at compile time. However, if Pgtcl-ng is compiled using stubs with Tcl-8.6,
+and then run under Tcl-8.5 or older, it will crash. This is because the
+new function used at 8.6 to access the structure member does not exist in
+older releases.
+
+
+Note: Despite the version number ending in ".0.0", Pgtclng-2.0.0 is not 
+substantially different from the previous release 1.9.0, and there should
+be no incompatibilities. (Changes were made to an internal data structure,
+but a major factor in not using "1.10.0" instead is the way release packages
+are sorted by name.)
+
+
+* 2011-03-21    pgtcl-ng 1.9.0 Released
+
+This release adds one new feature: pg_result $r -dict, which returns the
+query result as a Tcl dictionary. The idea for this feature came from the
+pgfoundry 'pgtcl' project. This feature requires Tcl-8.5 or higher.
+
+
+* 2010-10-10    pgtcl-ng 1.8.0 Released
+
+This release has one new feature for PostgreSQL-9.0.0. Notification
+messages can now include a payload, which is passed to the notification
+listener callback proc. For example:
+Given (in one session):
+    pg_listen $db my_channel my_callback_proc
+
+Then (possibly in another session):
+    SQL> NOTIFY my_channel, 'the payload'
+This will result in execution of:  my_callback_proc "the payload" in the
+original session.
+
+And:
+       SQL> NOTIFY my_channel
+ or:   SQL> NOTIFY my_channel, ''
+This will result in execution of:  my_callback_proc
+in the original session.
+
+Compatibility Warning:
+    This applies only if you use pg_listen to set up a notification listener
+    callback procedure.
+
+    Your listener callback should be defined to accept an optional argument
+    for the payload, for example:   proc listen_handler {{payload ""}} { ... }
+    Starting with version 1.8.0, pgtclng will pass a payload argument to the
+    handler if a non-empty payload is provided in the SQL command. If an empty
+    payload is provided, or no payload (including any usage with a PostgreSQL
+    server older than 9.0.0), pgtclng will not supply the argument to the
+    handler. This behavior was chosen to improve compatibility with older
+    scripts that would throw an error if provided an unexpected argument.
+
+    If you do not update your listener callback to have an optional argument,
+    and you never include a payload in the notification SQL, your script will
+    not have any problems. However, note that anyone who can connect to the
+    database can send a notification (if they know the 'channel' name used
+    in the pg_listen command), and they can include a payload. If your listener
+    callback does not expect a payload argument, it will throw a background
+    error (which may or may not terminate the script) if it receives such a
+    payload argument.
+
+
+For Windows, only MinGW building is now supported and tested. Borland BCC
+building of pgtcl-ng probably still works, but is no longer tested. Refer
+to the Windows binary release of pgtcl-ng for more information.
+
+
+* 2010-07-14    pgtcl-ng 1.7.2 Released
+
+This release now supports building on Windows with MinGW, in addition to
+Borland C++ Building (BCC). The binary release for Windows now includes
+DLLs built with BCC and with MinGW. (In future releases, the BCC-built DLLs
+may be dropped, leaving just MinGW.)
+
+There is one bug fix for a failure to build and run pgtcl-ng on PostgreSQL
+versions before 8.2. It has no impact for PostgreSQL-8.2 and higher.
+
+
+* 2009-11-25    pgtcl-ng 1.7.1 Released
+
+The release now supports building a Tcl stubs-enabled module on Windows,
+which means the same compiled module will load into different Tcl versions.
+
+There is one minor bug fix to pg_encrypt_password. An error was not
+properly detected when the command was passed an invalid, empty username.
+
+
+* 2009-09-11    pgtcl-ng 1.7.0 Released
+
+This release adds some commands and options to "catch up" to features added
+to the PostgreSQL libpq library.
+
+This version adds four new commands:
++ pg_encrypt_password to encrypt a password for certain SQL commands
++ pg_lo_truncate to truncate a large object
++ pg_describe_cursor to return information about a cursor (portal)
++ pg_describe_prepared to return information about a prepared statement.
+
+This version adds two options to pg_result, for use with
+pg_describe_prepared to return information about a prepared statement:
++ pg_result -numParams returns the number of parameters
++ pg_result -paramTypes returns the parameter type OIDs.
+
+In this release, pg_escape_string, pg_quote, and pg_escape_bytea
+accept an optional connection parameter. This allows use of
+connection-specific information to properly handle string escaping.
+
+This release also contains fixes to error handling in pg_select.
+
+
+* 2007-12-26    pgtcl-ng 1.6.2 Released
+
+This release fixes a character set encoding problem on Windows only. When
+communicating with a non-UTF8 database, character set translation was not
+working because the method pgtcl-ng used to set the client encoding
+(PGCLIENTENCODING environment variable) was not working. This release fixes
+the problem by using a different way to set the client encoding
+(PQsetEncoding call). This problem only affected Windows, and this was
+probably a long-standing issue (not introduced in a recent release).
+
+* 2007-12-25    pgtcl-ng 1.6.1 Released
+
+This release contains important fixes for the new Tcl-8.5.0 release.
+Versions of pgtcl-ng before this will crash with "... called with
+shared object" when built against Tcl-8.5. Pgtcl-ng 1.6.1 will also build
+and run with Tcl-8.4.x.
+
+
+* 2007-01-15    pgtcl-ng 1.6.0 Released
+
+This release contains the new features described in "pgtcl-ng 1.6.0 Beta
+version" below, plus the following:
+
+New command: pg_sendquery_prepared
+This executes a pre-prepared query (like pg_exec_prepared), but is
+asynchronous like pg_sendquery.
+
+New command: pg_sendquery_params
+This executes a parameterized query (like pg_exec_params), but is
+asynchronous like pg_sendquery. Note: pg_sendquery itself supports
+parameterized queries, but only for untyped TEXT parameters.
+pg_sendquery_params supports binary parameters and binary return type.
+
+
+* 2006-12-13    pgtcl-ng 1.6.0 Beta version
+
+This release contains two new features for asynchronous queries.
+
+1. Asynchronous parameterized queries:
+
+The command pg_sendquery now accepts optional arguments which are used
+as parameter substitutions in the SQL query. For example:
+     pg_sendquery $connection "SELECT * FROM mytable WHERE i=\$1" $var
+The parameter value ($var) is sent to the PostgreSQL backend along with the
+query as a parameterized query. This works like pg_exec with parameters,
+but for asynchronous queries.  This idea was copied from the Pgtcl project,
+by Brett Schwarz and Karl Lehenbauer.
+
+
+2. Event-driven asynchronous query results:
+
+A command can be registered to execute when a result is ready from an
+asynchronous query. This provides event-driven asynchronous queries.
+(Before this was added, the choice was to busy-wait or block.)
+
+The command to register a result callback is:
+     pg_result_callback $conn ?callbackCommand?
+If the callback command is provided, a new result callback is established.
+Only one result callback can be active at any time.
+Synchronous query commands are not allowed when a result callback is in place.
+A result callback will be removed if any of the following occurs:
+  (a) The callback command executes because the result is ready.
+  (b) pg_getresult is called (which blocks until a result is ready).
+  (c) pg_cancelrequest is called (canceling the asynchronous query).
+  (d) The connection is closed.
+  (e) pg_result_callback is called. (Without a callbackCommand, to
+      just remove the callback, or with a callbackCommand to replace the
+      callback.)
+To use event-driven asynchronous query results, first establish the
+callback, then issue the query with pg_sendquery.
+
+Suggested by Kyle Bateman (kyleb), with the initial implementation designed
+and written by Miguel Sofer (msofer).
+
+
+* 2006-08-30    pgtcl-ng 1.5.3 Released
+
+This is the first release on pgfoundry. (Prior releases were on gborg.)
+This release also contains the following changes:
+   1. Bug fix for character set encoding during COPY FROM/TO
+   2. Replaced build system using newer TEA 3.5. Other build fixes.
+
+
+* 2004-11-07    pgtcl-ng 1.5.2 Released
+
+This is a minor release. There are two new commands suggested by levanj:
+   1.  New command pg_escape_bytea escapes a binary string for
+       use in an SQL statement for a BYTEA type column.
+   2.  New command pg_unescape_bytea un-escapes a BYTEA column value
+       from a query result and returns a Tcl binary string.
+
+For better compatibility with Gborg pgtcl, which implemented the -errorField
+feature of pgtcl-ng/pgin.tcl in a different way:
+   3.  The error code field name is now optional to pg_result -errorField,
+       and can also be supplied to pg_result -error. This means the two
+       subcommands are now identical. With no error code field name argument,
+       they return the default message form. Also, extended the list of
+       valid field code names to be case insensitive and include the
+       different field code names used in Gborg pgtcl, 
+
+
+* 2004-06-07    pgtcl-ng 1.5.1 Released
+
+This is the second release of pgtcl-ng with these changes:
+   1.  New command option: pg_result $res -cmdStatus
+       Returns the command completion tag, e.g. "UPDATE 4".
+       (Suggested by Jerry.Levan -at- EKU.EDU)
+   2.  If EXTRA_LIBS is defined in the environment when "configure" runs,
+       its value will be appended to the link line. This is for some systems
+       where dependent libraries must be explicitly specified.
+       (Suggested by Jerry.Levan -at- EKU.EDU)
+   3.  New command: pg_quote to return quoted escaped string. This was recently
+       added to Gborg pgtcl CVS, replacing pg_escape_string, but pgtcl-ng
+       will continue to support both.
+   4.  Fix pg_execute error handling to allow arbitrary return
+       codes from the script it executes, same as pg_select.
+   5.  New command: pg_exec_params to execute parameterized query, binary safe.
+   6.  pg_exec can take extra arguments which will substitute for
+       placeholders in the SQL. This is not binary safe; use pg_exec_prepared
+       or pg_exec_params for binary parameters or binary results.
+       (Idea from Gborg pgtcl CVS - karl.)
+
+
+* 2004-02-28    pgtcl-ng 1.5.0 Released
+
+This is the first release of pgtcl-ng. (The version number is 1.5.0 for
+continuity with previous implementations of this interface.) Highlights of
+this release are:
+
+  * From Gborg pgtcl project:
+    1. Stand-alone Tcl Extension Architecture (TEA) build system
+    2. New asynchronous query commands
+    3. New: Get query results as lists
+    4. New: pg_escape_string
+  * New in Pgtcl-ng:
+    5. Completed conversion to use Tcl-8 objects
+    6. New: pg_transaction_status, check in-transaction status
+    7. New: pg_parameter_status, get server parameter value
+    8. New: pg_exec_prepared, execute prepared queries, binary-safe
+    9. New: pg_notice_handler, change Notice and Warning handler
+   10. New: Get extended error message field values
+   11. New: Get extended column attribute information
+   12. New: Test query result values for NULL
+  * New reference manual
+  * Windows binary release
+
+There are also numerous fixes, include Large Object error handling, and a
+rewritten COPY implementation which can now deal with records longer than
+4096 bytes. (Bet you didn't know that limitation was there...) Please note:
+Many of the new commands should be considered 'experimental' and possibly
+subject to change.
+
+More detailed changes can be found in the ChangeLog files. Please note,
+however, that it is likely that not all changes between bundled PostgreSQL
+libpgtcl, Gborg pgtcl, and Gborg pgtcl-ng have been recorded.
+
+-----------------------------------------------------------------------------

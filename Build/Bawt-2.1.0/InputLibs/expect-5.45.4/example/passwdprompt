@@ -1,0 +1,35 @@
+#!/depot/path/expect
+
+# This script prompts for a passwd from stdin while echoing *'s
+
+# Prompt MUST be passed as argument to avoid falling into the classic
+# prompt-before-echo-has-been-disabled mistake.
+
+proc getpass {prompt} {
+    set sttyOld [stty -echo raw]
+    send_user $prompt
+
+    set timeout -1
+    set passwd ""
+
+    expect {
+	-re "\r" {
+	    send_user \r\n
+	} -re "\010|\177" {
+	    if {[string length $passwd] > 0} {
+		# not all ttys support destructive spaces
+		send "\010 \010"
+		regexp (.*). $passwd x passwd
+	    }
+	    exp_continue
+	} -re . {
+	    send_user *
+	    append passwd $expect_out(0,string)
+	    exp_continue
+	}
+    }
+    eval stty $sttyOld
+    return $passwd
+}
+
+puts "The password you entered was: [getpass "Password: "]"

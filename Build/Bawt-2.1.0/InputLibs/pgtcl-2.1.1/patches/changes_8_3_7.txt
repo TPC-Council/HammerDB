@@ -1,0 +1,63 @@
+Change file for PostgreSQL-8.3.7 build of libpq with Borland BCC
+-----------------------------------------------------------------------------
+
+This was tested with PostgreSQL-8.3.7 but should work with prior
+releases back to 8.3.4.
+
+In the source directory interfaces/libpq, edit the file bcc32.mak to
+remove all references to the files dirent and open. This includes removing
+the erase commands in the CLEAN target, removing the dirent.obj and open.obj
+entries in the LIB32_OBJS macro, and removing the build blocks for
+dirent.obj and open.obj. These 2 modules do not build with BCC.
+
+The remainder of this file is a patch for the change described above.
+
+
+--- src/interfaces/libpq/bcc32.mak.orig	2008-08-15 21:56:25.000000000 -0400
++++ src/interfaces/libpq/bcc32.mak	2009-04-06 21:56:12.000000000 -0400
+@@ -99,10 +99,8 @@
+ 	-@erase "$(INTDIR)\pthread-win32.obj"
+ 	-@erase "$(INTDIR)\snprintf.obj"
+ 	-@erase "$(INTDIR)\strlcpy.obj"
+-	-@erase "$(INTDIR)\dirent.obj"
+ 	-@erase "$(INTDIR)\dirmod.obj"
+ 	-@erase "$(INTDIR)\pgsleep.obj"
+-	-@erase "$(INTDIR)\open.obj"
+ 	-@erase "$(INTDIR)\win32error.obj"
+ 	-@erase "$(OUTDIR)\$(OUTFILENAME).lib"
+ 	-@erase "$(OUTDIR)\$(OUTFILENAME)dll.lib"
+@@ -139,10 +137,8 @@
+ 	"$(INTDIR)\encnames.obj" \
+ 	"$(INTDIR)\snprintf.obj" \
+ 	"$(INTDIR)\strlcpy.obj" \
+-	"$(INTDIR)\dirent.obj" \
+ 	"$(INTDIR)\dirmod.obj" \
+ 	"$(INTDIR)\pgsleep.obj" \
+-	"$(INTDIR)\open.obj" \
+ 	"$(INTDIR)\win32error.obj" \
+ 	"$(INTDIR)\pthread-win32.obj"
+ 
+@@ -251,11 +247,6 @@
+ 	$(CPP_PROJ) /I"." ..\..\port\strlcpy.c
+ <<
+ 
+-"$(INTDIR)\dirent.obj" : ..\..\port\dirent.c
+-	$(CPP) @<<
+-	$(CPP_PROJ) /I"." ..\..\port\dirent.c
+-<<
+-
+ "$(INTDIR)\dirmod.obj" : ..\..\port\dirmod.c
+ 	$(CPP) @<<
+ 	$(CPP_PROJ) /I"." ..\..\port\dirmod.c
+@@ -266,11 +257,6 @@
+ 	$(CPP_PROJ) /I"." ..\..\port\pgsleep.c
+ <<
+ 
+-"$(INTDIR)\open.obj" : ..\..\port\open.c
+-	$(CPP) @<<
+-	$(CPP_PROJ) /I"." ..\..\port\open.c
+-<<
+-
+ "$(INTDIR)\win32error.obj" : ..\..\port\win32error.c
+ 	$(CPP) @<<
+ 	$(CPP_PROJ) /I"." ..\..\port\win32error.c

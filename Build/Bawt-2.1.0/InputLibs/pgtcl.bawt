@@ -1,0 +1,59 @@
+# Copyright: 2018-2021 Paul Obermeier (obermeier@tcl3d.org)
+# Distributed under BSD license.
+#
+# BuildType: MSys / gcc
+#
+#PostgreSQL Client Libraries must be installed to compile PgTcl
+#PostgreSQL needs the PG_CONFIG environment variable set to the location of the pg_config command
+#The output of pg_config shows where the PostgreSQL Include and Lib directories are
+#PgTcl uses the autoreconf command to create the configure command
+proc Init_pgtcl { libName libVersion } {
+    SetScriptAuthor    $libName "Steve Shaw" "smshaw@users.sourceforge.net"
+    SetLibHomepage     $libName "http://pgtclng.sourceforge.net/"
+    SetLibDependencies $libName "Tcl"
+    SetPlatforms       $libName "All"
+}
+
+proc Build_pgtcl { libName libVersion buildDir instDir devDir distDir } {
+    if { [UseStage "Extract" $libName] } {
+        ExtractLibrary $libName $buildDir
+    }
+    if { [UseStage "Configure" $libName] } {
+        global env
+#Look for the PG_CONFIG environment variable
+        if [ info exists env(PG_CONFIG) ] { 
+#Run pg_config and put the output in a dict called pg_config
+	set pg_config_output [ exec $env(PG_CONFIG)/pg_config ]
+	foreach val [ split [ string map {" = " * \n :} $pg_config_output] : ] { 
+	dict set pg_config [lindex [ split $val * ] 0 ] [lindex [ split $val * ] 1 ]
+		}
+#Check that we have INCLUDEDIR and LIBDIR in the config and these are valid directories
+	if {!([ dict exists $pg_config INCLUDEDIR ] && [dict exists $pg_config LIBDIR ] && [ file isdirectory [dict get $pg_config INCLUDEDIR ]] && [ file isdirectory [dict get $pg_config LIBDIR ]])} {
+	ErrorAppend "pgtcl configure error: Cannot find include or lib directories from pg_config" "FATAL"
+	return false
+	} else {
+#PostgreSQL Build environment has been found
+	;
+	}
+	} else {
+	ErrorAppend "Pgtcl configure error: PG_CONFIG environment variable is not set to location of pg_config command" "FATAL"
+	return false
+	}
+#Run conifgure with postgres include and lib options from captured environment
+        TeaConfig $libName $buildDir $instDir "" "--with-postgres-include=[dict get $pg_config INCLUDEDIR ]" "--with-postgres-lib=[dict get $pg_config LIBDIR ]"
+    }
+    if { [UseStage "Compile" $libName] } {
+        MSysBuild $libName $buildDir "install"
+    }
+
+    if { [UseStage "Distribute" $libName] } {
+        LibFileCopy "$instDir"  "$devDir/[GetTclDir]"   "*"  true
+        LibFileCopy "$instDir"  "$distDir/[GetTclDir]"  "*"  true
+
+        if { ! [UseTclPkgVersion] } {
+            FileRename "$devDir/[GetTclLibDir]/$libName$libVersion"   "$devDir/[GetTclLibDir]/$libName"
+            FileRename "$distDir/[GetTclLibDir]/$libName$libVersion"  "$distDir/[GetTclLibDir]/$libName"
+        }
+    }
+    return true
+}

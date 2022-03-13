@@ -1,0 +1,551 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!-- $Id: FAQ.html,v 1.6 2006/06/30 15:19:43 tmh Exp $ -->
+<html>
+  <head>
+    <title>Oratcl Frequently Asked Questions</title>
+  </head>
+
+  <body>
+    <h1>Oratcl Frequently Asked Questions</h1>
+
+    <h2><a name="TOC">Table of Contents</a></h2>
+    <h3><a href="#SEC1">Section 1: General Information</a></h3>
+    <ul>
+      <li><a href="#Q1.1">Q1.1 What is Oratcl?</a>
+      <li><a href="#Q1.2">Q1.2 What platforms does Oratcl support?</a>
+      <li><a href="#Q1.3">Q1.3 What versions of Oracle does Oratcl support?</a>
+      <li><a href="#Q1.4">Q1.4 What version of Oratcl should I use?</a>
+    </ul>
+
+    <h3><a href="#SEC2">Section 2: Obtaining Oratcl</a></h3>
+    <ul>
+      <li><a href="#Q2.1">Q2.1 How is Oratcl distributed?</a>
+      <li><a href="#Q2.2">Q2.2 Where can I get Oratcl?</a>
+    </ul>
+
+    <h3><a href="#SEC3">Section 3: Building Oratcl</a></h3>
+    <ul>
+      <li><a href="#Q3.1">Q3.1 How do I build Oratcl on UNIX systems?</a>
+      <li>
+	<a href="#Q3.2">
+	  Q3.2 How do I build Oratcl on Win32 systems using Cygwin?
+	</a>
+      <li>
+	<a href="#Q3.3">
+	  Q3.3 How do I build Oratcl on Win32 systems using Microsoft
+	  development tools?
+	</a>
+      <li>
+	<a href="#Q3.4">
+	  Q3.4 When I try to compile Oratcl, I get an error like
+	  "unrecognized option `-rpath'."  How can I fix this?
+	</a>
+    </ul>
+    
+    <h3><a href="#SEC4">Section 4: Using Oratcl</a></h3>
+    <ul>
+      <li><a href="#Q4.1">Q4.1 Is there documentation for Oratcl?</a>
+      <li><a href="#Q4.2">Q4.2 How do I configure SQL*NET for Oratcl?</a>
+      <li><a href="#Q4.3">Q4.3 What might a <tt>tnsnames.ora</tt> 
+	  file look like?</a>
+      <li><a href="#Q4.4">Q4.4 When I select DATE fields, the date is
+	  in the wrong format.  How do I get what I want?</a>
+    </ul>
+
+    <h3><a href="#SEC5">Section 5: Getting Help</a></h3>
+    <ul>
+      <li><a href="#Q5.1">Q5.1 How can I get help for Oratcl?</a>
+    </ul>
+
+    <h3><a href="#SEC6">Section 6: Contributing to Oratcl</a></h3>
+    <ul>
+      <li><a href="#Q6.1">Q6.1 How can I contribute to Oratcl?</a>
+    </ul>
+
+    <hr width="80%">
+
+    <h3>
+      <a name="SEC1" href="#TOC">Section 1: General Information</a>
+    </h3>
+    <blockquote>
+      <dl>
+	<dt>
+	  <a name="Q1.1" href="#TOC">Q1.1 What is Oratcl?</a>
+	  
+	<dd>
+	  
+	  <p>
+	    Oratcl is an extension to Tool Command Language (Tcl) that
+	    provides access to a Oracle Database server.  Oratcl adds
+	    additional Tcl commands that login to an Oracle Server,
+	    pass SQL code, read results, etc.  Oratcl was inspired by
+	    similar tools written for Perl (sybperl, oraperl) but was
+	    written from scratch instead of borrowing on the work of
+	    either Perl extension.
+	  </p>
+	  
+	<dt>
+	  <a name="Q1.2" href="#TOC">
+	    Q1.2 What platforms does Oratcl support?
+	  </a>
+	  
+	<dd>
+
+	  <p>
+	    The following is a list of platforms upon which Oratcl has
+	    been successfully deployed:
+	  </p>
+	  
+	  <ul>
+	    <li>Solaris 2.6, 7, 8, 9 and 10</b> *
+	    <li>Windows 9x, NT4, 2000, XP, 2003</b> *
+	    <li>AIX 4.3</b> *
+	    <li>HP/UX
+	    <li>RedHat Linux x86: ES3, AS3, ES4, AS4 *
+	    <li>RedHat Linux x86-64: ES3, AS3, ES4, AS4 *
+            <li>Fedora core: 3, 4
+	  </ul>
+	  
+	  <p>
+	    The entries above with asterisks (*) have been tested by the
+	    developers.  Other entries have been reported by users,
+	    but unverified by the developers.
+	  </p>
+
+	  <p>
+	    It is intended that Oratcl work on any platform that
+	    supports both Tcl/Tk and Oracle.  If you have difficulties
+	    building and/or running Oratcl, please post a message to
+	    the Oratcl/Sourceforge
+	    <a href="https://sourceforge.net/forum/forum.php?forum_id=40540">
+	      Help Forum</a>.
+	  </p>
+	  
+	<dt>
+	  <a name="Q1.3" href="#TOC">
+	    Q1.3 What versions of Oracle does Oratcl support?
+	  </a>
+	  
+	<dd>
+
+	  <p>
+	    The current versions of Oratcl (version 4.4) supports Oracle
+	    8i, 9i, 10g (32 bit and 64 bit versions) and the 10g release 2
+            instant client.  Oratcl (version 3.3) supports older releases
+	    of Oracle that use the older OCI API.  (I.E. Oracle 8.0.x).
+	    Previous versions supported the Oracle 7 OCI API and
+	    remain available for Oracle 7 users.
+	  </p>
+
+	<dt>
+	  <a name="Q1.4" href="#TOC">
+	    Q1.4 What version of Oratcl should I use?
+	  </a>
+	  
+	<dd>
+
+	  <p>
+	    Please refer to the table below when choosing a version of
+	    Oratcl:
+	  </p>
+	  
+	  <table border="1">
+	    <tr>
+	      <th colspan="2" rowspan="2">&nbsp;</th>
+	      <th colspan="6">Oracle Version</th>
+	    </tr>
+	    <tr>
+	      <th>7.x</th>
+	      <th>8.0.x</th>
+	      <th>8.1+</th>
+	      <th>8.1.7</th>
+	      <th>9i</th>
+	      <th>10g</th>
+	    </tr>
+	    <tr>
+	      <th rowspan="6">Tcl<br>Version</th>
+	      <th align="left">Tcl 7.x</th>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	    </tr>
+	    <tr>
+	      <th align="left">Tcl 8.0x</th>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Oratcl 2.6</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	    </tr>
+	    <tr>
+	      <th align="left">Tcl 8.1-8.2</th>
+	      <td align="center">Oratcl 2.7</td>
+	      <td align="center">Oratcl 3.0.1</td>
+	      <td align="center">Oratcl 3.0.1</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	      <td align="center">Unknown</td>
+	    </tr>
+	    <tr>
+	      <th align="left">Tcl 8.3</th>
+	      <td align="center">Unknown</td>
+	      <td align="center">Oratcl 3.3</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	    </tr>
+	    <tr>
+	      <th align="left">Tcl 8.4</th>
+	      <td align="center">Unknown</td>
+	      <td align="center">Oratcl 3.3</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	    </tr>
+	    <tr>
+	      <th align="left">Tcl 8.5</th>
+	      <td align="center">Unknown</td>
+	      <td align="center">Oratcl 3.3</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	      <td align="center"><b>Oratcl 4.4</td>
+	    </tr>
+	  </table>
+	  
+      </dl>
+    </blockquote>
+
+    <h3>
+      <a name="SEC2" href="#TOC">Section 2: Obtaining Oratcl</a>
+    </h3>
+    <blockquote>
+      <dl>
+	<dt>
+	  <a name="Q2.1" href="#TOC">Q2.1 How is Oratcl distributed?</a>
+	<dd>
+	  <p>
+	    Current versions of Oratcl are distributed in source code
+	    form for all supported platforms (in tar/gzip format)
+	    <!-- 
+	    and
+	    as a binary distribution for the Win32 platform (zip
+	    format)
+	    -->
+	    .
+	  </p>
+	  <p>
+	    Older versions of Oratcl will be available as long as there
+	    is demand.
+	  </p>
+
+	<dt><a name="Q2.2" href="#TOC">Q2.2 Where can I get Oratcl?</a>
+	<dd>
+	  <p>
+	    Distributions will be made available
+	    on the 
+	    <a href="http://sourceforge.net/projects/oratcl/">
+	      SourceForge Oratcl site
+	    </a> 
+	    as soon as possible.	    
+	  </p>
+	  <p>  
+	    The most current version of Oratcl is also available through
+	    <a href="http://sourceforge.net/cvs/?group_id=12880">
+	      anonymous CVS
+	    </a>.
+	    Please use <tt>oratcl</tt> as the <i>modulename</i> to
+	    check out.
+	  </p>
+      </dl>
+    </blockquote>
+
+    <h3><a name="SEC3" href="#TOC">Section 3: Building Oratcl</a></h3>
+    <blockquote>
+      <dl>
+	<dt>
+	  <a name="Q3.1" href="#TOC">
+	    Q3.1 How do I build Oratcl on UNIX systems?
+	  </a>
+	<dd>
+	  <p>
+	    Oratcl uses the <b>GNU autoconf</b> automatic configuration
+	    system to create Makefiles appropriate for your Tcl and Oracle
+	    installations.  Building Oratcl is often as simple as:
+	  <pre>
+cd {oratcl source directory}
+./configure --prefix=/path_to_installed_tcl
+make && make install
+	  </pre>
+	</p>
+	  <p>
+	    More specific instructions can be found in the 
+	    <tt>oratcl/INSTALL</tt> file included
+	    with the source distribution.
+	  </p>
+	  
+	<dt>
+	  <a name="#Q3.2" href="#TOC">
+	    Q3.2 How do I build Oratcl on Win32 systems using Cygwin?
+	  </a>
+	  
+	<dd>
+	  <p>
+	    The <b>GNU autoconf</b> system is known to work for
+	    building and installing Oratcl for Cygwin environments.
+	    However, you must have installed Tcl/Tk by building it
+	    in the Cygwin environment for the Oratcl build to 
+	    succeed.
+	  </p>
+	  <p>
+	    The Oratcl objects built in the Cygwin environment will
+	    work with <i>either</i> a Cygwin Tcl/Tk or a standard
+	    Win32 Tcl/Tk installation.
+	  </p>
+	  <p>
+	    Instructions for building Oratcl in a Cygwin environment
+	    are the same as for any other environment.
+	  </p>
+
+	<dt>
+	  <a name="Q3.3" href="#TOC">
+	    Q3.3 How do I build Oratcl on Win32 systems using Microsoft
+	    development tools?
+	  </a>
+	<dd>
+	  <p>
+	    Makefiles appropriate for building Oratcl with
+	    <i>Microsoft Developer's Studio</i> may be found in the
+	    <tt>oratcl/windows</tt> directory.  Pre-built Win32
+	    libraries may also be found in that directory.
+	  </p>
+	<dt>
+	  <a name="Q3.4" href="#TOC">
+	    Q3.4 When I try to compile Oratcl, I get an error like
+	    "unrecognized option `-rpath'."  How can I fix this?
+	  </a>
+	<dd>
+	  <p>
+	    This error seems to occur on systems where the
+	    <tt>gcc</tt> compiler is installed as "<tt>cc</tt>", like
+	    Linux.  The solution is to set the environment variable
+	    <tt>CC</tt> to "<tt>gcc</tt>" before running
+	    <tt>configure</tt>.  For example, from the <tt>unix</tt>
+	    directory in the Oratcl source tree:
+	  <pre>
+env CC="gcc" ../configure --prefix=/path/to/install
+	  </pre>
+      </dl>
+    </blockquote>
+
+    <h3><a name="SEC4" href="#TOC">Section 4: Using Oratcl</a></h3>
+    <blockquote>
+      <dl>
+	<dt>
+	  <a name="Q4.1" href="#TOC">
+	    Q4.1 Is there documentation for Oratcl?
+	  </a>
+	<dd>
+	  <p>
+	    The current Oratcl distribution includes a manual page in
+	    both HTML and nroff formats.  You can find the manual
+	    pages in the <tt>oratcl/doc</tt> directory, or installed
+	    in <tt><i>prefix</i>/man/mann</tt> on UNIX systems.
+	  </p>
+	  <p>
+	    The manual pages are also available on-line.  The most current
+	    version is available as the
+	    <a href="manpage.html">
+	      Oratcl Manual page
+	    </a>
+	    at <a href="http://sourceforge.net/">SourceForge</a>.
+	  </p>
+	  <p>
+	    Other versions of the manual pages are linked from the
+	    <a href="http://oratcl.sourceforge.net/">
+	      Oratcl Main Page
+	    </a>
+	    also at <a href="http://sourceforge.net/">SourceForge</a>.
+	<dt>
+	  <a name="Q4.2" href="#TOC">
+	    Q4.2 How do I configure SQL*NET for Oratcl?
+	  </a>
+	<dd>
+	  <p>
+	    Oratcl requires no special configuration to connect with a
+	    database other than a valid Oracle client install on the local
+	    server.
+	  </p>
+	  <p>
+	    Recent versions of Oratcl are not linked with Oracle
+	    libraries at build time.  Oratcl will dynamically load
+	    the oracle client libraries found at $ORACLE_HOME/lib or
+	    using the ORATCL environment variable ORACLE_LIBRARY to 
+	    override the $ORACLE_HOME/lib.  This ORACLE_LIBRARY variable
+	    is most useful with the 10g instant client.
+	  </p>
+	<dt>
+	  <a name="Q4.3" href="#TOC">
+	    Q4.3 What might a <tt>tnsnames.ora</tt> file look like?
+	  </a>
+	<dd>
+	  <p>
+	    The SQL*NET configuration for a database connection may be
+	    very complex, and is outside the scope of this document.
+	    However, at its simplest, a <tt>tnsnames.ora</tt> file
+	    may resemble this for TCP/IP connected databases:
+	  </p>
+	  <pre>
+mydb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+        (ADDRESS =
+          (PROTOCOL = TCP)
+          (HOST = mydbhost.domain.com)
+          (PORT = 1521)
+        )
+    )
+    (CONNECT_DATA =
+      (SID = db)
+    )
+  )
+	  </pre>
+	  <p>
+	    In this case, the connect string given to
+	    <tt>oralogon</tt> should resemble
+	    <tt>"username/password@mydb"</tt>.
+	  </p>
+	  <p>
+	    Please note that the database alias ("mydb") need not be
+	    the same as the SID ("db"), but you must use the alias in
+	    the connect string.  Also, Net8 introduced some new syntax
+	    and features and you may find that your configuration
+	    files look quite different than this stripped-down
+	    example.
+	  </p>
+	<dt>
+	  <a name="Q4.4" href="#TOC">
+	    Q4.4 When I select DATE fields, the date is
+	    in the wrong format.  How do I get what I want?
+	  </a>
+	<dd>
+	  <p>
+	    Whenever a DATE field is selected, the database does an
+	    implicit TO_CHAR() conversion to change the data from the
+	    internal date format into something recognizable as a
+	    date.  The actual format used in the TO_CHAR() operation
+	    is defined by the NLS_DATE_FORMAT session parameter, which
+	    may default to something like 'DD-MON-YYYY' rather than
+	    what you want.
+	  </p>
+	  <p>
+	    To get the DATE information in the format you want, you
+	    can either set the NLS_DATE_FORMAT on a per-session basis,
+	    alter the NLS_DATE_FORMAT system-wide by editing the
+	    <tt>init.ora</tt> file, or request an explicit TO_CHAR()
+	    whenever you select a DATE.  Usually, the first method is
+	    the easiest when you want all dates to appear in the same
+	    format to the Tcl program.
+	  </p>
+	  <p>
+	    Below is an example of setting NLS_DATE_FORMAT on a
+	    per-session basis:
+	  </p>
+	  <pre>
+# oralogon, oraopen, etc. happen above
+oraparse $cur {alter session set nls_date_format='DD-MON-YYYY'}
+oraexec $cur
+oraparse $cur {select sysdate from dual}
+oraexec $cur
+while [orafetch $cur -datavariable now] == 0] {
+	puts $now
+}
+
+oraparse $cur {alter session set nls_date_format='DD-MON-YYYY HH:MI:SS'}
+oraexec $cur
+oraparse $cur {select sysdate from dual}
+oraexec $cur
+while [orafetch $cur -datavariable now] == 0] {
+	puts $now
+}
+	  </pre>
+      </dl>
+    </blockquote>
+
+    <h3><a name="SEC5" href="#TOC">Section 5: Getting Help</a></h3>
+    <blockquote>
+      <dl>
+	<dt><a name="Q5.1" href="#TOC">Q5.1 How can I get help for Oratcl?</a>
+	<dd>
+	  <p>
+	    The Oratcl developers monitor the 
+	    <a href="http://sourceforge.net/forum/?group_id=12880">
+	      SourceForge Oratcl Forums
+	    </a>
+	    and the <a href="news:comp.lang.tcl">Tcl Newsgroup</a>
+	    as time permits.
+	  </p>
+	  <p>
+	    You may also submit questions and/or concerns to 
+	    <a href="mailto:tmh@users.sorceforge.net">Todd Helfter</a>
+	    (Oratcl developer/maintainer) or
+	    <a href="mailto:bhlewis@users.sourceforge.net">Ben Lewis</a>
+	    (documentation).  We will try to respond in a timely manner.
+	  </p>
+      </dl>
+    </blockquote>
+
+    <h3>
+      <a name="SEC6" href="#TOC">Section 6: Contributing to Oratcl</a>
+    </h3>
+    <blockquote>
+      <dl>
+	<dt><a name="Q6.1" href="#TOC">Q6.1 How can I contribute to Oratcl?</a>
+	<dd>
+	  <p>
+	    The Oratcl developers welcome problem reports, feature suggestions,
+	    and especially patches from anyone that would like to contribute
+	    to the furtherment of the project.  Below are some links to
+	    the various <a href="http://sourceforge.net/">SourceForge</a>
+	    features that allow the developers to keep track of these things:
+	  </p>
+	  <ul>
+	    <li>
+	      <a href="http://sourceforge.net/bugs/?group_id=12880">
+		Bug Reporting Page
+	      </a>
+	    <li>
+	      <a href="http://sourceforge.net/patch/?group_id=12880">
+		Patch Page
+	      </a>
+	    <li>
+	      <a href="http://sourceforge.net/forum/?group_id=12880">
+		Oratcl Forums
+	      </a>
+	  </ul>
+	  <p>
+	    Please be sure to include a complete description of the
+	    computing environment you are using and any necessary
+	    contact information with your Bug Reports.  Patch submitters,
+	    please include the information we'll need to credit you
+	    properly!
+	  </p>
+      </dl>
+    </blockquote>
+
+
+    <hr>
+    <address><a href="mailto:tmh@users.sourceforge.net">Todd Helfter</a></address>
+    <address><a href="mailto:bhlewis@users.sourceforge.net">Benjamin Lewis</a></address>
+<!-- Created: Mon Nov  6 09:02:57 EST 2000 -->
+<!-- hhmts start -->
+Last modified: Tue Jul 24 09:15:46 EST 2001
+<!-- hhmts end -->
+  </body>
+</html>

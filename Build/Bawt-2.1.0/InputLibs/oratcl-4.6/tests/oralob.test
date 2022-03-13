@@ -1,0 +1,459 @@
+# oralob.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise oralob
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oralob {
+	namespace import ::tcltest::*
+
+	global ora_constr
+	set lob_lda [oralogon $ora_constr]
+	set lob_stm [oraopen $lob_lda]
+	# this appears to be very near the maximum piece size in pl/sql for 10gR2
+	oraconfig $lob_stm lobpsize 32500
+
+	set lob_sql(query_nls_characterset) {
+		SELECT value$ FROM sys.props$ WHERE name = 'NLS_CHARACTERSET'
+	}
+
+	set lob_sql(create_lob_table) {
+		create table oratcl_lob ( \
+			lob_key varchar2(10), \
+			lob_clob clob default empty_clob(), \
+			lob_blob blob default empty_blob() \
+		)
+	}
+
+	set lob_sql(insert_lob_table) { \
+		insert into oratcl_lob (lob_key) values (:lob_key) \
+	}
+
+	set lob_sql(select_lob_table) { \
+		select rowid from oratcl_lob where lob_key = :lob_key \
+	}
+
+	set lob_sql(drop_lob_table) {
+		drop table oratcl_lob
+	}
+
+	# code added to skip some LOB tests when client NLS_CHARACTER_SET does not match database.
+	oraparse $lob_stm $lob_sql(query_nls_characterset)
+	oraexec $lob_stm
+	orafetch $lob_stm -datavariable lob_nls_characterset
+        testConstraint nls_character_set_mismatch [string equal $lob_nls_characterset [orainfo nlsgetinfo $lob_lda NLS_CHARACTER_SET]]
+
+	catch {
+		oraparse $lob_stm $lob_sql(drop_lob_table)
+		oraexec $lob_stm
+	}
+
+	oraparse $lob_stm $lob_sql(create_lob_table)
+	oraexec $lob_stm
+
+	oraparse $lob_stm $lob_sql(insert_lob_table)
+	orabind $lob_stm :lob_key l1
+	oraexec $lob_stm
+	orabind $lob_stm :lob_key l2
+	oraexec $lob_stm
+	orabind $lob_stm :lob_key l3
+	oraexec $lob_stm
+
+	oracommit $lob_lda
+
+	oraparse $lob_stm $lob_sql(select_lob_table)
+	orabind $lob_stm :lob_key l1
+	oraexec $lob_stm
+	orafetch $lob_stm -datavariable rowid1
+	orabind $lob_stm :lob_key l2
+	oraexec $lob_stm
+	orafetch $lob_stm -datavariable rowid2
+	orabind $lob_stm :lob_key l3
+	oraexec $lob_stm
+	orafetch $lob_stm -datavariable rowid3
+
+	set chr_data [string repeat 0123456789---------- 10000]
+
+	set fileId [open [info nameofexecutable] r]
+	fconfigure $fileId -translation binary
+	set bin_data [read $fileId]
+	close $fileId
+	unset fileId
+
+	test oralob-0.0 {oralob: all procs loaded} {
+		set procCtr 0
+		set procFnd 0
+		foreach procname { \
+			::oratcl::lob_alloc \
+			::oratcl::lob_append \
+			::oratcl::lob_compare \
+			::oratcl::lob_erase \
+			::oratcl::lob_free \
+			::oratcl::lob_instr \
+			::oratcl::lob_length \
+			::oratcl::lob_read \
+			::oratcl::lob_substr \
+			::oratcl::lob_trim \
+			::oratcl::lob_write \
+			::oratcl::lob_writeappend \
+		} {
+			incr procCtr
+			if {[string equal [info commands $procname] $procname]} {
+				incr procFnd
+			}
+		}
+		set res [expr {$procCtr == $procFnd}]
+		list $res
+	} {1}
+
+	test oralob-1.0 {oralob: alloc and free clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob free $lob} free
+		list $lob $free
+	} {oralob.0 0}
+
+	test oralob-1.1 {oralob: alloc and free blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		catch {oralob free $lob} free
+		list $lob $free
+	} {oralob.1 0}
+
+	test oralob-1.2 {oralob: write clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob write $lob -datavariable chr_data} write
+		catch {oralob free $lob} free
+		list $lob $write $free
+	} {oralob.2 0 0}
+
+	test oralob-1.3 {oralob: read clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob read $lob -datavariable chr_out} res
+		set read [string equal $chr_data $chr_out]
+		catch {oralob free $lob} free
+		list $lob $read $free
+	} {oralob.3 1 0}
+
+	test oralob-1.4 {oralob: write blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		catch {oralob write $lob -datavariable bin_data} write
+		catch {oralob free $lob} free
+		list $lob $write $free
+	} {oralob.4 0 0}
+
+	test oralob-1.5 {oralob: read blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		catch {oralob read $lob -datavariable bin_out} write
+		catch {oralob free $lob} free
+		set read [string equal $bin_data $bin_out]
+		list $lob $read $free
+	} {oralob.5 1 0}
+
+	test oralob-1.6 {oralob: length clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob length $lob} length
+		catch {oralob free $lob} free
+		set res [expr {[string length $chr_data] == $length}]
+		list $lob $res $free
+	} {oralob.6 1 0}
+
+	test oralob-1.7 {oralob: length blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		catch {oralob length $lob} length
+		catch {oralob free $lob} free
+		set res [expr {[string length $bin_data] == $length}]
+		list $lob $res $free
+	} {oralob.7 1 0}
+
+	test oralob-1.8 {oralob: trim clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		set half [expr {[string length $chr_data] / 2}]
+		catch {oralob trim $lob -length $half} trim
+		catch {oralob length $lob} length
+		catch {oralob free $lob} free
+		set res [expr {$half == $length}]
+		list $lob $res $free
+	} {oralob.8 1 0}
+
+	test oralob-1.9 {oralob: trim blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		set half [expr {[string length $bin_data] / 2}]
+		catch {oralob trim $lob -length $half} trim
+		catch {oralob length $lob} length
+		catch {oralob free $lob} free
+		set res [expr {$half == $length}]
+		list $lob $res $free
+	} {oralob.9 1 0}
+
+	test oralob-1.10 {oralob: substr clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		set sub [string range $chr_data 10 100] 
+		catch {oralob substr $lob -start 10 -stop 100 -datavariable sub_out}
+		catch {oralob free $lob} free
+		set res [expr {$sub == $sub_out}]
+		list $lob $res $free
+	} {oralob.10 1 0}
+
+	test oralob-1.11 {oralob: substr blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		set sub [string range $bin_data 10 100] 
+		catch {oralob substr $lob -start 10 -stop 100 -datavariable sub_out} 
+		catch {oralob free $lob} free
+		set res [expr {$sub == $sub_out}]
+		list $lob $res $free
+	} {oralob.11 1 0}
+
+	test oralob-1.12 {oralob: erase clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		set source "[string range $chr_data 10 11]   [string range $chr_data 15 16]" 
+		catch {oralob erase $lob -start 12 -stop 14} erase_res
+		catch {oralob substr $lob -start 10 -stop 16 -datavariable erase_out}
+		catch {oralob free $lob} free
+		set res [string equal $source $erase_out]
+		list $lob $res $free
+	} {oralob.12 1 0}
+
+	test oralob-1.13 {oralob: erase blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		set source "[string range $bin_data 10 11]   [string range $bin_data 15 16]" 
+		set p1 [string range $bin_data 20 21]
+		binary scan $p1 H* p1h
+		set p2 [string range $bin_data 25 26]
+		binary scan $p2 H* p2h
+		set source [binary format H* ${p1h}000000${p2h}]
+		catch {oralob erase $lob -start 22 -stop 24} erase_res
+		catch {oralob substr $lob -start 20 -stop 26 -datavariable erase_out}
+		catch {oralob free $lob} free
+		set res [string equal $source $erase_out]
+		list $lob $res $free
+	} {oralob.13 1 0}
+
+	test oralob-1.14 {oralob: instr clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		set pattern [string range $chr_data 15 50]
+		set pos [oralob instr $lob -pattern $pattern]
+		catch {oralob free $lob} free
+		list $lob $pos $free
+	} {oralob.14 15 0}
+
+	test oralob-1.15 {oralob: instr blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob
+		set pattern [string range $bin_data 15 20]
+		set pos [oralob instr $lob -pattern $pattern]
+		catch {oralob free $lob} free
+		list $lob $pos $free
+	} {oralob.15 15 0}
+
+	test oralob-2.0 {oralob: append clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob1
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid2} lob2
+		catch {oralob append $lob2 $lob1} res
+		catch {oralob free $lob1} free1
+		catch {oralob free $lob2} free2
+		set res
+	} {0}
+
+	test oralob-2.1 {oralob: append blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob1
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid2} lob2
+		catch {oralob append $lob2 $lob1} res
+		catch {oralob free $lob1} free1
+		catch {oralob free $lob2} free2
+		set res
+	} {0}
+
+	test oralob-3.0 {oralob: compare clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob1
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid2} lob2
+		catch {oralob compare $lob1 $lob2} res
+		catch {oralob free $lob1} free1
+		catch {oralob free $lob2} free2
+		set res
+	} {0}
+
+	test oralob-3.1 {oralob: compare blob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid1} lob1
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_blob -rowid $rowid2} lob2
+		catch {oralob compare $lob1 $lob2} res
+		catch {oralob free $lob1} free1
+		catch {oralob free $lob2} free2
+		set res
+	} {0}
+
+	test oralob-4.0 {oralob: write clob 'double character'} {
+		set one_chr zz
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob write $lob -datavariable one_chr} write
+		catch {oralob read $lob -datavariable one_out} res
+		set res [string equal $one_chr $one_out]
+		catch {oralob free $lob} free
+		set res
+	} {1}
+
+	test oralob-4.1 {oralob: write clob 'single character'} {
+		set one_chr z
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob write $lob -datavariable one_chr} write
+		catch {oralob read $lob -datavariable one_out} res
+		set res [string equal $one_chr $one_out]
+		catch {oralob free $lob} free
+		set res
+	} {1}
+
+	test oralob-4.2 {oralob: write clob 'null string'} {
+		set one_chr {}
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid1} lob
+		catch {oralob write $lob -datavariable one_chr} write
+		catch {oralob read $lob -datavariable one_out} res
+		set res [string equal $one_chr $one_out]
+		catch {oralob free $lob} free
+		set res
+	} {1}
+
+	test oralob-5.0 {oralob: writeappend clob 'double writeappend'} {
+		set in_str zz_xx
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid3} lob
+		catch {oralob writeappend $lob -datavariable in_str} write
+		catch {oralob writeappend $lob -datavariable in_str} write
+		oracommit $lob_lda
+		catch {oralob read $lob -datavariable out_str} res
+		set res [string equal ${in_str}${in_str} $out_str]
+		catch {oralob free $lob} free
+		set res
+	} {1}
+
+	test oralob-6.0 {oralob: write clob} {
+		catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid2} lob
+		catch {oralob write $lob -datavariable chr_data} write
+		catch {oralob free $lob} free
+		list $write
+	} {0}
+
+	test oralob-6.1 {oralob: read clob with SQL} {
+		-constraints nls_character_set_mismatch
+		-body {
+			catch {oralob alloc $lob_stm -table oratcl_lob -column lob_clob -rowid $rowid2} lob
+			catch {oralob read $lob -datavariable chr_out} res
+			set read [string equal $chr_data $chr_out]
+			catch {oralob free $lob} free
+			catch {
+			   oraconfig $lob_stm lobpsize 1000000
+			   oraparse $lob_stm {select lob_clob from oratcl_lob where lob_key = :key}
+			   orabind $lob_stm :key l2
+			   oraexec $lob_stm
+			   if {[orafetch $lob_stm -datavariable sql_out] == 0} {
+				set read [string equal $chr_out $sql_out]
+			   } else {
+				set read 0
+			   }
+			}
+			set read
+		}
+		-result {1}
+	}
+
+        test oralob-6.2 {oralob: insert clob with SQL} {
+		-constraints nls_character_set_mismatch
+                -setup {
+                        set lda [oralogon $ora_constr]
+                        set stm [oraopen $lda]
+                        oraconfig $stm lobpsize 1000000
+                }
+                -body {
+			set sql { \
+				update oratcl_lob  \
+				set lob_clob = :val  \
+				where lob_key = :key \
+			}
+			oraparse $stm $sql
+			orabind $stm :val TMH :key l1
+			set res [oraexec $stm]
+			oracommit $lda
+			set res
+                }
+                -cleanup {
+                        oraclose $stm
+                        oralogoff $lda
+                }
+                -result {0}
+        }
+
+        test oralob-6.3 {oralob: update clob with SQL} {
+		-constraints nls_character_set_mismatch
+                -setup {
+                        set lda [oralogon $ora_constr]
+                        set stm [oraopen $lda]
+                        oraconfig $stm lobpsize 1000000
+                }
+                -body {
+			oraparse $stm {insert into oratcl_lob (lob_key, lob_clob) values (:lkey, :lclb)}
+			orabind $stm :lkey l4 :lclb TMH
+			set res [oraexec $stm]
+			oracommit $lda
+			set res
+                }
+                -cleanup {
+                        oraclose $stm
+                        oralogoff $lda
+                }
+                -result {0}
+        }
+
+        test oralob-6.4 {oralob: update clob with SQL} {
+		-constraints nls_character_set_mismatch
+                -setup {
+			set x [expr {214748364 * 2}]
+			set lrg_data [string repeat 0 $x]
+                        set tst6_4(lda) [oralogon $ora_constr]
+                        set tst6_4(st1) [oraopen $tst6_4(lda)]
+                        set tst6_4(st2) [oraopen $tst6_4(lda)]
+                        oraconfig $tst6_4(st1) lobpsize 1000000
+                        oraconfig $tst6_4(st1) bindsize [string length $lrg_data]
+                }
+                -body {
+			set res -1
+			set rc [catch {oraparse $tst6_4(st1) {insert into oratcl_lob (lob_key, lob_clob) values (:lkey, :lclb)}} cres]
+			if {$rc} {puts stderr "insert parse: $cres"}
+			set rc [catch {orabind $tst6_4(st1) :lkey l5 :lclb $lrg_data} cres]
+			if {$rc} {puts stderr "insert bind: $cres"}
+			set rc [catch {oraexec $tst6_4(st1)} cres]
+			if {$rc} {puts stderr "insert exec: $cres"}
+			oracommit $tst6_4(lda)
+			set rc [catch {oraparse $tst6_4(st2) {select lob_clob from oratcl_lob where lob_key = :lkey}} cres]
+			if {$rc} {puts stderr "select parse: $cres"}
+			set rc [catch {orabind $tst6_4(st2) :lkey l5} cres]
+			if {$rc} {puts stderr "select bind: $cres"}
+			set rc [catch {oraexec $tst6_4(st2)} cres]
+			if {$rc} {puts stderr "select exec: $cres"}
+			if {[orafetch $tst6_4(st2) -datavariable res] == 0} {
+				set res [string equal $res $lrg_data]
+			}
+			set res
+                }
+                -cleanup {
+                        oraclose $tst6_4(st1)
+                        oraclose $tst6_4(st2)
+                        oralogoff $tst6_4(lda)
+                        array unset tst6_4
+                }
+                -result {1}
+        }
+
+	orasql $lob_stm $lob_sql(drop_lob_table)
+	oraclose $lob_stm
+	oralogoff $lob_lda
+
+	cleanupTests
+}
+namespace delete ::tcl::test::oralob
+return

@@ -1,0 +1,101 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# This script unhangs a printer which claims it is "waiting for lock".
+# Written by Don Libes.  Based on English instructions from Scott Paisley.
+
+# lpunlock figures out if the printer is on a server, and if so which,
+# by looking in the local printcap file.  (You can override this by
+# supplying a server name as an additional argument.)  It then rlogins
+# to the server, recreates the device and resets the queue via lpc.
+
+# assumes user has root privs on remote host via /.rhosts
+
+# assumes printer is name of device on remote system
+
+proc usage {} {
+	send_user "usage: lpunlock <printer> \[<server>\]\n"
+	send_user "example: lpunlock lw-isg durer\n"
+	exit
+}
+
+if {$argc==0} usage
+set printer [lindex $argv 0]
+
+set client [exec hostname]
+
+if {$argc == 1} {
+	# if no arg2, look in local printcap for info
+	spawn ed /etc/printcap
+	expect "\n"			;# discard character count
+	send "/$printer/\r"
+	for {} {1} {} {
+		expect -re ".*:rm=(\[^:]*):.*\r\n" {
+			set server $expect_out(1,string)
+			break
+		} "\r\n*\\\r\n" {	;# look at next line of entry
+			send "\r"
+		} "\r\n*\n" {		;# no more lines of entry - give up
+			set server $client
+			break
+		}
+	}
+} else {
+	if {$argc == 2} {
+		set server [lindex $argv 1]
+	} else usage
+}
+
+set whoami [exec whoami]
+if {[string match $server $client] && [string match $whoami "root"]} {
+	spawn csh
+	expect "# "
+} else {
+	# login to the print server as root.
+	# Set timeout high because login is slow.
+	set timeout 60
+	spawn rlogin $server -l root
+	expect	timeout	exit \
+		eof exit \
+		"Password*" {
+			send_user "\ncouldn't login to $server as root\n"
+			exit
+		} "1#*"
+	set timeout 10
+}
+
+# run lpc and 'stop printer'
+send lpc\r				; expect "lpc>*"
+send stop $printer\r			; expect "unknown*" exit \
+						"disabled*lpc>*"
+
+# exit lpc and cd /dev
+send quit\r				; expect "#*"
+send cd /dev\r				; expect "#*"
+
+# figure out major/minor device numbers
+send ls -l /dev/$printer\r		; expect timeout {
+	send_user "\nbad device - couldn't get major/minor numbers\n"; exit
+						} "crw*#*"
+scan $expect_out(buffer) "ls -l %*s %*s 1 root %d, %d" major minor
+
+# delete the lock and the printer device itself
+send rm /var/spool/$printer/lock /dev/$printer\r	; expect #*
+
+# recreate the printer device
+send mknod $printer c $major $minor\r	; expect #*
+
+# run lpc and 'start printer'
+send lpc\r				; expect lpc>*
+send start $printer\r			; expect started*lpc>*
+send quit\r				; expect #*
+
+# logout
+send exit\r				; expect eof
+
+send_user Printer unlocked and restarted.\n

@@ -1,0 +1,289 @@
+This is the pgtcl-ng Source Release Historical README
+Last updated for pgtcl-1.5.0 on 2004-02-29
+The project home page is: http://gborg.postgresql.org/project/pgtclng/
+-----------------------------------------------------------------------------
+
+This file contains historical information about the PostgreSQL Tcl
+Interface. README files distributed with predecessor projects can be found
+below.  Not all of this information applies to the current release, and the
+Reference Manual and current README should be considered definitive.
+
+=============================================================================
+    README from Gborg "pgtcl" project unbundled interface release 1.4b3
+-----------------------------------------------------------------------------
+libpgtcl is a library that implements Tcl commands for front-end
+clients to interact with Postgresql 7.2 (and perhaps later)
+backends.  See libpgtcl.doc for details.
+
+ Id: README,v 1.6 2002/11/16 01:10:51 karl Exp  
+
+This is pgtcl version 1.4 beta 3
+
+CHANGES IN 1.4 BETA 3
+
+Fixed all known memory leaks.  Fixed bug in "pg_result -assignbyidx".
+Fixed notifier bug in pg_listen.
+
+VERSION 1.4
+
+With version 1.4, Pgtcl has been internally overhauled and brought up to
+date with the latest Tcl C-interface technology, while maintaining
+nearly 100% compatibility with the pg_* Tcl interface provided by Pgtcl 1.3.
+
+Most Tcl programs that used Pgtcl 1.3 will work without modification
+under Pgtcl 1.4.
+
+This is a transitional release, as pgtcl is moving out the of core and
+into its own distribution.  This means that documentation also must be
+collected and included.  This has not yet been done.
+
+CONFIGURING
+
+Pgtcl is now Tcl Extension Architecture (TEA) compliant, shipping with
+a standard "configure" script.  It no longer needs to reside in a specific
+place within the Postgres source tree in order to build.  
+
+You need to specify a path to the Postgres include files
+using --with-postgres-include and to the Postgres libraries 
+using --with-postgres-lib
+
+If you had PostgreSQL installed into /usr/postgres and a Tcl build in
+/usr/pptcl, you might use something like
+
+./configure --prefix=/usr/pptcl --with-postgres-include=/usr/postgres/include --with-postgres-lib=/usr/postgres/lib
+
+BUILDING
+
+Do a "make".  If all goes well, libpgtcl will be compiled and linked.
+
+INSTALLING
+
+Do a "make install".
+
+USING IT
+
+With version 1.4, Pgtcl is a standard package and can be loaded with
+"package require" instead of the shared library load routine, "load".
+
+Fire up your tclsh:
+
+tclsh8.4
+% package require Pgtcl
+1.4
+
+You should use package require instead of load because there will be
+additional Tcl code shipped in future versions of Pgtcl, and using
+package require will make that code available to your application.
+
+
+CHANGES
+
+The main changes are:
+
+    o Support has been dropped for Tcl 7.x.  We now support Tcl 8.0 and above,
+      preferably Tcl 8.3 and above.
+
+    o All commands have now been converted to use Tcl 8-style Tcl objects.
+
+        The result is a probable increase in performance in all routines, with
+        potentially huge performance increases in pg_select and pg_execute when
+        used with complex Tcl code bodies.
+
+    o A new experimental asynchronous interface has been added
+
+	Requests can be issued to the backend without waiting for the
+	results, allowing for user interfaces to still work, etc.
+	Also, requests can now be cancelled while they're in process.
+
+    o pg_* call arguments are now checked much more rigorously.
+
+	Code previously using atoi() for integer conversions now
+	uses Tcl_GetIntFromObj, etc.
+
+	pg_* calls with too many arguments were often accepted without
+	complaint.  These now generate standard Tcl "wrong # args"
+	messages, etc.
+
+    o Error reporting has been brought into more compliance with the
+      Tcl way of doing things.
+
+    o TEA-compliant build and install.
+
+So some programs that might have been working properly but had certain
+syntatically incorrect pg_* commands will now fail until fixed.
+
+pg_result -assign and pg_result -assignbyidx used to return the array
+name, which was superfluous because the array name was specified on the
+command line.  They now return nothing.  *** POTENTIAL INCOMPATIBILITY ***
+
+=============================================================================
+    README.async from Gborg "pgtcl" unbundled interface project
+-----------------------------------------------------------------------------
+ Id: README.async,v 1.1 2002/11/04 16:53:38 karl Exp  
+
+Experimental Tcl interface to PostgreSQL asynchronous query processing
+
+        by Karl Lehenbauer (karl@procplace.com) 10/30/2002
+
+RATIONALE
+
+From the C-interface docs:
+
+The PQexec function is adequate for submitting commands in simple 
+synchronous applications. It has a couple of major deficiencies however:
+
+    * PQexec waits for the command to be completed. The application may 
+      have other work to do (such as maintaining a user interface), in which 
+      case it won't want to block waiting for the response.
+
+    * Since control is buried inside PQexec, it is hard for the frontend 
+      to decide it would like to try to cancel the ongoing command. (It 
+      can be done from a signal handler, but not otherwise.)
+
+    * PQexec can return only one PGresult structure. If the submitted 
+      command string contains multiple SQL commands, all but the last 
+      PGresult are discarded by PQexec.
+
+WHAT THIS IS
+
+A handful of new pg_* commands have been added to support asynchronous
+operation, including cancelling requests that are currently being
+processed and obtaining results from each SQL command when a
+query contains multiple commands.
+
+EXPERIMENTAL IN NATURE
+
+This is a new Tcl interface to asynchronous query processing capabilities that
+have been made available through the Postgres C interface.
+
+We're calling it experimental because we think we'll want to evolve and change
+the interface, perhaps simplifying it, as we gain experience with it.  So
+if you use it, understand that we are not promising to provide the same
+interface or backwards compatibility to this interface in future releases.
+
+ASYNCHRONOUS QUERY PROCESSING COMMANDS
+
+    pg_sendquery connection query
+
+This works like pg_exec, except that the query is issued asynchronously
+and pg_sendquery returns immediately without providing a result handle.
+
+To get result handles resulting from the execution of pg_sendqery (and there 
+may be more than one if there are multiple SQL commands in the query), you 
+need to repeatedly call
+
+    pg_getresult connection
+
+This will return the same sort of result handle that pg_exec returns.
+
+If there is no query currently being processed or all of the results have
+been obtained, pg_getresult returns nothing.
+
+
+    pg_isbusy connection
+
+pg_getresult can block if results aren't yet available.  To avoid this,
+you can use pg_isbusy to check to see if the connection is busy processing
+a query.
+
+If this returns 1, pg_getresult will block if called.  If it's 0, you can
+safely call pg_getresult and it won't block.
+
+    pg_blocking
+
+This sets whether a connection is set for blocking or nonblocking, and
+allows that state to be changed.
+
+ syntax:
+ pg_blocking connection - returns the current state, 1 = blocking, 0 = non
+ pg_blocking connection 1 - sets the connection to blocking
+ pg_blocking connection 0 - sets the connection to nonblocking
+
+Note - I'm not sure about all of the ramifications of setting a connection
+nonblocking.  Even with a connection in the (default) blocking state, 
+pg_isbusy seems to work OK and can be used in conjunction with pg_getresult
+to keep from blocking while processing query results.
+
+
+    pg_cancelrequest connection
+
+This request that postgresql abandon processing of the current command
+issued via pg_sendquery.
+
+There is no guarantee that the request will be cancelled.  If it is and
+you were in the middle of a transaction, the entire transaction  is cancelled.
+
+You still need to call pg_getresult repeatedly until it doesn't return
+anything, and handle (and discard) all of the returned result handles.
+
+
+HOW TO USE IT
+
+We really need some example code.  Probably we need some Tcl code that will
+be part of the libary, pulled in with "package require Pgtcl", that will
+issue a pg_sendrequest and iteratively call pg_isbusy on a timer, then
+looping through passed-in Tcl code for each result until none are found.
+
+You'll want to write something that issues the request via pg_sendquery.
+Then you'll want a proc that does a pg_isbusy and if it is busy, calls
+itself to run again after, oh, a tenth of a second or so, via "after".
+If pg_isbusy returns 0, you can safely call pg_getresult to get a result.
+(Use pg_result to examine the result, as in the past.)  If pg_getresult
+returns an empty string, there is no more work to be done.
+
+If you want to cancel a request that is currently in progress, use
+pg_cancelrequest.  Note that you still need to do the pg_getresult
+thing repeatedly until it returns nothing.  For more information, read
+the C interface docs in the PostgreSQL documentation.
+
+I know you'd like some example code.  We don't have any yet.  That's why we 
+call it an alpha release.
+
+LICENSE
+
+Berkeley License.  Freely redistributable for any use including resale,
+without royalty or other sucky GPL restrictions.  Don't sue us if it
+kills your dog.
+
+=============================================================================
+    README from PostgreSQL-7.4.1 bundled interfaces/libpgtcl:
+-----------------------------------------------------------------------------
+libpgtcl is a library that implements Tcl commands for front-end
+clients to interact with the Postgresql 6.3 (and perhaps later)
+backends.  See libpgtcl.doc for details.
+  
+For an example of how to build a new tclsh to use libpgtcl, see the
+directory ../bin/pgtclsh
+
+Note this version is modified by NeoSoft to have the following additional
+features:
+
+1. Postgres connections are a valid Tcl channel, and can therefore
+   be manipulated by the interp command (ie. shared or transfered).
+   A connection handle's results are transfered/shared with it.
+   (Result handles are NOT channels, though it was tempting).  Note
+   that a "close $connection" is now functionally identical to a
+   "pg_disconnect $connection", although pg_connect must be used
+   to create a connection.
+   
+2. Result handles are changed in format: ${connection}.<result#>.
+   This just means for a connection 'pgtcl0', they look like pgtcl0.0,
+   pgtcl0.1, etc.  Enforcing this syntax makes it easy to look up
+   the real pointer by indexing into an array associated with the
+   connection.
+
+3. I/O routines are now defined for the connection handle.  I/O to/from
+   the connection is only valid under certain circumstances: following
+   the execution of the queries "copy <table> from stdin" or
+   "copy <table> to stdout".  In these cases, the result handle obtains
+   an intermediate status of "PGRES_COPY_IN" or "PGRES_COPY_OUT".  The
+   programmer is then expected to use Tcl gets or read commands on the
+   database connection (not the result handle) to extract the copy data.
+   For copy outs, read until the standard EOF indication is encountered.
+   For copy ins, puts a single terminator (\.).  The statement for this
+   would be
+	puts $conn "\\."      or       puts $conn {\.}
+   In either case (upon detecting the EOF or putting the `\.', the status
+   of the result handle will change to "PGRES_COMMAND_OK", and any further
+   I/O attempts will cause a Tcl error.
+-----------------------------------------------------------------------------

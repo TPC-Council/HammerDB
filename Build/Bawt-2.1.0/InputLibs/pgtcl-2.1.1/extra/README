@@ -1,0 +1,74 @@
+This is the pgtcl-ng/extra README - Additional code for Pgtcl
+Last updated for pgtcl-1.7.1 on 2009-11-25
+The project home page is: http://sourceforge.net/projects/pgtclng/
+-----------------------------------------------------------------------------
+
+SUMMARY:
+
+This directory contains the source for pgtclsh, a Tcl shell (tclsh) with
+PostgreSQL extensions, and pgwish (previously known as pgtksh), a Tcl/Tk
+shell (wish) with PostgreSQL extensions.
+
+
+BACKGROUND:
+
+Until pgtcl was unbundled from PostgreSQL, these were part of the
+PostgreSQL distribution in the src/bin/pgtclsh directory.  With the
+unbundling of the pgtcl interface, the sources have been moved here
+and are now deprecated. Why deprecated? With the large number of extensions
+available for Tcl/Tk, it rarely makes sense to build a new shell with one
+extension. It is much better to arrange to dynamically load extensions as
+needed into the standard tclsh (or wish) shells. The right way to do this
+is with:
+     package require Pgtcl
+but you can also use "load" for simple cases where the interface is in a
+single file (like libpgtcl). Either way is better than building a new shell.
+
+But if you still want the PostgreSQL-extended shells, here they are.  You
+are going to have to manually configure the build, as described next.
+Note: I renamed pgtksh to pgwish, but feel free to rename it back after you
+build it, if you want.
+
+There are no instructions for building under Windows, and no Makefile. You
+are strongly encouraged to use dynamic loading under Windows instead.
+
+
+BUILDING:
+
+Prerequisites:
+  + PostgreSQL installation (needs libpq shared library),
+  + Tcl/Tk installation (needs header files and Tcl/Tk libraries),
+  + pgtcl source (needs libpgtcl.h and libpgtcl shared library).
+
+Edit the Makefile. Sorry, but automatic configure seems like overkill here.
+There are a few defined symbols at the top you need to set to it can find
+your PostgreSQL installation, Tcl/Tk, and libpgtcl.
+
+Note that you can link with libpq and libpgtcl shared libraries in any path
+you specify below, but that doesn't mean the loader will find them when
+you try to run the application. You will need to install the libraries
+where the system can find them, or use another method such as
+LD_LIBRARY_PATH or the 'rpath' option when linking.
+
+Example Makefile customization:
+
+    # Include paths: needs to find libpgtcl.h and Tcl headers:
+    # (My Tcl headers are in /usr/include so I don't need another -I for them)
+    INCLUDES=-I../src
+    
+    # Link libpgtcl:
+    libpgtcl_link=-L../src -lpgtcl
+    # Link Tcl libraries:
+    tcl_link=-ltcl
+    # Link Tk libraries:
+    tk_link=-ltk
+    # Link PostgreSQL libpq:
+    libpq_link=-L/opt/postgres/lib -lpq
+
+Also check the definition of CFLAGS in this file.
+
+Then "make" builds both pgtclsh and pgwish (or "make pgtclsh" for just
+pgtclsh).
+
+The result will be executables "pgtclsh" and "pgwish", which you can manually
+install.

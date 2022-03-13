@@ -1,0 +1,17 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+# wrapper to make passwd(1) be non-interactive
+# username is passed as 1st arg, passwd as 2nd
+
+set password [lindex $argv 1]
+spawn passwd [lindex $argv 0]
+expect "assword:"
+send -- "$password\r"
+expect "assword:"
+send -- "$password\r"
+expect eof

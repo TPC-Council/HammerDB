@@ -1,0 +1,100 @@
+.TH DISLOCATE 1 "7 October 1993"
+.SH NAME
+Dislocate \- disconnect and reconnect processes
+.SH SYNOPSIS
+.B dislocate
+[
+.I program args...
+]
+.SH INTRODUCTION
+.B Dislocate
+allows processes to be disconnected and reconnected to the terminal.
+Possible uses:
+.RS
+.TP 4
+\(bu
+You can disconnect a process from a terminal at work
+and reconnect from home, to continue working.
+.TP 4
+\(bu
+After having your line be dropped due to noise, you can get back to your
+process without having to restart it from scratch.
+.TP 4
+\(bu
+If you have a problem that you would like to show someone, you can set
+up the scenario at your own terminal, disconnect, walk down the hall,
+and reconnect on another terminal.
+.TP 4
+\(bu
+If you are in the middle of a great game (or whatever) that does not allow
+you to save, and someone else kicks you off the terminal, you can disconnect,
+and reconnect later.
+.SH USAGE
+When run with no arguments,
+.B Dislocate
+tells you about your disconnected processes and lets you reconnect to one.
+Otherwise,
+.B Dislocate
+runs the named program along with any arguments.
+
+By default, ^] is an escape that lets you talk to
+.B Dislocate
+itself.  At that point, you can disconnect (by pressing ^D) or
+suspend
+.B Dislocate
+(by pressing ^Z).
+
+Any Tcl or Expect command is also acceptable at this point.
+For example,
+to insert the contents of a the file /etc/motd as if you had typed it, say:
+.nf
+
+     send -i $out [exec cat /etc/motd]
+
+.fi
+
+To send the numbers 1 to 100 in response to the prompt "next #", say:
+.nf
+
+     for {set i 0} {$i<100} {incr i} {
+         expect -i $in "next #"
+         send -i $out "$i\\r"
+     }
+.fi
+
+Scripts can also be prepared and sourced in so that you don't have to
+type them on the spot.
+
+.B Dislocate
+is actually just a simple
+.B Expect
+script.  Feel free to make it do what you want it to do or just
+use
+.B Expect
+directly, without going through
+.BR Dislocate .
+.B Dislocate
+understands a few special arguments.  These should appear before any program
+name.  Each should be separated by whitespace.  If the arguments themselves
+takes arguments, these should also be separated by whitespace.
+.PP
+The
+.B \-escape
+flag sets the escape to whatever follows.  The default escape is ^].
+.PP
+.SH CAVEATS
+This program was written by the author as an exercise to show that
+communicating with disconnected processes is easy.  There are
+many features that could be added, but that is not the intent of this
+program.
+
+.SH SEE ALSO
+.BR Tcl (3),
+.BR libexpect (3)
+.br
+.I
+"Exploring Expect: A Tcl-Based Toolkit for Automating Interactive Programs"
+\fRby Don Libes,
+O'Reilly and Associates, January 1995.
+.SH AUTHOR
+Don Libes, National Institute of Standards and Technology

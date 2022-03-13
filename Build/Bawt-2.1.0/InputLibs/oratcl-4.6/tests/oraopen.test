@@ -1,0 +1,119 @@
+# oraopen.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# 09/21/2009 - upgraded to tcltest 2.0
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+    source [file join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::oraopen {
+    namespace import ::tcltest::*
+
+    testConstraint testoraopen	[llength [info commands oraopen]]
+    testConstraint testoraclose	[llength [info commands oraclose]]
+
+    # oraopen with wrong arg count
+    test oraopen-1.0 {oraopen: no arguments} {
+        -constraints testoraopen
+        -body {
+            catch {oraopen} res
+            set res
+        }
+        -result {wrong # args: should be "oraopen lda_handle"}
+    } 
+
+    # oraopen with valid login-handle
+    test oraopen-1.1 {oraopen: valid login-handle} {
+        -constraints {
+            testoraopen
+            testoraclose
+        }
+        -body {
+             #global ora_lda
+             catch {set cur [oraopen $ora_lda]} res
+             set res
+        }
+        -cleanup {
+             catch {oraclose $cur}
+             unset cur
+        }
+        -result oratcl0.3
+    }
+
+
+    # oraclose with wrong arg count
+    test oraopen-2.0 {oraclose: no arguments} {
+        -constraints testoraclose
+        -body {
+            catch {oraclose} res
+            set res
+        }
+        -result {wrong # args: should be "oraclose stm_handle"}
+    } 
+
+    # oraclose with valid login-handle
+    test oraopen-2.1 {oraclose: valid login-handle} {
+        -constraints {
+            testoraopen
+            testoraclose
+        }
+        -setup {
+             global ora_lda
+             set stm [oraopen $ora_lda]
+        }
+        -body {
+             catch {set rc [oraclose $stm]} res
+             set rc
+        }
+        -cleanup {
+             unset stm
+        }
+        -result 0
+    }
+
+    # open and close 30 statement handles
+    test oraopen-3.0 {oraopen: many statement handles} {
+        -constraints {
+            testoraopen
+            testoraclose
+        }
+        -setup {
+            set tst(lda) [oralogon $ora_constr]
+            set cur_list {}
+        }
+        -body {
+            for {set n 0} {$n < 30} {incr n} {
+                set cr [catch {set tst(st$n) [oraopen $tst(lda)]}]
+                if {$cr == 0} {
+                    lappend cur_list $tst(st$n)
+                } else {
+                    break
+                }
+            }
+            set res [llength $cur_list]
+        }
+        -cleanup {
+            foreach cur $cur_list {
+                catch {oraclose $cur}
+            }
+            oralogoff $tst(lda)
+            array unset tst
+            unset cur_list
+            unset cur
+        }
+        -result 30
+    } 
+
+    cleanupTests
+}
+namespace delete ::tcl::test::oraopen
+return

@@ -1,0 +1,909 @@
+
+<html><head>
+<title>mysqltcl -  </title>
+</head>
+<! -- Generated from file 'mysqltcl.man' by tcllib/doctools with format 'html'
+   -->
+<! -- CVS: $Id$ mysqltcl.n
+   -->
+
+<body>
+<h1> mysqltcl(n) 3.0  &quot;&quot;</h1>
+<h2><a name="name">NAME</a></h2>
+<p>
+<p> mysqltcl - MySQL server access commands for Tcl
+
+
+
+
+
+
+<h2><a name="table_of_contents">TABLE OF CONTENTS</a></h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<a href="#table_of_contents">TABLE OF CONTENTS</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#synopsis">SYNOPSIS</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#description">DESCRIPTION</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#mysqltcl_commands">MYSQLTCL COMMANDS</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#status_information">STATUS INFORMATION</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#backward_compatibility">Backward compatibility</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#bugs_&_possible_misfeatures">BUGS &amp; POSSIBLE MISFEATURES</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#authors">AUTHORS</a><br>
+<h2><a name="synopsis">SYNOPSIS</a></h2>
+<p>
+package require <b>Tcl 8.4</b><br>
+package require <b>mysqltcl 3.0</b><br>
+<br><table border=1 width=100% cellspacing=0 cellpadding=0><tr            bgcolor=lightyellow><td bgcolor=lightyellow><table 0 width=100% cellspacing=0 cellpadding=0><tr valign=top ><td ><a href="#1"><b class='cmd'>::mysql::connect</b> ?<i class='arg'>option value</i>...?</a></td></tr>
+<tr valign=top ><td ><a href="#2"><b class='cmd'>::mysql::use</b> <i class='arg'>handle</i> <i class='arg'>database</i></a></td></tr>
+<tr valign=top ><td ><a href="#3"><b class='cmd'>::mysql::sel</b> <i class='arg'>handle</i> <i class='arg'>sql-statement</i> ?<i class='arg'>-list|-flatlist</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#4"><b class='cmd'>::mysql::fetch</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#5"><b class='cmd'>::mysql::exec</b> <i class='arg'>handle</i> <i class='arg'>sql-statement</i></a></td></tr>
+<tr valign=top ><td ><a href="#6"><b class='cmd'>::mysql::query</b> <i class='arg'>handle</i> <i class='arg'>sql-select-statement</i></a></td></tr>
+<tr valign=top ><td ><a href="#7"><b class='cmd'>::mysql::endquery</b> <i class='arg'>query-handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#8"><b class='cmd'>::mysql::map</b> <i class='arg'>handle</i> <i class='arg'>binding-list</i> <i class='arg'>script</i></a></td></tr>
+<tr valign=top ><td ><a href="#9"><b class='cmd'>::mysql::receive</b> <i class='arg'>handle</i> <i class='arg'>sql-statment</i> <i class='arg'>binding-list</i> <i class='arg'>script</i></a></td></tr>
+<tr valign=top ><td ><a href="#10"><b class='cmd'>::mysql::seek</b> <i class='arg'>handle</i> <i class='arg'>row-index</i></a></td></tr>
+<tr valign=top ><td ><a href="#11"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> <i class='arg'>table-name</i> <i class='arg'>option</i></a></td></tr>
+<tr valign=top ><td ><a href="#12"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> <i class='arg'>table-name</i> <i class='arg'>optionkist</i></a></td></tr>
+<tr valign=top ><td ><a href="#13"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> ?<i class='arg'>option</i>...?</a></td></tr>
+<tr valign=top ><td ><a href="#14"><b class='cmd'>::mysql::info</b> <i class='arg'>handle</i> <i class='arg'>option</i></a></td></tr>
+<tr valign=top ><td ><a href="#15"><b class='cmd'>::mysql::baseinfo</b> <i class='arg'>option</i></a></td></tr>
+<tr valign=top ><td ><a href="#16"><b class='cmd'>::mysql::ping</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#17"><b class='cmd'>::mysql::changeuser</b> <i class='arg'>user</i> <i class='arg'>password</i> ?<i class='arg'>database</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#18"><b class='cmd'>::mysql::result</b> <i class='arg'>handle</i> <i class='arg'>option</i></a></td></tr>
+<tr valign=top ><td ><a href="#19"><b class='cmd'>::mysql::state</b> <i class='arg'>handle</i> ?<i class='arg'>-numeric</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#20"><b class='cmd'>::mysql::close</b> ?<i class='arg'>handle</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#21"><b class='cmd'>::mysql::insertid</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#22"><b class='cmd'>::mysql::escape</b> ?<i class='arg'>handle</i>? <i class='arg'>string</i></a></td></tr>
+<tr valign=top ><td ><a href="#23"><b class='cmd'>::mysql::autocommit</b> <i class='arg'>handle</i> <i class='arg'>boolean</i></a></td></tr>
+<tr valign=top ><td ><a href="#24"><b class='cmd'>::mysql::commit</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#25"><b class='cmd'>::mysql::rollback</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#26"><b class='cmd'>::mysql::nextresult</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#27"><b class='cmd'>::mysql::moreresult</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#28"><b class='cmd'>::mysql::warningcount</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#29"><b class='cmd'>::mysql::isnull</b> <i class='arg'>value</i></a></td></tr>
+<tr valign=top ><td ><a href="#30"><b class='cmd'>::mysql::newnull</b> </a></td></tr>
+<tr valign=top ><td ><a href="#31"><b class='cmd'>::mysql::setserveroption</b> <i class='arg'>handle</i> <i class='arg'>option</i></a></td></tr>
+<tr valign=top ><td ><a href="#32"><b class='cmd'>::mysql::shutdown</b> <i class='arg'>handle</i></a></td></tr>
+<tr valign=top ><td ><a href="#33"><b class='cmd'>::mysql::encoding</b> <i class='arg'>handle</i> ?encoding?</a></td></tr>
+</table></td></tr></table>
+<h2><a name="description">DESCRIPTION</a></h2>
+<p>
+MySQLTcl is a collection of Tcl commands and a Tcl global array that
+provide access to MySQL database servers.
+<p>
+MySQLTcl is nothing more than a patched version of a patched version
+of Hakan Soderstrom's patch of Tom Poindexter's Sybtcl.
+<p>
+Mysqltcl is binary Tcl library (extension) written in C language that use direkt
+official MySQL C-API. Almost all Tcl commands correspond to MySQL C-API functions.
+For detail documentation see official MySQL C-API manual.
+
+<h2><a name="mysqltcl_commands">MYSQLTCL COMMANDS</a></h2>
+<p>
+
+<dl>
+
+<dt><a name="1"><b class='cmd'>::mysql::connect</b> ?<i class='arg'>option value</i>...?</a><dd>
+
+
+Connect to a MySQL server.
+A handle is returned which should be used in other mysqltcl
+commands using this connection.
+::mysql::connect raises a Tcl error if the connection fails.
+::mysql::connect read first the options from my.cnf file group mysqltcl.
+See MySQL documentation chapter &quot;options files&quot;.
+Possible connection options are:
+
+<br><br>
+<dl>
+
+<dt><strong>-host</strong> <i class='arg'>hostname</i><dd>
+The host on which the server is located. The local host is used by default.
+
+<br><br>
+<dt><strong>-user</strong> <i class='arg'>user</i><dd>
+The user whose name is used for the connection.
+The current Unix user-name is used by default.
+
+<br><br>
+<dt><strong>-password</strong> <i class='arg'>password</i><dd>
+The password that must be used for the connection.
+If it is not present, the connection is possible only for users with
+no password on the server.
+
+<br><br>
+<dt><strong>-db</strong> <i class='arg'>db</i><dd>
+If this option is present, <i class='arg'>db</i> is used as current database, with no need
+for a call to <em>mysql::use</em>.
+
+<br><br>
+<dt><strong>-port</strong> <i class='arg'>port</i><dd>
+The port number for the TCP/IP connection, if it's different from the default.
+
+<br><br>
+<dt><strong>-socket</strong> <i class='arg'>socket</i><dd>
+The socket or named pipe for the connection.
+
+<br><br>
+<dt><strong>-encoding</strong> <i class='arg'>encodingname</i><dd>
+The option works similar to -encoding option in fconfigure. It support also
+special encoding name binary. By option -binary no converting will be done be reading or writing to/from MySQL.
+If option is not set the system encoding (see utf-8) is used.
+Please test all input and outputs with another program to check that all 
+is the way you expect it. If option binary is not used the system procedures
+Tcl_ExternalToUtfDString (writing) and Tcl_ExternalToUtf (reading) will be used
+by option binary the function Tcl_GetByteArrayFromObj and Tcl_NewByteArrayObj are used.
+If you want to manipulate binary date use -encoding binary. By handling textes set your
+special encoding that you want to use in your database. Consider what another system access the
+database and what encoding they expect. It can useful
+to use -encoding utf-8. That is standard encoding in some linux distributions and newer systems.
+
+<br><br>
+<dt><strong>-compress</strong> <i class='arg'>boolean</i><dd>
+Use compression protocol. Default is false
+
+<br><br>
+<dt><strong>-odbc</strong> <i class='arg'>boolean</i><dd>
+The client is an ODBC client. This changes mysqld to be more ODBC-friendly. Default is false
+
+<br><br>
+<dt><strong>-noschema</strong> <i class='arg'>boolean</i><dd>
+Don't allow the db_name.tbl_name.col_name syntax. This is for ODBC. It causes the parser to generate an error if you use that syntax, which is useful for trapping bugs in some ODBC programs. This changes mysqld to be more ODBC-friendly. Default is false
+
+<br><br>
+<dt><strong>-multistatement</strong> <i class='arg'>boolean</i><dd>
+Tell the server that the client may send multiple-row-queries (separated by `;').
+If this flag is not set, multiple-row-queries are disabled. Default is false.
+
+<br><br>
+<dt><strong>-multiresult</strong> <i class='arg'>boolean</i><dd>
+Tell the server that the client can handle multiple-result sets from multi-queries or stored procedures.
+This is automatically set if CLIENT_MULTI_STATEMENTS is set.
+
+<br><br>
+<dt><strong>-localfiles</strong> <i class='arg'>boolean</i><dd>
+Enable LOAD DATA LOCAL handling. Default is false.
+
+<br><br>
+<dt><strong>-foundrows</strong> <i class='arg'>boolean</i><dd>
+Return the number of found (matched) rows, not the number of affected rows.
+Default is false.
+
+<br><br>
+<dt><strong>-interactive</strong> <i class='arg'>boolean</i><dd>
+Allow interactive_timeout seconds (instead of wait_timeout seconds) of inactivity before closing the connection.
+The client's session wait_timeout variable will be set to the value of the session interactive_timeout variable.
+Default is false.
+
+<br><br>
+<dt><strong>-ssl</strong> <i class='arg'>boolean</i><dd>
+Switch to SSL after handshake. Default is  false
+
+<br><br>
+<dt><strong>-sslkey</strong> <i class='arg'>string</i><dd>
+is the pathname to the key file. 
+Used if -ssl is true
+
+<br><br>
+<dt><strong>-sslcert</strong> <i class='arg'>string</i><dd>
+is the pathname to the certificate file.
+Used if -ssl is true
+
+<br><br>
+<dt><strong>-sslca</strong> <i class='arg'>string</i><dd>
+is the pathname to the certificate authority file. 
+Used if -ssl is true
+
+<br><br>
+<dt><strong>-sslcapath</strong> <i class='arg'>string</i><dd>
+is the pathname to a directory that contains trusted SSL CA certificates in pem format. 
+Used if -ssl is true
+
+<br><br>
+<dt><strong>-sslcipher</strong> <i class='arg'>string</i><dd>
+is a list of allowable ciphers to use for SSL encryption. 
+Used if -ssl is true
+
+<br><br>
+<dt><strong>-reconnect</strong> <i class='arg'>boolean</i><dd>
+default is false.
+
+</dl>
+
+<dt><a name="2"><b class='cmd'>::mysql::use</b> <i class='arg'>handle</i> <i class='arg'>database</i></a><dd>
+
+
+Associate a connected handle with a particular database.
+<i class='arg'>handle</i> must be a valid handle previously obtained from ::mysql::connect.
+mysql::use raises a Tcl error if the handle is not valid or
+if the database name specified could not be used.
+<br><br>
+Consider you can use mysqltcl without to specify the database, in this case
+you must use explizit schema notation to specify the table in sql.
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+::mysql::sel $handle {select * from uni.student}
+</pre></td></tr></table></p>
+with option connection <i class='arg'>-noschema</i> you can prohibit such syntax.
+
+<br><br>
+<dt><a name="3"><b class='cmd'>::mysql::sel</b> <i class='arg'>handle</i> <i class='arg'>sql-statement</i> ?<i class='arg'>-list|-flatlist</i>?</a><dd>
+
+
+Send <i class='arg'>sql-statement</i> to the server.
+<br><br>
+If <i class='arg'>sql-statement</i> is a SELECT statement and no <i class='arg'>-list</i> or
+<i class='arg'>-flatlist</i> option is specified, the command returns the
+number of rows returned as the result of the query.
+The rows can be obtained by the <i class='arg'>::mysql::fetch</i> and/or the
+<i class='arg'>::mysql::map</i> commands.
+The resulting rows are called the <em>pending result</em>.
+<br><br>
+If <i class='arg'>sql-statement</i> is a SELECT statement and <i class='arg'>-list</i> or <i class='arg'>-flatlist</i>
+is specified, the command returns the full list of rows returned as 
+the result of the query in one of two possible formats:
+
+<br><br>
+<dl>
+
+<dt><strong>-list</strong><dd>
+generates a list of lists, in which each element is a row of the result.
+
+<br><br>
+<dt><strong>-flatlist</strong><dd>
+generates the concatenation of all rows in a single list, which 
+is useful for scanning with a single <em>foreach</em>.
+
+</dl>
+
+Example:
+
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+% ::mysql::sel $db &quot;SELECT ID, NAME FROM FRIENDS&quot; -list
+{1 Joe} {2 Phil} {3 John}
+% ::mysql::sel $db &quot;SELECT ID, NAME FROM FRIENDS&quot; -flatlist
+{1 Joe 2 Phil 3 John}
+</pre></td></tr></table></p>
+
+Note that both list syntaxes are faster than something like
+
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+% ::mysql::sel $db &quot;SELECT ID, NAME FROM FRIENDS&quot;
+% ::mysql::map $db {id name} {lappend result $id $name}
+% set $result
+{1 Joe 2 Phil 3 John}
+</pre></td></tr></table></p>
+
+If <i class='arg'>sql-statement</i> is a valid MySQL statement, but not a SELECT
+statement, the command returns -1 after executing the statement, or an empty 
+string if <i class='arg'>-list</i> or <i class='arg'>-flatlist</i> is specified.
+There is no pending result in this case.
+<br><br>
+In any case ::mysql::sel implicitly cancels any previous result still
+pending for the handle.
+
+<br><br>
+<dt><a name="4"><b class='cmd'>::mysql::fetch</b> <i class='arg'>handle</i></a><dd>
+
+
+Returns the next row from result set as Tcl list.
+mysql::fetch raises a Tcl error if there is no pending result for <i class='arg'>handle</i>.
+mysql::fetch was former named mysqlnext.
+
+<br><br>
+<dt><a name="5"><b class='cmd'>::mysql::exec</b> <i class='arg'>handle</i> <i class='arg'>sql-statement</i></a><dd>
+
+
+Send <i class='arg'>sql-statement</i>, a MySQL non-SELECT statement, to the server.
+The <i class='arg'>handle</i> must be in use (through ::mysql::connect and ::mysql::use).
+<br><br>
+::mysql::exec implicitly cancels any previous result pending for the handle.
+<br><br>
+If <i class='arg'>sql-statement</i> is a valid MySQL SELECT statement, the statement
+is executed, but the result is discarded.
+No Tcl error is generated.
+This amounts to a (potentially costly) no-op.
+Use the ::mysql::sel command for SELECT statements.
+<br><br>
+::mysql::exec returns the number of affected rows (DELETE, UPDATE).
+In case of multiple statement ::mysql::exec returns a list of number of affected rows.
+<br><br>
+
+<br><br>
+<dt><a name="6"><b class='cmd'>::mysql::query</b> <i class='arg'>handle</i> <i class='arg'>sql-select-statement</i></a><dd>
+
+
+Send <i class='arg'>sql-select-statement</i> to the server.
+<br><br>
+<i class='arg'>mysql::query</i> allow to send multiple nested queries on one handle (without need to build
+new handle or caching results).
+mysql::query return a query handle that can be used as handle in commands as (mysql::fetch,
+::mysql::map, mysql::seek, mysql::col, mysql::result).
+After result proceeding all query must be
+freed with <em>::mysql::endquery query-hanlde</em> command.
+<br><br>
+Example:
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+set query1 [::mysql::query $db {SELECT ID, NAME FROM FRIENDS}\]
+while {[set row [::mysql::fetch $query1]]!=&quot;&quot;} {
+    set id [lindex $row 0]
+    set query2 [::mysql::query $db &quot;SELECT ADDRESS FROM ADDRESS WHERE FRIENDID=$ID&quot;]
+    ::mysql::map $query2 address { puts &quot;address = $address&quot; }
+    ::mysql::endquery $query2
+}
+::mysql::endquery $query1
+</pre></td></tr></table></p>
+In most cases one should use sql-joins and avoid nested queries.
+SQL-sever can optimize such queries.
+But in some applications (GUI-Forms) where the results are used long time the inner
+query is not known before.
+
+<br><br>
+<dt><a name="7"><b class='cmd'>::mysql::endquery</b> <i class='arg'>query-handle</i></a><dd>
+
+
+free result memory after <i class='arg'>::mysql::query</i> command.
+You must invoke ::mysql::endquery after each mysqlquery to not cause memory leaks. See mysqlquery command.
+<br><br>
+Using <i class='arg'>::mysql::endquery</i> on db-handle will free also memory (pending result) after <i class='arg'>::mysql::sel</i> command.
+<br><br>
+
+
+<br><br>
+<dt><a name="8"><b class='cmd'>::mysql::map</b> <i class='arg'>handle</i> <i class='arg'>binding-list</i> <i class='arg'>script</i></a><dd>
+
+
+Iterate a script over the rows of the pending result.
+::mysql::map may consume all rows or only some of the rows of the pending
+result.
+Any remaining rows may be obtained by further ::mysql::fetch or ::mysql::map
+commands.
+<br><br>
+<i class='arg'>handle</i> must be a handle with a pending result from a previous
+::mysql::sel command.
+<i class='arg'>binding-list</i> must be a list of one or more variable names.
+<i class='arg'>script</i> must be a Tcl script.
+It may be empty, but usually it contains one or more commands.
+<br><br>
+::mysql::map processes one row at a time from the pending result.
+For each row the column values are bound to the variables in the
+binding list, then the script is executed.
+Binding is strictly positional.
+The first variable in the binding list is bound to the first column of
+the row, and so on.
+The variables are created in the current context (if they do not
+already exist).
+A variable name begining with a hyphen is not bound; it serves as a
+placeholder in the binding list.
+If there are more columns than variables the extra columns are
+ignored.
+<br><br>
+The ::mysql::map command is similar to an ordinary <em>foreach</em>.
+A <em>foreach</em> iterates over the elements of a list, ::mysql::map
+iterates over the rows of a pending result.
+In both cases iteration is affected by <em>break</em> and <em>continue</em>
+Tcl commands.
+The binding list variables retain their last values after the command
+has completed.
+<br><br>
+A simple example follows.
+Assume $db is a handle in use.
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+::mysql::sel $db {
+    select lname, fname, area, phone from friends order by lname, fname
+}
+::mysql::map $db {ln fn - phone} {
+   if {$phone == {}} continue
+   puts [format &quot;%16s %-8s %s&quot; $ln $fn $phone]
+}
+</pre></td></tr></table></p>
+The ::mysql::sel command gets and sorts all rows from table friends.
+The ::mysql::map command is used to format and print the result in a way
+suitable for a phone list.
+For demonstration purposes one of the columns (area) is not used.
+The script begins by skipping over rows which have no phone number.
+The second command in the script formats and prints values from the row.
+<br><br>
+::mysql::map raises a Tcl error if there is no pending result for
+<i class='arg'>handle</i>, or if <i class='arg'>binding-list</i> contains more variables than
+there are columns in the pending result.
+<br><br>
+
+<br><br>
+<dt><a name="9"><b class='cmd'>::mysql::receive</b> <i class='arg'>handle</i> <i class='arg'>sql-statment</i> <i class='arg'>binding-list</i> <i class='arg'>script</i></a><dd>
+
+
+This command works the same way as the command mysqtclmap but
+it do not need leading ::mysql::sel command.
+The main difference is internal using of MySQL client library.
+This command use mysql_use_result from C-API that do not
+store result on client but try to receive the rows directly
+from server.
+There is also no client cache.
+This command can be faster as using of ::mysql::sel and by
+very big resultset will not overload client machine.
+The scipt should process the result immadiatly because
+it can block table (or tables) for another clients.
+If performance matter please test all alternatives separatly.
+You must consider two aspects: memory consumption and performance.
+
+<br><br>
+<dt><a name="10"><b class='cmd'>::mysql::seek</b> <i class='arg'>handle</i> <i class='arg'>row-index</i></a><dd>
+
+
+Moves the current position among the rows in the pending result.
+This may cause <em>::mysql::fetch</em> and <em>::mysql::map</em> to re-read rows, or to
+skip over rows.
+<br><br>
+Row index 0 is the position just before the first row in the pending result;
+row index 1 is the position just before the second row, and so
+on.
+You may specify a negative row index.
+Row index -1 is the position just before the last row;
+row index -2 is the position just before the second last row,
+and so on.
+An out-of-bounds row index will cause ::mysql::seek to set the new current
+position either just before the first row (if the index is too negative),
+or just after the last row (if the index exceeds the number of rows).
+This is not an error condition.
+<br><br>
+::mysql::seek returns the number of rows that can be read sequentially from
+the new current position.
+::mysql::seek raises a Tcl error if there is no pending result for <i class='arg'>handle</i>.
+<br><br>
+Portability note: The functionality of <i class='arg'>::mysql::seek</i> is frequently
+absent in other Tcl extensions for SQL.
+That is because MySQL C-API client library ofers own result set caching functionality
+that lacks another SQL-APIs.
+That increase the performance because all rows are received at once and the query does
+not block the server for another clienst , on the other
+hand you works on the cached data can use a lot of memory and are up to date only in the moment
+of query but not fetch.
+<br><br>
+
+<br><br>
+<dt><a name="11"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> <i class='arg'>table-name</i> <i class='arg'>option</i></a><dd>
+
+<dt><a name="12"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> <i class='arg'>table-name</i> <i class='arg'>optionkist</i></a><dd>
+
+<dt><a name="13"><b class='cmd'>::mysql::col</b> <i class='arg'>handle</i> ?<i class='arg'>option</i>...?</a><dd>
+
+
+Return information about the columns of a table.
+<i class='arg'>handle</i> must be in use.
+<i class='arg'>table-name</i> must be the name of a table; it may be a table name
+or <i class='arg'>-current</i> if there is a pending result.
+One or more options control what information to return.
+Each option must be one of the following keywords.
+<br><br>
+<dl>
+
+<dt><strong>name</strong><dd> Return the name of a column.
+
+<br><br>
+<dt><strong>type</strong><dd>
+Return the type of a column; one of the strings <em>decimal</em>,
+<em>tiny</em>, <em>short</em>, <em>long</em>, <em>float</em>, <em>double</em>,
+<em>null</em>, <em>timestamp</em>, <em>long long</em>, <em>int24</em>, <em>date</em>,
+<em>time</em>, <em>date time</em>, <em>year</em>, <em>new date</em>, <em>enum</em>,
+<em>set</em>, <em>tiny blob</em>, <em>medium blob</em>, <em>long blob</em>,
+<em>blob</em>, <em>var string</em>, or <em>string</em>.
+Note that a column of type <em>char</em> will return tiny, while they are 
+represented equally.
+
+<br><br>
+<dt><strong>length</strong><dd> Return the length of a column in bytes.
+
+<br><br>
+<dt><strong>table</strong><dd> Return the name of the table in which this column occurs.
+
+<br><br>
+<dt><strong>non_null</strong><dd> Return the string &quot;1&quot; if the column is non-null; otherwise &quot;0&quot;.
+
+<br><br>
+<dt><strong>prim_key</strong><dd> Return the string &quot;1&quot; if the column is part of the primary key;
+otherwise &quot;0&quot;.
+
+<br><br>
+<dt><strong>numeric</strong><dd> Return the string &quot;1&quot; if the column is numeric; otherwise &quot;0&quot;.
+
+<br><br>
+<dt><strong>decimals</strong><dd> Return the string &quot;1&quot; if the column is non-null; otherwise &quot;0&quot;.
+</dl>
+
+The three forms of this command generate their result in a
+particular way.
+<br><br>
+<ol>
+<li>
+If a single option is present the result is a simple list of
+values; one for each column.
+<br><br>
+<li>
+If the options are given in the form of an option list the
+result is a list of lists.
+Each sublist corresponds to a column and contains the information
+specified by the options.
+<br><br>
+<li>
+If several options are given, but not in a list, the result is also
+a list of lists.
+In this case each sublist corresponds to an option and contains one
+value for each column.
+</ol>
+
+The following is a sample interactive session containing all forms of
+the ::mysql::col command and their results.
+The last command uses the <em>-current</em> option.
+It could alternatively specify the table name explicitly.
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+%::mysql::col $db friends name
+name lname area phone
+% ::mysql::col $db friends {name type length}
+{fname char 12} {lname char 20} {area char 5} {phone char 12}
+% ::mysql::sel $db {select * from friends}
+% ::mysql::col $db -current name type length
+{fname lname area phone} {char char char char} {12 20 5 12}]
+</pre></td></tr></table></p>
+
+<br><br>
+<dt><a name="14"><b class='cmd'>::mysql::info</b> <i class='arg'>handle</i> <i class='arg'>option</i></a><dd>
+
+
+Return various database information depending on the <i class='arg'>option</i>.
+The option must be one of the following keywords.
+
+<br><br>
+<dl>
+<dt><strong>info</strong><dd>
+Return a String with information about last operation.
+&quot;Records: 3 Duplicates: 0 Warnings: 0&quot; by INSERT or 
+&quot;Rows matched: 40 Changed: 40 Warnings: 0&quot; by UPDATE statements
+(read the manual for mysql_info in MySQL C API documentation) 
+
+<br><br>
+<dt><strong>databases</strong><dd>
+Return a list of all database names known to the server.
+The handle must be connected.
+
+<br><br>
+<dt><strong>dbname</strong><dd>
+Return the name of the database with which the handle is associated.
+The handle must be in use.
+
+<br><br>
+<dt><strong>dbname?</strong><dd>
+Return the name of the database with which the handle is associated;
+an empty string if the handle is connected, but not in use.
+
+<br><br>
+<dt><strong>host</strong><dd>
+Return the name of the host to which the handle is connected.
+The handle must be connected.
+
+<br><br>
+<dt><strong>host</strong><dd>
+Return the name of the host to which the handle is connected; an empty
+string if the handle is not valid.
+
+<br><br>
+<dt><strong>tables</strong><dd>
+Return a list of all table names in the database with which the handle
+is associated.
+The handle must be in use.
+
+<br><br>
+<dt><strong>serverversion</strong><dd> 
+Returns the version number of the server as a string.
+
+<br><br>
+<dt><strong>serverversionid</strong><dd>
+Returns the version number of the server as an integer.
+
+<br><br>
+<dt><strong>sqlstate</strong><dd>
+Returns a string containing the SQLSTATE error code for the last error.
+The error code consists of five characters. '00000' means ``no error.''
+The values are specified by ANSI SQL and ODBC.
+
+Note that not all MySQL errors are yet mapped to SQLSTATE's.
+The value 'HY000' (general error) is used for unmapped errors. 
+
+<br><br>
+<dt><strong>state</strong><dd>
+Returns a character string containing information similar to that provided by the mysqladmin status command.
+This includes uptime in seconds and the number of running threads, questions, reloads, and open tables.
+
+</dl>
+
+<dt><a name="15"><b class='cmd'>::mysql::baseinfo</b> <i class='arg'>option</i></a><dd>
+
+
+return information information that do not need handle.
+<br><br>
+<dl>
+
+<dt><strong>connectparameters</strong><dd>
+return all supported connecting options
+
+<br><br>
+<dt><strong>clientversion</strong><dd>
+return the version of underlying MYSQL C-API library
+</dl>
+
+<dt><a name="16"><b class='cmd'>::mysql::ping</b> <i class='arg'>handle</i></a><dd>
+
+
+Checks whether the connection to the server is working. If it has gone down, an automatic reconnection is attempted.
+<br><br>
+This function can be used by clients that remain idle for a long while, to check whether the server has closed the connection and reconnect if necessary.
+<br><br>
+Return True if server is alive
+
+<br><br>
+<dt><a name="17"><b class='cmd'>::mysql::changeuser</b> <i class='arg'>user</i> <i class='arg'>password</i> ?<i class='arg'>database</i>?</a><dd>
+
+
+Changes the user and causes the database specified by database to become the default (current) database on the connection specified by MySQL. In subsequent queries, this database is the default for table references that do not include an explicit database specifier.
+<br><br>
+::mysql::changeuser fails unless the connected user can be authenticated or if he doesn't have permission to use the database. In this case the user and database are not changed
+<br><br>
+if database parameter may be set were is no default database. 
+<br><br>
+Cause Error if operation is not succesed
+
+<br><br>
+<dt><a name="18"><b class='cmd'>::mysql::result</b> <i class='arg'>handle</i> <i class='arg'>option</i></a><dd>
+
+
+Return information about the pending result.
+Note that a result is pending until canceled by a ::mysql::exec command,
+even if no rows remain to be read.
+<i class='arg'>Option</i> must be one of the following keywords.
+
+<br><br>
+<dl>
+
+<dt><strong>cols</strong><dd>
+Return the number of columns in the pending result.
+There must be a pending result.
+
+<br><br>
+<dt><strong>cols</strong><dd>
+Return the number of columns in the pending result; an empty string if
+no result is pending.
+
+<br><br>
+<dt><strong>current</strong><dd>
+Return the current position in the pending result; a non-negative integer.
+This value can be used as <i class='arg'>row-index</i> in the ::mysql::seek command.
+An error is raised if there is no pending result.
+
+<br><br>
+<dt><strong>current?</strong><dd>
+As above, but returns an empty string if there is no pending result.
+
+<br><br>
+<dt><strong>rows</strong><dd>
+Return the number of rows that can be read sequentially from the
+current position in the pending result.
+There must be a pending result.
+
+<br><br>
+<dt><strong>rows</strong><dd>
+Return the number of rows that can be read sequentially from the
+current position in the pending result; an empty string if no result
+is pending.
+<br><br>
+[::mysql::result $db current] + [::mysql::result $db rows]
+always equals the total number of rows in the pending result.
+</dl>
+
+<dt><a name="19"><b class='cmd'>::mysql::state</b> <i class='arg'>handle</i> ?<i class='arg'>-numeric</i>?</a><dd>
+
+
+Return the state of a handle as a string or in numeric form.
+There is no requirement on <i class='arg'>handle</i>; it may be any string.
+The return value is one of the following strings, or the corresponding
+numeric value if <i class='arg'>-numeric</i> is specified.
+The states form a progression where each state builds on the previous.
+<br><br>
+<dl>
+
+<dt><strong>NOT_A_HANDLE (0)</strong><dd>
+The string supplied for <i class='arg'>handle</i> is not a mysqltcl handle at all.
+
+<br><br>
+<dt><strong>UNCONNECTED (1)</strong><dd>
+The string supplied for <i class='arg'>handle</i> is one of the possible mysqltcl
+handles, but it is not valid to any server.
+
+<br><br>
+<dt><strong>CONNECTED (2)</strong><dd>
+The handle is connected to a server, but not associated with a database.
+
+<br><br>
+<dt><strong>IN_USE (3)</strong><dd>
+The handle is connected and associated with a database, but there is
+no pending result.
+
+<br><br>
+<dt><strong>RESULT_PENDING (4)</strong><dd>
+The handle is connected, associated with a database, and there is a
+pending result.
+</dl>
+
+<dt><a name="20"><b class='cmd'>::mysql::close</b> ?<i class='arg'>handle</i>?</a><dd>
+
+
+Closes the server connection associated with <i class='arg'>handle</i>, causing it
+to go back to the unconnected state.
+Closes all connections if <i class='arg'>handle</i> is omitted.
+Returns an empty string.
+::mysql::close raises a Tcl error if a handle is specified which is not
+valid.
+
+<br><br>
+<dt><a name="21"><b class='cmd'>::mysql::insertid</b> <i class='arg'>handle</i></a><dd>
+
+
+Returns the auto increment id of the last INSERT statement.
+
+<br><br>
+<dt><a name="22"><b class='cmd'>::mysql::escape</b> ?<i class='arg'>handle</i>? <i class='arg'>string</i></a><dd>
+
+
+Returns the content of <i class='arg'>string</i>, with all special characters escaped,
+so that it is suitable for use in an SQL statement. This is simpler (faster)
+than using a general <em>regexp</em> or string map.
+If handle is specified C-API function mysql_real_escape_string is used.
+This is the recommended usage because in this case current character set is respected.
+
+<br><br>
+<dt><a name="23"><b class='cmd'>::mysql::autocommit</b> <i class='arg'>handle</i> <i class='arg'>boolean</i></a><dd>
+
+Sets autocommit mode on if mode is 1, off if mode is 0.
+
+<br><br>
+<dt><a name="24"><b class='cmd'>::mysql::commit</b> <i class='arg'>handle</i></a><dd>
+
+Commits the current transaction.
+
+<br><br>
+<dt><a name="25"><b class='cmd'>::mysql::rollback</b> <i class='arg'>handle</i></a><dd>
+
+Rollback the current transaction.
+
+<br><br>
+<dt><a name="26"><b class='cmd'>::mysql::nextresult</b> <i class='arg'>handle</i></a><dd>
+
+If more query results exist, mysql::nextresult() reads the next query results and returns the status back to application.
+returns -1 if no result or number of rows in the result set.
+
+<br><br>
+<dt><a name="27"><b class='cmd'>::mysql::moreresult</b> <i class='arg'>handle</i></a><dd>
+
+Returns true if more results exist from the currently executed query, and the application must call mysql::result to fetch the results.
+
+<br><br>
+<dt><a name="28"><b class='cmd'>::mysql::warningcount</b> <i class='arg'>handle</i></a><dd>
+
+Returns the number of warnings generated during execution of the previous SQL statement.
+
+
+<br><br>
+<dt><a name="29"><b class='cmd'>::mysql::isnull</b> <i class='arg'>value</i></a><dd>
+
+Null handling is a known problem with Tcl, especially with DB interaction.
+The mysql &quot;varchar&quot; type has two valid blank values, NULL and an empty
+string. This is where the problem arises; Tcl is not able to differentiate
+between the two because of the way it handles strings.
+Mysql has new internal Tcl type for null that string representation is stored
+in global array mysqltcl(nullvalue) and as default empty string.
+mysql::isnull can be used for safe check for null value.
+Warning mysql::isnull works only reliable if there are no type conversation on
+returned rows.
+Consider row is always Tcl list even when there are only one column in the row.
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+set row [::mysql::next $handle]
+if {[mysql::isnull [lindex $row 1]]} {
+   puts &quot;2. column of $row is null&quot;
+}
+if {[mysql::isnull $row]} {
+   puts &quot;this does not work, because of type conversation list to string&quot;
+}
+</pre></td></tr></table></p>
+
+<br><br>
+<dt><a name="30"><b class='cmd'>::mysql::newnull</b> </a><dd>
+
+create new null object. It can be used to simulate returned row contents.
+
+<br><br>
+<dt><a name="31"><b class='cmd'>::mysql::setserveroption</b> <i class='arg'>handle</i> <i class='arg'>option</i></a><dd>
+
+there are only 2 options now: -multi_statment_on and -multi_statment_off
+
+<br><br>
+<dt><a name="32"><b class='cmd'>::mysql::shutdown</b> <i class='arg'>handle</i></a><dd>
+
+Asks the database server to shut down. The connected user must have SHUTDOWN privileges. 
+
+<br><br>
+<dt><a name="33"><b class='cmd'>::mysql::encoding</b> <i class='arg'>handle</i> ?encoding?</a><dd>
+
+Ask or change a encoding of connection.
+There are special encoding &quot;binary&quot; for binary data transfers.
+
+</dl>
+
+<h2><a name="status_information">STATUS INFORMATION</a></h2>
+<p>
+Mysqltcl creates and maintains a Tcl global array to provide status
+information. 
+Its name is <em>mysqlstatus</em>.
+.P
+Mysqlstatus elements:
+<dl>
+<dt>code<dd>
+
+A numeric conflict code set after every mysqltcl command.
+Zero means no conflict; non-zero means some kind of conflict.
+All conflicts also generate a Tcl error.
+<br><br>
+All MySQL server conflicts set mysqlstatus(code) to the numeric
+code of the MySQL error.
+<br><br>
+Any other conflict sets mysqlstatus(code) to -1.
+
+<br><br>
+<dt>command<dd>
+The last failing mysqltcl command.
+Not updated for successful commands.
+
+<br><br>
+<dt>message<dd>
+Message string for the last conflict detected.
+The same string is returned as the result of the failing mysqltcl
+command.
+Not updated for successful commands.
+
+<br><br>
+<dt>nullvalue<dd>
+The string to use in query results to represent the SQL null value.
+The empty string is used initially.
+You may set it to another value.
+</dl>
+
+<h2><a name="backward_compatibility">Backward compatibility</a></h2>
+<p>
+Up from version 3.0 all mysql commands are declared in ::mysql namespace.
+All names for example mysqlconnect are also aviable but deprecated.
+All old commands have the name pattern mysql{name} and the most of them are now mysql::{name}.
+The exception is mysqlnext, which  was renamed to mysql::fetch.
+
+<h2><a name="bugs_&amp;_possible_misfeatures">BUGS &amp; POSSIBLE MISFEATURES</a></h2>
+<p>
+
+Deleting any of the mysqltcl commands closes all connections.
+
+<h2><a name="authors">AUTHORS</a></h2>
+<p>
+
+<ul>
+<li>
+Tobias Ritzau
+<br><br>
+<li>
+Paolo Brutti
+<br><br>
+<li>
+Artur Trzewik (mail@xdobry.de) - active maintainer
+
+</ul>
+
+MySQLTcl is derived from a patch of msql by Hakan Soderstrom, Soderstrom Programvaruverkstad,
+S-12242 Enskede, Sweden.
+msql is derived from Sybtcl by Tom Poindexter.
+There are many contributors and bug reporter that are not mentioned.
+If you have contributed to mysqltcl and wants to be on the list contact Artur Trzewik.
+</body></html>
+

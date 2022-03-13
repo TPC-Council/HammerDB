@@ -1,0 +1,59 @@
+# orasql.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various combinations of orasql and orafetch
+#
+
+package require tcltest 2.2
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::oratest::orasql {
+	namespace import ::tcltest::*
+
+	test orasql-1.1 {orasql: no rows returned} {
+	  orasql $ora_cur {select * from oratcl___tests where v_number < 0}
+	  oramsg $ora_cur rows
+	} {0}
+
+	test orasql-1.3 {orasql: one row returned} {
+	  orasql $ora_cur {select * from oratcl___tests where v_number = 0}
+	  set cnt 0
+	  orafetch $ora_cur -command {incr cnt}
+	  set cnt
+	} {1}
+
+	test orasql-1.4 {orasql: all columns returned} {
+	  orasql $ora_cur {select * from oratcl___tests}
+	  oramsg $ora_cur rc
+	} {0}
+
+	test orasql-1.6 {orasql: computed column} {
+	  orasql $ora_cur {select count(v_number), sum(v_number) from oratcl___tests}
+	  oramsg $ora_cur rc
+	} {0}
+
+	test orasql-1.19 {orasql: no results returned, sql update} {
+	  orasql $ora_cur "update oratcl___tests set v_number=0 where v_number <0"
+	  oramsg $ora_cur rc
+	} {0}
+
+	test orasql-1.20 {orasql: no results returned, sql create index} {
+	  orasql $ora_cur {create index oratcl___tests_idx1 on oratcl___tests(v_number)}
+	  oramsg $ora_cur rc
+	} {0}
+
+	test orasql-1.21 {orasql: no results returned, sql drop index} {
+	  orasql $ora_cur {drop index oratcl___tests_idx1}
+	  oramsg $ora_cur rc
+	} {0}
+
+	cleanupTests
+}
+
+namespace delete ::oratest::orasql
+

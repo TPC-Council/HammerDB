@@ -1,0 +1,59 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+# expect script to connect two UNIX chess programs together.
+# written by Don Libes - May 9, 1990
+
+# Note, this depends on the "usual" UNIX chess output.  Other chess programs
+# will almost certainly not work.
+
+# Moves and counter-moves are printed out in different formats, sigh...
+# But I guess that's what makes this Expect script challenging to write.
+# In particular, the 1st player outputs:
+#
+# p/k2-k4		(echo from 2nd player)
+# 1. ... p/k2-k4	(reprint it with a number in front - god knows why)
+# 2. n/kn1-kb3		(our new move)
+#
+# and the 2nd player outputs the following
+#
+# n/kn1-kb3		(echo from first player)
+# 2. n/kn1-kb3		(reprint it as above, but differently - god knows why)
+# 2. ... p/k4-k5	(our new countermove - written differently, of course)
+
+set timeout -1;			# wait forever
+expect_before {
+    -i $any_spawn_id eof {
+	send_user "player resigned!\n"
+	exit
+    }
+}
+
+# start things rolling
+spawn chess
+set id1 $spawn_id
+expect "Chess\r\n"
+send "first\r"
+# read_first_move
+expect -re "1. (.*)\n"
+
+spawn chess
+set id2 $spawn_id
+expect "Chess\r\n"
+send $expect_out(1,string)
+
+while {1} {
+    expect {
+	-i $id2 -re "\\.\\. (.*)\n" {
+	    send -i $id1 $expect_out(1,string)
+	}
+	-i $id1 -re "\\.\\. .*\\. (.*)\n" {
+	    send -i $id2 $expect_out(1,string)
+	}
+    }
+}

@@ -1,0 +1,100 @@
+# oracommit.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise oracommit, oraroll, and oraautocom
+#
+
+package require tcltest 2.2
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::oratest::oracommit {
+	namespace import ::tcltest::*
+
+	global ora_constr
+	set tst1_lda [oralogon $ora_constr]
+	set tst2_lda [oralogon $ora_constr]
+	set tst1_cur [oraopen $tst1_lda]
+	set tst2_cur [oraopen $tst2_lda]
+
+	test oracommit-1.1 {orasql: commit} {
+	  set sql1 {update oratcl___tests set v_varchar2 = 'changed1' where v_number = 0}
+	  set sql2 {select v_varchar2 from oratcl___tests where v_number = 0}
+	  oraparse $tst1_cur $sql1
+	  oraexec $tst1_cur
+	  oracommit $tst1_lda
+	  oraparse $tst2_cur $sql2
+	  oraexec $tst2_cur
+	  set res {}
+	  orafetch $tst2_cur -datavariable res
+	  unset sql1
+	  unset sql2
+	  set res 
+	} {changed1}
+
+	test oracommit-1.2 {orasql: commit} {
+	  set sql1 {select v_varchar2 from oratcl___tests where v_number = 0}
+	  set sql2 {update oratcl___tests set v_varchar2 = 'changed2' where v_number = 0}
+	  set sql3 {select v_varchar2 from oratcl___tests where v_number = 0}
+	  oraparse $tst2_cur $sql1
+	  oraexec $tst2_cur 
+	  orafetch $tst2_cur -datavariable res
+	  oraparse $tst1_cur $sql2
+	  oraexec $tst1_cur
+	  oraroll $tst1_lda
+	  oraparse $tst2_cur $sql3
+	  oraexec $tst2_cur
+	  orafetch $tst2_cur -datavariable res
+	  unset sql1
+	  unset sql2
+	  unset sql3
+	  set res 
+	} {changed1}
+
+	test oracommit-1.3 {orasql: commit} {
+	  oraautocom $tst1_lda on
+	  set sql1 {update oratcl___tests set v_varchar2 = 'changed3' where v_number = 0}
+	  set sql2 {select v_varchar2 from oratcl___tests where v_number = 0}
+	  oraparse $tst1_cur $sql1
+	  oraexec $tst1_cur
+	  oraparse $tst2_cur $sql2
+	  oraexec $tst2_cur
+	  orafetch $tst2_cur -datavariable res
+	  oraautocom $tst1_lda off
+	  unset sql1
+	  unset sql2
+	  set res 
+	} {changed3}
+
+	test oracommit-1.4 {orasql: commit} {
+	  oraautocom $tst1_lda true
+	  set sql1 {update oratcl___tests set v_varchar2 = 'changed4' where v_number = 0}
+	  set sql2 {select v_varchar2 from oratcl___tests where v_number = 0}
+	  oraparse $tst1_cur $sql1
+	  oraexec $tst1_cur
+	  oraparse $tst2_cur $sql2
+	  oraexec $tst2_cur
+	  orafetch $tst2_cur -datavariable res
+	  oraautocom $tst1_lda false
+	  unset sql1
+	  unset sql2
+	  set res 
+	} {changed4}
+
+	oraclose $tst1_cur
+	oralogoff $tst1_lda
+	oraclose $tst2_cur
+	oralogoff $tst2_lda
+	unset tst1_cur
+	unset tst1_lda
+	unset tst2_cur
+	unset tst2_lda
+
+	cleanupTests
+}
+
+namespace delete ::oratest::oracommit

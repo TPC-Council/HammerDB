@@ -1,0 +1,43 @@
+# Commands covered:  pid
+#
+# This file contains a collection of tests for one or more of the Tcl
+# built-in commands.  Sourcing this file into Tcl runs the tests and
+# generates output for errors.  No output means no errors were found.
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+    package require tcltest
+    # do this in a way that is backward compatible for Tcl 8.3
+    namespace import ::tcltest::test ::tcltest::cleanupTests
+}
+package require Expect
+
+catch {unset x}
+
+#exp_internal -f /dev/ttyp5 0
+
+test pid-1.2 {basic pid operation} {
+    set cat [exp_spawn -noecho cat]
+    set x [expr 0!=$cat]
+    set y [expr 0==[string compare $cat [exp_pid -i $spawn_id]]]
+    exp_close;exp_wait
+    list $x $y
+} {1 1}
+
+test pid-1.3 {basic pid operation} {
+    exp_spawn -noecho cat; set cat $spawn_id
+    exp_spawn -noecho cat; set cat2 $spawn_id
+    set x [expr {0!=[string compare [exp_pid -i $cat2] [exp_pid -i $cat]]}]
+    exp_close -i $cat;exp_wait -i $cat;exp_close -i $cat2;exp_wait -i $cat2
+    set x
+} {1}
+
+test pid-1.4 {basic pid operation} {
+    list [catch {exp_pid -i 100} msg] $msg
+} {1 {can not find channel named "100"}}
+
+test pid-1.5 {basic pid operation} {
+	list [catch {exp_pid -j} msg] $msg
+} {1 {usage: -i spawn_id}}
+
+cleanupTests
+return

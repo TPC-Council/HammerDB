@@ -1,0 +1,333 @@
+#!/bin/sh
+# -*- tcl -*-
+# The next line is executed by /bin/sh, but not tcl \
+exec tclsh "$0" ${1+"$@"}
+
+package require Expect
+
+
+#
+# gethostbyaddr a.b.c.d - translate an internet address to a FQDN,
+#			  guessing (a lot) if necessary.
+# Author: Don Libes, NIST
+# Version 4.0
+# Written: January 11, 1991
+# Last revised: March 21, 1996
+
+# By default, return a FQDN (fully qualified domain name) or descriptive
+# string (if FQDN is not easily determinable).  This is tagged with a brief
+# explanation of how it was determined.
+#
+# If the host part of the FQDN cannot be determined, the original IP address
+# is used.  
+#
+# Optional arguments act as toggles:					Default
+# -t	tag names with a description of how derived.			true
+# -v	verbose.							false
+# -r	reverse names to see if they resolve back to orig IP address.	true
+# -n	query nic for a descriptive string if it begins to look like	true
+#	the FQDN may be hard to derive.
+# -d	turn on debugging to expose underlying dialogue			false
+#
+# These options and others (see below) may be set in a ~/.gethostbyaddr file
+# To set options from that file, use the same syntax as below.
+set timeout 120		;# timeout query after this many seconds
+set tag 1		;# same as -t
+set reverse 1		;# same as -r
+set verbose 0		;# same as -v
+set nic 1		;# same as -n
+set debug 0		;# same as -d
+log_user 0
+
+proc usage {} {
+	send_user "usage: gethostbyaddr \[options\] a.b.c.d\n"
+	send_user "options meaning (all options act as toggles)      default\n"
+	send_user "  -t    tag with derivation description           true\n"
+	send_user "  -v    verbose                                   false\n"
+	send_user "  -r    reverse back to IP addr for verification  true\n"
+	send_user "  -n    query nic                                 true\n"
+	send_user "  -d    produce debugging output                  false\n"
+	send_user "options must be separate.\n"
+	exit
+}
+
+if {[file readable ~/.gethostbyaddr]} {source ~/.gethostbyaddr}
+
+while {[llength $argv]>0} {
+	set flag [lindex $argv 0]
+	switch -- $flag \
+	"-v" {
+		set verbose [expr !$verbose]
+		set argv [lrange $argv 1 end]
+	} "-r" {
+		set reverse [expr !$reverse]
+		set argv [lrange $argv 1 end]
+	} "-n" {
+		set nic [expr !$nic]
+		set argv [lrange $argv 1 end]
+	} "-t" {
+		set tag [expr !$tag]
+		set argv [lrange $argv 1 end]
+	} "-d" {
+		set debug [expr !$debug]
+		set argv [lrange $argv 1 end]
+		debug $debug
+	} default {
+		break
+	}
+}
+
+set IPaddress $argv
+
+if {[llength $argv]!=1} usage
+if {4!=[scan $IPaddress "%d.%d.%d.%d" a b c d]} usage
+
+proc vprint {s} {
+	global verbose
+
+	if {!$verbose} return
+	send_user $s\n
+}
+
+# dn==1 if domain name, 0 if text (from nic)
+proc printhost {name how dn} {
+	global reverse tag IPaddress
+
+	if {$dn && $reverse} {
+		set verified [verify $name $IPaddress]
+	} else {set verified 0}
+
+	if {$verified || !$reverse || !$dn} {
+		if {$tag} {
+			send_user "$name ($how)\n"
+		} else {
+			send_user "$name\n"
+		}
+		
+		if {$verified || !$reverse} {
+			close
+			wait
+			exit
+		}
+	}
+}
+
+# return 1 if name resolves to IP address
+proc verify {name IPaddress} {
+	vprint "verifying $name is $IPaddress"
+	set rc 0
+	spawn nslookup
+	expect ">*"
+	send $name\r
+
+	expect {
+	 	-re "\\*\\*\\* (\[^\r]*)\r" {
+			vprint $expect_out(1,string)
+		} timeout {
+			vprint "timed out"
+		} -re "Address:.*Address:  (\[^\r]*)\r" {
+			set addr2 $expect_out(1,string)
+			if {[string match $IPaddress $addr2]} {
+				vprint "verified"
+				set rc 1
+			} else {
+				vprint "not verified - $name is $addr2"
+			}
+		}
+	}
+	close
+	wait
+	return $rc
+}
+
+set bad_telnet_responses "(telnet:|: unknown).*"
+
+proc telnet_error {s} {
+	regexp ": (.*)\r" $s dontcare msg
+	vprint $msg
+}
+
+proc guessHost {guess} {
+	global guessHost
+	if {[info exists guessHost]} return
+	set guessHost $guess
+}
+
+proc guessDomain {guess} {
+	global guessDomain
+	if {[info exists guessDomain]} return
+	set guessDomain $guess
+}
+
+proc guessFQDN {} {
+	global guessHost guessDomain
+	return $guessHost.$guessDomain
+}
+
+######################################################################
+# first do a simple reverse nslookup
+######################################################################
+
+vprint "using nslookup"
+spawn nslookup
+expect ">*"
+send "set query=ptr\r"
+expect ">*"
+send "$d.$c.$b.$a.in-addr.arpa\r"
+expect {
+	timeout {
+		vprint "timed out"
+	} -re "\\*\\*\\* (\[^\r]*)\r" {
+		vprint $expect_out(1,string)
+	} -re "name = (\[^\r]*)\r" {
+		set host $expect_out(1,string)
+		printhost $host nslookup 1
+
+		# split out hostname from FQDN as guess for later
+		guessHost [lindex [split $host "."] 0]
+	}
+}
+
+close
+wait
+
+######################################################################
+# next telnet to host and ask it what its name is
+######################################################################
+
+vprint "talking smtp to $IPaddress"
+spawn telnet $IPaddress smtp
+expect	{
+	-re $bad_telnet_responses {
+		telnet_error $expect_out(buffer)
+	} timeout {
+		vprint "timed out"
+	} -re "\n220 (\[^\\. ]*).?(\[^ ]*)" {
+		set host $expect_out(1,string)
+		set domain $expect_out(2,string)
+		printhost $host.$domain smtp 1
+
+		# if not valid FQDN, it's likely either host or domain
+		if {[string length $domain]} {
+		    guessDomain $host.$domain
+		} else {
+		    guessHost $host
+		}
+	}
+}
+catch close
+wait
+
+######################################################################
+# ask NIC for any info about this host
+######################################################################
+
+if {$nic || ($d == 0)} {
+ vprint "talking to nic"
+ spawn telnet internic.net
+ expect	{
+	-re $bad_telnet_responses {
+		telnet_error $expect_out(buffer)
+	} timeout {
+		vprint "timed out"
+	} "InterNIC >" {
+		send "whois\r"
+		expect "Whois: "
+		vprint "getting info on network $a.$b.$c"
+		send "net $a.$b.$c\r"
+		expect {
+		    "No match*" {
+			vprint "no info"
+			expect "Whois: "
+			vprint "getting info on network $a.$b"
+			send "net $a.$b\r"
+			expect {
+			    "No match*" {
+				vprint "no info"
+			    } -re "net\r\n(\[^\r]*)\r" {
+				printhost $expect_out(1,string) nic 0
+			    } timeout {
+				vprint "timed out"
+			    }
+			}
+		    } -re "net\r\n(\[^\r]*)\r" {
+			printhost $expect_out(1,string) nic 0
+		    } timeout {
+			vprint "timed out"
+		    }
+		}
+	}
+ }
+ catch close
+ wait
+ if {$d == 0} exit
+}
+
+######################################################################
+# ask other hosts in the same class C what their name is
+# so that we can at least get the likely domain
+#
+# do this in two loops - first from current IP address down to 0
+# and then next from current IP address up to 255
+######################################################################
+
+# give up guessing host name
+guessHost "unknown"
+
+for {set i [expr $d-1]} {$i>0} {incr i -1} {
+	vprint "talking smtp to $a.$b.$c.$i"
+	spawn telnet $a.$b.$c.$i smtp
+	expect {
+		-re $bad_telnet_responses {
+			telnet_error $expect_out(buffer)
+		} timeout {
+			vprint "timed out"
+		} -re "\n220 (\[^\\. ]*).?(\[^ ]*)" {
+			set host $expect_out(1,string)
+			set domain $expect_out(2,string)
+			printhost $guessHost.$domain "smtp - $a.$b.$c.$i is $host.$domain" 1
+
+			# if not valid FQDN, it's likely either host or domain
+			# don't bother recording host since it can't be for
+			# original addr.
+			if {[string length $domain]} {
+			    guessDomain $host.$domain
+			}
+		}
+	}
+	catch close
+	wait
+}
+
+for {set i [expr $d+1]} {$i<255} {incr i} {
+	vprint "talking smtp to $a.$b.$c.$i"
+	spawn telnet $a.$b.$c.$i smtp
+	expect {
+		-re $bad_telnet_responses {
+			telnet_error $expect_out(buffer)
+		} timeout {
+			vprint "timed out"
+		} -re "\n220 (\[^ ]*.(\[^ ])) " {
+			set host $expect_out(1,string)
+			set domain $expect_out(2,string)
+			printhost $guessHost.$domain "smtp - $a.$b.$c.$i is $host.$domain" 1
+
+			# if not valid FQDN, it's likely either host or domain
+			# don't bother recording host since it can't be for
+			# original addr.
+			if {[string length $domain]} {
+			    guessDomain $host.$domain
+			}
+		}
+	}
+	catch close
+	wait
+}
+
+######################################################################
+# print our best guess as to the name
+######################################################################
+
+
+# How pathetic.  Print something, anything!
+if {!$verbose && !$tag} {send_user [guessFQDN]}

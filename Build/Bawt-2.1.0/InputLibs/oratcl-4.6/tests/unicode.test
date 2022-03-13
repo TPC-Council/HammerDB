@@ -1,0 +1,223 @@
+# oratcl_unicode.test
+#
+# Copyright (c) 2017 by Todd M. Helfter
+# All rights reserved.
+#
+# exercise various oratcl_unicode operations
+#
+
+if {[catch {package require tcltest 2}]} {
+    puts stderr "Skipping tests in [info script].  tcltest 2 required."
+    return
+}
+
+if {[info exists ora_lda] == 0} {
+	source [file  join [pwd] [file dirname [info script]] defs.tcl]
+}
+
+namespace eval ::tcl::test::unicode {
+    namespace import ::tcltest::*
+
+	proc oratcl_unicode_begin {} {
+		uplevel 1 {
+			global ora_constr
+			set un_lda [oralogon $ora_constr]
+			set un_stm [oraopen $un_lda]
+			set un_sql {create table oratcl___unicode (u_id number(2), u_char varchar2(4000))}
+			catch {
+				oraparse $un_stm $un_sql
+				oraexec $un_stm
+				oracommit $un_stm
+			}
+			unset un_sql
+		}
+	}
+
+	proc str2hex str {
+		binary scan $str H* hex
+		return $hex
+	}
+
+	proc oratcl_unicode_final {} {
+		uplevel 1 {
+			oraparse $un_stm "drop table oratcl___unicode"
+			oraexec $un_stm
+			oraclose $un_stm
+			oralogoff $un_lda
+			unset un_stm
+			unset un_lda
+		}
+	}
+
+	oratcl_unicode_begin
+
+	test oratcl_unicode-1.1 {oratcl: :bind non-unicode string} {
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			oraconfig $stm unicode true
+			oraconfig $stm fetchrows 1
+			set sql1 {insert into oratcl___unicode values (:u_id, :u_char)}
+			set sql2 {select u_id, u_char from oratcl___unicode where u_id = :u_id}
+			set idx 1
+			set val OraTcl
+		}
+		-body {
+			oraparse $stm $sql1
+			orabind $stm :u_id 1 :u_char $val
+			oraexec $stm
+			oraparse $stm $sql2
+			orabind $stm :u_id $idx
+			oraexec $stm
+			if {[orafetch $stm -datavariable res] == 0} {
+				#puts "src = [str2hex $val]"
+				#puts "res = [str2hex [lindex $res 1]]"
+				list [string equal [str2hex [lindex $res 1]] [str2hex $val]]
+			} else {
+				list 0
+			}
+		}
+		-cleanup {
+			oraclose $stm
+			oracommit $lda
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oratcl_unicode-1.2 {oratcl: :bind unicode string} {
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			oraconfig $stm unicode true
+			oraconfig $stm fetchrows 1
+			set sql1 {insert into oratcl___unicode values (:u_id, :u_char)}
+			set sql2 {select * from oratcl___unicode where u_id = :u_id}
+			set idx 2
+			set val QuéPué
+		}
+		-body {
+			oraparse $stm $sql1
+			oracols $stm
+			orabind $stm :u_id $idx :u_char $val
+			oraexec $stm
+			oraparse $stm $sql2
+			orabind $stm :u_id $idx
+			oraexec $stm
+			if {[orafetch $stm -datavariable res] == 0} {
+				#puts "src = [str2hex $val]"
+				#puts "res = [str2hex [lindex $res 1]]"
+				list [string equal [str2hex [lindex $res 1]] [str2hex $val]]
+			} else {
+				list 0
+			}
+		}
+		-cleanup {
+			oraclose $stm
+			oracommit $lda
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oratcl_unicode-1.3 {oratcl: :bind medium unicode string} {
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			oraconfig $stm unicode true
+			oraconfig $stm fetchrows 1
+			set sql1 {insert into oratcl___unicode values (:u_id, :u_char)}
+			set sql2 {select * from oratcl___unicode where u_id = :u_id}
+			set idx 3
+			set val [string repeat Ç'ëéé 200]
+		}
+		-body {
+			oraparse $stm $sql1
+			oracols $stm
+			orabind $stm :u_id $idx :u_char $val
+			oraexec $stm
+			oraparse $stm $sql2
+			orabind $stm :u_id $idx
+			oraexec $stm
+			if {[orafetch $stm -datavariable res] == 0} {
+				#puts "src = [str2hex $val]"
+				#puts "res = [str2hex [lindex $res 1]]"
+				list [string equal [str2hex [lindex $res 1]] [str2hex $val]]
+			} else {
+				list 0
+			}
+		}
+		-cleanup {
+			oraclose $stm
+			oracommit $lda
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oratcl_unicode-1.4 {oratcl: :bind large unicode string} {
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			oraconfig $stm unicode true
+			oraconfig $stm fetchrows 1
+			set sql1 {insert into oratcl___unicode values (:u_id, :u_char)}
+			set sql2 {select * from oratcl___unicode where u_id = :u_id}
+			set idx 4
+			set val [string repeat Ç'ëéé 400]
+		}
+		-body {
+			oraparse $stm $sql1
+			oracols $stm
+			orabind $stm :u_id $idx :u_char $val
+			oraexec $stm
+			oraparse $stm $sql2
+			orabind $stm :u_id $idx
+			oraexec $stm
+			if {[orafetch $stm -datavariable res] == 0} {
+				#puts "src = [str2hex $val]"
+				#puts "res = [str2hex [lindex $res 1]]"
+				list [string equal [str2hex [lindex $res 1]] [str2hex $val]]
+			} else {
+				list 0
+			}
+		}
+		-cleanup {
+			oraclose $stm
+			oracommit $lda
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	test oratcl_unicode-1.5 {oratcl: select unicode strings} {
+		-setup {
+			set lda [oralogon $ora_constr]
+			set stm [oraopen $lda]
+			oraconfig $stm unicode true
+			oraconfig $stm fetchrows 10
+			set sql {select * from oratcl___unicode}
+		}
+		-body {
+			oraparse $stm $sql
+			#puts [oracols $stm all]
+			oraexec $stm
+			while {[orafetch $stm -datavariable row] == 0} {
+				#puts $row
+				#puts [str2hex [lindex $row 0]]
+			}
+			list 1
+		}
+		-cleanup {
+			oraclose $stm
+			oralogoff $lda
+		}
+		-result {1}
+	}
+
+	oratcl_unicode_final
+
+	cleanupTests
+}
+namespace delete ::tcl::test::unicode
+return

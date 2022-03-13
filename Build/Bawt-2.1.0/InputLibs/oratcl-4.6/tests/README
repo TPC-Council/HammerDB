@@ -1,0 +1,26 @@
+There are test files in this directory.
+These tests exercise the basic Oratcl
+functions. See comments  in the individual files for 
+more info.
+
+The files containing ora in the file name test
+Oratcl commands.
+
+The files containing i18n in the filename test the
+Oratcl commands with unicode strings. This tests
+the internationalization features of Tcl8.1.
+
+The entire test suite may be run from the source build
+directory with
+
+> make test
+
+
+
+In addition, each test file may be sourced in the Tcl Interpreter.
+If nothing is returned, then the test passed.
+
+Example:
+
+%source basic_tests.test
+%
