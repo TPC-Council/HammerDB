@@ -56,7 +56,6 @@ if { [ file isdirectory [ file join [file nativename [GetOutputDistDir]] HammerD
 set zipProg [Get7ZipProg]
 exec -ignorestderr {*}$zipProg u [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] -y -bd $HammerDBsrcDirIn -xr\!Build -xr\!DocBook -xr!.git* -xr!*.bat
 if { [ file tail $HammerDBsrcDirIn ] != "HammerDB" } {
-puts "exec -ignorestderr {*}$zipProg rn [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] [ file tail $HammerDBsrcDirIn ] HammerDB"
 exec -ignorestderr {*}$zipProg rn [ file join [GetOutputDistDir] HammerDBLinSrc.7z ] [ file tail $HammerDBsrcDirIn ] HammerDB
 	}
     Log "Extracting HammerDB source to [file nativename [GetOutputDistDir]]"
