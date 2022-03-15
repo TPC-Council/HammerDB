@@ -241,7 +241,6 @@ namespace eval BawtZip {
     namespace export GetZipDistDir
     namespace export GetZipProg
     namespace export Unzip
-    namespace export Zip
     namespace export TarGzip
     namespace export Bootstrap
 
@@ -367,11 +366,6 @@ namespace eval BawtZip {
             package require vfs::zip
             _VfsUnzip $zipFile $dir
         }
-    }
-
-    proc Zip {option zipFile dir args} {
-            set zipProg [Get7ZipProg]
-            exec -ignorestderr {*}$zipProg $option $zipFile -y -bd [file nativename $dir] $args
     }
 
     proc TarGzip { tarFile dir } {
@@ -693,7 +687,7 @@ namespace eval BawtFile {
             return
         }
 
-        set cmd "$curlProg -s -o $targetFile $sourceFileUrl"
+        set cmd "$curlProg -L -s -o $targetFile $sourceFileUrl"
         MSysRun $libName "DownloadFile" "" "$cmd"
 
         if { $errorType eq "FATAL" } {
@@ -4268,6 +4262,7 @@ namespace eval BawtMain {
 
     proc HaveLibZipFile { libName } {
         variable sOpts
+
         return [info exists sOpts($libName,ZipFile)]
     }
 
@@ -4863,11 +4858,6 @@ namespace eval BawtMain {
     }
 
     proc ExtractLibrary { libName targetDir } {
-	    #For HammerDB update 7z file from source directory
-	    if [ file isdirectory [ file join [GetLibZipDir $libName] [file rootname [GetLibZipFile $libName]]]] {
-		Log  "Updating Zip file [ file join [GetLibZipDir $libName] [GetLibZipFile $libName ]] from directory [ file join [GetLibZipDir $libName] [file rootname [GetLibZipFile $libName]]]" 2
-		Zip u [ file join [GetLibZipDir $libName] [GetLibZipFile $libName ]] [ file join [GetLibZipDir $libName] [file rootname [GetLibZipFile $libName]]]
-	    }
         if { ! [HaveLibZipFile $libName] } {
             ErrorAppend "ExtractLibrary: No directory or ZIP file specified for library $libName" "FATAL"
             return
@@ -5071,9 +5061,7 @@ namespace eval BawtMain {
                     UpdateLib $libName "Download/Build (Source distribution not available)"
                 }
             } else {
-	       #For HammerDB if the ZIP file doesn't exist we create it from existing source directory
-	       #Once they exist then we update it if there are any source changes
-               #ErrorAppend "Setup: Directory or ZIP file $zipFullPath does not exist" "FATAL"
+                ErrorAppend "Setup: Directory or ZIP file $zipFullPath does not exist" "FATAL"
             }
         } else {
             set modTime 0

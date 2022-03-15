@@ -40,7 +40,7 @@ TCLKIT="./tclkit-Linux${BITS}"
 NUMJOBS=`nproc`
 ACTION="--${ACTION}"
 
-BAWTOPTS="--rootdir ${OUTROOTDIR} --architecture ${ARCH} --numjobs ${NUMJOBS} --noonline --finalizefile Setup/HammerDBFinalize.bawt"
+BAWTOPTS="--rootdir ${OUTROOTDIR} --architecture ${ARCH} --numjobs ${NUMJOBS} --url http://www.hammerdb.com/build --finalizefile Setup/HammerDBFinalize.bawt"
 
 # Build all libraries as listed in Setup file.
 ${TCLKIT} Bawt.tcl ${BAWTOPTS} ${ACTION} ${SETUPFILE} ${TARGETS}
