@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.3.</para>
+      <para>The following are the release notes for HammerDB v4.4.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -73,23 +73,16 @@
         configuration has been modified to use the InnoDB storage engine
         instead of MyISAM and to remove additional indexes on the LINEITEM
         table not compliant with the TPC-H specification. Consequently
-        performance of TPROC-H on MySQL and MariaDB in version 4.3 is not
-        comparable with version 4.2 and earlier.</para>
+        performance of TPROC-H on MySQL and MariaDB in version 4.3 and above
+        is not comparable with version 4.2 and earlier.</para>
       </section>
 
       <section>
-        <title>sslmode support for PostgreSQL</title>
+        <title>PostgreSQL Citus Data Support</title>
 
-        <para>From version 4.3 PostgreSQL connections support <link
-        xlink:href="https://www.postgresql.org/docs/13/libpq-ssl.html">SSL
-        connections</link> this requires OpenSSL on client and server and
-        needs to be enabled in PostgreSQL at compilation. When enabled
-        HammerDB uses the "prefer" option as default meaning that when
-        selected if SSL is supported and available HammerDB will use it. When
-        unselected "disable" is used and SSL is not used even if supported.
-        Where SSL is enabled and used performance should not be directly
-        compared to HammerDB v4.2 and earlier where SSL is not
-        supported.</para>
+        <para>From version 4.4 the PostgreSQL TPROC-C workloads support <link
+        xlink:href="https://www.citusdata.com/">Citus Data</link> distributed
+        PostgreSQL environments.</para>
       </section>
 
       <section>
@@ -162,7 +155,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     <section>
       <title>Documentation License and Copyright</title>
 
-      <para>Copyright (C) 2021 Steve Shaw.</para>
+      <para>Copyright (C) 2022 Steve Shaw.</para>
 
       <para>Permission is granted to copy, distribute and/or modify this
       document under the terms of the GNU Free Documentation License, Version
@@ -173,24 +166,30 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.3 New Features</title>
+      <title>HammerDB v4.4 New Features</title>
 
-      <para>HammerDB v4.3 New Features are all referenced to <link
+      <para>HammerDB v4.4 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Issues and Pull Requests</link>, where more details for each new feature
-      and related pull requests can be found here: <link
-      xlink:href="https://github.com/TPC-Council/HammerDB/issues"/></para>
+      and related pull requests can be found here: </para>
 
-      <para>[TPC-Council#279] Add performance metrics for PostgreSQL</para>
+      <para>[TPC-Council#306] Fix getcols can return zero, resulting in
+      divide-by-zero</para>
 
-      <para>[TPC-Council#278] Add CLI to Web Service with SQLite repository
-      for output, timing and transactions</para>
+      <para>[TPC-Council#303] readline: only catch signals when using
+      interact</para>
 
-      <para>[TPC-Council#274] Update for #264 [TPROC-H] MySQL create FKs after
-      table load</para>
+      <para>[TPC-Council#302] Add optional Citus support</para>
 
-      <para>[TPC-Council#271] Add sslmode support for PostgreSQL
-      database</para>
+      <para>[TPC-Council#301] Build dataset using COPY instead of multi-row
+      inserts for TPROC-C</para>
+
+      <para>[TPC-Council#298] Make Linux hammerdb executable work with spaces
+      in PATH</para>
+
+      <para>[TPC-Council#295] Optimize MakeAlphaString</para>
+
+      <para>[TPC-Council#292] Standardize indentation of tcl files </para>
     </section>
 
     <section>
@@ -280,14 +279,14 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>MariaDB</entry>
 
-              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6</entry>
+              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8</entry>
             </row>
 
             <row>
               <entry>PostgreSQL (EnterpriseDB) (Amazon Redshift)
               (Greenplum)</entry>
 
-              <entry>10.2 / 10.3 / 11 / 12 / 13</entry>
+              <entry>10.2 / 10.3 / 11 / 12 / 13 / 14</entry>
             </row>
           </tbody>
         </tgroup>
@@ -305,12 +304,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.3-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.4-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.3-Linux.tar.gz 
-sha1sum HammerDB-4.3-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.4-Linux.tar.gz 
+sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -508,10 +507,10 @@ sha1sum HammerDB-4.3-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.3.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.4.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.3.</para>
+        HammerDB-4.4.</para>
       </section>
 
       <section>
@@ -558,8 +557,8 @@ sha1sum HammerDB-4.3-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.3
-Copyright (C) 2003-2021 Steve Shaw
+      <programlisting>HammerDB CLI v4.4
+Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;librarycheck
@@ -581,8 +580,8 @@ hammerdb&gt;
 
       <para>librarycheck is also provided in the HammerDB Web Service.</para>
 
-      <programlisting>HammerDB Web Service v4.3
-Copyright (C) 2003-2021 Steve Shaw
+      <programlisting>HammerDB Web Service v4.4
+Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 Initialized SQLite on-disk database C:/Users/Steve/AppData/Local/Temp/hammer.DB using existing tables
@@ -881,7 +880,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.3 (4.2/4.1/4.0 and version 3.3) has been
+        <para>HammerDB version 4.4 (4.3/4.2/4.1/4.0 and version 3.3) has been
         built and tested against a MySQL 8.0 client installation, hammerDB
         version 3.0-3.2 has been built against MySQL 5.7. On Linux this means
         that HammerDB will require a MySQL client library called
@@ -895,7 +894,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.3 has been built and tested against MariaDB
+        <para>HammerDB version 4.4 has been built and tested against MariaDB
         10.5.10 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
@@ -2205,18 +2204,22 @@ MariaDB [(none)]&gt; </programlisting>
         EnterpriseDB produce an enhanced version of the PostgreSQL database
         termed Postgres Plus Advanced Server. This version of PostgreSQL in
         particular includes compatibility features with the Oracle database
-        such as PL/SQL support. For this reason the Hammer OLTP workload for
-        PostgreSQL can operate in 2 modes. Firstly Oracle compatible mode uses
+        such as PL/SQL support. Also Citus Data have produced a distributed
+        PostgreSQL extension. For this reason the Hammer OLTP workload for
+        PostgreSQL can operate in 3 modes. Firstly Oracle compatible mode uses
         PL/SQL and additional Postgres Plus Advanced Server features (such as
         DRITA snapshots) that will only operate against Enterprise DB Postgres
-        Plus Advanced Server. Secondly by not selecting Oracle compatibility
-        HammerDB can continue to operate against Postgres Plus Advanced Server
-        but additionally against a regular PostgreSQL build using native
-        PostgreSQL features. You must ensure before proceeding with OLTP that
-        you are aware of the version of PostgreSQL you have installed and the
-        features available, if you wish to test Oracle compatibility then you
-        must use Postgres Plus Advanced Server from EnterpriseDB and install
-        in Oracle compatible mode.</para>
+        Plus Advanced Server. Secondly Citus compatible mode supports
+        distributed PostgreSQL with the Citus Data extension. Finally by not
+        selecting Citus or Oracle compatibility HammerDB can continue to
+        operate against a regular PostgreSQL build using native PostgreSQL
+        features. You must ensure before proceeding with OLTP that you are
+        aware of the version of PostgreSQL you have installed and the features
+        available, if you wish to test Oracle compatibility then you must use
+        Postgres Plus Advanced Server from EnterpriseDB and install in Oracle
+        compatible mode, if you wish to use Citus Data you must be running
+        against a Citus enabled installation either installed or in the cloud.
+        </para>
 
         <para>During the installation make a note of your postgres superuser
         password, you will need it for the test schema creation. You must be
@@ -3224,6 +3227,13 @@ GO
 
                   <entry>When running on PostgreSQL v11 or upwards use
                   PostgreSQL stored procedures instead of functions.</entry>
+                </row>
+
+                <row>
+                  <entry>Citus Compatible</entry>
+
+                  <entry>Installs a schema into a PostgreSQL database with the
+                  Citus Data Distributed PostgreSQL extension.</entry>
                 </row>
 
                 <row>
