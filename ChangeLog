@@ -976,22 +976,7 @@ Version 4.3 Nov 2021
 
 Pull Requests & Issues
 
-v4.3 fix - encapsulate graphical metrics in namespace #283
 Add performance metrics for PostgreSQL #279 (#8)
 Add CLI to Web Service with SQLite repository for output, timing and transactions #278 (#145)
 Update for #264 [TPROC-H] MySQL create FKs after table load #274 (#264)
 Add sslmode support for PostgreSQL database #271
-
----------------------------------------------------------------------
-
-Version 4.4 Feb 2022
-
-Pull Requests & Issues
-
-Fix getcols can return zero, resulting in divide-by-zero #306
-readline: only catch signals when using interact #303
-Add optional Citus support #302
-Build dataset using COPY instead of multi-row inserts for TPROC-C #301
-Make Linux hammerdb executable work with spaces in PATH #298
-Optimize MakeAlphaString #295
-Standardize indentation of tcl files #292
