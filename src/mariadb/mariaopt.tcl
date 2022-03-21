@@ -141,6 +141,7 @@ proc countmariaopts { bm } {
     if { $bm eq "TPC-C" } {
         ttk::button $Name -command {
             copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpcc
+            Dict2SQLite "mariadb" $configmariadb
             unset mariaoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -158,6 +159,7 @@ proc countmariaopts { bm } {
     } else {
         ttk::button $Name -command {
             copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpch
+            Dict2SQLite "mariadb" $configmariadb
             unset mariaoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -534,6 +536,7 @@ proc configmariatpcc {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmariadb [ subst $mariafields ] tpcc
+                Dict2SQLite "mariadb" $configmariadb
                 unset mariafields
                 destroy .tpc
                 loadtpcc
@@ -544,6 +547,7 @@ proc configmariatpcc {option} {
                 set maria_count_ware [ verify_warehouse $maria_count_ware 100000 ]
                 set maria_num_vu [ verify_build_threads $maria_num_vu $maria_count_ware 1024 ]
                 copyfieldstoconfig configmariadb [ subst $mariafields ] tpcc
+                Dict2SQLite "mariadb" $configmariadb
                 unset mariafields
                 destroy .tpc
             } -text {OK}
@@ -799,6 +803,7 @@ proc configmariatpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmariadb [ subst $mariafields ] tpch
+                Dict2SQLite "mariadb" $configmariadb
                 unset mariafields
                 destroy .mytpch
                 loadtpch
@@ -808,6 +813,7 @@ proc configmariatpch {option} {
             ttk::button $Name -command {
                 set maria_num_tpch_threads [ verify_build_threads $maria_num_tpch_threads 512 512 ]
                 copyfieldstoconfig configmariadb [ subst $mariafields ] tpch
+                Dict2SQLite "mariadb" $configmariadb
                 unset mariafields
                 destroy .mytpch
             } -text {OK}

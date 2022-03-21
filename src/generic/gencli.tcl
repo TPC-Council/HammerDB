@@ -529,6 +529,8 @@ proc diset { args } {
                                 putscli "Failed to set Dictionary value: $message"
                             } else {
                                 putscli "Changed $dct:$key2 from $previous to [ concat $val ] for $rdbms"
+                              	#Save new value to SQLite
+                              	SQLiteUpdateKeyValue $key $dct $key2 $val
                                 remote_command [ concat diset $dct $key2 [ list \{$val\} ]]
                         }}
                     } else {
@@ -603,6 +605,7 @@ proc dbset { args } {
                     set rdbms [ lindex $dbl $ind ]
                     remote_command [ concat dbset db $val ]
                     putscli "Database set to $rdbms"
+                    SQLiteUpdateKeyValue "generic" "benchmark" "rdbms" $rdbms
                 }
             }	
             bm {
@@ -623,6 +626,7 @@ proc dbset { args } {
                                 set bm $dicttoup
                                 remote_command [ concat dbset bm $dicttoup ]
                                 putscli "Benchmark set to $toup for $rdbms"
+                                SQLiteUpdateKeyValue "generic" "benchmark" "bm" $bm
                             }
                         } else {
                             putscli "Unknown benchmark $toup, choose one from $posswkl2 (or compatible names $posswkl)"
@@ -827,6 +831,17 @@ proc loadscript {} {
         putscli "Error:script failed to load"
     }
     remote_command [ concat loadscript ]
+    #Save dict(all config) to SQLite, if need group saving, uncomment
+    #upvar #0 dbdict dbdict
+    #foreach { key } [ dict keys $dbdict ] {
+    #  if { [ dict get $dbdict $key name ] eq $rdbms } {
+    #    set dbname $key
+    #    set dictname config$key
+    #    upvar #0 $dictname $dictname
+    #    break
+    #  }
+    #}
+    #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
 }
 
 proc clearscript {} {
@@ -918,6 +933,7 @@ proc buildschema {} {
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
+	          #set dbname $key
             upvar #0 $dictname $dictname
             break
         }
@@ -981,6 +997,8 @@ proc buildschema {} {
             puts "Error: $message"
         }
     }
+    #Save dict(all config) to SQLite, if need group saving, uncomment
+    #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
 }
 
 proc vurun {} {
