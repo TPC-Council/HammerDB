@@ -1,5 +1,5 @@
 proc build_mariatpcc {} {
-    global maxvuser suppo ntimes threadscreated _ED
+    global maxvuser suppo ntimes threadscreated _ED maria_ssl_options
     upvar #0 dbdict dbdict
 
     if {[dict exists $dbdict maria library ]} {
@@ -11,7 +11,10 @@ proc build_mariatpcc {} {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpccvars $configmariadb
-
+    #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
@@ -451,6 +454,45 @@ proc CreateStoredProcs { maria_handler } {
         mariaexec $maria_handler $sql($i)
     }
     return
+}
+
+proc ConnectToMaria { host port socket ssl_options user password } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+		if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        maria::autocommit $maria_handler 0
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
+    }
 }
 
 proc GatherStatistics { maria_handler } {
@@ -913,7 +955,7 @@ proc chk_socket { host socket } {
     }
 }
 
-proc do_tpcc { host port socket count_ware user password db maria_storage_engine partition num_vu } {
+proc do_tpcc { host port socket ssl_options count_ware user password db maria_storage_engine partition num_vu } {
     global mariastatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -945,22 +987,7 @@ proc do_tpcc { host port socket count_ware user password db maria_storage_engine
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $db ] SCHEMA"
-        if { [ chk_socket $host $socket ] eq "TRUE" } {
-            if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                puts "the local socket connection to $socket could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            } 
-        } else {
-            if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                puts "the tcp connection to $host:$port could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            } 
-        }
-        if {$connected} {
+	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
             CreateDatabase $maria_handler $db
             mariause $maria_handler $db
             maria::autocommit $maria_handler 0
@@ -974,10 +1001,6 @@ proc do_tpcc { host port socket count_ware user password db maria_storage_engine
                 set num_part 0
             }
             CreateTables $maria_handler $maria_storage_engine $num_part
-        } else {
-            error $mariastatus(message)
-            return
-        }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $maria_handler $MAXITEMS
@@ -1018,28 +1041,8 @@ proc do_tpcc { host port socket count_ware user password db maria_storage_engine
                 }
                 after 5000
             }
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mariause $maria_handler $db
-                maria::autocommit $maria_handler 0
-            } else {
-                error $mariastatus(message)
-                return
-            }
+	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+            mariause $maria_handler $db
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
             tsv::lreplace common thrdlst $myposition $myposition active
@@ -1063,10 +1066,10 @@ proc do_tpcc { host port socket count_ware user password db maria_storage_engine
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         mariaclose $maria_handler
         return
-    }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket $maria_count_ware $maria_user $maria_pass $maria_dbase $maria_storage_engine $maria_partition $maria_num_vu"
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user $maria_pass $maria_dbase $maria_storage_engine $maria_partition $maria_num_vu" 
     } else {
         return 
     }
@@ -1089,13 +1092,13 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set Maria connect string
-                set $id [ list $maria_host $maria_port $maria_socket $maria_user $maria_pass $maria_dbase ]
+                set $id [ list $maria_host $maria_port $maria_socket $maria_ssl_options $maria_user $maria_pass $maria_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
         foreach id [ split $conkeys ] {
-            lassign [ set $id ] 1 2 3 4 5 6
-            dict set connlist $id [ set maria_handler$id [ ConnectToMaria $1 $2 $3 $4 $5 $6 ] ]
+            lassign [ set $id ] 1 2 3 4 5 6 7
+            dict set connlist $id [ set maria_handler$id [ ConnectToMaria $1 $2 $3 $4 $5 $6 $7 ] ]
             if {  [ set maria_handler$id ] eq "Failed" } {
                 puts "error, the database connection to $1 could not be established"
             }
@@ -1134,7 +1137,7 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             #puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
         }
         #Open standalone connect to determine highest warehouse id for all connections
-        set mmaria_handler [ ConnectToMaria $host $port $socket $user $password $db ]
+        set mmaria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
         set w_id_input [ list [ maria::sel $mmaria_handler "select max(w_id) from warehouse" -list ] ]
         #2.4.1.1 set warehouse_id stays constant for a given terminal
         set w_id  [ RandomNumber 1 $w_id_input ]  
@@ -1196,18 +1199,20 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             if {$prepare} {
                 foreach st {neword_st payment_st delivery_st slev_st ostat_st} {
                     catch {mariaexec $maria_handler "deallocate prepare $st"}
-                }
-            }
-            mariaclose $maria_handler
-        }
-        mariaclose $mmaria_handler
-    }
+}
+}
+mariaclose $maria_handler
+}
+mariaclose $mmaria_handler
+}
     #Find single connection start and end points
     set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "mariaclose \$maria_handler" end ]
     #puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
     #Delete text from start and end points
+    #Bug introduced by reformatting of Tcl #292 remove +1l below
     .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+    #.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)
     #Replace with connect pool version
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
     if { $testtype eq "timed" } {
@@ -1286,10 +1291,10 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
             set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
-            set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmaria_handler [ ConnectToMaria $host $port $socket $user $password $db ]} end ]
+            set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmaria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]} end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
             #Replace individual lines for Asynch
-            foreach line {{set maria_handler [ ConnectToMariaAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set maria_handler$id [ ConnectToMaria $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmaria_handler [ ConnectToMariaAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set maria_handler$id [ ConnectToMariaAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+            foreach line {{set maria_handler [ ConnectToMariaAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set maria_handler$id [ ConnectToMaria $1 $2 $3 $4 $5 $6 $7 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmaria_handler [ ConnectToMariaAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set maria_handler$id [ ConnectToMariaAsynch $1 $2 $3 $4 $5 $6 $7 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
                 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
@@ -1326,7 +1331,7 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
 }
 
 proc loadmariatpcc { } {
-    global _ED
+    global _ED maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -1334,6 +1339,10 @@ proc loadmariatpcc { } {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpccvars $configmariadb
+     #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C"
@@ -1347,6 +1356,7 @@ set KEYANDTHINK \"$maria_keyandthink\" ;# Time for user thinking and keying (tru
 set host \"$maria_host\" ;# Address of the server hosting Maria 
 set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
+set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
 set password \"$maria_pass\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
@@ -1371,33 +1381,45 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMaria { host port socket user password db } {
+proc ConnectToMaria { host port socket ssl_options user password db } {
     global mariastatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+		if $use_socket {
             puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
     } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
             puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
     }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
     if {$connected} {
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
         return $maria_handler
     } else {
         error $mariastatus(message)
         return
     }
 }
-
 #NEW ORDER
 proc neword { maria_handler no_w_id w_id_input prepare RAISEERROR } {
     global mariastatus
@@ -1580,7 +1602,7 @@ proc prep_statement { maria_handler statement_st } {
 }
 
 #RUN TPC-C
-set maria_handler [ ConnectToMaria $host $port $socket $user $password $db ]
+set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
 if {$prepare} {
     foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
 }
@@ -1626,14 +1648,15 @@ if {$prepare} {
         catch {mariaexec $maria_handler "deallocate prepare $st"}
     }
 }
-mariaclose $maria_handler}
-    if { $maria_connect_pool } {
-        insert_mariaconnectpool_drivescript test sync
-    }
+mariaclose $maria_handler
+}
+if { $maria_connect_pool } {
+insert_mariaconnectpool_drivescript test sync
+}
 }
 
 proc loadtimedmariatpcc { } {
-    global opmode _ED
+    global opmode _ED maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -1641,6 +1664,10 @@ proc loadtimedmariatpcc { } {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpccvars $configmariadb
+    #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C Timed"
@@ -1659,6 +1686,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$maria_host\" ;# Address of the server hosting Maria 
 set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
+set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
 set password \"$maria_pass\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
@@ -1683,26 +1711,39 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMaria { host port socket user password db } {
+proc ConnectToMaria { host port socket ssl_options user password db } {
     global mariastatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+		if $use_socket {
             puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
     } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
             puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
     }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
     if {$connected} {
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
         return $maria_handler
     } else {
         error $mariastatus(message)
@@ -1714,28 +1755,7 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mariause $maria_handler $db
-                maria::autocommit $maria_handler 1
-            } else {
-                error $mariastatus(message)
-                return
-            }
+	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
@@ -1983,7 +2003,7 @@ switch $myposition {
         }
 
         #RUN TPC-C
-        set maria_handler [ ConnectToMaria $host $port $socket $user $password $db ]
+        set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
         if {$prepare} {
             foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
         }
@@ -2024,13 +2044,13 @@ switch $myposition {
                 catch {mariaexec $maria_handler "deallocate prepare $st"}
             }
         }
-        mariaclose $maria_handler
-    }
+mariaclose $maria_handler 
+}
 }}
-        if { $maria_connect_pool } {
-            insert_mariaconnectpool_drivescript timed sync
-        }
-    } else {
+if { $maria_connect_pool } {
+insert_mariaconnectpool_drivescript timed sync
+}
+} else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
@@ -2045,6 +2065,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$maria_host\" ;# Address of the server hosting Maria 
 set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
+set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
 set password \"$maria_pass\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
@@ -2073,34 +2094,89 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMariaAsynch { host port socket user password db clientname async_verbose } {
+proc ConnectToMaria { host port socket ssl_options user password db } {
+#Used for Monitor Connection
     global mariastatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-            set connected "FALSE"
-            if { $RAISEERROR } {
-                puts "$clientname:socket login failed:$mariastatus(message)"
-            }
-        } else {
-            set connected "TRUE"
-        }
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+		if $use_socket {
+            puts "the local socket connection to $socket could not be established"
     } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-            set connected "FALSE"
-            if { $RAISEERROR } {
-                puts "$clientname:tcp login failed:$mariastatus(message)"
-            }
-        } else {
-            set connected "TRUE"
-        }
+            puts "the tcp connection to $host:$port could not be established"
     }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
     if {$connected} {
-        if { $async_verbose } { puts "Connected $clientname:$maria_handler" }
+        mariause $maria_handler $db
+        maria::autocommit $maria_handler 0
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
+    }
+}
+
+proc ConnectToMariaAsynch { host port socket ssl_options user password db clientname async_verbose } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+	if $use_socket {
+	if $async_verbose {
+	    puts "$clientname:socket login failed:$mariastatus(message)"
+    		}
+    } else {
+	if $async_verbose {
+	    puts "$clientname:tcp login failed:$mariastatus(message)"
+    		}
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+	if { $async_verbose } { 
+	puts "Connected $clientname:$maria_handler" 
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts "$clientname:[ join $ssl_status ]"
+	}}
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
         return $maria_handler
     } else {
-        return "$clientname:login failed:$mariastatus(message)"
+	return "$clientname:login failed:$mariastatus(message)"
     }
 }
 
@@ -2108,28 +2184,7 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mariause $maria_handler $db
-                maria::autocommit $maria_handler 1
-            } else {
-                error $mariastatus(message)
-                return
-            }
+	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
@@ -2377,14 +2432,14 @@ switch $myposition {
         }
 
         #CONNECT ASYNC
-        promise::async simulate_client { clientname total_iterations host port socket user password RAISEERROR KEYANDTHINK db prepare async_verbose async_delay } {
+        promise::async simulate_client { clientname total_iterations host port socket ssl_options user password RAISEERROR KEYANDTHINK db prepare async_verbose async_delay } {
             global mariastatus
             set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
             if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
             async_time $acno
             if { [ tsv::get application abort ] } { return "$clientname:abort before login" }
             if { $async_verbose } { puts "Logging in $clientname" }
-            set maria_handler [ ConnectToMariaAsynch $host $port $socket $user $password $db $clientname $async_verbose ]
+            set maria_handler [ ConnectToMariaAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]
             #RUN TPC-C
             if {$prepare} {
                 foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $maria_handler $st ] }
@@ -2438,19 +2493,21 @@ switch $myposition {
         for {set ac 1} {$ac <= $async_client} {incr ac} {
             set clientdesc "vuser$myposition:ac$ac"
             lappend clientlist $clientdesc
-            lappend clients [simulate_client $clientdesc $total_iterations $host $port $socket $user $password $RAISEERROR $KEYANDTHINK $db $prepare $async_verbose $async_delay]
+            lappend clients [simulate_client $clientdesc $total_iterations $host $port $socket $ssl_options $user $password $RAISEERROR $KEYANDTHINK $db $prepare $async_verbose $async_delay]
         }
         puts "Started asynchronous clients:$clientlist"
         set acprom [ promise::eventloop [ promise::all $clients ] ]
         puts "All asynchronous clients complete"
         if { $async_verbose } {
             foreach client $acprom { puts $client }
-        }
-    }
 }
 }
-        if { $maria_connect_pool } {
-            insert_mariaconnectpool_drivescript timed async
-        }
-    }
+}}
+#Reformatting src causes error when inserting timeprofile
+#Do not modify double close bracket above
+#Close bracket of fast insert must come directly after inserted code without newline
+if { $maria_connect_pool } {
+insert_mariaconnectpool_drivescript timed async
+}
+}
 }
