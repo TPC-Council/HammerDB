@@ -1,0 +1,115 @@
+/* 
+ *
+ * Version Resource Script
+ *
+ */
+
+#define RESOURCE_INCLUDED
+
+#include <winver.h>
+#include <tcl.h>
+
+#ifdef TCLKIT_WITH_TK
+#include <tk.h>
+#endif
+
+#define STRINGIFY1(x)	    #x
+#define STRINGIFY(x)	    STRINGIFY1(x) 
+
+
+/*
+ * build-up the name suffix that defines the type of build this is.
+ */
+
+#ifdef TCL_THREADS
+#define SUFFIX_THREADS	    "t"
+#else
+#define SUFFIX_THREADS	    ""
+#endif
+
+#if STATIC_BUILD
+#define SUFFIX_STATIC	    "s"
+#else
+#define SUFFIX_STATIC	    ""
+#endif
+
+#ifdef DEBUG
+#define SUFFIX_DEBUG	    "g"
+#else
+#define SUFFIX_DEBUG	    ""
+#endif
+
+#define SUFFIX		    SUFFIX_THREADS SUFFIX_STATIC SUFFIX_DEBUG
+
+
+LANGUAGE 0x9, 0x1	/* LANG_ENGLISH, SUBLANG_DEFAULT */
+
+VS_VERSION_INFO	VERSIONINFO
+#ifdef TCLKIT_WITH_TK
+ FILEVERSION	TK_MAJOR_VERSION,TK_MINOR_VERSION,TK_RELEASE_LEVEL,TK_RELEASE_SERIAL
+ PRODUCTVERSION	TK_MAJOR_VERSION,TK_MINOR_VERSION,TK_RELEASE_LEVEL,TK_RELEASE_SERIAL
+#else
+ FILEVERSION	TCL_MAJOR_VERSION,TCL_MINOR_VERSION,TCL_RELEASE_LEVEL,TCL_RELEASE_SERIAL
+ PRODUCTVERSION	TCL_MAJOR_VERSION,TCL_MINOR_VERSION,TCL_RELEASE_LEVEL,TCL_RELEASE_SERIAL
+#endif
+ FILEFLAGSMASK	0x3fL
+#ifdef DEBUG
+ FILEFLAGS	VS_FF_DEBUG
+#else
+ FILEFLAGS	0x0L
+#endif
+ FILEOS		VOS__WINDOWS32
+ FILETYPE	VFT_DLL
+ FILESUBTYPE	0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "Tclkit, a standalone runtime for Tcl/Tk\0"
+            VALUE "OriginalFilename", "tclkit.exe\0"
+            VALUE "CompanyName", "poSoft, Paul Obermeier's Portable Software\0"
+            VALUE "LegalCopyright", "© 1999-2021 by Paul Obermeier\0"
+#ifdef TCLKIT_WITH_TK
+            VALUE "FileVersion", TK_PATCH_LEVEL
+            VALUE "ProductName", "Tclkit " TK_VERSION " for Windows\0"
+            VALUE "ProductVersion", TK_PATCH_LEVEL
+#else
+            VALUE "FileVersion", TCL_PATCH_LEVEL
+            VALUE "ProductName", "Tclkit " TCL_VERSION " for Windows\0"
+            VALUE "ProductVersion", TCL_PATCH_LEVEL
+#endif
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+/*
+ * Icon
+ */
+
+tk                    ICON    DISCARDABLE     "tclkit.ico"
+
+#ifdef TCLKIT_WITH_TK
+/*
+ *  Include the base resources.
+ */
+
+#include "tk_base.rc"
+
+/*
+ * This enables themed scrollbars in XP by trying to use comctl32 v6.
+ */
+
+#ifndef RT_MANIFEST
+#define RT_MANIFEST     24
+#endif
+#ifndef CREATEPROCESS_MANIFEST_RESOURCE_ID
+#define CREATEPROCESS_MANIFEST_RESOURCE_ID 1
+#endif
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "wish.exe.manifest"
+
+#endif
