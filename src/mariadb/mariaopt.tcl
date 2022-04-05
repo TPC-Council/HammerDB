@@ -88,7 +88,7 @@ proc countmariaopts { bm } {
         set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
         } else {
         set platform "win"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath $maria_ssl_windows_capath} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
         }
     } else {
    if {![string match windows $::tcl_platform(platform)]} {
@@ -96,7 +96,7 @@ proc countmariaopts { bm } {
         set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
         } else {
         set platform "win"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath $maria_ssl_windows_capath} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
         }
     }
     if { [ info exists afval ] } {
@@ -383,7 +383,7 @@ proc configmariatpcc {option} {
     set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
         } else {
         set platform "win"
-    set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath $maria_ssl_windows_capath} ]
+    set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
         }
     variable mariafields
     set mariafields [ dict merge $mariaconn $tpccfields ]
@@ -872,10 +872,10 @@ proc configmariatpch {option} {
     #set matching fields in dialog to temporary dict
        if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
+    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath {$maria_ssl_linux_capath}} ]
         } else {
         set platform "win"
-    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath $maria_ssl_windows_capath} ]
+    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
         }
     variable mariafields
     set mariafields [ dict merge $mariaconn $tpchfields ]
