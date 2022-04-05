@@ -1,5 +1,5 @@
 proc build_mariatpch {} {
-    global maxvuser suppo ntimes threadscreated _ED
+    global maxvuser suppo ntimes threadscreated _ED maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -9,6 +9,10 @@ proc build_mariatpch {} {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpchvars $configmariadb
+    #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $maria_scale_fact TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ] in database [ string toupper $maria_tpch_dbase ] with storage engine [ string toupper $maria_tpch_storage_engine ]?" -type yesno ] == yes} { 
         if { $maria_num_tpch_threads eq 1 } {
@@ -46,6 +50,45 @@ proc chk_socket { host socket } {
         return "TRUE"
     } else {
         return "FALSE"
+    }
+}
+
+proc ConnectToMaria { host port socket ssl_options user password } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+         } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+        }
+        foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+        }
+        append connectstring " -user $user -password $password"
+        set login_command "mariaconnect [ dict get $connectstring ]"
+        #eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+                if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        maria::autocommit $maria_handler 0
+        catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+        puts [ join $ssl_status ]
+        }
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
     }
 }
 
@@ -426,7 +469,7 @@ proc mk_order { maria_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket scale_fact user password db maria_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket ssl_options scale_fact user password db maria_tpch_storage_engine num_vu } {
     global mariastatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -478,30 +521,11 @@ proc do_tpch { host port socket scale_fact user password db maria_tpch_storage_e
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
-        if { [ chk_socket $host $socket ] eq "TRUE" } {
-            if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                puts "the local socket connection to $socket could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            }
-        } else {
-            if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                puts "the tcp connection to $host:$port could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            }
-        }
-        if {$connected} {
+	    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
             CreateDatabase $maria_handler $db
             mariause $maria_handler $db
             maria::autocommit $maria_handler 0
             CreateTables $maria_handler $maria_tpch_storage_engine
-        } else {
-            error $mariastatus(message)
-            return
-        }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -555,29 +579,9 @@ proc do_tpch { host port socket scale_fact user password db maria_tpch_storage_e
                 }
                 after 5000
             }
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mariause $maria_handler $db
-                maria::autocommit $maria_handler 0
+	    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+	    mariause $maria_handler $db
                 mariaexec $maria_handler "SET FOREIGN_KEY_CHECKS = 0"
-            } else {
-                error $mariastatus(message)
-                return
-            }
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
             set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
@@ -613,12 +617,12 @@ proc do_tpch { host port socket scale_fact user password db maria_tpch_storage_e
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket $maria_scale_fact $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_scale_fact $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads"
     } else { return }
 }
 
 proc loadmariatpch { } {
-    global _ED
+    global _ED maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -628,6 +632,10 @@ proc loadmariatpch { } {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpchvars $configmariadb
+     #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-H"
@@ -641,6 +649,7 @@ set scale_factor $maria_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$maria_host\" ;# Address of the server hosting Maria 
 set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
+set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_tpch_user\" ;# Maria user
 set password \"$maria_tpch_pass\" ;# Password for the Maria user
 set db \"$maria_tpch_dbase\" ;# Database containing the TPC Schema
@@ -676,6 +685,45 @@ proc chk_socket { host socket } {
     }
 }
 
+proc ConnectToMaria { host port socket ssl_options user password db } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+         } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+        }
+        foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+        }
+        append connectstring " -user $user -password $password"
+        set login_command "mariaconnect [ dict get $connectstring ]"
+        #eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+                if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        mariause $maria_handler $db
+        maria::autocommit $maria_handler 0
+        catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+        puts [ join $ssl_status ]
+        }
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
+    }
+}
 #########################
 #TPCH REFRESH PROCEDURE
 proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -800,29 +848,8 @@ proc del_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_
     maria::commit $maria_handler
 }
 
-proc do_refresh { host port socket user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mariause $maria_handler $db
-        maria::autocommit $maria_handler 0
-    } else {
-        error $mariastatus(message)
-        return
-    }
+proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
     set upd_num 1
     for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
         if {  [ tsv::get application abort ]  } { break }
@@ -1074,30 +1101,9 @@ proc sub_query { query_no scale_factor myposition } {
 
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mariastatus
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mariause $maria_handler $db
-        maria::autocommit $maria_handler 0
-    } else {
-        error $mariastatus(message)
-        return
-    }
+    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set start [ clock seconds ]
@@ -1190,27 +1196,27 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
-        do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
             1 {
-                do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
 }
 }
 }
 
 proc loadmariacloud {} {
-    global _ED
+    global _ED maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -1218,6 +1224,10 @@ proc loadmariacloud {} {
     upvar #0 configmariadb configmariadb
     #set variables to values in dict
     setlocaltpchvars $configmariadb
+     #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB Cloud"
@@ -1229,6 +1239,7 @@ set VERBOSE \"$maria_verbose\" ;# Show query text and output
 set host \"$maria_host\" ;# Address of the server hosting Maria 
 set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
+set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_tpch_user\" ;# Maria user
 set password \"$maria_tpch_pass\" ;# Password for the Maria user
 set db \"$maria_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1262,6 +1273,45 @@ proc chk_socket { host socket } {
     }
 }
 
+proc ConnectToMaria { host port socket ssl_options user password db } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+         } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+        }
+        foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+        }
+        append connectstring " -user $user -password $password"
+        set login_command "mariaconnect [ dict get $connectstring ]"
+        #eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+                if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        mariause $maria_handler $db
+        maria::autocommit $maria_handler 0
+        catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+        puts [ join $ssl_status ]
+        }
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
+    }
+}
 #########################
 #CLOUD ANALYTIC TPCH QUERY GENERATION
 proc set_query { } {
@@ -1291,31 +1341,10 @@ proc get_query { query_no } {
 
 #########################
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
-proc do_cloud { host port socket user password db RAISEERROR VERBOSE } {
+proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE } {
     global mariastatus
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mariaconnect -socket $socket -user $user -password $password} maria_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mariaconnect -host $host -port $port -user $user -password $password} maria_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mariause $maria_handler $db
-        maria::autocommit $maria_handler 0
+    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
         mariaexec $maria_handler "set session group_concat_max_len = 18446744073709551615"
-    } else {
-        error $mariastatus(message)
-        return
-    }
     unset -nocomplain qlist
     set start [ clock seconds ]
     for { set q 1 } { $q <= 13 } { incr q } {
@@ -1342,6 +1371,6 @@ proc do_cloud { host port socket user password db RAISEERROR VERBOSE } {
 
 #########################
 #RUN CLOUD ANALYTIC TPC-H
-do_cloud $host $port $socket $user $password $db $RAISEERROR $VERBOSE
+do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE
 }
 }

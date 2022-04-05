@@ -1,5 +1,5 @@
 proc tcount_maria {bm interval masterthread} {
-    global tc_threadID
+    global tc_threadID maria_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict maria library ]} {
         set library [ dict get $dbdict maria library ]
@@ -7,7 +7,51 @@ proc tcount_maria {bm interval masterthread} {
 
     #Setup Transaction Counter Thread
     set tc_threadID [thread::create {
-        proc read_more { MASTER library maria_host maria_port maria_socket maria_user maria_pass maria_tpch_user maria_tpch_pass interval old tce bm } {
+    proc chk_socket { host socket } {
+    if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+        return "TRUE"
+    } else {
+        return "FALSE"
+    		}
+	}
+
+    proc ConnectToMaria { host port socket ssl_options user password } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+         } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+        }
+        foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+        }
+        append connectstring " -user $user -password $password"
+        set login_command "mariaconnect [ dict get $connectstring ]"
+        #eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+                if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        return $maria_handler
+    } else {
+                    tsv::set application tc_errmsg $maria_handler
+                    eval [subst {thread::send $MASTER show_tc_errmsg}]
+                    thread::release
+                    return
+    }
+}
+
+        proc read_more { MASTER library maria_host maria_port maria_socket maria_ssl_options maria_user maria_pass maria_tpch_user maria_tpch_pass interval old tce bm } {
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 } 
@@ -46,22 +90,7 @@ proc tcount_maria {bm interval masterthread} {
             } else {
                 namespace import tcountcommon::*
             }
-            if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } {
-                if [catch {mariaconnect -socket $maria_socket -user $tmp_maria_user -password $tmp_maria_pass} maria_handler] {
-                    tsv::set application tc_errmsg $maria_handler
-                    eval [subst {thread::send $MASTER show_tc_errmsg}]
-                    thread::release
-                    return
-                } 
-            } else {
-                if [catch {mariaconnect -host $maria_host -port $maria_port -user $tmp_maria_user -password $tmp_maria_pass} maria_handler] {
-                    tsv::set application tc_errmsg $maria_handler
-                    eval [subst {thread::send $MASTER show_tc_errmsg}]
-                    thread::release
-                    return
-                } 
-            }
-
+	    set maria_handler [ ConnectToMaria $maria_host $maria_port $maria_socket $maria_ssl_options $tmp_maria_user $tmp_maria_pass ]
             #Enter loop until stop button pressed
             while { $timeout eq 0 } {
                 set timeout [ tsv::get application timeout ]
@@ -136,7 +165,11 @@ proc tcount_maria {bm interval masterthread} {
     #Setup Transaction Counter Connection Variables
     upvar #0 configmariadb configmariadb
     setlocaltcountvars $configmariadb 1
+    #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket $maria_user $maria_pass $maria_tpch_user $maria_tpch_pass $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user $maria_pass $maria_tpch_user $maria_tpch_pass $interval $old tce $bm }}]
 } 
