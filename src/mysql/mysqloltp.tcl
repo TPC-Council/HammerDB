@@ -955,6 +955,7 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
                 set num_part 0
             }
             CreateTables $mysql_handler $mysql_storage_engine $num_part
+            CreateStoredProcs $mysql_handler
         } else {
             error $mysqlstatus(message)
             return
@@ -1037,7 +1038,6 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        CreateStoredProcs $mysql_handler
         GatherStatistics $mysql_handler
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         mysqlclose $mysql_handler

@@ -2127,6 +2127,8 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
                     set num_part 0
                 }
                 CreateTables $lda $ora_compatible $citus_compatible $num_part
+                CreateIndexes $lda
+                CreateStoredProcs $lda $ora_compatible $citus_compatible $pg_storedprocs
                 set result [ pg_exec $lda "commit" ]
                 pg_result $result -clear
             }
@@ -2195,8 +2197,6 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        CreateIndexes $lda
-        CreateStoredProcs $lda $ora_compatible $citus_compatible $pg_storedprocs
         GatherStatistics $lda 
         puts "[ string toupper $user ] SCHEMA COMPLETE"
         pg_disconnect $lda
