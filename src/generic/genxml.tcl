@@ -50,30 +50,30 @@ proc xmlopts {} {
 }
 
 proc set_globle_config {genericdict} {
-global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight gen_count_ware gen_scale_fact gen_directory gen_num_vu 
+    global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight gen_count_ware gen_scale_fact gen_directory gen_num_vu 
 
-  if { $genericdict eq "" } {
-    puts "Error: empty genericdict"
-  }
-
-  dict for {key attributes} $genericdict {
-    set tablename $key
-    dict for {subkey subattributes} $attributes {
-      set myvariable $subkey
-      switch $myvariable {
-        user_delay { set myvariable delayms }
-        repeat_delay { set myvariable conpause }
-        iterations { set myvariable ntimes }
-        show_output { set myvariable suppo }
-        log_to_temp { set myvariable optlog }
-        refresh_rate { set myvariable interval }
-        autopilot_mode { set myvariable apmode }
-        autopilot_duration { set myvariable apduration }
-        autopilot_sequence { set myvariable apsequence }
-      }
-      set [ set myvariable ] $subattributes
+    if { $genericdict eq "" } {
+        puts "Error: empty genericdict"
     }
-  }
+
+    dict for {key attributes} $genericdict {
+        set tablename $key
+        dict for {subkey subattributes} $attributes {
+            set myvariable $subkey
+            switch $myvariable {
+                user_delay { set myvariable delayms }
+                repeat_delay { set myvariable conpause }
+                iterations { set myvariable ntimes }
+                show_output { set myvariable suppo }
+                log_to_temp { set myvariable optlog }
+                refresh_rate { set myvariable interval }
+                autopilot_mode { set myvariable apmode }
+                autopilot_duration { set myvariable apduration }
+                autopilot_sequence { set myvariable apsequence }
+            }
+            set [ set myvariable ] $subattributes
+        }
+    }
 }
 
 proc Dict2SQLite {dbname dbdict} {

@@ -933,7 +933,7 @@ proc buildschema {} {
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
-	          #set dbname $key
+            #set dbname $key
             upvar #0 $dictname $dictname
             break
         }

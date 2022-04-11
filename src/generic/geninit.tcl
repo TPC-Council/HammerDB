@@ -58,3 +58,4 @@ tsv::set application genericdict $genericdict
 #Complete GUI using database config
 disable_bm_menu
 guid_init
+

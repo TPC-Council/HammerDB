@@ -3036,13 +3036,14 @@ proc select_rdbms { preselect } {
             remote_command disable_bm_menu
 
             #Change the default database
+            #If only submit rdbms&bm to SQLite, uncomment the following
             #SQLiteUpdateKeyValue "generic" "benchmark" "rdbms" $rdbms
             #SQLiteUpdateKeyValue "generic" "benchmark" "bm" $bm
             dict set genericdict "benchmark" "rdbms" $rdbms
             dict set genericdict "benchmark" "bm" $bm
             Dict2SQLite "generic" $genericdict
 
-            #Change the order of databases in dbdict
+            #Change the order of databases in dbdict. If need, uncomment
             #set dbdict [ SetKeyAsFirst $dbdict [ string tolower $rdbms ] ]
             #Dict2SQLite "database" $dbdict
         }
