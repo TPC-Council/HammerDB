@@ -1756,6 +1756,7 @@ switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
 	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
+        maria::autocommit $maria_handler 1
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
@@ -2185,6 +2186,7 @@ switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
 	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
+        maria::autocommit $maria_handler 1
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
