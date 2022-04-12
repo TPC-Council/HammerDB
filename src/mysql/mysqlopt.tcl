@@ -134,6 +134,7 @@ proc countmysqlopts { bm } {
     if { $bm eq "TPC-C" } {
         ttk::button $Name -command {
             copyfieldstoconfig configmysql [ subst $myoptsfields ] tpcc
+            Dict2SQLite "mysql" $configmysql
             unset myoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -151,6 +152,7 @@ proc countmysqlopts { bm } {
     } else {
         ttk::button $Name -command {
             copyfieldstoconfig configmysql [ subst $myoptsfields ] tpch
+            Dict2SQLite "mysql" $configmysql
             unset myoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -485,6 +487,7 @@ proc configmysqltpcc {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmysql [ subst $myfields ] tpcc
+                Dict2SQLite "mysql" $configmysql
                 unset myfields
                 destroy .tpc
                 loadtpcc
@@ -495,6 +498,7 @@ proc configmysqltpcc {option} {
                 set mysql_count_ware [ verify_warehouse $mysql_count_ware 100000 ]
                 set mysql_num_vu [ verify_build_threads $mysql_num_vu $mysql_count_ware 1024 ]
                 copyfieldstoconfig configmysql [ subst $myfields ] tpcc
+                Dict2SQLite "mysql" $configmysql
                 unset myfields
                 destroy .tpc
             } -text {OK}
@@ -723,6 +727,7 @@ proc configmysqltpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmysql [ subst $myfields ] tpch
+                Dict2SQLite "mysql" $configmysql
                 unset myfields
                 destroy .mytpch
                 loadtpch
@@ -732,6 +737,7 @@ proc configmysqltpch {option} {
             ttk::button $Name -command {
                 set mysql_num_tpch_threads [ verify_build_threads $mysql_num_tpch_threads 512 512 ]
                 copyfieldstoconfig configmysql [ subst $myfields ] tpch
+                Dict2SQLite "mysql" $configmysql
                 unset myfields
                 destroy .mytpch
             } -text {OK}

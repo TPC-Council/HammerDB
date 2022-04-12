@@ -150,6 +150,7 @@ proc countoraopts { bm } {
         } else { 
             copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpch
         }
+        Dict2SQLite "oracle" $configoracle
         unset oraoptsfields
         if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
             dict set genericdict transaction_counter tc_refresh_rate 10
@@ -574,6 +575,7 @@ proc configoratpcc {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configoracle [ subst $orafields ] tpcc
+                Dict2SQLite "oracle" $configoracle
                 unset orafields
                 destroy .tpc
                 loadtpcc
@@ -584,6 +586,7 @@ proc configoratpcc {option} {
                 set count_ware [ verify_warehouse $count_ware 100000 ]
                 set num_vu [ verify_build_threads $num_vu $count_ware 1024 ]
                 copyfieldstoconfig configoracle [ subst $orafields ] tpcc
+                Dict2SQLite "oracle" $configoracle
                 unset orafields
                 destroy .tpc
             } -text {OK}
@@ -848,6 +851,7 @@ proc configoratpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configoracle [ subst $orafields ] tpch
+                Dict2SQLite "oracle" $configoracle
                 unset orafields
                 destroy .tpch
                 loadtpch
@@ -857,6 +861,7 @@ proc configoratpch {option} {
             ttk::button $Name -command {
                 set num_tpch_threads [ verify_build_threads $num_tpch_threads 512 512 ]
                 copyfieldstoconfig configoracle [ subst $orafields ] tpch
+                Dict2SQLite "oracle" $configoracle
                 unset orafields
                 destroy .tpch
             } -text {OK}
@@ -937,6 +942,7 @@ proc metoraopts {} {
         set agent_id [.metric.f1.e1 get]
         set agent_hostname [.metric.f1.e2 get]
         copyfieldstoconfig configoracle [ subst $oraoptsfields ] tpcc
+        Dict2SQLite "oracle" $configoracle
         unset oraoptsfields
         catch "destroy .metric"
         if { ![string is integer -strict $agent_id] } {
