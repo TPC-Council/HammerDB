@@ -10,7 +10,7 @@ dbset bm TPC-C
 
 diset connection mysql_host localhost
 diset connection mysql_port 3306
-diset connection mysql_host /tmp/mysql.sock
+diset connection mysql_sock /tmp/mysql.sock
 
 diset tpcc mysql_count_ware 1
 diset tpcc mysql_num_vu 1
