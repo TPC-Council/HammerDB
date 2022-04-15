@@ -10,7 +10,7 @@ dbset bm TPC-C
 
 diset connection maria_host localhost
 diset connection maria_port 3306
-diset connection maria_host /tmp/mariadb.sock
+diset connection maria_sock /tmp/mariadb.sock
 
 diset tpcc maria_user root
 diset tpcc maria_pass maria
