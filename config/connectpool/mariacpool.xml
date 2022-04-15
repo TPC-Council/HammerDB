@@ -4,6 +4,7 @@
 	<maria_host>host1</maria_host>
         <maria_port>3306</maria_port>
         <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_ssl_options>-ssl false</maria_ssl_options>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
         <maria_dbase>tpcc</maria_dbase>
@@ -12,6 +13,7 @@
 	<maria_host>host2</maria_host>
         <maria_port>3306</maria_port>
         <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_ssl_options>-ssl false</maria_ssl_options>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
         <maria_dbase>tpcc</maria_dbase>
@@ -20,6 +22,7 @@
 	<maria_host>host3</maria_host>
         <maria_port>3306</maria_port>
         <maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_ssl_options>-ssl false</maria_ssl_options>
 	<maria_user>root</maria_user>
         <maria_pass>maria</maria_pass>
         <maria_dbase>tpcc</maria_dbase>
