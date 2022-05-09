@@ -121,6 +121,7 @@ proc countdb2opts { bm } {
     if { $bm eq "TPC-C" } {
         ttk::button $Name -command {
             copyfieldstoconfig configdb2 [ subst $db2optsfields ] tpcc
+            Dict2SQLite "db2" $configdb2
             unset db2optsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -138,6 +139,7 @@ proc countdb2opts { bm } {
     } else {
         ttk::button $Name -command {
             copyfieldstoconfig configdb2 [ subst $db2optsfields ] tpch
+            Dict2SQLite "db2" $configdb2
             unset db2optsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -492,6 +494,7 @@ proc configdb2tpcc {option} {
             if {$db2_monreport >= $db2_duration} { set db2_monreport 0 }
             ttk::button $Name -command {
                 copyfieldstoconfig configdb2 [ subst $db2fields ] tpcc
+                Dict2SQLite "db2" $configdb2
                 unset db2fields
                 destroy .tpc
                 loadtpcc
@@ -502,6 +505,7 @@ proc configdb2tpcc {option} {
                 set db2_count_ware [ verify_warehouse $db2_count_ware 100000 ]
                 set db2_num_vu [ verify_build_threads $db2_num_vu $db2_count_ware 1024 ]
                 copyfieldstoconfig configdb2 [ subst $db2fields ] tpcc
+                Dict2SQLite "db2" $configdb2
                 unset db2fields
                 destroy .tpc
             } -text {OK}
@@ -723,6 +727,7 @@ proc configdb2tpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configdb2 [ subst $db2fields ] tpch
+                Dict2SQLite "db2" $configdb2
                 unset db2fields
                 destroy .db2tpch
                 loadtpch
@@ -732,6 +737,7 @@ proc configdb2tpch {option} {
             ttk::button $Name -command {
                 set db2_num_tpch_threads [ verify_build_threads $db2_num_tpch_threads 512 512 ]
                 copyfieldstoconfig configdb2 [ subst $db2fields ] tpch
+                Dict2SQLite "db2" $configdb2
                 unset db2fields
                 destroy .db2tpch
             } -text {OK}

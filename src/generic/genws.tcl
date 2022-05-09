@@ -741,6 +741,14 @@ proc diset { args } {
         set body [ subst { "dict": "$dct", "key": "$key2", "value": "$val" } ]
         set res [rest::post http://localhost:$ws_port/diset $body ]
         putscli $res
+
+        #Save new value to SQLite
+        upvar #0 dbdict dbdict
+        foreach { key } [ dict keys $dbdict ] {
+            if { [ dict get $dbdict $key name ] eq $rdbms } {
+                SQLiteUpdateKeyValue $key $dct $key2 $val
+            }
+        }
     }
 }
 
@@ -910,6 +918,13 @@ proc dbset { args } {
         set body [ subst { "$opt": "$val" } ]
         set res [rest::post http://localhost:$ws_port/dbset $body ]
         putscli $res
+
+        #Save new setting to SQLite
+        if { $opt eq "db" } {
+            SQLiteUpdateKeyValue "generic" "benchmark" "rdbms" $val
+        } elseif { $opt eq "bm" } {
+            SQLiteUpdateKeyValue "generic" "benchmark" "bm" $val
+        }
     }
 }
 

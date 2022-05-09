@@ -157,6 +157,7 @@ proc countpgopts { bm } {
     if { $bm eq "TPC-C" } {
         ttk::button $Name -command {
             copyfieldstoconfig configpostgresql [ subst $pgoptsfields ] tpcc
+            Dict2SQLite "postgresql" $configpostgresql
             unset pgoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
                 dict set genericdict transaction_counter tc_refresh_rate 10
@@ -174,6 +175,7 @@ proc countpgopts { bm } {
     } else {
         ttk::button $Name -command {
             copyfieldstoconfig configpostgresql [ subst $pgoptsfields ] tpch
+            Dict2SQLite "postgresql" $configpostgresql
             unset pgoptsfields
             if { ($interval >= 60) || ($interval <= 0)  } { 
                 tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
@@ -614,6 +616,7 @@ proc configpgtpcc {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configpostgresql [ subst $pgfields ] tpcc
+                Dict2SQLite "postgresql" $configpostgresql
                 unset pgfields
                 destroy .tpc
                 loadtpcc
@@ -624,6 +627,7 @@ proc configpgtpcc {option} {
                 set pg_count_ware [ verify_warehouse $pg_count_ware 100000 ]
                 set pg_num_vu [ verify_build_threads $pg_num_vu $pg_count_ware 1024 ]
                 copyfieldstoconfig configpostgresql [ subst $pgfields ] tpcc
+                Dict2SQLite "postgresql" $configpostgresql
                 unset pgfields
                 destroy .tpc
             } -text {OK}
@@ -914,6 +918,7 @@ proc configpgtpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configpostgresql [ subst $pgfields ] tpch
+                Dict2SQLite "postgresql" $configpostgresql
                 unset pgfields
                 destroy .pgtpch
                 loadtpch
@@ -923,6 +928,7 @@ proc configpgtpch {option} {
             ttk::button $Name -command {
                 set pg_num_tpch_threads [ verify_build_threads $pg_num_tpch_threads 512 512 ]
                 copyfieldstoconfig configpostgresql [ subst $pgfields ] tpch
+                Dict2SQLite "postgresql" $configpostgresql
                 unset pgfields
                 destroy .pgtpch
             } -text {OK}
@@ -1054,6 +1060,7 @@ proc metpgopts {} {
             copyfieldstoconfig configpostgresql [ subst $pgoptsfields ] tpch
             unset pgoptsfields
         }
+        Dict2SQLite "postgresql" $configpostgresql
         catch "destroy .metric"
         if { ![string is integer -strict $agent_id] } {
             tk_messageBox -message "Agent id must be an integer"

@@ -4,6 +4,14 @@
         <maria_host>127.0.0.1</maria_host>
         <maria_port>3306</maria_port>
 	<maria_socket>/tmp/mariadb.sock</maria_socket>
+	<maria_ssl>false</maria_ssl>
+	<maria_ssl_two_way>false</maria_ssl_two_way>
+	<maria_ssl_linux_capath>/etc/mysql/certs</maria_ssl_linux_capath>
+	<maria_ssl_windows_capath>C:\mysql\certs</maria_ssl_windows_capath>
+	<maria_ssl_ca>ca-cert.pem</maria_ssl_ca>
+	<maria_ssl_cert>client-cert.pem</maria_ssl_cert>
+	<maria_ssl_key>client-key.pem</maria_ssl_key>
+	<maria_ssl_cipher>server</maria_ssl_cipher>
     </connection>
 	<tpcc>
         <schema>

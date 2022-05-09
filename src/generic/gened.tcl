@@ -3034,6 +3034,18 @@ proc select_rdbms { preselect } {
             tk_messageBox -title "Confirm Benchmark" -message "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
             remote_command [ concat vuser_bench_ops $rdbms $bm ]
             remote_command disable_bm_menu
+
+            #Change the default database
+            #If only submit rdbms&bm to SQLite, uncomment the following
+            #SQLiteUpdateKeyValue "generic" "benchmark" "rdbms" $rdbms
+            #SQLiteUpdateKeyValue "generic" "benchmark" "bm" $bm
+            dict set genericdict "benchmark" "rdbms" $rdbms
+            dict set genericdict "benchmark" "bm" $bm
+            Dict2SQLite "generic" $genericdict
+
+            #Change the order of databases in dbdict. If need, uncomment
+            #set dbdict [ SetKeyAsFirst $dbdict [ string tolower $rdbms ] ]
+            #Dict2SQLite "database" $dbdict
         }
     } -text OK
     grid $Parent.f1.ok -column 2 -row 8 -padx 3 -pady 3 -sticky e

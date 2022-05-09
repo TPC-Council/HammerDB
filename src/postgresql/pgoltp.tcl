@@ -1608,17 +1608,17 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
     puts "CREATING DATABASE $db under OWNER $user"
     set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
     if { [pg_result $result -numTuples] == 0 } {
-        set sql($stmnt_count) "CREATE USER $user PASSWORD '$password'"
+        set sql($stmnt_count) "CREATE USER \"$user\" PASSWORD '$password'"
         incr stmnt_count;
-        set sql($stmnt_count) "GRANT $user to $superuser"
+        set sql($stmnt_count) "GRANT \"$user\" to \"$superuser\""
     } else {
         puts "Using existing User $user for Schema build"
-        set sql($stmnt_count) "ALTER USER $user PASSWORD '$password'"
+        set sql($stmnt_count) "ALTER USER \"$user\" PASSWORD '$password'"
     }
     incr stmnt_count;
     set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
     if { [pg_result $result -numTuples] == 0} {
-        set sql($stmnt_count) "CREATE DATABASE $db OWNER $user"
+        set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
     } else {
         set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
         if { $existing_db eq "Failed" } {
@@ -1627,7 +1627,7 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
             set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
             if { [pg_result $result -numTuples] == 0 } {
                 puts "Using existing empty Database $db for Schema build"
-                set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+                set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
             } else {
                 puts "Database with tables $db exists"
                 error "Database $db exists but is not empty, specify a new or empty database name"

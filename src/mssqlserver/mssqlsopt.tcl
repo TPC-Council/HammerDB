@@ -188,6 +188,7 @@ proc countmssqlsopts { bm } {
     set Name $Parent.b1
     ttk::button $Name -command {
         copyfieldstoconfig configmssqlserver [ subst $mssqloptsfields ] tpcc
+        Dict2SQLite "mssqlserver" $configmssqlserver
         unset mssqloptsfields
         if { ($interval >= 60) || ($interval <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs" 
             dict set genericdict transaction_counter tc_refresh_rate 10
@@ -617,6 +618,7 @@ proc configmssqlstpcc {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmssqlserver [ subst $mssqlsfields ] tpcc
+                Dict2SQLite "mssqlserver" $configmssqlserver
                 unset mssqlsfields
                 destroy .tpc
                 loadtpcc
@@ -627,6 +629,7 @@ proc configmssqlstpcc {option} {
                 set mssqls_count_ware [ verify_warehouse $mssqls_count_ware 100000 ]
                 set mssqls_num_vu [ verify_build_threads $mssqls_num_vu $mssqls_count_ware 1024 ]
                 copyfieldstoconfig configmssqlserver [ subst $mssqlsfields ] tpcc
+                Dict2SQLite "mssqlserver" $configmssqlserver
                 unset mssqlsfields
                 destroy .tpc
             } -text {OK}
@@ -920,6 +923,7 @@ proc configmssqlstpch {option} {
         "drive" {
             ttk::button $Name -command {
                 copyfieldstoconfig configmssqlserver [ subst $mssqlsfields ] tpch
+                Dict2SQLite "mssqlserver" $configmssqlserver
                 unset mssqlsfields
                 destroy .mssqlstpch
                 loadtpch
@@ -929,6 +933,7 @@ proc configmssqlstpch {option} {
             ttk::button $Name -command {
                 set mssqls_num_tpch_threads [ verify_build_threads $mssqls_num_tpch_threads 512 512 ]
                 copyfieldstoconfig configmssqlserver [ subst $mssqlsfields ] tpch
+                Dict2SQLite "mssqlserver" $configmssqlserver
                 unset mssqlsfields
                 destroy .mssqlstpch
             } -text {OK}

@@ -31,11 +31,6 @@ namespace eval TclReadLine {
 
     variable forever 0
 
-    # Resource and history files:
-    variable HISTORY_SIZE 100
-    variable HISTORY_LEVEL 0
-    variable HISTFILE $::env(HOME)/.tclline_history
-    variable  RCFILE $::env(HOME)/.tcllinerc
 }
 
 proc TclReadLine::setup_prompt_requirements {} {
@@ -797,11 +792,15 @@ proc TclReadLine::interact {} {
     TclReadLine::setup_prompt_requirements
     rename ::unknown ::_unknown
     rename TclReadLine::unknown ::unknown
+    # Resource and history files:
+    variable HISTORY_SIZE 100
+    variable HISTORY_LEVEL 0
+    variable HISTFILE $::env(HOME)/.tclline_history
+    variable  RCFILE $::env(HOME)/.tcllinerc
     variable RCFILE
     if {[file exists $RCFILE]} {
         source $RCFILE
     }
-
     # Load history if available:
     # variable HISTORY
     variable HISTFILE
