@@ -2809,22 +2809,27 @@ namespace eval BawtBuild {
         ErrorAppend "GetTkStubLib: No Tk stub file in $tclLibDir found." "FATAL"
     }
 
-    proc _GetTclshWishName { tclshOrWish { libVersion "" } } {
+    proc _GetTclshWishName { tclshOrWish libName { libVersion "" } } {
         set debugSuffix ""
         if { [IsDebugBuild] && [IsWindows] } {
             set debugSuffix "g"
+        }
+        set threadSuffix ""
+        if { [IsWindows] && [UseWinCompiler $libName "vs"] } {
+            set threadSuffix "t"
         }
         if { $libVersion eq "" } {
             set versionStr ""
         } else {
             set versionStr [GetMajorMinor $libVersion]
         }
-        set name [format "%s%s%s%s" $tclshOrWish $versionStr $debugSuffix [GetExeSuffix]]
+        set name [format "%s%s%s%s%s" $tclshOrWish $versionStr $threadSuffix $debugSuffix [GetExeSuffix]]
         return $name
     }
 
+
     proc GetTclshName { { libVersion "" } } {
-        return [_GetTclshWishName "tclsh" $libVersion]
+        return [_GetTclshWishName "tclsh" "Tcl" $libVersion]
     }
 
     proc GetTclshPath { { libVersion "" } } {
@@ -2832,8 +2837,8 @@ namespace eval BawtBuild {
     }
 
     proc GetWishName { { libVersion "" } } {
-        return [_GetTclshWishName "wish" $libVersion]
-    }
+        return [_GetTclshWishName "wish" "Tk" $libVersion]
+    } 
 
     proc GetWishPath { { libVersion "" } } {
         return [file join [GetOutputDevDir] [GetTclBinDir] [GetWishName $libVersion]]
@@ -3158,13 +3163,14 @@ namespace eval BawtBuild {
         if { [llength $args] > 0 } {
             Log "Options         : $args"   4 false
         }
-
         set    cmd ""
         append cmd "CALL nmake.exe "
         append cmd     "/nologo "
         append cmd     "/f \"$makeFile\" "
+	#Filename arguments with spaces get wrapped with curly braces
+	#replace with double quotes
+	regsub -all {\}|\{} $args "\"" args
         append cmd     "$args "
-
         set originator "NMakeBuild[_GetBuildCount $libName NMakeBuild]"
         DosRun $libName $originator $sourceDir "$cmd"
     }
@@ -5818,8 +5824,8 @@ if { [UseStage "Finalize"] && ! [IsSimulationMode] } {
     if { [IsWindows] && [UseVisualStudio] && [CopyRuntimeLibs] } {
         Log "VisualStudio runtime files" 2 false
         if { [GetVSRuntimeLibDir] ne "" } {
-            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDevDir]  "bin"]  "*.dll"
-            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDistDir] "bin"]  "*.dll"
+            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDevDir] [GetTclBinDir]]  "*.dll"
+            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDistDir] [GetTclBinDir]]  "*.dll"
         }
     }
 
