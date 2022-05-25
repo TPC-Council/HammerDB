@@ -1,0 +1,26 @@
+# Builds Tcl, Tk, Starkit and Tcl/Tk packages, which do not depend on 3rd party libraries.
+# On Windows all libraries can be compiled with MSys/MinGW.
+
+# Setup LibName         ZipFile                        BuildFile           BuildOptions
+
+# Tcl/Tk, stubs and manual.
+Setup Tcl	        Tcl-[GetTclVersion].7z         Tcl_NMake.bawt
+Setup Tcl_gcc           Tcl-[GetTclVersion].7z         Tcl_Gcc.bawt
+Setup TclStubs          Tcl-[GetTclVersion].7z         TclStubs.bawt
+Setup Tk		Tk-[GetTkVersion].7z           Tk_NMake.bawt
+Setup Tk_gcc            Tk-[GetTkVersion].7z           Tk_Gcc.bawt
+Setup TkStubs           Tk-[GetTkVersion].7z           TkStubs.bawt
+# Compiled Tcl packages.
+Setup twapi		twapi-4.6.0.7z		       twapi.bawt
+Setup tksvg             tksvg-0.5.7z                   tksvg.bawt
+Setup tkblt             tkblt-3.2.23.7z                tkblt.bawt
+# Compiled Tcl Database interface packages.
+Setup oratcl            oratcl-4.6.7z                  oratcl_NMake.bawt	
+Setup mariatcl          mariatcl-0.1.7z                mariatcl_NMake.bawt
+Setup mysqltcl          mysqltcl-3.052.7z              mysqltcl_NMake.bawt
+Setup pgtcl             pgtcl-2.1.1.7z                 pgtcl_NMake.bawt	
+Setup db2tcl            db2tcl-2.0.1.7z                db2tcl_NMake.bawt
+# Pure Tcl/Tk packages.
+Setup awthemes          awthemes-9.3.1.7z              awthemes.bawt
+Setup clearlooks        clearlooks-1.0.7z              clearlooks.bawt
+Setup redis             redis-0.1.7z                   redis.bawt
