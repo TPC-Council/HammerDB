@@ -1,5 +1,5 @@
 proc build_mysqltpch {} {
-    global maxvuser suppo ntimes threadscreated _ED
+    global maxvuser suppo ntimes threadscreated _ED mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
@@ -7,6 +7,10 @@ proc build_mysqltpch {} {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpchvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
         if { $mysql_num_tpch_threads eq 1 } {
@@ -42,6 +46,45 @@ proc chk_socket { host socket } {
         return "TRUE"
     } else {
         return "FALSE"
+    }
+}
+
+proc ConnectToMySQL { host port socket ssl_options user password } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+    }
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+        puts [ join $ssl_status ]
+        }
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
     }
 }
 
@@ -410,7 +453,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket scale_fact user password db mysql_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } {
     global mysqlstatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -462,30 +505,11 @@ proc do_tpch { host port socket scale_fact user password db mysql_tpch_storage_e
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
-        if { [ chk_socket $host $socket ] eq "TRUE" } {
-            if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                puts "the local socket connection to $socket could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            }
-        } else {
-            if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                puts "the tcp connection to $host:$port could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            }
-        }
-        if {$connected} {
-            CreateDatabase $mysql_handler $db
-            mysqluse $mysql_handler $db
-            mysql::autocommit $mysql_handler 0
-            CreateTables $mysql_handler $mysql_tpch_storage_engine
-        } else {
-            error $mysqlstatus(message)
-            return
-        }
+        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+        CreateDatabase $mysql_handler $db
+        mysqluse $mysql_handler $db
+        mysql::autocommit $mysql_handler 0
+        CreateTables $mysql_handler $mysql_tpch_storage_engine
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -536,29 +560,9 @@ proc do_tpch { host port socket scale_fact user password db mysql_tpch_storage_e
                 }
                 after 5000
             }
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mysqluse $mysql_handler $db
-                mysql::autocommit $mysql_handler 0
-                mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
-            } else {
-                error $mysqlstatus(message)
-                return
-            }
+    	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+    	    mysqluse $mysql_handler $db
+            mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
             set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
@@ -594,12 +598,12 @@ proc do_tpch { host port socket scale_fact user password db mysql_tpch_storage_e
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
     } else { return }
 }
 
 proc loadmysqltpch { } {
-    global _ED
+    global _ED mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
@@ -607,6 +611,10 @@ proc loadmysqltpch { } {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpchvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-H"
@@ -620,6 +628,7 @@ set scale_factor $mysql_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
+set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
@@ -653,6 +662,47 @@ proc chk_socket { host socket } {
         return "FALSE"
     }
 }
+
+proc ConnectToMySQL { host port socket ssl_options user password db } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+    }
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysqluse $mysql_handler $db
+        mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
+}
+
 #########################
 #TPCH REFRESH PROCEDURE
 proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -777,29 +827,8 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
     mysql::commit $mysql_handler
 }
 
-proc do_refresh { host port socket user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mysqluse $mysql_handler $db
-        mysql::autocommit $mysql_handler 0
-    } else {
-        error $mysqlstatus(message)
-        return
-    }
+proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+	set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
     set upd_num 1
     for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
         if {  [ tsv::get application abort ]  } { break }
@@ -828,6 +857,7 @@ proc do_refresh { host port socket user password db scale_factor update_sets tri
     puts "Completed $update_sets update set(s)"
     mysqlclose $mysql_handler
 }
+
 #########################
 #TPCH QUERY GENERATION
 proc set_query { myposition } {
@@ -1049,30 +1079,9 @@ proc sub_query { query_no scale_factor myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mysqlstatus
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mysqluse $mysql_handler $db
-        mysql::autocommit $mysql_handler 0
-    } else {
-        error $mysqlstatus(message)
-        return
-    }
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set start [ clock seconds ]
@@ -1169,26 +1178,26 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
-        do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
             1 {
-                do_refresh $host $port $socket $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
 }}
 }
 
 proc loadmysqlcloud {} {
-    global _ED
+    global _ED mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
@@ -1196,6 +1205,10 @@ proc loadmysqlcloud {} {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpchvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL Cloud"
@@ -1207,6 +1220,7 @@ set VERBOSE \"$mysql_verbose\" ;# Show query text and output
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
+set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1237,6 +1251,47 @@ proc chk_socket { host socket } {
         return "FALSE"
     }
 }
+
+proc ConnectToMySQL { host port socket ssl_options user password db } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+    }
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysqluse $mysql_handler $db
+        mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
+}
+
 #########################
 #CLOUD ANALYTIC TPCH QUERY GENERATION
 proc set_query { } {
@@ -1265,31 +1320,10 @@ proc get_query { query_no } {
 }
 #########################
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
-proc do_cloud { host port socket user password db RAISEERROR VERBOSE } {
+proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE } {
     global mysqlstatus
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
-    }
-    if {$connected} {
-        mysqluse $mysql_handler $db
-        mysql::autocommit $mysql_handler 0
-        mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
-    } else {
-        error $mysqlstatus(message)
-        return
-    }
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+    mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
     unset -nocomplain qlist
     set start [ clock seconds ]
     for { set q 1 } { $q <= 13 } { incr q } {
@@ -1315,5 +1349,5 @@ proc do_cloud { host port socket user password db RAISEERROR VERBOSE } {
 }
 #########################
 #RUN CLOUD ANALYTIC TPC-H
-do_cloud $host $port $socket $user $password $db $RAISEERROR $VERBOSE}
+do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE}
 }

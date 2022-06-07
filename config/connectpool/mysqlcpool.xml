@@ -1,50 +1,53 @@
 <connpool>
 <connections>
     <c1>
-	<mysql_host>host1</mysql_host>
+        <mysql_host>host1</mysql_host>
         <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
-	<mysql_user>root</mysql_user>
+        <mysql_ssl_options>-ssl false</mysql_ssl_options>
+        <mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>
         <mysql_dbase>tpcc</mysql_dbase>
     </c1>
     <c2>
-	<mysql_host>host2</mysql_host>
+        <mysql_host>host2</mysql_host>
         <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
-	<mysql_user>root</mysql_user>
+        <mysql_ssl_options>-ssl false</mysql_ssl_options>
+        <mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>
         <mysql_dbase>tpcc</mysql_dbase>
     </c2>
     <c3>
-	<mysql_host>host3</mysql_host>
+        <mysql_host>host3</mysql_host>
         <mysql_port>3306</mysql_port>
         <mysql_socket>/tmp/mysql.sock</mysql_socket>
-	<mysql_user>root</mysql_user>
+        <mysql_ssl_options>-ssl false</mysql_ssl_options>
+        <mysql_user>root</mysql_user>
         <mysql_pass>mysql</mysql_pass>
         <mysql_dbase>tpcc</mysql_dbase>
     </c3>
 </connections>
 <sprocs>
-  	<neworder>
-		<connections>c1 c2 c3</connections>
-    		<policy>round_robin</policy>
-	</neworder>
-    	<payment>
-		<connections>c1 c2 c3</connections>
-    		<policy>round_robin</policy>
-	</payment>
-    	<delivery>
-		<connections>c1 c2 c3</connections>
-    		<policy>round_robin</policy>
-	</delivery>
-    	<stocklevel>
-		<connections>c1 c2 c3</connections>
-    		<policy>round_robin</policy>
-	</stocklevel>
-    	<orderstatus>
-		<connections>c1 c2 c3</connections>
-    		<policy>round_robin</policy>
-	</orderstatus>
+    <neworder>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </neworder>
+        <payment>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </payment>
+        <delivery>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </delivery>
+        <stocklevel>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </stocklevel>
+        <orderstatus>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </orderstatus>
 </sprocs>
 </connpool>

@@ -1,12 +1,18 @@
 proc build_mysqltpcc {} {
-    global maxvuser suppo ntimes threadscreated _ED
+    global maxvuser suppo ntimes threadscreated _ED mysql_ssl_options
     upvar #0 dbdict dbdict
+
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
     } else { set library "mysqltcl" }
+
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpccvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $mysql_count_ware Warehouse MySQL TPROC-C schema\nin host [string toupper $mysql_connector] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ] with storage engine [ string toupper $mysql_storage_engine ]?" -type yesno ] == yes} { 
         if { $mysql_num_vu eq 1 || $mysql_count_ware eq 1 } {
@@ -432,6 +438,45 @@ proc CreateStoredProcs { mysql_handler } {
         mysqlexec $mysql_handler $sql($i)
     }
     return
+}
+
+proc ConnectToMySQL { host port socket ssl_options user password } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    	set use_socket "true"
+    	append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+	}
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
 }
 
 proc GatherStatistics { mysql_handler } {
@@ -894,7 +939,7 @@ proc chk_socket { host socket } {
     }
 }
 
-proc do_tpcc { host port socket count_ware user password db mysql_storage_engine partition num_vu } {
+proc do_tpcc { host port socket ssl_options count_ware user password db mysql_storage_engine partition num_vu } {
     global mysqlstatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -926,39 +971,22 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $db ] SCHEMA"
-        if { [ chk_socket $host $socket ] eq "TRUE" } {
-            if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                puts "the local socket connection to $socket could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            } 
-        } else {
-            if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                puts "the tcp connection to $host:$port could not be established"
-                set connected "FALSE"
-            } else {
-                set connected "TRUE"
-            } 
-        }
-        if {$connected} {
-            CreateDatabase $mysql_handler $db
-            mysqluse $mysql_handler $db
-            mysql::autocommit $mysql_handler 0
-            if { $partition eq "true" } {
-                if {$count_ware < 200} {
-                    set num_part 0
-                } else {
-                    set num_part [ expr round($count_ware/100) ]
-                }
-            } else {
+    puts "Call ConnectToMySQL 1"
+    #puts "Call ConnectToMySQL $host $port $socket $ssl_options $user $password"
+	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+        CreateDatabase $mysql_handler $db
+        mysqluse $mysql_handler $db
+        mysql::autocommit $mysql_handler 0
+        if { $partition eq "true" } {
+            if {$count_ware < 200} {
                 set num_part 0
+            } else {
+                set num_part [ expr round($count_ware/100) ]
             }
-            CreateTables $mysql_handler $mysql_storage_engine $num_part
         } else {
-            error $mysqlstatus(message)
-            return
+            set num_part 0
         }
+        CreateTables $mysql_handler $mysql_storage_engine $num_part
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $mysql_handler $MAXITEMS
@@ -979,9 +1007,12 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
                 set prevactive $lvcnt
                 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
                 after 10000
-            }} else {
+            }
+        } else {
             LoadItems $mysql_handler $MAXITEMS
-    }}
+        }
+    }
+    puts "Call ConnectToMySQL 2"
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
@@ -997,28 +1028,8 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
                 }
                 after 5000
             }
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mysqluse $mysql_handler $db
-                mysql::autocommit $mysql_handler 0
-            } else {
-                error $mysqlstatus(message)
-                return
-            }
+	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+            mysqluse $mysql_handler $db
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
             tsv::lreplace common thrdlst $myposition $myposition active
@@ -1045,7 +1056,7 @@ proc do_tpcc { host port socket count_ware user password db mysql_storage_engine
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_num_vu"
     } else { return }
 }
 
@@ -1066,13 +1077,14 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set MySQL connect string
-                set $id [ list $mysql_host $mysql_port $mysql_socket $mysql_user $mysql_pass $mysql_dbase ]
+                set $id [ list $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $mysql_user $mysql_pass $mysql_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
+    puts "Call ConnectToMySQL 3"
         foreach id [ split $conkeys ] {
-            lassign [ set $id ] 1 2 3 4 5 6
-            dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]
+            lassign [ set $id ] 1 2 3 4 5 6 7
+            dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 $7 ] ]
             if {  [ set mysql_handler$id ] eq "Failed" } {
                 puts "error, the database connection to $1 could not be established"
             }
@@ -1111,7 +1123,8 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             #puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
         }
         #Open standalone connect to determine highest warehouse id for all connections
-        set mmysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
+    puts "Call ConnectToMySQL 4"
+        set mmysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
         set w_id_input [ list [ mysql::sel $mmysql_handler "select max(w_id) from warehouse" -list ] ]
         #2.4.1.1 set warehouse_id stays constant for a given terminal
         set w_id  [ RandomNumber 1 $w_id_input ]  
@@ -1173,18 +1186,20 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             if {$prepare} {
                 foreach st {neword_st payment_st delivery_st slev_st ostat_st} { 
                     catch {mysqlexec $mysql_handler "deallocate prepare $st"}
-                }
-            }
-            mysqlclose $mysql_handler
-        }
-        mysqlclose $mmysql_handler
-    }
+}
+}
+mysqlclose $mysql_handler
+}
+mysqlclose $mmysql_handler
+}
     #Find single connection start and end points
     set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "mysqlclose \$mysql_handler" end ]
     #puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
     #Delete text from start and end points
+    #Bug introduced by reformatting of Tcl #292 remove +1l below
     .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+    #.ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)
     #Replace with connect pool version
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
     if { $testtype eq "timed" } {
@@ -1262,10 +1277,11 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
             set syncdrvi(7a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#Open standalone connect to determine highest warehouse id for all connections" end ]
-            set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]} end ]
+            set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]} end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
             #Replace individual lines for Asynch
-            foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+    puts "Call ConnectToMySQL 5"
+            foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
                 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
@@ -1302,7 +1318,7 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
 }
 
 proc loadmysqltpcc { } {
-    global _ED
+    global _ED mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
@@ -1310,6 +1326,10 @@ proc loadmysqltpcc { } {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpccvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-C"
@@ -1323,6 +1343,7 @@ set KEYANDTHINK \"$mysql_keyandthink\" ;# Time for user thinking and keying (tru
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
+set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -1346,26 +1367,39 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket user password db } {
+proc ConnectToMySQL { host port socket ssl_options user password db } {
     global mysqlstatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
+    	set use_socket "true"
+    	append connectstring " -socket $socket"
     } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+	}
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
         } else {
-            set connected "TRUE"
+            puts "the tcp connection to $host:$port could not be established"
         }
+        set connected "false"
+    } else {
+        set connected "true"
     }
     if {$connected} {
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
         return $mysql_handler
     } else {
         error $mysqlstatus(message)
@@ -1545,7 +1579,8 @@ proc prep_statement { mysql_handler statement_st } {
     }
 }
 #RUN TPC-C
-set mysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
+    puts "Call ConnectToMySQL 6"
+set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
 if {$prepare} {
     foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $mysql_handler $st ] }
 }
@@ -1591,14 +1626,15 @@ if {$prepare} {
         catch {mysqlexec $mysql_handler "deallocate prepare $st"}
     }
 }
-mysqlclose $mysql_handler}
-    if { $mysql_connect_pool } {
-        insert_mysqlconnectpool_drivescript test sync
-    }
+mysqlclose $mysql_handler
+}
+if { $mysql_connect_pool } {
+    insert_mysqlconnectpool_drivescript test sync
+}
 }
 
 proc loadtimedmysqltpcc { } {
-    global opmode _ED
+    global opmode _ED mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
         set library [ dict get $dbdict mysql library ]
@@ -1606,6 +1642,10 @@ proc loadtimedmysqltpcc { } {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpccvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-C Timed"
@@ -1624,6 +1664,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
+set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -1646,26 +1687,39 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket user password db } {
+proc ConnectToMySQL { host port socket ssl_options user password db } {
     global mysqlstatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            puts "the local socket connection to $socket could not be established"
-            set connected "FALSE"
-        } else {
-            set connected "TRUE"
-        }
+    	set use_socket "true"
+    	append connectstring " -socket $socket"
     } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            puts "the tcp connection to $host:$port could not be established"
-            set connected "FALSE"
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+	}
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
         } else {
-            set connected "TRUE"
+            puts "the tcp connection to $host:$port could not be established"
         }
+        set connected "false"
+    } else {
+        set connected "true"
     }
     if {$connected} {
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
         return $mysql_handler
     } else {
         error $mysqlstatus(message)
@@ -1677,28 +1731,9 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mysqluse $mysql_handler $db
-                mysql::autocommit $mysql_handler 1
-            } else {
-                error $mysqlstatus(message)
-                return
-            }
+    puts "Call ConnectToMySQL 7"
+	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+            mysql::autocommit $mysql_handler 1
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
@@ -1935,7 +1970,8 @@ switch $myposition {
             }
         }
         #RUN TPC-C
-        set mysql_handler [ ConnectToMySQL $host $port $socket $user $password $db ]
+    puts "Call ConnectToMySQL 8"
+        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
         if {$prepare} {
             foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $mysql_handler $st ] }
         }
@@ -1976,13 +2012,13 @@ switch $myposition {
                 catch {mysqlexec $mysql_handler "deallocate prepare $st"}
             }
         }
-        mysqlclose $mysql_handler
-    }
+mysqlclose $mysql_handler
+}
 }}
-        if { $mysql_connect_pool } {
-            insert_mysqlconnectpool_drivescript timed sync
-        }
-    } else {
+if { $mysql_connect_pool } {
+    insert_mysqlconnectpool_drivescript timed sync
+}
+} else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
 #EDITABLE OPTIONS##################################################
@@ -1997,6 +2033,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$mysql_host\" ;# Address of the server hosting MySQL 
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
+set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
 set password \"$mysql_pass\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
@@ -2023,29 +2060,84 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQLAsynch { host port socket user password db clientname async_verbose } {
+proc ConnectToMySQL { host port socket ssl_options user password db } {
     global mysqlstatus
+    #ssl_options is variable length so build a connectstring
     if { [ chk_socket $host $socket ] eq "TRUE" } {
-        if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-            set connected "FALSE"
-            if { $RAISEERROR } {
+    	set use_socket "true"
+    	append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+	}
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysqluse $mysql_handler $db
+        mysql::autocommit $mysql_handler 0
+        catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+            puts [ join $ssl_status ]
+        }
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
+}
+
+proc ConnectToMySQLAsynch { host port socket ssl_options user password db clientname async_verbose } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+        set use_socket "true"
+        append connectstring " -socket $socket"
+    } else {
+        set use_socket "false"
+        append connectstring " -host $host -port $port"
+    }
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }
+    append connectstring " -user $user -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+    #eval the login command
+    if [catch {set mysql_handler [eval $login_command]}] {
+        if $use_socket {
+            if $async_verbose {
                 puts "$clientname:socket login failed:$mysqlstatus(message)"
             }
         } else {
-            set connected "TRUE"
-        }
-    } else {
-        if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-            set connected "FALSE"
-            if { $RAISEERROR } {
+            if $async_verbose {
                 puts "$clientname:tcp login failed:$mysqlstatus(message)"
             }
-        } else {
-            set connected "TRUE"
         }
+        set connected "false"
+    } else {
+        set connected "true"
     }
     if {$connected} {
-        if { $async_verbose } { puts "Connected $clientname:$mysql_handler" }
+        if { $async_verbose } { 
+            puts "Connected $clientname:$mysql_handler" 
+            catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+            if { [ info exists ssl_status ] } {
+                puts "$clientname:[ join $ssl_status ]"
+            }
+        }
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
         return $mysql_handler
@@ -2057,29 +2149,10 @@ proc ConnectToMySQLAsynch { host port socket user password db clientname async_v
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
+    puts "Call ConnectToMySQL 9"
         if { $mode eq "Local" || $mode eq "Primary" } {
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
-                if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
-                    puts "the local socket connection to $socket could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            } else {
-                if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
-                    puts "the tcp connection to $host:$port could not be established"
-                    set connected "FALSE"
-                } else {
-                    set connected "TRUE"
-                }
-            }
-            if {$connected} {
-                mysqluse $mysql_handler $db
-                mysql::autocommit $mysql_handler 1
-            } else {
-                error $mysqlstatus(message)
-                return
-            }
+	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+            mysql::autocommit $mysql_handler 1
             set ramptime 0
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
@@ -2321,14 +2394,15 @@ switch $myposition {
             }
         }
         #CONNECT ASYNC
-        promise::async simulate_client { clientname total_iterations host port socket user password RAISEERROR KEYANDTHINK db prepare async_verbose async_delay } {
+        promise::async simulate_client { clientname total_iterations host port socket ssl_options user password RAISEERROR KEYANDTHINK db prepare async_verbose async_delay } {
             global mysqlstatus
             set acno [ expr [ string trimleft [ lindex [ split $clientname ":" ] 1 ] ac ] * $async_delay ]
             if { $async_verbose } { puts "Delaying login of $clientname for $acno ms" }
             async_time $acno
             if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
             if { $async_verbose } { puts "Logging in $clientname" }
-            set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]
+    puts "Call ConnectToMySQL 10"
+            set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]
             #RUN TPC-C
             if {$prepare} {
                 foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $mysql_handler $st ] }
@@ -2382,18 +2456,21 @@ switch $myposition {
         for {set ac 1} {$ac <= $async_client} {incr ac} {
             set clientdesc "vuser$myposition:ac$ac"
             lappend clientlist $clientdesc
-            lappend clients [simulate_client $clientdesc $total_iterations $host $port $socket $user $password $RAISEERROR $KEYANDTHINK $db $prepare $async_verbose $async_delay]
+            lappend clients [simulate_client $clientdesc $total_iterations $host $port $socket $ssl_options $user $password $RAISEERROR $KEYANDTHINK $db $prepare $async_verbose $async_delay]
         }
         puts "Started asynchronous clients:$clientlist"
         set acprom [ promise::eventloop [ promise::all $clients ] ]
         puts "All asynchronous clients complete"
         if { $async_verbose } {
             foreach client $acprom { puts $client }
-        }
-    }
+}
+}
 }}
-        if { $mysql_connect_pool } {
-            insert_mysqlconnectpool_drivescript timed async
-        }
-    }
+#Reformatting src causes error when inserting timeprofile
+#Do not modify double close bracket above
+#Close bracket of fast insert must come directly after inserted code without newline
+if { $mysql_connect_pool } {
+insert_mysqlconnectpool_drivescript timed async
+}
+}
 }
