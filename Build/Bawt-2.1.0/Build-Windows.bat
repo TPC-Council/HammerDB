@@ -45,6 +45,8 @@ set BAWTOPTS=--rootdir %OUTROOTDIR% ^
              --architecture %ARCH% ^
              --compiler %COMPILER% ^
              --numjobs %NUMJOBS% ^
+             --url http://www.hammerdb.com/build ^
+	     --finalizefile Setup\HammerDBFinalize.bawt ^
              --logviewer
 
 rem Build all libraries as listed in Setup file.
