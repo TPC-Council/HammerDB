@@ -383,6 +383,20 @@ namespace eval BawtZip {
     # Windows needs 7-Zip and the MSys/MinGW package.
     # Darwin needs 7-Zip.
     proc Bootstrap {} {
+
+    proc Downloadgcc { fileName } {
+        set curlProg [GetCurlProg]
+        set sourceFileUrl [format "%s/%s/%s" [GetBawtUrl] Bootstrap-Windows $fileName]
+        set targetFile [file join [GetBootstrapDir] $fileName]
+        Log "Source file: $sourceFileUrl" 4 false
+        Log "Target file: $targetFile"    4 false
+        set cmd "$curlProg -L $sourceFileUrl -o $targetFile"
+        set result [eval exec "[auto_execok $curlProg ] -L -s $sourceFileUrl -o $targetFile" ]
+        if { [string match -nocase "*404 Not Found*" $result] } {
+            ErrorAppend "File $sourceFileUrl not existent." $errorType
+            return
+   		}
+	}
         Log "Bootstrap"
 
         # First check, if bootstrap tool 7-Zip is either available on the system
@@ -432,6 +446,13 @@ namespace eval BawtZip {
         # This step is only needed for Windows, as on Unix systems we assume a development
         # package to be installed, ex. XCode for Mac, C/C++ development package for Linux.
         if { [IsWindows] } {
+		set gccname [ GetGccWinPack ]
+		if { ![ file exists [file join [GetBootstrapDir] $gccname]] } {
+                Log "Downloading MSys/MinGW for Windows" 2 false
+		Downloadgcc $gccname
+		} else {
+                Log "MSys/MinGW for Windows found" 2 false
+		}
             set msysDistDir [file join [GetOutputToolsDir] [GetMingwDir]]
             if { ! [file isdirectory $msysDistDir] } {
                 set toolList [lsort [glob -nocomplain [GetBootstrapDir]/gcc*]]
@@ -1215,6 +1236,7 @@ namespace eval BawtBuild {
     namespace export GetValidCompilerVersions
     namespace export SetNumJobs GetNumJobs
     namespace export SetTimeout GetTimeout
+    namespace export GetGccWinPack
     namespace export GetMingwVersion GetMingwGccVersion SetMingwGccVersion
     namespace export GetMingwDir GetMingwSubDir GetMingwIncludeDir
     namespace export GetMingwLib GetPthreadLib GetSehLib
@@ -1312,7 +1334,8 @@ namespace eval BawtBuild {
         Tclkit,FileVersion       ""
         FinalizeFile             ""
         BuildType                "NA"
-        GccVersion               "7.2.0"
+        GccVersion               "8.1.0"
+	GccWinPack 		 "gcc8.1.0_x86_64-w64-mingw32.7z"
         all,NumJobs              1
         Timeout                  30000          ; # Default timeout 30 seconds.
         UseTclPkgVersion         true
@@ -2048,6 +2071,12 @@ namespace eval BawtBuild {
         variable sBuildOpts
 
         return $sBuildOpts(GccVersion)
+    }
+
+    proc GetGccWinPack {} {
+        variable sBuildOpts
+
+        return $sBuildOpts(GccWinPack)
     }
 
     proc GetMingwVersion {} {
@@ -2809,22 +2838,27 @@ namespace eval BawtBuild {
         ErrorAppend "GetTkStubLib: No Tk stub file in $tclLibDir found." "FATAL"
     }
 
-    proc _GetTclshWishName { tclshOrWish { libVersion "" } } {
+    proc _GetTclshWishName { tclshOrWish libName { libVersion "" } } {
         set debugSuffix ""
         if { [IsDebugBuild] && [IsWindows] } {
             set debugSuffix "g"
+        }
+        set threadSuffix ""
+        if { [IsWindows] && [UseWinCompiler $libName "vs"] } {
+            set threadSuffix "t"
         }
         if { $libVersion eq "" } {
             set versionStr ""
         } else {
             set versionStr [GetMajorMinor $libVersion]
         }
-        set name [format "%s%s%s%s" $tclshOrWish $versionStr $debugSuffix [GetExeSuffix]]
+        set name [format "%s%s%s%s%s" $tclshOrWish $versionStr $threadSuffix $debugSuffix [GetExeSuffix]]
         return $name
     }
 
+
     proc GetTclshName { { libVersion "" } } {
-        return [_GetTclshWishName "tclsh" $libVersion]
+        return [_GetTclshWishName "tclsh" "Tcl" $libVersion]
     }
 
     proc GetTclshPath { { libVersion "" } } {
@@ -2832,8 +2866,8 @@ namespace eval BawtBuild {
     }
 
     proc GetWishName { { libVersion "" } } {
-        return [_GetTclshWishName "wish" $libVersion]
-    }
+        return [_GetTclshWishName "wish" "Tk" $libVersion]
+    } 
 
     proc GetWishPath { { libVersion "" } } {
         return [file join [GetOutputDevDir] [GetTclBinDir] [GetWishName $libVersion]]
@@ -3158,13 +3192,14 @@ namespace eval BawtBuild {
         if { [llength $args] > 0 } {
             Log "Options         : $args"   4 false
         }
-
         set    cmd ""
         append cmd "CALL nmake.exe "
         append cmd     "/nologo "
         append cmd     "/f \"$makeFile\" "
+	#Filename arguments with spaces get wrapped with curly braces
+	#replace with double quotes
+	regsub -all {\}|\{} $args "\"" args
         append cmd     "$args "
-
         set originator "NMakeBuild[_GetBuildCount $libName NMakeBuild]"
         DosRun $libName $originator $sourceDir "$cmd"
     }
@@ -5818,8 +5853,8 @@ if { [UseStage "Finalize"] && ! [IsSimulationMode] } {
     if { [IsWindows] && [UseVisualStudio] && [CopyRuntimeLibs] } {
         Log "VisualStudio runtime files" 2 false
         if { [GetVSRuntimeLibDir] ne "" } {
-            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDevDir]  "bin"]  "*.dll"
-            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDistDir] "bin"]  "*.dll"
+            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDevDir] [GetTclBinDir]]  "*.dll"
+            MultiFileCopy [GetVSRuntimeLibDir]  [file join [GetOutputDistDir] [GetTclBinDir]]  "*.dll"
         }
     }
 
