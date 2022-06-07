@@ -971,8 +971,6 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $db ] SCHEMA"
-    puts "Call ConnectToMySQL 1"
-    #puts "Call ConnectToMySQL $host $port $socket $ssl_options $user $password"
 	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
         CreateDatabase $mysql_handler $db
         mysqluse $mysql_handler $db
@@ -1012,7 +1010,6 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
             LoadItems $mysql_handler $MAXITEMS
         }
     }
-    puts "Call ConnectToMySQL 2"
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
@@ -1081,7 +1078,6 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             }
         }
         #For the connect keys c1, c2 etc make a connection
-    puts "Call ConnectToMySQL 3"
         foreach id [ split $conkeys ] {
             lassign [ set $id ] 1 2 3 4 5 6 7
             dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 $7 ] ]
@@ -1123,7 +1119,6 @@ proc insert_mysqlconnectpool_drivescript { testtype timedtype } {
             #puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
         }
         #Open standalone connect to determine highest warehouse id for all connections
-    puts "Call ConnectToMySQL 4"
         set mmysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
         set w_id_input [ list [ mysql::sel $mmysql_handler "select max(w_id) from warehouse" -list ] ]
         #2.4.1.1 set warehouse_id stays constant for a given terminal
@@ -1280,7 +1275,6 @@ mysqlclose $mmysql_handler
             set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]} end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
             #Replace individual lines for Asynch
-    puts "Call ConnectToMySQL 5"
             foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
                 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
@@ -1579,7 +1573,6 @@ proc prep_statement { mysql_handler statement_st } {
     }
 }
 #RUN TPC-C
-    puts "Call ConnectToMySQL 6"
 set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
 if {$prepare} {
     foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $mysql_handler $st ] }
@@ -1731,7 +1724,6 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-    puts "Call ConnectToMySQL 7"
 	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
             mysql::autocommit $mysql_handler 1
             set ramptime 0
@@ -1970,7 +1962,6 @@ switch $myposition {
             }
         }
         #RUN TPC-C
-    puts "Call ConnectToMySQL 8"
         set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
         if {$prepare} {
             foreach st {neword_st payment_st delivery_st slev_st ostat_st} { set $st [ prep_statement $mysql_handler $st ] }
@@ -2149,7 +2140,6 @@ proc ConnectToMySQLAsynch { host port socket ssl_options user password db client
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
-    puts "Call ConnectToMySQL 9"
         if { $mode eq "Local" || $mode eq "Primary" } {
 	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
             mysql::autocommit $mysql_handler 1
@@ -2401,7 +2391,6 @@ switch $myposition {
             async_time $acno
             if {  [ tsv::get application abort ]  } { return "$clientname:abort before login" }
             if { $async_verbose } { puts "Logging in $clientname" }
-    puts "Call ConnectToMySQL 10"
             set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]
             #RUN TPC-C
             if {$prepare} {
