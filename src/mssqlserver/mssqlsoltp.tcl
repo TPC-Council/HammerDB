@@ -84,7 +84,7 @@ proc CreateStoredProcs { odbc imdb } {
             @rbk int
             BEGIN TRANSACTION
             BEGIN TRY
-            SET @no_o_all_local = 0
+            SET @no_o_all_local = 1
             SELECT
             @no_c_discount = c_discount,
             @no_c_last = c_last,
@@ -632,7 +632,7 @@ proc CreateStoredProcs { odbc imdb } {
             @rbk int
             BEGIN TRANSACTION
             BEGIN TRY
-            SET @no_o_all_local = 0
+            SET @no_o_all_local = 1
             SELECT
             @no_c_discount = c_discount,
             @no_c_last = c_last,
