@@ -1,4 +1,5 @@
 package require sqlite3
+global hdb_version
 
 #Get generic config data
 set genericdict [ ::XML::To_Dict config/generic.xml ]
@@ -10,12 +11,9 @@ if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
     set sqlitedb_dir ""
 }
 
-#Get xml_schema_version
-if { [ dict exists $genericdict xml_schema version ] } {
-    set xml_schema_version [ dict get $genericdict xml_schema version ]
-} else {
-    set xml_schema_version ""
-}
+#Set hammerdb version to genericdict
+set hdb_version_dict [ dict create version $hdb_version ]
+dict append genericdict hdb_version $hdb_version_dict
 
 #Try to get generic config data from SQLite
 set genericdictdb [ SQLite2Dict "generic" ]
@@ -23,18 +21,18 @@ if { $genericdictdb eq "" } {
     #No SQLite found, save genericdict from XML to SQLite
     Dict2SQLite "generic" $genericdict
 } else {
-    if { [ dict exists $genericdictdb xml_schema version ] } {
-        set db_schema_version [ dict get $genericdictdb xml_schema version ]
+    if { [ dict exists $genericdictdb hdb_version version ] } {
+        set sqlite_hdb_version [ dict get $genericdictdb hdb_version version ]
     } else {
-        set db_schema_version ""
+        set sqlite_hdb_version "unknown"
     }
 
     #SQLite found, check whether the schema versions from SQLite and XML are consistent
-    if { $xml_schema_version ne $db_schema_version } {
-        puts "The existed SQLite DBs are incompatible with current HammerDB. SQLite DBs will be cleared."
+    if { $sqlite_hdb_version ne $hdb_version } {
+        puts "The existing SQLite DBs are from version $sqlite_hdb_version. SQLite DBs will be reset to $hdb_version."
         foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql } {
             set dbfile [ CheckSQLiteDB $dbname ]
-            #Remove SQLite file, if need to keep old file, use 'file rename'
+            #Remove SQLite file
             file delete $dbfile
         }
         #After remove old SQLite, save genericdict to SQLite DB
