@@ -49,7 +49,7 @@ proc xmlopts {} {
     puts "This function to write out XML data for database $rdbms"
 }
 
-proc set_globle_config {genericdict} {
+proc set_global_config {genericdict} {
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight gen_count_ware gen_scale_fact gen_directory gen_num_vu 
 
     if { $genericdict eq "" } {

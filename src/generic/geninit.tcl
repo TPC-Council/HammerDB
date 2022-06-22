@@ -75,7 +75,7 @@ foreach { key } [ dict keys $dbdict ] {
 }
 
 #get_xml_data
-set_globle_config $genericdict
+set_global_config $genericdict
 
 #Make generics global
 tsv::set application genericdict $genericdict
