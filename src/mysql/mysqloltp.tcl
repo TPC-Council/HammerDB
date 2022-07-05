@@ -74,7 +74,7 @@ proc CreateStoredProcs { mysql_handler } {
         DECLARE `Constraint Violation` CONDITION FOR SQLSTATE '23000';
         DECLARE EXIT HANDLER FOR `Constraint Violation` ROLLBACK;
         DECLARE EXIT HANDLER FOR NOT FOUND ROLLBACK;
-        SET no_o_all_local = 0;
+        SET no_o_all_local = 1;
         SELECT c_discount, c_last, c_credit, w_tax
         INTO no_c_discount, no_c_last, no_c_credit, no_w_tax
         FROM customer, warehouse
@@ -86,8 +86,6 @@ proc CreateStoredProcs { mysql_handler } {
         WHERE d_id = no_d_id AND d_w_id = no_w_id FOR UPDATE;
         UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id;
         SET o_id = no_d_next_o_id;
-        INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
-        INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         SET rbk = FLOOR(1 + (RAND() * 99));
         SET loop_counter = 1;
         WHILE loop_counter <= no_o_ol_cnt DO
@@ -150,6 +148,8 @@ proc CreateStoredProcs { mysql_handler } {
         VALUES (o_id, no_d_id, no_w_id, loop_counter, no_ol_i_id, no_ol_supply_w_id, no_ol_quantity, no_ol_amount, no_ol_dist_info);
         set loop_counter = loop_counter + 1;
         END WHILE;
+        INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
+        INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
     END }
     set sql(2) { CREATE PROCEDURE `DELIVERY`(
