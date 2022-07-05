@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.4.</para>
+      <para>The following are the release notes for HammerDB v4.5.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -40,18 +40,21 @@
         <title>Stored Procedure Refactoring and Performance</title>
 
         <para>From version 4.0 the stored procedures for the Oracle and
-        PostgreSQL TPROC-C workloads have been refactored. This increases the
-        expected performance between versions and consequently the performance
-        from HammerDB v4.0 cannot be compared directly to the performance of
-        v3.3 or previous releases. Additionally for some workloads HammerDB
-        v4.0 changed the relationship between the NOPM and TPM metrics
-        compared to previous versions. As a result of the stored procedure
-        refactoring using bulk operations more work is processed per commit
-        and therefore in these cases the NOPM has increased whilst the TPM
-        remains the same. This indicates a real measure of increased
-        throughput by doing more work per database transaction and
-        consequently NOPM is now listed first as the primary metric in
-        reporting output. However as raised in <link
+        PostgreSQL TPROC-C workloads have been refactored. From version 4.5
+        the stored procedures for the SQL Server TPROC-C have been refactored
+        and MySQL, MariaDB and Db2 modified. This increases the expected
+        performance between versions and consequently the performance from
+        HammerDB v4.5 &amp; HammerDB v4.0 cannot be compared directly to the
+        performance of v3.3 or previous releases dependent on the database
+        being tested. Additionally for some workloads HammerDB v45/v4.0
+        changed the relationship between the NOPM and TPM metrics compared to
+        previous versions. As a result of the stored procedure refactoring
+        using bulk operations more work is processed per commit and therefore
+        in these cases the NOPM has increased whilst the TPM remains the same.
+        This indicates a real measure of increased throughput by doing more
+        work per database transaction and consequently NOPM is now listed
+        first as the primary metric in reporting output. However as raised in
+        <link
         xlink:href="https://github.com/TPC-Council/HammerDB/issues/111">HammerDB
         GitHub Issue #111</link> there may be cases where there is a
         dependency on the wording of the HammerDB log. For this reason a
@@ -67,22 +70,42 @@
       </section>
 
       <section>
-        <title>MySQL and MariaDB TPROC-H indexing</title>
+        <title>Build Automation</title>
 
-        <para>From version 4.3 the default MySQL and MariaDB TPROC-H
-        configuration has been modified to use the InnoDB storage engine
-        instead of MyISAM and to remove additional indexes on the LINEITEM
-        table not compliant with the TPC-H specification. Consequently
-        performance of TPROC-H on MySQL and MariaDB in version 4.3 and above
-        is not comparable with version 4.2 and earlier.</para>
+        <para>HammerDB v4.5 includes a source code build environment to
+        compile all HammerDB dependencies and build a HammerDB release on
+        Linux and Windows with a compatible compiler from the source code
+        cloned or downloaded from GitHub.</para>
       </section>
 
       <section>
-        <title>PostgreSQL Citus Data Support</title>
+        <title>Dockerfile</title>
 
-        <para>From version 4.4 the PostgreSQL TPROC-C workloads support <link
-        xlink:href="https://www.citusdata.com/">Citus Data</link> distributed
-        PostgreSQL environments.</para>
+        <para>HammerDB v4.5 includes a Dockerfile to enable building a
+        HammerDB Docker image for rapid deployment of HammerDB in cloud
+        environments.</para>
+      </section>
+
+      <section>
+        <title>Persistent Configuration</title>
+
+        <para>From version v4.5 the XML configuration for HammerDB has been
+        made persistent between restarts through storing the configuration in
+        a series of SQLite database files. This means when HammerDB is
+        restarted the settings will be resumed from the previous point where
+        HammerDB was closed down. It also means that a configuration can be
+        set within the GUI and then run from the CLI and vice versa.</para>
+      </section>
+
+      <section>
+        <title>MySQL and MariaDB SSL/TLS Configuration</title>
+
+        <para>At version 4.5 HammerDB adds the option to use an SSL/TLS
+        connection to the database. At earlier versions it is possible to use
+        SSL/TLS however this requires modification of the build and driver
+        scripts, HammerDB v4.5 allows passing of the SSL configuration
+        directly from the configuration so that modification of the scripts is
+        not required.</para>
       </section>
 
       <section>
@@ -166,30 +189,44 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.4 New Features</title>
+      <title>HammerDB v4.5 New Features</title>
 
-      <para>HammerDB v4.4 New Features are all referenced to <link
+      <para>HammerDB v4.5 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Issues and Pull Requests</link>, where more details for each new feature
-      and related pull requests can be found here: </para>
+      and related pull requests can be found here:</para>
 
-      <para>[TPC-Council#306] Fix getcols can return zero, resulting in
-      divide-by-zero</para>
+      <para>[TPC-Council#376] Add SSL options to MySQL</para>
 
-      <para>[TPC-Council#303] readline: only catch signals when using
-      interact</para>
+      <para>[TPC-Council#375] Fix for o_all_local value update and
+      insert</para>
 
-      <para>[TPC-Council#302] Add optional Citus support</para>
+      <para>[TPC-Council#372] SQL Server Schema/Stored Procedure
+      Updates</para>
 
-      <para>[TPC-Council#301] Build dataset using COPY instead of multi-row
-      inserts for TPROC-C</para>
+      <para>[TPC-Council#366] Fix RAISEEROR error in Asynch connect</para>
 
-      <para>[TPC-Council#298] Make Linux hammerdb executable work with spaces
-      in PATH</para>
+      <para>[TPC-Council#356] use correct transaction boundaries in MySQL /
+      MariaDB and PG</para>
 
-      <para>[TPC-Council#295] Optimize MakeAlphaString</para>
+      <para>[TPC-Council#362] Dependency build automation for Windows</para>
 
-      <para>[TPC-Council#292] Standardize indentation of tcl files </para>
+      <para>[TPC-Council#340] Escape username and database name in PostgreSQL
+      procedures</para>
+
+      <para>[TPC-Council#339] Added Dockerfile to build a HammerDB container
+      and TPROC_C sample scripts to build schema and run tests</para>
+
+      <para>[TPC-Council#336] Save/load configuration to SQLite DB</para>
+
+      <para>[TPC-Council#333] set MariaDB autocommit to 1 for Monitor
+      VU</para>
+
+      <para>[TPC-Council#332] Move history file tracking to interactive</para>
+
+      <para>[TPC-Council#331] Add SSL connection options to MariaDB</para>
+
+      <para>[TPC-Council#323] Dependency build automation for Linux</para>
     </section>
 
     <section>
@@ -230,7 +267,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
               <row>
                 <entry>Windows</entry>
 
-                <entry>Windows 10</entry>
+                <entry>Windows 10 / 11</entry>
               </row>
             </tbody>
           </tgroup>
@@ -255,7 +292,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>Oracle (TimesTen)</entry>
 
-              <entry>12c / 18c / 19c</entry>
+              <entry>12c / 18c / 19c / 21c</entry>
             </row>
 
             <row>
@@ -294,6 +331,15 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
+      <title>Downloading HammerDB</title>
+
+      <para>Pre-built binary installation packages for HammerDB can be
+      downloaded from the <link
+      xlink:href="https://www.hammerdb.com/download.html">Download</link> page
+      at www.hammerdb.com.</para>
+    </section>
+
+    <section>
       <title>Checksum Verification</title>
 
       <para>Checksums for the installation files are shown alongside the
@@ -304,12 +350,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.4-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.5-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.4-Linux.tar.gz 
-sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.5-Linux.tar.gz 
+sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -415,8 +461,10 @@ sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
 
         <para>HammerDB will start ready for you to use. The order of the
         databases in the treeview is in the order that they were added to
-        HammerDB, however this is user configurable. To change the order see
-        section 9 XML Configuration further in this Chapter.</para>
+        HammerDB, however this is user configurable and from v4.5 settings
+        will persist across restarts of HammerDB. To change the order and
+        understand how settings are persisted see section 9 XML Configuration
+        further in this Chapter.</para>
 
         <figure>
           <title>HammerDB Started</title>
@@ -507,10 +555,10 @@ sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.4.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.5.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.4.</para>
+        HammerDB-4.5.</para>
       </section>
 
       <section>
@@ -528,6 +576,150 @@ sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
         <para>To uninstall HammerDB on Linux run the uninstall executable for
         the self-extracting installer or remove the directory for the tar.gz
         install.</para>
+      </section>
+    </section>
+
+    <section>
+      <title>HammerDB Docker Container Build &amp; Run</title>
+
+      <para>At v4.5 the HammerDB Docker Container supports the CLI interface
+      on Linux only. </para>
+
+      <para>Containers are lightweight prebuilt environments that are easy to
+      distribute and deploy. Version 4.5 includes a Dockerfile that can be
+      used to create a HammerDB Docker containers. This container is based on
+      an Ubuntu 20.04 base image and provides a ready to use environment to
+      run HammerDB. HammerDB has a dependency on 3rd party driver libraries to
+      connect to the target databases. This docker container installs the
+      required client libraries and sets up the environment that enables
+      connections to the target databases.</para>
+
+      <para>A Dockerfile is a shell script that automates the docker container
+      build. It makes it easier to spawn multiple containers with ease.
+      HammerDBv-4.5 source on GitHub is packaged with a folder “Docker”, that
+      contains all the Docker related files and folders. This folder contains
+      a Dockerfile for building a HammerDB client container that supports all
+      the databases that HammerDB supports, i.e. Oracle, Microsoft SQL Server,
+      IBM Db2, MySQL, PostgreSQL and MariaDB. Dockerfile is easy to customize
+      each one’s requirement.</para>
+
+      <section>
+        <title>Download and installation</title>
+
+        <para>The HammerDB Dockerfile is stored within the <link
+        xlink:href="https://github.com/TPC-Council/HammerDB">HammerDB GitHub
+        repository</link>. To download the Dockerfile either Clone or Download
+        the ZIP of the the HammerDB source and navigate to the Docker
+        directory.</para>
+
+        <figure>
+          <title>Docker File Download</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-12a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
+
+      <section>
+        <title>Building the HammerDB Container</title>
+
+        <para>The Docker container built from this Dockerfile installs the
+        required 3rd party driver libraries for all databases supported in
+        HammerDB except for IBM Db2. As IBM Db2 client libraries are not free
+        to redistribute they must be independently downloaded and added if
+        required. For the build to include IBM Db2, IBM Data Server Driver for
+        <link xlink:href="https://www.ibm.com/support/pages/node/6465915">ODBC
+        and CLI version 11.5.6</link> can be downloaded locally and placed in
+        the same location as Dockerfile.</para>
+
+        <para>To create an image: Go to the folder containing the Dockerfile
+        and run the docker build command.</para>
+
+        <programlisting>docker build -t hammerdb-v4.5 . </programlisting>
+
+        <figure>
+          <title>docker build</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-12b.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <figure>
+          <title>Successfully built</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-12c.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
+
+      <section>
+        <title>Running the Container</title>
+
+        <para>To create and start a container named "hammerdb" with the image
+        built in previous section run the following command. The container
+        build is successful but the client libraries for IBM are not
+        installed.</para>
+
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.5 bash</programlisting>
+
+        <figure>
+          <title>docker run</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-12d.png"/>
+            </imageobject>
+          </mediaobject>
+
+          <para>If IBM client libraries are manually downloaded and placed
+          alongside Dockerfile, container builds successfully and output looks
+          as follows.</para>
+        </figure>
+
+        <section>
+          <title>IBM Client install</title>
+
+          <para>If IBM client libraries are manually downloaded and placed
+          alongside Dockerfile, container builds successfully and output looks
+          as follows.</para>
+
+          <figure>
+            <title>IBM client</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../DocBook/docs/images/ch1-12e.png"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </section>
+      </section>
+
+      <section>
+        <title>Connecting the Container to the Network</title>
+
+        <para>The docker container needs to be connected to network to
+        communicate with remote databases. The following is an example of
+        adding host network to the container.</para>
+
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.5 bash </programlisting>
+      </section>
+
+      <section>
+        <title>Sample_scripts folder</title>
+
+        <para>A sub-folder 'sample_scripts" is also added to the container. It
+        contains some command line scripts to run HammerDB TPROC-C workload
+        with each database.</para>
       </section>
     </section>
 
@@ -557,7 +749,7 @@ sha1sum HammerDB-4.4-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.4
+      <programlisting>HammerDB CLI v4.5
 Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -580,7 +772,7 @@ hammerdb&gt;
 
       <para>librarycheck is also provided in the HammerDB Web Service.</para>
 
-      <programlisting>HammerDB Web Service v4.4
+      <programlisting>HammerDB Web Service v4.5
 Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -604,17 +796,17 @@ hammerws&gt;</programlisting>
       first level library that HammerDB requires however there may be
       additional dependencies. Refer to the Test Matrix to determine which
       database versions HammerDB was built against. On Windows the <link
-      xlink:href="https://dependencywalker.com/">Dependency Walker
+      xlink:href="https://github.com/lucasg/Dependencies/">Dependencies
       Utility</link> can be used to determine the dependencies and on Linux
       the command ldd.</para>
 
-      <para>For example on Windows use dependency walker to open the HammerDB
-      library for your chosen database. In the following example
+      <para>For example on Windows use the dependencies utility to open the
+      HammerDB library for your chosen database. In the following example
       libmysqltcl.dll is opened for MySQL. This shows that the key dependency
       is on the 64-bit libmysql.dll.</para>
 
       <figure>
-        <title>Dependency Walker MySQL</title>
+        <title>Dependencies MySQL</title>
 
         <mediaobject>
           <imageobject>
@@ -880,10 +1072,10 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.4 (4.3/4.2/4.1/4.0 and version 3.3) has been
-        built and tested against a MySQL 8.0 client installation, hammerDB
-        version 3.0-3.2 has been built against MySQL 5.7. On Linux this means
-        that HammerDB will require a MySQL client library called
+        <para>HammerDB version 4.5 (4.4/4.3/4.2/4.1/4.0 and version 3.3) has
+        been built and tested against a MySQL 8.0 client installation,
+        hammerDB version 3.0-3.2 has been built against MySQL 5.7. On Linux
+        this means that HammerDB will require a MySQL client library called
         libmysqlclient.so.21 for HammerDB version 4.2,4.1,4.0 and 3.3 and
         libmysqlclient.so.20 for version 3.2 and earlier. This client library
         needs to be referenced in the LD_LIBRARY_PATH as shown previously in
@@ -894,7 +1086,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.4 has been built and tested against MariaDB
+        <para>HammerDB version 4.5 has been built and tested against MariaDB
         10.5.10 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
@@ -919,12 +1111,10 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
     </section>
 
     <section>
-      <title>XML Configuration</title>
+      <title>XML &amp; Persistent Configuration</title>
 
       <para>HammerDB configuration and settings are defined in a number of XML
-      files in the config directory. You may edit these files to change the
-      configuration on startup, however it is recommended to save a copy of
-      the original in case of incompatible changes.</para>
+      files in the config directory.</para>
 
       <figure>
         <title>XML Configuration Files</title>
@@ -935,23 +1125,33 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
           </imageobject>
         </mediaobject>
 
-        <para>By default the databases in the GUI menu are listed in the order
-        that the workloads were added to HammerDB. If you wish to change the
-        order to put a particular database first you can change the rdbms
-        value in generic.xml to the name of the database of your choice. The
-        name entry for a particular database can be found in the database.xml
-        file. For example the following would set SQL Server to be the
-        database at the top of the menu.</para>
+        <para>From v4.5 it is recommended not to edit these files apart from
+        the sqlitedb_dir parameter in the generic.xml file. The configuration
+        is now stored and persisted across restarts through a series of SQLite
+        database files located in the sqlitedb_dir directory. By default this
+        directory is set to a temporary location and it is therefore
+        recommended to set this to a preferred permanent storage location if
+        desired.</para>
 
-        <programlisting>&lt;benchmark&gt;
-&lt;rdbms&gt;MSSQLServer&lt;/rdbms&gt;
-&lt;bm&gt;TPC-C&lt;/bm&gt;
-&lt;first_result&gt;NOPM&lt;/first_result&gt;
-&lt;/benchmark&gt;</programlisting>
+        <programlisting>   &lt;sqlitedb&gt;
+        &lt;sqlitedb_dir&gt;TMP&lt;/sqlitedb_dir&gt;
+   &lt;/sqlitedb&gt;</programlisting>
       </figure>
 
-      <para>On startup SQL Server is shown first and already selected meaning
-      it is not required to switch to a preferred database from the default
+      <figure>
+        <title>Database Files</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch1-17aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>With this persistent storage after closing and restarting HammerDB
+      it will continue with the settings previously used. For example, on
+      startup SQL Server is shown first and already selected meaning it is not
+      required to switch to a preferred database from the default
       choice.</para>
 
       <figure>
@@ -963,8 +1163,25 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
           </imageobject>
         </mediaobject>
 
-        <para>Similarly it also possible to change the default workload to
-        TPROC-H by modifying the bm value to TPC-H.</para>
+        <para>Also note that the configuration is interchangeable between GUI,
+        CLI and WS and therefore the settings made for one interface will be
+        persisted for use for another interface on the same system. Therefore,
+        for example settings made with the GUI can be stored and then run with
+        the CLI. If it is wished to reset the settings for a particular
+        database the corresponding SQLite database can be deleted and it will
+        be recreated at next use.</para>
+
+        <para>Note that for the potential of an incompatible modified
+        configuration the SQLite databases will be cleared if a different
+        version of HammerDB is detected from the one that created the existing
+        database files, reporting the following message at startup.</para>
+
+        <programlisting>The existing SQLite DBs are from version v4.4. SQLite DBs will be reset to v4.5.</programlisting>
+
+        <para>For this reason before running another version any existing
+        configuration that is wished to be saved should be exported using
+        SQLite tools and imported into the newly created database
+        files.</para>
       </figure>
     </section>
 
@@ -1043,6 +1260,320 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
 
       <programlisting>(HammerDB-4.0) 49 % puts [ tk scaling ]
 1.3333333333333333</programlisting>
+    </section>
+
+    <section>
+      <title>Building HammerDB from Source</title>
+
+      <para>Before building from source be aware that HammerDB already
+      provides pre-compiled packages from the download page and therefore
+      building from source is not required to run HammerDB. Instead building
+      from source is for people who want to compile all of their own
+      dependencies from the C code that HammerDB is built in. </para>
+
+      <para>Building from source also enables building a distribution with
+      commits ahead of the current HammerDB release. </para>
+
+      <para>When building from source all of the dependent packages will be
+      downloaded from www.hammerdb.com.</para>
+
+      <para>HammerDB build automation uses an adapted version of the BAWT
+      package by Paul Obermeier . BAWT is copyrighted by Paul Obermeier and
+      distributed under the 3-clause BSD license.</para>
+
+      <section>
+        <title>Compiler &amp; Dependency Install on Linux</title>
+
+        <para>Install a development environment using the gcc compiler for
+        Linux. You will also need the p7zip tool as well as the Xft font
+        library development packages.  The build has been tested on x64 Red
+        Hat 8.X and Ubuntu 20.04.X Linux, with the following example from Red
+        Hat Linux.</para>
+
+        <programlisting>yum install p7zip-16.02-20.el8.x86_64.rpm
+sudo yum install libXft-devel
+yum group install "Development Tools"</programlisting>
+
+        <para>The HammerDB Oracle and ODBC for SQL Server client libraries
+        will build without the respective Oracle and SQL Server client
+        libraries, but will need them at runtime. However, the client or
+        server must be installed for all of Db2, MariaDB, PostgreSQL and MySQL
+        for the HammerDB build to be successful. The database installation
+        must include both the include and lib directories. For Db2 either the
+        server or client can be installed, for example
+        v11.5.7_linuxx64_server_dec.tar.gz. HammerDB build automation will
+        look for the Db2 installation in the location of the environment
+        variable IBM_DB_DIR set using db2profile tool. Verify that this has
+        been set as follows:</para>
+
+        <programlisting>$ echo $IBM_DB_DIR
+/home/ibm/sqllib</programlisting>
+
+        <para>On Linux MariaDB, PostgreSQL and MySQL include a config command
+        in the bin directory that returns details of the configuration.
+        HammerDB uses these commands to find the headers and libraries needed
+        for the build. Before running the build, environment variables
+        MARIADB_CONFIG, PG_CONFIG and MYSQL_CONFIG must be set to the location
+        of the respective config commands for each database in the terminal
+        running the build.</para>
+
+        <programlisting>$ export MARIADB_CONFIG=/opt/mariadb/mariadb-10.6.7-linux-systemd-x86_64/bin
+$ export PG_CONFIG=/opt/postgresql/bin
+$ export MYSQL_CONFIG=/opt/mysql/mysql-8.0.28-linux-glibc2.12-x86_64/bin</programlisting>
+      </section>
+
+      <section>
+        <title>Compiler &amp; Dependency Install on Windows</title>
+
+        <para>On Windows, download and install <link
+        xlink:href="https://visualstudio.microsoft.com/vs/community/">Visual
+        Studio 2022</link>, Visual Studio is free for open source developers.
+        An additional gcc compiler will be downloaded and installed locally
+        during the build. The build has been tested on x64 Windows 10 and 11.
+        As with Linux it is also mandatory to install a database server or
+        client including the development environment of headers and libraries
+        for MariaDB, Db2, MySQL and PostgreSQL. For Db2 on Windows, there is
+        no db2profile that sets the environment therefore the IBM_DB_DIR
+        environment variable must be set to the location of the Db2 install.
+        Similarly, the MariaDB and MySQL config commands are not available on
+        Windows either and should also be set to the database or client
+        installation directory rather than the bin directory. PostgreSQL for
+        Windows does include the config command and therefore the environment
+        configuration is the same as Linux.</para>
+
+        <programlisting>set MARIADB_CONFIG=C:\Program Files\MariaDB\MariaDB Connector C 64-bit
+set MYSQL_CONFIG=C:\Program Files\MySQL\MySQL Server 8.0
+set PG_CONFIG=C:\Program Files\PostgreSQL\pgsql\bin
+set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB</programlisting>
+
+        <para>For all database installations on Windows whether client or
+        server verify that the installation has the include, bin and lib
+        directories. On Windows in particular, some installations may not
+        include all the required files for development.</para>
+      </section>
+
+      <section>
+        <title>Download HammerDB Source</title>
+
+        <para>At this stage you will have installed the compiler you need and
+        database client/server installations for MariaDB, Db2, MySQL and
+        PostgreSQL. To reiterate, HammerDB will not build correctly unless you
+        have installed ALL the required database environments. Next download
+        HammerDB from gitHub by either cloning or downloading. From the main
+        HammerDB GitHub page use the clone URL or the Download Zip link from
+        the master branch.</para>
+
+        <figure>
+          <title>Download Source</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-12a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <programlisting>$ git clone https://github.com/TPC-Council/HammerDB.git
+Cloning into 'HammerDB'...
+remote: Enumerating objects: 8099, done.
+remote: Total 8099 (delta 0), reused 0 (delta 0), pack-reused 8099
+Receiving objects: 100% (8099/8099), 40.41 MiB | 8.39 MiB/s, done.
+Resolving deltas: 100% (2564/2564), done.
+</programlisting>
+
+        <para>If cloning you will have a directory called “HammerDB” or
+        extracting the zipfile a directory called “HammerDB-master”.</para>
+      </section>
+
+      <section>
+        <title>Running the Build</title>
+
+        <para>Navigate to the Build\Bawt-2.1.0 directory with the command line
+        for both Linux and Windows. Note that during the build an InputLibs
+        directory will be created and all HammerDB libraries downloaded and
+        under the Build directory a BawtBuild directory will be created where
+        the installation will take place. Therefore, sufficient disk space and
+        permissions must be available for the build to take place. Within the
+        command line you are running the build make sure that you have
+        correctly set all the MARIADB_CONFIG, MYSQL_CONFIG, PG_CONFIG, and
+        IBM_DB_DIR environment variables used during the build and run the
+        Build-Linux.sh command for Linux.</para>
+
+        <programlisting>./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update</programlisting>
+
+        <para> and Build-Windows.bat commands for Windows </para>
+
+        <programlisting>./Build-Windows.bat x64 vs2022+gcc Setup/HammerDB-Windows.bawt update</programlisting>
+
+        <para>the command sequence will look similar to the following on
+        Linux:</para>
+
+        <programlisting>$ export MYSQL_CONFIG=/opt/mysql-8.0.20-linux-glibc2.12-x86_64/bin
+$ export MARIADB_CONFIG=/opt/mariadb-10.8.1-linux-x86_64/bin/
+$ export PG_CONFIG=/opt/postgresql-14.1/bin
+$ echo $IBM_DB_DIR
+/opt/ibm/sqllib
+$ ./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update</programlisting>
+
+        <para>and the following on Windows:</para>
+
+        <programlisting>set MARIADB_CONFIG=C:\Program Files\MariaDB\MariaDB Connector C 64-bit
+set MYSQL_CONFIG=C:\Program Files\MySQL\MySQL Server 8.0
+set PG_CONFIG=C:\Program Files\PostgreSQL\pgsql\bin
+set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB
+Build-Windows.bat x64 vs2022+gcc Setup\HammerDB-Windows.bawt update</programlisting>
+
+        <para>The first step the build will take is to download the required
+        packages and build instructions from www.hammerdb.com, On Windows the
+        MYSYS/MinGW package will also be downloaded. These will be stored in
+        the Bawt-2.1.0/InputLibs directory. Both checksums and modification
+        times are verified with the remote packages. If a package is already
+        present with the same checksum and modification time, it will not be
+        downloaded again if already present. Also some packages such as Tcl
+        have been modified from the original and therefore only the packages
+        from www.hammerdb.com should be used. In some cases different packages
+        are used on Linux and Windows and therefore the package listing
+        differs between the OS environments, this is expected and the
+        following listing shows a Linux example.</para>
+
+        <para><programlisting>awthemes-9.3.1.7z  libressl-2.6.4.7z  pgtcl-2.1.1.7z    Tk-8.6.12.7z
+awthemes.bawt      libressl.bawt      pgtcl.bawt        Tk.bawt
+clearlooks-1.0.7z  mariatcl-0.1.7z    redis-0.1.7z      tkblt-3.2.23.7z
+clearlooks.bawt    mariatcl.bawt      redis.bawt        tkblt.bawt
+db2tcl-2.0.1.7z    mysqltcl-3.052.7z  Tcl-8.6.12.7z     tksvg-0.5.7z
+db2tcl.bawt        mysqltcl.bawt      Tcl.bawt          tksvg.bawt
+expect-5.45.4.7z   oratcl-4.6.7z      tcltls-1.7.22.7z
+expect.bawt        oratcl.bawt        tcltls.bawt</programlisting>Allow the
+        build to complete. A summary will be given of the packages built and
+        the location of the build given, for example for Linux as
+        follows:</para>
+
+        <programlisting>14:27:08 &gt; Creating Distribution tar.gz in /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution
+14:27:08 &gt;   TarGzip
+               Source directory: /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5
+               Tar file        : /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5-Linux.tar.gz
+14:27:09 &gt; End FinalizeStage
+
+14:27:09 &gt; Summary
+           Setup file     : /opt/HammerDB/Build/Bawt-2.1.0/Setup/HammerDB-Linux.bawt
+           Build directory: /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Build
+           Architecture   : x64
+           Compilers      : gcc
+           Global stages  : Finalize
+           #  : Library Name         Version    Build time Stages
+----------------------------------------------------------------------
+             1: Tcl                  8.6.12     1.52 minutes Clean Extract Configure Compile Distribute
+             2: Tk                   8.6.12     0.36 minutes Clean Extract Configure Compile Distribute
+             3: awthemes             9.3.1      0.00 minutes Clean Extract Configure Compile Distribute
+             4: clearlooks           1.0        0.00 minutes Clean Extract Configure Compile Distribute
+             5: db2tcl               2.0.1      0.10 minutes Clean Extract Configure Compile Distribute
+             6: expect               5.45.4     0.12 minutes Clean Extract Configure Compile Distribute
+             7: libressl             2.6.4      0.99 minutes Clean Extract Configure Compile Distribute
+             8: mariatcl             0.1        0.04 minutes Clean Extract Configure Compile Distribute
+             9: mysqltcl             3.052      0.04 minutes Clean Extract Configure Compile Distribute
+            10: oratcl               4.6        0.05 minutes Clean Extract Configure Compile Distribute
+            11: pgtcl                2.1.1      0.05 minutes Clean Extract Configure Compile Distribute
+            12: redis                0.1        0.00 minutes Clean Extract Configure Compile Distribute
+            13: tcltls               1.7.22     0.14 minutes Clean Extract Configure Compile Distribute
+            14: tkblt                3.2.23     0.21 minutes Clean Extract Configure Compile Distribute
+            15: tksvg                0.5        0.06 minutes Clean Extract Configure Compile Distribute
+----------------------------------------------------------------------
+           Total: 3.70 minutes</programlisting>
+
+        <para>On Windows a graphical viewer monitors the progress of the
+        build.</para>
+
+        <figure>
+          <title>Windows build</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="docs/images/ch1-9a.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>On Windows both Visual Studio and gcc compilers are used with
+        Visual Studio for performance critical packages (i.e. Tcl, Tk and
+        databases interfaces) and gcc for other packages. For this reason Tcl
+        and Tk are compiled twice with both Visual Studio and gcc for the
+        respective dependent packages to be compiled against, however the
+        final distribution only includes the Tcl and Tk builds compiled with
+        Visual Studio. For this reason the Windows build takes more time than
+        the comparative Linux build. </para>
+
+        <para>You now have your own distribution of HammerDB with the latest
+        source code. </para>
+
+        <para>This will be in the following directory on Linux:</para>
+
+        <programlisting>HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution</programlisting>
+
+        <para>and the following directory on Windows:</para>
+
+        <programlisting>HammerDB-master\Build\BawtBuild\vs2022\x64\Release\Distribution</programlisting>
+
+        <para>Note that the entire distribution including the HammerDB source
+        is built and installed in this directory and therefore you should run
+        or copy the distribution from this location. If trying to run HammerDB
+        from the HammerDB source root directory it will not run correctly
+        instead copy or run the built distribution from the locations
+        above.</para>
+
+        <para>Alongside the HammerDB distribution directory is also a tar.gz
+        file on Linux and zip file on Windows of the directory. </para>
+
+        <para>You can run the hammerdbcli librarycheck command to verify that
+        the libraries built correctly.</para>
+
+        <programlisting>/opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution$ ls
+HammerDB-4.5  HammerDB-4.5-Linux.tar.gz
+$ cd HammerDB-4.5
+/opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5$ ./hammerdbcli
+HammerDB CLI v4.5
+Copyright (C) 2003-2022 Steve Shaw
+Type "help" for a list of commands
+hammerdb&gt;librarycheck
+Checking database library for Oracle
+Success ... loaded library Oratcl for Oracle
+Checking database library for MSSQLServer
+Success ... loaded library tdbc::odbc for MSSQLServer
+Checking database library for Db2
+Success ... loaded library db2tcl for Db2
+Checking database library for MySQL
+Success ... loaded library mysqltcl for MySQL
+Checking database library for PostgreSQL
+Success ... loaded library Pgtcl for PostgreSQL
+Checking database library for MariaDB
+Success ... loaded library mariatcl for MariaDB</programlisting>
+
+        <para>You can also browse all of the C source code for the libraries
+        you have built in the Build directory for example:</para>
+
+        <programlisting>HammerDB/Build/BawtBuild/Linux/x64/Release/Build</programlisting>
+      </section>
+
+      <section>
+        <title>HammerDB License</title>
+
+        <para>HammerDB is copyrighted and distributed under the GNU General
+        Public License Version 3.0 (GPL v3). When building from source this
+        copyright remains and any distributions must be made under GPLv3
+        complying to the following requirements.</para>
+
+        <para>1. Include a copy of the full license text </para>
+
+        <para>2. State all significant changes made to the original software
+        </para>
+
+        <para>3. Make available the original source code when you distribute
+        any binaries based on the licensed work </para>
+
+        <para>4. Include a copy of the original copyright notice</para>
+
+        <para>it is not permitted to modify the license on a build from source
+        distribution.</para>
+      </section>
     </section>
   </chapter>
 
@@ -2218,8 +2749,8 @@ MariaDB [(none)]&gt; </programlisting>
         available, if you wish to test Oracle compatibility then you must use
         Postgres Plus Advanced Server from EnterpriseDB and install in Oracle
         compatible mode, if you wish to use Citus Data you must be running
-        against a Citus enabled installation either installed or in the cloud.
-        </para>
+        against a Citus enabled installation either installed or in the
+        cloud.</para>
 
         <para>During the installation make a note of your postgres superuser
         password, you will need it for the test schema creation. You must be
@@ -2907,7 +3438,59 @@ GO
                   <entry>The MySQL Socket option is enabled on Linux only. If
                   HammerDB is running on the same server and the MySQL Host is
                   127.0.0.1 or localhost then HammerDB will open a connection
-                  on the socket given instead of using TCP/IP.</entry>
+                  on the socket given instead of using TCP/IP. To force the
+                  use of the port instead of the socket on the localhost set
+                  the socket value to "null".</entry>
+                </row>
+
+                <row>
+                  <entry>Enable SSL</entry>
+
+                  <entry>Enable SSL permits SSL/TLS encryption on the network
+                  connection to MySQL with the option of choosing One-Way or
+                  Two-Way encryption.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL CApath</entry>
+
+                  <entry>If the SSL CA, SSL Cert and SSL Key entries are empty
+                  HammerDB will pass the value in SSL CApath as the SSL capath
+                  option. If the SSL CA, SSL Cert and SSL Key entries contain
+                  the names of .pem files then the SSL CApath path option will
+                  be appended to these file names and used to locate these
+                  files.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL CA</entry>
+
+                  <entry>The name of the SSL CA .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Cert</entry>
+
+                  <entry>The name of the SSL Cert .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Key</entry>
+
+                  <entry>The name of the SSL Key .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Cipher</entry>
+
+                  <entry>The default of SSL Cipher is "server" meaning that
+                  the server-side selected cipher is used. Alternatively this
+                  option can be used to specify a different cipher. The Cipher
+                  used will be reported by each Virtual User on connection. If
+                  the value is shown as {} then SSL is not enabled. </entry>
                 </row>
 
                 <row>
@@ -3031,8 +3614,59 @@ GO
                   <entry>The MariaDB Socket option is enabled on Linux only.
                   If HammerDB is running on the same server and the MariaDB
                   Host is 127.0.0.1 or localhost then HammerDB will open a
-                  connection on the socket given instead of using
-                  TCP/IP.</entry>
+                  connection on the socket given instead of using TCP/IP. To
+                  force the use of the port instead of the socket on the
+                  localhost set the socket value to "null".</entry>
+                </row>
+
+                <row>
+                  <entry>Enable SSL</entry>
+
+                  <entry>Enable SSL permits SSL/TLS encryption on the network
+                  connection to MariaDB with the option of choosing One-Way or
+                  Two-Way encryption.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL CApath</entry>
+
+                  <entry>If the SSL CA, SSL Cert and SSL Key entries are empty
+                  HammerDB will pass the value in SSL CApath as the SSL capath
+                  option. If the SSL CA, SSL Cert and SSL Key entries contain
+                  the names of .pem files then the SSL CApath path option will
+                  be appended to these file names and used to locate these
+                  files. </entry>
+                </row>
+
+                <row>
+                  <entry>SSL CA</entry>
+
+                  <entry>The name of the SSL CA .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Cert</entry>
+
+                  <entry>The name of the SSL Cert .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Key</entry>
+
+                  <entry>The name of the SSL Key .pem file in the SSL CApath
+                  directory.</entry>
+                </row>
+
+                <row>
+                  <entry>SSL Cipher</entry>
+
+                  <entry>The default of SSL Cipher is "server" meaning that
+                  the server-side selected cipher is used. Alternatively this
+                  option can be used to specify a different cipher. The Cipher
+                  used will be reported by each Virtual User on connection. If
+                  the value is shown as {} then SSL is not enabled.</entry>
                 </row>
 
                 <row>

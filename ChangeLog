@@ -995,3 +995,24 @@ Build dataset using COPY instead of multi-row inserts for TPROC-C #301
 Make Linux hammerdb executable work with spaces in PATH #298
 Optimize MakeAlphaString #295
 Standardize indentation of tcl files #292
+
+---------------------------------------------------------------------
+
+Version 4.5 Jul 2022
+
+Pull Requests & Issues
+
+Add SSL options to MySQL #376 
+Fix for o_all_local value update and insert #375 [#374)
+SQL Server Schema/Stored Procedure Updates #372 (#371)
+Fix RAISEEROR error in Asynch connect #366 (#365)
+use correct transaction boundaries in MySQL / MariaDB and PG #356
+Dependency build automation for Windows #362 (#37)
+Escape username and database name in PostgreSQL procedures #340
+Added Dockerfile to build a HammerDB container and TPROC_C sample scripts to
+build schema and run tests #339 (#107)
+Save/load configuration to SQLite DB #336 (#3)
+set MariaDB autocommit to 1 for Monitor VU #333
+Move history file tracking to interactive #332 (#320)
+Add SSL connection options to MariaDB #331
+Dependency build automation for Linux #323 (#36)
