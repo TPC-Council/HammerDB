@@ -2033,18 +2033,14 @@ proc ConnectToMySQLAsynch { host port socket user password db clientname async_v
     if { [ chk_socket $host $socket ] eq "TRUE" } {
         if [catch {mysqlconnect -socket $socket -user $user -password $password} mysql_handler] {
             set connected "FALSE"
-            if { $RAISEERROR } {
-                puts "$clientname:socket login failed:$mysqlstatus(message)"
-            }
+            puts "$clientname:socket login failed:$mysqlstatus(message)"
         } else {
             set connected "TRUE"
         }
     } else {
         if [catch {mysqlconnect -host $host -port $port -user $user -password $password} mysql_handler] {
             set connected "FALSE"
-            if { $RAISEERROR } {
-                puts "$clientname:tcp login failed:$mysqlstatus(message)"
-            }
+            puts "$clientname:tcp login failed:$mysqlstatus(message)"
         } else {
             set connected "TRUE"
         }
