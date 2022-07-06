@@ -41,14 +41,14 @@ if [catch {package require tpcccommon} ] { error "Failed to load tpcc common fun
 proc CreateStoredProcs { odbc imdb } {
     puts "CREATING TPCC STORED PROCEDURES"
     if { $imdb } {
-        set sql(1) {CREATE PROCEDURE [dbo].[neword]  
+        set sql(1) {CREATE PROCEDURE [dbo].[neword]
             @no_w_id int,
             @no_max_w_id int,
             @no_d_id int,
             @no_c_id int,
             @no_o_ol_cnt int,
             @TIMESTAMP datetime2(0)
-            AS 
+            AS
             BEGIN
             SET ANSI_WARNINGS OFF
             DECLARE
@@ -58,58 +58,49 @@ proc CreateStoredProcs { odbc imdb } {
             @no_d_tax smallmoney,
             @no_w_tax smallmoney,
             @no_d_next_o_id int,
-            @no_ol_supply_w_id int, 
-            @no_ol_i_id int, 
-            @no_ol_quantity int, 
-            @no_o_all_local int, 
-            @o_id int, 
-            @no_i_name char(24), 
-            @no_i_price smallmoney, 
-            @no_i_data char(50), 
-            @no_s_quantity int, 
-            @no_ol_amount int, 
-            @no_s_dist_01 char(24), 
-            @no_s_dist_02 char(24), 
-            @no_s_dist_03 char(24), 
-            @no_s_dist_04 char(24), 
-            @no_s_dist_05 char(24), 
-            @no_s_dist_06 char(24), 
-            @no_s_dist_07 char(24), 
-            @no_s_dist_08 char(24), 
-            @no_s_dist_09 char(24), 
-            @no_s_dist_10 char(24), 
-            @no_ol_dist_info char(24), 
-            @no_s_data char(50), 
-            @x int, 
+            @no_ol_supply_w_id int,
+            @no_ol_i_id int,
+            @no_ol_quantity int,
+            @no_o_all_local int,
+            @o_id int,
+            @no_i_name char(24),
+            @no_i_price smallmoney,
+            @no_i_data char(50),
+            @no_s_quantity int,
+            @no_ol_amount int,
+            @no_s_dist_01 char(24),
+            @no_s_dist_02 char(24),
+            @no_s_dist_03 char(24),
+            @no_s_dist_04 char(24),
+            @no_s_dist_05 char(24),
+            @no_s_dist_06 char(24),
+            @no_s_dist_07 char(24),
+            @no_s_dist_08 char(24),
+            @no_s_dist_09 char(24),
+            @no_s_dist_10 char(24),
+            @no_ol_dist_info char(24),
+            @no_s_data char(50),
+            @x int,
             @rbk int
             BEGIN TRANSACTION
             BEGIN TRY
-
-            SET @no_o_all_local = 0
-            SELECT @no_c_discount = customer.c_discount
-            , @no_c_last = customer.c_last
-            , @no_c_credit = customer.c_credit
-            , @no_w_tax = warehouse.w_tax 
-            FROM dbo.customer, dbo.warehouse
-            WHERE warehouse.w_id = @no_w_id 
-            AND customer.c_w_id = @no_w_id 
-            AND customer.c_d_id = @no_d_id 
-            AND customer.c_id = @no_c_id
-
-            UPDATE dbo.district 
-            SET @no_d_tax = d_tax
-            , @o_id = d_next_o_id
-            ,  d_next_o_id = district.d_next_o_id + 1 
-            WHERE district.d_id = @no_d_id 
+            SET @no_o_all_local = 1
+            SELECT
+            @no_c_discount = c_discount,
+            @no_c_last = c_last,
+            @no_c_credit = c_credit
+            FROM dbo.customer
+            WHERE
+            c_w_id = @no_w_id AND
+            c_d_id = @no_d_id AND
+            c_id = @no_c_id
+            UPDATE dbo.district
+            SET
+            @no_d_tax = d_tax,
+            @o_id = d_next_o_id,
+            @no_d_next_o_id = d_next_o_id = district.d_next_o_id + 1
+            WHERE district.d_id = @no_d_id
             AND district.d_w_id = @no_w_id
-            SET @no_d_next_o_id = @o_id+1
-
-            INSERT dbo.orders( o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) 
-            VALUES ( @o_id, @no_d_id, @no_w_id, @no_c_id, @TIMESTAMP, @no_o_ol_cnt, @no_o_all_local)
-
-            INSERT dbo.new_order(no_o_id, no_d_id, no_w_id) 
-            VALUES (@o_id, @no_d_id, @no_w_id)
-
             SET @rbk = CAST(100 * RAND() + 1 AS INT)
             DECLARE
             @loop_counter int
@@ -121,12 +112,12 @@ proc CreateStoredProcs { odbc imdb } {
             BEGIN
             IF ((@loop_counter = @no_o_ol_cnt) AND (@rbk = 1))
             SET @no_ol_i_id = 100001
-            ELSE 
-            SET @no_ol_i_id =  CAST(1000000 * RAND() + 1 AS INT)
+            ELSE
+            SET @no_ol_i_id = CAST(1000000 * RAND() + 1 AS INT)
             SET @x = CAST(100 * RAND() + 1 AS INT)
             IF (@x > 1)
             SET @no_ol_supply_w_id = @no_w_id
-            ELSE 
+            ELSE
             BEGIN
             SET @no_ol_supply_w_id = @no_w_id
             SET @no_o_all_local = 0
@@ -138,410 +129,75 @@ proc CreateStoredProcs { odbc imdb } {
             END
             END
             SET @no_ol_quantity = CAST(10 * RAND() + 1 AS INT)
-
             SELECT @no_i_price = item.i_price
             , @no_i_name = item.i_name
-            , @no_i_data = item.i_data 
-            FROM dbo.item 
+            , @no_i_data = item.i_data
+            FROM dbo.item
             WHERE item.i_id = @no_ol_i_id
-
-            SELECT @no_s_quantity = stock.s_quantity
-            , @no_s_data = stock.s_data
-            , @no_s_dist_01 = stock.s_dist_01
-            , @no_s_dist_02 = stock.s_dist_02
-            , @no_s_dist_03 = stock.s_dist_03
-            , @no_s_dist_04 = stock.s_dist_04
-            , @no_s_dist_05 = stock.s_dist_05
-            , @no_s_dist_06 = stock.s_dist_06
-            , @no_s_dist_07 = stock.s_dist_07
-            , @no_s_dist_08 = stock.s_dist_08
-            , @no_s_dist_09 = stock.s_dist_09
-            , @no_s_dist_10 = stock.s_dist_10 
-            FROM dbo.stock
-            WHERE stock.s_i_id = @no_ol_i_id 
-            AND stock.s_w_id = @no_ol_supply_w_id
-
-
-            IF (@no_s_quantity > @no_ol_quantity)
-            SET @no_s_quantity = (@no_s_quantity - @no_ol_quantity)
-            ELSE 
-            SET @no_s_quantity = (@no_s_quantity - @no_ol_quantity + 91)
-
             UPDATE dbo.stock
-            SET s_quantity = @no_s_quantity 
-            WHERE stock.s_i_id = @no_ol_i_id 
-            AND stock.s_w_id = @no_ol_supply_w_id
-
-            SET @no_ol_amount = (@no_ol_quantity * @no_i_price * (1 + @no_w_tax + @no_d_tax) * (1 - @no_c_discount))
-            IF @no_d_id = 1
-            SET @no_ol_dist_info = @no_s_dist_01
-            ELSE 
-            IF @no_d_id = 2
-            SET @no_ol_dist_info = @no_s_dist_02
-            ELSE 
-            IF @no_d_id = 3
-            SET @no_ol_dist_info = @no_s_dist_03
-            ELSE 
-            IF @no_d_id = 4
-            SET @no_ol_dist_info = @no_s_dist_04
-            ELSE 
-            IF @no_d_id = 5
-            SET @no_ol_dist_info = @no_s_dist_05
-            ELSE 
-            IF @no_d_id = 6
-            SET @no_ol_dist_info = @no_s_dist_06
-            ELSE 
-            IF @no_d_id = 7
-            SET @no_ol_dist_info = @no_s_dist_07
-            ELSE 
-            IF @no_d_id = 8
-            SET @no_ol_dist_info = @no_s_dist_08
-            ELSE 
-            IF @no_d_id = 9
-            SET @no_ol_dist_info = @no_s_dist_09
-            ELSE 
-            BEGIN
-            IF @no_d_id = 10
-            SET @no_ol_dist_info = @no_s_dist_10
+            SET
+            s_quantity = s_quantity - @no_ol_quantity + CASE WHEN (s_quantity > @no_ol_quantity)
+            THEN 0 ELSE 91 END,
+            @no_s_data = s_data,
+            @no_ol_dist_info =
+            CASE @no_d_id
+            WHEN 1 THEN s_dist_01
+            WHEN 2 THEN s_dist_02
+            WHEN 3 THEN s_dist_03
+            WHEN 4 THEN s_dist_04
+            WHEN 5 THEN s_dist_05
+            WHEN 6 THEN s_dist_06
+            WHEN 7 THEN s_dist_07
+            WHEN 8 THEN s_dist_08
+            WHEN 9 THEN s_dist_09
+            WHEN 10 THEN s_dist_10
             END
-            INSERT dbo.order_line( ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)
-            VALUES ( @o_id, @no_d_id, @no_w_id, @loop_counter, @no_ol_i_id, @no_ol_supply_w_id, @no_ol_quantity, @no_ol_amount, @no_ol_dist_info)
+            OUTPUT
+            @o_id,
+            @no_d_id,
+            @no_w_id,
+            @loop_counter,
+            @no_ol_i_id,
+            NULL,
+            (@no_ol_quantity * @no_i_price),
+            @no_ol_supply_w_id,
+            @no_ol_quantity,
+            CASE @no_d_id
+            WHEN 1 THEN inserted.s_dist_01
+            WHEN 2 THEN inserted.s_dist_02
+            WHEN 3 THEN inserted.s_dist_03
+            WHEN 4 THEN inserted.s_dist_04
+            WHEN 5 THEN inserted.s_dist_05
+            WHEN 6 THEN inserted.s_dist_06
+            WHEN 7 THEN inserted.s_dist_07
+            WHEN 8 THEN inserted.s_dist_08
+            WHEN 9 THEN inserted.s_dist_09
+            WHEN 10 THEN inserted.s_dist_10
+            END
+            INTO dbo.order_line
+            WHERE
+            stock.s_i_id = @no_ol_i_id AND
+            stock.s_w_id = @no_ol_supply_w_id
             SET @loop_counter = @loop_counter + 1
             END
-            SELECT convert(char(8), @no_c_discount) as N'@no_c_discount', @no_c_last as N'@no_c_last', @no_c_credit as N'@no_c_credit', convert(char(8),@no_d_tax) as N'@no_d_tax', convert(char(8),@no_w_tax) as N'@no_w_tax', @no_d_next_o_id as N'@no_d_next_o_id'
-
-            END TRY
-            BEGIN CATCH
-            IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
-            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
-            ELSE
-            SELECT 
-            ERROR_NUMBER() AS ErrorNumber
-            ,ERROR_SEVERITY() AS ErrorSeverity
-            ,ERROR_STATE() AS ErrorState
-            ,ERROR_PROCEDURE() AS ErrorProcedure
-            ,ERROR_LINE() AS ErrorLine
-            ,ERROR_MESSAGE() AS ErrorMessage;
-            IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            END CATCH;
-            IF @@TRANCOUNT > 0
-            COMMIT TRANSACTION;
-
-        END}
-        set sql(2) {CREATE PROCEDURE [dbo].[delivery]  
-            @d_w_id int,
-            @d_o_carrier_id int,
-            @timestamp datetime2(0)
-            AS 
-            BEGIN
-            SET ANSI_WARNINGS OFF
-            DECLARE
-            @d_no_o_id int, 
-            @d_d_id int, 
-            @d_c_id int, 
-            @d_ol_total int
-            BEGIN TRANSACTION
-            BEGIN TRY
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 1
-            WHILE @loop_counter <= 10
-            BEGIN
-            SET @d_d_id = @loop_counter
-
-
-            DECLARE @d_out TABLE (d_no_o_id INT)
-
-            DELETE TOP (1) 
-            FROM dbo.new_order 
-            OUTPUT deleted.no_o_id INTO @d_out -- @d_no_o_id
-            WHERE new_order.no_w_id = @d_w_id 
-            AND new_order.no_d_id = @d_d_id 
-
-            SELECT @d_no_o_id = d_no_o_id FROM @d_out
-
-
-            UPDATE dbo.orders 
-            SET o_carrier_id = @d_o_carrier_id 
-            , @d_c_id = orders.o_c_id 
-            WHERE orders.o_id = @d_no_o_id 
-            AND orders.o_d_id = @d_d_id 
-            AND orders.o_w_id = @d_w_id
-
-
-            SET @d_ol_total = 0
-
-            UPDATE dbo.order_line 
-            SET ol_delivery_d = @timestamp
-            , @d_ol_total = @d_ol_total + ol_amount
-            WHERE order_line.ol_o_id = @d_no_o_id 
-            AND order_line.ol_d_id = @d_d_id 
-            AND order_line.ol_w_id = @d_w_id
-
-
-            UPDATE dbo.customer SET c_balance = customer.c_balance + @d_ol_total 
-            WHERE customer.c_id = @d_c_id 
-            AND customer.c_d_id = @d_d_id 
-            AND customer.c_w_id = @d_w_id
-
-
-            PRINT 
-            'D: '
-            + 
-            ISNULL(CAST(@d_d_id AS nvarchar(4000)), '')
-            + 
-            'O: '
-            + 
-            ISNULL(CAST(@d_no_o_id AS nvarchar(4000)), '')
-            + 
-            'time '
-            + 
-            ISNULL(CAST(@timestamp AS nvarchar(4000)), '')
-            SET @loop_counter = @loop_counter + 1
-            END
-            SELECT	@d_w_id as N'@d_w_id', @d_o_carrier_id as N'@d_o_carrier_id', @timestamp as N'@TIMESTAMP'
-            END TRY
-            BEGIN CATCH
-            IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
-            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
-            ELSE
-            SELECT 
-            ERROR_NUMBER() AS ErrorNumber
-            ,ERROR_SEVERITY() AS ErrorSeverity
-            ,ERROR_STATE() AS ErrorState
-            ,ERROR_PROCEDURE() AS ErrorProcedure
-            ,ERROR_LINE() AS ErrorLine
-            ,ERROR_MESSAGE() AS ErrorMessage;
-            IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            END CATCH;
-            IF @@TRANCOUNT > 0
-            COMMIT TRANSACTION;
-        END}
-        set sql(3) {CREATE PROCEDURE [dbo].[payment]  
-            @p_w_id int,
-            @p_d_id int,
-            @p_c_w_id int,
-            @p_c_d_id int,
-            @p_c_id int,
-            @byname int,
-            @p_h_amount numeric(6,2),
-            @p_c_last char(16),
-            @TIMESTAMP datetime2(0)
-            AS 
-            BEGIN
-            SET ANSI_WARNINGS OFF
-            DECLARE
-            @p_w_street_1 char(20),
-            @p_w_street_2 char(20),
-            @p_w_city char(20),
-            @p_w_state char(2),
-            @p_w_zip char(10),
-            @p_d_street_1 char(20),
-            @p_d_street_2 char(20),
-            @p_d_city char(20),
-            @p_d_state char(20),
-            @p_d_zip char(10),
-            @p_c_first char(16),
-            @p_c_middle char(2),
-            @p_c_street_1 char(20),
-            @p_c_street_2 char(20),
-            @p_c_city char(20),
-            @p_c_state char(20),
-            @p_c_zip char(9),
-            @p_c_phone char(16),
-            @p_c_since datetime2(0),
-            @p_c_credit char(32),
-            @p_c_credit_lim  numeric(12,2), 
-            @p_c_discount  numeric(4,4),
-            @p_c_balance numeric(12,2),
-            @p_c_data varchar(500),
-            @namecnt int, 
-            @p_d_name char(11), 
-            @p_w_name char(11), 
-            @p_c_new_data varchar(500), 
-            @h_data varchar(30)
-            BEGIN TRANSACTION
-            BEGIN TRY
-
-            SELECT @p_w_street_1 = warehouse.w_street_1
-            , @p_w_street_2 = warehouse.w_street_2
-            , @p_w_city = warehouse.w_city
-            , @p_w_state = warehouse.w_state
-            , @p_w_zip = warehouse.w_zip
-            , @p_w_name = warehouse.w_name 
+            INSERT dbo.orders( o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local)
+            VALUES ( @o_id, @no_d_id, @no_w_id, @no_c_id, @TIMESTAMP, @no_o_ol_cnt, @no_o_all_local)
+            INSERT dbo.new_order(no_o_id, no_d_id, no_w_id)
+            VALUES (@o_id, @no_d_id, @no_w_id)
+            IF (@rbk = 1)
+            ROLLBACK TRANSACTION
+            SELECT @no_w_tax = warehouse.w_tax
             FROM dbo.warehouse
-            WHERE warehouse.w_id = @p_w_id
-
-            UPDATE dbo.district 
-            SET d_ytd = district.d_ytd + @p_h_amount 
-            WHERE district.d_w_id = @p_w_id 
-            AND district.d_id = @p_d_id
-
-            SELECT @p_d_street_1 = district.d_street_1
-            , @p_d_street_2 = district.d_street_2
-            , @p_d_city = district.d_city
-            , @p_d_state = district.d_state
-            , @p_d_zip = district.d_zip
-            , @p_d_name = district.d_name 
-            FROM dbo.district
-            WHERE district.d_w_id = @p_w_id 
-            AND district.d_id = @p_d_id
-            IF (@byname = 1)
-            BEGIN
-            SELECT @namecnt = count(customer.c_id) 
-            FROM dbo.customer
-            WHERE customer.c_last = @p_c_last 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_w_id = @p_c_w_id
-
-            DECLARE
-            c_byname CURSOR STATIC LOCAL FOR 
-            SELECT customer.c_first
-            , customer.c_middle
-            , customer.c_id
-            , customer.c_street_1
-            , customer.c_street_2
-            , customer.c_city
-            , customer.c_state
-            , customer.c_zip
-            , customer.c_phone
-            , customer.c_credit
-            , customer.c_credit_lim
-            , customer.c_discount
-            , C_BAL.c_balance
-            , customer.c_since 
-            FROM dbo.customer  AS customer
-            INNER LOOP JOIN dbo.customer AS C_BAL
-            ON C_BAL.c_w_id = customer.c_w_id
-            AND C_BAL.c_d_id = customer.c_d_id
-            AND C_BAL.c_id = customer.c_id
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_last = @p_c_last 
-            ORDER BY customer.c_first
-            OPTION ( MAXDOP 1)
-            OPEN c_byname
-            IF ((@namecnt % 2) = 1)
-            SET @namecnt = (@namecnt + 1)
-            BEGIN
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 0
-            DECLARE
-            @loop$bound int
-            SET @loop$bound = (@namecnt / 2)
-            WHILE @loop_counter <= @loop$bound
-            BEGIN
-            FETCH c_byname
-            INTO 
-            @p_c_first, 
-            @p_c_middle, 
-            @p_c_id, 
-            @p_c_street_1, 
-            @p_c_street_2, 
-            @p_c_city, 
-            @p_c_state, 
-            @p_c_zip, 
-            @p_c_phone, 
-            @p_c_credit, 
-            @p_c_credit_lim, 
-            @p_c_discount, 
-            @p_c_balance, 
-            @p_c_since
-            SET @loop_counter = @loop_counter + 1
-            END
-            END
-            CLOSE c_byname
-            DEALLOCATE c_byname
-            END
-            ELSE 
-            BEGIN
-            SELECT @p_c_first = customer.c_first, @p_c_middle = customer.c_middle, @p_c_last = customer.c_last
-            , @p_c_street_1 = customer.c_street_1, @p_c_street_2 = customer.c_street_2
-            , @p_c_city = customer.c_city, @p_c_state = customer.c_state
-            , @p_c_zip = customer.c_zip, @p_c_phone = customer.c_phone
-            , @p_c_credit = customer.c_credit, @p_c_credit_lim = customer.c_credit_lim
-            , @p_c_discount = customer.c_discount, @p_c_balance = customer.c_balance
-            , @p_c_since = customer.c_since 
-            FROM dbo.customer 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_id = @p_c_id 
-
-            END
-            SET @p_c_balance = (@p_c_balance + @p_h_amount)
-            IF @p_c_credit = 'BC'
-            BEGIN
-            SELECT @p_c_data = customer.c_data FROM dbo.customer WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id AND customer.c_id = @p_c_id
-            SET @h_data = (ISNULL(@p_w_name, '') + ' ' + ISNULL(@p_d_name, ''))
-            SET @p_c_new_data = (
-            ISNULL(CAST(@p_c_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_c_d_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_c_w_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_d_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_w_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_h_amount AS CHAR(8)), '')
-            + 
-            ISNULL(CAST(@TIMESTAMP AS char), '')
-            + 
-            ISNULL(@h_data, ''))
-            SET @p_c_new_data = substring((@p_c_new_data + @p_c_data), 1, 500 - LEN(@p_c_new_data))
-            UPDATE dbo.customer SET c_balance = @p_c_balance, c_data = @p_c_new_data 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id AND customer.c_id = @p_c_id
-            END
-            ELSE 
-            UPDATE dbo.customer SET c_balance = @p_c_balance 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_id = @p_c_id
-
-            SET @h_data = (ISNULL(@p_w_name, '') + ' ' + ISNULL(@p_d_name, ''))
-
-            INSERT dbo.history( h_c_d_id, h_c_w_id, h_c_id, h_d_id, h_w_id, h_date, h_amount, h_data) 
-            VALUES ( @p_c_d_id, @p_c_w_id, @p_c_id, @p_d_id, @p_w_id, @TIMESTAMP, @p_h_amount, @h_data)
-            SELECT	@p_c_id as N'@p_c_id', @p_c_last as N'@p_c_last', @p_w_street_1 as N'@p_w_street_1'
-            , @p_w_street_2 as N'@p_w_street_2', @p_w_city as N'@p_w_city'
-            , @p_w_state as N'@p_w_state', @p_w_zip as N'@p_w_zip'
-            , @p_d_street_1 as N'@p_d_street_1', @p_d_street_2 as N'@p_d_street_2'
-            , @p_d_city as N'@p_d_city', @p_d_state as N'@p_d_state'
-            , @p_d_zip as N'@p_d_zip', @p_c_first as N'@p_c_first'
-            , @p_c_middle as N'@p_c_middle', @p_c_street_1 as N'@p_c_street_1'
-            , @p_c_street_2 as N'@p_c_street_2'
-            , @p_c_city as N'@p_c_city', @p_c_state as N'@p_c_state', @p_c_zip as N'@p_c_zip'
-            , @p_c_phone as N'@p_c_phone', @p_c_since as N'@p_c_since', @p_c_credit as N'@p_c_credit'
-            , @p_c_credit_lim as N'@p_c_credit_lim', @p_c_discount as N'@p_c_discount', @p_c_balance as N'@p_c_balance'
-            , @p_c_data as N'@p_c_data'
-
-
-            UPDATE dbo.warehouse
-            SET w_ytd = warehouse.w_ytd + @p_h_amount 
-            WHERE warehouse.w_id = @p_w_id
-
+            WHERE warehouse.w_id = @no_w_id
+            SELECT convert(char(8), @no_c_discount) as N'@no_c_discount', @no_c_last as N'@no_c_last', @no_c_credit 
+	    as N'@no_c_credit', convert(char(8),@no_d_tax) as N'@no_d_tax', convert(char(8),@no_w_tax)
+            as N'@no_w_tax', @no_d_next_o_id as N'@no_d_next_o_id'
             END TRY
             BEGIN CATCH
-            IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
+	    IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
             SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
             ELSE
-            SELECT 
+            SELECT
             ERROR_NUMBER() AS ErrorNumber
             ,ERROR_SEVERITY() AS ErrorSeverity
             ,ERROR_STATE() AS ErrorState
@@ -554,395 +210,17 @@ proc CreateStoredProcs { odbc imdb } {
             IF @@TRANCOUNT > 0
             COMMIT TRANSACTION;
         END}
-        set sql(4) {CREATE PROCEDURE [dbo].[ostat] 
-            @os_w_id int,
-            @os_d_id int,
-            @os_c_id int,
-            @byname int,
-            @os_c_last char(20)
-            AS 
-            BEGIN
-            SET ANSI_WARNINGS OFF
-            DECLARE
-            @os_c_first char(16),
-            @os_c_middle char(2),
-            @os_c_balance money,
-            @os_o_id int,
-            @os_entdate datetime2(0),
-            @os_o_carrier_id int,
-            @os_ol_i_id 	INT,
-            @os_ol_supply_w_id INT,
-            @os_ol_quantity INT,
-            @os_ol_amount 	INT,
-            @os_ol_delivery_d DATE,
-            @namecnt int, 
-            @i int,
-            @os_ol_i_id_array VARCHAR(200),
-            @os_ol_supply_w_id_array VARCHAR(200),
-            @os_ol_quantity_array VARCHAR(200),
-            @os_ol_amount_array VARCHAR(200),
-            @os_ol_delivery_d_array VARCHAR(210)
-            BEGIN TRANSACTION
-            BEGIN TRY
-            SET @os_ol_i_id_array = 'CSV,'
-            SET @os_ol_supply_w_id_array = 'CSV,'
-            SET @os_ol_quantity_array = 'CSV,'
-            SET @os_ol_amount_array = 'CSV,'
-            SET @os_ol_delivery_d_array = 'CSV,'
-            IF (@byname = 1)
-            BEGIN
-
-            SELECT @namecnt = count_big(customer.c_id) 
-            FROM dbo.customer 
-            WHERE customer.c_last = @os_c_last AND customer.c_d_id = @os_d_id AND customer.c_w_id = @os_w_id
-
-            IF ((@namecnt % 2) = 1)
-            SET @namecnt = (@namecnt + 1)
-            DECLARE
-            c_name CURSOR LOCAL FOR 
-            SELECT customer.c_balance
-            , customer.c_first
-            , customer.c_middle
-            , customer.c_id 
-            FROM dbo.customer 
-            WHERE customer.c_last = @os_c_last 
-            AND customer.c_d_id = @os_d_id 
-            AND customer.c_w_id = @os_w_id 
-            ORDER BY customer.c_first
-
-            OPEN c_name
-            BEGIN
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 0
-            DECLARE
-            @loop$bound int
-            SET @loop$bound = (@namecnt / 2)
-            WHILE @loop_counter <= @loop$bound
-            BEGIN
-            FETCH c_name
-            INTO @os_c_balance, @os_c_first, @os_c_middle, @os_c_id
-            SET @loop_counter = @loop_counter + 1
-            END
-            END
-            CLOSE c_name
-            DEALLOCATE c_name
-            END
-            ELSE 
-            BEGIN
-            SELECT @os_c_balance = customer.c_balance, @os_c_first = customer.c_first
-            , @os_c_middle = customer.c_middle, @os_c_last = customer.c_last 
-            FROM dbo.customer
-            WHERE customer.c_id = @os_c_id AND customer.c_d_id = @os_d_id AND customer.c_w_id = @os_w_id
-            END
-            BEGIN
-            SELECT TOP (1) @os_o_id = fci.o_id, @os_o_carrier_id = fci.o_carrier_id, @os_entdate = fci.o_entry_d
-            FROM 
-            (SELECT TOP 9223372036854775807 orders.o_id, orders.o_carrier_id, orders.o_entry_d 
-            FROM dbo.orders
-            WHERE orders.o_d_id = @os_d_id 
-            AND orders.o_w_id = @os_w_id 
-            AND orders.o_c_id = @os_c_id 
-            ORDER BY orders.o_id DESC)  AS fci
-            IF @@ROWCOUNT = 0
-            PRINT 'No orders for customer';
-            END
-            SET @i = 0
-            DECLARE
-            c_line CURSOR LOCAL FORWARD_ONLY FOR 
-            SELECT order_line.ol_i_id
-            , order_line.ol_supply_w_id
-            , order_line.ol_quantity
-            , order_line.ol_amount
-            , order_line.ol_delivery_d 
-            FROM dbo.order_line 
-            WHERE order_line.ol_o_id = @os_o_id 
-            AND order_line.ol_d_id = @os_d_id 
-            AND order_line.ol_w_id = @os_w_id
-            OPEN c_line
-            WHILE 1 = 1
-            BEGIN
-            FETCH c_line
-            INTO 
-            @os_ol_i_id,
-            @os_ol_supply_w_id,
-            @os_ol_quantity,
-            @os_ol_amount,
-            @os_ol_delivery_d
-            IF @@FETCH_STATUS = -1
-            BREAK
-            set @os_ol_i_id_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_i_id AS CHAR)
-            set @os_ol_supply_w_id_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_supply_w_id AS CHAR)
-            set @os_ol_quantity_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_quantity AS CHAR)
-            set @os_ol_amount_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_amount AS CHAR);
-            set @os_ol_delivery_d_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_delivery_d AS CHAR)
-            SET @i = @i + 1
-            END
-            CLOSE c_line
-            DEALLOCATE c_line
-            SELECT	@os_c_id as N'@os_c_id', @os_c_last as N'@os_c_last', @os_c_first as N'@os_c_first', @os_c_middle as N'@os_c_middle', @os_c_balance as N'@os_c_balance', @os_o_id as N'@os_o_id', @os_entdate as N'@os_entdate', @os_o_carrier_id as N'@os_o_carrier_id'
-            END TRY
-            BEGIN CATCH
-            IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
-            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
-            ELSE
-            SELECT 
-            ERROR_NUMBER() AS ErrorNumber
-            ,ERROR_SEVERITY() AS ErrorSeverity
-            ,ERROR_STATE() AS ErrorState
-            ,ERROR_PROCEDURE() AS ErrorProcedure
-            ,ERROR_LINE() AS ErrorLine
-            ,ERROR_MESSAGE() AS ErrorMessage;
-            IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            END CATCH;
-            IF @@TRANCOUNT > 0
-            COMMIT TRANSACTION;
-        END}
-        set sql(5) {CREATE PROCEDURE [dbo].[slev]  
-            @st_w_id int,
-            @st_d_id int,
-            @threshold int
-            AS 
-            BEGIN
-            DECLARE
-            @st_o_id int, 
-            @stock_count int 
-            BEGIN TRANSACTION
-            BEGIN TRY
-
-            SELECT @st_o_id = district.d_next_o_id 
-            FROM dbo.district 
-            WHERE district.d_w_id = @st_w_id AND district.d_id = @st_d_id
-
-            SELECT @stock_count = count_big(DISTINCT stock.s_i_id) 
-            FROM dbo.order_line
-            , dbo.stock
-            WHERE order_line.ol_w_id = @st_w_id 
-            AND order_line.ol_d_id = @st_d_id 
-            AND (order_line.ol_o_id < @st_o_id) 
-            AND order_line.ol_o_id >= (@st_o_id - 20) 
-            AND stock.s_w_id = @st_w_id 
-            AND stock.s_i_id = order_line.ol_i_id 
-            AND stock.s_quantity < @threshold
-            OPTION (LOOP JOIN, MAXDOP 1)
-
-            SELECT	@st_o_id as N'@st_o_id', @stock_count as N'@stock_count'
-            END TRY
-            BEGIN CATCH
-            IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
-            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
-            ELSE
-            SELECT 
-            ERROR_NUMBER() AS ErrorNumber
-            ,ERROR_SEVERITY() AS ErrorSeverity
-            ,ERROR_STATE() AS ErrorState
-            ,ERROR_PROCEDURE() AS ErrorProcedure
-            ,ERROR_LINE() AS ErrorLine
-            ,ERROR_MESSAGE() AS ErrorMessage;
-            IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            END CATCH;
-            IF @@TRANCOUNT > 0
-            COMMIT TRANSACTION;
-        END} 
-    } else {
-        set sql(1) {CREATE PROCEDURE [dbo].[neword]  
-            @no_w_id int,
-            @no_max_w_id int,
-            @no_d_id int,
-            @no_c_id int,
-            @no_o_ol_cnt int,
-            @TIMESTAMP datetime2(0)
-            AS 
-            BEGIN
-            SET ANSI_WARNINGS OFF
-            DECLARE
-            @no_c_discount smallmoney,
-            @no_c_last char(16),
-            @no_c_credit char(2),
-            @no_d_tax smallmoney,
-            @no_w_tax smallmoney,
-            @no_d_next_o_id int,
-            @no_ol_supply_w_id int, 
-            @no_ol_i_id int, 
-            @no_ol_quantity int, 
-            @no_o_all_local int, 
-            @o_id int, 
-            @no_i_name char(24), 
-            @no_i_price smallmoney, 
-            @no_i_data char(50), 
-            @no_s_quantity int, 
-            @no_ol_amount int, 
-            @no_s_dist_01 char(24), 
-            @no_s_dist_02 char(24), 
-            @no_s_dist_03 char(24), 
-            @no_s_dist_04 char(24), 
-            @no_s_dist_05 char(24), 
-            @no_s_dist_06 char(24), 
-            @no_s_dist_07 char(24), 
-            @no_s_dist_08 char(24), 
-            @no_s_dist_09 char(24), 
-            @no_s_dist_10 char(24), 
-            @no_ol_dist_info char(24), 
-            @no_s_data char(50), 
-            @x int, 
-            @rbk int
-            BEGIN TRANSACTION
-            BEGIN TRY
-
-            SET @no_o_all_local = 0
-            SELECT @no_c_discount = customer.c_discount
-            , @no_c_last = customer.c_last
-            , @no_c_credit = customer.c_credit
-            , @no_w_tax = warehouse.w_tax 
-            FROM dbo.customer, dbo.warehouse WITH (INDEX = w_details)
-            WHERE warehouse.w_id = @no_w_id 
-            AND customer.c_w_id = @no_w_id 
-            AND customer.c_d_id = @no_d_id 
-            AND customer.c_id = @no_c_id
-
-            UPDATE dbo.district 
-            SET @no_d_tax = d_tax
-            , @o_id = d_next_o_id
-            ,  d_next_o_id = district.d_next_o_id + 1 
-            WHERE district.d_id = @no_d_id 
-            AND district.d_w_id = @no_w_id
-            SET @no_d_next_o_id = @o_id+1
-
-            INSERT dbo.orders( o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) 
-            VALUES ( @o_id, @no_d_id, @no_w_id, @no_c_id, @TIMESTAMP, @no_o_ol_cnt, @no_o_all_local)
-
-            INSERT dbo.new_order(no_o_id, no_d_id, no_w_id) 
-            VALUES (@o_id, @no_d_id, @no_w_id)
-
-            SET @rbk = CAST(100 * RAND() + 1 AS INT)
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 1
-            DECLARE
-            @loop$bound int
-            SET @loop$bound = @no_o_ol_cnt
-            WHILE @loop_counter <= @loop$bound
-            BEGIN
-            IF ((@loop_counter = @no_o_ol_cnt) AND (@rbk = 1))
-            SET @no_ol_i_id = 100001
-            ELSE 
-            SET @no_ol_i_id =  CAST(1000000 * RAND() + 1 AS INT)
-            SET @x = CAST(100 * RAND() + 1 AS INT)
-            IF (@x > 1)
-            SET @no_ol_supply_w_id = @no_w_id
-            ELSE 
-            BEGIN
-            SET @no_ol_supply_w_id = @no_w_id
-            SET @no_o_all_local = 0
-            WHILE ((@no_ol_supply_w_id = @no_w_id) AND (@no_max_w_id != 1))
-            BEGIN
-            SET @no_ol_supply_w_id = CAST(@no_max_w_id * RAND() + 1 AS INT)
-            DECLARE
-            @db_null_statement$2 int
-            END
-            END
-            SET @no_ol_quantity = CAST(10 * RAND() + 1 AS INT)
-
-            SELECT @no_i_price = item.i_price
-            , @no_i_name = item.i_name
-            , @no_i_data = item.i_data 
-            FROM dbo.item 
-            WHERE item.i_id = @no_ol_i_id
-
-            SELECT @no_s_quantity = stock.s_quantity
-            , @no_s_data = stock.s_data
-            , @no_s_dist_01 = stock.s_dist_01
-            , @no_s_dist_02 = stock.s_dist_02
-            , @no_s_dist_03 = stock.s_dist_03
-            , @no_s_dist_04 = stock.s_dist_04
-            , @no_s_dist_05 = stock.s_dist_05
-            , @no_s_dist_06 = stock.s_dist_06
-            , @no_s_dist_07 = stock.s_dist_07
-            , @no_s_dist_08 = stock.s_dist_08
-            , @no_s_dist_09 = stock.s_dist_09
-            , @no_s_dist_10 = stock.s_dist_10 
-            FROM dbo.stock
-            WHERE stock.s_i_id = @no_ol_i_id 
-            AND stock.s_w_id = @no_ol_supply_w_id
-
-
-            IF (@no_s_quantity > @no_ol_quantity)
-            SET @no_s_quantity = (@no_s_quantity - @no_ol_quantity)
-            ELSE 
-            SET @no_s_quantity = (@no_s_quantity - @no_ol_quantity + 91)
-
-            UPDATE dbo.stock
-            SET s_quantity = @no_s_quantity 
-            WHERE stock.s_i_id = @no_ol_i_id 
-            AND stock.s_w_id = @no_ol_supply_w_id
-
-            SET @no_ol_amount = (@no_ol_quantity * @no_i_price * (1 + @no_w_tax + @no_d_tax) * (1 - @no_c_discount))
-            IF @no_d_id = 1
-            SET @no_ol_dist_info = @no_s_dist_01
-            ELSE 
-            IF @no_d_id = 2
-            SET @no_ol_dist_info = @no_s_dist_02
-            ELSE 
-            IF @no_d_id = 3
-            SET @no_ol_dist_info = @no_s_dist_03
-            ELSE 
-            IF @no_d_id = 4
-            SET @no_ol_dist_info = @no_s_dist_04
-            ELSE 
-            IF @no_d_id = 5
-            SET @no_ol_dist_info = @no_s_dist_05
-            ELSE 
-            IF @no_d_id = 6
-            SET @no_ol_dist_info = @no_s_dist_06
-            ELSE 
-            IF @no_d_id = 7
-            SET @no_ol_dist_info = @no_s_dist_07
-            ELSE 
-            IF @no_d_id = 8
-            SET @no_ol_dist_info = @no_s_dist_08
-            ELSE 
-            IF @no_d_id = 9
-            SET @no_ol_dist_info = @no_s_dist_09
-            ELSE 
-            BEGIN
-            IF @no_d_id = 10
-            SET @no_ol_dist_info = @no_s_dist_10
-            END
-            INSERT dbo.order_line( ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)
-            VALUES ( @o_id, @no_d_id, @no_w_id, @loop_counter, @no_ol_i_id, @no_ol_supply_w_id, @no_ol_quantity, @no_ol_amount, @no_ol_dist_info)
-            SET @loop_counter = @loop_counter + 1
-            END
-            SELECT convert(char(8), @no_c_discount) as N'@no_c_discount', @no_c_last as N'@no_c_last', @no_c_credit as N'@no_c_credit', convert(char(8),@no_d_tax) as N'@no_d_tax', convert(char(8),@no_w_tax) as N'@no_w_tax', @no_d_next_o_id as N'@no_d_next_o_id'
-
-            END TRY
-            BEGIN CATCH
-            SELECT 
-            ERROR_NUMBER() AS ErrorNumber
-            ,ERROR_SEVERITY() AS ErrorSeverity
-            ,ERROR_STATE() AS ErrorState
-            ,ERROR_PROCEDURE() AS ErrorProcedure
-            ,ERROR_LINE() AS ErrorLine
-            ,ERROR_MESSAGE() AS ErrorMessage;
-            IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            END CATCH;
-            IF @@TRANCOUNT > 0
-            COMMIT TRANSACTION;
-
-        END}
-        set sql(2) {CREATE PROCEDURE [dbo].[delivery]  
+        set sql(2) {CREATE PROCEDURE [dbo].[delivery]
             @d_w_id int,
             @d_o_carrier_id int,
             @timestamp datetime2(0)
-            AS 
+            AS
             BEGIN
             SET ANSI_WARNINGS OFF
             DECLARE
-            @d_no_o_id int, 
-            @d_d_id int, 
-            @d_c_id int, 
+            @d_no_o_id int,
+            @d_d_id int,
+            @d_c_id int,
             @d_ol_total int
             BEGIN TRANSACTION
             BEGIN TRY
@@ -952,61 +230,59 @@ proc CreateStoredProcs { odbc imdb } {
             WHILE @loop_counter <= 10
             BEGIN
             SET @d_d_id = @loop_counter
-
-
-            DECLARE @d_out TABLE (d_no_o_id INT)
-
-            DELETE TOP (1) 
-            FROM dbo.new_order 
-            OUTPUT deleted.no_o_id INTO @d_out -- @d_no_o_id
-            WHERE new_order.no_w_id = @d_w_id 
-            AND new_order.no_d_id = @d_d_id 
-
-            SELECT @d_no_o_id = d_no_o_id FROM @d_out
-
-
-            UPDATE dbo.orders 
-            SET o_carrier_id = @d_o_carrier_id 
-            , @d_c_id = orders.o_c_id 
-            WHERE orders.o_id = @d_no_o_id 
-            AND orders.o_d_id = @d_d_id 
+            SELECT TOP 1
+            @d_no_o_id = no_o_id
+            FROM dbo.new_order
+            WHERE no_w_id = @d_w_id AND
+            no_d_id = @d_d_id
+            ORDER BY no_o_id ASC
+            IF (@@rowcount <> 0)
+            BEGIN
+            -- claim the order for this district
+            DELETE dbo.new_order
+            WHERE no_w_id = @d_w_id AND
+            no_d_id = @d_d_id AND
+            no_o_id = @d_no_o_id
+            UPDATE dbo.orders
+            SET o_carrier_id = @d_o_carrier_id
+            , @d_c_id = orders.o_c_id
+            WHERE orders.o_id = @d_no_o_id
+            AND orders.o_d_id = @d_d_id
             AND orders.o_w_id = @d_w_id
-
-
             SET @d_ol_total = 0
-
-            UPDATE dbo.order_line 
+            UPDATE dbo.order_line
             SET ol_delivery_d = @timestamp
             , @d_ol_total = @d_ol_total + ol_amount
-            WHERE order_line.ol_o_id = @d_no_o_id 
-            AND order_line.ol_d_id = @d_d_id 
+            WHERE order_line.ol_o_id = @d_no_o_id
+            AND order_line.ol_d_id = @d_d_id
             AND order_line.ol_w_id = @d_w_id
-
-
-            UPDATE dbo.customer SET c_balance = customer.c_balance + @d_ol_total 
-            WHERE customer.c_id = @d_c_id 
-            AND customer.c_d_id = @d_d_id 
+            END
+            UPDATE dbo.customer SET c_balance = customer.c_balance + @d_ol_total
+            WHERE customer.c_id = @d_c_id
+            AND customer.c_d_id = @d_d_id
             AND customer.c_w_id = @d_w_id
-
-
-            PRINT 
+      
+            PRINT
             'D: '
-            + 
+            +
             ISNULL(CAST(@d_d_id AS nvarchar(4000)), '')
-            + 
+            +
             'O: '
-            + 
+            +
             ISNULL(CAST(@d_no_o_id AS nvarchar(4000)), '')
-            + 
+            +
             'time '
-            + 
+            +
             ISNULL(CAST(@timestamp AS nvarchar(4000)), '')
             SET @loop_counter = @loop_counter + 1
             END
-            SELECT	@d_w_id as N'@d_w_id', @d_o_carrier_id as N'@d_o_carrier_id', @timestamp as N'@TIMESTAMP'
+            SELECT @d_w_id as N'@d_w_id', @d_o_carrier_id as N'@d_o_carrier_id', @timestamp as N'@TIMESTAMP'
             END TRY
             BEGIN CATCH
-            SELECT 
+	    IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
+            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
+            ELSE
+            SELECT
             ERROR_NUMBER() AS ErrorNumber
             ,ERROR_SEVERITY() AS ErrorSeverity
             ,ERROR_STATE() AS ErrorState
@@ -1019,7 +295,7 @@ proc CreateStoredProcs { odbc imdb } {
             IF @@TRANCOUNT > 0
             COMMIT TRANSACTION;
         END}
-        set sql(3) {CREATE PROCEDURE [dbo].[payment]  
+        set sql(3) {CREATE PROCEDURE [dbo].[payment]
             @p_w_id int,
             @p_d_id int,
             @p_c_w_id int,
@@ -1029,7 +305,7 @@ proc CreateStoredProcs { odbc imdb } {
             @p_h_amount numeric(6,2),
             @p_c_last char(16),
             @TIMESTAMP datetime2(0)
-            AS 
+            AS
             BEGIN
             SET ANSI_WARNINGS OFF
             DECLARE
@@ -1053,172 +329,98 @@ proc CreateStoredProcs { odbc imdb } {
             @p_c_phone char(16),
             @p_c_since datetime2(0),
             @p_c_credit char(32),
-            @p_c_credit_lim  numeric(12,2), 
-            @p_c_discount  numeric(4,4),
-            @p_c_balance numeric(12,2),
+            @p_c_credit_lim numeric(12,2),
+            @p_c_discount numeric(4,4),
+            @p_c_balance money,
+            --numeric(12,2),
             @p_c_data varchar(500),
-            @namecnt int, 
-            @p_d_name char(11), 
-            @p_w_name char(11), 
-            @p_c_new_data varchar(500), 
+            @namecnt int,
+            @p_d_name char(11),
+            @p_w_name char(11),
+            @p_c_new_data varchar(500),
             @h_data varchar(30)
-            BEGIN TRANSACTION
             BEGIN TRY
-
-            SELECT @p_w_street_1 = warehouse.w_street_1
-            , @p_w_street_2 = warehouse.w_street_2
-            , @p_w_city = warehouse.w_city
-            , @p_w_state = warehouse.w_state
-            , @p_w_zip = warehouse.w_zip
-            , @p_w_name = warehouse.w_name 
-            FROM dbo.warehouse WITH (INDEX = [w_details])
-            WHERE warehouse.w_id = @p_w_id
-
-            UPDATE dbo.district 
-            SET d_ytd = district.d_ytd + @p_h_amount 
-            WHERE district.d_w_id = @p_w_id 
-            AND district.d_id = @p_d_id
-
-            SELECT @p_d_street_1 = district.d_street_1
-            , @p_d_street_2 = district.d_street_2
-            , @p_d_city = district.d_city
-            , @p_d_state = district.d_state
-            , @p_d_zip = district.d_zip
-            , @p_d_name = district.d_name 
-            FROM dbo.district WITH (INDEX = d_details)
-            WHERE district.d_w_id = @p_w_id 
-            AND district.d_id = @p_d_id
             IF (@byname = 1)
             BEGIN
-            SELECT @namecnt = count(customer.c_id) 
-            FROM dbo.customer WITH (repeatableread) 
-            WHERE customer.c_last = @p_c_last 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_w_id = @p_c_w_id
-
-            DECLARE
-            c_byname CURSOR STATIC LOCAL FOR 
-            SELECT customer.c_first
-            , customer.c_middle
-            , customer.c_id
-            , customer.c_street_1
-            , customer.c_street_2
-            , customer.c_city
-            , customer.c_state
-            , customer.c_zip
-            , customer.c_phone
-            , customer.c_credit
-            , customer.c_credit_lim
-            , customer.c_discount
-            , C_BAL.c_balance
-            , customer.c_since 
-            FROM dbo.customer  AS customer WITH (INDEX = [customer_i2], repeatableread)
-            INNER LOOP JOIN dbo.customer AS C_BAL WITH (INDEX = [customer_i1], repeatableread) 
-            ON C_BAL.c_w_id = customer.c_w_id
-            AND C_BAL.c_d_id = customer.c_d_id
-            AND C_BAL.c_id = customer.c_id
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_last = @p_c_last 
-            ORDER BY customer.c_first
-            OPTION ( MAXDOP 1)
-            OPEN c_byname
-            IF ((@namecnt % 2) = 1)
-            SET @namecnt = (@namecnt + 1)
-            BEGIN
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 0
-            DECLARE
-            @loop$bound int
-            SET @loop$bound = (@namecnt / 2)
-            WHILE @loop_counter <= @loop$bound
-            BEGIN
-            FETCH c_byname
-            INTO 
-            @p_c_first, 
-            @p_c_middle, 
-            @p_c_id, 
-            @p_c_street_1, 
-            @p_c_street_2, 
-            @p_c_city, 
-            @p_c_state, 
-            @p_c_zip, 
-            @p_c_phone, 
-            @p_c_credit, 
-            @p_c_credit_lim, 
-            @p_c_discount, 
-            @p_c_balance, 
-            @p_c_since
-            SET @loop_counter = @loop_counter + 1
-            END
-            END
-            CLOSE c_byname
-            DEALLOCATE c_byname
-            END
-            ELSE 
-            BEGIN
-            SELECT @p_c_first = customer.c_first, @p_c_middle = customer.c_middle, @p_c_last = customer.c_last
-            , @p_c_street_1 = customer.c_street_1, @p_c_street_2 = customer.c_street_2
-            , @p_c_city = customer.c_city, @p_c_state = customer.c_state
-            , @p_c_zip = customer.c_zip, @p_c_phone = customer.c_phone
-            , @p_c_credit = customer.c_credit, @p_c_credit_lim = customer.c_credit_lim
-            , @p_c_discount = customer.c_discount, @p_c_balance = customer.c_balance
-            , @p_c_since = customer.c_since 
+            SELECT TOP 1
+            @p_c_id = c_id
+            FROM (
+            SELECT TOP 50 PERCENT c_id, c_first
             FROM dbo.customer 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_id = @p_c_id 
-
+            WHERE
+            c_last = @p_c_last AND
+            c_w_id = @p_c_w_id AND
+            c_d_id = @p_c_d_id
+            ORDER BY c_first) X
+            ORDER BY c_first desc
             END
-            SET @p_c_balance = (@p_c_balance + @p_h_amount)
-            IF @p_c_credit = 'BC'
-            BEGIN
-            SELECT @p_c_data = customer.c_data FROM dbo.customer WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id AND customer.c_id = @p_c_id
+            BEGIN TRANSACTION
+            -- get customer info and update balances
+            UPDATE dbo.customer
+            SET
+            @p_c_balance = c_balance = c_balance - @p_h_amount,
+            c_data =
+            CASE
+            WHEN c_credit <> 'BC' THEN c_credit
+            ELSE LEFT(
+            ISNULL(CAST(@p_c_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_c_d_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_c_w_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_d_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_w_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_h_amount AS CHAR(8)), '') + ' ' +
+            ISNULL(CAST(@TIMESTAMP AS char), '') + ' ' +
+            ISNULL(@p_w_name, '') + ' ' +
+            ISNULL(@p_d_name, '') + ' ' +
+            c_data,
+            500)
+            END,
+            @p_c_first = c_first,
+            @p_c_middle = c_middle,
+            @p_c_last = c_last,
+            @p_c_street_1 = c_street_1,
+            @p_c_street_2 = c_street_2,
+            @p_c_city = c_city,
+            @p_c_state = c_state,
+            @p_c_zip = c_zip,
+            @p_c_phone = c_phone,
+            @p_c_credit = c_credit,
+            @p_c_credit_lim = c_credit_lim,
+            @p_c_discount = c_discount,
+            @p_c_since = c_since
+            WHERE
+            c_id = @p_c_id AND
+            c_w_id = @p_c_w_id AND
+            c_d_id = @p_c_d_id
             SET @h_data = (ISNULL(@p_w_name, '') + ' ' + ISNULL(@p_d_name, ''))
-            SET @p_c_new_data = (
-            ISNULL(CAST(@p_c_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_c_d_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_c_w_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_d_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_w_id AS char), '')
-            + 
-            ' '
-            + 
-            ISNULL(CAST(@p_h_amount AS CHAR(8)), '')
-            + 
-            ISNULL(CAST(@TIMESTAMP AS char), '')
-            + 
-            ISNULL(@h_data, ''))
-            SET @p_c_new_data = substring((@p_c_new_data + @p_c_data), 1, 500 - LEN(@p_c_new_data))
-            UPDATE dbo.customer SET c_balance = @p_c_balance, c_data = @p_c_new_data 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id AND customer.c_id = @p_c_id
-            END
-            ELSE 
-            UPDATE dbo.customer SET c_balance = @p_c_balance 
-            WHERE customer.c_w_id = @p_c_w_id 
-            AND customer.c_d_id = @p_c_d_id 
-            AND customer.c_id = @p_c_id
-
-            SET @h_data = (ISNULL(@p_w_name, '') + ' ' + ISNULL(@p_d_name, ''))
-
-            INSERT dbo.history( h_c_d_id, h_c_w_id, h_c_id, h_d_id, h_w_id, h_date, h_amount, h_data) 
+            INSERT dbo.history( h_c_d_id, h_c_w_id, h_c_id, h_d_id, h_w_id, h_date, h_amount, h_data)
             VALUES ( @p_c_d_id, @p_c_w_id, @p_c_id, @p_d_id, @p_w_id, @TIMESTAMP, @p_h_amount, @h_data)
-            SELECT	@p_c_id as N'@p_c_id', @p_c_last as N'@p_c_last', @p_w_street_1 as N'@p_w_street_1'
+            -- get district data and update year-to-date
+            UPDATE dbo.district
+            SET
+            d_ytd = d_ytd + @p_h_amount,
+            @p_d_street_1 = d_street_1,
+            @p_d_street_2 = d_street_2,
+            @p_d_city = d_city,
+            @p_d_state = d_state,
+            @p_d_zip = d_zip,
+            @p_d_name = d_name
+            WHERE
+            d_w_id = @p_w_id AND
+            d_id = @p_d_id
+            -- get warehouse data and update year-to-date
+            UPDATE dbo.warehouse
+            SET
+            w_ytd = w_ytd + @p_h_amount,
+            @p_w_street_1 = w_street_1,
+            @p_w_street_2 = w_street_2,
+            @p_w_city = w_city,
+            @p_w_state = w_state,
+            @p_w_zip = w_zip,
+            @p_w_name = w_name
+            WHERE
+            w_id = @p_w_id
+            SELECT @p_c_id as N'@p_c_id', @p_c_last as N'@p_c_last', @p_w_street_1 as N'@p_w_street_1'
             , @p_w_street_2 as N'@p_w_street_2', @p_w_city as N'@p_w_city'
             , @p_w_state as N'@p_w_state', @p_w_zip as N'@p_w_zip'
             , @p_d_street_1 as N'@p_d_street_1', @p_d_street_2 as N'@p_d_street_2'
@@ -1228,17 +430,15 @@ proc CreateStoredProcs { odbc imdb } {
             , @p_c_street_2 as N'@p_c_street_2'
             , @p_c_city as N'@p_c_city', @p_c_state as N'@p_c_state', @p_c_zip as N'@p_c_zip'
             , @p_c_phone as N'@p_c_phone', @p_c_since as N'@p_c_since', @p_c_credit as N'@p_c_credit'
-            , @p_c_credit_lim as N'@p_c_credit_lim', @p_c_discount as N'@p_c_discount', @p_c_balance as N'@p_c_balance'
+            , @p_c_credit_lim as N'@p_c_credit_lim', @p_c_discount as N'@p_c_discount', @p_c_balance as
+            N'@p_c_balance'
             , @p_c_data as N'@p_c_data'
-
-
-            UPDATE dbo.warehouse WITH (XLOCK)
-            SET w_ytd = warehouse.w_ytd + @p_h_amount 
-            WHERE warehouse.w_id = @p_w_id
-
             END TRY
             BEGIN CATCH
-            SELECT 
+	    IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
+            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
+            ELSE
+            SELECT
             ERROR_NUMBER() AS ErrorNumber
             ,ERROR_SEVERITY() AS ErrorSeverity
             ,ERROR_STATE() AS ErrorState
@@ -1251,13 +451,13 @@ proc CreateStoredProcs { odbc imdb } {
             IF @@TRANCOUNT > 0
             COMMIT TRANSACTION;
         END}
-        set sql(4) {CREATE PROCEDURE [dbo].[ostat] 
+        set sql(4) {CREATE PROCEDURE [dbo].[ostat]
             @os_w_id int,
             @os_d_id int,
             @os_c_id int,
             @byname int,
             @os_c_last char(20)
-            AS 
+            AS
             BEGIN
             SET ANSI_WARNINGS OFF
             DECLARE
@@ -1267,120 +467,70 @@ proc CreateStoredProcs { odbc imdb } {
             @os_o_id int,
             @os_entdate datetime2(0),
             @os_o_carrier_id int,
-            @os_ol_i_id 	INT,
+            @os_ol_i_id
+            INT,
             @os_ol_supply_w_id INT,
             @os_ol_quantity INT,
-            @os_ol_amount 	INT,
+            @os_ol_amount
+            INT,
             @os_ol_delivery_d DATE,
-            @namecnt int, 
-            @i int,
-            @os_ol_i_id_array VARCHAR(200),
-            @os_ol_supply_w_id_array VARCHAR(200),
-            @os_ol_quantity_array VARCHAR(200),
-            @os_ol_amount_array VARCHAR(200),
-            @os_ol_delivery_d_array VARCHAR(210)
+            @namecnt int,
+            @i int
             BEGIN TRANSACTION
             BEGIN TRY
-            SET @os_ol_i_id_array = 'CSV,'
-            SET @os_ol_supply_w_id_array = 'CSV,'
-            SET @os_ol_quantity_array = 'CSV,'
-            SET @os_ol_amount_array = 'CSV,'
-            SET @os_ol_delivery_d_array = 'CSV,'
             IF (@byname = 1)
             BEGIN
-
-            SELECT @namecnt = count_big(customer.c_id) 
+            SELECT TOP 1
+            @os_c_id = c_id,
+            @os_c_balance = c_balance,
+            @os_c_first = c_first,
+            @os_c_middle = c_middle,
+            @os_c_last = c_last
+            FROM (
+            SELECT TOP 50 PERCENT c_id, c_balance, c_first, c_middle, c_last
             FROM dbo.customer 
-            WHERE customer.c_last = @os_c_last AND customer.c_d_id = @os_d_id AND customer.c_w_id = @os_w_id
-
-            IF ((@namecnt % 2) = 1)
-            SET @namecnt = (@namecnt + 1)
-            DECLARE
-            c_name CURSOR LOCAL FOR 
-            SELECT customer.c_balance
-            , customer.c_first
-            , customer.c_middle
-            , customer.c_id 
-            FROM dbo.customer 
-            WHERE customer.c_last = @os_c_last 
-            AND customer.c_d_id = @os_d_id 
-            AND customer.c_w_id = @os_w_id 
-            ORDER BY customer.c_first
-
-            OPEN c_name
-            BEGIN
-            DECLARE
-            @loop_counter int
-            SET @loop_counter = 0
-            DECLARE
-            @loop$bound int
-            SET @loop$bound = (@namecnt / 2)
-            WHILE @loop_counter <= @loop$bound
-            BEGIN
-            FETCH c_name
-            INTO @os_c_balance, @os_c_first, @os_c_middle, @os_c_id
-            SET @loop_counter = @loop_counter + 1
+            WHERE
+            c_last = @os_c_last AND
+            c_w_id = @os_w_id AND
+            c_d_id = @os_d_id
+            ORDER BY c_first) X
+            ORDER BY c_first desc
             END
-            END
-            CLOSE c_name
-            DEALLOCATE c_name
-            END
-            ELSE 
+            ELSE
             BEGIN
             SELECT @os_c_balance = customer.c_balance, @os_c_first = customer.c_first
-            , @os_c_middle = customer.c_middle, @os_c_last = customer.c_last 
-            FROM dbo.customer WITH (repeatableread) 
+            , @os_c_middle = customer.c_middle, @os_c_last = customer.c_last
+            FROM dbo.customer 
             WHERE customer.c_id = @os_c_id AND customer.c_d_id = @os_d_id AND customer.c_w_id = @os_w_id
             END
             BEGIN
-            SELECT TOP (1) @os_o_id = fci.o_id, @os_o_carrier_id = fci.o_carrier_id, @os_entdate = fci.o_entry_d
-            FROM 
-            (SELECT TOP 9223372036854775807 orders.o_id, orders.o_carrier_id, orders.o_entry_d 
-            FROM dbo.orders WITH (serializable) 
-            WHERE orders.o_d_id = @os_d_id 
-            AND orders.o_w_id = @os_w_id 
-            AND orders.o_c_id = @os_c_id 
-            ORDER BY orders.o_id DESC)  AS fci
+            SELECT TOP (1) @os_o_id = o_id, @os_o_carrier_id = o_carrier_id, @os_entdate = o_entry_d
+            FROM dbo.orders 
+            WHERE orders.o_d_id = @os_d_id
+            AND orders.o_w_id = @os_w_id
+            AND orders.o_c_id = @os_c_id
+            ORDER BY orders.o_id DESC
             IF @@ROWCOUNT = 0
             PRINT 'No orders for customer';
             END
-            SET @i = 0
-            DECLARE
-            c_line CURSOR LOCAL FORWARD_ONLY FOR 
             SELECT order_line.ol_i_id
             , order_line.ol_supply_w_id
             , order_line.ol_quantity
             , order_line.ol_amount
-            , order_line.ol_delivery_d 
-            FROM dbo.order_line WITH (repeatableread) 
-            WHERE order_line.ol_o_id = @os_o_id 
-            AND order_line.ol_d_id = @os_d_id 
+            , order_line.ol_delivery_d
+            FROM dbo.order_line 
+            WHERE order_line.ol_o_id = @os_o_id
+            AND order_line.ol_d_id = @os_d_id
             AND order_line.ol_w_id = @os_w_id
-            OPEN c_line
-            WHILE 1 = 1
-            BEGIN
-            FETCH c_line
-            INTO 
-            @os_ol_i_id,
-            @os_ol_supply_w_id,
-            @os_ol_quantity,
-            @os_ol_amount,
-            @os_ol_delivery_d
-            IF @@FETCH_STATUS = -1
-            BREAK
-            set @os_ol_i_id_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_i_id AS CHAR)
-            set @os_ol_supply_w_id_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_supply_w_id AS CHAR)
-            set @os_ol_quantity_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_quantity AS CHAR)
-            set @os_ol_amount_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_amount AS CHAR);
-            set @os_ol_delivery_d_array += CAST(@i AS CHAR) + ',' + CAST(@os_ol_delivery_d AS CHAR)
-            SET @i = @i + 1
-            END
-            CLOSE c_line
-            DEALLOCATE c_line
-            SELECT	@os_c_id as N'@os_c_id', @os_c_last as N'@os_c_last', @os_c_first as N'@os_c_first', @os_c_middle as N'@os_c_middle', @os_c_balance as N'@os_c_balance', @os_o_id as N'@os_o_id', @os_entdate as N'@os_entdate', @os_o_carrier_id as N'@os_o_carrier_id'
+            SELECT @os_c_id as N'@os_c_id', @os_c_last as N'@os_c_last', @os_c_first as N'@os_c_first', @os_c_middle
+            as N'@os_c_middle', @os_c_balance as N'@os_c_balance', @os_o_id as N'@os_o_id', @os_entdate as
+            N'@os_entdate', @os_o_carrier_id as N'@os_o_carrier_id'
             END TRY
             BEGIN CATCH
-            SELECT 
+	    IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
+            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
+            ELSE
+            SELECT
             ERROR_NUMBER() AS ErrorNumber
             ,ERROR_SEVERITY() AS ErrorSeverity
             ,ERROR_STATE() AS ErrorState
@@ -1393,38 +543,572 @@ proc CreateStoredProcs { odbc imdb } {
             IF @@TRANCOUNT > 0
             COMMIT TRANSACTION;
         END}
-        set sql(5) {CREATE PROCEDURE [dbo].[slev]  
+        set sql(5) {CREATE PROCEDURE [dbo].[slev]
             @st_w_id int,
             @st_d_id int,
             @threshold int
-            AS 
+            AS
             BEGIN
             DECLARE
-            @st_o_id int, 
-            @stock_count int 
+            @st_o_id_low int,
+            @st_o_id_high int
             BEGIN TRANSACTION
             BEGIN TRY
-
-            SELECT @st_o_id = district.d_next_o_id 
-            FROM dbo.district 
+            SELECT
+            @st_o_id_low = district.d_next_o_id - 20,
+            @st_o_id_high = district.d_next_o_id - 1
+            FROM dbo.district
             WHERE district.d_w_id = @st_w_id AND district.d_id = @st_d_id
-
-            SELECT @stock_count = count_big(DISTINCT stock.s_i_id) 
+            SELECT
+            COUNT(DISTINCT stock.s_i_id)
             FROM dbo.order_line
             , dbo.stock
-            WHERE order_line.ol_w_id = @st_w_id 
-            AND order_line.ol_d_id = @st_d_id 
-            AND (order_line.ol_o_id < @st_o_id) 
-            AND order_line.ol_o_id >= (@st_o_id - 20) 
-            AND stock.s_w_id = @st_w_id 
-            AND stock.s_i_id = order_line.ol_i_id 
+            WHERE order_line.ol_w_id = @st_w_id
+            AND order_line.ol_d_id = @st_d_id
+            AND order_line.ol_o_id BETWEEN @st_o_id_low AND @st_o_id_high
+            AND stock.s_w_id = order_line.ol_w_id
+            AND stock.s_i_id = order_line.ol_i_id
             AND stock.s_quantity < @threshold
-            OPTION (LOOP JOIN, MAXDOP 1)
-
-            SELECT	@st_o_id as N'@st_o_id', @stock_count as N'@stock_count'
+	    OPTION (ORDER GROUP, LOOP JOIN, MAXDOP 1);
             END TRY
             BEGIN CATCH
-            SELECT 
+	    IF (error_number() in (701, 41839, 41823, 41302, 41305, 41325, 41301))
+            SELECT 'IMOLTPERROR',ERROR_NUMBER() AS ErrorNumber
+            ELSE
+            SELECT
+            ERROR_NUMBER() AS ErrorNumber
+            ,ERROR_SEVERITY() AS ErrorSeverity
+            ,ERROR_STATE() AS ErrorState
+            ,ERROR_PROCEDURE() AS ErrorProcedure
+            ,ERROR_LINE() AS ErrorLine
+            ,ERROR_MESSAGE() AS ErrorMessage;
+            IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            END CATCH;
+            IF @@TRANCOUNT > 0
+            COMMIT TRANSACTION;
+        END}
+    } else {
+        set sql(1) {CREATE PROCEDURE [dbo].[neword]
+            @no_w_id int,
+            @no_max_w_id int,
+            @no_d_id int,
+            @no_c_id int,
+            @no_o_ol_cnt int,
+            @TIMESTAMP datetime2(0)
+            AS
+            BEGIN
+            SET ANSI_WARNINGS OFF
+            DECLARE
+            @no_c_discount smallmoney,
+            @no_c_last char(16),
+            @no_c_credit char(2),
+            @no_d_tax smallmoney,
+            @no_w_tax smallmoney,
+            @no_d_next_o_id int,
+            @no_ol_supply_w_id int,
+            @no_ol_i_id int,
+            @no_ol_quantity int,
+            @no_o_all_local int,
+            @o_id int,
+            @no_i_name char(24),
+            @no_i_price smallmoney,
+            @no_i_data char(50),
+            @no_s_quantity int,
+            @no_ol_amount int,
+            @no_s_dist_01 char(24),
+            @no_s_dist_02 char(24),
+            @no_s_dist_03 char(24),
+            @no_s_dist_04 char(24),
+            @no_s_dist_05 char(24),
+            @no_s_dist_06 char(24),
+            @no_s_dist_07 char(24),
+            @no_s_dist_08 char(24),
+            @no_s_dist_09 char(24),
+            @no_s_dist_10 char(24),
+            @no_ol_dist_info char(24),
+            @no_s_data char(50),
+            @x int,
+            @rbk int
+            BEGIN TRANSACTION
+            BEGIN TRY
+            SET @no_o_all_local = 1
+            SELECT
+            @no_c_discount = c_discount,
+            @no_c_last = c_last,
+            @no_c_credit = c_credit
+            FROM dbo.customer
+            WHERE
+            c_w_id = @no_w_id AND
+            c_d_id = @no_d_id AND
+            c_id = @no_c_id
+            UPDATE dbo.district
+            SET
+            @no_d_tax = d_tax,
+            @o_id = d_next_o_id,
+            @no_d_next_o_id = d_next_o_id = district.d_next_o_id + 1
+            WHERE district.d_id = @no_d_id
+            AND district.d_w_id = @no_w_id
+            SET @rbk = CAST(100 * RAND() + 1 AS INT)
+            DECLARE
+            @loop_counter int
+            SET @loop_counter = 1
+            DECLARE
+            @loop$bound int
+            SET @loop$bound = @no_o_ol_cnt
+            WHILE @loop_counter <= @loop$bound
+            BEGIN
+            IF ((@loop_counter = @no_o_ol_cnt) AND (@rbk = 1))
+            SET @no_ol_i_id = 100001
+            ELSE
+            SET @no_ol_i_id = CAST(1000000 * RAND() + 1 AS INT)
+            SET @x = CAST(100 * RAND() + 1 AS INT)
+            IF (@x > 1)
+            SET @no_ol_supply_w_id = @no_w_id
+            ELSE
+            BEGIN
+            SET @no_ol_supply_w_id = @no_w_id
+            SET @no_o_all_local = 0
+            WHILE ((@no_ol_supply_w_id = @no_w_id) AND (@no_max_w_id != 1))
+            BEGIN
+            SET @no_ol_supply_w_id = CAST(@no_max_w_id * RAND() + 1 AS INT)
+            DECLARE
+            @db_null_statement$2 int
+            END
+            END
+            SET @no_ol_quantity = CAST(10 * RAND() + 1 AS INT)
+            SELECT @no_i_price = item.i_price
+            , @no_i_name = item.i_name
+            , @no_i_data = item.i_data
+            FROM dbo.item
+            WHERE item.i_id = @no_ol_i_id
+            UPDATE dbo.stock
+            SET
+            s_quantity = s_quantity - @no_ol_quantity + CASE WHEN (s_quantity > @no_ol_quantity)
+            THEN 0 ELSE 91 END,
+            @no_s_data = s_data,
+            @no_ol_dist_info =
+            CASE @no_d_id
+            WHEN 1 THEN s_dist_01
+            WHEN 2 THEN s_dist_02
+            WHEN 3 THEN s_dist_03
+            WHEN 4 THEN s_dist_04
+            WHEN 5 THEN s_dist_05
+            WHEN 6 THEN s_dist_06
+            WHEN 7 THEN s_dist_07
+            WHEN 8 THEN s_dist_08
+            WHEN 9 THEN s_dist_09
+            WHEN 10 THEN s_dist_10
+            END
+            OUTPUT
+            @o_id,
+            @no_d_id,
+            @no_w_id,
+            @loop_counter,
+            @no_ol_i_id,
+            NULL,
+            (@no_ol_quantity * @no_i_price),
+            @no_ol_supply_w_id,
+            @no_ol_quantity,
+            CASE @no_d_id
+            WHEN 1 THEN inserted.s_dist_01
+            WHEN 2 THEN inserted.s_dist_02
+            WHEN 3 THEN inserted.s_dist_03
+            WHEN 4 THEN inserted.s_dist_04
+            WHEN 5 THEN inserted.s_dist_05
+            WHEN 6 THEN inserted.s_dist_06
+            WHEN 7 THEN inserted.s_dist_07
+            WHEN 8 THEN inserted.s_dist_08
+            WHEN 9 THEN inserted.s_dist_09
+            WHEN 10 THEN inserted.s_dist_10
+            END
+            INTO dbo.order_line
+            WHERE
+            stock.s_i_id = @no_ol_i_id AND
+            stock.s_w_id = @no_ol_supply_w_id
+            SET @loop_counter = @loop_counter + 1
+            END
+            INSERT dbo.orders( o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local)
+            VALUES ( @o_id, @no_d_id, @no_w_id, @no_c_id, @TIMESTAMP, @no_o_ol_cnt, @no_o_all_local)
+            INSERT dbo.new_order(no_o_id, no_d_id, no_w_id)
+            VALUES (@o_id, @no_d_id, @no_w_id)
+            IF (@rbk = 1)
+            ROLLBACK TRANSACTION
+            SELECT @no_w_tax = warehouse.w_tax
+            FROM dbo.warehouse
+            WHERE warehouse.w_id = @no_w_id
+            SELECT convert(char(8), @no_c_discount) as N'@no_c_discount', @no_c_last as N'@no_c_last', @no_c_credit 
+	    as N'@no_c_credit', convert(char(8),@no_d_tax) as N'@no_d_tax', convert(char(8),@no_w_tax)
+            as N'@no_w_tax', @no_d_next_o_id as N'@no_d_next_o_id'
+            END TRY
+            BEGIN CATCH
+            SELECT
+            ERROR_NUMBER() AS ErrorNumber
+            ,ERROR_SEVERITY() AS ErrorSeverity
+            ,ERROR_STATE() AS ErrorState
+            ,ERROR_PROCEDURE() AS ErrorProcedure
+            ,ERROR_LINE() AS ErrorLine
+            ,ERROR_MESSAGE() AS ErrorMessage;
+            IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            END CATCH;
+            IF @@TRANCOUNT > 0
+            COMMIT TRANSACTION;
+        END}
+        set sql(2) {CREATE PROCEDURE [dbo].[delivery]
+            @d_w_id int,
+            @d_o_carrier_id int,
+            @timestamp datetime2(0)
+            AS
+            BEGIN
+            SET ANSI_WARNINGS OFF
+            DECLARE
+            @d_no_o_id int,
+            @d_d_id int,
+            @d_c_id int,
+            @d_ol_total int
+            BEGIN TRANSACTION
+            BEGIN TRY
+            DECLARE
+            @loop_counter int
+            SET @loop_counter = 1
+            WHILE @loop_counter <= 10
+            BEGIN
+            SET @d_d_id = @loop_counter
+            SELECT TOP 1
+            @d_no_o_id = no_o_id
+            FROM dbo.new_order WITH (serializable updlock)
+            WHERE no_w_id = @d_w_id AND
+            no_d_id = @d_d_id
+            ORDER BY no_o_id ASC
+            IF (@@rowcount <> 0)
+            BEGIN
+            -- claim the order for this district
+            DELETE dbo.new_order
+            WHERE no_w_id = @d_w_id AND
+            no_d_id = @d_d_id AND
+            no_o_id = @d_no_o_id
+            UPDATE dbo.orders
+            SET o_carrier_id = @d_o_carrier_id
+            , @d_c_id = orders.o_c_id
+            WHERE orders.o_id = @d_no_o_id
+            AND orders.o_d_id = @d_d_id
+            AND orders.o_w_id = @d_w_id
+            SET @d_ol_total = 0
+            UPDATE dbo.order_line
+            SET ol_delivery_d = @timestamp
+            , @d_ol_total = @d_ol_total + ol_amount
+            WHERE order_line.ol_o_id = @d_no_o_id
+            AND order_line.ol_d_id = @d_d_id
+            AND order_line.ol_w_id = @d_w_id
+            END
+            UPDATE dbo.customer SET c_balance = customer.c_balance + @d_ol_total
+            WHERE customer.c_id = @d_c_id
+            AND customer.c_d_id = @d_d_id
+            AND customer.c_w_id = @d_w_id
+      
+            PRINT
+            'D: '
+            +
+            ISNULL(CAST(@d_d_id AS nvarchar(4000)), '')
+            +
+            'O: '
+            +
+            ISNULL(CAST(@d_no_o_id AS nvarchar(4000)), '')
+            +
+            'time '
+            +
+            ISNULL(CAST(@timestamp AS nvarchar(4000)), '')
+            SET @loop_counter = @loop_counter + 1
+            END
+            SELECT @d_w_id as N'@d_w_id', @d_o_carrier_id as N'@d_o_carrier_id', @timestamp as N'@TIMESTAMP'
+            END TRY
+            BEGIN CATCH
+            SELECT
+            ERROR_NUMBER() AS ErrorNumber
+            ,ERROR_SEVERITY() AS ErrorSeverity
+            ,ERROR_STATE() AS ErrorState
+            ,ERROR_PROCEDURE() AS ErrorProcedure
+            ,ERROR_LINE() AS ErrorLine
+            ,ERROR_MESSAGE() AS ErrorMessage;
+            IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            END CATCH;
+            IF @@TRANCOUNT > 0
+            COMMIT TRANSACTION;
+        END}
+        set sql(3) {CREATE PROCEDURE [dbo].[payment]
+            @p_w_id int,
+            @p_d_id int,
+            @p_c_w_id int,
+            @p_c_d_id int,
+            @p_c_id int,
+            @byname int,
+            @p_h_amount numeric(6,2),
+            @p_c_last char(16),
+            @TIMESTAMP datetime2(0)
+            AS
+            BEGIN
+            SET ANSI_WARNINGS OFF
+            DECLARE
+            @p_w_street_1 char(20),
+            @p_w_street_2 char(20),
+            @p_w_city char(20),
+            @p_w_state char(2),
+            @p_w_zip char(10),
+            @p_d_street_1 char(20),
+            @p_d_street_2 char(20),
+            @p_d_city char(20),
+            @p_d_state char(20),
+            @p_d_zip char(10),
+            @p_c_first char(16),
+            @p_c_middle char(2),
+            @p_c_street_1 char(20),
+            @p_c_street_2 char(20),
+            @p_c_city char(20),
+            @p_c_state char(20),
+            @p_c_zip char(9),
+            @p_c_phone char(16),
+            @p_c_since datetime2(0),
+            @p_c_credit char(32),
+            @p_c_credit_lim numeric(12,2),
+            @p_c_discount numeric(4,4),
+            @p_c_balance money,
+            --numeric(12,2),
+            @p_c_data varchar(500),
+            @namecnt int,
+            @p_d_name char(11),
+            @p_w_name char(11),
+            @p_c_new_data varchar(500),
+            @h_data varchar(30)
+            BEGIN TRY
+            IF (@byname = 1)
+            BEGIN
+            SELECT TOP 1
+            @p_c_id = c_id
+            FROM (
+            SELECT TOP 50 PERCENT c_id, c_first
+            FROM dbo.customer WITH (repeatableread)
+            WHERE
+            c_last = @p_c_last AND
+            c_w_id = @p_c_w_id AND
+            c_d_id = @p_c_d_id
+            ORDER BY c_first) X
+            ORDER BY c_first desc
+            END
+            BEGIN TRANSACTION
+            -- get customer info and update balances
+            UPDATE dbo.customer
+            SET
+            @p_c_balance = c_balance = c_balance - @p_h_amount,
+            c_data =
+            CASE
+            WHEN c_credit <> 'BC' THEN c_credit
+            ELSE LEFT(
+            ISNULL(CAST(@p_c_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_c_d_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_c_w_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_d_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_w_id AS char), '') + ' ' +
+            ISNULL(CAST(@p_h_amount AS CHAR(8)), '') + ' ' +
+            ISNULL(CAST(@TIMESTAMP AS char), '') + ' ' +
+            ISNULL(@p_w_name, '') + ' ' +
+            ISNULL(@p_d_name, '') + ' ' +
+            c_data,
+            500)
+            END,
+            @p_c_first = c_first,
+            @p_c_middle = c_middle,
+            @p_c_last = c_last,
+            @p_c_street_1 = c_street_1,
+            @p_c_street_2 = c_street_2,
+            @p_c_city = c_city,
+            @p_c_state = c_state,
+            @p_c_zip = c_zip,
+            @p_c_phone = c_phone,
+            @p_c_credit = c_credit,
+            @p_c_credit_lim = c_credit_lim,
+            @p_c_discount = c_discount,
+            @p_c_since = c_since
+            WHERE
+            c_id = @p_c_id AND
+            c_w_id = @p_c_w_id AND
+            c_d_id = @p_c_d_id
+            SET @h_data = (ISNULL(@p_w_name, '') + ' ' + ISNULL(@p_d_name, ''))
+            INSERT dbo.history( h_c_d_id, h_c_w_id, h_c_id, h_d_id, h_w_id, h_date, h_amount, h_data)
+            VALUES ( @p_c_d_id, @p_c_w_id, @p_c_id, @p_d_id, @p_w_id, @TIMESTAMP, @p_h_amount, @h_data)
+            -- get district data and update year-to-date
+            UPDATE dbo.district
+            SET
+            d_ytd = d_ytd + @p_h_amount,
+            @p_d_street_1 = d_street_1,
+            @p_d_street_2 = d_street_2,
+            @p_d_city = d_city,
+            @p_d_state = d_state,
+            @p_d_zip = d_zip,
+            @p_d_name = d_name
+            WHERE
+            d_w_id = @p_w_id AND
+            d_id = @p_d_id
+            -- get warehouse data and update year-to-date
+            UPDATE dbo.warehouse
+            SET
+            w_ytd = w_ytd + @p_h_amount,
+            @p_w_street_1 = w_street_1,
+            @p_w_street_2 = w_street_2,
+            @p_w_city = w_city,
+            @p_w_state = w_state,
+            @p_w_zip = w_zip,
+            @p_w_name = w_name
+            WHERE
+            w_id = @p_w_id
+            SELECT @p_c_id as N'@p_c_id', @p_c_last as N'@p_c_last', @p_w_street_1 as N'@p_w_street_1'
+            , @p_w_street_2 as N'@p_w_street_2', @p_w_city as N'@p_w_city'
+            , @p_w_state as N'@p_w_state', @p_w_zip as N'@p_w_zip'
+            , @p_d_street_1 as N'@p_d_street_1', @p_d_street_2 as N'@p_d_street_2'
+            , @p_d_city as N'@p_d_city', @p_d_state as N'@p_d_state'
+            , @p_d_zip as N'@p_d_zip', @p_c_first as N'@p_c_first'
+            , @p_c_middle as N'@p_c_middle', @p_c_street_1 as N'@p_c_street_1'
+            , @p_c_street_2 as N'@p_c_street_2'
+            , @p_c_city as N'@p_c_city', @p_c_state as N'@p_c_state', @p_c_zip as N'@p_c_zip'
+            , @p_c_phone as N'@p_c_phone', @p_c_since as N'@p_c_since', @p_c_credit as N'@p_c_credit'
+            , @p_c_credit_lim as N'@p_c_credit_lim', @p_c_discount as N'@p_c_discount', @p_c_balance as
+            N'@p_c_balance'
+            , @p_c_data as N'@p_c_data'
+            END TRY
+            BEGIN CATCH
+            SELECT
+            ERROR_NUMBER() AS ErrorNumber
+            ,ERROR_SEVERITY() AS ErrorSeverity
+            ,ERROR_STATE() AS ErrorState
+            ,ERROR_PROCEDURE() AS ErrorProcedure
+            ,ERROR_LINE() AS ErrorLine
+            ,ERROR_MESSAGE() AS ErrorMessage;
+            IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            END CATCH;
+            IF @@TRANCOUNT > 0
+            COMMIT TRANSACTION;
+        END}
+        set sql(4) {CREATE PROCEDURE [dbo].[ostat]
+            @os_w_id int,
+            @os_d_id int,
+            @os_c_id int,
+            @byname int,
+            @os_c_last char(20)
+            AS
+            BEGIN
+            SET ANSI_WARNINGS OFF
+            DECLARE
+            @os_c_first char(16),
+            @os_c_middle char(2),
+            @os_c_balance money,
+            @os_o_id int,
+            @os_entdate datetime2(0),
+            @os_o_carrier_id int,
+            @os_ol_i_id
+            INT,
+            @os_ol_supply_w_id INT,
+            @os_ol_quantity INT,
+            @os_ol_amount
+            INT,
+            @os_ol_delivery_d DATE,
+            @namecnt int,
+            @i int
+            BEGIN TRANSACTION
+            BEGIN TRY
+            IF (@byname = 1)
+            BEGIN
+            SELECT TOP 1
+            @os_c_id = c_id,
+            @os_c_balance = c_balance,
+            @os_c_first = c_first,
+            @os_c_middle = c_middle,
+            @os_c_last = c_last
+            FROM (
+            SELECT TOP 50 PERCENT c_id, c_balance, c_first, c_middle, c_last
+            FROM dbo.customer WITH (repeatableread)
+            WHERE
+            c_last = @os_c_last AND
+            c_w_id = @os_w_id AND
+            c_d_id = @os_d_id
+            ORDER BY c_first) X
+            ORDER BY c_first desc
+            END
+            ELSE
+            BEGIN
+            SELECT @os_c_balance = customer.c_balance, @os_c_first = customer.c_first
+            , @os_c_middle = customer.c_middle, @os_c_last = customer.c_last
+            FROM dbo.customer WITH (repeatableread)
+            WHERE customer.c_id = @os_c_id AND customer.c_d_id = @os_d_id AND customer.c_w_id = @os_w_id
+            END
+            BEGIN
+            SELECT TOP (1) @os_o_id = o_id, @os_o_carrier_id = o_carrier_id, @os_entdate = o_entry_d
+            FROM dbo.orders WITH (serializable)
+            WHERE orders.o_d_id = @os_d_id
+            AND orders.o_w_id = @os_w_id
+            AND orders.o_c_id = @os_c_id
+            ORDER BY orders.o_id DESC
+            IF @@ROWCOUNT = 0
+            PRINT 'No orders for customer';
+            END
+            SELECT order_line.ol_i_id
+            , order_line.ol_supply_w_id
+            , order_line.ol_quantity
+            , order_line.ol_amount
+            , order_line.ol_delivery_d
+            FROM dbo.order_line WITH (repeatableread)
+            WHERE order_line.ol_o_id = @os_o_id
+            AND order_line.ol_d_id = @os_d_id
+            AND order_line.ol_w_id = @os_w_id
+            SELECT @os_c_id as N'@os_c_id', @os_c_last as N'@os_c_last', @os_c_first as N'@os_c_first', @os_c_middle
+            as N'@os_c_middle', @os_c_balance as N'@os_c_balance', @os_o_id as N'@os_o_id', @os_entdate as
+            N'@os_entdate', @os_o_carrier_id as N'@os_o_carrier_id'
+            END TRY
+            BEGIN CATCH
+            SELECT
+            ERROR_NUMBER() AS ErrorNumber
+            ,ERROR_SEVERITY() AS ErrorSeverity
+            ,ERROR_STATE() AS ErrorState
+            ,ERROR_PROCEDURE() AS ErrorProcedure
+            ,ERROR_LINE() AS ErrorLine
+            ,ERROR_MESSAGE() AS ErrorMessage;
+            IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            END CATCH;
+            IF @@TRANCOUNT > 0
+            COMMIT TRANSACTION;
+        END}
+        set sql(5) {CREATE PROCEDURE [dbo].[slev]
+            @st_w_id int,
+            @st_d_id int,
+            @threshold int
+            AS
+            BEGIN
+            DECLARE
+            @st_o_id_low int,
+            @st_o_id_high int
+            BEGIN TRANSACTION
+            BEGIN TRY
+            SELECT
+            @st_o_id_low = district.d_next_o_id - 20,
+            @st_o_id_high = district.d_next_o_id - 1
+            FROM dbo.district
+            WHERE district.d_w_id = @st_w_id AND district.d_id = @st_d_id
+            SELECT
+            COUNT(DISTINCT stock.s_i_id)
+            FROM dbo.order_line
+            , dbo.stock
+            WHERE order_line.ol_w_id = @st_w_id
+            AND order_line.ol_d_id = @st_d_id
+            AND order_line.ol_o_id BETWEEN @st_o_id_low AND @st_o_id_high
+            AND stock.s_w_id = order_line.ol_w_id
+            AND stock.s_i_id = order_line.ol_i_id
+            AND stock.s_quantity < @threshold
+	    OPTION (ORDER GROUP, LOOP JOIN, MAXDOP 1);
+            END TRY
+            BEGIN CATCH
+            SELECT
             ERROR_NUMBER() AS ErrorNumber
             ,ERROR_SEVERITY() AS ErrorSeverity
             ,ERROR_STATE() AS ErrorState
@@ -1443,7 +1127,6 @@ proc CreateStoredProcs { odbc imdb } {
     }
     return
 }
-
 
 proc UpdateStatistics { odbc db azure } {
     puts "UPDATING SCHEMA STATISTICS"
@@ -1530,14 +1213,13 @@ proc CreateTables { odbc imdb count_ware bucket_factor durability } {
         set item_bc 131072
         set cust_bc [ expr $count_ware * 30000 ]
         set stock_bc  [ expr $count_ware * 100000 ]
-        set neword_bc  [ expr $count_ware * (40000 * $bucket_factor) ]
         set orderl_bc  [ expr $count_ware * (400000 * $bucket_factor) ]
         set order_bc  [ expr $count_ware * (40000 * $bucket_factor) ]
         set sql(1) [ subst -nocommands {CREATE TABLE [dbo].[customer] ( [c_id] [int] NOT NULL, [c_d_id] [tinyint] NOT NULL, [c_w_id] [int] NOT NULL, [c_discount] [smallmoney] NULL, [c_credit_lim] [money] NULL, [c_last] [char](16) COLLATE Latin1_General_CI_AS NULL, [c_first] [char](16) COLLATE Latin1_General_CI_AS NULL, [c_credit] [char](2) COLLATE Latin1_General_CI_AS NULL, [c_balance] [money] NULL, [c_ytd_payment] [money] NULL, [c_payment_cnt] [smallint] NULL, [c_delivery_cnt] [smallint] NULL, [c_street_1] [char](20) COLLATE Latin1_General_CI_AS NULL, [c_street_2] [char](20) COLLATE Latin1_General_CI_AS NULL, [c_city] [char](20) COLLATE Latin1_General_CI_AS NULL, [c_state] [char](2) COLLATE Latin1_General_CI_AS NULL, [c_zip] [char](9) COLLATE Latin1_General_CI_AS NULL, [c_phone] [char](16) COLLATE Latin1_General_CI_AS NULL, [c_since] [datetime] NULL, [c_middle] [char](2) COLLATE Latin1_General_CI_AS NULL, [c_data] [char](500) COLLATE Latin1_General_CI_AS NULL, CONSTRAINT [customer_i1] PRIMARY KEY NONCLUSTERED HASH ([c_id], [c_d_id], [c_w_id]) WITH (BUCKET_COUNT = $cust_bc), INDEX [customer_i2] NONCLUSTERED ([c_last], [c_w_id], [c_d_id], [c_first], [c_id])) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}]
         set sql(2) [ subst -nocommands {CREATE TABLE [dbo].[district] ( [d_id] [tinyint] NOT NULL, [d_w_id] [int] NOT NULL, [d_ytd] [money] NOT NULL, [d_next_o_id] [int] NULL, [d_tax] [smallmoney] NULL, [d_name] [char](10) COLLATE Latin1_General_CI_AS NULL, [d_street_1] [char](20) COLLATE Latin1_General_CI_AS NULL, [d_street_2] [char](20) COLLATE Latin1_General_CI_AS NULL, [d_city] [char](20) COLLATE Latin1_General_CI_AS NULL, [d_state] [char](2) COLLATE Latin1_General_CI_AS NULL, [d_zip] [char](9) COLLATE Latin1_General_CI_AS NULL, CONSTRAINT [district_i1] PRIMARY KEY NONCLUSTERED HASH ([d_id], [d_w_id]) WITH (BUCKET_COUNT = $dist_bc)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}]
         set sql(3) [ subst -nocommands {CREATE TABLE [dbo].[history] ( [h_id] [int] IDENTITY(1,1) NOT NULL, [h_c_id] [int] NOT NULL, [h_c_d_id] [tinyint] NULL, [h_c_w_id] [int] NULL, [h_d_id] [tinyint] NULL, [h_w_id] [int] NULL, [h_date] [datetime] NOT NULL, [h_amount] [smallmoney] NULL, [h_data] [char](24) COLLATE Latin1_General_CI_AS NULL, CONSTRAINT [history_i1] PRIMARY KEY NONCLUSTERED ([h_id])) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}]
         set sql(4) [ subst -nocommands {CREATE TABLE [dbo].[item] ( [i_id] [int] NOT NULL, [i_name] [char](24) COLLATE Latin1_General_CI_AS NULL, [i_price] [smallmoney] NULL, [i_data] [char](50) COLLATE Latin1_General_CI_AS NULL, [i_im_id] [int] NULL, CONSTRAINT [item_i1]  PRIMARY KEY NONCLUSTERED HASH ([i_id]) WITH (BUCKET_COUNT = $item_bc)) WITH (MEMORY_OPTIMIZED = ON , DURABILITY = $durability)}]
-        set sql(5) [ subst -nocommands {CREATE TABLE [dbo].[new_order] ( [no_o_id] [int] NOT NULL, [no_d_id] [tinyint] NOT NULL, [no_w_id] [int] NOT NULL, CONSTRAINT [new_order_i1]  PRIMARY KEY NONCLUSTERED HASH ([no_w_id], [no_d_id], [no_o_id]) WITH (BUCKET_COUNT = $neword_bc)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}] 
+        set sql(5) [ subst -nocommands {CREATE TABLE [dbo].[new_order] ( [no_o_id] [int] NOT NULL, [no_d_id] [tinyint] NOT NULL, [no_w_id] [int] NOT NULL, CONSTRAINT [new_order_i1]  PRIMARY KEY NONCLUSTERED ([no_w_id], [no_d_id], [no_o_id])) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}] 
         set sql(6) [ subst -nocommands {CREATE TABLE [dbo].[order_line] ([ol_o_id] [int] NOT NULL, [ol_d_id] [tinyint] NOT NULL, [ol_w_id] [int] NOT NULL, [ol_number] [tinyint] NOT NULL, [ol_i_id] [int] NULL, [ol_delivery_d] [datetime] NULL, [ol_amount] [smallmoney] NULL, [ol_supply_w_id] [int] NULL, [ol_quantity] [smallint] NULL, [ol_dist_info] [char](24) COLLATE Latin1_General_CI_AS NULL, CONSTRAINT [order_line_i1] PRIMARY KEY NONCLUSTERED HASH ([ol_o_id], [ol_d_id], [ol_w_id], [ol_number]) WITH (BUCKET_COUNT = $orderl_bc), INDEX [orderline_i2] NONCLUSTERED ([ol_d_id], [ol_w_id], [ol_o_id])) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability )}]
         set sql(7) [ subst -nocommands {CREATE TABLE [dbo].[orders] ( [o_id] [int] NOT NULL, [o_d_id] [tinyint] NOT NULL, [o_w_id] [int] NOT NULL, [o_c_id] [int] NOT NULL, [o_carrier_id] [tinyint] NULL, [o_ol_cnt] [tinyint] NULL, [o_all_local] [tinyint] NULL, [o_entry_d] [datetime] NULL, CONSTRAINT [orders_i1]  PRIMARY KEY NONCLUSTERED HASH ([o_w_id], [o_d_id], [o_id]) WITH (BUCKET_COUNT = $order_bc), INDEX [orders_i2] NONCLUSTERED ([o_c_id], [o_d_id], [o_w_id], [o_id])) WITH (MEMORY_OPTIMIZED = ON , DURABILITY = $durability)}]
         set sql(8) [ subst -nocommands {CREATE TABLE [dbo].[stock] ( [s_i_id] [int] NOT NULL, [s_w_id] [int] NOT NULL, [s_quantity] [smallint] NOT NULL, [s_ytd] [int] NOT NULL, [s_order_cnt] [smallint] NULL, [s_remote_cnt] [smallint] NULL, [s_data] [char](50) COLLATE Latin1_General_CI_AS NULL, [s_dist_01] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_02] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_03] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_04] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_05] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_06] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_07] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_08] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_09] [char](24) COLLATE Latin1_General_CI_AS NULL, [s_dist_10] [char](24) COLLATE Latin1_General_CI_AS NULL, CONSTRAINT [stock_i1]  PRIMARY KEY NONCLUSTERED HASH ( [s_i_id], [s_w_id]) WITH (BUCKET_COUNT = $stock_bc)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = $durability)}]
@@ -1545,14 +1227,14 @@ proc CreateTables { odbc imdb count_ware bucket_factor durability } {
     } else {
         set stmnt_cnt 20 
         set sql(1) {CREATE TABLE [dbo].[customer]( [c_id] [int] NOT NULL, [c_d_id] [tinyint] NOT NULL, [c_w_id] [int] NOT NULL, [c_discount] [smallmoney] NULL, [c_credit_lim] [money] NULL, [c_last] [char](16) NULL, [c_first] [char](16) NULL, [c_credit] [char](2) NULL, [c_balance] [money] NULL, [c_ytd_payment] [money] NULL, [c_payment_cnt] [smallint] NULL, [c_delivery_cnt] [smallint] NULL, [c_street_1] [char](20) NULL, [c_street_2] [char](20) NULL, [c_city] [char](20) NULL, [c_state] [char](2) NULL, [c_zip] [char](9) NULL, [c_phone] [char](16) NULL, [c_since] [datetime] NULL, [c_middle] [char](2) NULL, [c_data] [char](500) NULL)}
-        set sql(2) {CREATE TABLE [dbo].[district]( [d_id] [tinyint] NOT NULL, [d_w_id] [int] NOT NULL, [d_ytd] [money] NOT NULL, [d_next_o_id] [int] NULL, [d_tax] [smallmoney] NULL, [d_name] [char](10) NULL, [d_street_1] [char](20) NULL, [d_street_2] [char](20) NULL, [d_city] [char](20) NULL, [d_state] [char](2) NULL, [d_zip] [char](9) NULL, [padding] [char](6000) NOT NULL, CONSTRAINT [PK_DISTRICT] PRIMARY KEY CLUSTERED ( [d_w_id] ASC, [d_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON))}
+        set sql(2) {CREATE TABLE [dbo].[district]( [d_id] [tinyint] NOT NULL, [d_w_id] [int] NOT NULL, [d_ytd] [money] NOT NULL, [d_next_o_id] [int] NULL, [d_tax] [smallmoney] NULL, [d_name] [char](10) NULL, [d_street_1] [char](20) NULL, [d_street_2] [char](20) NULL, [d_city] [char](20) NULL, [d_state] [char](2) NULL, [d_zip] [char](9) NULL, [padding] [char](6000) NOT NULL, CONSTRAINT [PK_DISTRICT] PRIMARY KEY CLUSTERED ( [d_w_id] ASC, [d_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF))}
         set sql(3) {CREATE TABLE [dbo].[history]( [h_c_id] [int] NULL, [h_c_d_id] [tinyint] NULL, [h_c_w_id] [int] NULL, [h_d_id] [tinyint] NULL, [h_w_id] [int] NULL, [h_date] [datetime] NULL, [h_amount] [smallmoney] NULL, [h_data] [char](24) NULL)} 
-        set sql(4) {CREATE TABLE [dbo].[item]( [i_id] [int] NOT NULL, [i_name] [char](24) NULL, [i_price] [smallmoney] NULL, [i_data] [char](50) NULL, [i_im_id] [int] NULL, CONSTRAINT [PK_ITEM] PRIMARY KEY CLUSTERED ( [i_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON))} 
+        set sql(4) {CREATE TABLE [dbo].[item]( [i_id] [int] NOT NULL, [i_name] [char](24) NULL, [i_price] [smallmoney] NULL, [i_data] [char](50) NULL, [i_im_id] [int] NULL, CONSTRAINT [PK_ITEM] PRIMARY KEY CLUSTERED ( [i_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF))} 
         set sql(5) {CREATE TABLE [dbo].[new_order]( [no_o_id] [int] NOT NULL, [no_d_id] [tinyint] NOT NULL, [no_w_id] [int] NOT NULL)} 
         set sql(6) {CREATE TABLE [dbo].[orders]( [o_id] [int] NOT NULL, [o_d_id] [tinyint] NOT NULL, [o_w_id] [int] NOT NULL, [o_c_id] [int] NOT NULL, [o_carrier_id] [tinyint] NULL, [o_ol_cnt] [tinyint] NULL, [o_all_local] [tinyint] NULL, [o_entry_d] [datetime] NULL)} 
         set sql(7) {CREATE TABLE [dbo].[order_line]( [ol_o_id] [int] NOT NULL, [ol_d_id] [tinyint] NOT NULL, [ol_w_id] [int] NOT NULL, [ol_number] [tinyint] NOT NULL, [ol_i_id] [int] NULL, [ol_delivery_d] [datetime] NULL, [ol_amount] [smallmoney] NULL, [ol_supply_w_id] [int] NULL, [ol_quantity] [smallint] NULL, [ol_dist_info] [char](24) NULL)} 
-        set sql(8) {CREATE TABLE [dbo].[stock]( [s_i_id] [int] NOT NULL, [s_w_id] [int] NOT NULL, [s_quantity] [smallint] NOT NULL, [s_ytd] [int] NOT NULL, [s_order_cnt] [smallint] NULL, [s_remote_cnt] [smallint] NULL, [s_data] [char](50) NULL, [s_dist_01] [char](24) NULL, [s_dist_02] [char](24) NULL, [s_dist_03] [char](24) NULL, [s_dist_04] [char](24) NULL, [s_dist_05] [char](24) NULL, [s_dist_06] [char](24) NULL, [s_dist_07] [char](24) NULL, [s_dist_08] [char](24) NULL, [s_dist_09] [char](24) NULL, [s_dist_10] [char](24) NULL, CONSTRAINT [PK_STOCK] PRIMARY KEY CLUSTERED ( [s_w_id] ASC, [s_i_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON))}
-        set sql(9) {CREATE TABLE [dbo].[warehouse]( [w_id] [int] NOT NULL, [w_ytd] [money] NOT NULL, [w_tax] [smallmoney] NOT NULL, [w_name] [char](10) NULL, [w_street_1] [char](20) NULL, [w_street_2] [char](20) NULL, [w_city] [char](20) NULL, [w_state] [char](2) NULL, [w_zip] [char](9) NULL, [padding] [char](4000) NOT NULL, CONSTRAINT [PK_WAREHOUSE] PRIMARY KEY CLUSTERED ( [w_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON))} 
+        set sql(8) {CREATE TABLE [dbo].[stock]( [s_i_id] [int] NOT NULL, [s_w_id] [int] NOT NULL, [s_quantity] [smallint] NOT NULL, [s_ytd] [int] NOT NULL, [s_order_cnt] [smallint] NULL, [s_remote_cnt] [smallint] NULL, [s_data] [char](50) NULL, [s_dist_01] [char](24) NULL, [s_dist_02] [char](24) NULL, [s_dist_03] [char](24) NULL, [s_dist_04] [char](24) NULL, [s_dist_05] [char](24) NULL, [s_dist_06] [char](24) NULL, [s_dist_07] [char](24) NULL, [s_dist_08] [char](24) NULL, [s_dist_09] [char](24) NULL, [s_dist_10] [char](24) NULL, CONSTRAINT [PK_STOCK] PRIMARY KEY CLUSTERED ( [s_w_id] ASC, [s_i_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF))}
+        set sql(9) {CREATE TABLE [dbo].[warehouse]( [w_id] [int] NOT NULL, [w_ytd] [money] NOT NULL, [w_tax] [smallmoney] NOT NULL, [w_name] [char](10) NULL, [w_street_1] [char](20) NULL, [w_street_2] [char](20) NULL, [w_city] [char](20) NULL, [w_state] [char](2) NULL, [w_zip] [char](9) NULL, [padding] [char](4000) NOT NULL, CONSTRAINT [PK_WAREHOUSE] PRIMARY KEY CLUSTERED ( [w_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF))} 
         set sql(10) {ALTER TABLE [dbo].[customer] SET (LOCK_ESCALATION = DISABLE)}
         set sql(11) {ALTER TABLE [dbo].[district] SET (LOCK_ESCALATION = DISABLE)}
         set sql(12) {ALTER TABLE [dbo].[history] SET (LOCK_ESCALATION = DISABLE)}
@@ -1577,13 +1259,13 @@ proc CreateIndexes { odbc imdb } {
         #In-memory Indexes created with tables
     } else {
         set sql(1) {CREATE UNIQUE CLUSTERED INDEX [customer_i1] ON [dbo].[customer] ( [c_w_id] ASC, [c_d_id] ASC, [c_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
-        set sql(2) {CREATE UNIQUE CLUSTERED INDEX [new_order_i1] ON [dbo].[new_order] ( [no_w_id] ASC, [no_d_id] ASC, [no_o_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
-        set sql(3) {CREATE UNIQUE CLUSTERED INDEX [orders_i1] ON [dbo].[orders] ( [o_w_id] ASC, [o_d_id] ASC, [o_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
-        set sql(4) {CREATE UNIQUE CLUSTERED INDEX [order_line_i1] ON [dbo].[order_line] ( [ol_w_id] ASC, [ol_d_id] ASC, [ol_o_id] ASC, [ol_number] ASC)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)} 
-        set sql(5) {CREATE UNIQUE NONCLUSTERED INDEX [customer_i2] ON [dbo].[customer] ( [c_w_id] ASC, [c_d_id] ASC, [c_last] ASC, [c_id] ASC) INCLUDE ([c_credit], [c_street_1], [c_street_2], [c_city], [c_state], [c_zip], [c_phone], [c_middle], [c_credit_lim], [c_since], [c_discount], [c_first]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
-        set sql(6) {CREATE NONCLUSTERED INDEX [d_details] ON [dbo].[district] ( [d_id] ASC, [d_w_id] ASC) INCLUDE ([d_name], [d_street_1], [d_street_2], [d_city], [d_state], [d_zip], [padding]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)}
-        set sql(7) {CREATE NONCLUSTERED INDEX [orders_i2] ON [dbo].[orders] ( [o_w_id] ASC, [o_d_id] ASC, [o_c_id] ASC, [o_id] ASC)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
-        set sql(8) {CREATE UNIQUE NONCLUSTERED INDEX [w_details] ON [dbo].[warehouse] ( [w_id] ASC) INCLUDE ([w_tax], [w_name], [w_street_1], [w_street_2], [w_city], [w_state], [w_zip], [padding]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
+        set sql(2) {CREATE UNIQUE CLUSTERED INDEX [new_order_i1] ON [dbo].[new_order] ( [no_w_id] ASC, [no_d_id] ASC, [no_o_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = OFF, ALLOW_PAGE_LOCKS = ON)}
+        set sql(3) {CREATE UNIQUE CLUSTERED INDEX [orders_i1] ON [dbo].[orders] ( [o_w_id] ASC, [o_d_id] ASC, [o_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = OFF, ALLOW_PAGE_LOCKS = ON)}
+        set sql(4) {CREATE UNIQUE CLUSTERED INDEX [order_line_i1] ON [dbo].[order_line] ( [ol_w_id] ASC, [ol_d_id] ASC, [ol_o_id] ASC, [ol_number] ASC)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = OFF, ALLOW_PAGE_LOCKS = ON)} 
+        set sql(5) {CREATE NONCLUSTERED INDEX [customer_c_last] ON [dbo].[customer]([c_w_id] ASC, [c_d_id] ASC, [c_last] ASC, [c_first] ASC, [c_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
+        set sql(6) {CREATE NONCLUSTERED INDEX [district_d_id] ON [dbo].[district]([d_id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF)}
+        set sql(7) {CREATE NONCLUSTERED INDEX [orders_i2] ON [dbo].[orders] ( [o_w_id] ASC, [o_d_id] ASC, [o_c_id] ASC, [o_id] ASC)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = OFF, ALLOW_PAGE_LOCKS = ON)}
+        set sql(8) {CREATE CLUSTERED INDEX [history_i1] ON [dbo].[history]([h_c_w_id] ASC, [h_date] ASC, [h_c_d_id] ASC, [h_c_id] ASC, [h_amount] ASC)}
         for { set i 1 } { $i <= 8 } { incr i } {
             $odbc evaldirect $sql($i)
         }

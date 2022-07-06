@@ -80,7 +80,7 @@ proc CreateStoredProcs { mysql_handler } {
         DECLARE `Constraint Violation` CONDITION FOR SQLSTATE '23000';
         DECLARE EXIT HANDLER FOR `Constraint Violation` ROLLBACK;
         DECLARE EXIT HANDLER FOR NOT FOUND ROLLBACK;
-        SET no_o_all_local = 0;
+        SET no_o_all_local = 1;
         SELECT c_discount, c_last, c_credit, w_tax
         INTO no_c_discount, no_c_last, no_c_credit, no_w_tax
         FROM customer, warehouse
@@ -92,8 +92,6 @@ proc CreateStoredProcs { mysql_handler } {
         WHERE d_id = no_d_id AND d_w_id = no_w_id FOR UPDATE;
         UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id;
         SET o_id = no_d_next_o_id;
-        INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
-        INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         SET rbk = FLOOR(1 + (RAND() * 99));
         SET loop_counter = 1;
         WHILE loop_counter <= no_o_ol_cnt DO
@@ -156,6 +154,8 @@ proc CreateStoredProcs { mysql_handler } {
         VALUES (o_id, no_d_id, no_w_id, loop_counter, no_ol_i_id, no_ol_supply_w_id, no_ol_quantity, no_ol_amount, no_ol_dist_info);
         set loop_counter = loop_counter + 1;
         END WHILE;
+        INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
+        INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
     END }
     set sql(2) { CREATE PROCEDURE `DELIVERY`(
@@ -174,6 +174,7 @@ proc CreateStoredProcs { mysql_handler } {
         DECLARE `Constraint Violation` CONDITION FOR SQLSTATE '23000';
         DECLARE EXIT HANDLER FOR `Constraint Violation` ROLLBACK;
         SET loop_counter = 1;
+        START TRANSACTION;
         WHILE loop_counter <= 10 DO
         SET d_d_id = loop_counter;
         SELECT no_o_id INTO d_no_o_id FROM new_order WHERE no_w_id = d_w_id AND no_d_id = d_d_id LIMIT 1;
@@ -195,9 +196,9 @@ proc CreateStoredProcs { mysql_handler } {
         WHERE c_id = d_c_id AND c_d_id = d_d_id AND
         c_w_id = d_w_id;
         SET deliv_data = CONCAT(d_d_id,' ',d_no_o_id,' ',timestamp);
-        COMMIT;
         set loop_counter = loop_counter + 1;
         END WHILE;
+        COMMIT;
     END }
     set sql(3) { CREATE PROCEDURE `PAYMENT` (
         p_w_id			INTEGER,
@@ -364,6 +365,7 @@ proc CreateStoredProcs { mysql_handler } {
         set os_ol_quantity_array = 'CSV,';
         set os_ol_amount_array = 'CSV,';
         set os_ol_delivery_d_array = 'CSV,';
+        START TRANSACTION;
         IF ( byname = 1 )
         THEN
         SELECT count(c_id) INTO namecnt
@@ -412,6 +414,7 @@ proc CreateStoredProcs { mysql_handler } {
         END IF;
         UNTIL done END REPEAT;
         CLOSE c_line;
+        COMMIT;
     END }
     set sql(5) { CREATE PROCEDURE `SLEV` (
         st_w_id                 INTEGER,
@@ -424,6 +427,7 @@ proc CreateStoredProcs { mysql_handler } {
         DECLARE `Constraint Violation` CONDITION FOR SQLSTATE '23000';
         DECLARE EXIT HANDLER FOR `Constraint Violation` ROLLBACK;
         DECLARE EXIT HANDLER FOR NOT FOUND ROLLBACK;
+        START TRANSACTION;
         SELECT d_next_o_id INTO st_o_id
         FROM district
         WHERE d_w_id=st_w_id AND d_id=st_d_id;
@@ -433,6 +437,7 @@ proc CreateStoredProcs { mysql_handler } {
         ol_d_id = st_d_id AND (ol_o_id < st_o_id) AND
         ol_o_id >= (st_o_id - 20) AND s_w_id = st_w_id AND
         s_i_id = ol_i_id AND s_quantity < threshold;
+        COMMIT;
     END }
     for { set i 1 } { $i <= 5 } { incr i } {
         mysqlexec $mysql_handler $sql($i)
