@@ -3,9 +3,17 @@
     <connection>
         <mysql_host>127.0.0.1</mysql_host>
         <mysql_port>3306</mysql_port>
-	<mysql_socket>/tmp/mysql.sock</mysql_socket>
+        <mysql_socket>/tmp/mysql.sock</mysql_socket>
+        <mysql_ssl>false</mysql_ssl>
+        <mysql_ssl_two_way>false</mysql_ssl_two_way>
+        <mysql_ssl_linux_capath>/etc/mysql/certs</mysql_ssl_linux_capath>
+        <mysql_ssl_windows_capath>C:\mysql\certs</mysql_ssl_windows_capath>
+        <mysql_ssl_ca>ca-cert.pem</mysql_ssl_ca>
+        <mysql_ssl_cert>client-cert.pem</mysql_ssl_cert>
+        <mysql_ssl_key>client-key.pem</mysql_ssl_key>
+        <mysql_ssl_cipher>server</mysql_ssl_cipher>
     </connection>
-	<tpcc>
+    <tpcc>
         <schema>
             <mysql_count_ware>1</mysql_count_ware>
             <mysql_num_vu>1</mysql_num_vu>
@@ -13,23 +21,23 @@
             <mysql_pass>mysql</mysql_pass>
             <mysql_dbase>tpcc</mysql_dbase>
             <mysql_storage_engine>innodb</mysql_storage_engine>
-	    <mysql_partition>false</mysql_partition>
-	    <mysql_prepared>false</mysql_prepared>
+            <mysql_partition>false</mysql_partition>
+            <mysql_prepared>false</mysql_prepared>
         </schema>
         <driver>
             <mysql_total_iterations>10000000</mysql_total_iterations>
             <mysql_raiseerror>false</mysql_raiseerror>
             <mysql_keyandthink>false</mysql_keyandthink>
             <mysql_driver>test</mysql_driver>
-	    <mysql_rampup>2</mysql_rampup>
+            <mysql_rampup>2</mysql_rampup>
             <mysql_duration>5</mysql_duration>
             <mysql_allwarehouse>false</mysql_allwarehouse>
             <mysql_timeprofile>false</mysql_timeprofile>
-	    <mysql_async_scale>false</mysql_async_scale>
+            <mysql_async_scale>false</mysql_async_scale>
             <mysql_async_client>10</mysql_async_client>
             <mysql_async_verbose>false</mysql_async_verbose>
             <mysql_async_delay>1000</mysql_async_delay>
-	    <mysql_connect_pool>false</mysql_connect_pool>
+            <mysql_connect_pool>false</mysql_connect_pool>
         </driver>
     </tpcc>
     <tpch>
@@ -39,7 +47,7 @@
             <mysql_tpch_pass>mysql</mysql_tpch_pass>
             <mysql_tpch_dbase>tpch</mysql_tpch_dbase>
             <mysql_num_tpch_threads>1</mysql_num_tpch_threads>
-  	    <mysql_tpch_storage_engine>innodb</mysql_tpch_storage_engine>
+            <mysql_tpch_storage_engine>innodb</mysql_tpch_storage_engine>
         </schema>
         <driver>
             <mysql_total_querysets>1</mysql_total_querysets>
@@ -49,7 +57,7 @@
             <mysql_update_sets>1</mysql_update_sets>
             <mysql_trickle_refresh>1000</mysql_trickle_refresh>
             <mysql_refresh_verbose>false</mysql_refresh_verbose>
-	    <mysql_cloud_query>false</mysql_cloud_query>
+            <mysql_cloud_query>false</mysql_cloud_query>
         </driver>
     </tpch>
 </mysql>

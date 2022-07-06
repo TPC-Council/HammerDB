@@ -1,4 +1,5 @@
 package require sqlite3
+global hdb_version
 
 #Get generic config data
 set genericdict [ ::XML::To_Dict config/generic.xml ]
@@ -10,9 +11,40 @@ if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
     set sqlitedb_dir ""
 }
 
+#Set hammerdb version to genericdict
+set hdb_version_dict [ dict create version $hdb_version ]
+dict append genericdict hdb_version $hdb_version_dict
+
+#Try to get generic config data from SQLite
+set genericdictdb [ SQLite2Dict "generic" ]
+if { $genericdictdb eq "" } {
+    #No SQLite found, save genericdict from XML to SQLite
+    Dict2SQLite "generic" $genericdict
+} else {
+    if { [ dict exists $genericdictdb hdb_version version ] } {
+        set sqlite_hdb_version [ dict get $genericdictdb hdb_version version ]
+    } else {
+        set sqlite_hdb_version "unknown"
+    }
+
+    #SQLite found, check whether the schema versions from SQLite and XML are consistent
+    if { $sqlite_hdb_version ne $hdb_version } {
+        puts "The existing SQLite DBs are from version $sqlite_hdb_version. SQLite DBs will be reset to $hdb_version."
+        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql } {
+            set dbfile [ CheckSQLiteDB $dbname ]
+            #Remove SQLite file
+            file delete $dbfile
+        }
+        #After remove old SQLite, save genericdict to SQLite DB
+        Dict2SQLite "generic" $genericdict
+    } else {
+        #Use configration from SQLite
+        set genericdict $genericdictdb
+    }
+}
+
 #Load database config from SQLite database.db
 set dbdict [ SQLite2Dict "database" ]
-
 if { $dbdict eq "" } {
     #Load database config from database.xml
     set dbdict [ ::XML::To_Dict config/database.xml ]
@@ -42,16 +74,8 @@ foreach { key } [ dict keys $dbdict ] {
     lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\olap.tcl" "$key/$prefix\otc.tcl" "$key/$prefix\met.tcl"
 }
 
-#Get generic config data
-set genericdictdb [ SQLite2Dict "generic" ]
-if { $genericdictdb eq "" } {
-    Dict2SQLite "generic" $genericdict
-} else {
-    set genericdict $genericdictdb
-}
-
 #get_xml_data
-set_globle_config $genericdict
+set_global_config $genericdict
 
 #Make generics global
 tsv::set application genericdict $genericdict
