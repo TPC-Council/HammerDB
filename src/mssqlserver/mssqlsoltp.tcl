@@ -113,7 +113,7 @@ proc CreateStoredProcs { odbc imdb } {
             IF ((@loop_counter = @no_o_ol_cnt) AND (@rbk = 1))
             SET @no_ol_i_id = 100001
             ELSE
-            SET @no_ol_i_id = CAST(1000000 * RAND() + 1 AS INT)
+            SET @no_ol_i_id = CAST(100000 * RAND() + 1 AS INT)
             SET @x = CAST(100 * RAND() + 1 AS INT)
             IF (@x > 1)
             SET @no_ol_supply_w_id = @no_w_id
@@ -661,7 +661,7 @@ proc CreateStoredProcs { odbc imdb } {
             IF ((@loop_counter = @no_o_ol_cnt) AND (@rbk = 1))
             SET @no_ol_i_id = 100001
             ELSE
-            SET @no_ol_i_id = CAST(1000000 * RAND() + 1 AS INT)
+            SET @no_ol_i_id = CAST(100000 * RAND() + 1 AS INT)
             SET @x = CAST(100 * RAND() + 1 AS INT)
             IF (@x > 1)
             SET @no_ol_supply_w_id = @no_w_id
