@@ -5,7 +5,7 @@
 #   It is published with the terms of tcllib's BSD-style license.
 #   See the file named license.terms.
 #
-# This library provide functions to differentinate string/list/dict in multi-ranks.
+# This library provide functions to differentiate string/list/dict in multi-ranks.
 #
 # Copyright (c) 2008-2011 KATO Kanryu <kanryu6@users.sourceforge.net>
 # Copyright (c) 2015 Miguel Martínez López <aplicacionamedida@gmail.com>

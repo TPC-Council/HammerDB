@@ -463,7 +463,7 @@ proc ::tooltip::treeviewTip {w x y} {
     }
 }
 
-# Handle the lack of <Enter>/<Leave> between treeview rows using <Motion> nitialize tooltip events for Treeview widgets
+# Handle the lack of <Enter>/<Leave> between treeview rows using <Motion> initialize tooltip events for Treeview widgets
 proc ::tooltip::enableTreeview {w args} {
     if {[string match *treeviewTip* [bind $w <Enter>]]} { return }
     bind $w <Enter> +[namespace code [list treeviewTip %W %x %y]]

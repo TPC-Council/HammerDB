@@ -35,7 +35,7 @@ package provide etprof 1.1
  }
 
  proc ::etprof::TraceHandler {name cmd args} {
-     # We need to misure the elapsed time as early as possible.
+     # We need to measure the elapsed time as early as possible.
      set enter_clicks [clock clicks]
      set enter_secs [clock seconds]
      set elapsed [expr {$enter_clicks-$::etprof::timer}]
@@ -102,7 +102,7 @@ package provide etprof 1.1
      # Add the time spent inside the handler to every element
      # of the cumulative timers list. Note that the time needed
      # to perform the following operation will be accounted to user code
-     # as comulative, but from worst-case tests performed this does not
+     # as cumulative, but from worst-case tests performed this does not
      # seems to alter the output in a significant way.
      if {[llength $::etprof::cumulative_timers]} {
         set spent [expr {[clock clicks]-$enter_clicks}]

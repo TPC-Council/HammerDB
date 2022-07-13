@@ -79,7 +79,7 @@ proc convert_to_oratcl { } {
             set text($cur2hash($cursor)) [remspace $text($cur2hash($cursor))]
             set bindmatch [ check_date_formats $text($cur2hash($cursor)) ]
             if {[regexp {:\"?([[:alnum:]_]+)(?!\=)\"?|(?!\=)\"?:\"?([[:alnum:]_]+)} $bindmatch) match]} {
-                ## BB: 7/25/13 - based on order of projection filtering in SQL , ie :1=ColumnName versus ColumnName=:1, handle bind variable setting...
+                ## BB: 7/25/13 - based on order of projection filtering in SQL, i.e. :1=ColumnName versus ColumnName=:1, handle bind variable setting...
                 if {[regexp {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch) match]} {
                     set bindvarlist($cursor) [split [regexp -inline -all --\
        {:\"?([[:alnum:]_]+)(?!\=)\"?} $bindmatch ]]

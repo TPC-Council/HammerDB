@@ -520,11 +520,11 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name insert $rdbms.$bm end -id $rdbms.$bm.mode -text "Mode" -image [ create_image mode icons ]
     dict set treeidicons $rdbms.$bm.mode mode
     $Name item $rdbms.$bm.mode -tags {modehlp}
-    tooltip::tooltip $Name -item $rdbms.$bm.mode "Configure and Run Remote Conection Modes"
+    tooltip::tooltip $Name -item $rdbms.$bm.mode "Configure and Run Remote Connection Modes"
     $Name insert $rdbms.$bm.mode end -id $rdbms.$bm.mode.options -text "Options" -image [ create_image option icons ]
     dict set treeidicons $rdbms.$bm.mode.options option
     $Name item $rdbms.$bm.mode.options -tags modeopt
-    tooltip::tooltip $Name -item $rdbms.$bm.mode.options "Remote Conection Mode Options"
+    tooltip::tooltip $Name -item $rdbms.$bm.mode.options "Remote Connection Mode Options"
     $Name tag bind modeopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } {select_mode } }
     $Name insert $rdbms.$bm end -id $rdbms.$bm.datagen -text "Datagen" -image [ create_image datagen icons ]
     dict set treeidicons $rdbms.$bm.datagen datagen
@@ -747,7 +747,7 @@ proc construct_button {Name button_type iconname file cmd helpmsg} {
 proc construct_button_png {Name button_type iconname file cmd helpmsg} {
     #If called with button type of bar buttons are packed in the button bar along the top
     #edit buttons are packed along the left hand side visible when the menu button is pressed
-    #all butons are bound to show an alternative icon when entered and original when left
+    #all buttons are bound to show an alternative icon when entered and original when left
     global tcl_version ctext
     upvar #0 icons icons
     upvar #0 iconalt iconalt
@@ -770,7 +770,7 @@ proc construct_button_png {Name button_type iconname file cmd helpmsg} {
 proc construct_button_svg {Name button_type iconname file cmd helpmsg} {
     #If called with button type of bar buttons are packed in the button bar along the top
     #edit buttons are packed along the left hand side visible when the menu button is pressed
-    #all butons are bound to show an alternative icon when entered and original when left
+    #all buttons are bound to show an alternative icon when entered and original when left
     global tcl_version ctext win_scale_fact
     upvar #0 iconssvg iconssvg 
     upvar #0 iconaltsvg iconaltsvg 
@@ -1669,7 +1669,7 @@ proc ed_run_package {} {
     ed_kill_apps
     ed_edit_commit
     if { [catch {load_virtual} message]} {
-        puts "Failed to create virtaul user: $message"
+        puts "Failed to create virtual user: $message"
     } else {
         if { [catch {run_virtual} message]} {
             puts "Failed to run TCL Code Test: $message"

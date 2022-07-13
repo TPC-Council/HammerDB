@@ -12,7 +12,7 @@ namespace eval socktest {
        9 Undefined
    }
 
-   # test if port 'sock' at adress 'host' is responding within timeout
+   # test if port 'sock' at address 'host' is responding within timeout
    # note: socket -async requires a running eventloop
    proc socktest {host sock {timeout 1000}} {
         if {$timeout == 0} {
@@ -35,7 +35,7 @@ namespace eval socktest {
         # waiting for timeout or other result
         vwait [namespace current]::done$sock
         catch {close $s}
-        after cancel $aid; # catch not neccessary
+        after cancel $aid; # catch not necessary
         set ret [set done$sock]
         unset done$sock; # save mem
         return $ret

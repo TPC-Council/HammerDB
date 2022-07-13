@@ -76,7 +76,7 @@ proc sendonecommand { command stepcount } {
     Primary send [ lindex $masterlistcopy [ expr $stepcount - 1 ]] eval $command  
 }
 
-#do the equivalent of dbset for all parameters in a dict, ie set the entire dict
+#do the equivalent of dbset for all parameters in a dict, i.e. set the entire dict
 proc dbsetall { stepcount dbname dbconfig } {
     global masterlist masterlistcopy
     putscli "Sending dbset all to [ lindex $masterlistcopy [ expr $stepcount - 1 ]]"
@@ -298,7 +298,7 @@ proc steprun {} {
         putscli "Failed to write Primary port file to temp directory"
     }
     #Wait for replicas to connect
-    putscli "Doing wait to connnect ...."
+    putscli "Doing wait to connect ...."
     set dbconfig_dict [ set $dbconfig ]
     wait_to_connect_and_continue $base_rampup $base_duration $prefix $dbconfig $port_file
 }

@@ -302,15 +302,15 @@ namespace eval oramet {
         #} err ] } { ; }
     }
 
-    # For zooming in and out, resets the miminum point on X axis
+    # For zooming in and out, resets the minimum point on X axis
     proc reset_ticks { } {
         global x_w_ash
         global public
-        # number of seconds to display on the graph, ie width
-        # ash,xmin is a factor, ie sho 2x the number of seconds or 1/2 
+        # number of seconds to display on the graph, i.e. width
+        # ash,xmin is a factor, i.e. show 2x the number of seconds or 1/2 
         set secs [ expr $public(ash,xmin) * 3600 ]
         set max $x_w_ash(end)
-        # take maximum dispaly point, in seconds and subtrct the width, this is min point
+        # take maximum display point, in seconds and subtract the width, this is min point
         set min   [ expr $x_w_ash(end) - $secs ] 
         set delta [ expr $max - $min ]
         if  { $min > 0 } {
@@ -2583,7 +2583,7 @@ namespace eval oramet {
                      decode(session_state,'ON CPU',
                                            decode(session_type,'BACKGROUND','BCPU','CPU')
                      ,event)
-                    ,' []$/','____') /* replace first characters with undescore, get rid of / */
+                    ,' []$/','____') /* replace first characters with underscore, get rid of / */
                 event#,
 		'ash' type,
 		session_type
