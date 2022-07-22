@@ -4145,7 +4145,7 @@ namespace eval BawtMain {
         append msg "--compiler <string>    : Build with specified compiler version.\n"
         append msg "                         Choices: gcc vs2008 vs2010 vs2012 vs2013 vs2015 vs2017 vs2019 vs2022.\n"
         append msg "                         Specify primary and secondary compiler by adding a plus sign\n"
-        append msg "                         inbetween. Example: gcc+vs2013.\n"
+        append msg "                         in between. Example: gcc+vs2013.\n"
         append msg "                         Default: [GetCompilerVersion].\n"
         append msg "--gccversion <string>  : Build with specified MinGW gcc version. Windows only.\n"
         append msg "                         Choices: 4.9.2 5.2.0 7.2.0 8.1.0.\n"
@@ -5235,7 +5235,7 @@ namespace eval BawtMain {
                             }
                         }
                     } else {
-                        # All other strings are interpeted as user configurations.
+                        # All other strings are interpreted as user configurations.
                         AddUserConfig $libName $arg
                     }
                 }

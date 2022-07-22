@@ -49,7 +49,7 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "prints the current configuration: 
 db: database 
 bm: benchmark
-dict: the dictionary for the current database ie all active variables
+dict: the dictionary for the current database, i.e. all active variables
 script: the loaded script
 vuconf: the virtual user configuration
 vucreated: the number of virtual users created
@@ -198,7 +198,7 @@ proc wapp-page-help {} {
         get http://localhost:8080/print?bm / get http://localhost:8080/bm
         {\"benchmark\": \"TPC-C\"}
         <br>
-        <b>GET dict</b>: Show the dictionary for the current database ie all active variables.
+        <b>GET dict</b>: Show the dictionary for the current database, i.e. all active variables.
         get http://localhost:8080/print?dict /  http://localhost:8080/dict
         <br> 
         <b>GET script</b>: Show the loaded script.

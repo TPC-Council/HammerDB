@@ -45,7 +45,7 @@ namespace eval reformat_tcl {
                     } elseif {$ch=="\""} {
                         set nquot [expr {[incr nquot] % 2}]
                     } elseif {$nquot} {
-                        # anything in quotes doesn't impact indendation
+                        # anything in quotes doesn't impact indentation
                     } elseif {$ch=="\{"} {
                         if {[string range $newline $i $i+2]=="\{\"\}"} {
                             incr i 2  ;# quote in braces - correct (though tricky)

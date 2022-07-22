@@ -278,7 +278,7 @@ proc District { file w_id DIST_PER_WARE db } {
     set chalen [ llength $globArray ]
     puts "Generating District"
     if { $db eq "mssql" } {
-        #Note additional field for District for paddinga remove last | for original
+        #Note additional field for District for padding remove last | for original
         set statement {_puts $file $d_id|$d_w_id|$d_ytd|$d_next_o_id|$d_tax|$d_name|[ lindex $d_add 0 ]|[ lindex $d_add 1 ]|[ lindex $d_add 2 ]|[ lindex $d_add 3 ]|[ lindex $d_add 4 ]|}
     } else {
         if { $db eq "db2" } {
@@ -306,7 +306,7 @@ proc LoadWare { file1 file2 file3 ware_start count_ware MAXITEMS DIST_PER_WARE d
     set chalen [ llength $globArray ]
     puts "Generating Warehouse"
     if { $db eq "mssql" } {
-        #Note additional field for District for paddinga remove last | for original
+        #Note additional field for District for padding remove last | for original
         set statement {_puts $file1 $w_id|$w_ytd|$w_tax|$w_name|[ lindex $add 0 ]|[ lindex $add 1 ]|[ lindex $add 2 ]|[ lindex $add 3 ]|[ lindex $add 4 ]|}
     } else {
         if { $db eq "db2" } {

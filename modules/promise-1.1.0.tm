@@ -313,7 +313,7 @@ oo::class create promise::Promise {
     }
 
     # Internal method to queue all registered reactions based on
-    # whether the promise is succesfully fulfilled or not
+    # whether the promise is successfully fulfilled or not
     method ScheduleReactions {} {
         if {$_state ni {FULFILLED REJECTED} || [llength $_reactions] == 0 } {
             # Promise is not settled or no reactions registered
@@ -376,8 +376,8 @@ oo::class create promise::Promise {
                 set edict $_edict
             }
             # TBD - how exactly is level to be handled?
-            # If -level is not 0, bgerror barfs because it treates
-            # it as TCL_RETURN no matter was -code is
+            # If -level is not 0, bgerror barfs because it treats
+            # it as TCL_RETURN no matter what -code is
             dict set edict -level 0
             after idle [interp bgerror {}] [list $_value $edict]
             set _bgerror_done 1

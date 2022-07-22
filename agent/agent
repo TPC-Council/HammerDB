@@ -11,7 +11,7 @@ exit
 ########################################################################
 # HammerDB Metrics
 #
-# Adpated from http://wiki.tcl.tk/37820
+# Adapted from http://wiki.tcl.tk/37820
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #

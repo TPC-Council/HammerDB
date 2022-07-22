@@ -1,5 +1,5 @@
 #Tablelist package modified to operate as a module
-#Copyright norice from original package
+#Copyright notice from original package
 #Multi-column listbox and tree widget package Tablelist, version 5.18
 #Copyright (c) 2000-2017  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #
@@ -3670,7 +3670,7 @@ proc tablelist::labelB1Down {w x shiftPressed} {
 # tablelist::labelB1Motion
 #
 # This procedure is invoked to process mouse motion events in the header label
-# w of a tablelist widget while button 1 is down.  If this event occured during
+# w of a tablelist widget while button 1 is down.  If this event occurred during
 # a column resize operation then the procedure computes the difference between
 # the pointer's new x-coordinate relative to that label and the one recorded by
 # the last invocation of labelB1Down, and adjusts the width of the
@@ -3870,7 +3870,7 @@ proc tablelist::labelB1Motion {w X x y} {
 #
 # This procedure is invoked when the mouse pointer enters the header label w of
 # a tablelist widget while mouse button 1 is down.  If the label was not
-# previously clicked then nothing happens.  Otherwise, if this event occured
+# previously clicked then nothing happens.  Otherwise, if this event occurred
 # during a column resize operation then the procedure updates the mouse cursor
 # accordingly.  Otherwise it changes the label's relief to sunken.
 #------------------------------------------------------------------------------
@@ -3934,7 +3934,7 @@ proc tablelist::labelB1Leave {w x y} {
 #
 # This procedure is invoked when mouse button 1 is released, if it was
 # previously clicked in a label of the tablelist widget win.  If this event
-# occured during a column resize operation then the procedure redisplays the
+# occurred during a column resize operation then the procedure redisplays the
 # column and stretches the stretchable columns.  Otherwise, if the mouse button
 # was released in the previously clicked label then the procedure restores the
 # label's relief and invokes the command specified by the -labelcommand or
@@ -4067,7 +4067,7 @@ proc tablelist::labelB1Up {w X} {
 # tablelist::labelB3Down
 #
 # This procedure is invoked when mouse button 3 is pressed in the header label
-# w of a tablelist widget.  If the Shift key was down when this event occured
+# w of a tablelist widget.  If the Shift key was down when this event occurred
 # then the procedure restores the last static width of the given column;
 # otherwise it configures the width of the given column to be just large enough
 # to hold all the elements (including the label).
@@ -22720,7 +22720,7 @@ proc tablelist::synchronize win {
     #
     # Here we are in the case that the procedure was scheduled for
     # execution at idle time.  However, it might have been invoked
-    # directly, before the idle time occured; in this case we should
+    # directly, before the idle time occurred; in this case we should
     # cancel the execution of the previously scheduled idle callback.
     #
     after cancel $data(syncId)	;# no harm if data(syncId) is no longer valid
@@ -24968,7 +24968,7 @@ proc tablelist::collapseSubCmd {win argList} {
     set callerProc [lindex [info level -1] 0]
     if {![string match "collapse*SubCmd" $callerProc]} {
 	#
-	# Destroy the label and messsage widgets
+	# Destroy the label and message widgets
 	# embedded into the descendants just elided
 	#
 	set widgets {}
@@ -25095,7 +25095,7 @@ proc tablelist::collapseallSubCmd {win argList} {
 	    }
 
 	    #
-	    # Destroy the label and messsage widgets
+	    # Destroy the label and message widgets
 	    # embedded into the descendants just elided
 	    #
 	    set widgets {}
@@ -29324,7 +29324,7 @@ proc tablelist::displayItems win {
     #
     # Here we are in the case that the procedure was scheduled for
     # execution at idle time.  However, it might have been invoked
-    # directly, before the idle time occured; in this case we should
+    # directly, before the idle time occurred; in this case we should
     # cancel the execution of the previously scheduled idle callback.
     #
     after cancel $data(dispId)	;# no harm if data(dispId) is no longer valid

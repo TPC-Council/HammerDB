@@ -23,7 +23,7 @@ if { [ file isdirectory $capath ] } {
 if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
 #All of the file entries are blank, use capath only
 } else {
-#CApath is valid, file entires are not blank, always check CA
+#CApath is valid, file entries are not blank, always check CA
 if { [ file readable [ file join $capath $maria_ssl_ca ]] } {
 } else {
 tk_messageBox -message "[ file join $capath $maria_ssl_ca ] is not readable, disabling SSL"

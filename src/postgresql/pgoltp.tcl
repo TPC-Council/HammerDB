@@ -2828,7 +2828,7 @@ set KEYANDTHINK \"$pg_keyandthink\" ;# Time for user thinking and keying (true o
 set rampup $pg_rampup;  # Rampup time in minutes before first Transaction Count is taken
 set duration $pg_duration;  # Duration in minutes before second Transaction Count is taken
 set mode \"$opmode\" ;# HammerDB operational mode
-set VACUUM \"$pg_vacuum\" ;# Perform checkpoint and vacuuum when complete (true or false)
+set VACUUM \"$pg_vacuum\" ;# Perform checkpoint and vacuum when complete (true or false)
 set DRITA_SNAPSHOTS \"$pg_dritasnap\";#Take DRITA Snapshots
 set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
@@ -3256,7 +3256,7 @@ set KEYANDTHINK \"$pg_keyandthink\" ;# Time for user thinking and keying (true o
 set rampup $pg_rampup;  # Rampup time in minutes before first Transaction Count is taken
 set duration $pg_duration;  # Duration in minutes before second Transaction Count is taken
 set mode \"$opmode\" ;# HammerDB operational mode
-set VACUUM \"$pg_vacuum\" ;# Perform checkpoint and vacuuum when complete (true or false)
+set VACUUM \"$pg_vacuum\" ;# Perform checkpoint and vacuum when complete (true or false)
 set DRITA_SNAPSHOTS \"$pg_dritasnap\";#Take DRITA Snapshots
 set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures

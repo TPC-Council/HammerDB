@@ -314,7 +314,7 @@ proc ::rest::create_interface {name} {
 
 # mime_multipart --
 #
-# creates a mime mulipart message
+# creates a mime multipart message
 #
 # ARGS:
 #       var        name of variable in which the mime body is stored

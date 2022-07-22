@@ -420,7 +420,7 @@ proc ::json::Implementations {} {
 #
 # Results:
 #	A list of implementation keys. In the order
-#	of preference, most prefered first.
+#	of preference, most preferred first.
 
 proc ::json::KnownImplementations {} {
     return {critcl tcl}
@@ -457,7 +457,7 @@ proc ::json::many-json2dict_critcl {args} {
 
 # ### ### ### ######### ######### #########
 ## Initialization: Choose an implementation,
-## most prefered first. Loads only one of the
+## most preferred first. Loads only one of the
 ## possible implementations. And activates it.
 
 namespace eval ::json {

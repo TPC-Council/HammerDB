@@ -2137,7 +2137,7 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
 
       <para>The goal of HammerDB is to make database performance data open
       source and enable database professionals a fast and low-cost to compare
-      and contrast database systems. HamerDB maintains a list of <link
+      and contrast database systems. HammerDB maintains a list of <link
       xlink:href="https://www.hammerdb.com/benchmarks.html">3rd party
       publications on the HammerDB website</link>.</para>
     </section>
@@ -4482,7 +4482,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
               determines the number of times that a script will be run in its
               entirety. The total_iterations value is internal to the TPROC-C
               driver script and determines the number of times the internal
-              loop is iterated ie for {set it 0} {$it &lt; $total_iterations}
+              loop is iterated, i.e. for {set it 0} {$it &lt; $total_iterations}
               {incr it} { ... } In other words if total_iterations is set to
               1000 then the executing user will log on once execute 1000
               transactions and then log off. If on the other hand Iterations
@@ -5628,7 +5628,7 @@ Vuser 3:sproc_cur:slev_st connections:{odbcc2 odbcc3} cursors:::oo::Obj28::Stmt:
         and tpcc3 and the connections chosen to round robin between them,
         therefore the actual number of NOPM is 3X that recorded from just the
         standalone connection. In a correctly configured cluster environment
-        it would be the same and the results wouyld be both consistent and
+        it would be the same and the results would be both consistent and
         valid. Be aware that these client side values are recorded during both
         rampup and timed test periods and therefore may not accurately reflect
         the results from a valid timed test.</para>
@@ -5791,7 +5791,7 @@ Starting 4 replica HammerDB instance
 HammerDB CLI v4.1
 Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
-Doing wait to connnect ....
+Doing wait to connect ....
 HammerDB CLI v4.1
 Copyright (C) 2003-2021 Steve Shaw
 Primary waiting for all replicas to connect .... 0 out of 4 are connected
@@ -7572,7 +7572,7 @@ hammerdb&gt;
                 |vucreated|vustatus|datagen]</entry>
 
                 <entry>prints the current configuration: db: database bm:
-                benchmark dict: the dictionary for the current database ie all
+                benchmark dict: the dictionary for the current database, i.e. all
                 active variables script: the loaded script vuconf: the virtual
                 user configuration vucreated: the number of virtual users
                 created vustatus: the status of the virtual users datagen :
@@ -7893,7 +7893,7 @@ tpcc       {
       at the end of the build. Note that exactly as the GUI the build is
       multithreaded with Virtual Users running simultaneously.</para>
 
-      <programlisting>hhammerdb&gt;buildschema
+      <programlisting>hammerdb&gt;buildschema
 Script cleared
 Building 10 Warehouses with 5 Virtual Users, 4 active + 1 Monitor VU(dict value mssqls_num_vu is set to 4)
 Ready to create a 10 Warehouse MS SQL Server TPROC-C schema
@@ -8486,7 +8486,7 @@ GET bm: Show the configured benchmark.
 get http://localhost:8080/print?bm / get http://localhost:8080/bm
 {"benchmark": "TPC-C"}
 
-GET dict: Show the dictionary for the current database ie all active variables.
+GET dict: Show the dictionary for the current database, i.e. all active variables.
 get http://localhost:8080/print?dict /  http://localhost:8080/dict
 
 GET script: Show the loaded script.
@@ -10004,7 +10004,7 @@ force_parallel_mode = on
 
         <programlisting># Enable compression by default on create, set to 0 to turn off
 infinidb_compression_type=2
-# Default for string table threshhold
+# Default for string table threshold
 infinidb_stringtable_threshold=20
 # infinidb local query flag
 # infinidb_local_query=1
@@ -12303,7 +12303,7 @@ GEOMEAN 4.011822724
       </figure>
 
       <para>You may also view the data with a text editor to see that the
-      generated data is delimited by a pip character ie “|” and intended NULL
+      generated data is delimited by a pip character, i.e. “|” and intended NULL
       values are represented by blank or empty data.</para>
 
       <figure>

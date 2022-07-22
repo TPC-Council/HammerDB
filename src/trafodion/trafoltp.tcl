@@ -1776,7 +1776,7 @@ proc do_tpcc { dsn odbc_driver server port uid pwd count_ware schema num_vu load
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         odbc close
-        #LogOff and reconnect due to Issue with COMMUNICATION LINK FAILURE. THE SERVER TIMED OUT OR DISAPPEARED occuring after a connection has been idle waiting for workers to complete. 
+        #LogOff and reconnect due to Issue with COMMUNICATION LINK FAILURE. THE SERVER TIMED OUT OR DISAPPEARED occurring after a connection has been idle waiting for workers to complete. 
         if [catch {tdbc::odbc::connection create odbc $connection} message ] {
             puts stderr "Error: the database connection to $connection could not be established"
             error $message
@@ -2210,7 +2210,7 @@ switch $myposition {
             }
             if { [ tsv::get application abort ] } { break }
             puts "Rampup complete, Taking start Transaction Count."
-            #No current statement for querying Trafodion transactions ie commits + rollbacks
+            #No current statement for querying Trafodion transactions, i.e. commits + rollbacks
             set start_trans 0
             if [ catch {set stmnt [ odbc prepare "select sum(d_next_o_id) from district" ]} message ] {
                 puts "Failed to prepare statement"
@@ -2238,7 +2238,7 @@ switch $myposition {
             }
             if { [ tsv::get application abort ] } { break }
             puts "Test complete, Taking end Transaction Count."
-            #No current statement for querying Trafodion transactions ie commits + rollbacks
+            #No current statement for querying Trafodion transactions, i.e. commits + rollbacks
             set end_trans 0
             if [ catch {set stmnt [ odbc prepare "select sum(d_next_o_id) from district" ]} message ] {
                 puts "Failed to prepare statement"

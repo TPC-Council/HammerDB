@@ -779,7 +779,7 @@ proc ::comm::commConfigure {chan {force 0} args} {
 
 # ::comm::Capability --
 #
-#	Internal command. Interogate an interp for
+#	Internal command. Interrogate an interp for
 #	the commands needed to execute regular and
 #	hook scripts.
 
@@ -1455,7 +1455,7 @@ proc ::comm::CommRunHook {chan event} {
 ## system.
 
 # AsyncPrepare, AsyncCheck: Initialize state information for async
-# return upon start of a remote invokation, and checking the state for
+# return upon start of a remote invocation, and checking the state for
 # async return.
 
 proc ::comm::AsyncPrepare {chan fid cmd ser} {

@@ -1,6 +1,6 @@
 #All icons orignally sourced for from open-iconic https://github.com/iconic/open-iconic
-#non-scaleable icons are PNG in base64 format (modified with GIMP)
-#scaleable icons are SVG format (modified with Inkscape)
+#non-scalable icons are PNG in base64 format (modified with GIMP)
+#scalable icons are SVG format (modified with Inkscape)
 #All icon sets in HammerDB including modification and colouring by Lucas Shaw
 proc create_icon_images { iconset } {
 switch $iconset {

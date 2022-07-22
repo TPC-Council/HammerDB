@@ -222,7 +222,7 @@ proc ::tkcon::Init {args} {
     ## If you set ::tkcon::OPT(exec) to {}, then instead of a multiple
     ## interp model, you get tkcon operating in the main interp by default.
     ## This can be useful when attaching to programs that like to operate
-    ## in the main interpter (for example, based on special wish'es).
+    ## in the main interpreter (for example, based on special wish'es).
     ## You can set this from the command line with -exec ""
     ## A side effect is that all tkcon command line args will be used
     ## by the first console only.
@@ -854,7 +854,7 @@ proc ::tkcon::GarbageCollect {} {
 
 ## ::tkcon::Eval - evaluates commands input into console window
 ## This is the first stage of the evaluating commands in the console.
-## They need to be broken up into consituent commands (by ::tkcon::CmdSep) in
+## They need to be broken up into constituent commands (by ::tkcon::CmdSep) in
 ## case a multiple commands were pasted in, then each is eval'ed (by
 ## ::tkcon::EvalCmd) in turn.  Any uncompleted command will not be eval'ed.
 # ARGS:	w	- console text widget
@@ -879,7 +879,7 @@ proc ::tkcon::Eval {w} {
 # ARGS:	w	- console text widget
 # 	cmd	- the command to evaluate
 # Calls:	::tkcon::Prompt
-# Outputs:	result of command to stdout (or stderr if error occured)
+# Outputs:	result of command to stdout (or stderr if error occurred)
 # Returns:	next event number
 ## 
 proc ::tkcon::EvalCmd {w cmd} {
@@ -1988,7 +1988,7 @@ proc ::tkcon::Find {w str args} {
 
 ## ::tkcon::Attach - called to attach tkcon to an interpreter
 # ARGS:	name	- application name to which tkcon sends commands
-#		  This is either a slave interperter name or tk appname.
+#		  This is either a slave interpreter name or tk appname.
 #	type	- (slave|interp) type of interpreter we're attaching to
 #		  slave means it's a tkcon interpreter
 #		  interp means we'll need to 'send' to it.
@@ -5610,7 +5610,7 @@ proc ::tkcon::ExpandBestMatch {l {e {}}} {
 #   mapped to corresponding functions in the parent interpreter.
 #
 # Further on, Tk cannot be really loaded. Still the safe 'load'
-# provedes a speciall case. The Tk can be divided into 4 groups,
+# provides a special case. The Tk can be divided into 4 groups,
 # that each has a safe handling procedure.
 #
 # - "::tkcon::SafeItem" handles commands like 'button', 'canvas' ......
@@ -5978,7 +5978,7 @@ proc ::tkcon::Retrieve {} {
     }
 }
 
-## 'send' pacakge that handles multiple communication variants
+## 'send' package that handles multiple communication variants
 ##
 # Try using Tk send first, then look for a winsend interp,
 # then try dde and finally have a go at comm
@@ -6084,7 +6084,7 @@ proc ::send::Pop {varname {nth 0}} {
     return $r
 }
 ##
-## end 'send' pacakge
+## end 'send' package
 
 ## special case 'tk appname' in Tcl plugin
 if {$::tkcon::PRIV(WWW)} {

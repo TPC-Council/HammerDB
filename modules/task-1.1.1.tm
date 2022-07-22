@@ -58,7 +58,7 @@ proc ::task args {
       in     { set execution_time [expr { $now + [::task::time $arg] }] }
       at     {
         if { [string length $arg] < [string length $now] } {
-          # We assume this is seconds since it couldnt be milliseconds :-P
+          # We assume this is seconds since it couldn't be milliseconds :-P
           set execution_time [expr { $arg * 1000 }]
         } else {
           set execution_time $arg

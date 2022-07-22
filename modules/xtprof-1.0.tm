@@ -31,7 +31,7 @@ tsv::unset allclicktimings
         set fun [lindex [lindex $args 0] 0]
         
         if { [lindex $args end] == "enter" } {
-            # Initalize the count of functions if needed...
+            # Initialize the count of functions if needed...
             if { ![info exists ProfilerArray(funcount)] } {
                 set ProfilerArray(funcount) 0
             }
@@ -371,7 +371,7 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
 #Add the timings to a list of timings for the same stored proc for all virtual users
 #At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
 #To record all individual data points for a virtual user write the output of this command to a file
-#Preceed with {*} to expand the list into individual space separated values
+#Precede with {*} to expand the list into individual space separated values
 #The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
  	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
 		}
@@ -393,7 +393,7 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
 #Add the timings to a list of timings for the same stored proc for all virtual users
 #At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
 #To record all individual data points for a virtual user write the output of this command to a file
-#Preceed with {*} to expand the list into individual space separated values
+#Precede with {*} to expand the list into individual space separated values
 #The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
  	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
 		}

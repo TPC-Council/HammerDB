@@ -36,7 +36,7 @@ Version 1.04 August 2003
 
 Bug Fixes
 
-[ 791801 ] doublequoted SQL not escaped when parsed
+[ 791801 ] double quoted SQL not escaped when parsed
 [ 791802 ] bind variable incorrectly parsed
 [ 791808 ] Startup error if run from different directory
 
@@ -90,7 +90,7 @@ Added networking functionality and operating modes as a base for remote distribu
 
 Added Master Distribution functionality to distribute files between clients.
 
-Tablelist package incorporated into code to reduce external pacakage requirements
+Tablelist package incorporated into code to reduce external package requirements
 
 Tested with TCL 8.4.5 and TK 8.4.5
 
@@ -459,7 +459,7 @@ Changed "Number of Threads" to "Virtual Users to Build Schema" in Schema builds 
 
 Added Number of Virtual Users to result of TPC-C timed driver workloads 
 
-Mulithreaded and tuned Oracle TPC-H Schema build
+Multithreaded and tuned Oracle TPC-H Schema build
 
 Added NLS Settings to TPC-H build and driver scripts
 
@@ -487,7 +487,7 @@ tcl8.5.9, tk8.5.9, thread2.6.6, oratcl4.5, mysqltcl3.05 tclodbc2.5.1
 
 for Linux x86 and x86-64 and Windows x86 and x86-64
 
-Significant performance and scalability improvements with Windows binaries to eqivalence of Linux platform
+Significant performance and scalability improvements with Windows binaries to equivalence of Linux platform
 
 Bug Fixes
 
@@ -589,7 +589,7 @@ Changed Application name from Hammerora to HammerDB
 
 Updated Splash Screen with new HammerDB logo to reflect name change
 
-Added HammerDB icon to be displayed when minmised and in corner of Windows version
+Added HammerDB icon to be displayed when minimised and in corner of Windows version
 
 Added support for TimesTen database with TPC-C workload
 
@@ -729,7 +729,7 @@ Version 2.21 Nov 2016
 
 Bug fixes 
 
-[#109] Exit on Oracle Errror not applied when set in config.xml
+[#109] Exit on Oracle Error not applied when set in config.xml
 [#110] Running autopilot from master only kills virtual users in local instance
 [#111] Oracle AWR Driver script reports double TPM when running against RAC
 [#112] Metrics: too many nested evaluations (infinite loop?) 
@@ -760,7 +760,7 @@ Removed mssqls_schema XML config parameter
 
 Added mssqls_linux_server,mssqls_linux_athent,mssqls_linux_odbc to configuration for Linux default
 
-Deprecated original SQL Server TPC-C schema as imcompatible with bulk load 
+Deprecated original SQL Server TPC-C schema as incompatible with bulk load 
 
 Thomas Kejser SQL Server TPC-C schema set as default for all platforms
 
@@ -805,7 +805,7 @@ Version 3.0 Apr 2018
 Bug fixes 
 
 [#114] 	Metrics connection is lost on Windows server
-[#115] 	wrong # args error when selecting Times Ten compatability in Oracle
+[#115] 	wrong # args error when selecting Times Ten compatibility in Oracle
 [#116] 	Incorrect time displayed in long running autopilot
 [#117] 	Only Basic Fonts used on Linux
 [#118] 	Oracle Hash Clusters schema does not build when warehouses not divisible by 100
