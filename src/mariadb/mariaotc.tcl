@@ -28,7 +28,10 @@ proc tcount_maria {bm interval masterthread} {
         foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
         }
-        append connectstring " -user $user -password $password"
+        append connectstring " -user $user"
+        if { [ string tolower $password ] != "null" } {
+        append connectstring " -password $password"
+        }
         set login_command "mariaconnect [ dict get $connectstring ]"
         #eval the login command
         if [catch {set maria_handler [eval $login_command]}] {
