@@ -23,8 +23,11 @@ if { [ file isdirectory $capath ] } {
 if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
 #All of the file entries are blank, use capath only
 } else {
-#CApath is valid, file entries are not blank, always check CA
-if { [ file readable [ file join $capath $maria_ssl_ca ]] } {
+#Two scenarios:
+#-CApath is valid, file entries are not blank, so check CA
+#-CApath is empty when we only want to use cert+key to authenthicate
+#but we don't want to verify CA certificate (useful for self signing scenarios)
+if { $maria_ssl_ca eq "" || [ file readable [ file join $capath $maria_ssl_ca ]] } {
 } else {
 tk_messageBox -message "[ file join $capath $maria_ssl_ca ] is not readable, disabling SSL"
 dict set configmariadb connection maria_ssl "false"
@@ -56,8 +59,10 @@ if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
 #No files given as an argument use -capath only
 append maria_ssl_options " -sslcapath $capath "
 } else {
-#for one-way use -sslca only
+#for one-way use -sslca only if exists
+if { $maria_ssl_ca != "" } {
 append maria_ssl_options " -sslca [ file join $capath $maria_ssl_ca ] "
+}
 if { $maria_ssl_two_way eq "true" } {
 #for two-way add -sslcert & -sslkey
 append maria_ssl_options " -sslcert [ file join $capath $maria_ssl_cert ] "
