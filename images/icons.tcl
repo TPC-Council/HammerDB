@@ -1,6 +1,6 @@
 #All icons orignally sourced for from open-iconic https://github.com/iconic/open-iconic
-#non-scalable icons are PNG in base64 format (modified with GIMP)
-#scalable icons are SVG format (modified with Inkscape)
+#non-scaleable icons are PNG in base64 format (modified with GIMP)
+#scaleable icons are SVG format (modified with Inkscape)
 #All icon sets in HammerDB including modification and colouring by Lucas Shaw
 proc create_icon_images { iconset } {
 switch $iconset {
@@ -473,6 +473,7 @@ vbtoU5a4VCE1EwXqHoID7Ilmw4RAH38IElMgmipw45HAMJqSb3/NAuPWaTAL4lAAToDzXykQTQk4
 xD86okfeFN81cAwUJ0BgCTiII9BhcujE1cCK5ftQHAhUXd+Grsj9N4HYX7IBMD2heK/jC19a1VBp
 7vgA2QAAAABJRU5ErkJggg==
 }
+
 dict set icons hdbicon {
 iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAIZAAACGQHBpymoAAAA
 GXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAS9JREFUOMvdkbFKA1EQRc8+AmvA
@@ -482,6 +483,35 @@ HO4aeMnOJaC16AevQAy8ZX0L2ATKWY0XGZyJSNV13TVVPQQaIlIXkaaIbNdqtWVjTFNVL7PHfkQ4
 EpGLvLy+71c9zxtNJpOGqvaAcuELvxeG4ZO1dstxnAPgVkSOAcIw3FfVK6CeJEkK9AABTvKGiKpW
 h8PhwPO8AbAyRb8DhUVrXKpUKsUZYoDC9BB/hTyDeyCJ4zgF+nkGz3Pyn0ZRFHe73TFwPkf/+AH+
 yWuzBhiMfwAAAABJRU5ErkJggg==
+}
+
+dict set icons delete {
+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
 }
 return [ set icons ]
 }
@@ -785,6 +815,35 @@ Idadod/naCqaCOtOIK4YVXSI8hfeRSFDDGVt1TdU1J0hhr5CxuGv4h8YlHIz0V6su01RNY/2sYNH
 XOMpxVOiAfSkq/mTQT0kaqJe0ZyisbBpJCQmQ2JYh4poErtpMRBiXXzdmQ8bdnKvhLikpuLOkzFt
 B+j5+AbTcdWlYFAwKzoKiQWIa2ZEexjxoCU6wL5g8b2D7Kg51jCkga4vuWeUvh9jQadx5Qwx6QT/
 9COdart3o4WL7wyucnLLIXEdtjWxlcM5fwEKukWjV0kHBgAAAABJRU5ErkJggg==
+}
+
+dict set icons delete {
+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
 }
 return [ set icons ]
 }
@@ -3344,6 +3403,64 @@ dict set iconssvg hdbiconsvg {
      style="fill:#626262;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.133333"
      id="path30" /></svg>
 }
+dict set iconssvg deletesvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="delete-g.svg"
+   id="svg22"
+   version="1.1"
+   viewBox="0 0 8 8"
+   height="8"
+   width="8">
+  <metadata
+     id="metadata28">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs26" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg22"
+     inkscape:window-maximized="0"
+     inkscape:window-y="130"
+     inkscape:window-x="910"
+     inkscape:cy="4"
+     inkscape:cx="4"
+     inkscape:zoom="91.75"
+     showgrid="false"
+     id="namedview24"
+     inkscape:window-height="783"
+     inkscape:window-width="820"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="fill:#626262;fill-opacity:1"
+     id="path20"
+     transform="translate(0 1)"
+     d="M2 0l-2 3 2 3h6v-6h-6zm1.5.78l1.5 1.5 1.5-1.5.72.72-1.5 1.5 1.5 1.5-.72.72-1.5-1.5-1.5 1.5-.72-.72 1.5-1.5-1.5-1.5.72-.72z" />
+</svg>
+}
 return [ set iconssvg ]
 }
 
@@ -5490,6 +5607,64 @@ dict set iconssvg hdbiconsvg {
      id="path30"
      style="fill:#ff7900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.133333"
      d="m 83.861533,1.2401157 h -25.30134 c -3.50266,0 -3.97866,1.592005 -3.97866,4.294665 V 45.321451 H 35.166863 V 5.5347807 c 0,-3.817331 -2.07067,-4.294665 -4.61733,-4.294665 H 5.7255329 c -3.02267,0.158667 -4.14,1.433335 -4.14,4.294665 V 109.29877 c 0,3.81734 1.59067,4.296 4.776,4.296 H 35.072193 c 0.93867,-5 2.092,-8.82266 2.092,-8.82266 h 2.98134 V 85.384111 l -0.27867,-5.85334 c -0.248,-4.52132 -3.14533,-6.50799 -6.38667,-6.65466 -5.17733,-0.236 -5.69466,2.56134 -8.97466,3.116 -3.39067,0.56267 -6.51467,0.35334 -6.51467,0.35334 -1.8,0.0987 -3.25867,-1.09867 -3.25867,-2.67467 v -14.37733 c 0,-1.57867 1.45867,-2.75734 3.25867,-2.64 0,0 3.17467,-0.144 6.51467,0.42933 3.344,0.572 3.66666,2.27333 6.73466,3.364 3.076,1.09867 4.28934,-1.33733 6.53067,-2.94933 2.24933,-1.61867 8.34267,-1.68134 12.944,-1.36534 4.6,0.31467 9.19467,1.24134 9.19467,1.24134 20.24133,5.34933 22.512,22.29732 22.512,22.29732 -13.31867,-14.18932 -24.39734,-9.01066 -29.412,-3.21866 -3.33734,3.852 -2.86134,9.404 -2.86134,9.404 h -0.0253 v 18.915999 h 2.04 c 0,0 1.15467,3.82266 2.09067,8.82266 h 29.76933 c 3.02267,0 4.29467,-0.796 4.29467,-4.296 V 5.3761207 c 0,-3.498671 -1.272,-4.136005 -4.456,-4.136005" /></svg>
+}
+dict set iconssvg deletesvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="delete-o.svg"
+   id="svg22"
+   version="1.1"
+   viewBox="0 0 8 8"
+   height="8"
+   width="8">
+  <metadata
+     id="metadata28">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs26" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg22"
+     inkscape:window-maximized="0"
+     inkscape:window-y="130"
+     inkscape:window-x="910"
+     inkscape:cy="4"
+     inkscape:cx="4"
+     inkscape:zoom="91.75"
+     showgrid="false"
+     id="namedview24"
+     inkscape:window-height="783"
+     inkscape:window-width="820"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="fill:#ff7900;fill-opacity:1"
+     id="path20"
+     transform="translate(0 1)"
+     d="M2 0l-2 3 2 3h6v-6h-6zm1.5.78l1.5 1.5 1.5-1.5.72.72-1.5 1.5 1.5 1.5-.72.72-1.5-1.5-1.5 1.5-.72-.72 1.5-1.5-1.5-1.5.72-.72z" />
+</svg>
 }
 return [ set iconssvg ]
 }
