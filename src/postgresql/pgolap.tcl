@@ -57,11 +57,6 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
         set lda "Failed" ; puts $message
         error $message
     } else {
-        if {$tcl_platform(platform) == "windows"} {
-            #Workaround for Bug #95 where first connection fails on Windows
-            catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
-        }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
         pg_result $result -clear
@@ -783,11 +778,6 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
         set lda "Failed" ; puts $message
         error $message
     } else {
-        if {$tcl_platform(platform) == "windows"} {
-            #Workaround for Bug #95 where first connection fails on Windows
-            catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port sslmode = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
-        }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
         pg_result $result -clear
@@ -1377,11 +1367,6 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
         puts $message
         error $message
     } else {
-        if {$tcl_platform(platform) == "windows"} {
-            #Workaround for Bug #95 where first connection fails on Windows
-            catch {pg_disconnect $lda}
-            set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
-        }
         pg_notice_handler $lda puts
         set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
         pg_result $result -clear

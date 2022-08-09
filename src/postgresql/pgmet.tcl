@@ -2042,11 +2042,6 @@ namespace eval pgmet {
                     set handle "Failed" 
                     thread::send -async $parent "::callback_err [ join $err ]"
                 } else {
-                    if {$tcl_platform(platform) == "windows"} {
-                        #Workaround for Bug #95 where first connection fails on Windows
-                        catch {pg_disconnect $handle}
-                        set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
-                    }
                     pg_notice_handler $handle puts
                     set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
                     pg_result $result -clear

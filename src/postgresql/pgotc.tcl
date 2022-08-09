@@ -11,11 +11,6 @@ proc tcount_pg {bm interval masterthread} {
             if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
                 set lda "connection failed:$message"
             } else {
-                if {$tcl_platform(platform) == "windows"} {
-                    #Workaround for Bug #95 where first connection fails on Windows
-                    catch {pg_disconnect $lda}
-                    set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]
-                }
                 pg_notice_handler $lda puts
                 set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
                 pg_result $result -clear
