@@ -1,12 +1,12 @@
 
-This folder provides a Dockerfile for building a HammerDb-v4.4 client container that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, IBM Db2, MySQL, PostgreSQL and MariaDB. However for enabling client libraries for IBM Db2, you will need to download the client libraries from IBM web portal. For seamless build from Dockerfile, you can place the downloaded IBM Db2 client libraries,  "odbc_cli" alongside Dockerfile in the same folder where you plan to build the HammerD container. For someone who doesn't need IBM DB2 client, they can create a empty folder as "odbc_cli".
+This folder provides a Dockerfile for building a HammerDb-v4.5 client container that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, IBM Db2, MySQL, PostgreSQL and MariaDB. However for enabling client libraries for IBM Db2, you will need to download the client libraries from IBM web portal. For seamless build from Dockerfile, you can place the downloaded IBM Db2 client libraries,  "odbc_cli" alongside Dockerfile in the same folder where you plan to build the HammerD container. For someone who doesn't need IBM DB2 client, they can create a empty folder as "odbc_cli".
 
 To create an image: Go to the folder containing the Dockerfile
-	docker build -t hammerdb-v4.4 .
+	docker build -t hammerdb-v4.5 .
 
-To start a container named "hammerdb" with the image, "hammerdb-v4.4" built from from Dockerfile
-	docker run -it --name hammerdb hammerdb-v4.4 bash
+To start a container named "hammerdb" with the image, "hammerdb-v4.5" built from from Dockerfile
+	docker run -it --name hammerdb hammerdb-v4.5 bash
 
 You will need to add networking to communicate with a remote database when starting the container
 For example, adding host network to the container.
-	docker run --network=host -it --name hammerdb hammerdb-v4.4 bash
+	docker run --network=host -it --name hammerdb hammerdb-v4.5 bash
