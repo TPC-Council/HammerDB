@@ -999,6 +999,24 @@ proc wapp-page-dbset {} {
             }
 }}}
 
+proc numberOfCPUs {} {
+  # Windows puts it in an environment variable
+  global tcl_platform env
+  if {$tcl_platform(platform) eq "windows"} {
+    return $env(NUMBER_OF_PROCESSORS)
+  }
+
+  # Assume Linux, which has /proc/cpuinfo, but be careful
+  if {![catch {open "/proc/cpuinfo"} f]} {
+    set cores [regexp -all -line {^processor\s} [read $f]]
+    close $f
+    if {$cores > 0} {
+      return $cores
+    }
+  }
+  return 1
+}
+
 proc vuset { args } {
     global ws_port
     if {[ llength $args ] != 2} {
@@ -1041,6 +1059,9 @@ proc wapp-page-vuset {} {
             switch  $key {
                 vu {	
                     set virtual_users $val
+		      if { $virtual_users eq "vcpu" } {
+                          set virtual_users [ numberOfCPUs ]
+                        }
                     dict set jsondict success message "Virtual users set to $val"
                     if { ![string is integer -strict $virtual_users] } {
                         dict set jsondict error message "The number of virtual users must be an integer"
