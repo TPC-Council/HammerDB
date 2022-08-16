@@ -344,6 +344,24 @@ proc pdict {args} {
     }
 }
 
+proc numberOfCPUs {} {
+  # Windows puts it in an environment variable
+  global tcl_platform env
+  if {$tcl_platform(platform) eq "windows"} {
+    return $env(NUMBER_OF_PROCESSORS)
+  }
+
+  # Assume Linux, which has /proc/cpuinfo, but be careful
+  if {![catch {open "/proc/cpuinfo"} f]} {
+    set cores [regexp -all -line {^processor\s} [read $f]]
+    close $f
+    if {$cores > 0} {
+      return $cores
+    }
+  }
+  return 1
+}
+
 proc vuset { args } {
     global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
     if {[ llength $args ] != 2} {
@@ -364,6 +382,9 @@ proc vuset { args } {
         switch  $option {
             vu {	
                 set virtual_users $val
+		if { $virtual_users eq "vcpu" } { 
+		    set virtual_users [ numberOfCPUs ]
+			}
                 if { ![string is integer -strict $virtual_users] } {
                     tk_messageBox -message "The number of virtual users must be an integer"
                     puts -nonewline "setting to value: "
