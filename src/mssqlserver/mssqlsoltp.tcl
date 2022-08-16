@@ -1542,7 +1542,7 @@ proc LoadOrd { odbc ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE } 
     return
 }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -1555,15 +1555,17 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_ware db imdb bucket_factor durability num_vu } {
+proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_ware db imdb bucket_factor durability num_vu encrypt trust_cert } {
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
     set DIST_PER_WARE 10
     set ORD_PER_DIST 3000
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
     if { $num_vu > $count_ware } { set num_vu $count_ware }
     if { $num_vu > 1 && [ chk_thread ] eq "TRUE" } {
         set threaded "MULTI-THREADED"
@@ -1667,7 +1669,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }
 
@@ -1691,13 +1693,13 @@ proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
                     set mssqls_odbc_driver $mssqls_linux_odbc
                     set mssqls_authentication $mssqls_linux_authent 
                 }
-                set $id [ list $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_dbase ]
+                set $id [ list $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
         foreach id [ split $conkeys ] {
-            lassign [ set $id ] 1 2 3 4 5 6 7 8 9
-            set connection [ connect_string $1 $2 $3 $4 $5 $6 $7 $8 $9 ]
+            lassign [ set $id ] 1 2 3 4 5 6 7 8 9 10 11
+            set connection [ connect_string $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 ]
             if [catch {tdbc::odbc::connection create odbc$id $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
@@ -1739,7 +1741,7 @@ proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
             #puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"
         }
         #Open standalone connect to determine highest warehouse id for all connections
-        set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+    	set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
         if [catch {tdbc::odbc::connection create odbc $connection} message ] {
             error "Connection to $connection could not be established : $message"
         } else {
@@ -1795,13 +1797,13 @@ proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
-        foreach cursor $neworder_cursors { $cursor close }
-        foreach cursor $payment_cursors { $cursor close }
-        foreach cursor $delivery_cursors { $cursor close }
-        foreach cursor $stocklevel_cursors { $cursor close }
-        foreach cursor $orderstatus_cursors { $cursor close }
-        foreach odbc_con [ dict values $connlist ] { $odbc_con close }
-        odbc close
+foreach cursor $neworder_cursors { $cursor close }
+foreach cursor $payment_cursors { $cursor close }
+foreach cursor $delivery_cursors { $cursor close }
+foreach cursor $stocklevel_cursors { $cursor close }
+foreach cursor $orderstatus_cursors { $cursor close }
+foreach odbc_con [ dict values $connlist ] { $odbc_con close }
+odbc close
     }
     #Find single connection start and end points
     set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#RUN TPC-C" end ]
@@ -1962,6 +1964,8 @@ set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
+set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
+set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1969,9 +1973,9 @@ if [catch {package require $library $version} message] { error "Failed to load $
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
-    if {[ string toupper $authentication ] eq "WINDOWS" } { 
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
     } else {
         if {[ string toupper $authentication ] eq "SQL" } {
@@ -1982,6 +1986,8 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 #TIMESTAMP
@@ -2214,7 +2220,7 @@ proc prep_statement { odbc statement_st } {
 }
 
 #RUN TPC-C
-set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
 if [catch {tdbc::odbc::connection create odbc $connection} message ] {
     error "Connection to $connection could not be established : $message"
 } else {
@@ -2315,6 +2321,8 @@ set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
+set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
+set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 #EDITABLE OPTIONS##################################################
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -2326,7 +2334,7 @@ if { [ chk_thread ] eq "FALSE" } {
     error "SQL Server Timed Script must be run in Thread Enabled Interpreter"
 }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -2339,6 +2347,8 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
@@ -2346,7 +2356,7 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-            set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+    	    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
             if [catch {tdbc::odbc::connection create odbc $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
@@ -2651,7 +2661,7 @@ switch $myposition {
         }
 
         #RUN TPC-C
-        set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+    	set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
         if [catch {tdbc::odbc::connection create odbc $connection} message ] {
             error "Connection to $connection could not be established : $message"
         } else {
@@ -2693,12 +2703,12 @@ switch $myposition {
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
-        $neword_st close 
-        $payment_st close
-        $delivery_st close
-        $slev_st close
-        $ostat_st close
-        odbc close
+$neword_st close 
+$payment_st close
+$delivery_st close
+$slev_st close
+$ostat_st close
+odbc close
     }
 }}
         if { $mssqls_connect_pool } { 
@@ -2726,6 +2736,8 @@ set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
+set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
+set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 set async_client $mssqls_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $mssqls_async_verbose;# Report activity of asynchronous clients
 set async_delay $mssqls_async_delay;# Delay in ms between logins of asynchronous clients
@@ -2741,7 +2753,7 @@ if { [ chk_thread ] eq "FALSE" } {
     error "SQL Server Timed Script must be run in Thread Enabled Interpreter"
 }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -2754,6 +2766,8 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
@@ -2761,7 +2775,7 @@ set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-            set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+    	    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
             if [catch {tdbc::odbc::connection create odbc $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
@@ -3132,7 +3146,7 @@ switch $myposition {
             if { $async_verbose } { puts "$clientname:complete" }
             return $clientname:complete
         }
-        set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ] 
+    	set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
         for {set ac 1} {$ac <= $async_client} {incr ac} { 
             set clientdesc "vuser$myposition:ac$ac"
             lappend clientlist $clientdesc

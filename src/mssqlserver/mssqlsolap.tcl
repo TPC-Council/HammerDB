@@ -427,7 +427,7 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -440,10 +440,12 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore num_vu } {
+proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu } {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -456,7 +458,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     #SF * 1500K rows in Orders table
     #SF * 6000K rows in Lineitem table
     ###############################################
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
     #update number always zero for first load
     set upd_num 0
     if { ![ array exists dists ] } { set_dists }
@@ -595,7 +597,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads"
     } else { return }
 }
 
@@ -638,6 +640,8 @@ set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_tpch_dbase\";# Database containing the TPC Schema
+set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
+set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 set refresh_on \"$mssqls_refresh_on\" ;#First User does refresh function
 set update_sets $mssqls_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh function
@@ -649,7 +653,7 @@ if [catch {package require $library $version} message] { error "Failed to load $
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -662,6 +666,8 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
@@ -796,8 +802,8 @@ proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE }
     }
 }
 
-proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database ]
+proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database encrypt trust_cert update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
@@ -1053,8 +1059,8 @@ proc sub_query { query_no scale_factor maxdop myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db RAISEERROR VERBOSE maxdop total_querysets myposition } {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
+proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition } {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
@@ -1139,20 +1145,20 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $RAISEERROR $VERBOSE $maxdop $total_querysets 0
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
+        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
             1 {
-                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]
+                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]
             }
         }
     }
 } else {
-    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition
+    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition
 }}
 }

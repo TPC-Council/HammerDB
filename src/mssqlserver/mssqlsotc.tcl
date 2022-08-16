@@ -10,24 +10,26 @@ proc tcount_mssqls {bm interval masterthread} {
     }
     #Setup Transaction Counter Thread
     set tc_threadID [thread::create {
-        proc read_more { MASTER library version mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tcp mssqls_azure db interval old tce bm } {
+        proc read_more { MASTER library version mssqls_server mssqls_port mssqls_authentication mssqls_odbc_driver mssqls_uid mssqls_pass mssqls_tcp mssqls_azure mssqls_encrypt_connection mssqls_trust_server_cert db interval old tce bm } {
             set timeout 0
             set iconflag 0
-            proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
-                if { $tcp eq "true" } { set server tcp:$server,$port }
-                if {[ string toupper $authentication ] eq "WINDOWS" } {
-                    set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
-                } else {
-                    if {[ string toupper $authentication ] eq "SQL" } {
-                        set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
-                    } else {
-                        puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
-                        set connection "DRIVER=$odbc_driver;SERVER=$server"
-                    }
-                }
-                if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
-                return $connection
-            }
+	    proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
+    		if { $tcp eq "true" } { set server tcp:$server,$port }
+    		if {[ string toupper $authentication ] eq "WINDOWS" } {
+        	set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
+    		} else {
+        		if {[ string toupper $authentication ] eq "SQL" } {
+            		set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+        		} else {
+            		puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            		set connection "DRIVER=$odbc_driver;SERVER=$server"
+        		}
+    		}
+    		if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    		if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    		if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
+    		return $connection
+	  }
             if { $interval <= 0 } { set interval 10 } 
             set gcol "yellow"
             if { ![ info exists tcdata ] } { set tcdata {} }
@@ -58,7 +60,7 @@ proc tcount_mssqls {bm interval masterthread} {
             } else {
                 namespace import tcountcommon::*
             }
-            set connection [ connect_string $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $db ]
+            set connection [ connect_string $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $db $mssqls_encrypt_connection $mssqls_trust_server_cert ]
             if [catch {tdbc::odbc::connection create tc_odbc $connection} message ] {
                 tsv::set application tc_errmsg "connection failed $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -150,5 +152,5 @@ proc tcount_mssqls {bm interval masterthread} {
     }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $version {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $db $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $version {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_encrypt_connection $mssqls_trust_server_cert $db $interval $old tce $bm }}]
 } 

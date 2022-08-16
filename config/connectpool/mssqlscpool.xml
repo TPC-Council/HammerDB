@@ -8,11 +8,13 @@
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
         <mssqls_linux_authent>sql</mssqls_linux_authent>
-	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
-	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
         <mssqls_uid>sa</mssqls_uid>
         <mssqls_pass>admin</mssqls_pass>
 	<mssqls_dbase>tpcc</mssqls_dbase>
+	<mssqls_encrypt_connection>true</mssqls_encrypt_connection>
+        <mssqls_trust_server_cert>true</mssqls_trust_server_cert>
     </c1>
     <c2>
         <mssqls_server>(local)\SQL2</mssqls_server>
@@ -22,11 +24,13 @@
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
         <mssqls_linux_authent>sql</mssqls_linux_authent>
-	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
-	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
         <mssqls_uid>sa</mssqls_uid>
         <mssqls_pass>admin</mssqls_pass>
 	<mssqls_dbase>tpcc</mssqls_dbase>
+	<mssqls_encrypt_connection>true</mssqls_encrypt_connection>
+        <mssqls_trust_server_cert>true</mssqls_trust_server_cert>
     </c2>
     <c3>
         <mssqls_server>(local)\SQL3</mssqls_server>
@@ -36,11 +40,13 @@
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
         <mssqls_linux_authent>sql</mssqls_linux_authent>
-	<mssqls_odbc_driver>ODBC Driver 13 for SQL Server</mssqls_odbc_driver>
-	<mssqls_linux_odbc>ODBC Driver 17 for SQL Server</mssqls_linux_odbc>
+	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
+	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
         <mssqls_uid>sa</mssqls_uid>
         <mssqls_pass>admin</mssqls_pass>
 	<mssqls_dbase>tpcc</mssqls_dbase>
+	<mssqls_encrypt_connection>true</mssqls_encrypt_connection>
+        <mssqls_trust_server_cert>true</mssqls_trust_server_cert>
     </c3>
 </connections>
 <sprocs>
