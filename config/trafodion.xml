@@ -23,7 +23,7 @@
             <trafodion_total_iterations>10000000</trafodion_total_iterations>
             <trafodion_raiseerror>false</trafodion_raiseerror>
             <trafodion_keyandthink>false</trafodion_keyandthink>
-            <traf_driver>test</traf_driver>
+            <traf_driver>timed</traf_driver>
 	    <trafodion_rampup>2</trafodion_rampup>
             <trafodion_duration>5</trafodion_duration>
             <trafodion_allwarehouse>false</trafodion_allwarehouse>

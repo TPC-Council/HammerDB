@@ -20,7 +20,7 @@
             <db2_total_iterations>10000000</db2_total_iterations>
             <db2_raiseerror>false</db2_raiseerror>
             <db2_keyandthink>false</db2_keyandthink>
-            <db2_driver>test</db2_driver>
+            <db2_driver>timed</db2_driver>
 	    <db2_rampup>2</db2_rampup>
             <db2_duration>5</db2_duration>
 	    <db2_monreport>0</db2_monreport>

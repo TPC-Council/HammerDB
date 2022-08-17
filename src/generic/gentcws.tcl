@@ -10,7 +10,7 @@ proc showLCD {number} {
     #debug output by uncomment next line 
     #putscli "$number $rdbms $metric"
     if { $jobid != "" } {
-        hdb eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
+        hdbws eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
     }
 }
 
@@ -82,11 +82,11 @@ proc show_tc_errmsg {} {
         if [catch {set joinedmsg [ join $tc_errmsg ]} message ] {
             #error in join show unjoined message
             putscli [ subst {{"error": {"message": "Transaction Counter Error: $tc_errmsg"}}} ]
-            hdb eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$tc_errmsg)}
+            hdbws eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$tc_errmsg)}
         } else {
             #show joined message
             putscli [ subst {{"error": {"message": "Transaction Counter Error: $joinedmsg"}}} ]
-            hdb eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$joinedmsg)}
+            hdbws eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$joinedmsg)}
         }
     } else {
         #message is empty

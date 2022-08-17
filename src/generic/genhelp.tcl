@@ -4,11 +4,11 @@ proc help { args } {
     if [ llength [ info commands wapp-default ]] { set wsmode 1 } else { set wsmode 0 }
     if $wsmode { set helpbanner "HammerDB $hdb_version WS Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset jobs librarycheck loadscript print quit runtimer tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus waittocomplete ]
+        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     } else {
         set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset distributescript librarycheck loadscript print quit runtimer steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus waittocomplete ]
+        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset distributescript librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     }
     if {[ llength $args ] != 1} {
         puts $helpbanner
@@ -139,15 +139,6 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
                 datagenrun {
                     putscli "datagenrun - Usage: datagenrun"
                     putscli "Run Data Generation. Equivalent to the Generate option in the graphical interface."
-                }
-                runtimer {
-                    putscli "runtimer - Usage: runtimer seconds"
-                    putscli "Helper routine to run a timer in the main hammerdbcli thread to keep it busy for a period of time whilst the virtual users run a workload. The timer will return when vucomplete returns true or the timer reaches the seconds value. Usually followed by vudestroy."
-
-                }
-                waittocomplete {
-                    putscli "waittocomplete - Usage: waittocomplete"
-                    putscli "Helper routine to enable the main hammerdbcli thread to keep it busy until vucomplete is detected. When vucomplete is detected exit is called causing all virtual users and the main hammerdblci thread to terminate. Often used when calling hammerdb from external scripting commands."
                 }
                 tcset {
                     if $wsmode {

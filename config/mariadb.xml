@@ -28,7 +28,7 @@
             <maria_total_iterations>10000000</maria_total_iterations>
             <maria_raiseerror>false</maria_raiseerror>
             <maria_keyandthink>false</maria_keyandthink>
-            <maria_driver>test</maria_driver>
+            <maria_driver>timed</maria_driver>
             <maria_rampup>2</maria_rampup>
             <maria_duration>5</maria_duration>
             <maria_allwarehouse>false</maria_allwarehouse>

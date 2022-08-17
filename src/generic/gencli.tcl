@@ -759,7 +759,11 @@ proc ed_status_message { flag message } {
 proc vucreate {} {
     global _ED lprefix vustatus opmode
     if { [ string length $_ED(package) ] eq 0  } {
-        putscli "No Script loaded: Load script before creating Virtual Users"
+    #Try loadscript and recheck before asking the user to load the script if it is empty
+       catch {loadscript}
+       if { [ string length $_ED(package) ] eq 0  } {
+       putscli "No Script loaded: Load script before creating Virtual Users"
+       }
     } else {
         if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
             putscli "Error: Virtual Users exist, destroy with vudestroy before creating"
@@ -1020,15 +1024,57 @@ proc buildschema {} {
     }
     #Save dict(all config) to SQLite, if need group saving, uncomment
     #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
+    #Add automated waittocomplete to buildschema
+    _waittocomplete
+}
+
+proc keepalive {} {
+#Routine to keep the main thread alive during vurun
+    global rdbms bm
+    set ka_valid 1
+	if {$bm eq "TPC-C"} {
+#For TPC-C we have a rampup and duration time, find these, check they are valid and call _runtimer automatically with these values
+	 upvar #0 dbdict dbdict
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set dictname config$key
+            upvar #0 $dictname $dictname
+    }
+    }
+    set rampup_secs [expr {[ get_base_rampup [ set $dictname ]]*60}]
+    set duration_secs [expr {[ get_base_duration [ set $dictname ]] *60}]
+    foreach { val } [ list $rampup_secs $duration_secs ] {
+    if { ![string is integer -strict $val ] || $val < 60 } {
+	set ka_valid 0 
+    	}
+    }
+    if { $ka_valid } {
+    _runtimer [expr {$rampup_secs + $duration_secs + 10}]
+    	} else {
+tk_messageBox -icon warning -message "Cannot detect rampup and duration times, keepalive for main thread not active"
+	}
+} else {
+#Workload is TPROC-H, call _waittocomplete to wait until vucomplete message after an indeterminate amount of time
+_waittocomplete
+return
+}
 }
 
 proc vurun {} {
     global _ED opmode
+    #If calling vurun and virtual users not created, create them now
+    if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
+        vucreate
+    	}
+    #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
     if { [ string length $_ED(package) ] > 0 } { 
         remote_command [ concat vurun ]
         if { [ catch {run_virtual} message ] } {
             putscli "Error: $message"
-        }
+        } else {
+	#Deprecated runtimer replaced with automated keepalive
+	keepalive
+	}
     } else {
         putscli "Error: There is no workload to run because the Script is empty"
     }
@@ -1261,21 +1307,34 @@ proc quit {} {
     exit
 }
 
-proc waittocomplete {} {
+proc waittocomplete { args } {
+global hdb_version
+tk_messageBox -icon warning -message "waittocomplete command has been deprecated and is not required for version $hdb_version"
+}
+
+proc _waittocomplete {} {
+#waittocomplete returns after vucomplete is detected, in v4.5 and earlier it would call exit
+    upvar timevar timevar
     proc wait_to_complete_loop {} {
+    upvar timevar timevar
         upvar wcomplete wcomplete
         set wcomplete [vucomplete]
         if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else { 
-            putscli "waittocomplete called script exit"
-            exit
+	set timevar 1
         }
     }
     set wcomplete "false"
     wait_to_complete_loop
-    vwait forever
+    vwait timevar
+    return
 }
 
-proc runtimer { seconds } {
+proc runtimer { args } {
+global hdb_version
+tk_messageBox -icon warning -message "runtimer command has been deprecated and is not required for version $hdb_version"
+}
+
+proc _runtimer { seconds } {
     upvar elapsed elapsed
     upvar timevar timevar
     proc runtimer_loop { seconds } {
@@ -1285,12 +1344,12 @@ proc runtimer { seconds } {
         set rcomplete [vucomplete]
         if { ![ expr {$elapsed % 60} ] } {
             set y [ expr $elapsed / 60 ]
-            putscli "Timer: $y minutes elapsed"
+            #putscli "Timer: $y minutes elapsed"
         }
         if {!$rcomplete && $elapsed < $seconds } {
             ;#Neither vucomplete or time reached, reschedule loop
         catch {after 1000 runtimer_loop $seconds }} else {
-            putscli "runtimer returned after $elapsed seconds"
+            #putscli "keepalive returned after $elapsed seconds"
             set elapsed 0
             set timevar 1
         }
