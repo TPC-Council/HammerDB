@@ -3,7 +3,7 @@ proc post_kill_transcount_cleanup {} {
     global tc_threadID
     unset -nocomplain tc_threadID
     tsv::set application timeout 2
-    tsv::unset application thecount
+    if {[ tsv::exists application thecount ]} { tsv::unset application thecount }
 }
 
 proc setlocaltcountvars { configdict allvars } {
