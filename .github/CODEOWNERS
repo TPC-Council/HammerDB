@@ -1,0 +1,8 @@
+# The CODEOWNERS mechanism determines who must review changes to files in the repository.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Files in root directory
+* @TPC-Council/HammerDB-Code-Maintenance-Team
+
+# Files in any directory
+/** @TPC-Council/HammerDB-Code-Maintenance-Team
