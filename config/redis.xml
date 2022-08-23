@@ -14,7 +14,7 @@
             <redis_total_iterations>10000000</redis_total_iterations>
             <redis_raiseerror>false</redis_raiseerror>
             <redis_keyandthink>false</redis_keyandthink>
-            <redis_driver>test</redis_driver>
+            <redis_driver>timed</redis_driver>
 	    <redis_rampup>2</redis_rampup>
             <redis_duration>5</redis_duration>
             <redis_allwarehouse>false</redis_allwarehouse>

@@ -128,10 +128,10 @@ proc find_current_dict {} {
 
 proc jobmain { jobid } {
     global rdbms bm
-    set query [ hdb eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid} ]
+    set query [ hdbws eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid} ]
     if { $query eq 0 } {
         set tmpdictforpt [ find_current_dict ]
-        hdb eval {INSERT INTO JOBMAIN(jobid,db,bm,jobdict) VALUES($jobid,$rdbms,$bm,$tmpdictforpt)}
+        hdbws eval {INSERT INTO JOBMAIN(jobid,db,bm,jobdict) VALUES($jobid,$rdbms,$bm,$tmpdictforpt)}
         return 0
     } else {
         return 1
@@ -143,7 +143,7 @@ proc runninguser { threadid } {
     global table threadscreated thvnum inrun AVUC vustatus jobid
     set AVUC "run"
     set message [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ]
-    hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+    hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     dict set vustatus [ expr $thvnum($threadid) + 1 ] "RUNNING"
 }
 
@@ -152,17 +152,17 @@ proc printresult { result threadid } {
     incr totcount
     if { $result == 0 } {
         set message [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ]
-        hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+        hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH SUCCESS"
     } else {
         set message [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ]
-        hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+        hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH FAILED"
     }
     if { $totrun == $totcount } {
         set AVUC "complete"
         if { [ info exists inrun ] } { unset inrun }
-        hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
+        hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
         refreshscript
     }
 }
@@ -175,7 +175,7 @@ proc tk_messageBox { args } {
     } else {
         set message [ lindex $args [expr $messind + 1] ]
     }
-    hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+    hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     set typeind [ lsearch $args yesno ]
     if { $typeind eq -1 } { set yesno "false" 
     } else {
@@ -195,18 +195,18 @@ proc myerrorproc { id info } {
         if { [ string length $info ] == 0 } {
             set message "Warning: a running Virtual User was terminated, any pending output has been discarded"
             putscli [ subst {{"warning": {"message": "a running Virtual User was terminated, any pending output has been discarded"}}} ]
-            hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+            hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         } else {
             if { [ info exists threadsbytid($id) ] } {
                 set vuser [expr $threadsbytid($id) + 1]
                 set info "Error: $info"
                 putscli [ subst {{"error": {"message": "$info"}}} ]
-                hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
+                hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
             }  else {
                 if {[string match {*.tc*} $info]} {
                     #set message "Warning: Transaction Counter stopped, connection message not displayed"
                     putscli [ subst {{"error": {"message": "$info"}}} ]
-                    hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $info)}
+                    hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $info)}
                 } else {
                     ;
                     #Background Error from Virtual User suppressed
@@ -221,7 +221,7 @@ proc Log {id msg lastline} {
     global tids threadsbytid jobid 
     set vuser [expr $threadsbytid($id) + 1]
     set lastline [ string trimright $lastline ]
-    hdb eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
+    hdbws eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
 }
 
 rename logtofile _logtofile
@@ -1426,8 +1426,12 @@ proc vucreate {} {
 proc wapp-page-vucreate {} {
     global _ED lprefix vustatus
     if { [ string length $_ED(package) ] eq 0  } {
+    #Try loadscript and recheck before asking the user to load the script if it is empty
+        catch {wapp-page-loadscript}
+    	if { [ string length $_ED(package) ] eq 0  } {
         dict set jsondict error message "No Script loaded: Load script before creating Virtual Users"
         wapp-2-json 2 $jsondict
+	}
     } else {
         if {[expr [ llength [ thread::names ] ] - 1 ] > 0} {
             dict set jsondict error message "Virtual Users exist, destroy with vudestroy before creating"
@@ -1635,7 +1639,7 @@ proc wapp-page-jobs {} {
     set paramlen [ llength $params ]
     #No parameters list jobids
     if { $paramlen eq 0 } {
-        set joboutput [ hdb eval {SELECT DISTINCT JOBID FROM JOBMAIN} ]
+        set joboutput [ hdbws eval {SELECT DISTINCT JOBID FROM JOBMAIN} ]
         set huddleobj [ huddle compile {list} $joboutput ]
         wapp-mimetype application/json
         wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
@@ -1663,7 +1667,7 @@ proc wapp-page-jobs {} {
                 if [ string is entier $vuid ] {
                     unset -nocomplain jobtiming
                     set jobtiming [ dict create ]
-                    hdb eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and VU=$vuid and SUMMARY=0 ORDER BY RATIO_PCT DESC}  {
+                    hdbws eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and VU=$vuid and SUMMARY=0 ORDER BY RATIO_PCT DESC}  {
                         set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
                         dict append jobtiming $procname $timing
                     }
@@ -1687,13 +1691,13 @@ proc wapp-page-jobs {} {
     if { $paramlen eq 1 } {
         if { [ dict keys $paramdict ] eq "jobid" } {
             set jobid [ dict get $paramdict jobid ]
-            set query [ hdb eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+            set query [ hdbws eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid} ]
             if { $query eq 0 } {
                 dict set jsondict error message "Jobid $jobid does not exist"
                 wapp-2-json 2 $jsondict
                 return
             } else {
-                set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                set joboutput [ hdbws eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
                 set huddleobj [ huddle compile {list} $joboutput ]
                 wapp-mimetype application/json
                 wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
@@ -1716,36 +1720,36 @@ proc wapp-page-jobs {} {
                     set vuid 0
                 }
             }
-            set query [ hdb eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+            set query [ hdbws eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
             if { $query eq 0 } {
                 dict set jsondict error message "Jobid $jobid for virtual user $vuid does not exist"
                 wapp-2-json 2 $jsondict
                 return
             } else {
                 if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" } {
-                    set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+                    set joboutput [ hdbws eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
                     set huddleobj [ huddle compile {list} $joboutput ]
                     wapp-mimetype application/json
                     wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
                     return
                 }
                 if { [ dict keys $paramdict ] eq "jobid delete" } {
-                    set joboutput [ hdb eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
-                    set joboutput [ hdb eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
-                    set joboutput [ hdb eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
-                    set joboutput [ hdb eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbws eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbws eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbws eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbws eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
                     dict set jsondict success message "Deleted Jobid $jobid"
                     wapp-2-json 2 $jsondict
                 } else {
                     if { [ dict keys $paramdict ] eq "jobid result" } {
                         if { $bm eq "TPC-C" } { 
                             set tstamp ""
-                            set tstamp [ join [ hdb eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
-                            set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+                            set tstamp [ join [ hdbws eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                            set joboutput [ hdbws eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
                             set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
                             set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
                         } else {
-                            set joboutput [ hdb eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                            set joboutput [ hdbws eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
                             set result [ lsearch -all -glob -inline $joboutput "Completed*" ]
                         }
                         if { $result eq {} } {
@@ -1761,7 +1765,7 @@ proc wapp-page-jobs {} {
                         if { [ dict keys $paramdict ] eq "jobid timing" } {
                             unset -nocomplain jobtiming
                             set jobtiming [ dict create ]
-                            hdb eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and SUMMARY=1 ORDER BY RATIO_PCT DESC}  {
+                            hdbws eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and SUMMARY=1 ORDER BY RATIO_PCT DESC}  {
                                 set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
                                 dict append jobtiming $procname $timing
                             }
@@ -1775,27 +1779,27 @@ proc wapp-page-jobs {} {
                             }
                         } else {
                             if { [ dict keys $paramdict ] eq "jobid timestamp" } {
-                                set joboutput [ hdb eval {SELECT jobid, timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]
+                                set joboutput [ hdbws eval {SELECT jobid, timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]
                                 wapp-2-json 2 $joboutput
                                 return
                             } else {
                                 if { [ dict keys $paramdict ] eq "jobid dict" } {
-                                    set joboutput [ join [ hdb eval {SELECT jobdict FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                    set joboutput [ join [ hdbws eval {SELECT jobdict FROM JOBMAIN WHERE JOBID=$jobid} ]]
                                     wapp-2-json 2 $joboutput
                                     return
                                 } else {
                                     if { [ dict keys $paramdict ] eq "jobid tcount" } {
-                                        set jobheader [ hdb eval {select distinct(db), metric from JOBTCOUNT, JOBMAIN WHERE JOBTCOUNT.JOBID=$jobid AND JOBMAIN.JOBID=$jobid} ]
-                                        set joboutput [ hdb eval {select counter, JOBTCOUNT.timestamp from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
+                                        set jobheader [ hdbws eval {select distinct(db), metric from JOBTCOUNT, JOBMAIN WHERE JOBTCOUNT.JOBID=$jobid AND JOBMAIN.JOBID=$jobid} ]
+                                        set joboutput [ hdbws eval {select counter, JOBTCOUNT.timestamp from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
                                         dict append jsondict $jobheader $joboutput 
                                         wapp-2-json 2 $jsondict
                                         return
                                     } else {
                                         if { [ dict keys $paramdict ] eq "jobid db" } {
-                                            set joboutput [ join [ hdb eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                            set joboutput [ join [ hdbws eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
                                         } else {
                                             if { [ dict keys $paramdict ] eq "jobid bm" } {
-                                                set joboutput [ join [ hdb eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                                set joboutput [ join [ hdbws eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
                                             } else {
                                                 set joboutput [ list $jobid "Cannot find Jobid output" ]
                                             }
@@ -1815,11 +1819,46 @@ proc wapp-page-jobs {} {
 
 interp alias {} wapp-page-job {} wapp-page-jobs
 
+proc keepalive {} {
+#Routine to keep the main thread alive during vurun
+    global rdbms bm
+    set ka_valid 1
+        if {$bm eq "TPC-C"} {
+#For TPC-C we have a rampup and duration time, find these, check they are valid and call _runtimer automatically with these values
+         upvar #0 dbdict dbdict
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set dictname config$key
+            upvar #0 $dictname $dictname
+    }
+    }
+    set rampup_secs [expr {[ get_base_rampup [ set $dictname ]]*60}]
+    set duration_secs [expr {[ get_base_duration [ set $dictname ]] *60}]
+    foreach { val } [ list $rampup_secs $duration_secs ] {
+    if { ![string is integer -strict $val ] || $val < 60 } {
+        set ka_valid 0
+        }
+    }
+    if { $ka_valid } {
+    _runtimer [expr {$rampup_secs + $duration_secs + 10}]
+        } else {
+        dict set jsondict error message "Cannot detect rampup and duration times, keepalive for main thread not active"
+        wapp-2-json 2 $jsondict
+        }
+} else {
+#Workload is TPROC-H, call _waittocomplete to wait until vucomplete message after an indeterminate amount of time
+_waittocomplete
+return
+}
+}
+
 proc vurun {} {
     global ws_port jobid
     unset -nocomplain jobid
     set res [rest::get http://localhost:$ws_port/vurun "" ]
     putscli $res
+    #We need to run keepalive if running from the command line with WS
+    keepalive
     if { [ info exists jobid ] } {
         return $jobid
     } else {
@@ -1828,13 +1867,16 @@ proc vurun {} {
 }
 
 proc wapp-page-vurun {} {
-    global _ED jobid
+    global _ED jobid ws_port
     set jobid [guid]
     if { [jobmain $jobid] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         wapp-2-json 2 $jsondict
         return
     }
+    if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
+	    wapp-page-vucreate
+        }
     if { [ string length $_ED(package) ] > 0 } { 
         if { [ catch {run_virtual} message ] } {
             dict set jsondict error message "Error running virtual users: $message"
@@ -1891,10 +1933,10 @@ proc _dumpdb {} {
 }
 
 proc wapp-page-_dumpdb {} {
-    set jmdump [ concat [ hdb eval {SELECT * FROM JOBMAIN} ] ]]
-    set jtdump [ concat [ hdb eval {SELECT * FROM JOBTIMING} ]]
-    set jcdump [ concat [ hdb eval {SELECT * FROM JOBTCOUNT} ]]
-    set jodump [ concat [ hdb eval {SELECT * FROM JOBOUTPUT} ]]
+    set jmdump [ concat [ hdbws eval {SELECT * FROM JOBMAIN} ] ]]
+    set jtdump [ concat [ hdbws eval {SELECT * FROM JOBTIMING} ]]
+    set jcdump [ concat [ hdbws eval {SELECT * FROM JOBTCOUNT} ]]
+    set jodump [ concat [ hdbws eval {SELECT * FROM JOBOUTPUT} ]]
     set joboutput [ list $jmdump $jtdump $jcdump $jodump ]
     set huddleobj [ huddle compile {list} $joboutput ]
     wapp-mimetype application/json
@@ -1912,7 +1954,19 @@ proc wapp-page-quit {} {
     exit
 }
 
-proc runtimer { seconds } {
+proc runtimer { args } {
+    global ws_port
+    set res [rest::get http://localhost:$ws_port/runtimer "" ]
+    putscli $res
+}
+
+proc wapp-page-runtimer { args } {
+    global hdb_version
+    dict set jsondict error message "runtimer command has been deprecated and is not required for version $hdb_version"
+    wapp-2-json 2 $jsondict
+}
+
+proc _runtimer { seconds } {
     global ws_port
     upvar elapsed elapsed
     upvar timevar timevar
@@ -2031,20 +2085,32 @@ proc wapp-page-tcstop {} {
 
 proc waittocomplete {} {
     global ws_port
+    set res [rest::get http://localhost:$ws_port/waittocomplete "" ]
+    putscli $res
+}
+
+proc wapp-page-waittocomplete {} {
+    global hdb_version
+    dict set jsondict error message "waittocomplete command has been deprecated and is not required for version $hdb_version"
+    wapp-2-json 2 $jsondict
+}
+
+proc _waittocomplete {} {
+    global ws_port
+#waittocomplete returns after vucomplete is detected, in v4.5 and earlier it would call exit
+    upvar timevar timevar
     proc wait_to_complete_loop {} {
-        global ws_port
+    upvar timevar timevar
         upvar wcomplete wcomplete
         set wcomplete [vucomplete]
         if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else {
-            set body { "type": "success", "key": "message", "value": "waittocomplete called script exit" }
-            set res [rest::post http://localhost:$ws_port/echo $body ]
-            putscli $res
-            exit
+        set timevar 1
         }
     }
     set wcomplete "false"
     wait_to_complete_loop
-    vwait forever
+    vwait timevar
+    return
 }
 
 proc start_webservice { args } {
@@ -2073,58 +2139,58 @@ proc start_webservice { args } {
     } else {
         set sqlite_db ":memory:"
     }
-    if [catch {sqlite3 hdb $sqlite_db} message ] {
+    if [catch {sqlite3 hdbws $sqlite_db} message ] {
         puts "Error initializing SQLite database : $message"
         return
     } else {
-        catch {hdb timeout 30000}
-        #hdb eval {PRAGMA foreign_keys=ON}
+        catch {hdbws timeout 30000}
+        #hdbws eval {PRAGMA foreign_keys=ON}
         if { $sqlite_db eq ":memory:" } {
-            catch {hdb eval {DROP TABLE JOBMAIN}}
-            catch {hdb eval {DROP TABLE JOBTIMING}}
-            catch {hdb eval {DROP TABLE JOBTCOUNT}}
-            catch {hdb eval {DROP TABLE JOBOUTPUT}}
-            if [catch {hdb eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+            catch {hdbws eval {DROP TABLE JOBMAIN}}
+            catch {hdbws eval {DROP TABLE JOBTIMING}}
+            catch {hdbws eval {DROP TABLE JOBTCOUNT}}
+            catch {hdbws eval {DROP TABLE JOBOUTPUT}}
+            if [catch {hdbws eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
                 puts "Error creating JOBMAIN table in SQLite in-memory database : $message"
                 return
-            } elseif [ catch {hdb eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+            } elseif [ catch {hdbws eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
                 puts "Error creating JOBTIMING table in SQLite in-memory database : $message"
-            } elseif [ catch {hdb eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+            } elseif [ catch {hdbws eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
                 puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
                 return
-            } elseif [ catch {hdb eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+            } elseif [ catch {hdbws eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
                 puts "Error creating JOBOUTPUT table in SQLite in-memory database : $message"
                 return
             } else {
-                catch {hdb eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
-                catch {hdb eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
-                catch {hdb eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
-                catch {hdb eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
+                catch {hdbws eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
+                catch {hdbws eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
+                catch {hdbws eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+                catch {hdbws eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
                 puts "Initialized new SQLite in-memory database"
             }
         } else {
-            if [catch {set tblname [ hdb eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
+            if [catch {set tblname [ hdbws eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
                 puts "Error querying  JOBOUTPUT table in SQLite on-disk database : $message"
                 return
             } else {
                 if { $tblname eq "" } {
-                    if [catch {hdb eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+                    if [catch {hdbws eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
                         puts "Error creating JOBMAIN table in SQLite in-memory database : $message"
                         return
-                    } elseif [ catch {hdb eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+                    } elseif [ catch {hdbws eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
                         puts "Error creating JOBTIMING table in SQLite in-memory database : $message"
                         return
-                    } elseif [ catch {hdb eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+                    } elseif [ catch {hdbws eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
                         puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
                         return
-                    } elseif [catch {hdb eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
+                    } elseif [catch {hdbws eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
                         puts "Error creating JOBOUTPUT table in SQLite on-disk database : $message"
                         return
                     } else {
-                        catch {hdb eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
-                        catch {hdb eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
-                        catch {hdb eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
-                        catch {hdb eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
+                        catch {hdbws eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
+                        catch {hdbws eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
+                        catch {hdbws eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+                        catch {hdbws eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
                         puts "Initialized new SQLite on-disk database $sqlite_db"
                     }
                 } else {

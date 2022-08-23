@@ -27,7 +27,7 @@
             <pg_total_iterations>10000000</pg_total_iterations>
             <pg_raiseerror>false</pg_raiseerror>
             <pg_keyandthink>false</pg_keyandthink>
-            <pg_driver>test</pg_driver>
+            <pg_driver>timed</pg_driver>
 	    <pg_rampup>2</pg_rampup>
             <pg_duration>5</pg_duration>
             <pg_allwarehouse>false</pg_allwarehouse>

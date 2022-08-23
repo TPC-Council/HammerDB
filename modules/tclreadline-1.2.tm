@@ -54,7 +54,8 @@ proc TclReadLine::setup_prompt_requirements {} {
         package require Expect
         interp alias {} stty {} exp_stty
         # Prevent sigint from killing our shell:
-        exp_trap SIG_IGN SIGINT
+        # Allow SIGINT to kill shell, uncomment to trap SIGINT
+        #exp_trap SIG_IGN SIGINT
         # Handle terminal resize events:
         exp_trap ::TclReadLine::getColumns SIGWINCH
     }

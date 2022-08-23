@@ -24,7 +24,7 @@
             <raiseerror>false</raiseerror>
             <keyandthink>false</keyandthink>
 	    <checkpoint>false</checkpoint>
-            <ora_driver>test</ora_driver>
+            <ora_driver>timed</ora_driver>
             <rampup>2</rampup>
             <duration>5</duration>
             <allwarehouse>false</allwarehouse>

@@ -28,7 +28,7 @@
             <mysql_total_iterations>10000000</mysql_total_iterations>
             <mysql_raiseerror>false</mysql_raiseerror>
             <mysql_keyandthink>false</mysql_keyandthink>
-            <mysql_driver>test</mysql_driver>
+            <mysql_driver>timed</mysql_driver>
             <mysql_rampup>2</mysql_rampup>
             <mysql_duration>5</mysql_duration>
             <mysql_allwarehouse>false</mysql_allwarehouse>
