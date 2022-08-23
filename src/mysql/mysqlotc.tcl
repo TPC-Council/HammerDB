@@ -14,7 +14,7 @@ proc tcount_mysql {bm interval masterthread} {
             }
         }
     
-        proc ConnectToMySQL { host port socket ssl_options user password } {
+        proc ConnectToMySQL { MASTER host port socket ssl_options user password } {
             global mysqlstatus
             #ssl_options is variable length so build a connectstring
             if { [ chk_socket $host $socket ] eq "TRUE" } {
@@ -30,12 +30,7 @@ proc tcount_mysql {bm interval masterthread} {
             append connectstring " -user $user -password $password"
             set login_command "mysqlconnect [ dict get $connectstring ]"
             #eval the login command
-            if [catch {set mysql_handler [eval $login_command]}] {
-                if $use_socket {
-                    puts "the local socket connection to $socket could not be established"
-                } else {
-                    puts "the tcp connection to $host:$port could not be established"
-                }
+            if [catch {set mysql_handler [eval $login_command]} message ] {
                 set connected "false"
             } else {
                 set connected "true"
@@ -43,7 +38,7 @@ proc tcount_mysql {bm interval masterthread} {
             if {$connected} {
                 return $mysql_handler
             } else {
-                tsv::set application tc_errmsg $mysql_handler
+                tsv::set application tc_errmsg $message
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
                 thread::release
                 return
@@ -90,7 +85,7 @@ proc tcount_mysql {bm interval masterthread} {
                 namespace import tcountcommon::*
             }
 
-            set mysql_handler [ ConnectToMySQL $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass ]
+            set mysql_handler [ ConnectToMySQL $MASTER $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass ]
 
             #Enter loop until stop button pressed
             while { $timeout eq 0 } {
