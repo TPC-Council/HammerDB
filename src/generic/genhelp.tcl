@@ -4,11 +4,11 @@ proc help { args } {
     if [ llength [ info commands wapp-default ]] { set wsmode 1 } else { set wsmode 0 }
     if $wsmode { set helpbanner "HammerDB $hdb_version WS Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
+        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     } else {
         set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema clearscript customscript datagenrun dbset dgset diset distributescript librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
+        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset distributescript librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     }
     if {[ llength $args ] != 1} {
         puts $helpbanner
@@ -95,6 +95,10 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
                 buildschema {
                     putscli "buildschema - Usage: buildschema"
                     putscli "Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface." 
+                }
+                deleteschema {
+                    putscli "deleteschema - Usage: deleteschema"
+                    putscli "Runs the schema delete for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Delete command in the graphical interface." 
                 }
                 vuset {
                     putscli "vuset - Usage: vuset \[vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps\]"
@@ -227,6 +231,9 @@ proc wapp-page-help {} {
         <br>
         <b>GET buildschema</b>: Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface. Creates a job id associated with all output. 
         get http://localhost:8080/buildschema
+        <br>
+        <b>GET deleteschema</b>: Runs the schema delete for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Delete command in the graphical interface. Creates a job id associated with all output. 
+        get http://localhost:8080/deleteschema
         <br>
         <b>GET jobs</b>: Show the job ids, configuration, output, status, results and timings of jobs created by buildschema and vurun. Job output is equivalent to the output viewed in the graphical interface or command line.
         get http://localhost:8080/jobs

@@ -404,6 +404,32 @@ proc build_schema {} {
     }
 }
 
+proc delete_schema {} {
+    global _ED
+    #This runs the schema deletion
+    upvar #0 dbdict dbdict
+    global _ED bm rdbms
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set prefix [ dict get $dbdict $key prefix ]
+            if { $bm == "TPC-C" }  {
+                set command [ concat [subst {delete_$prefix}]tpcc ]
+            } else {
+                set command [ concat [subst {delete_$prefix}]tpch ]
+            }
+            eval $command
+            break
+        }
+    }
+    if { [ string length $_ED(package) ] > 0 } { 
+        #yes was pressed
+        run_virtual
+    } else {
+        #no was pressed
+        #puts "Schema deletion cancelled"
+    }
+}
+
 proc loadtpcc {} {
     upvar #0 dbdict dbdict
     global _ED rdbms lprefix
@@ -1461,6 +1487,12 @@ proc buildschema {} {
     putscli $res
 }
 
+proc deleteschema {} {
+    global ws_port
+    set res [rest::get http://localhost:$ws_port/deleteschema "" ]
+    putscli $res
+}
+
 proc wapp-page-buildschema {} {
     global virtual_users maxvuser rdbms bm threadscreated jobid 
     if { [ info exists threadscreated ] } {
@@ -1555,6 +1587,41 @@ proc wapp-page-buildschema {} {
             dict set jsondict success message "Building Scale Factor $buildsf with $maxvuser Virtual Users, $buildvu active + 1 Monitor VU(dict value $vuname is set to $buildvu): JOBID=$jobid"
             wapp-2-json 2 $jsondict
         }
+    }
+}
+
+proc wapp-page-deleteschema {} {
+    global virtual_users maxvuser rdbms bm threadscreated jobid 
+    if { [ info exists threadscreated ] } {
+        dict set jsondict error message "Cannot delete schema with Virtual Users active, destroy Virtual Users first"
+        wapp-2-json 2 $jsondict
+        return
+    }
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in deleting jobid in JOBMAIN table"
+        wapp-2-json 2 $jsondict
+        return
+    }
+    upvar #0 dbdict dbdict
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set dictname config$key
+            upvar #0 $dictname $dictname
+            break
+        }
+    }
+    set maxvuser 1
+    set virtual_users 1
+    clearscript2
+    if { [ catch {delete_schema} message ] } {
+        dict set jsondict error message "$message"
+        wapp-2-json 2 $jsondict
+        unset -nocomplain jobid
+        return
+    } else {
+        dict set jsondict success message "Deleting $bm Schema with 1 Virtual User: $jobid"
+        wapp-2-json 2 $jsondict
     }
 }
 

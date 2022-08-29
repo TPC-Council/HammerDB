@@ -1060,6 +1060,56 @@ return
 }
 }
 
+proc delete_schema {} {
+    global _ED
+    #This runs the schema deletion
+    upvar #0 dbdict dbdict
+    global _ED bm rdbms
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set prefix [ dict get $dbdict $key prefix ]
+            if { $bm == "TPC-C" }  {
+                set command [ concat [subst {delete_$prefix}]tpcc ]
+            } else {
+                set command [ concat [subst {delete_$prefix}]tpch ]
+            }
+            eval $command
+            break
+        }
+    }
+    if { [ string length $_ED(package) ] > 0 } { 
+        #yes was pressed
+        run_virtual
+    } else {
+        #no was pressed
+        puts "Schema deletion cancelled"
+    }
+}
+
+proc deleteschema {} {
+    global virtual_users maxvuser rdbms bm threadscreated
+    if { [ info exists threadscreated ] } {
+        puts "Error: Cannot delete schema with Virtual Users active, destroy Virtual Users first"
+        return
+    }
+    upvar #0 dbdict dbdict
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set dictname config$key
+            #set dbname $key
+            upvar #0 $dictname $dictname
+            break
+        }
+    }
+    set maxvuser 1
+    set virtual_users 1
+    clearscript
+    puts "Deleting schema with 1 Virtual User"
+    if { [ catch {delete_schema} message ] } {
+        puts "Error: $message"
+    }
+}
+
 proc vurun {} {
     global _ED opmode
     #If calling vurun and virtual users not created, create them now

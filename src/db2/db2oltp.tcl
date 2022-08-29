@@ -2306,3 +2306,62 @@ switch $myposition {
         }
     }
 }
+
+proc delete_db2tpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict db2 library ]} {
+        set library [ dict get $dbdict db2 library ]
+    } else { set library "db2tcl" }
+    upvar #0 configdb2 configdb2
+    #set variables to values in dict
+    setlocaltpccvars $configdb2
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Ready to delete Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
+        if { $db2_num_vu eq 1 || $db2_count_ware eq 1 } {
+            set maxvuser 1
+        } else {
+            set maxvuser [ expr $db2_num_vu + 1 ]
+        }
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "Db2 TPROC-C deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema deletion: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc ConnectToDb2 { dbname user password } {
+    puts "Connecting to database $dbname"
+    if {[catch {set db_handle [db2_connect $dbname $user $password ]} message]} {
+        error $message
+        return ""
+    } else {
+        puts "Connection established"
+        return $db_handle
+    }
+}
+
+proc drop_schema { dbname user password } {
+    set db_handle [ ConnectToDb2 $dbname $user $password ]
+    if { $db_handle ne "" } {
+        set sql "drop database tpcc"
+        db2_exec_direct $db_handle $sql
+        db2_disconnect $db_handle
+        puts "TPROC-C schema has been deleted successfully."
+    }
+    return
+}
+
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_dbase $db2_user $db2_pass"
+    } else { return }
+}
+

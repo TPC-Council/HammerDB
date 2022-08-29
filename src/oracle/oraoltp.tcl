@@ -3283,3 +3283,69 @@ switch $myposition {
         } 
     }
 }
+
+proc delete_oratpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict oracle library ]} {
+        set library [ dict get $dbdict oracle library ]
+    } else { set library "Oratcl" } 
+    upvar #0 configoracle configoracle
+    setlocaltpccvars $configoracle
+    if { $tpcc_tt_compat eq "true" } {
+        set install_message "Ready to delete TimesTen TPROC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
+    } else {
+        set install_message "Ready to delete Oracle TPROC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
+    }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message $install_message -type yesno ] == yes} { 
+        if { $num_vu eq 1 || $count_ware eq 1 } {
+            set maxvuser 1
+        } else {
+            set maxvuser [ expr $num_vu + 1 ]
+        }
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create thread(s) for schema deletion: $message"
+            return 1
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } {
+    set connect $system_user/$system_password@$instance
+    set lda [ oralogon $connect ]
+    set curn [oraopen $lda ]
+    if  { $hash_clusters } {
+        foreach table { WAREHOUSE DISTRICT CUSTOMER ITEM STOCK ORDERS NEW_ORDER ORDER_LINE HISTORY } {
+            set sql "ALTER TABLE $table DISABLE TABLE LOCK\n"
+            if {[ catch {orasql $curn $sql} message ] } {
+                puts "$sql : $message"
+                #puts [ oramsg $curn all ]
+            }
+        }
+    }
+    set dropsql "drop user $tpcc_user cascade\n"
+    if {[ catch {orasql $curn $dropsql} message ] } {
+        puts "$dropsql : $message"
+        #puts [ oramsg $curn all ]
+    } else {
+        puts "TPROC-C schema has been deleted successfully."
+    }
+    oralogoff $lda
+
+    return
+}
+
+}
+
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc $system_user $system_password $instance $tpcc_user $hash_clusters"
+    } else { return }
+}

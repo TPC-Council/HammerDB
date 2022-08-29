@@ -2533,3 +2533,113 @@ insert_mariaconnectpool_drivescript timed async
 }
 }
 }
+
+proc delete_mariatpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED maria_ssl_options
+    upvar #0 dbdict dbdict
+
+    if {[dict exists $dbdict maria library ]} {
+        set library [ dict get $dbdict maria library ]
+    } else {
+        set library "mariatcl" 
+    }
+
+    upvar #0 configmariadb configmariadb
+    #set variables to values in dict
+    setlocaltpccvars $configmariadb
+    #If the options menu has been run under the GUI maria_ssl_options is set
+    #If build is run under the GUI, CLI or WS maria_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
+        set maria_connector "$maria_host:$maria_port" 
+    }
+
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_user ] in database [ string toupper $maria_dbase ]?" -type yesno ] == yes} {
+        if { $maria_num_vu eq 1 || $maria_count_ware eq 1 } {
+            set maxvuser 1
+        } else {
+            set maxvuser [ expr $maria_num_vu + 1 ]
+        }
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema deletion: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc chk_socket { host socket } {
+    if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+        return "TRUE"
+    } else {
+        return "FALSE"
+    }
+}
+
+proc ConnectToMaria { host port socket ssl_options user password } {
+    global mariastatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mariaconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set maria_handler [eval $login_command]}] {
+		if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        maria::autocommit $maria_handler 0
+	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
+        return $maria_handler
+    } else {
+        error $mariastatus(message)
+        return
+    }
+}
+
+proc drop_schema { host port socket ssl_options user password } {
+    global mariastatus
+
+    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+    if {[ catch {mariaexec $maria_handler "drop database tpcc;"} message ] } {
+        puts "$message"
+    } else {
+        puts "TPROC-C Schema has been deleted successfully."
+    }
+    mariaclose $maria_handler
+
+    return
+}
+
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user $maria_pass"
+    } else { return }
+}

@@ -3165,3 +3165,79 @@ switch $myposition {
         }
     }
 }
+
+proc delete_mssqlstpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict mssqlserver library ]} {
+        set library [ dict get $dbdict mssqlserver library ]
+    } else { set library "tdbc::odbc 1.0.6" }
+    if { [ llength $library ] > 1 } { 
+        set version [ lindex $library 1 ]
+        set library [ lindex $library 0 ]
+    }
+    upvar #0 configmssqlserver configmssqlserver
+    #set variables to values in dict
+    setlocaltpccvars $configmssqlserver
+    if {![string match windows $::tcl_platform(platform)]} {
+        set mssqls_server $mssqls_linux_server 
+        set mssqls_odbc_driver $mssqls_linux_odbc
+        set mssqls_authentication $mssqls_linux_authent 
+    }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Ready to delete MS SQL Server TPROC-C schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_dbase ]?" -type yesno ] == yes} { 
+        if { $mssqls_num_vu eq 1 || $mssqls_count_ware eq 1 } {
+            set maxvuser 1
+        } else {
+            set maxvuser [ expr $mssqls_num_vu + 1 ]
+        }
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema deletion: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+set version $version
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+    if { $tcp eq "true" } { set server tcp:$server,$port }
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
+        set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
+    } else {
+        if {[ string toupper $authentication ] eq "SQL" } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+        } else {
+            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            set connection "DRIVER=$odbc_driver;SERVER=$server"
+        }
+    }
+    if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    return $connection
+}
+
+proc drop_tpcc { server port odbc_driver authentication uid pwd tcp azure count_ware db imdb } {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
+    
+    if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+        error "Connection to $connection could not be established : $message"
+    } else {
+        #if {!$azure} {odbc evaldirect "use $db"}
+        odbc evaldirect "drop database tpcc"
+        puts "TPROC-C schema has been deleted successfully."
+    } 
+    odbc close
+    return
+}
+
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb"
+    } else { return }
+}
