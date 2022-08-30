@@ -192,6 +192,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Parent .ed_mainFrame
     construct_button $Parent.buttons.hmenu bar hmenu new.ppm "pop_up_menu"  "Open Edit Menu"
     construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
+    #construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
     construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
     construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command run_virtual; run_virtual" "Run Virtual Users" 
@@ -443,7 +444,7 @@ proc populate_tree {rdbms bm icons iconalt} {
     tooltip::tooltip $Name -item $rdbms.$bm.build.go "Create $rdbms $bm Schema"
     $Name tag bind builsch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { build_schema } }
     $Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.del -text "Delete" -image [ create_image delete icons ]
-    dict set treeidicons $rdbms.$bm.build.del boxes
+    dict set treeidicons $rdbms.$bm.build.del delete
     $Name item $rdbms.$bm.build.del -tags deletesch
     tooltip::tooltip $Name -item $rdbms.$bm.build.del "Delete $rdbms $bm Schema"
     $Name tag bind deletesch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { delete_schema } }

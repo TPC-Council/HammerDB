@@ -1195,13 +1195,19 @@ proc ConnectToDb2 { dbname user password } {
 }
 
 proc drop_schema { dbname user password } {
-    set db_handle [ ConnectToDb2 $dbname $user $password ]
-    if { $db_handle ne "" } {
-        set sql "drop database tpch"
-        db2_exec_direct $db_handle $sql
-        db2_disconnect $db_handle
-        puts "TPROC-H schema has been deleted successfully."
+    global tcl_platform
+    if {$tcl_platform(platform) == "windows"} {
+        set cmd "db2cmd -c -w -i db2 drop database tpch"
+    } else {
+        set cmd "db2 drop database tpch"
     }
+
+    if {[ catch {eval exec $cmd} message ]} {
+        error $message
+    } else {
+        puts "TPROC-H Schema has been deleted successfully."
+    }
+
     return
 }
 
