@@ -1,0 +1,13 @@
+# The CODEOWNERS mechanism determines who must review changes to files in the repository.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# In particular, team auto-assignment has been configured to ensure that multiple
+# members of the Code Maintenance Team are assigned as reviewers, as per TPC
+# Procedures, rather than the Github default of one.
+# https://docs.github.com/en/enterprise-cloud@latest/organizations/organizing-members-into-teams/managing-code-review-settings-for-your-team
+
+# Files in root directory
+* @TPC-Council/hammerdb-code-maintenance-team
+
+# Files in any directory
+/** @TPC-Council/hammerdb-code-maintenance-team
