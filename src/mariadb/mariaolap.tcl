@@ -1400,12 +1400,8 @@ proc delete_mariatpch {} {
     #Set it now if it doesn't exist
     if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ] in database [ string toupper $maria_tpch_dbase ]?" -type yesno ] == yes} {
-        if { $maria_num_tpch_threads eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $maria_num_tpch_threads + 1 ]
-        }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete [ string toupper $maria_tpch_dbase ] TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ]?" -type yesno ] == yes} {
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -1470,14 +1466,14 @@ proc ConnectToMaria { host port socket ssl_options user password } {
     }
 }
 
-proc drop_schema { host port socket ssl_options user password } {
+proc drop_schema { host port socket ssl_options user password dbase } {
     global mariastatus
 
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
-    if {[ catch {mariaexec $maria_handler "drop database tpch;"} message ] } {
+    if {[ catch {mariaexec $maria_handler "drop database $dbase"} message ] } {
         puts "$message"
     } else {
-        puts "TPROC-H Schema has been deleted successfully."
+        puts "$dbase TPROC-H Schema has been deleted successfully."
     }
     mariaclose $maria_handler
 
@@ -1485,6 +1481,6 @@ proc drop_schema { host port socket ssl_options user password } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_tpch_user $maria_tpch_pass"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase"
     } else { return }
 }
