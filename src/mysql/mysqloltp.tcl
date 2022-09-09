@@ -2485,12 +2485,8 @@ proc delete_mysqltpcc {} {
     #Set it now if it doesn't exist
     if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_user ] in database [ string toupper $mysql_dbase ]?" -type yesno ] == yes} {
-        if { $mysql_num_vu eq 1 || $mysql_count_ware eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $mysql_num_vu + 1 ]
-        }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mysql_dbase ] TPROC-C schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_user ]?" -type yesno ] == yes} {
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -2554,14 +2550,14 @@ proc ConnectToMySQL { host port socket ssl_options user password } {
     }
 }
 
-proc drop_schema { host port socket ssl_options user password } {
+proc drop_schema { host port socket ssl_options user password dbase } {
     global mysqlstatus
 
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
-    if {[ catch {mysqlexec $mysql_handler "drop database tpcc;"} message ] } {
+    if {[ catch {mysqlexec $mysql_handler "drop database $dbase"} message ] } {
         puts "$message"
     } else {
-        puts "TPROC-C Schema has been deleted successfully."
+        puts "$dbase TPROC-C Schema has been deleted successfully."
     }
     mysqlclose $mysql_handler
 
@@ -2569,6 +2565,6 @@ proc drop_schema { host port socket ssl_options user password } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user $mysql_pass"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user $mysql_pass $mysql_dbase"
     } else { return }
 }

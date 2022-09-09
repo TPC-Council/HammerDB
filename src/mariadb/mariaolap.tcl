@@ -1400,7 +1400,7 @@ proc delete_mariatpch {} {
     #Set it now if it doesn't exist
     if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete [ string toupper $maria_tpch_dbase ] TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ]?" -type yesno ] == yes} {
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $maria_tpch_dbase ] TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
         set suppo 1
         set ntimes 1
