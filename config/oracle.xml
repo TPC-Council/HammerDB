@@ -12,8 +12,8 @@
 	    <num_vu>1</num_vu>
             <tpcc_user>tpcc</tpcc_user>
             <tpcc_pass>tpcc</tpcc_pass>
-            <tpcc_def_tab>tpcctab</tpcc_def_tab>
-            <tpcc_ol_tab>tpcctab</tpcc_ol_tab>
+            <tpcc_def_tab>users</tpcc_def_tab>
+            <tpcc_ol_tab>users</tpcc_ol_tab>
             <tpcc_def_temp>temp</tpcc_def_temp>
 	    <partition>false</partition>
 	    <hash_clusters>false</hash_clusters>
@@ -41,7 +41,7 @@
             <scale_fact>1</scale_fact>
             <tpch_user>tpch</tpch_user>
             <tpch_pass>tpch</tpch_pass>
-            <tpch_def_tab>tpchtab</tpch_def_tab>
+            <tpch_def_tab>users</tpch_def_tab>
             <tpch_def_temp>temp</tpch_def_temp>
             <num_tpch_threads>1</num_tpch_threads>
 	    <tpch_tt_compat>false</tpch_tt_compat>
