@@ -1658,16 +1658,12 @@ proc delete_oratpch {} {
     upvar #0 configoracle configoracle
     setlocaltpchvars $configoracle
     if { $tpch_tt_compat eq "true" } {
-        set install_message "Ready to delete TimesTen TPROC-H schema\nin the existing database [string toupper $instance]\n under existing user [ string toupper $tpch_user ]?"
+        set install_message "Do you want to delete the [ string toupper $tpch_user ] TimesTen TPROC-H schema\nin the instance [string toupper $instance]?"
     } else {
-        set install_message "Ready to delete TPROC-H schema in database [string toupper $instance]\n under user [ string toupper $tpch_user ] in tablespace [ string toupper $tpch_def_tab]?"
+        set install_message "Do you want to delete the [ string toupper $tpch_user ] TPROC-H schema in the instance [string toupper $instance]?"
     }
     if {[ tk_messageBox -title "Delete Schema" -icon question -message $install_message -type yesno ] == yes} {
-        if { $num_tpch_threads eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $num_tpch_threads + 1 ]
-        }
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -1690,16 +1686,13 @@ proc drop_tpch { system_user system_password instance tpch_user } {
     set curn [oraopen $lda ]
     set dropsql "drop user $tpch_user cascade\n"
     if {[ catch {orasql $curn $dropsql} message ] } {
-        puts "$dropsql : $message"
-        #puts [ oramsg $curn all ]
+	      error [ regsub -all {\{|\}} [ oramsg $curn all ] "" ]
     } else {
-        puts "TPROC-H schema has been deleted successfully."
+        puts "$tpch_user TPROC-H schema has been deleted successfully."
     }
     oralogoff $lda
-
     return
 }
-
 }
 
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch $system_user $system_password $instance $tpch_user"

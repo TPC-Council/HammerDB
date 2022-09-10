@@ -3293,16 +3293,12 @@ proc delete_oratpcc {} {
     upvar #0 configoracle configoracle
     setlocaltpccvars $configoracle
     if { $tpcc_tt_compat eq "true" } {
-        set install_message "Ready to delete TimesTen TPROC-C schema\nin the existing database [string toupper $instance] under existing user [ string toupper $tpcc_user ]?" 
+        set delete_message "Do you want to delete the [ string toupper $tpcc_user ] TimesTen TPROC-C schema\nin the instance [string toupper $instance]?" 
     } else {
-        set install_message "Ready to delete Oracle TPROC-C schema\nin database [string toupper $instance] under user [ string toupper $tpcc_user ] in tablespace [ string toupper $tpcc_def_tab]?" 
+        set delete_message "Do you want to delete the [ string toupper $tpcc_user ] Oracle TPROC-C schema\nin the instance [string toupper $instance]?" 
     }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message $install_message -type yesno ] == yes} { 
-        if { $num_vu eq 1 || $count_ware eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $num_vu + 1 ]
-        }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message $delete_message -type yesno ] == yes} { 
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -3325,25 +3321,21 @@ proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } 
     set curn [oraopen $lda ]
     if  { $hash_clusters } {
         foreach table { WAREHOUSE DISTRICT CUSTOMER ITEM STOCK ORDERS NEW_ORDER ORDER_LINE HISTORY } {
-            set sql "ALTER TABLE $table DISABLE TABLE LOCK\n"
+            set sql "ALTER TABLE $table ENABLE TABLE LOCK\n"
             if {[ catch {orasql $curn $sql} message ] } {
-                puts "$sql : $message"
-                #puts [ oramsg $curn all ]
+	      error [ regsub -all {\{|\}} [ oramsg $curn all ] "" ]
             }
         }
     }
     set dropsql "drop user $tpcc_user cascade\n"
     if {[ catch {orasql $curn $dropsql} message ] } {
-        puts "$dropsql : $message"
-        #puts [ oramsg $curn all ]
+	      error [ regsub -all {\{|\}} [ oramsg $curn all ] "" ]
     } else {
-        puts "TPROC-C schema has been deleted successfully."
+        puts "$tpcc_user TPROC-C schema has been deleted successfully."
     }
     oralogoff $lda
-
     return
 }
-
 }
 
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc $system_user $system_password $instance $tpcc_user $hash_clusters"
