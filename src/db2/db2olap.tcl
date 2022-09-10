@@ -1166,7 +1166,7 @@ proc delete_db2tpch {} {
     upvar #0 configdb2 configdb2
     #set variables to values in dict
     setlocaltpchvars $configdb2
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Ready to delete TPROC-H schema under user [ string toupper $db2_tpch_user ]\n in database [ string toupper $db2_tpch_dbase ]?" -type yesno ] == yes} {
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $db2_tpch_dbase ] TPROC-H schema under user [ string toupper $db2_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
         set suppo 1
         set ntimes 1
@@ -1184,33 +1184,21 @@ set library $library
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc ConnectToDb2 { dbname user password } {
-    puts "Connecting to database $dbname"
-    if {[catch {set db_handle [db2_connect $dbname $user $password ]} message]} {
-        error $message
-    } else {
-        puts "Connection established"
-        return $db_handle
-    }
-}
-
 proc drop_schema { dbname user password } {
     global tcl_platform
     if {$tcl_platform(platform) == "windows"} {
-        set cmd "db2cmd -c -w -i db2 drop database tpch"
+        set cmd "db2cmd -c -w -i db2 drop database $dbname"
     } else {
-        set cmd "db2 drop database tpch"
+        set cmd "db2 drop database $dbname"
     }
 
     if {[ catch {eval exec $cmd} message ]} {
         error $message
     } else {
-        puts "TPROC-H Schema has been deleted successfully."
+        puts "$dbname TPROC-H Schema has been deleted successfully."
     }
-
     return
 }
-
 }
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_tpch_dbase $db2_tpch_user $db2_tpch_pass"
     } else { return }

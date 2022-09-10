@@ -2316,12 +2316,8 @@ proc delete_db2tpcc {} {
     upvar #0 configdb2 configdb2
     #set variables to values in dict
     setlocaltpccvars $configdb2
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Ready to delete Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
-        if { $db2_num_vu eq 1 || $db2_count_ware eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $db2_num_vu + 1 ]
-        }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $db2_dbase ] Db2 TPROC-C schema\nunder user [ string toupper $db2_user ]?" -type yesno ] == yes} { 
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -2338,36 +2334,23 @@ set library $library
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
-proc ConnectToDb2 { dbname user password } {
-    puts "Connecting to database $dbname"
-    if {[catch {set db_handle [db2_connect $dbname $user $password ]} message]} {
-        error $message
-        return ""
-    } else {
-        puts "Connection established"
-        return $db_handle
-    }
-}
-
 proc drop_schema { dbname user password } {
     global tcl_platform
     if {$tcl_platform(platform) == "windows"} {
-        set cmd "db2cmd -c -w -i db2 drop database tpcc"
+        set cmd "db2cmd -c -w -i db2 drop database $dbname"
     } else {
-        set cmd "db2 drop database tpcc"
+        set cmd "db2 drop database $dbname"
     }
 
     if {[ catch {eval exec $cmd} message ]} {
         error $message
     } else {
-        puts "TPROC-C Schema has been deleted successfully."
+        puts "$dbname TPROC-C Schema has been deleted successfully."
     }
 
     return
 }
-
 }
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_dbase $db2_user $db2_pass"
     } else { return }
 }
-
