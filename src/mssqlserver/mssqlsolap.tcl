@@ -1181,12 +1181,8 @@ proc delete_mssqlstpch {} {
         set mssqls_odbc_driver $mssqls_linux_odbc
         set mssqls_authentication $mssqls_linux_authent
     }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Ready to delete MS SQL Server TPROC-H schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
-        if { $mssqls_num_tpch_threads eq 1 } {
-            set maxvuser 1
-        } else {
-            set maxvuser [ expr $mssqls_num_tpch_threads + 1 ]
-        }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mssqls_tpch_dbase ] TPROC-H schema\nin host [string toupper $mssqls_server ]?" -type yesno ] == yes} { 
+        set maxvuser 1
         set suppo 1
         set ntimes 1
         ed_edit_clear
@@ -1204,7 +1200,7 @@ set version $version
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
@@ -1217,24 +1213,45 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
         }
     }
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc drop_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db } {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db ]
-    
+proc drop_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
+
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
-        #if {!$azure} {odbc evaldirect "use $db"}
-        odbc evaldirect "drop database tpch"
-        puts "TPROC-H schema has been deleted successfully."
-    } 
-    odbc close
-    return
+            if {!$azure} {odbc evaldirect "use tempdb"}
+    set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+    set db_exists [ lindex {*}$rows 1 ]
+ if { $db_exists } {
+        if {!$azure} {
+set sql(1) [ subst -nocommands {USE [$db];
+ALTER DATABASE $db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+USE [tempdb];
+DROP DATABASE $db;}]
+        } else {
+set sql(1) "DROP DATABASE $db"
 }
-
+odbc evaldirect $sql(1)
+set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+    set db_exists [ lindex {*}$rows 1 ]
+ if { !$db_exists } {
+puts "$db TPROC-H schema has been deleted successfully."
+} else {
+error "Failed to delete $db TPROC-H schema."
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase"
+} else {
+error "$db TPROC-H schema does not exist to delete."
+}
+odbc close
+return
+}
+}
+}
+	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }
