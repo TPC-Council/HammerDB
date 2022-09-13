@@ -473,8 +473,22 @@ if {[dict exists $tmpgendict theme scaling ]} {
         }
         rename tk_messageBox _tk_messageBox
         proc tk_messageBox {args} {
+        variable ::ttk::dialog_module::window_name
+	    if [ winfo exists $window_name ] {
+		    raise $window_name
+		    if [ llength $::ttk::dialog_module::args ] {
+			    if [ dict exists $::ttk::dialog_module::args -title ] {
+		    puts "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
+		    	} else {
+		    puts "Warning: a dialog is already open, close it first"
+			}
+		    }
+		    return
+	    } else {
+	    set ::ttk::dialog_module::args $args
             bell
             ttk::messageBox {*}$args
+    		}
         }
         initscaletheme $theme $pixelsperpoint
     } else {
@@ -493,10 +507,24 @@ if {[dict exists $tmpgendict theme scaling ]} {
                 set defaultBackground #efebe7
                 set defaultForeground black
                 rename tk_messageBox _tk_messageBox
-                proc tk_messageBox {args} {
-                    bell
-                    ttk::messageBox {*}$args
-                }
+        proc tk_messageBox {args} {
+        variable ::ttk::dialog_module::window_name
+	    if [ winfo exists $window_name ] {
+		    raise $window_name
+		    if [ llength $::ttk::dialog_module::args ] {
+			    if [ dict exists $::ttk::dialog_module::args -title ] {
+		    puts "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
+		    	} else {
+		    puts "Warning: a dialog is already open, close it first"
+			}
+		    }
+		    return
+	    } else {
+	    set ::ttk::dialog_module::args $args
+            bell
+            ttk::messageBox {*}$args
+    		}
+        }
             }
         }
         initfixedtheme $theme
