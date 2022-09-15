@@ -1201,7 +1201,7 @@ proc drop_schema { dbname user password } {
  if {[ catch {eval exec [ concat $prefix $drop ]} message ]} {
         error $message
     } else {
-        puts "$dbname TPROC-H schema has been deletedi successfully."
+        puts "$dbname TPROC-H schema has been deleted successfully."
     }
 }
     return
