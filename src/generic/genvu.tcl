@@ -231,6 +231,8 @@ proc load_virtual {}  {
     $Name configure -state disabled
     set Name .ed_mainFrame.buttons.boxes 
     $Name configure -state disabled
+    set Name .ed_mainFrame.buttons.delete 
+    $Name configure -state disabled
     set Name .ed_mainFrame.editbuttons.test 
     $Name configure -state disabled
     for { set vuser 0 } {$vuser < $maxvuser } {incr vuser} {
@@ -531,6 +533,8 @@ proc ed_kill_vusers {args} {
     set Name .ed_mainFrame.buttons.datagen 
     $Name configure -state normal
     set Name .ed_mainFrame.buttons.boxes 
+    $Name configure -state normal
+    set Name .ed_mainFrame.buttons.delete 
     $Name configure -state normal
     set Name .ed_mainFrame.editbuttons.test 
     $Name configure -state normal
