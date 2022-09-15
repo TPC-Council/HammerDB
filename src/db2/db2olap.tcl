@@ -1186,17 +1186,24 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc drop_schema { dbname user password } {
     global tcl_platform
+        set force "db2 force applications all"
+        set drop "db2 drop database $dbname"
     if {$tcl_platform(platform) == "windows"} {
-        set cmd "db2cmd -c -w -i db2 drop database $dbname"
+        set prefix "db2cmd -c -w -i"
     } else {
-        set cmd "db2 drop database $dbname"
+        set prefix ""
     }
 
-    if {[ catch {eval exec $cmd} message ]} {
+    if {[ catch {eval exec [ concat $prefix $force ]} message ]} {
         error $message
     } else {
-        puts "$dbname TPROC-H Schema has been deleted successfully."
+        puts "force applications all complete."
+ if {[ catch {eval exec [ concat $prefix $drop ]} message ]} {
+        error $message
+    } else {
+        puts "$dbname TPROC-H schema has been deletedi successfully."
     }
+}
     return
 }
 }
