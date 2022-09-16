@@ -2339,7 +2339,7 @@ proc drop_schema { dbname user password } {
         set force "db2 force applications all"
         set drop "db2 drop database $dbname"
     if {$tcl_platform(platform) == "windows"} {
-        set prefix "db2cmd -c -w -i"
+        set prefix "db2cmd -c"
     } else {
         set prefix ""
     }
