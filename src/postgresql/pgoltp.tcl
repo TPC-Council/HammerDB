@@ -3699,3 +3699,73 @@ switch $myposition {
         }
     }
 }
+
+proc delete_pgtpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict postgresql library ]} {
+        set library [ dict get $dbdict postgresql library ]
+    } else { set library "Pgtcl" }
+    upvar #0 configpostgresql configpostgresql
+    #set variables to values in dict
+    setlocaltpccvars $configpostgresql
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $pg_dbase ] TPROC-C schema and role [ string toupper $pg_user ]\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_superuser ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema deletion: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc ConnectToPostgres { host port sslmode user password dbname } {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
+}
+
+proc drop_schema { host port sslmode user superuser superuser_password default_dbase dbase } {
+    set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
+    if { $suconnect eq "Failed" } {
+        error "error, the database connection to $host could not be established"
+    } else {
+        set result [ pg_exec $suconnect "drop database $dbase"]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
+        } else {
+            puts "$dbase TPROC-C schema has been deleted successfully."
+            pg_result $result -clear
+        }
+        set result [ pg_exec $suconnect "drop role $user"]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
+        } else {
+            puts "$user TPROC-C role has been deleted successfully."
+            pg_result $result -clear
+        }
+        pg_disconnect $suconnect
+    }
+    return
+}
+}
+
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase"
+    } else { return }
+}

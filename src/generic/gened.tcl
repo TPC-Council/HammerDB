@@ -192,6 +192,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Parent .ed_mainFrame
     construct_button $Parent.buttons.hmenu bar hmenu new.ppm "pop_up_menu"  "Open Edit Menu"
     construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
+    construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
     construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
     construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command run_virtual; run_virtual" "Run Virtual Users" 
@@ -428,7 +429,7 @@ proc populate_tree {rdbms bm icons iconalt} {
     bind .ed_mainFrame.treeframe.treeview <Leave> { ed_status_message -perm }
     $Name insert $rdbms end -id $rdbms.$bm -text [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] -image [ create_image hdbicon icons ]
     dict set treeidicons $rdbms.$bm hdbicon
-    $Name insert $rdbms.$bm end -id $rdbms.$bm.build -text "Schema Build" -image [ create_image boxes icons ]
+    $Name insert $rdbms.$bm end -id $rdbms.$bm.build -text "Schema" -image [ create_image boxes icons ]
     dict set treeidicons $rdbms.$bm.build boxes
     $Name item $rdbms.$bm.build -tags $rdbms.$bm.buildhlp
     tooltip::tooltip $Name -item $rdbms.$bm.build "Configure and Build $rdbms $bm Schema"
@@ -442,6 +443,11 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name item $rdbms.$bm.build.go -tags builsch
     tooltip::tooltip $Name -item $rdbms.$bm.build.go "Create $rdbms $bm Schema"
     $Name tag bind builsch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { build_schema } }
+    $Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.del -text "Delete" -image [ create_image delete icons ]
+    dict set treeidicons $rdbms.$bm.build.del delete
+    $Name item $rdbms.$bm.build.del -tags deletesch
+    tooltip::tooltip $Name -item $rdbms.$bm.build.del "Delete $rdbms $bm Schema"
+    $Name tag bind deletesch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { delete_schema } }
     $Name insert $rdbms.$bm end -id $rdbms.$bm.driver -text "Driver Script" -image [ create_image driveroptim icons ]
     dict set treeidicons $rdbms.$bm.driver driveroptim
     $Name item $rdbms.$bm.driver -tags {drvhlp}
@@ -3098,6 +3104,45 @@ proc build_schema {} {
         return
     } else {
         #Yes was pressed at schema creation run
+        run_virtual
+    }
+}
+
+proc delete_schema {} {
+    #This runs the schema deletion
+    upvar #0 dbdict dbdict
+    global _ED bm rdbms threadscreated 
+    #Clear the Script Editor first to make sure a genuine schema is run
+    ed_edit_clear
+    if { [ info exists threadscreated ] } {
+        tk_messageBox -icon error -message "Cannot delete schema with Virtual Users active, destroy Virtual Users first"
+        #clear script editor so cannot be re-run with incorrect v user count
+        return 1
+    }
+    #puts "delete_schema $mysql_user"
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set prefix [ dict get $dbdict $key prefix ]
+            if { $bm == "TPC-C" }  {
+                set command [ concat [subst {delete_$prefix}]tpcc ]
+            } else {
+                set command [ concat [subst {delete_$prefix}]tpch ]
+            }
+            eval $command
+            break
+        }
+    }
+
+    .ed_mainFrame.notebook select .ed_mainFrame.mainwin
+    applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
+    .ed_mainFrame.notebook select .ed_mainFrame.tw
+    #Commit to update values in script editor
+    ed_edit_commit
+    if { [ string length $_ED(package)] eq 1 } {
+        #No was pressed at schema deletion and editor is empty do not run
+        return
+    } else {
+        #Yes was pressed at schema deletion run
         run_virtual
     }
 }

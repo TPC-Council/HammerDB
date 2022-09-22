@@ -1648,3 +1648,53 @@ proc do_cloud { connect RAISEERROR VERBOSE degree_of_parallel } {
 #RUN CLOUD ANALYTIC TPC-H
 do_cloud $connect $RAISEERROR $VERBOSE $degree_of_parallel}
 }
+
+proc delete_oratpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict oracle library ]} {
+        set library [ dict get $dbdict oracle library ]
+    } else { set library "Oratcl" }
+    upvar #0 configoracle configoracle
+    setlocaltpchvars $configoracle
+    if { $tpch_tt_compat eq "true" } {
+        set install_message "Do you want to delete the [ string toupper $tpch_user ] TimesTen TPROC-H schema\nin the instance [string toupper $instance]?"
+    } else {
+        set install_message "Do you want to delete the [ string toupper $tpch_user ] TPROC-H schema in the instance [string toupper $instance]?"
+    }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message $install_message -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "Oracle TPROC-H deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema deletion: $message"
+            return 1
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
+
+proc drop_tpch { system_user system_password instance tpch_user } {
+    set connect $system_user/$system_password@$instance
+    set lda [ oralogon $connect ]
+    set curn [oraopen $lda ]
+    set dropsql "drop user $tpch_user cascade\n"
+    if {[ catch {orasql $curn $dropsql} message ] } {
+	      error [ regsub -all {\{|\}} [ oramsg $curn all ] "" ]
+    } else {
+        puts "$tpch_user TPROC-H schema has been deleted successfully."
+    }
+    oralogoff $lda
+    return
+}
+}
+
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch $system_user $system_password $instance $tpch_user"
+    } else { return }
+}

@@ -1156,3 +1156,58 @@ if { $refresh_on } {
     do_tpch $dbname $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
 }}
 }
+
+proc delete_db2tpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict db2 library ]} {
+        set library [ dict get $dbdict db2 library ]
+    } else { set library "db2tcl" }
+    upvar #0 configdb2 configdb2
+    #set variables to values in dict
+    setlocaltpchvars $configdb2
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $db2_tpch_dbase ] TPROC-H schema under user [ string toupper $db2_tpch_user ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "Db2 TPROC-H deletion"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema deletion: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
+
+proc drop_schema { dbname user password } {
+    global tcl_platform
+        set force "db2 force applications all"
+        set drop "db2 drop database $dbname"
+    if {$tcl_platform(platform) == "windows"} {
+        set prefix "db2cmd -c"
+    } else {
+        set prefix ""
+    }
+
+    if {[ catch {eval exec [ concat $prefix $force ]} message ]} {
+        error $message
+    } else {
+        puts "force applications all complete."
+ if {[ catch {eval exec [ concat $prefix $drop ]} message ]} {
+        error $message
+    } else {
+        puts "$dbname TPROC-H schema has been deleted successfully."
+    }
+}
+    return
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_tpch_dbase $db2_tpch_user $db2_tpch_pass"
+    } else { return }
+}
+
