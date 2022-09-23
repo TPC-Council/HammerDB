@@ -517,6 +517,18 @@ proc vuset { args } {
             }
 }}}
 
+proc findakey { key2find dictname } {
+        upvar #0 $dictname $dictname
+        foreach key [dict keys [ set $dictname]] {
+                dict for {k v} [dict get [ set $dictname ] $key] {
+                if { $k eq $key2find } {
+                return $key
+                }
+                }
+        }
+return {}
+}
+
 proc diset { args } {
     global rdbms opmode
     if {[ llength $args ] != 3} {
@@ -554,11 +566,15 @@ proc diset { args } {
                               	SQLiteUpdateKeyValue $key $dct $key2 $val
                                 remote_command [ concat diset $dct $key2 [ list \{$val\} ]]
                         }}
-                    } else {
-                        putscli {Usage: diset dict key value}
-                        putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't"
-                        putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
-                    }
+                    		} else {
+		       		set key2find [ findakey $key2 $dictname ]
+                       		if { [ string length $key2find ] > 0 } {
+                        	putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" is in the \"$key2find\" dictionary"
+                        	} else {
+                        	putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" cannot be found in any $rdbms dictionary"
+                        	}
+                        	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
+                    	}
                 } else {
                     putscli {Usage: diset dict key value}
                     putscli "Dictionary \"$dct\" for $rdbms does not exist"
