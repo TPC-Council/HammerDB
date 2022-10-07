@@ -59,6 +59,7 @@ proc .ed_mainFrame.buttons.datagen { args } { ; }
 proc .ed_mainFrame.buttons.boxes { args } { ; }
 proc .ed_mainFrame.buttons.test { args } { ; }
 proc .ed_mainFrame.buttons.runworld { args } { ; }
+proc .ed_mainFrame.buttons.delete { args } { ; }
 proc ed_lvuser_button { args } { ; }
 proc .ed_mainFrame.editbuttons.test { args } { ; }
 proc .ed_mainFrame.editbuttons.distribute { args } { ; }
