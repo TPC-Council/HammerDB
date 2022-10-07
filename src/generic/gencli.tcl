@@ -779,6 +779,9 @@ proc vucreate {} {
        catch {loadscript}
        if { [ string length $_ED(package) ] eq 0  } {
        putscli "No Script loaded: Load script before creating Virtual Users"
+       } else {
+        #Call vucreate recursively, first call loaded script, 2nd to create VUs
+        vucreate
        }
     } else {
         if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
@@ -1051,6 +1054,13 @@ proc keepalive {} {
 	if {$bm eq "TPC-C"} {
 #For TPC-C we have a rampup and duration time, find these, check they are valid and call _runtimer automatically with these values
 	 upvar #0 dbdict dbdict
+	 upvar #0 genericdict genericdict
+         if {[dict exists $genericdict commandline keepalive_margin]} {
+                set ka_margin [ dict get $genericdict commandline keepalive_margin]
+                if {![string is entier $ka_margin]} { set ka_margin 10 }
+                } else {
+                set ka_margin 10
+                }
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
@@ -1060,12 +1070,12 @@ proc keepalive {} {
     set rampup_secs [expr {[ get_base_rampup [ set $dictname ]]*60}]
     set duration_secs [expr {[ get_base_duration [ set $dictname ]] *60}]
     foreach { val } [ list $rampup_secs $duration_secs ] {
-    if { ![string is integer -strict $val ] || $val < 60 } {
+    if { ![string is entier $val ] || ($val < 60 && $val != 0) } {
 	set ka_valid 0 
     	}
     }
     if { $ka_valid } {
-    _runtimer [expr {$rampup_secs + $duration_secs + 10}]
+    _runtimer [expr {$rampup_secs + $duration_secs + $ka_margin}]
     	} else {
 tk_messageBox -icon warning -message "Cannot detect rampup and duration times, keepalive for main thread not active"
 	}

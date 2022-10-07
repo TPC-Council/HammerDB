@@ -59,6 +59,9 @@
             <gen_directory>
 	    </gen_directory>
     </datageneration>
+    <commandline>
+	   <keepalive_margin>10</keepalive_margin> 
+    </commandline>
     <webservice>
 	   <ws_port>8080</ws_port> 
 	   <sqlite_db>TMP</sqlite_db> 
