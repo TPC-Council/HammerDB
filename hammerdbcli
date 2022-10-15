@@ -25,7 +25,7 @@ exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.5"
+set hdb_version "v4.6"
 puts "HammerDB CLI $hdb_version"
 puts "Copyright (C) 2003-2022 Steve Shaw"
 puts "Type \"help\" for a list of commands"
