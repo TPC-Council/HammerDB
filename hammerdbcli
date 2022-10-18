@@ -172,43 +172,42 @@ catch {package forget tclpy}
 #Remove tclreadline module from common initialisation in Python
 regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
 append cli_common_init $cli_py_append
-set timeout 2
-spawn -noecho python3
+set timeout 10
 log_user 0
+spawn -noecho python3
 expect ">>>"
-send "import sys\n"
+send "import sys\x0D"
 expect ">>>"
-send "sys.path.append('$syspath')\n"
+send "sys.path.append('$syspath')\x0D"
 expect ">>>"
-send "import tclpy\n"
+send "import tclpy\x0D"
 expect ">>>"
-send "tclpy.eval('global hdb_version')\n"
+send "tclpy.eval('global hdb_version')\x0D"
 expect ">>>"
-send "tclpy.eval('set hdb_version $hdb_version')\n"
+send "tclpy.eval('set hdb_version $hdb_version')\x0D"
 expect ">>>"
-send "init_tcl = (r'''\n$cli_common_init\n''')\n"
+send "init_tcl = (r'''\n$cli_common_init\n''')\x0D"
 expect ">>>"
-send "tclpy.eval(init_tcl)\n"
+send "tclpy.eval(init_tcl)\x0D"
 expect ">>>"
-send "from hammerdb import *\n"
+send "from hammerdb import *\x0D"
 expect ">>>"
-if { $autostart::autostartap == "true" } {
-send "runscript(1)\n"
-	} else {
-send "runscript(0)\n"
-	}
-expect ">>>"
-send {sys.ps1 = "hammerdb>>>"}
-send "\n"
-expect {"hammerdb>>>"}
-log_user 1
+if { $autostart::autostartap == "true" } { send "runscript(1)\x0D" } else { send "runscript(0)\x0D" }
+send "sys.stdout.flush()\x0D"
+send "sys.ps1 = 'hammerdb>>>'\x0D"
 #If timeout is set to a +ve value auto scripts will terminate before completion
 set timeout -1
 if { $autostart::autostartap == "true" } {
+#run python script
 send "exec(open('$autostart::autoloadscript').read())"
-send "\n"
+send "\x0D"
 expect {"hammerdb>>>"}
 	} else {
+expect "hammerdb>>>"
+log_user 1
+#-----------------------------#
+#run interactive python shell
+#-----------------------------#
 interact {
  	\x03 {
 	puts "^C"
@@ -218,6 +217,8 @@ interact {
     	}
  	\x04 {
 	puts "^D"
+	#send Ctrl-D to Python
+	#send "\x04"
 	return
     	}
 	}
