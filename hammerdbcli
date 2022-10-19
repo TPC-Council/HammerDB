@@ -199,9 +199,13 @@ send "sys.ps1 = 'hammerdb>>>'\x0D"
 set timeout -1
 if { $autostart::autostartap == "true" } {
 #run python script
+trap {
+    send "\x03"
+    send_user "^C\n"
+    exit
+} SIGINT
 expect "hammerdb>>>"
-send "exec(open('$autostart::autoloadscript').read())"
-send "\n"
+send "exec(open('$autostart::autoloadscript').read())\x0D"
 log_user 1
 expect {"hammerdb>>>"}
 	} else {
@@ -212,15 +216,9 @@ log_user 1
 #-----------------------------#
 interact {
  	\x03 {
-	puts "^C"
 	#send Ctrl-C to Python
 	send "\x03"
-	return
-    	}
- 	\x04 {
-	puts "^D"
-	#send Ctrl-D to Python
-	send "\x04"
+	send_user "^C"
 	return
     	}
 	}
