@@ -51,7 +51,7 @@ exit
       }
 }
 
-append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl }
+append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl sqlite3 huddle }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m
@@ -80,6 +80,8 @@ for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccoun
                 puts stderr "Error loading database source files/$f"
         }
     }
+
+init_job_tables
 
 if { $autostart::autostartap == "true" } {
 	source $autostart::autoloadscript

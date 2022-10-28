@@ -473,22 +473,27 @@ if {[dict exists $tmpgendict theme scaling ]} {
         }
         rename tk_messageBox _tk_messageBox
         proc tk_messageBox {args} {
-        variable ::ttk::dialog_module::window_name
-	    if [ winfo exists $window_name ] {
-		    raise $window_name
-		    if [ llength $::ttk::dialog_module::args ] {
-			    if [ dict exists $::ttk::dialog_module::args -title ] {
-		    puts "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
-		    	} else {
-		    puts "Warning: a dialog is already open, close it first"
-			}
-		    }
-		    return
-	    } else {
-	    set ::ttk::dialog_module::args $args
-            bell
-            ttk::messageBox {*}$args
-    		}
+            global jobid
+            variable ::ttk::dialog_module::window_name
+            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+            if [ winfo exists $window_name ] {
+                raise $window_name
+                if [ llength $::ttk::dialog_module::args ] {
+                    if [ dict exists $::ttk::dialog_module::args -title ] {
+                        set message "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
+                        puts $message
+                    } else {
+                        set message "Warning: a dialog is already open, close it first"
+                        puts $message
+                    }
+                    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                }
+                return
+            } else {
+                set ::ttk::dialog_module::args $args
+                bell
+                ttk::messageBox {*}$args
+            }
         }
         initscaletheme $theme $pixelsperpoint
     } else {
@@ -507,24 +512,29 @@ if {[dict exists $tmpgendict theme scaling ]} {
                 set defaultBackground #efebe7
                 set defaultForeground black
                 rename tk_messageBox _tk_messageBox
-        proc tk_messageBox {args} {
-        variable ::ttk::dialog_module::window_name
-	    if [ winfo exists $window_name ] {
-		    raise $window_name
-		    if [ llength $::ttk::dialog_module::args ] {
-			    if [ dict exists $::ttk::dialog_module::args -title ] {
-		    puts "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
-		    	} else {
-		    puts "Warning: a dialog is already open, close it first"
-			}
-		    }
-		    return
-	    } else {
-	    set ::ttk::dialog_module::args $args
-            bell
-            ttk::messageBox {*}$args
-    		}
-        }
+                proc tk_messageBox {args} {
+                    global jobid
+                    variable ::ttk::dialog_module::window_name
+                    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+                    if [ winfo exists $window_name ] {
+                        raise $window_name
+                        if [ llength $::ttk::dialog_module::args ] {
+                            if [ dict exists $::ttk::dialog_module::args -title ] {
+                                set message "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
+                                puts $message
+                            } else {
+                                set message "Warning: a dialog is already open, close it first"
+                                puts $message
+                            }
+                            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                        }
+                        return
+                    } else {
+                        set ::ttk::dialog_module::args $args
+                        bell
+                        ttk::messageBox {*}$args
+                    }
+                }
             }
         }
         initfixedtheme $theme

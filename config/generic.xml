@@ -60,7 +60,8 @@
 	    </gen_directory>
     </datageneration>
     <commandline>
-	   <keepalive_margin>10</keepalive_margin> 
+        <keepalive_margin>10</keepalive_margin>
+        <jobsoutput>text</jobsoutput>
     </commandline>
     <webservice>
 	   <ws_port>8080</ws_port> 

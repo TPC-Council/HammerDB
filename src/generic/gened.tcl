@@ -195,7 +195,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
     construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
-    construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command run_virtual; run_virtual" "Run Virtual Users" 
+    construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command vurun; vurun" "Run Virtual Users" 
     construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_autopilot" "Start Autopilot" 
     .ed_mainFrame.buttons.autopilot configure -state disabled
     construct_button $Parent.buttons.pencil bar pencil pencil.ppm "transcount" "Start Transaction Counter" 
@@ -1592,7 +1592,7 @@ proc ed_stop_vuser {} {
     bind .ed_mainFrame.buttons.lvuser <Enter> {}   
     set Name .ed_mainFrame.buttons.runworld
     set im [ create_image rungreen icons ]
-    $Name config -image $im -command "remote_command run_virtual; run_virtual" 
+    $Name config -image $im -command "remote_command vurun; vurun" 
     #bindtags command sets a break to prevent highlighting of button
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.runworld ]
     tooltip::tooltip .ed_mainFrame.buttons.runworld "Run Virtual Users"
@@ -1617,15 +1617,15 @@ proc ed_lvuser_button {} {
     set Name .ed_mainFrame.buttons.runworld
     #button is not pressed so show normal
     set im [ create_image runworld icons ]
-    $Name config -image $im -command "remote_command run_virtual; run_virtual"
+    $Name config -image $im -command "remote_command vurun; vurun"
     #return bind order as before so highlights shown
     bindtags $Name [ list .ed_mainFrame.buttons.runworld Button .ed_mainFrame all ]
     tooltip::tooltip .ed_mainFrame.buttons.runworld "Run Virtual Users"
     bind $Name <Enter> [
-    list $Name config -image [ create_image runworld iconalt ] -command "remote_command run_virtual; run_virtual"
+    list $Name config -image [ create_image runworld iconalt ] -command "remote_command vurun; vurun"
     ]
     bind $Name <Leave> [
-    list $Name config -image [ create_image runworld icons ] -command "remote_command run_virtual; run_virtual"
+    list $Name config -image [ create_image runworld icons ] -command "remote_command vurun; vurun"
     ]
 }
 
@@ -1638,6 +1638,27 @@ proc ed_stop_autopilot {} {
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.autopilot ]
     tooltip::tooltip .ed_mainFrame.buttons.autopilot "Stop Autopilot"
     bind .ed_mainFrame.buttons.autopilot <Enter> {}   
+}
+
+proc vurun {} {
+    global _ED opmode jobid
+
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
+    
+    #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
+    if { [ string length $_ED(package) ] > 0 } { 
+        if { [ catch {run_virtual} message ] } {
+            puts "Error: $message"
+            unset -nocomplain jobid
+        }
+    } else {
+        puts "Error: There is no workload to run because the Script is empty"
+        unset -nocomplain jobid
+    }
 }
 
 proc ed_autopilot_button {} {
@@ -3069,10 +3090,46 @@ proc select_rdbms { preselect } {
     update
 }
 
+proc find_current_dict {} {
+    global rdbms bm
+    upvar #0 dbdict dbdict
+    foreach { key } [ dict keys $dbdict ] {
+        set dictname config$key
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            upvar #0 config$key config$key
+            set posswkl  [ split  [ dict get $dbdict $key workloads ]]
+            set ind [lsearch $posswkl $bm]
+            if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
+                if { [ llength $wkltoremove ] > 1 } { 
+                    puts "Error printing dict format more than 2 workloads" 
+                    return
+                } else {
+                    set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
+                    set tmpdictforpt [ dict remove [ subst \$config$key ] $bmdct ]
+                }
+            }
+            return $tmpdictforpt
+        }
+    }
+}
+
+proc jobmain { jobid } {
+    global rdbms bm
+    set query [ hdbgui eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid} ]
+    if { $query eq 0 } {
+        set tmpdictforpt [ find_current_dict ]
+        set res [hdbgui eval {INSERT INTO JOBMAIN(jobid,db,bm,jobdict) VALUES($jobid,$rdbms,$bm,$tmpdictforpt)}]
+        return 0
+    } else {
+        return 1
+    }
+}
+
 proc build_schema {} {
     #This runs the schema creation
     upvar #0 dbdict dbdict
-    global _ED bm rdbms threadscreated 
+    global _ED bm rdbms threadscreated jobid
+
     #Clear the Script Editor first to make sure a genuine schema build is run
     ed_edit_clear
     if { [ info exists threadscreated ] } {
@@ -3080,6 +3137,13 @@ proc build_schema {} {
         #clear script editor so cannot be re-run with incorrect v user count
         return 1
     }
+
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
+
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set prefix [ dict get $dbdict $key prefix ]
@@ -3101,6 +3165,7 @@ proc build_schema {} {
     ed_edit_commit
     if { [ string length $_ED(package)] eq 1 } {
         #No was pressed at schema creation and editor is empty do not run
+        unset -nocomplain jobid
         return
     } else {
         #Yes was pressed at schema creation run
@@ -3111,7 +3176,7 @@ proc build_schema {} {
 proc delete_schema {} {
     #This runs the schema deletion
     upvar #0 dbdict dbdict
-    global _ED bm rdbms threadscreated 
+    global _ED bm rdbms threadscreated
     #Clear the Script Editor first to make sure a genuine schema is run
     ed_edit_clear
     if { [ info exists threadscreated ] } {
@@ -3119,7 +3184,6 @@ proc delete_schema {} {
         #clear script editor so cannot be re-run with incorrect v user count
         return 1
     }
-    #puts "delete_schema $mysql_user"
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set prefix [ dict get $dbdict $key prefix ]
@@ -3332,4 +3396,262 @@ proc copyfieldstoconfig { configdict fieldsdict wkload } {
                             catch {dict set $configdict $descriptor $val $field}
     }}}}}}
 }
+
+proc jobs { args } {
+    #global ws_port
+    switch [ llength $args ] {
+        0 {
+            #Query all jobs
+            set res [ getjob "" ]
+            return $res
+        }
+        1 {
+            set param [ lindex [ split  $args ]  0 ]
+            #List results for all jobs
+            if [ string equal $param "result" ] {
+                #set alljobs [ rest::format_json [ jobs ]]
+                set alljobs [ jobs ]
+                foreach jobres $alljobs {
+                    set res [ getjob "jobid=$jobres&result" ]
+                    puts $res
+                }
+            } elseif [ string equal $param "timestamp" ] {
+                #set alljobs [ rest::format_json [ jobs ]]
+                set alljobs [ jobs ]
+                foreach jobres $alljobs {
+                    set res [getjob "jobid=$jobres&timestamp" ]
+                    puts $res
+                }	
+            } else {
+                #Query one jobid
+                set jobid $param
+                set res [getjob "jobid=$jobid" ]
+                puts $res
+            }
+        }
+        2 {
+            #Query status, result, vu number or delete job data for one jobid
+            #jobid=TEXT&status param is status
+            #jobid=TEXT&result param is result
+            #jobid=TEXT&delete param is delete
+            #jobid=TEXT&timestamp param is timestamp
+            #jobid=TEXT&dict param is dict
+            #jobid=TEXT&timing param is timing
+            #jobid=TEXT&db param is db
+            #jobid=TEXT&bm param is bm
+            #jobid=TEXT&tcount param is tcount
+            #jobid=TEXT&vu=INTEGER param is an INTEGER identifying the vu number
+            set jobid [ lindex [ split  $args ]  0 ]
+            set cmd [ lindex [ split  $args ]  1 ]
+            if [ string is entier $cmd ] { set cmd "vu=$cmd" }
+            set res [getjob "jobid=$jobid&$cmd" ]
+            puts $res
+        }
+        3 {
+            #jobs jobid=TEXT&timing&vu param is timing
+            set jobid [ lindex [ split  $args ]  0 ]
+            set cmd [ lindex [ split  $args ]  1 ]
+            set vusel [ lindex [ split  $args ]  2 ]
+            if { $cmd != "timing" } {
+                #set body { "type": "error", "key": "message", "value": "Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID" } 
+                #set res [rest::post http://localhost:$ws_port/echo $body ]
+                puts "Error: Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID"
+            } else {
+                #Three arguments 2nd parameter is timing
+                if [ string is entier $vusel ] { set vusel "vu=$vusel" }
+                set res [getjob "jobid=$jobid&$cmd&$vusel" ]
+                puts $res
+            }
+        }
+        default {
+            #set body { "type": "error", "key": "message", "value": "Usage: jobs query=parameter" } 
+            #set res [rest::post http://localhost:$ws_port/echo $body ]
+            puts "Error: Usage: jobs query=parameter"
+        }
+    }
+}
+
+proc getjob { query } {
+    global bm
+    set params [ split $query & ]
+    set paramlen [ llength $params ]
+    #No parameters list jobids
+    if { $paramlen eq 0 } {
+        set joboutput [ hdbgui eval {SELECT DISTINCT JOBID FROM JOBMAIN} ]
+        set huddleobj [ huddle compile {list} $joboutput ]
+        #puts [huddle jsondump $huddleobj]
+        return huddleobj
+    } else {
+        if { $paramlen >= 1 && $paramlen <= 3 } {
+            foreach a $params {
+                lassign [split $a =] key value
+                dict append paramdict $key $value
+            }
+        } else {
+            dict set jsondict error message "Usage: jobs query=parameter"
+            #puts "Error: Usage: jobs query=parameter"
+            return $jsondict
+        }
+        if { $paramlen eq 3 } {
+            if { [ dict keys $paramdict ] != "jobid timing vu" } {
+                dict set jsondict error message "Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID"
+                #puts "Error: Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID"
+                return $jsondict
+            } else {
+                #3 parameter case of 1-jobid 2-timing 3-vu
+                set jobid [ dict get $paramdict jobid ]
+                set vuid [ dict get $paramdict vu ]
+                if [ string is entier $vuid ] {
+                    unset -nocomplain jobtiming
+                    set jobtiming [ dict create ]
+                    hdbgui eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and VU=$vuid and SUMMARY=0 ORDER BY RATIO_PCT DESC}  {
+                        set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
+                        dict append jobtiming $procname $timing
+                    }
+                    if { ![ dict size $jobtiming ] eq 0 } {
+                        return $jobtiming
+                    } else {
+                        dict set jsondict error message "No Timing Data for VU $vuid for JOB $jobid: jobs jobid=JOBID&timing&vu=VUID"
+                        #puts "No Timing Data for VU $vuid for JOB $jobid: jobs jobid=JOBID&timing&vu=VUID"
+                        return $jsondict
+                    }
+                } else {
+                    dict set jsondict error message "Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID"
+                    #puts "Jobs Three Parameter Usage: jobs jobid=JOBID&timing&vu=VUID"
+                    return $jsondict
+                }
+            }
+        }
+    }
+    #1 parameter
+    if { $paramlen eq 1 } {
+        if { [ dict keys $paramdict ] eq "jobid" } {
+            set jobid [ dict get $paramdict jobid ]
+            set query [ hdbgui eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+            if { $query eq 0 } {
+                dict set jsondict error message "Jobid $jobid does not exist"
+                #puts "Jobid $jobid does not exist"
+                return $jsondict
+            } else {
+                set joboutput [ hdbgui eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                set huddleobj [ huddle compile {list} $joboutput ]
+                #puts [huddle jsondump $huddleobj]
+                return huddleobj
+            }
+        } else {
+            dict set jsondict error message "Jobs One Parameter Usage: jobs jobid=TEXT"
+            #puts "Jobs One Parameter Usage: jobs jobid=TEXT"
+            return
+        }
+        #2 or more parameters
+    } else {
+        if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" } {
+            set jobid [ dict get $paramdict jobid ]
+            if { [ dict keys $paramdict ] eq "jobid vu" } {
+                set vuid [ dict get $paramdict vu ]
+            } else {
+                if { [ dict keys $paramdict ] eq "jobid result" } {
+                    set vuid 1
+                } else {
+                    set vuid 0
+                }
+            }
+            set query [ hdbgui eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+            if { $query eq 0 } {
+                dict set jsondict error message "Jobid $jobid for virtual user $vuid does not exist"
+                #puts "Jobid $jobid for virtual user $vuid does not exist"
+                return $jsondict
+            } else {
+                if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" } {
+                    set joboutput [ hdbgui eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+                    set huddleobj [ huddle compile {list} $joboutput ]
+                    puts [huddle jsondump $huddleobj]
+                    #puts $joboutput
+                    return huddleobj
+                }
+                if { [ dict keys $paramdict ] eq "jobid delete" } {
+                    set joboutput [ hdbgui eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbgui eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbgui eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
+                    set joboutput [ hdbgui eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                    #dict set jsondict success message "Deleted Jobid $jobid"
+                    puts "Deleted Jobid $jobid"
+                } else {
+                    if { [ dict keys $paramdict ] eq "jobid result" } {
+                        if { $bm eq "TPC-C" } { 
+                            set tstamp ""
+                            set tstamp [ join [ hdbgui eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                            set joboutput [ hdbgui eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
+                            set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
+                            set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
+                        } else {
+                            set joboutput [ hdbgui eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+                            set result [ lsearch -all -glob -inline $joboutput "Completed*" ]
+                        }
+                        if { $result eq {} } {
+                            set joboutput [ list $jobid "Jobid has no test result" ]
+                        } else {
+                            if { $activevu eq {} } {
+                                set joboutput [ list $jobid $tstamp $result ]
+                            } else {
+                                set joboutput [ list $jobid $tstamp $activevu $result ]
+                            }
+                        }
+                    } else {
+                        if { [ dict keys $paramdict ] eq "jobid timing" } {
+                            unset -nocomplain jobtiming
+                            set jobtiming [ dict create ]
+                            hdbgui eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and SUMMARY=1 ORDER BY RATIO_PCT DESC}  {
+                                set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p50_ms $p50_ms sd $sd ratio_pct $ratio_pct"
+                                dict append jobtiming $procname $timing
+                            }
+                            if { ![ dict size $jobtiming ] eq 0 } {
+                                return $jobtiming
+                            } else {
+                                dict set jsondict error message "No Timing Data for JOB $jobid: jobs jobid=JOBID&timing"
+                                #puts "No Timing Data for JOB $jobid: jobs jobid=JOBID&timing"
+                                return $jsondict
+                            }
+                        } else {
+                            if { [ dict keys $paramdict ] eq "jobid timestamp" } {
+                                set joboutput [ hdbgui eval {SELECT jobid, timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]
+                                return $joboutput
+                            } else {
+                                if { [ dict keys $paramdict ] eq "jobid dict" } {
+                                    set joboutput [ join [ hdbgui eval {SELECT jobdict FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                    return $joboutput
+                                } else {
+                                    if { [ dict keys $paramdict ] eq "jobid tcount" } {
+                                        set jobheader [ hdbgui eval {select distinct(db), metric from JOBTCOUNT, JOBMAIN WHERE JOBTCOUNT.JOBID=$jobid AND JOBMAIN.JOBID=$jobid} ]
+                                        set joboutput [ hdbgui eval {select counter, JOBTCOUNT.timestamp from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
+                                        dict append jsondict $jobheader $joboutput 
+                                        return $jsondict
+                                    } else {
+                                        if { [ dict keys $paramdict ] eq "jobid db" } {
+                                            set joboutput [ join [ hdbgui eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                        } else {
+                                            if { [ dict keys $paramdict ] eq "jobid bm" } {
+                                                set joboutput [ join [ hdbgui eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                                            } else {
+                                                set joboutput [ list $jobid "Cannot find Jobid output" ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    set huddleobj [ huddle compile {list} $joboutput ]
+                    #puts [huddle jsondump $huddleobj]
+                    return huddleobj
+                }
+            }
+        }
+    } else {
+        dict set jsondict error message "Jobs Two Parameter Usage: jobs jobid=TEXT&status or jobs jobid=TEXT&db or jobs jobid=TEXT&bm or jobs jobid=TEXT&timestamp or jobs jobid=TEXT&dict or jobs jobid=TEXT&vu=INTEGER or jobs jobid=TEXT&result or jobs jobid=TEXT&timing or jobs jobid=TEXT&delete" 
+        #puts "Jobs Two Parameter Usage: jobs jobid=TEXT&status or jobs jobid=TEXT&db or jobs jobid=TEXT&bm or jobs jobid=TEXT&timestamp or jobs jobid=TEXT&dict or jobs jobid=TEXT&vu=INTEGER or jobs jobid=TEXT&result or jobs jobid=TEXT&timing or jobs jobid=TEXT&delete"
+        return $jsondict
+    }
+}
+
 bind Entry <BackSpace> {tkEntryBackspace %W}
