@@ -116,7 +116,7 @@ proc SQLiteUpdateKeyValue {dbname table keyname value} {
         if { $sqlitedb ne "" } {
             set sqlcmd "UPDATE $table SET val = \'$value\' WHERE key = \'$keyname\'"
             if [catch {hdb eval $sqlcmd} message ] {
-                puts "Error creating $tablename table in $sqlitedb : $message"
+                puts "Error creating $table table in $sqlitedb : $message"
                 return
             }
         }
