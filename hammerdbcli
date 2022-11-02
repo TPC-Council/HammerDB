@@ -192,8 +192,8 @@ proc piperead_interact {pipe echo} {
 	set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
 	puts "$got" 
 	}}}} else { 
-	catch{close $pipe}
- 	return	
+	catch {close $pipe}
+ 	exit	
 	 }
 	}
 
@@ -209,7 +209,7 @@ upvar script_end script_end
 	set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
         puts "$got"
     } else {
-	catch{close $pipe}
+	catch {close $pipe}
 	set script_end 1
 	}  
 }
