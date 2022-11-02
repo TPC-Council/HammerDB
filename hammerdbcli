@@ -108,14 +108,14 @@ for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccoun
                 puts stderr "Error:loading database source files/$f"
         }
     }}
-#In Tcl only either source file or do tclreadline::interact
+#In Tcl only either source file or do Tclreadline::interact
 set cli_tcl_append {
 if { $autostart::autostartap == "true" } {
         source $autostart::autoloadscript
         } else {
     TclReadLine::interact
         }}
-#In Python already in interact so bypas tclreadline
+#In Python on Linux use expect on Windows use Tclreadline::interact
 set cli_py_append {
 rename putscli _putscli
 proc putscli { output } {
@@ -128,30 +128,115 @@ eval $cli_common_init
 #Initialise CLI in Python
 } elseif { $lang eq "python" } {
 proc pythonVersion {{pythonExecutable "python3"}} {
-puts "did py version"
+if {[string match windows $::tcl_platform(platform)]} { set pythonExecutable "python" }
 if {![catch {exec $pythonExecutable --version}] || [lindex $::errorCode 0] eq "NONE"} {
 } else {
-puts "Error:failed to find executable $pythonExecutable"
-exit
+puts "Error: Failed to find $::tcl_platform(platform) executable \"$pythonExecutable\""
+return -1
 }
 set info [exec $pythonExecutable --version 2>@1]
 if {[regexp {^Python ([\d.]+)$} $info --> version]} {
 return $version
 }
-puts "Error:failed to parse output of $pythonExecutable --version: '$info'"
-exit
+puts "Error: Failed to parse output of $pythonExecutable --version: '$info'"
+return -1
 }
+if {[string match windows $::tcl_platform(platform)]} {
+#Windows
+proc winpause {} { after 3000 } 
+proc bgerror {message} { puts $message }
+#Check python library versions are compatible
+if {[catch {package require tclpy} message]} { 
+set pyver [pythonVersion] 
+if { $pyver != -1 } {
+puts "Error: Python installation [pythonVersion] detected but at incorrect Python version, see HammerDB documentation" 
+	} else {
+puts "Error: Unable to detect $::tcl_platform(platform) Python installation" 
+	}
+winpause
+exit
+	} else {
+catch {package forget tclpy}
+	}
+set UserDefaultDir [ file dirname [ info script ] ]
+::tcl::tm::path add "$UserDefaultDir/modules"
+package require tclreadline
+regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
+append cli_common_init $cli_py_append
+set py_init "import os
+import sys
+tcl_dll_location = os.getcwd() + r'\\bin'
+os.add_dll_directory(tcl_dll_location)
+sys.path.append(r'.\\lib\\tclpy0.4')
+import tclpy
+tclpy.eval('global hdb_version')
+tclpy.eval('set hdb_version $hdb_version')
+init_tcl = (r'''\n$cli_common_init\n''')
+tclpy.eval(init_tcl)
+from hammerdb import \*
+sys.stdout.flush()
+sys.ps1 = '<<<'"
+#Reversed the prompt to detect when Python has finished its output, so HammerDB can prompt also.
+proc piperead_interact {pipe echo} {
+    if {![eof $pipe]} {
+        set got [ read -nonewline $pipe ]
+	if {!$echo} { ; } else {
+	TclReadLine::pyclearline 
+	if { [ string equal "<<<" $got ] } { 
+	TclReadLine::prompt ""
+	} else {
+	if { [ string match "*<<<" $got ] } { 
+	set got [ string trimright $got "\n+<<<" ]
+	puts "\r$got\n"
+	TclReadLine::prompt ""
+	} else {
+	puts "\r$got"
+	}}}} else { 
+	close $pipe
+ 	return	
+	 }
+	}
+
+proc piperead_script {pipe} {
+    if {![eof $pipe]} {
+        set got [regsub {.+< } [gets $pipe] ""]
+        puts "$got"
+    }   
+}
+
+set pipe [open "|[ auto_execok python] -uiq 2>@1" r+]
+fconfigure $pipe -buffering line -blocking false -encoding cp1252
+fileevent $pipe readable [list piperead_interact $pipe false]
+set pywait [list]
+foreach pyline [split $py_init \n] {
+# send init line to the pipe
+puts $pipe $pyline
+# need some delay for the pipe
+after 60 [list append pywait ""]
+vwait pywait
+}
+if { $autostart::autostartap == "true" } { 
+puts $pipe "runscript(1)" 
+fileevent $pipe readable [list piperead_script $pipe]
+set pywait [ list ]
+puts $pipe "exec(open('$autostart::autoloadscript').read())"
+after 200 [ list append pywait ""]
+vwait pywait
+close $pipe
+} else { 
+fileevent $pipe readable [ list piperead_interact $pipe true ]
+puts $pipe "runscript(0)" 
+TclReadLine::interactpy $pipe
+}
+winpause
+exit
+} else {
+#Linux
 set syspath [ string trim $env(PYTHONPATH) ":*" ]
 if { ![ file isdirectory $syspath ] } {
 puts "Error:Cannot find HammerDB Python libraries $env(PYTHONPATH) is not a directory"
 exit
 	}
-if {[string match windows $::tcl_platform(platform)]} {
-#Windows
-        package require twapi
-        package require twapi_input
-} else {
-#Linux
 if {[catch {package require Expect} ]} { 
 puts "Error:Failed to load Expect package to run Python" 
 exit
@@ -163,7 +248,7 @@ if { [ info exists pyver ] && $pyver != [pythonVersion] } {
 puts "Error: Python version $pyver required, version [pythonVersion] is installed" 
 exit
 	} else {
-puts "Error: Unable to detect Python installation" 
+puts "Error: Unable to detect $::tcl_platform(platform) Python installation" 
 exit
 	}
 	} else {
