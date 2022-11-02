@@ -175,33 +175,43 @@ init_tcl = (r'''\n$cli_common_init\n''')
 tclpy.eval(init_tcl)
 from hammerdb import \*
 sys.stdout.flush()
-sys.ps1 = '<<<'"
-#Reversed the prompt to detect when Python has finished its output, so HammerDB can prompt also.
+sys.ps1 = '>>>'"
 proc piperead_interact {pipe echo} {
     if {![eof $pipe]} {
         set got [ read -nonewline $pipe ]
 	if {!$echo} { ; } else {
 	TclReadLine::pyclearline 
-	if { [ string equal "<<<" $got ] } { 
+	if { [ string equal ">>>" $got ] } { 
 	TclReadLine::prompt ""
 	} else {
-	if { [ string match "*<<<" $got ] } { 
-	set got [ string trimright $got "\n+<<<" ]
+	if { [ string match "*>>>" $got ] } { 
+	set got [ string trim [ string trimright $got "\n+>>>" ]]
 	puts "\r$got\n"
 	TclReadLine::prompt ""
 	} else {
-	puts "\r$got"
+	set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
+	puts "$got" 
 	}}}} else { 
-	close $pipe
+	catch{close $pipe}
  	return	
 	 }
 	}
 
 proc piperead_script {pipe} {
+upvar script_end script_end
     if {![eof $pipe]} {
-        set got [regsub {.+< } [gets $pipe] ""]
+        set got [ read -nonewline $pipe ]
+	if { [ string match "*>>>" $got ] } { 
+	puts "PYTHON SCRIPT END"
+ 	after 2000
+	set script_end 1
+	}
+	set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
         puts "$got"
-    }   
+    } else {
+	catch{close $pipe}
+	set script_end 1
+	}  
 }
 
 set pipe [open "|[ auto_execok python] -uiq 2>@1" r+]
@@ -216,13 +226,13 @@ after 60 [list append pywait ""]
 vwait pywait
 }
 if { $autostart::autostartap == "true" } { 
-puts $pipe "runscript(1)" 
-fileevent $pipe readable [list piperead_script $pipe]
 set pywait [ list ]
-puts $pipe "exec(open('$autostart::autoloadscript').read())"
-after 200 [ list append pywait ""]
+puts $pipe "runscript(1)" 
+after 50 [ list append pywait ""]
 vwait pywait
-close $pipe
+fileevent $pipe readable [list piperead_script $pipe]
+puts $pipe "exec(open('$autostart::autoloadscript').read())"
+vwait script_end
 } else { 
 fileevent $pipe readable [ list piperead_interact $pipe true ]
 puts $pipe "runscript(0)" 
