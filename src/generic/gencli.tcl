@@ -1049,42 +1049,44 @@ proc buildschema {} {
 }
 
 proc keepalive {} {
-#Routine to keep the main thread alive during vurun
-    global rdbms bm
-    set ka_valid 1
-	if {$bm eq "TPC-C"} {
-#For TPC-C we have a rampup and duration time, find these, check they are valid and call _runtimer automatically with these values
-	 upvar #0 dbdict dbdict
-	 upvar #0 genericdict genericdict
-         if {[dict exists $genericdict commandline keepalive_margin]} {
-                set ka_margin [ dict get $genericdict commandline keepalive_margin]
-                if {![string is entier $ka_margin]} { set ka_margin 10 }
-                } else {
-                set ka_margin 10
-                }
-    foreach { key } [ dict keys $dbdict ] {
-        if { [ dict get $dbdict $key name ] eq $rdbms } {
-            set dictname config$key
-            upvar #0 $dictname $dictname
+  #Routine to keep the main thread alive during vurun
+  global rdbms bm
+  set ka_valid 1
+  if {$bm eq "TPC-C"} {
+    #For TPC-C we have a rampup and duration time, find these, check they are valid and call _runtimer automatically with these values
+    upvar #0 dbdict dbdict
+    upvar #0 genericdict genericdict
+    if {[dict exists $genericdict commandline keepalive_margin]} {
+      set ka_margin [ dict get $genericdict commandline keepalive_margin]
+      if {![string is entier $ka_margin]} { 
+        set ka_margin 10 
+      }
+    } else {
+      set ka_margin 10
     }
+    foreach { key } [ dict keys $dbdict ] {
+      if { [ dict get $dbdict $key name ] eq $rdbms } {
+        set dictname config$key
+        upvar #0 $dictname $dictname
+      }
     }
     set rampup_secs [expr {[ get_base_rampup [ set $dictname ]]*60}]
     set duration_secs [expr {[ get_base_duration [ set $dictname ]] *60}]
     foreach { val } [ list $rampup_secs $duration_secs ] {
-    if { ![string is entier $val ] || ($val < 60 && $val != 0) } {
-	set ka_valid 0 
-    	}
+      if { ![string is entier $val ] || ($val < 60 && $val != 0) } {
+        set ka_valid 0
+      }
     }
     if { $ka_valid } {
-    _runtimer [expr {$rampup_secs + $duration_secs + $ka_margin}]
-    	} else {
-tk_messageBox -icon warning -message "Cannot detect rampup and duration times, keepalive for main thread not active"
-	}
-} else {
-#Workload is TPROC-H, call _waittocomplete to wait until vucomplete message after an indeterminate amount of time
-_waittocomplete
-return
-}
+      _runtimer [expr {$rampup_secs + $duration_secs + $ka_margin}]
+    } else {
+      tk_messageBox -icon warning -message "Cannot detect rampup and duration times, keepalive for main thread not active"
+    }
+  } else {
+    #Workload is TPROC-H, call _waittocomplete to wait until vucomplete message after an indeterminate amount of time
+    _waittocomplete
+    return
+  }
 }
 
 proc delete_schema {} {
