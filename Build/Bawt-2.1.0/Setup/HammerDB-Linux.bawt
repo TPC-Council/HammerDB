@@ -12,6 +12,7 @@ Setup libressl          libressl-2.6.4.7z              libressl.bawt
 Setup tcltls            tcltls-1.7.22.7z               tcltls.bawt	
 Setup tksvg             tksvg-0.5.7z                   tksvg.bawt
 Setup tkblt             tkblt-3.2.23.7z                tkblt.bawt
+Setup tclpy             tclpy-0.4.7z                   tclpy.bawt
 # Compiled Tcl Database interface packages.
 Setup oratcl            oratcl-4.6.7z                  oratcl.bawt	
 Setup mariatcl          mariatcl-0.1.7z                mariatcl.bawt	

@@ -5,6 +5,8 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 ## \
 export PATH="./bin:$PATH"
 ## \
+export PYTHONPATH="./lib/tclpy0.4:$PYTHONPATH"
+## \
 exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 ########################################################################
 # HammerDB
@@ -25,64 +27,300 @@ exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.5"
+set hdb_version "v4.6"
 puts "HammerDB CLI $hdb_version"
 puts "Copyright (C) 2003-2022 Steve Shaw"
-puts "Type \"help\" for a list of commands"
-set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "$UserDefaultDir/modules"
-
-namespace eval autostart {
-    set autostartap "false"
-    if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
-puts {Usage: hammerdbcli [ auto [ script_to_autoload.tcl  ] ]}
-exit
-	} else {
-        set autostartap "true"
-        set autoloadscript [lindex $argv 1]
-if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
-;# autostart selected and tcl file exists
-	     } else {
-puts {Usage: hammerdbcli [ auto [ script_to_autoload.tcl  ] ]}
-exit
-		}
-           } 
-      }
+if { $argc eq 0 } {
+set argv0 "" } else { set argv0 [ string tolower [lindex $argv 0 ]] }
+if { $argv0 == "" || $argv0 == "tcl" || $argv0 == "auto" } {
+  set lang "tcl"
+  set extension ".tcl"
+  puts "Type \"help\" for a list of commands"
+} elseif { $argv0 == "py" || $argv0 == "python" } {
+  set lang "python"
+  set extension ".py"
+  puts "Type \"help()\" for a list of commands"
+} else {
+  puts {Usage: hammerdbcli [ tcl|python [ auto [ script_to_autoload.[ tcl|py ] ] ] ]}
+  exit
 }
 
-append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl }
-for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
+namespace eval autostart {
+  set autostartap "false"
+  if { $argv0 == "tcl" || $argv0 == "py" || $argv0 == "python" } {
+    set argv [ lreplace $argv 0 0 ]
+    set argc [ expr {$argc - 1} ]
+  }
+  if { $argc eq 0 } { ; } else {
+    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+      puts {Usage: hammerdbcli [ tcl|python [ auto [ script_to_autoload.[ tcl|py ] ] ] ]}
+      exit
+    } else {
+      set autostartap "true"
+      set autoloadscript [lindex $argv 1]
+      if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq $extension } {
+        ;# autostart selected and tcl or py file exists
+      } else {
+        if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] != $extension } {
+          puts "Error: incorrect file extension for $lang" 
+          if { $lang eq "tcl" } {
+            puts {Usage: hammerdbcli [ tcl [ auto [ script_to_autoload.[ tcl ] ] ]}
+          } else {
+            puts {Usage: hammerdbcli [ python [ auto [ script_to_autoload.[ py ] ] ]}
+          }
+          exit
+        } else {
+          puts {Usage: hammerdbcli [ tcl|python [ auto [ script_to_autoload.[ tcl|py ] ] ] ]}
+        }
+      }
+    }
+  }
+}
+#Common CLI initialisation between Tcl and Python
+set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
+  ::tcl::tm::path add "$UserDefaultDir/modules"
+  append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl }
+  for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
-		set loadtext $m
-	if [catch { package require $m }] {
-                puts stderr "While loading module\
+    set loadtext $m
+    if [catch { package require $m }] {
+      puts stderr "While loading module\
                         \"$m\"...\n$errorInfo"
-                exit 1
-        }
+      exit 1
     }
-    
-append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl }
-for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
+  }
+
+  append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl }
+  for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
-		set loadtext $f
-	if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
-                puts stderr "While loading component file\
+    set loadtext $f
+    if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
+      puts stderr "While loading component file\
                         \"$f\"...\n$errorInfo"
-                exit 1
-        }
+      exit 1
     }
+  }
 
-for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccount } {
+  for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccount } {
     set f [lindex $dbsrclist $dbsrccount]
-		set loadtext $f
-	if [catch {source [ file join $UserDefaultDir src $f ]}] {
-                puts stderr "Error loading database source files/$f"
+    set loadtext $f
+    if [catch {source [ file join $UserDefaultDir src $f ]}] {
+      puts stderr "Error:loading database source files/$f"
+    }
+}}
+#In Tcl only either source file or do Tclreadline::interact
+set cli_tcl_append {
+  if { $autostart::autostartap == "true" } {
+    source $autostart::autoloadscript
+  } else {
+    TclReadLine::interact
+}}
+#In Python on Linux use expect on Windows use Tclreadline::interact
+set cli_py_append {
+  rename putscli _putscli
+  proc putscli { output } {
+    puts "$output\r"
+}}
+#Initialise CLI in Tcl
+if { $lang == "tcl" } {
+  append cli_common_init $cli_tcl_append
+  eval $cli_common_init
+  #Initialise CLI in Python
+} elseif { $lang eq "python" } {
+  proc pythonVersion {{pythonExecutable "python3"}} {
+    if {[string match windows $::tcl_platform(platform)]} { set pythonExecutable "python" }
+    if {![catch {exec $pythonExecutable --version}] || [lindex $::errorCode 0] eq "NONE"} {
+    } else {
+      puts "Error: Failed to find $::tcl_platform(platform) executable \"$pythonExecutable\""
+      return -1
+    }
+    set info [exec $pythonExecutable --version 2>@1]
+    if {[regexp {^Python ([\d.]+)$} $info --> version]} {
+      return $version
+    }
+    puts "Error: Failed to parse output of $pythonExecutable --version: '$info'"
+    return -1
+  }
+  if {[string match windows $::tcl_platform(platform)]} {
+    #Windows
+    proc winpause {} { after 3000 } 
+    proc bgerror {message} { puts $message }
+    #Check python library versions are compatible
+    if {[catch {package require tclpy} message]} { 
+      set pyver [pythonVersion] 
+      if { $pyver != -1 } {
+        puts "Error: Python installation [pythonVersion] detected but at incorrect Python version, see HammerDB documentation" 
+      } else {
+        puts "Error: Unable to detect $::tcl_platform(platform) Python installation" 
+      }
+      winpause
+      exit
+    } else {
+      catch {package forget tclpy}
+    }
+    set UserDefaultDir [ file dirname [ info script ] ]
+    ::tcl::tm::path add "$UserDefaultDir/modules"
+    package require tclreadline
+    regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
+    append cli_common_init $cli_py_append
+    set py_init "import os
+import sys
+tcl_dll_location = os.getcwd() + r'\\bin'
+os.add_dll_directory(tcl_dll_location)
+sys.path.append(r'.\\lib\\tclpy0.4')
+import tclpy
+tclpy.eval('global hdb_version')
+tclpy.eval('set hdb_version $hdb_version')
+init_tcl = (r'''\n$cli_common_init\n''')
+tclpy.eval(init_tcl)
+from hammerdb import \*
+sys.stdout.flush()
+sys.ps1 = '>>>'"
+    proc piperead_interact {pipe echo} {
+      if {![eof $pipe]} {
+        set got [ read -nonewline $pipe ]
+        if {!$echo} { ; } else {
+          TclReadLine::pyclearline 
+          if { [ string equal ">>>" $got ] } { 
+            TclReadLine::prompt ""
+          } else {
+            if { [ string match "*>>>" $got ] } { 
+              set got [ string trim [ string trimright $got "\n+>>>" ]]
+              puts "\r$got\n"
+              TclReadLine::prompt ""
+            } else {
+              set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
+              puts "$got" 
+            }
+          }
         }
+      } else { 
+        catch {close $pipe}
+        exit	
+      }
     }
 
-if { $autostart::autostartap == "true" } {
-	source $autostart::autoloadscript
-	} else {
-    TclReadLine::interact
-	}
+    proc piperead_script {pipe} {
+      upvar script_end script_end
+      if {![eof $pipe]} {
+        set got [ read -nonewline $pipe ]
+        if { [ string match "*>>>" $got ] } { 
+          puts "PYTHON SCRIPT END"
+          after 2000
+          set script_end 1
+        }
+        set got [ string trim [regsub -all {\n(?:\s*\n)+} $got \n] \n ]
+        puts "$got"
+      } else {
+        catch {close $pipe}
+        set script_end 1
+      }  
+    }
+
+    set pipe [open "|[ auto_execok python] -uiq 2>@1" r+]
+    fconfigure $pipe -buffering line -blocking false -encoding cp1252
+    fileevent $pipe readable [list piperead_interact $pipe false]
+    set pywait [list]
+    foreach pyline [split $py_init \n] {
+      # send init line to the pipe
+      puts $pipe $pyline
+      # need some delay for the pipe
+      after 60 [list append pywait ""]
+      vwait pywait
+    }
+    if { $autostart::autostartap == "true" } { 
+      set pywait [ list ]
+      puts $pipe "runscript(1)" 
+      after 50 [ list append pywait ""]
+      vwait pywait
+      fileevent $pipe readable [list piperead_script $pipe]
+      puts $pipe "exec(open('$autostart::autoloadscript').read())"
+      vwait script_end
+    } else { 
+      fileevent $pipe readable [ list piperead_interact $pipe true ]
+      puts $pipe "runscript(0)" 
+      TclReadLine::interactpy $pipe
+    }
+    winpause
+    exit
+  } else {
+    #Linux
+    set syspath [ string trim $env(PYTHONPATH) ":*" ]
+    if { ![ file isdirectory $syspath ] } {
+      puts "Error:Cannot find HammerDB Python libraries $env(PYTHONPATH) is not a directory"
+      exit
+    }
+    if {[catch {package require Expect} ]} { 
+      puts "Error:Failed to load Expect package to run Python" 
+      exit
+    } 
+    #Check python library versions are compatible
+    if {[catch {package require tclpy} message]} { 
+      regexp {libpython([0-9]+.[0-9]+).so} $message matched pyver 
+      if { [ info exists pyver ] && $pyver != [pythonVersion] } {
+        puts "Error: Python version $pyver required, version [pythonVersion] is installed" 
+        exit
+      } else {
+        puts "Error: Unable to detect $::tcl_platform(platform) Python installation" 
+        exit
+      }
+    } else {
+      catch {package forget tclpy}
+    }
+    #Remove tclreadline module from common initialisation in Python
+    regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
+    append cli_common_init $cli_py_append
+    set timeout 10
+    log_user 0
+    spawn -noecho python3
+    expect ">>>"
+    send "import sys\x0D"
+    expect ">>>"
+    send "sys.path.append('$syspath')\x0D"
+    expect ">>>"
+    send "import tclpy\x0D"
+    expect ">>>"
+    send "tclpy.eval('global hdb_version')\x0D"
+    expect ">>>"
+    send "tclpy.eval('set hdb_version $hdb_version')\x0D"
+    expect ">>>"
+    send "init_tcl = (r'''\n$cli_common_init\n''')\x0D"
+    expect ">>>"
+    send "tclpy.eval(init_tcl)\x0D"
+    expect ">>>"
+    send "from hammerdb import *\x0D"
+    expect ">>>"
+    if { $autostart::autostartap == "true" } { send "runscript(1)\x0D" } else { send "runscript(0)\x0D" }
+    send "sys.stdout.flush()\x0D"
+    send "sys.ps1 = 'hammerdb>>>'\x0D"
+    #If timeout is set to a +ve value auto scripts will terminate before completion
+    set timeout -1
+    if { $autostart::autostartap == "true" } {
+      #run python script
+      trap {
+        send "\x03"
+        send_user "^C\n"
+        exit
+      } SIGINT
+      expect "hammerdb>>>"
+      send "exec(open('$autostart::autoloadscript').read())\x0D"
+      log_user 1
+      expect {"hammerdb>>>"}
+    } else {
+      expect "hammerdb>>>"
+      log_user 1
+      #-----------------------------#
+      #run interactive python shell
+      #-----------------------------#
+      interact {
+        \x03 {
+          #send Ctrl-C to Python
+          send "\x03"
+          send_user "^C"
+          return
+        }
+      }
+    }
+    exit
+  }
+}
