@@ -1637,6 +1637,11 @@ proc vurun {} {
         putscli "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
     }
+     if { [ info exists jobid ] } {
+        return $jobid
+    } else {
+        return
+    }
 }
 
 proc run_datagen {} {
