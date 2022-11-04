@@ -1638,7 +1638,7 @@ proc vurun {} {
         unset -nocomplain jobid
     }
      if { [ info exists jobid ] } {
-        return $jobid
+        return "jobid=$jobid"
     } else {
         return
     }
