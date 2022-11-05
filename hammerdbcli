@@ -79,7 +79,7 @@ namespace eval autostart {
 #Common CLI initialisation between Tcl and Python
 set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
   ::tcl::tm::path add "$UserDefaultDir/modules"
-  append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl }
+  append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl sqlite3 huddle }
   for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
     set loadtext $m
@@ -107,7 +107,11 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
     if [catch {source [ file join $UserDefaultDir src $f ]}] {
       puts stderr "Error:loading database source files/$f"
     }
-}}
+}
+
+init_job_tables
+}
+
 #In Tcl only either source file or do Tclreadline::interact
 set cli_tcl_append {
   if { $autostart::autostartap == "true" } {

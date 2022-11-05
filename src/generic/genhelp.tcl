@@ -8,7 +8,7 @@ Type \"help command\" for more details on specific commands below\n"
     } else {
         set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset distributescript librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
+        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     }
     if {[ llength $args ] != 1} {
         puts $helpbanner

@@ -1,12 +1,18 @@
 set masterthread [thread::names]
 tsv::set application themaster $masterthread
 proc myerrorproc { id info } {
-    global threadsbytid
+    global threadsbytid jobid
+    if { ![ info exists jobid ] } { set jobid 0 }
     if { ![string match {*index*} $info] } {
         if { [ string length $info ] == 0 } {
-            puts "Warning: a running Virtual User was terminated, any pending output has been discarded"
+            set message "Warning: a running Virtual User was terminated, any pending output has been discarded"
+            puts $message
+            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         } else {
             if { [ info exists threadsbytid($id) ] } {
+                set vuser [expr $threadsbytid($id) + 1]
+                set info "Error: $info"
+                hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
                 puts "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
             }  else {
                 if {[string match {*.tc*} $info]} {
@@ -91,9 +97,12 @@ proc guid { } {
 }
 
 proc Log {id msg lastline} {
-    global tids threadsbytid
+    global tids threadsbytid jobid
     set Name .ed_mainFrame.ap.canv
     catch {.ed_mainFrame.tw.cv itemconfigure $tids($id) -text [ join $msg ]}
+    set vuser [expr $threadsbytid($id) + 1]
+    set lastline [ string trimright $lastline ]
+    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
     if {[winfo exists $Name.a.t]} {
         if { [ info exists threadsbytid($id) ] } {
             if { [ expr $threadsbytid($id) + 1 ] eq 1 } {
