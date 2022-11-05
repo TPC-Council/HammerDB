@@ -481,11 +481,10 @@ if {[dict exists $tmpgendict theme scaling ]} {
                 if [ llength $::ttk::dialog_module::args ] {
                     if [ dict exists $::ttk::dialog_module::args -title ] {
                         set message "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
-                        puts $message
                     } else {
                         set message "Warning: a dialog is already open, close it first"
-                        puts $message
                     }
+                    puts $message
                     hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                 }
                 return
@@ -521,11 +520,10 @@ if {[dict exists $tmpgendict theme scaling ]} {
                         if [ llength $::ttk::dialog_module::args ] {
                             if [ dict exists $::ttk::dialog_module::args -title ] {
                                 set message "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
-                                puts $message
                             } else {
                                 set message "Warning: a dialog is already open, close it first"
-                                puts $message
                             }
+                            puts $message
                             hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                         }
                         return
