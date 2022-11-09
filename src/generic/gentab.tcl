@@ -1,7 +1,7 @@
 proc runninguser { threadid } {
     global table threadscreated thvnum run jobid
     set message [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ]
-    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     $table cellconfigure $thvnum($threadid),3 -image $run 
 }
 
@@ -13,11 +13,11 @@ proc printresult { result threadid } {
     $table cellconfigure $thvnum($threadid),2 -text $c
     if { $result == 0 } {
         set message [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ]
-        hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+        hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         $table cellconfigure $thvnum($threadid),3 -image $succ 
     } else {
         set message [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ]
-        hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+        hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         $table cellconfigure $thvnum($threadid),3 -image $fail
     }
     if { $totrun == $totcount } {
@@ -26,7 +26,7 @@ proc printresult { result threadid } {
         if { [ info exists inrun ] } {
             unset inrun
         }
-        hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
+        hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, "ALL VIRTUAL USERS COMPLETE")}
         ed_status_message -finish "COMPLETE"
     }
 }

@@ -51,7 +51,7 @@ exit
       }
 }
 
-append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle }
+append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle jobs }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m

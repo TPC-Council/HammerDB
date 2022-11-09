@@ -7,12 +7,12 @@ proc myerrorproc { id info } {
         if { [ string length $info ] == 0 } {
             set message "Warning: a running Virtual User was terminated, any pending output has been discarded"
             puts $message
-            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         } else {
             if { [ info exists threadsbytid($id) ] } {
                 set vuser [expr $threadsbytid($id) + 1]
                 set info "Error: $info"
-                hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
+                hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
                 puts "Error in Virtual User [expr $threadsbytid($id) + 1]: $info"
             }  else {
                 if {[string match {*.tc*} $info]} {
@@ -22,7 +22,7 @@ proc myerrorproc { id info } {
                     if {[string match {*canceled*} $info]} {
                         #message was eval canceled
                     } else {
-                        puts "Metrics Thread Error: $info"
+			    ;
                     }
                 }
             }
@@ -102,7 +102,7 @@ proc Log {id msg lastline} {
     catch {.ed_mainFrame.tw.cv itemconfigure $tids($id) -text [ join $msg ]}
     set vuser [expr $threadsbytid($id) + 1]
     set lastline [ string trimright $lastline ]
-    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
+    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
     if {[winfo exists $Name.a.t]} {
         if { [ info exists threadsbytid($id) ] } {
             if { [ expr $threadsbytid($id) + 1 ] eq 1 } {

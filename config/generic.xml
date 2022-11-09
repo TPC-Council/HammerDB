@@ -60,16 +60,18 @@
 	    </gen_directory>
     </datageneration>
     <commandline>
+	<sqlite_db>TMP</sqlite_db> 
         <keepalive_margin>10</keepalive_margin>
-        <jobsoutput>text</jobsoutput>
+        <jobsoutput>JSON</jobsoutput>
+        <jobs_disable>0</jobs_disable>
     </commandline>
     <webservice>
 	   <ws_port>8080</ws_port> 
-	   <sqlite_db>TMP</sqlite_db> 
     </webservice>
     <timeprofile>
            <profiler>xtprof</profiler>
            <xt_unique_log_name>0</xt_unique_log_name>
            <xt_gather_timeout>10</xt_gather_timeout>
+           <xt_job_storage>1</xt_job_storage>
     </timeprofile>
 </hammerdb>

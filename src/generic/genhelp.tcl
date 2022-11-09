@@ -30,6 +30,12 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "jobid: list VU output for jobid."
                     putscli "result: list result for all jobs."
                     putscli "timestamp: list starting timestamp for all jobs.\n"
+                    putscli {jobs format - Usage: jobs format [ text | JSON ]}
+                    putscli "text: Format job output as text."
+                    putscli "JSON: Format job output as JSON.\n"
+                    putscli {jobs disable - Usage: jobs disable [ 0 | 1 ]}
+                    putscli "0: Enable storage of job output, restart required."
+                    putscli "1: Disable storage of job output, restart required.\n"
                     putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]}
                     putscli "bm: list benchmark for jobid."
                     putscli "db: list database for jobid."

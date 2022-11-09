@@ -369,7 +369,7 @@ proc ::tkcon::Init {args} {
 	# consoles will adopt from the main's history, but still
 	# keep separate histories
 	if {!$PRIV(WWW) && $OPT(usehistory) && [file exists $PRIV(histfile)]} {
-	    puts -nonewline "loading history file ... "
+	    #puts -nonewline "loading history file ... "
 	    # The history file is built to be loaded in and
 	    # understood by tkcon
 	    if {[catch {uplevel \#0 [list source $PRIV(histfile)]} herr]} {
@@ -377,7 +377,7 @@ proc ::tkcon::Init {args} {
 		append PRIV(errorInfo) $errorInfo\n
 	    }
 	    set PRIV(event) [EvalSlave history nextid]
-	    puts "[expr {$PRIV(event)-1}] events added"
+	    #puts "[expr {$PRIV(event)-1}] events added"
 	}
     }
 
@@ -427,7 +427,8 @@ proc ::tkcon::Init {args} {
     }
     StateCheckpoint $PRIV(name) slave
 
-    Prompt "$title console display active (Tcl$::tcl_patchLevel / Tk$::tk_patchLevel)\n"
+    #Prompt "$title console display active (Tcl$::tcl_patchLevel / Tk$::tk_patchLevel)\n"
+    Prompt
 }
 
 ## ::tkcon::InitSlave - inits the slave by placing key procs and aliases in it

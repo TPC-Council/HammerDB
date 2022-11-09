@@ -475,7 +475,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
         proc tk_messageBox {args} {
             global jobid
             variable ::ttk::dialog_module::window_name
-            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
             if [ winfo exists $window_name ] {
                 raise $window_name
                 if [ llength $::ttk::dialog_module::args ] {
@@ -485,7 +485,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
                         set message "Warning: a dialog is already open, close it first"
                     }
                     puts $message
-                    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                 }
                 return
             } else {
@@ -514,7 +514,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
                 proc tk_messageBox {args} {
                     global jobid
                     variable ::ttk::dialog_module::window_name
-                    hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+                    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
                     if [ winfo exists $window_name ] {
                         raise $window_name
                         if [ llength $::ttk::dialog_module::args ] {
@@ -524,7 +524,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
                                 set message "Warning: a dialog is already open, close it first"
                             }
                             puts $message
-                            hdbgui eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                         }
                         return
                     } else {

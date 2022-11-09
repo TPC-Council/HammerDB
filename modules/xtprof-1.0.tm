@@ -235,9 +235,10 @@ break
     }
   }
 }
-#Extract xt_unique_log_name and xt_gather_timeout from generic.xml assume log name is not unique if config cannot be read. Assume timeout is 10 mins if config cannot be read.
+#Extract xt_unique_log_name,  xt_gather_timeout and xt_job_storage from generic.xml assume log name is not unique if config cannot be read. Assume timeout is 10 mins if config cannot be read. Assume job storage if cannot be read.
 set xtunique_log_name 0
 set xtgather_timeout 10
+set xtjob_storage 1
 set 2key 0
 if {[catch {set gendict [ ::XML::To_Dict config/generic.xml ]} message ]} { ; } else {
 dict for {key value} $gendict {
@@ -252,9 +253,19 @@ set xtgather_timeout $value2
 incr 2key
 if { $2key eq 2 } { break }
         }
+if { $key2 eq "xt_job_storage" } {
+set xtjob_storage $value2
+incr 2key
+if { $2key eq 2 } { break }
+        }
      }
   }
 }
+#If running in the GUI do not try to store output in SQLite
+if { [ tsv::exists commandline sqldb ] eq 0 } {
+set xtjob_storage 0
+}
+
 if { [ string is entier $xtgather_timeout ] } { 
 set xtto [expr {$xtgather_timeout * 60}]
 } else {
@@ -304,10 +315,6 @@ set lev2uniquekeys [ lsort -unique [concat {*}[lmap k1 [dict keys $monitortiming
 if { ![ string equal "delivery neword ostat payment slev" $lev2uniquekeys ]} { 
 puts "WARNING:Timing data returned values for functions different than expected delivery neword ostat payment slev: $lev2uniquekeys"
 }
-
-if ![ tsv::exists webservice wsport ] {
-#Not working in webservice mode so open file for writing timing data
-set using_webservice "false"
 set tmpdir [ findtempdir ]
 if { $tmpdir != "notmpdir" } {
         if { $xtunique_log_name eq 1 } {
@@ -328,14 +335,12 @@ puts $fd "$dbtoreport Hammerdb Time Profile Report @ [clock format [clock second
 } else {
      error "Could not open tempfile for Time Profile Report"
   }
-} else {
-#set local variable using_webservice
-set using_webservice "true"
+if { $xtjob_storage eq 1 } {
 if [catch {package require sqlite3} message ] {
 puts "Error loading SQLite : $message"
 return
         }
-set sqlite_db [ tsv::get webservice sqldb ]
+set sqlite_db [ tsv::get commandline sqldb ]
 if [catch {sqlite3 hdb $sqlite_db} message ] {
 puts "Error initializing SQLite database for Job Timings : $message"
 return
@@ -362,7 +367,7 @@ set sprocorder [ lsort -stride 2 -index 1 -real -decreasing $sprocratio ]
 for { set so 0 } { $so < [llength $sprocorder] } { incr so } {
 set sprocorder [ lreplace $sprocorder [ expr $so + 1 ] [ expr $so + 1 ] ] 
 }
-if { $using_webservice } {
+if { $xtjob_storage eq 1 } {
 	foreach sproc $sprocorder {
 #DEBUG insert into JOBTIMINGS TABLE
 #puts [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min,avg,max,total,p99,p95,p50,sd,ratio,summary,elapsed) VALUES($jobid,$vutr,[format "%s" [ string toupper $sproc]],[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed])} ]
@@ -375,7 +380,7 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
 #The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
  	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
 		}
-	} else {
+	} 
             puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
             puts $fd [format ">>>>> VIRTUAL USER %s : ELAPSED TIME : %.0fms" $vutr [dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed]]
 	foreach sproc $sprocorder {
@@ -397,7 +402,6 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
 #The msperclick per user is in [ dict get $clicktimings $vutr ] clicks need to be multiplied by this value for timings
  	    lappend $sproc-clickslist {*}[dict get $monitortimings $vutr $sproc clickslist]
 		}
-        }
 }
 #Calculate Summary for All Virtual Users
 #use median values for milliseconds per click, end clicks and end ms
@@ -438,12 +442,12 @@ set sprocorder [ lsort -stride 2 -index 1 -real -decreasing $sprocratio ]
 for { set so 0 } { $so < [llength $sprocorder] } { incr so } {
 set sprocorder [ lreplace $sprocorder [ expr $so + 1 ] [ expr $so + 1 ] ] 
 }
-if { $using_webservice } {
+if { $xtjob_storage eq 1 } {
 foreach sproc $sprocorder {
 #Insert summary timings into JOBTIMING table, summary identified by summary column eq 1
 hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct,summary,elapsed_ms) VALUES('$jobid',[llength $vustoreport],'[format "%s" [ string toupper $sproc]]',[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],1,$medianendms)} ]
 		}
-	} else {
+	} 
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
      puts $fd [format ">>>>> SUMMARY OF [llength $vustoreport] ACTIVE VIRTUAL USERS : MEDIAN ELAPSED TIME : %.0fms" $medianendms]
 foreach sproc $sprocorder {
@@ -461,7 +465,6 @@ foreach sproc $sprocorder {
 	}
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 close $fd
-	}
 }
     
 proc xttimeprofdump {myposition} {
