@@ -155,7 +155,7 @@ proc ::tkcon::Init {args} {
 	gc-delay	60000
 	gets		{congets}
 	overrideexit	1
-	usehistory	1
+	usehistory	0
 
 	exec		slave
     } {
@@ -233,7 +233,8 @@ proc ::tkcon::Init {args} {
 	set OPT(prompt1) {[history nextid] % }
     } else {
 	lappend PRIV(slaveprocs) tcl_unknown unknown
-	set OPT(prompt1) {([file tail [pwd]]) [history nextid] % }
+	#set OPT(prompt1) {([file tail [pwd]]) [history nextid] % }
+	set OPT(prompt1) {([file tail [pwd]]) % }
     }
 
     ## If we are using the default '.' toplevel, and there appear to be
