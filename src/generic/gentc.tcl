@@ -809,10 +809,6 @@ proc showLCD {number} {
         LCD_Display "ERR:OVERFLOW" 0 0 0
     }
     write_to_transcount_log $number $rdbms $metric
-    #TCOUNT may run without a job so only insert TCOUNT DATA into Database if a job is running
-    #If no job is running no data is inserted, by using global var once job is created data is inserted
-    #debug output by uncomment next line
-    #putscli "$number $rdbms $metric"
     if { $jobid != "" } {
         hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
     }

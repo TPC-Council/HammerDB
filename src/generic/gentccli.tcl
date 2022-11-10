@@ -5,13 +5,12 @@ proc tce {} {;}
 proc showLCD {number} {
     global bm rdbms jobid
     if { $bm eq "TPC-C" } { set metric "tpm" } else { set metric "qph" }
-    #TCOUNT may run without a job so only insert TCOUNT DATA into Database if a job is running
-    #If no job is running no data is inserted, by using global var once job is created data is inserted
-    #debug output by uncomment next line
-    #putscli "$number $rdbms $metric"
+     putscli "$number $rdbms $metric"
+     write_to_transcount_log $number $rdbms $metric
     if { $jobid != "" } {
         hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
     }
+    return
 }
 
 proc transcount { } {
