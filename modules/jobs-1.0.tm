@@ -1,3 +1,6 @@
+package provide jobs 1.0
+namespace eval jobs {
+namespace export init_job_tables_gui init_job_tables jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs getjob
 interp alias {} job {} jobs
 
 proc commify {x} {
@@ -658,7 +661,7 @@ proc getjob { query } {
         	}
                 return
               } else {
-                puts "No Timing Data for JOB $jobid: jobs jobid=JOBID&timing"
+                puts "No Timing Data for JOB $jobid: jobs jobid timing"
                 return
               }
             } else {
@@ -718,3 +721,5 @@ proc getjob { query } {
     }
   }
 }
+}
+namespace import jobs::*
