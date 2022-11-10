@@ -84,11 +84,11 @@ proc show_tc_errmsg {} {
     if { $tc_errmsg != "" } {
         if [catch {set joinedmsg [ join $tc_errmsg ]} message ] {
             #error in join show unjoined message
-            putscli [ subst {{"error": {"message": "Transaction Counter Error: $tc_errmsg"}}} ]
+	    putscli "Transaction Counter Error: $tc_errmsg"
             hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$tc_errmsg)}
         } else {
             #show joined message
-            putscli [ subst {{"error": {"message": "Transaction Counter Error: $joinedmsg"}}} ]
+	    putscli "Transaction Counter Error: $joinedmsg"
             hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$joinedmsg)}
         }
     } else {
