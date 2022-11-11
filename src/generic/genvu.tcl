@@ -20,9 +20,9 @@ proc myerrorproc { id info } {
                 } else {
                     #metrics thread
                     if {[string match {*canceled*} $info]} {
-                        #message was eval canceled
+                    #message was eval canceled
                     } else {
-			    ;
+		    #metrics thread error suppressed 
                     }
                 }
             }
