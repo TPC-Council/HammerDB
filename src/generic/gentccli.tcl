@@ -3,10 +3,13 @@ proc .ed_mainFrame.tc.g {args} {;}
 proc tce {} {;}
 
 proc showLCD {number} {
-    global bm rdbms
+    global bm rdbms jobid
     if { $bm eq "TPC-C" } { set metric "tpm" } else { set metric "qph" }
-    putscli "$number $rdbms $metric"
-    write_to_transcount_log $number $rdbms $metric
+     putscli "$number $rdbms $metric"
+     write_to_transcount_log $number $rdbms $metric
+    if { $jobid != "" } {
+        hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
+    }
     return
 }
 
@@ -74,18 +77,22 @@ proc ed_kill_transcount {args} {
 }
 
 proc show_tc_errmsg {} {
+    global jobid
+    if { ![ info exists jobid ] } { set jobid 0 }
     set tc_errmsg [ tsv::get application tc_errmsg ]
     if { $tc_errmsg != "" } {
         if [catch {set joinedmsg [ join $tc_errmsg ]} message ] {
             #error in join show unjoined message
-            putscli "Transaction Counter Error: $tc_errmsg"
+	    putscli "Transaction Counter Error: $tc_errmsg"
+            hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$tc_errmsg)}
         } else {
             #show joined message
-            putscli "Transaction Counter Error: $joinedmsg"
+	    putscli "Transaction Counter Error: $joinedmsg"
+            hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$joinedmsg)}
         }
     } else {
         #message is empty
-        putscli "Transaction Counter Error"
+        putscli {"error": {"message": "Transaction Counter Error"}}
     }
     #error message is always followed by thread release before loop enter
     #so remove tc_threadID to prevent false positive on startup

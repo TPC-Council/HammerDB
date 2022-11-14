@@ -155,7 +155,7 @@ proc ::tkcon::Init {args} {
 	gc-delay	60000
 	gets		{congets}
 	overrideexit	1
-	usehistory	1
+	usehistory	0
 
 	exec		slave
     } {
@@ -233,7 +233,8 @@ proc ::tkcon::Init {args} {
 	set OPT(prompt1) {[history nextid] % }
     } else {
 	lappend PRIV(slaveprocs) tcl_unknown unknown
-	set OPT(prompt1) {([file tail [pwd]]) [history nextid] % }
+	#set OPT(prompt1) {([file tail [pwd]]) [history nextid] % }
+	set OPT(prompt1) {([file tail [pwd]]) % }
     }
 
     ## If we are using the default '.' toplevel, and there appear to be
@@ -369,7 +370,7 @@ proc ::tkcon::Init {args} {
 	# consoles will adopt from the main's history, but still
 	# keep separate histories
 	if {!$PRIV(WWW) && $OPT(usehistory) && [file exists $PRIV(histfile)]} {
-	    puts -nonewline "loading history file ... "
+	    #puts -nonewline "loading history file ... "
 	    # The history file is built to be loaded in and
 	    # understood by tkcon
 	    if {[catch {uplevel \#0 [list source $PRIV(histfile)]} herr]} {
@@ -377,7 +378,7 @@ proc ::tkcon::Init {args} {
 		append PRIV(errorInfo) $errorInfo\n
 	    }
 	    set PRIV(event) [EvalSlave history nextid]
-	    puts "[expr {$PRIV(event)-1}] events added"
+	    #puts "[expr {$PRIV(event)-1}] events added"
 	}
     }
 
@@ -427,7 +428,8 @@ proc ::tkcon::Init {args} {
     }
     StateCheckpoint $PRIV(name) slave
 
-    Prompt "$title console display active (Tcl$::tcl_patchLevel / Tk$::tk_patchLevel)\n"
+    #Prompt "$title console display active (Tcl$::tcl_patchLevel / Tk$::tk_patchLevel)\n"
+    Prompt
 }
 
 ## ::tkcon::InitSlave - inits the slave by placing key procs and aliases in it

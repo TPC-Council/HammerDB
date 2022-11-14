@@ -795,7 +795,7 @@ proc SetPixels {varRow varCol varChar}  {
 }
 
 proc showLCD {number} {
-    global bm rdbms
+    global bm rdbms jobid
     if { $bm eq "TPC-C" } { set metric "tpm" } else { set metric "qph" }
     #blank display before displaying number
     LCD_Display "               " 0 0 0
@@ -809,6 +809,9 @@ proc showLCD {number} {
         LCD_Display "ERR:OVERFLOW" 0 0 0
     }
     write_to_transcount_log $number $rdbms $metric
+    if { $jobid != "" } {
+        hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
+    }
     return
 }
 
@@ -945,11 +948,22 @@ proc ed_kill_transcount {args} {
 }
 
 proc show_tc_errmsg {} {
+    global jobid
     upvar #0 icons icons
     set ban [ create_image ban icons ]
     set tc_errmsg [ tsv::get application tc_errmsg ]
     if { $tc_errmsg != "" } {
-        puts "Transaction Counter Error:$tc_errmsg"
+        if [catch {set joinedmsg [ join $tc_errmsg ]} message ] {
+            #error in join show unjoined message
+	    puts "Transaction Counter Error: $tc_errmsg"
+            hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$tc_errmsg)}
+        } else {
+            #show joined message
+	    puts "Transaction Counter Error: $joinedmsg"
+            hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,0,$joinedmsg)}
+        }
+    } else {
+        putscli "Transaction Counter Error"
     }
     LCD_Display "               " 0 0 0
     LCD_Display "   TX ERROR   " 0 0 0
