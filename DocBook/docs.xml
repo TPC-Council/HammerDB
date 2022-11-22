@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.5.</para>
+      <para>The following are the release notes for HammerDB v4.6.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -70,42 +70,46 @@
       </section>
 
       <section>
-        <title>Build Automation</title>
+        <title>Job Storage</title>
 
-        <para>HammerDB v4.5 includes a source code build environment to
-        compile all HammerDB dependencies and build a HammerDB release on
-        Linux and Windows with a compatible compiler from the source code
-        cloned or downloaded from GitHub.</para>
+        <para>HammerDB v4.6 includes a built-in SQLite repository database to
+        store the output, results, configuration, timing and transaction count
+        of workloads run in the Command Line (CLI) and can also be enabled by
+        advanced users in the GUI. This feature can also be disabled if
+        desired.</para>
       </section>
 
       <section>
-        <title>Dockerfile</title>
+        <title>Alternative Python CLI Interface</title>
 
-        <para>HammerDB v4.5 includes a Dockerfile to enable building a
-        HammerDB Docker image for rapid deployment of HammerDB in cloud
-        environments.</para>
+        <para>HammerDB v4.6 permits the CLI to be run in a system installed
+        Python interpreter calling HammerDB CLI commands with python syntax.
+        At version v4.6 this feature requires a system installed Python 3.8 on
+        Linux, Python 3.6 on Red Hat Enterprise Linux 8 and Python 3.10 on
+        Windows.</para>
       </section>
 
       <section>
-        <title>Persistent Configuration</title>
+        <title>Deprecate CLI runtimer and waittocomplete</title>
 
-        <para>From version v4.5 the XML configuration for HammerDB has been
-        made persistent between restarts through storing the configuration in
-        a series of SQLite database files. This means when HammerDB is
-        restarted the settings will be resumed from the previous point where
-        HammerDB was closed down. It also means that a configuration can be
-        set within the GUI and then run from the CLI and vice versa.</para>
+        <para>From version v4.6 the commands runtimer and waittocomplete have
+        been deprecated with these values calculated automatically, running
+        these commands will print a deprecation notice "runtimer command has
+        been deprecated and is not required for version v4.6". An additional
+        configuration parameter of keepalive_margin with a default value of 10
+        seconds has been added to generic.xml in the commandline section to
+        modify the additional time that HammerDB will wait after completion
+        before terminating the workload. This can be useful if for example
+        gathering timing data for event driven scaling workloads with a large
+        number of asynchronous clients.</para>
       </section>
 
       <section>
-        <title>MySQL and MariaDB SSL/TLS Configuration</title>
+        <title>Default driver</title>
 
-        <para>At version 4.5 HammerDB adds the option to use an SSL/TLS
-        connection to the database. At earlier versions it is possible to use
-        SSL/TLS however this requires modification of the build and driver
-        scripts, HammerDB v4.5 allows passing of the SSL configuration
-        directly from the configuration so that modification of the scripts is
-        not required.</para>
+        <para>From v4.6 the default driver has been set to be "timed" instead
+        of "test". This setting can be changed in the GUI and CLI
+        interface.</para>
       </section>
 
       <section>
@@ -189,44 +193,29 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.5 New Features</title>
+      <title>HammerDB v4.6 New Features</title>
 
-      <para>HammerDB v4.5 New Features are all referenced to <link
+      <para>HammerDB v4.6 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Issues and Pull Requests</link>, where more details for each new feature
       and related pull requests can be found here:</para>
 
-      <para>[TPC-Council#376] Add SSL options to MySQL</para>
+      <para>[TPC-Council#453] Job Storage</para>
 
-      <para>[TPC-Council#375] Fix for o_all_local value update and
-      insert</para>
+      <para>[TPC-Council#452] Add Alternative python CLI interface</para>
 
-      <para>[TPC-Council#372] SQL Server Schema/Stored Procedure
-      Updates</para>
+      <para>[TPC-Council#430] Add drop schema functionality</para>
 
-      <para>[TPC-Council#366] Fix RAISEEROR error in Asynch connect</para>
+      <para>[TPC-Council#415] Deprecate CLI runtimer</para>
 
-      <para>[TPC-Council#356] use correct transaction boundaries in MySQL /
-      MariaDB and PG</para>
+      <para>[TPC-Council#409] Add set virtual user to available cpus</para>
 
-      <para>[TPC-Council#362] Dependency build automation for Windows</para>
+      <para>[TPC-Council#408] Passwordless MariaDB connection</para>
 
-      <para>[TPC-Council#340] Escape username and database name in PostgreSQL
-      procedures</para>
+      <para>[TPC-Council#407] Allow to skip CA for MariaDB</para>
 
-      <para>[TPC-Council#339] Added Dockerfile to build a HammerDB container
-      and TPROC_C sample scripts to build schema and run tests</para>
-
-      <para>[TPC-Council#336] Save/load configuration to SQLite DB</para>
-
-      <para>[TPC-Council#333] set MariaDB autocommit to 1 for Monitor
-      VU</para>
-
-      <para>[TPC-Council#332] Move history file tracking to interactive</para>
-
-      <para>[TPC-Council#331] Add SSL connection options to MariaDB</para>
-
-      <para>[TPC-Council#323] Dependency build automation for Linux</para>
+      <para>[TPC-Council#406] Add SQL Server encrypt connection and trust
+      certificate</para>
     </section>
 
     <section>
@@ -316,7 +305,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>MariaDB</entry>
 
-              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8</entry>
+              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8 / 10.10</entry>
             </row>
 
             <row>
@@ -350,12 +339,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.5-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.6-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.5-Linux.tar.gz 
-sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.6-Linux.tar.gz 
+sha1sum HammerDB-4.6-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -459,8 +448,8 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
           </mediaobject>
         </figure>
 
-        <para>HammerDB will start ready for you to use. The order of the
-        databases in the treeview is in the order that they were added to
+        <para>HammerDB will start ready for you to use. The default order of
+        the databases in the treeview is in the order that they were added to
         HammerDB, however this is user configurable and from v4.5 settings
         will persist across restarts of HammerDB. To change the order and
         understand how settings are persisted see section 9 XML Configuration
@@ -493,8 +482,6 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
             </imageobject>
           </mediaobject>
         </figure>
-
-        <para/>
       </section>
 
       <section>
@@ -521,12 +508,26 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
         an installer based installation double-click on uninstall and follow
         the on-screen prompts.</para>
 
+        <para><figure>
+            <title>Uninstall</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch1-12.PNG"/>
+              </imageobject>
+            </mediaobject>
+
+            <para>In addition to the HammerDB software deletion there is also
+            a number of database files by default stored in the temporary
+            area. These can also be safely removed if preferred.</para>
+          </figure></para>
+
         <figure>
-          <title>Uninstall</title>
+          <title>Uninstall database files</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch1-12.PNG"/>
+              <imagedata fileref="docs/images/ch1-12aa.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -555,10 +556,10 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.5.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.6.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.5.</para>
+        HammerDB-4.6.</para>
       </section>
 
       <section>
@@ -575,36 +576,49 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
 
         <para>To uninstall HammerDB on Linux run the uninstall executable for
         the self-extracting installer or remove the directory for the tar.gz
-        install.</para>
+        install. You can also remove the .db and .DB persistent configuration
+        database files that are by default stored in the /tmp
+        directory.</para>
       </section>
     </section>
 
     <section>
       <title>HammerDB Docker Container Build &amp; Run</title>
 
-      <para>At v4.5 the HammerDB Docker Container supports the CLI interface
-      on Linux only. </para>
+      <para>At v4.6 the HammerDB Docker Image and Container supports the CLI
+      interface on Linux only.</para>
 
       <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. Version 4.5 includes a Dockerfile that can be
-      used to create a HammerDB Docker containers. This container is based on
-      an Ubuntu 20.04 base image and provides a ready to use environment to
-      run HammerDB. HammerDB has a dependency on 3rd party driver libraries to
-      connect to the target databases. This docker container installs the
-      required client libraries and sets up the environment that enables
-      connections to the target databases.</para>
-
-      <para>A Dockerfile is a shell script that automates the docker container
-      build. It makes it easier to spawn multiple containers with ease.
-      HammerDBv-4.5 source on GitHub is packaged with a folder “Docker”, that
-      contains all the Docker related files and folders. This folder contains
-      a Dockerfile for building a HammerDB client container that supports all
-      the databases that HammerDB supports, i.e. Oracle, Microsoft SQL Server,
-      IBM Db2, MySQL, PostgreSQL and MariaDB. Dockerfile is easy to customize
-      each one’s requirement.</para>
+      distribute and deploy. Version 4.6 includes both a pre-built Docker
+      Image and a Dockerfile that can be used to create a HammerDB Docker
+      containers. This container is based on an Ubuntu 20.04 base image and
+      provides a ready to use environment to run HammerDB. HammerDB has a
+      dependency on 3rd party driver libraries to connect to the target
+      databases. This docker container installs the required client libraries
+      and sets up the environment that enables connections to the target
+      databases.</para>
 
       <section>
-        <title>Download and installation</title>
+        <title>Docker Image</title>
+
+        <para>A pre-built Docker image is provided on the official TPC site on
+        Docker Hub at <link
+        xlink:href="https://hub.docker.com/u/tpcorg">https://hub.docker.com/u/tpcorg</link>
+        it is only necessary to follow the Dockerfile build instructions if
+        you wish to build your own Dockerfile from source.</para>
+      </section>
+
+      <section>
+        <title>Dockerfile Download and installation</title>
+
+        <para>A Dockerfile is a shell script that automates the docker
+        container build. It makes it easier to spawn multiple containers with
+        ease. HammerDBv-4.6 source on GitHub is packaged with a folder
+        “Docker”, that contains all the Docker related files and folders. This
+        folder contains a Dockerfile for building a HammerDB client container
+        that supports all the databases that HammerDB supports, i.e. Oracle,
+        Microsoft SQL Server, IBM Db2, MySQL, PostgreSQL and MariaDB.
+        Dockerfile is easy to customize each one’s requirement.</para>
 
         <para>The HammerDB Dockerfile is stored within the <link
         xlink:href="https://github.com/TPC-Council/HammerDB">HammerDB GitHub
@@ -612,15 +626,15 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
         the ZIP of the the HammerDB source and navigate to the Docker
         directory.</para>
 
-        <figure>
-          <title>Docker File Download</title>
+        <para><figure>
+            <title>Docker File Download</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="docs/images/ch1-12a.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch1-12a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
       </section>
 
       <section>
@@ -638,7 +652,7 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
         <para>To create an image: Go to the folder containing the Dockerfile
         and run the docker build command.</para>
 
-        <programlisting>docker build -t hammerdb-v4.5 . </programlisting>
+        <programlisting>docker build -t hammerdb-v4.6 . </programlisting>
 
         <figure>
           <title>docker build</title>
@@ -669,7 +683,7 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
         build is successful but the client libraries for IBM are not
         installed.</para>
 
-        <programlisting>	docker run -it --name hammerdb hammerdb-v4.5 bash</programlisting>
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.6 bash</programlisting>
 
         <figure>
           <title>docker run</title>
@@ -711,15 +725,15 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
         communicate with remote databases. The following is an example of
         adding host network to the container.</para>
 
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.5 bash </programlisting>
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.6 bash </programlisting>
       </section>
 
       <section>
         <title>Sample_scripts folder</title>
 
         <para>A sub-folder 'sample_scripts" is also added to the container. It
-        contains some command line scripts to run HammerDB TPROC-C workload
-        with each database.</para>
+        contains example command line scripts to run HammerDB TPROC-C
+        workload.</para>
       </section>
     </section>
 
@@ -749,7 +763,7 @@ sha1sum HammerDB-4.5-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.5
+      <programlisting>HammerDB CLI v4.6
 Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -772,7 +786,7 @@ hammerdb&gt;
 
       <para>librarycheck is also provided in the HammerDB Web Service.</para>
 
-      <programlisting>HammerDB Web Service v4.5
+      <programlisting>HammerDB Web Service v4.6
 Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -1053,7 +1067,8 @@ export PATH=$ORACLE_HOME/bin:$PATH
         C:\Windows\System32\odbc32.dll. On Linux follow the SQL Server on
         Linux installation guide to install 'mssql-tools' with the unixODBC
         developer package. The command database drivers will show the
-        installed ODBC Driver.</para>
+        installed ODBC Driver. (Note that this command is not installed on
+        Windows as unixODBC is only installed on Linux).</para>
 
         <programlisting>hammerdb&gt;database drivers
 {{ODBC Driver 17 for SQL Server} {{Description=Microsoft ODBC Driver 17 for SQL Server} 
@@ -1072,11 +1087,11 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.5 (4.4/4.3/4.2/4.1/4.0 and version 3.3) has
-        been built and tested against a MySQL 8.0 client installation,
-        hammerDB version 3.0-3.2 has been built against MySQL 5.7. On Linux
-        this means that HammerDB will require a MySQL client library called
-        libmysqlclient.so.21 for HammerDB version 4.2,4.1,4.0 and 3.3 and
+        <para>HammerDB version 4.6 (4.X and version 3.3) has been built and
+        tested against a MySQL 8.0 client installation, hammerDB version
+        3.0-3.2 has been built against MySQL 5.7. On Linux this means that
+        HammerDB will require a MySQL client library called
+        libmysqlclient.so.21 for HammerDB version 4.X and 3.3 and
         libmysqlclient.so.20 for version 3.2 and earlier. This client library
         needs to be referenced in the LD_LIBRARY_PATH as shown previously in
         this section. On Windows libmysqll.dll is required and should be
@@ -1086,7 +1101,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.5 has been built and tested against MariaDB
+        <para>HammerDB version 4.6 has been built and tested against MariaDB
         10.5.10 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
@@ -1125,7 +1140,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
           </imageobject>
         </mediaobject>
 
-        <para>From v4.5 it is recommended not to edit these files apart from
+        <para>From v4.6 it is recommended not to edit these files apart from
         the sqlitedb_dir parameter in the generic.xml file. The configuration
         is now stored and persisted across restarts through a series of SQLite
         database files located in the sqlitedb_dir directory. By default this
@@ -1176,7 +1191,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         version of HammerDB is detected from the one that created the existing
         database files, reporting the following message at startup.</para>
 
-        <programlisting>The existing SQLite DBs are from version v4.4. SQLite DBs will be reset to v4.5.</programlisting>
+        <programlisting>The existing SQLite DBs are from version v4.5. SQLite DBs will be reset to v4.6.</programlisting>
 
         <para>For this reason before running another version any existing
         configuration that is wished to be saved should be exported using
@@ -1269,10 +1284,10 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       provides pre-compiled packages from the download page and therefore
       building from source is not required to run HammerDB. Instead building
       from source is for people who want to compile all of their own
-      dependencies from the C code that HammerDB is built in. </para>
+      dependencies from the C code that HammerDB is built in.</para>
 
       <para>Building from source also enables building a distribution with
-      commits ahead of the current HammerDB release. </para>
+      commits ahead of the current HammerDB release.</para>
 
       <para>When building from source all of the dependent packages will be
       downloaded from www.hammerdb.com.</para>
@@ -1320,6 +1335,12 @@ yum group install "Development Tools"</programlisting>
         <programlisting>$ export MARIADB_CONFIG=/opt/mariadb/mariadb-10.6.7-linux-systemd-x86_64/bin
 $ export PG_CONFIG=/opt/postgresql/bin
 $ export MYSQL_CONFIG=/opt/mysql/mysql-8.0.28-linux-glibc2.12-x86_64/bin</programlisting>
+
+        <para>In addition the source build will expect to find the python3 and
+        python3-config executables that would typically already be installed
+        on a Linux system with for example python3 being installed by the
+        python3-minimal package and python3-config by the python3-dev package
+        on Ubuntu.</para>
       </section>
 
       <section>
@@ -1339,12 +1360,27 @@ $ export MYSQL_CONFIG=/opt/mysql/mysql-8.0.28-linux-glibc2.12-x86_64/bin</progra
         Windows either and should also be set to the database or client
         installation directory rather than the bin directory. PostgreSQL for
         Windows does include the config command and therefore the environment
-        configuration is the same as Linux.</para>
+        configuration is the same as Linux. The source build will also require
+        a Python installation from <link
+        xlink:href="https://www.python.org/">https://www.python.org/</link>,
+        this installation will need the include and libs directory for
+        compilation and the Python DLL which is in the Python home directory
+        at runtime. In the following example the PYTHONHOME environment
+        variable should be set to
+        C:\Users\username\AppData\Local\Programs\Python\Python310.</para>
+
+        <programlisting>C:\Users\username\AppData\Local\Programs\Python\Python310
+C:\Users\username\AppData\Local\Programs\Python\Python310\include
+C:\Users\username\AppData\Local\Programs\Python\Python310\libs</programlisting>
+
+        <para>With the following settings for all environments variables for
+        the build.</para>
 
         <programlisting>set MARIADB_CONFIG=C:\Program Files\MariaDB\MariaDB Connector C 64-bit
 set MYSQL_CONFIG=C:\Program Files\MySQL\MySQL Server 8.0
 set PG_CONFIG=C:\Program Files\PostgreSQL\pgsql\bin
-set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB</programlisting>
+set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB
+set PYTHONHOME=C:\Users\username\AppData\Local\Programs\Python\Python310</programlisting>
 
         <para>For all database installations on Windows whether client or
         server verify that the installation has the include, bin and lib
@@ -1401,7 +1437,9 @@ Resolving deltas: 100% (2564/2564), done.
 
         <programlisting>./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update</programlisting>
 
-        <para> and Build-Windows.bat commands for Windows </para>
+        <para>and make sure PYTHONHOME is set to the correct directory of the
+        Python installation and run the Build-Windows.bat commands for
+        Windows</para>
 
         <programlisting>./Build-Windows.bat x64 vs2022+gcc Setup/HammerDB-Windows.bawt update</programlisting>
 
@@ -1421,6 +1459,7 @@ $ ./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update</programlisting>
 set MYSQL_CONFIG=C:\Program Files\MySQL\MySQL Server 8.0
 set PG_CONFIG=C:\Program Files\PostgreSQL\pgsql\bin
 set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB
+set PYTHONHOME=C:\Users\username\AppData\Local\Programs\Python\Python310
 Build-Windows.bat x64 vs2022+gcc Setup\HammerDB-Windows.bawt update</programlisting>
 
         <para>The first step the build will take is to download the required
@@ -1436,48 +1475,49 @@ Build-Windows.bat x64 vs2022+gcc Setup\HammerDB-Windows.bawt update</programlist
         differs between the OS environments, this is expected and the
         following listing shows a Linux example.</para>
 
-        <para><programlisting>awthemes-9.3.1.7z  libressl-2.6.4.7z  pgtcl-2.1.1.7z    Tk-8.6.12.7z
-awthemes.bawt      libressl.bawt      pgtcl.bawt        Tk.bawt
-clearlooks-1.0.7z  mariatcl-0.1.7z    redis-0.1.7z      tkblt-3.2.23.7z
-clearlooks.bawt    mariatcl.bawt      redis.bawt        tkblt.bawt
-db2tcl-2.0.1.7z    mysqltcl-3.052.7z  Tcl-8.6.12.7z     tksvg-0.5.7z
-db2tcl.bawt        mysqltcl.bawt      Tcl.bawt          tksvg.bawt
-expect-5.45.4.7z   oratcl-4.6.7z      tcltls-1.7.22.7z
-expect.bawt        oratcl.bawt        tcltls.bawt</programlisting>Allow the
-        build to complete. A summary will be given of the packages built and
-        the location of the build given, for example for Linux as
+        <para><programlisting>awthemes-9.3.1.7z  libressl-2.6.4.7z  pgtcl-2.1.1.7z  tcltls-1.7.22.7z
+awthemes.bawt      libressl.bawt      pgtcl.bawt      tcltls.bawt
+clearlooks-1.0.7z  mariatcl-0.1.7z    redis-0.1.7z    Tk-8.6.12.7z
+clearlooks.bawt    mariatcl.bawt      redis.bawt      Tk.bawt
+db2tcl-2.0.1.7z    mysqltcl-3.052.7z  Tcl-8.6.12.7z   tkblt-3.2.23.7z
+db2tcl.bawt        mysqltcl.bawt      Tcl.bawt        tkblt.bawt
+expect-5.45.4.7z   oratcl-4.6.7z      tclpy-0.4.7z    tksvg-0.5.7z
+expect.bawt        oratcl.bawt        tclpy.bawt      tksvg.bawt</programlisting>Allow
+        the build to complete. A summary will be given of the packages built
+        and the location of the build given, for example for Linux as
         follows:</para>
 
-        <programlisting>14:27:08 &gt; Creating Distribution tar.gz in /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution
-14:27:08 &gt;   TarGzip
-               Source directory: /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5
-               Tar file        : /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5-Linux.tar.gz
-14:27:09 &gt; End FinalizeStage
+        <programlisting>17:31:43 &gt; Creating Distribution tar.gz in /opt/HammerDB-master/Build/BawtBuild/Linux/x64/Release/Distribution
+17:31:43 &gt;   TarGzip
+               Source directory: /opt/HammerDB-master/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.6
+               Tar file        : /opt/HammerDB-master/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.6-Linux.tar.gz
+17:31:43 &gt; End FinalizeStage
 
-14:27:09 &gt; Summary
-           Setup file     : /opt/HammerDB/Build/Bawt-2.1.0/Setup/HammerDB-Linux.bawt
-           Build directory: /opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Build
+17:31:43 &gt; Summary
+           Setup file     : /opt/HammerDB-master/Build/Bawt-2.1.0/Setup/HammerDB-Linux.bawt
+           Build directory: /opt/HammerDB-master/Build/BawtBuild/Linux/x64/Release/Build
            Architecture   : x64
            Compilers      : gcc
            Global stages  : Finalize
-           #  : Library Name         Version    Build time Stages
-----------------------------------------------------------------------
-             1: Tcl                  8.6.12     1.52 minutes Clean Extract Configure Compile Distribute
-             2: Tk                   8.6.12     0.36 minutes Clean Extract Configure Compile Distribute
-             3: awthemes             9.3.1      0.00 minutes Clean Extract Configure Compile Distribute
-             4: clearlooks           1.0        0.00 minutes Clean Extract Configure Compile Distribute
-             5: db2tcl               2.0.1      0.10 minutes Clean Extract Configure Compile Distribute
-             6: expect               5.45.4     0.12 minutes Clean Extract Configure Compile Distribute
-             7: libressl             2.6.4      0.99 minutes Clean Extract Configure Compile Distribute
-             8: mariatcl             0.1        0.04 minutes Clean Extract Configure Compile Distribute
-             9: mysqltcl             3.052      0.04 minutes Clean Extract Configure Compile Distribute
-            10: oratcl               4.6        0.05 minutes Clean Extract Configure Compile Distribute
-            11: pgtcl                2.1.1      0.05 minutes Clean Extract Configure Compile Distribute
-            12: redis                0.1        0.00 minutes Clean Extract Configure Compile Distribute
-            13: tcltls               1.7.22     0.14 minutes Clean Extract Configure Compile Distribute
-            14: tkblt                3.2.23     0.21 minutes Clean Extract Configure Compile Distribute
-            15: tksvg                0.5        0.06 minutes Clean Extract Configure Compile Distribute
-----------------------------------------------------------------------
+           #  : Library Name         Version    Build time      Stages
+           ----------------------------------------------------------------------
+             1: Tcl                  8.6.12     1.54 minutes    Clean Extract Configure Compile Distribute
+             2: Tk                   8.6.12     0.36 minutes    Clean Extract Configure Compile Distribute
+             3: awthemes             9.3.1      0.00 minutes    Clean Extract Configure Compile Distribute
+             4: clearlooks           1.0        0.00 minutes    Clean Extract Configure Compile Distribute
+             5: db2tcl               2.0.1      0.10 minutes    Clean Extract Configure Compile Distribute
+             6: expect               5.45.4     0.12 minutes    Clean Extract Configure Compile Distribute
+             7: libressl             2.6.4      0.94 minutes    Clean Extract Configure Compile Distribute
+             8: mariatcl             0.1        0.04 minutes    Clean Extract Configure Compile Distribute
+             9: mysqltcl             3.052      0.04 minutes    Clean Extract Configure Compile Distribute
+            10: oratcl               4.6        0.05 minutes    Clean Extract Configure Compile Distribute
+            11: pgtcl                2.1.1      0.05 minutes    Clean Extract Configure Compile Distribute
+            12: redis                0.1        0.00 minutes    Clean Extract Configure Compile Distribute
+            13: tclpy                0.4        0.01 minutes    Clean Extract Configure Compile Distribute
+            14: tcltls               1.7.22     0.18 minutes    Clean Extract Configure Compile Distribute
+            15: tkblt                3.2.23     0.21 minutes    Clean Extract Configure Compile Distribute
+            16: tksvg                0.5        0.05 minutes    Clean Extract Configure Compile Distribute
+           ----------------------------------------------------------------------
            Total: 3.70 minutes</programlisting>
 
         <para>On Windows a graphical viewer monitors the progress of the
@@ -1500,10 +1540,10 @@ expect.bawt        oratcl.bawt        tcltls.bawt</programlisting>Allow the
         respective dependent packages to be compiled against, however the
         final distribution only includes the Tcl and Tk builds compiled with
         Visual Studio. For this reason the Windows build takes more time than
-        the comparative Linux build. </para>
+        the comparative Linux build.</para>
 
         <para>You now have your own distribution of HammerDB with the latest
-        source code. </para>
+        source code.</para>
 
         <para>This will be in the following directory on Linux:</para>
 
@@ -1521,16 +1561,16 @@ expect.bawt        oratcl.bawt        tcltls.bawt</programlisting>Allow the
         above.</para>
 
         <para>Alongside the HammerDB distribution directory is also a tar.gz
-        file on Linux and zip file on Windows of the directory. </para>
+        file on Linux and zip file on Windows of the directory.</para>
 
         <para>You can run the hammerdbcli librarycheck command to verify that
         the libraries built correctly.</para>
 
         <programlisting>/opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution$ ls
-HammerDB-4.5  HammerDB-4.5-Linux.tar.gz
-$ cd HammerDB-4.5
-/opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.5$ ./hammerdbcli
-HammerDB CLI v4.5
+HammerDB-4.6  HammerDB-4.6-Linux.tar.gz
+$ cd HammerDB-4.6
+/opt/HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution/HammerDB-4.6$ ./hammerdbcli
+HammerDB CLI v4.6
 Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 hammerdb&gt;librarycheck
@@ -1561,13 +1601,13 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
         copyright remains and any distributions must be made under GPLv3
         complying to the following requirements.</para>
 
-        <para>1. Include a copy of the full license text </para>
+        <para>1. Include a copy of the full license text</para>
 
-        <para>2. State all significant changes made to the original software
-        </para>
+        <para>2. State all significant changes made to the original
+        software</para>
 
         <para>3. Make available the original source code when you distribute
-        any binaries based on the licensed work </para>
+        any binaries based on the licensed work</para>
 
         <para>4. Include a copy of the original copyright notice</para>
 
@@ -1829,6 +1869,46 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
         <mediaobject>
           <imageobject>
             <imagedata fileref="docs/images/ch2-16.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </section>
+
+    <section>
+      <title>Deleting the Schema</title>
+
+      <para>When complete to delete the schema, select the Delete option under
+      Schema options.</para>
+
+      <para><figure>
+          <title>Delete Schema</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch2-16a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>Confirm the Schema delete dialog</para>
+
+      <figure>
+        <title>Confirm Deletion</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-16b.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>HammerDB will report that the Schema has been successfully
+      deleted.</para>
+
+      <figure>
+        <title>Schema deleted</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-16c.PNG"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2137,7 +2217,7 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
 
       <para>The goal of HammerDB is to make database performance data open
       source and enable database professionals a fast and low-cost to compare
-      and contrast database systems. HammerDB maintains a list of <link
+      and contrast database systems. HamerDB maintains a list of <link
       xlink:href="https://www.hammerdb.com/benchmarks.html">3rd party
       publications on the HammerDB website</link>.</para>
     </section>
@@ -2462,7 +2542,7 @@ OK (30 msec)
         Administrator tool on Windows and the command database drivers on
         Linux. The driver name should be entered into HammerDB exactly as
         shown in the Data Source Administrator. The default value is “ODBC
-        Driver 17 for SQL Server” for both Windows and Linux.</para>
+        Driver 18 for SQL Server” for both Windows and Linux.</para>
 
         <figure>
           <title>ODBC Drivers</title>
@@ -3148,6 +3228,24 @@ GO
                   </row>
 
                   <row>
+                    <entry>Encrypt Connection</entry>
+
+                    <entry>Provides the same functionality as the "Encrypt
+                    Connection" option in the SQL Server Management Studio
+                    connect dialog. This option is the default with ODBC
+                    Driver 18.</entry>
+                  </row>
+
+                  <row>
+                    <entry>Trust Server Certificate</entry>
+
+                    <entry>Provides the same functionality as the "Trust
+                    Server Certificate" option in the SQL Server Management
+                    Studio connect dialog. This option is the default with
+                    ODBC Driver 18.</entry>
+                  </row>
+
+                  <row>
                     <entry>SQL Server ODBC Driver</entry>
 
                     <entry>The Microsoft SQL ODBC Driver is the ODBC driver
@@ -3490,7 +3588,7 @@ GO
                   the server-side selected cipher is used. Alternatively this
                   option can be used to specify a different cipher. The Cipher
                   used will be reported by each Virtual User on connection. If
-                  the value is shown as {} then SSL is not enabled. </entry>
+                  the value is shown as {} then SSL is not enabled.</entry>
                 </row>
 
                 <row>
@@ -3635,7 +3733,8 @@ GO
                   option. If the SSL CA, SSL Cert and SSL Key entries contain
                   the names of .pem files then the SSL CApath path option will
                   be appended to these file names and used to locate these
-                  files. </entry>
+                  files. If the SSL CApath is an empty string then the SSL
+                  Cert and SSL Key entries will be used only.</entry>
                 </row>
 
                 <row>
@@ -3685,7 +3784,10 @@ GO
                   <entry>The MariaDB user password is the password for the
                   user defined as the MariaDB User. You will need to remember
                   the MariaDB user name and password for running the TPROC-C
-                  driver script after the database is built.</entry>
+                  driver script after the database is built. If SSL
+                  authentication is being used it is also possible to enter
+                  "null" for the password to skip passing a password and use
+                  SSL authentication only.</entry>
                 </row>
 
                 <row>
@@ -3980,6 +4082,50 @@ GO
           </imageobject>
         </mediaobject>
       </figure>
+    </section>
+
+    <section>
+      <title>Deleting the Schema</title>
+
+      <para>To delete the schema for your chosen database, select the Delete
+      schema option from the tree-view or menu.</para>
+
+      <figure>
+        <title>Delete Schema Option</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-16a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Select Yes at the Delete Schema dialog.</para>
+
+      <figure>
+        <title>Delete Schema Dialog</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-16b.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>and confirm that the schema has been deleted.</para>
+
+      <figure>
+        <title>Schema Deleted</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-16c.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Note that you may also delete the schema manually if preferred as
+      detailed in the following section.</para>
 
       <section>
         <title>Deleting or Verifying the Oracle Schema</title>
@@ -4066,7 +4212,6 @@ SQL&gt; select sum(bytes)/1024/1024 as MB from user_segments;
         MB
 ----------
    838.125
-
 </programlisting></para>
       </section>
 
@@ -4398,8 +4543,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
  item       |   100000
  order_line |  3001170
  customer   |   300000
-(9 rows)
-</programlisting></para>
+(9 rows)</programlisting></para>
       </section>
     </section>
 
@@ -4482,7 +4626,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
               determines the number of times that a script will be run in its
               entirety. The total_iterations value is internal to the TPROC-C
               driver script and determines the number of times the internal
-              loop is iterated, i.e. for {set it 0} {$it &lt; $total_iterations}
+              loop is iterated ie for {set it 0} {$it &lt; $total_iterations}
               {incr it} { ... } In other words if total_iterations is set to
               1000 then the executing user will log on once execute 1000
               transactions and then log off. If on the other hand Iterations
@@ -5628,7 +5772,7 @@ Vuser 3:sproc_cur:slev_st connections:{odbcc2 odbcc3} cursors:::oo::Obj28::Stmt:
         and tpcc3 and the connections chosen to round robin between them,
         therefore the actual number of NOPM is 3X that recorded from just the
         standalone connection. In a correctly configured cluster environment
-        it would be the same and the results would be both consistent and
+        it would be the same and the results wouyld be both consistent and
         valid. Be aware that these client side values are recorded during both
         rampup and timed test periods and therefore may not accurately reflect
         the results from a valid timed test.</para>
@@ -5791,7 +5935,7 @@ Starting 4 replica HammerDB instance
 HammerDB CLI v4.1
 Copyright (C) 2003-2021 Steve Shaw
 Type "help" for a list of commands
-Doing wait to connect ....
+Doing wait to connnect ....
 HammerDB CLI v4.1
 Copyright (C) 2003-2021 Steve Shaw
 Primary waiting for all replicas to connect .... 0 out of 4 are connected
@@ -7348,10 +7492,13 @@ New replica joined : {18424 osprey}</programlisting>
     understood learning the command line will be more straightforward. The CLI
     implements equivalent readline functionality for navigation. The CLI can
     be used in conjunction with scripting to build a powerful automated
-    environment. Both the CLI and the GUI run exactly the same commands
-    underneath the interactive layers, for example when operational the
-    Virtual Users run identical workloads and therefore performance
-    measurements between the CLI and GUI are interchangeable.</para>
+    environment. From v4.6 the CLI can run in both interactive and scripting
+    mode using the default Tcl mode or Python accepting the syntax and
+    commands of either language depending on the mode chosen. Both the CLI and
+    the GUI run exactly the same commands underneath the interactive layers,
+    for example when operational the Virtual Users run identical workloads and
+    therefore performance measurements between the CLI and GUI are
+    interchangeable.</para>
 
     <section>
       <title>Start the CLI</title>
@@ -7393,12 +7540,64 @@ hammerdb&gt;</programlisting>
     </section>
 
     <section>
+      <title>Start the CLI in Python</title>
+
+      <para>To use Python as the interactive or scripting language HammerDB
+      will use the system installed Python environment and will be dependent
+      on a particular version as follows:</para>
+
+      <table>
+        <title>Python version dependency</title>
+
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry>Linux</entry>
+
+              <entry>3.8</entry>
+            </row>
+
+            <row>
+              <entry>Red Hat Enterprise Linux</entry>
+
+              <entry>3.6</entry>
+            </row>
+
+            <row>
+              <entry>Windows</entry>
+
+              <entry>3.10</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table>
+
+      <para>Note that if an alternative version is required then HammerDB can
+      be build from source to change the Python version.</para>
+
+      <para>To start the CLI in Python mode run the hammerdbcli command from
+      the command line in Linux specifying the "py" or "python" options.
+      HammerDB will then accept Python syntax commands enabling it to be more
+      closely integrated into existing Python environments.</para>
+
+      <figure>
+        <title>CLI Python</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch8-2aa.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </section>
+
+    <section>
       <title>CLI Commands</title>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB CLI v4.1
-Copyright (C) 2003-2021 Steve Shaw
+      <programlisting>HammerDB CLI v4.6
+Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;help
@@ -7407,6 +7606,7 @@ HammerDB v4.1 CLI Help Index
 Type "help command" for more details on specific commands below
 
         buildschema
+        deleteschema
         clearscript
         customscript
         datagenrun
@@ -7414,11 +7614,11 @@ Type "help command" for more details on specific commands below
         dgset
         diset
         distributescript
+        jobs
         librarycheck
         loadscript
         print
         quit
-        runtimer
         steprun
         switchmode
         tcset
@@ -7431,7 +7631,6 @@ Type "help command" for more details on specific commands below
         vurun
         vuset
         vustatus
-        waittocomplete
 
 
 hammerdb&gt;
@@ -7472,6 +7671,17 @@ hammerdb&gt;
                 to the Yes or no prompt to proceed with the schema build. This
                 is to prevent the stalling of CLI scripts during
                 builds.</entry>
+              </row>
+
+              <row>
+                <entry>deleteschema</entry>
+
+                <entry>Usage: deleteschema</entry>
+
+                <entry>Runs the schema delete for the database and benchmark
+                selected with dbset and variables selected with diset.
+                Equivalent to the Delete command in the graphical
+                interface.</entry>
               </row>
 
               <row>
@@ -7544,6 +7754,20 @@ hammerdb&gt;
               </row>
 
               <row>
+                <entry>jobs (alias job)</entry>
+
+                <entry>Usage: jobs : jobs [jobid|result|timestamp] : jobs
+                format [ text | JSON ] : jobs disable [ 0 | 1 ] : jobs jobid
+                [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]
+                : jobs jobid timing vuid</entry>
+
+                <entry>The jobs command can be used to enable or disable jobs
+                functionality. If enabled it records the output,
+                configuration, result, timing and transactions of a workload
+                for retrieval at a later point identified by a jobid.</entry>
+              </row>
+
+              <row>
                 <entry>librarycheck</entry>
 
                 <entry>Usage: librarycheck</entry>
@@ -7572,7 +7796,7 @@ hammerdb&gt;
                 |vucreated|vustatus|datagen]</entry>
 
                 <entry>prints the current configuration: db: database bm:
-                benchmark dict: the dictionary for the current database, i.e. all
+                benchmark dict: the dictionary for the current database ie all
                 active variables script: the loaded script vuconf: the virtual
                 user configuration vucreated: the number of virtual users
                 created vustatus: the status of the virtual users datagen :
@@ -7586,18 +7810,6 @@ hammerdb&gt;
 
                 <entry>Calls the exit command and terminates the CLI
                 interface</entry>
-              </row>
-
-              <row>
-                <entry>runtimer</entry>
-
-                <entry>Usage: runtimer seconds</entry>
-
-                <entry>Helper routine to run a timer in the main hammerdbcli
-                thread to keep it busy for a period of time whilst the virtual
-                users run a workload. The timer runs asynchronously and will
-                return when vucomplete returns true or the timer reaches the
-                seconds value. Usually followed by vudestroy.</entry>
               </row>
 
               <row>
@@ -7703,7 +7915,8 @@ hammerdb&gt;
 
                 <entry>Send the loaded script to the created virtual users for
                 execution. Equivalent to the Run command in the graphical
-                interface.</entry>
+                interface. In the CLI returns a jobid to access the workloads
+                output and configuration.</entry>
               </row>
 
               <row>
@@ -7713,8 +7926,10 @@ hammerdb&gt;
                 |logtotemp|unique|nobuff|timestamps</entry>
 
                 <entry>Configure the virtual user options. Equivalent to the
-                Virtual User Options window in the graphical
-                interface.</entry>
+                Virtual User Options window in the graphical interface. vuset
+                expects an integer or the string "vcpu". Where "vcpu" is
+                specified the vu value will be set to the number of logical
+                CPUs detected on the system where HammerDB is running.</entry>
               </row>
 
               <row>
@@ -7729,21 +7944,78 @@ hammerdb&gt;
                 successfully or "FINISH FAILED" for virtual users that
                 encountered an error.</entry>
               </row>
-
-              <row>
-                <entry>waittocomplete</entry>
-
-                <entry>Usage: waittocomplete</entry>
-
-                <entry>Helper routine to enable the main hammerdbcli thread to
-                keep it busy until vucomplete is detected. When vucomplete is
-                detected exit is called causing all virtual users and the main
-                hammerdblci thread to terminate. Often used when calling
-                hammerdb from external scripting commands.</entry>
-              </row>
             </tbody>
           </tgroup>
         </table></para>
+
+      <para>Note that the runtimer and waittocomplete parameters have been
+      deprecated from v4.6. For this reason an additional configuration
+      parameter of keepalive_margin with a default value of 10 seconds has
+      been added to generic.xml in the commandline section to modify the
+      additional time that HammerDB will wait after completion before
+      terminating the workload. This can be useful if for example gathering
+      timing data for event driven scaling workloads with a large number of
+      asynchronous clients.</para>
+
+      <section>
+        <title>CLI commands in Python</title>
+
+        <para>The HammerDB commands in Python are identical to the ones in the
+        default Tcl mode except accessed as Python functions with either
+        string or integer arguments.</para>
+
+        <programlisting>C:\Program Files\HammerDB-4.6&gt;hammerdbcli py
+HammerDB CLI v4.6
+Copyright (C) 2003-2022 Steve Shaw
+Type "help()" for a list of commands
+hammerdb&gt;&gt;&gt;help()
+HammerDB v4.6 CLI Help Index
+
+Type "help command" for more details on specific commands below
+
+        buildschema
+        deleteschema
+        clearscript
+        customscript
+        datagenrun
+        dbset
+        dgset
+        diset
+        distributescript
+        jobs
+        librarycheck
+        loadscript
+        print
+        quit
+        steprun
+        switchmode
+        tcset
+        tcstart
+        tcstatus
+        tcstop
+        vucomplete
+        vucreate
+        vudestroy
+        vurun
+        vuset
+        vustatus
+
+hammerdb&gt;&gt;&gt;vuset('vu',10)
+hammerdb&gt;&gt;&gt;
+
+hammerdb&gt;&gt;&gt;print('vuconf')
+Virtual Users = 10
+User Delay(ms) = 500
+Repeat Delay(ms) = 500
+Iterations = 1
+Show Output = 1
+Log Output = 0
+Unique Log Name = 0
+No Log Buffer = 0
+Log Timestamps = 0
+
+hammerdb&gt;&gt;&gt;</programlisting>
+      </section>
     </section>
 
     <section>
@@ -7893,7 +8165,7 @@ tpcc       {
       at the end of the build. Note that exactly as the GUI the build is
       multithreaded with Virtual Users running simultaneously.</para>
 
-      <programlisting>hammerdb&gt;buildschema
+      <programlisting>hhammerdb&gt;buildschema
 Script cleared
 Building 10 Warehouses with 5 Virtual Users, 4 active + 1 Monitor VU(dict value mssqls_num_vu is set to 4)
 Ready to create a 10 Warehouse MS SQL Server TPROC-C schema
@@ -8093,8 +8365,10 @@ set database "tpcc";# Database containing the TPC Schema
       <programlisting>hammerdb&gt;print vucreated
 0 Virtual Users created</programlisting>
 
-      <para>The vuset command is used to configure the Virtual User options,
-      for example the number of Virtual Users to create.</para>
+      <para>The vuset command is used to configure the Virtual User options
+      either by setting an integer or the value vcpu which will set vu to the
+      maximum the logical CPUs on the system, for example the number of
+      Virtual Users to create. </para>
 
       <programlisting>hammerdb&gt;vuset vu 4</programlisting>
 
@@ -8210,7 +8484,7 @@ Script cleared</programlisting>
     </section>
 
     <section>
-      <title>CLI Scripting</title>
+      <title>CLI Scripting in Tcl</title>
 
       <para>The CLI enables a powerful automated test environment through
       scripting in the TCL language. A recommended updated guide to TCL is
@@ -8221,10 +8495,8 @@ Script cleared</programlisting>
       Microsoft SQL Server database that has previously been created. In this
       example the script runs a timed tests for a duration of a minute for 1,
       2 and 4 Virtual Users in a similar manner to autopilot functionality
-      with a timer set to run for 2 minutes. Note that from HammerDB v4.0 the
-      runtimer command is included. The timer is set to a period of time for
-      the test to run, however if vucomplete is set to true during the test it
-      will also return.</para>
+      with a timer set to run for 2 minutes. Note that from HammerDB v4.6 the
+      previous runtimer command has been deprecated.</para>
 
       <programlisting>#!/usr/bin/tclsh
 puts "SETTING CONFIGURATION"
@@ -8240,28 +8512,26 @@ puts "$z VU TEST"
 vuset vu $z
 vucreate
 vurun
-runtimer 120
 vudestroy
-after 5000
 }
-puts "TEST SEQUENCE COMPLETE"</programlisting>
+puts "TEST SEQUENCE COMPLETE"
+</programlisting>
 
       <para>Run the hammerdbcli command and at the prompt type source and the
       name of the script. The following output is produced without further
       intervention whilst also writing the output to the logfile.</para>
 
-      <programlisting>HammerDB CLI v4.1
-Copyright (C) 2003-2021 Steve Shaw
+      <programlisting>C:\Program Files\HammerDB-4.6&gt;hammerdbcli
+HammerDB CLI v4.6
+Copyright (C) 2003-2022 Steve Shaw
 Type "help" for a list of commands
-The xml is well-formed, applying configuration
+Initialized SQLite on-disk database C:/Users/Hdb/AppData/Local/Temp/hammer.DB using existing tables (36,864 KB)
 hammerdb&gt;source cliexample.tcl
 SETTING CONFIGURATION
 Database set to MSSQLServer
-Clearing Script, reload script to activate new setting
-Script cleared
-Changed tpcc:mssqls_driver from test to timed for MSSQLServer
-Changed tpcc:mssqls_rampup from 2 to 0 for MSSQLServer
-Changed tpcc:mssqls_duration from 5 to 1 for MSSQLServer
+Value timed for tpcc:mssqls_driver is the same as existing value timed, no change made
+Value 0 for tpcc:mssqls_rampup is the same as existing value 0, no change made
+Value 1 for tpcc:mssqls_duration is the same as existing value 1, no change made
 Script loaded, Type "print script" to view
 SEQUENCE STARTED
 1 VU TEST
@@ -8275,16 +8545,14 @@ Vuser 1:Beginning rampup time of 0 minutes
 Vuser 1:Rampup complete, Taking start Transaction Count.
 Vuser 1:Timing test period of 1 in minutes
 Vuser 2:RUNNING
-Vuser 2:Processing 1000000 transactions with output suppressed...
+Vuser 2:Processing 10000000 transactions with output suppressed...
 Vuser 1:1 ...,
 Vuser 1:Test complete, Taking end Transaction Count.
-Timer: 1 minutes elapsed
 Vuser 1:1 Active Virtual Users configured
-Vuser 1:TEST RESULT : System achieved 35576 NOPM from 81705 SQL Server TPM
+Vuser 1:TEST RESULT : System achieved 44932 NOPM from 104216 SQL Server TPM
 Vuser 1:FINISHED SUCCESS
 Vuser 2:FINISHED SUCCESS
 ALL VIRTUAL USERS COMPLETE
-runtimer returned after 61 seconds
 vudestroy success
 2 VU TEST
 Vuser 1 created MONITOR - WAIT IDLE
@@ -8298,19 +8566,17 @@ Vuser 1:Beginning rampup time of 0 minutes
 Vuser 1:Rampup complete, Taking start Transaction Count.
 Vuser 1:Timing test period of 1 in minutes
 Vuser 2:RUNNING
-Vuser 2:Processing 1000000 transactions with output suppressed...
+Vuser 2:Processing 10000000 transactions with output suppressed...
 Vuser 3:RUNNING
-Vuser 3:Processing 1000000 transactions with output suppressed...
+Vuser 3:Processing 10000000 transactions with output suppressed...
 Vuser 1:1 ...,
 Vuser 1:Test complete, Taking end Transaction Count.
 Vuser 1:2 Active Virtual Users configured
-Vuser 1:TEST RESULT : System achieved 60364 NOPM from 138633 SQL Server TPM
-Timer: 1 minutes elapsed
+Vuser 1:TEST RESULT : System achieved 68677 NOPM from 159282 SQL Server TPM
 Vuser 1:FINISHED SUCCESS
 Vuser 2:FINISHED SUCCESS
 Vuser 3:FINISHED SUCCESS
 ALL VIRTUAL USERS COMPLETE
-runtimer returned after 60 seconds
 vudestroy success
 4 VU TEST
 Vuser 1 created MONITOR - WAIT IDLE
@@ -8326,56 +8592,780 @@ Vuser 1:Beginning rampup time of 0 minutes
 Vuser 1:Rampup complete, Taking start Transaction Count.
 Vuser 1:Timing test period of 1 in minutes
 Vuser 2:RUNNING
-Vuser 2:Processing 1000000 transactions with output suppressed...
+Vuser 2:Processing 10000000 transactions with output suppressed...
 Vuser 3:RUNNING
-Vuser 3:Processing 1000000 transactions with output suppressed...
+Vuser 3:Processing 10000000 transactions with output suppressed...
 Vuser 4:RUNNING
-Vuser 4:Processing 1000000 transactions with output suppressed...
+Vuser 4:Processing 10000000 transactions with output suppressed...
 Vuser 5:RUNNING
-Vuser 5:Processing 1000000 transactions with output suppressed...
+Vuser 5:Processing 10000000 transactions with output suppressed...
 Vuser 1:1 ...,
 Vuser 1:Test complete, Taking end Transaction Count.
 Vuser 1:4 Active Virtual Users configured
-Vuser 1:TEST RESULT : System achieved 103055 NOPM from 236412 SQL Server TPM
+Vuser 1:TEST RESULT : System achieved 132905 NOPM from 309493 SQL Server TPM
 Vuser 1:FINISHED SUCCESS
-Vuser 2:FINISHED SUCCESS
 Vuser 4:FINISHED SUCCESS
+Vuser 2:FINISHED SUCCESS
 Vuser 5:FINISHED SUCCESS
 Vuser 3:FINISHED SUCCESS
 ALL VIRTUAL USERS COMPLETE
-runtimer returned after 59 seconds
 vudestroy success
 TEST SEQUENCE COMPLETE
 
 hammerdb&gt;</programlisting>
 
       <para>It is a common requirement to also want to drive HammerDB CLI
-      scripts from an external scripting tool. For this reason HammerDB v4.0
-      also includes the command waittocomplete. This can be seen as
-      complementary to runtimer, whereas runtimer will run in the main thread
-      for a specified period of time, waittocomplete will wait for an
-      indeterminate period of time until vucomplete is set to true. Therefore
-      waittocomplete is particularly beneficial for schema builds which may
-      take different periods of time but is complete when all Virtual Users
-      have finished their task. An example automated build is shown.</para>
-
-      <programlisting>#!/bin/tclsh
-dbset db mssqls
-diset tpcc mssqls_count_ware 10
-diset tpcc mssqls_num_vu 4
-diset connection mssqls_server {(local)\SQLDEVELOP}
-vuset logtotemp 1
-print dict
-buildschema
-waittocomplete</programlisting>
-
-      <para>The HammerDB CLI will accept the argument auto to run a specified
-      script automatically.</para>
+      scripts from an external scripting tool. The HammerDB CLI will accept
+      the argument auto to run a specified script automatically by default
+      expecting a filename with a .tcl extension and Tcl syntax.</para>
 
       <programlisting>hammerdbcli.bat auto autorunbuild.tcl</programlisting>
+    </section>
 
-      <para>Using this approach it is possible to build complex test scenarios
-      automating both build and test functionality.</para>
+    <section>
+      <title>CLI Scripting in Python</title>
+
+      <para>When run in Python mode with the py or python argument the
+      HammerDB CLI will accept syntax and commands in Python format with the
+      equivalent script as previous now written as follows:</para>
+
+      <programlisting>print("SETTING CONFIGURATION")
+dbset('db','mssqls')
+diset('tpcc','mssqls_driver','timed')
+diset('tpcc','mssqls_rampup',0)
+diset('tpcc','mssqls_duration',1)
+vuset('logtotemp',1)
+loadscript()
+print("SEQUENCE STARTED")
+for z in [1,2,4]:
+ print(z," VU TEST")
+ vuset('vu',z)
+ vucreate()
+ vurun()
+ vudestroy()
+
+print("TEST SEQUENCE COMPLETE")
+
+</programlisting>
+
+      <para>and run with output as follows:</para>
+
+      <programlisting>C:\Program Files\HammerDB-4.6&gt;hammerdbcli py
+HammerDB CLI v4.6
+Copyright (C) 2003-2022 Steve Shaw
+Type "help()" for a list of commands
+hammerdb&gt;&gt;&gt;source('cliexample.py')
+hammerdb&gt;&gt;&gt;SETTING CONFIGURATION
+Database set to MSSQLServer
+Value timed for tpcc:mssqls_driver is the same as existing value timed, no change made
+Value 0 for tpcc:mssqls_rampup is the same as existing value 0, no change made
+Value 1 for tpcc:mssqls_duration is the same as existing value 1, no change made
+Script loaded, Type "print script" to view
+SEQUENCE STARTED
+1  VU TEST
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Logging activated
+to C:/Users/Hdb/AppData/Local/Temp/hammerdb.log
+2 Virtual Users Created with Monitor VU
+Vuser 1:RUNNING
+Vuser 1:Beginning rampup time of 0 minutes
+Vuser 1:Rampup complete, Taking start Transaction Count.
+Vuser 1:Timing test period of 1 in minutes
+Vuser 2:RUNNING
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 1:1 ...,
+Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:1 Active Virtual Users configured
+Vuser 1:TEST RESULT : System achieved 46171 NOPM from 107258 SQL Server TPM
+Vuser 1:FINISHED SUCCESS
+Vuser 2:FINISHED SUCCESS
+ALL VIRTUAL USERS COMPLETE
+vudestroy success
+2  VU TEST
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Logging activated
+to C:/Users/Hdb/AppData/Local/Temp/hammerdb.log
+3 Virtual Users Created with Monitor VU
+Vuser 1:RUNNING
+Vuser 1:Beginning rampup time of 0 minutes
+Vuser 1:Rampup complete, Taking start Transaction Count.
+Vuser 1:Timing test period of 1 in minutes
+Vuser 2:RUNNING
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 3:RUNNING
+Vuser 3:Processing 10000000 transactions with output suppressed...
+Vuser 1:1 ...,
+Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:2 Active Virtual Users configured
+Vuser 1:TEST RESULT : System achieved 77825 NOPM from 180859 SQL Server TPM
+Vuser 1:FINISHED SUCCESS
+Vuser 3:FINISHED SUCCESS
+Vuser 2:FINISHED SUCCESS
+ALL VIRTUAL USERS COMPLETE
+vudestroy success
+4  VU TEST
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 4 created - WAIT IDLE
+Vuser 5 created - WAIT IDLE
+Logging activated
+to C:/Users/Hdb/AppData/Local/Temp/hammerdb.log
+5 Virtual Users Created with Monitor VU
+Vuser 1:RUNNING
+Vuser 1:Beginning rampup time of 0 minutes
+Vuser 1:Rampup complete, Taking start Transaction Count.
+Vuser 1:Timing test period of 1 in minutes
+Vuser 2:RUNNING
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 3:RUNNING
+Vuser 3:Processing 10000000 transactions with output suppressed...
+Vuser 4:RUNNING
+Vuser 4:Processing 10000000 transactions with output suppressed...
+Vuser 5:RUNNING
+Vuser 5:Processing 10000000 transactions with output suppressed...
+Vuser 1:1 ...,
+Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:4 Active Virtual Users configured
+Vuser 1:TEST RESULT : System achieved 126528 NOPM from 293263 SQL Server TPM
+Vuser 1:FINISHED SUCCESS
+Vuser 2:FINISHED SUCCESS
+Vuser 4:FINISHED SUCCESS
+Vuser 5:FINISHED SUCCESS
+Vuser 3:FINISHED SUCCESS
+ALL VIRTUAL USERS COMPLETE
+vudestroy success
+TEST SEQUENCE COMPLETE
+hammerdb&gt;&gt;&gt;</programlisting>
+
+      <para>It is a common requirement to also want to drive HammerDB CLI
+      scripts from an external scripting tool. The HammerDB CLI will accept
+      the argument auto to run a specified script automatically in python mode
+      expecting a python or py argument followed by a filename with a .py
+      extension and Python syntax.</para>
+
+      <programlisting>hammerdbcli.bat py auto autorunbuild.py</programlisting>
+    </section>
+
+    <section>
+      <title>CLI Jobs Interface</title>
+
+      <para>From v4.6 the HammerDB includes a jobs interface that stores the
+      configuration, output, transaction count and timing data for a HammerDB
+      workload that can be queried at a later point in time. This data is
+      stored in a SQLite database called hammer.DB. The location of this is
+      set in the generic.xml configuration file in the commandline section as
+      sqlite_db, be default this area will be in the Temp directory. </para>
+
+      <programlisting>  &lt;commandline&gt;
+&lt;sqlite_db&gt;TMP&lt;/sqlite_db&gt; 
+        ...
+        &lt;jobsoutput&gt;JSON&lt;/jobsoutput&gt;
+        &lt;jobs_disable&gt;0&lt;/jobs_disable&gt;
+   &lt;/commandline&gt;</programlisting>
+
+      <para>Additional configuration options are jobsoutput that can be set to
+      "text" or "JSON" and jobs_disable that if set to 1 will disable the
+      storage of jobs data.</para>
+
+      <para>Also under the timeprofile section there is the option to
+      individually disable the storage of the timeprofiler when timing data is
+      activated by setting xt_job_storage to 0.</para>
+
+      <programlisting>&lt;timeprofile&gt;
+...
+           &lt;xt_job_storage&gt;1&lt;/xt_job_storage&gt;
+    &lt;/timeprofile&gt;
+</programlisting>
+
+      <para>If jobs are enabled and the database is successfully initialized
+      then a message such as follows will be shown on CLI startup.</para>
+
+      <programlisting>Initialized SQLite on-disk database C:/Users/Hdb/AppData/Local/Temp/hammer.DB using existing tables (36,864 KB)</programlisting>
+
+      <para>If manually deleted HammerDB will recreate a new jobs database.
+      </para>
+
+      <para>If you do not want a jobs repository you can disable it as follows
+      and then restart your database.</para>
+
+      <programlisting>hammerdb&gt;jobs disable 1
+Disabling jobs repository, restart HammerDB to take effect</programlisting>
+
+      <para>Any further jobs commands will receive the following message until
+      re-enabled.</para>
+
+      <programlisting>hammerdb&gt;jobs
+Error: Jobs Disabled: enable with command "jobs disable 0" and restart HammerDB
+
+hammerdb&gt;</programlisting>
+
+      <para>When jobs are running all output will be stored in the local
+      SQLite database and therefore if for example running "test" workloads
+      with large volumes of output or establishing a configuration you may not
+      wish to store jobs output at this time. </para>
+
+      <para>The jobs command has the following functionality:</para>
+
+      <table>
+        <title>Jobs command</title>
+
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry>jobs</entry>
+
+              <entry>list all jobs</entry>
+            </row>
+
+            <row>
+              <entry>jobs [jobid|result|timestamp]</entry>
+
+              <entry>Query all jobs, list the VU output for the jobid, list
+              the results for all jobs, list the timestamp for all
+              jobs.</entry>
+            </row>
+
+            <row>
+              <entry>jobs format [ text|JSON]</entry>
+
+              <entry>Format job output as text or JSON.</entry>
+            </row>
+
+            <row>
+              <entry>jobs disable [ 0 | 1 ]</entry>
+
+              <entry>Disable or re-enable storage of job output after
+              restart.</entry>
+            </row>
+
+            <row>
+              <entry>jobs jobid
+              [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]</entry>
+
+              <entry>Query an individual job, showing the full output,
+              benchmark, database, delete the individual job, show the result,
+              status, transaction count, timestamp, timing and limited output
+              for a single vuid.</entry>
+            </row>
+
+            <row>
+              <entry>jobs jobid timing - Usage: jobs jobid timing vuid</entry>
+
+              <entry>Show the timing data for an individual vuid.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table>
+
+      <para>As an example of jobs functionality if we run the following
+      script.</para>
+
+      <programlisting>dbset db mssqls
+diset tpcc mssqls_driver timed
+diset tpcc mssqls_rampup 2
+diset tpcc mssqls_duration 5
+diset tpcc mssqls_timeprofile true
+loadscript
+vuset vu vcpu
+vucreate
+tcstart
+set jobid [ vurun ]
+tcstop
+vudestroy
+puts "jobid is $jobid"</programlisting>
+
+      <para>It produces output as follows, the vurun command returns the jobid
+      of the job it ran.</para>
+
+      <programlisting>hammerdb&gt;source clijob.tcl
+Database set to MSSQLServer
+Value timed for tpcc:mssqls_driver is the same as existing value timed, no change made
+Value 2 for tpcc:mssqls_rampup is the same as existing value 2, no change made
+Value 5 for tpcc:mssqls_duration is the same as existing value 5, no change made
+Value true for tpcc:mssqls_timeprofile is the same as existing value true, no change made
+Script loaded, Type "print script" to view
+Vuser 1 created MONITOR - WAIT IDLE
+Vuser 2 created - WAIT IDLE
+Vuser 3 created - WAIT IDLE
+Vuser 4 created - WAIT IDLE
+Vuser 5 created - WAIT IDLE
+Vuser 6 created - WAIT IDLE
+Vuser 7 created - WAIT IDLE
+Vuser 8 created - WAIT IDLE
+Vuser 9 created - WAIT IDLE
+9 Virtual Users Created with Monitor VU
+Transaction Counter Started
+Vuser 1:RUNNING
+Vuser 1:Initializing xtprof time profiler
+0 MSSQLServer tpm
+Vuser 1:Beginning rampup time of 2 minutes
+Vuser 2:RUNNING
+Vuser 2:Initializing xtprof time profiler
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 3:RUNNING
+Vuser 3:Initializing xtprof time profiler
+Vuser 3:Processing 10000000 transactions with output suppressed...
+Vuser 4:RUNNING
+Vuser 4:Initializing xtprof time profiler
+Vuser 4:Processing 10000000 transactions with output suppressed...
+Vuser 5:RUNNING
+Vuser 5:Initializing xtprof time profiler
+Vuser 5:Processing 10000000 transactions with output suppressed...
+Vuser 6:RUNNING
+Vuser 6:Initializing xtprof time profiler
+Vuser 6:Processing 10000000 transactions with output suppressed...
+Vuser 7:RUNNING
+Vuser 7:Initializing xtprof time profiler
+Vuser 7:Processing 10000000 transactions with output suppressed...
+Vuser 8:RUNNING
+Vuser 8:Initializing xtprof time profiler
+Vuser 8:Processing 10000000 transactions with output suppressed...
+Vuser 9:RUNNING
+Vuser 9:Initializing xtprof time profiler
+Vuser 9:Processing 10000000 transactions with output suppressed...
+321276 MSSQLServer tpm
+310152 MSSQLServer tpm
+353814 MSSQLServer tpm
+419544 MSSQLServer tpm
+407388 MSSQLServer tpm
+Vuser 1:Rampup 1 minutes complete ...
+416802 MSSQLServer tpm
+311670 MSSQLServer tpm
+397320 MSSQLServer tpm
+410778 MSSQLServer tpm
+393156 MSSQLServer tpm
+411288 MSSQLServer tpm
+Vuser 1:Rampup 2 minutes complete ...
+Vuser 1:Rampup complete, Taking start Transaction Count.
+Vuser 1:Timing test period of 5 in minutes
+361482 MSSQLServer tpm
+388710 MSSQLServer tpm
+381024 MSSQLServer tpm
+309954 MSSQLServer tpm
+385224 MSSQLServer tpm
+394812 MSSQLServer tpm
+Vuser 1:1 ...,
+382122 MSSQLServer tpm
+354288 MSSQLServer tpm
+422178 MSSQLServer tpm
+393714 MSSQLServer tpm
+327702 MSSQLServer tpm
+281616 MSSQLServer tpm
+Vuser 1:2 ...,
+405342 MSSQLServer tpm
+403242 MSSQLServer tpm
+385608 MSSQLServer tpm
+399612 MSSQLServer tpm
+422100 MSSQLServer tpm
+385494 MSSQLServer tpm
+Vuser 1:3 ...,
+393402 MSSQLServer tpm
+320376 MSSQLServer tpm
+412254 MSSQLServer tpm
+411258 MSSQLServer tpm
+394920 MSSQLServer tpm
+400608 MSSQLServer tpm
+Vuser 1:4 ...,
+372738 MSSQLServer tpm
+370362 MSSQLServer tpm
+387276 MSSQLServer tpm
+379926 MSSQLServer tpm
+350820 MSSQLServer tpm
+370398 MSSQLServer tpm
+Vuser 1:5 ...,
+Vuser 1:Test complete, Taking end Transaction Count.
+Vuser 1:8 Active Virtual Users configured
+Vuser 1:TEST RESULT : System achieved 161688 NOPM from 376090 SQL Server TPM
+Vuser 1:Gathering timing data from Active Virtual Users...
+Vuser 8:FINISHED SUCCESS
+Vuser 3:FINISHED SUCCESS
+Vuser 9:FINISHED SUCCESS
+Vuser 6:FINISHED SUCCESS
+293592 MSSQLServer tpm
+Vuser 4:FINISHED SUCCESS
+Vuser 5:FINISHED SUCCESS
+Vuser 2:FINISHED SUCCESS
+Vuser 7:FINISHED SUCCESS
+Vuser 1:Calculating timings...
+Vuser 1:Writing timing data to C:/Users/Steve/AppData/Local/Temp/hdbxtprofile.log
+Vuser 1:FINISHED SUCCESS
+ALL VIRTUAL USERS COMPLETE
+156 MSSQLServer tpm
+Transaction Counter thread running with threadid:tid0000000000001308
+Stopping Transaction Counter
+vudestroy success
+jobid is jobid=637CF9B73C8D03E243636303
+
+hammerdb&gt;</programlisting>
+
+      <para>Querying the job status will return all of the status messages
+      from the Virtual Users showing that the job completed
+      successfully.</para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303 status
+[
+  "0",
+  "Vuser 1:RUNNING",
+  "0",
+  "Vuser 2:RUNNING",
+  "0",
+  "Vuser 3:RUNNING",
+  "0",
+  "Vuser 4:RUNNING",
+  "0",
+  "Vuser 5:RUNNING",
+  "0",
+  "Vuser 6:RUNNING",
+  "0",
+  "Vuser 7:RUNNING",
+  "0",
+  "Vuser 8:RUNNING",
+  "0",
+  "Vuser 9:RUNNING",
+  "0",
+  "Vuser 8:FINISHED SUCCESS",
+  "0",
+  "Vuser 3:FINISHED SUCCESS",
+  "0",
+  "Vuser 9:FINISHED SUCCESS",
+  "0",
+  "Vuser 6:FINISHED SUCCESS",
+  "0",
+  "Vuser 4:FINISHED SUCCESS",
+  "0",
+  "Vuser 5:FINISHED SUCCESS",
+  "0",
+  "Vuser 2:FINISHED SUCCESS",
+  "0",
+  "Vuser 7:FINISHED SUCCESS",
+  "0",
+  "Vuser 1:FINISHED SUCCESS",
+  "0",
+  "ALL VIRTUAL USERS COMPLETE"
+]</programlisting>
+
+      <para>We can also view the result of the job.</para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303 result
+[
+  "637CF9B73C8D03E243636303",
+  "2022-11-22 16:32:55",
+  "8 Active Virtual Users configured",
+  "TEST RESULT : System achieved 161688 NOPM from 376090 SQL Server TPM"
+]</programlisting>
+
+      <para>Querying the job with no further arguments returns the output from
+      all Virtual Users. If a vuid is specified it returns the output from a
+      single VU. </para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303
+[
+  "0",
+  "Vuser 1:RUNNING",
+  "1",
+  "Initializing xtprof time profiler",
+  "1",
+  "Beginning rampup time of 2 minutes",
+  "0",
+  "Vuser 2:RUNNING",
+  "2",
+  "Initializing xtprof time profiler",
+  "2",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 3:RUNNING",
+  "3",
+  "Initializing xtprof time profiler",
+  "3",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 4:RUNNING",
+  "4",
+  "Initializing xtprof time profiler",
+  "4",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 5:RUNNING",
+  "5",
+  "Initializing xtprof time profiler",
+  "5",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 6:RUNNING",
+  "6",
+  "Initializing xtprof time profiler",
+  "6",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 7:RUNNING",
+  "7",
+  "Initializing xtprof time profiler",
+  "7",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 8:RUNNING",
+  "8",
+  "Initializing xtprof time profiler",
+  "8",
+  "Processing 10000000 transactions with output suppressed...",
+  "0",
+  "Vuser 9:RUNNING",
+  "9",
+  "Initializing xtprof time profiler",
+  "9",
+  "Processing 10000000 transactions with output suppressed...",
+  "1",
+  "Rampup 1 minutes complete ...",
+  "1",
+  "Rampup 2 minutes complete ...",
+  "1",
+  "Rampup complete, Taking start Transaction Count.",
+  "1",
+  "Timing test period of 5 in minutes",
+  "1",
+  "1  ...,",
+  "1",
+  "2  ...,",
+  "1",
+  "3  ...,",
+  "1",
+  "4  ...,",
+  "1",
+  "5  ...,",
+  "1",
+  "Test complete, Taking end Transaction Count.",
+  "1",
+  "8 Active Virtual Users configured",
+  "1",
+  "TEST RESULT : System achieved 161688 NOPM from 376090 SQL Server TPM",
+  "1",
+  "Gathering timing data from Active Virtual Users...",
+  "0",
+  "Vuser 8:FINISHED SUCCESS",
+  "0",
+  "Vuser 3:FINISHED SUCCESS",
+  "0",
+  "Vuser 9:FINISHED SUCCESS",
+  "0",
+  "Vuser 6:FINISHED SUCCESS",
+  "0",
+  "Vuser 4:FINISHED SUCCESS",
+  "0",
+  "Vuser 5:FINISHED SUCCESS",
+  "0",
+  "Vuser 2:FINISHED SUCCESS",
+  "0",
+  "Vuser 7:FINISHED SUCCESS",
+  "1",
+  "Calculating timings...",
+  "1",
+  "Writing timing data to C:\/Users\/Steve\/AppData\/Local\/Temp\/hdbxtprofile.log",
+  "0",
+  "Vuser 1:FINISHED SUCCESS",
+  "0",
+  "ALL VIRTUAL USERS COMPLETE"
+]</programlisting>
+
+      <para>We also store the configuration so can query the dict of the job
+      that was run. </para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303 dict
+{
+  "connection": {
+    "mssqls_server": "(local)\\SQLDEVELOP",
+    "mssqls_linux_server": "localhost",
+    "mssqls_tcp": "false",
+    "mssqls_port": "1433",
+    "mssqls_azure": "false",
+    "mssqls_authentication": "windows",
+    "mssqls_linux_authent": "sql",
+    "mssqls_odbc_driver": "ODBC Driver 18 for SQL Server",
+    "mssqls_linux_odbc": "ODBC Driver 18 for SQL Server",
+    "mssqls_uid": "sa",
+    "mssqls_pass": "admin",
+    "mssqls_encrypt_connection": "true",
+    "mssqls_trust_server_cert": "true"
+  },
+  "tpcc": {
+    "mssqls_count_ware": "10",
+    "mssqls_num_vu": "8",
+    "mssqls_dbase": "tpcc",
+    "mssqls_imdb": "false",
+    "mssqls_bucket": "1",
+    "mssqls_durability": "SCHEMA_AND_DATA",
+    "mssqls_total_iterations": "10000000",
+    "mssqls_raiseerror": "false",
+    "mssqls_keyandthink": "false",
+    "mssqls_checkpoint": "false",
+    "mssqls_driver": "timed",
+    "mssqls_rampup": "2",
+    "mssqls_duration": "5",
+    "mssqls_allwarehouse": "false",
+    "mssqls_timeprofile": "true",
+    "mssqls_async_scale": "false",
+    "mssqls_async_client": "10",
+    "mssqls_async_verbose": "false",
+    "mssqls_async_delay": "1000",
+    "mssqls_connect_pool": "false"
+  }
+}</programlisting>
+
+      <para>If we ran the transaction counter we can retrieve the transaction
+      count for the duration of the job.</para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303 tcount
+{"MSSQLServer tpm": {
+    "0": "2022-11-22 16:32:56",
+    "321276": "2022-11-22 16:33:06",
+    "310152": "2022-11-22 16:33:16",
+    "353814": "2022-11-22 16:33:26",
+    "419544": "2022-11-22 16:33:36",
+    "407388": "2022-11-22 16:33:46",
+    "416802": "2022-11-22 16:33:56",
+    "311670": "2022-11-22 16:34:06",
+    "397320": "2022-11-22 16:34:16",
+    "410778": "2022-11-22 16:34:26",
+    "393156": "2022-11-22 16:34:36",
+    "411288": "2022-11-22 16:34:46",
+    "361482": "2022-11-22 16:34:56",
+    "388710": "2022-11-22 16:35:07",
+    "381024": "2022-11-22 16:35:17",
+    "309954": "2022-11-22 16:35:27",
+    "385224": "2022-11-22 16:35:37",
+    "394812": "2022-11-22 16:35:47",
+    "382122": "2022-11-22 16:35:57",
+    "354288": "2022-11-22 16:36:07",
+    "422178": "2022-11-22 16:36:17",
+    "393714": "2022-11-22 16:36:27",
+    "327702": "2022-11-22 16:36:37",
+    "281616": "2022-11-22 16:36:47",
+    "405342": "2022-11-22 16:36:57",
+    "403242": "2022-11-22 16:37:07",
+    "385608": "2022-11-22 16:37:18",
+    "399612": "2022-11-22 16:37:28",
+    "422100": "2022-11-22 16:37:38",
+    "385494": "2022-11-22 16:37:48",
+    "393402": "2022-11-22 16:37:58",
+    "320376": "2022-11-22 16:38:08",
+    "412254": "2022-11-22 16:38:18",
+    "411258": "2022-11-22 16:38:28",
+    "394920": "2022-11-22 16:38:38",
+    "400608": "2022-11-22 16:38:48",
+    "372738": "2022-11-22 16:38:58",
+    "370362": "2022-11-22 16:39:09",
+    "387276": "2022-11-22 16:39:19",
+    "379926": "2022-11-22 16:39:29",
+    "350820": "2022-11-22 16:39:39",
+    "370398": "2022-11-22 16:39:49",
+    "293592": "2022-11-22 16:39:59",
+    "156": "2022-11-22 16:40:09"
+  }}</programlisting>
+
+      <para>and similarly with the timing data.</para>
+
+      <programlisting>hammerdb&gt;job 637CF9B73C8D03E243636303 timing
+{
+  "NEWORD": {
+    "elapsed_ms": "419545.5",
+    "calls": "135219",
+    "min_ms": "0.442",
+    "avg_ms": "1.365",
+    "max_ms": "5233.271",
+    "total_ms": "184527.133",
+    "p99_ms": "3.706",
+    "p95_ms": "2.07",
+    "p50_ms": "1.081",
+    "sd": "155972.059",
+    "ratio_pct": "44.232"
+  },
+  "PAYMENT": {
+    "elapsed_ms": "419545.5",
+    "calls": "135485",
+    "min_ms": "0.371",
+    "avg_ms": "1.009",
+    "max_ms": "465.959",
+    "total_ms": "136748.509",
+    "p99_ms": "3.098",
+    "p95_ms": "1.677",
+    "p50_ms": "0.741",
+    "sd": "36829.979",
+    "ratio_pct": "32.779"
+  },
+  "DELIVERY": {
+    "elapsed_ms": "419545.5",
+    "calls": "13481",
+    "min_ms": "0.922",
+    "avg_ms": "2.882",
+    "max_ms": "4545.935",
+    "total_ms": "38847.119",
+    "p99_ms": "5.296",
+    "p95_ms": "3.074",
+    "p50_ms": "1.879",
+    "sd": "523063.177",
+    "ratio_pct": "9.312"
+  },
+  "SLEV": {
+    "elapsed_ms": "419545.5",
+    "calls": "13435",
+    "min_ms": "0.645",
+    "avg_ms": "2.015",
+    "max_ms": "1279.086",
+    "total_ms": "27074.317",
+    "p99_ms": "2.706",
+    "p95_ms": "1.898",
+    "p50_ms": "1.304",
+    "sd": "220436.794",
+    "ratio_pct": "6.49"
+  },
+  "OSTAT": {
+    "elapsed_ms": "419545.5",
+    "calls": "13548",
+    "min_ms": "0.3",
+    "avg_ms": "1.266",
+    "max_ms": "2386.227",
+    "total_ms": "17153.631",
+    "p99_ms": "2.365",
+    "p95_ms": "1.544",
+    "p50_ms": "0.771",
+    "sd": "235611.656",
+    "ratio_pct": "4.112"
+  }
+}</programlisting>
+
+      <para>By default the jobs output is returned in JSON list and dict
+      format. If preferred this output can be set to text.</para>
+
+      <programlisting>hammerdb&gt;job format text
+Setting jobs output format to text
+
+hammerdb&gt;jobs
+6373B8BC5B2903E243637333
+637CD47BAB9C03E203730313
+637CD5C0CC7A03E203330323
+637CD5FEF1A303E293839323
+637CD63E175A03E203430383
+637CD8FAB8D703E233032343
+637CD9FD537D03E283432383
+637CDA447DC703E293232393
+637CDA82A24E03E233437353
+637CDAC0C74B03E263631323
+637CF5B8DA7503E293739383
+637CF7CA167B03E213436333
+637CF9B73C8D03E243636303
+
+hammerdb&gt;job 637CF9B73C8D03E243636303 bm
+TPC-C
+
+hammerdb&gt;job 637CF9B73C8D03E243636303 timestamp
+637CF9B73C8D03E243636303 {2022-11-22 16:32:55}
+</programlisting>
+
+      <para>The jobs functionality extends HammerDB functionality as an
+      essential repository for your test configuration and results.</para>
     </section>
   </chapter>
 
@@ -8486,7 +9476,7 @@ GET bm: Show the configured benchmark.
 get http://localhost:8080/print?bm / get http://localhost:8080/bm
 {"benchmark": "TPC-C"}
 
-GET dict: Show the dictionary for the current database, i.e. all active variables.
+GET dict: Show the dictionary for the current database ie all active variables.
 get http://localhost:8080/print?dict /  http://localhost:8080/dict
 
 GET script: Show the loaded script.
@@ -10004,7 +10994,7 @@ force_parallel_mode = on
 
         <programlisting># Enable compression by default on create, set to 0 to turn off
 infinidb_compression_type=2
-# Default for string table threshold
+# Default for string table threshhold
 infinidb_stringtable_threshold=20
 # infinidb local query flag
 # infinidb_local_query=1
@@ -10245,6 +11235,24 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
                   <entry>Include the Database name in the connect string
                   typical of Azure connections. To successfully build the
                   schema this database must be created and empty.</entry>
+                </row>
+
+                <row>
+                  <entry>Encrypt Connection</entry>
+
+                  <entry>Provides the same functionality as the "Encrypt
+                  Connection" option in the SQL Server Management Studio
+                  connect dialog. This option is the default with ODBC Driver
+                  18.</entry>
+                </row>
+
+                <row>
+                  <entry>Trust Server Certificate</entry>
+
+                  <entry>Provides the same functionality as the "Trust Server
+                  Certificate" option in the SQL Server Management Studio
+                  connect dialog. This option is the default with ODBC Driver
+                  18.</entry>
                 </row>
 
                 <row>
@@ -12303,7 +13311,7 @@ GEOMEAN 4.011822724
       </figure>
 
       <para>You may also view the data with a text editor to see that the
-      generated data is delimited by a pip character, i.e. “|” and intended NULL
+      generated data is delimited by a pip character ie “|” and intended NULL
       values are represented by blank or empty data.</para>
 
       <figure>
