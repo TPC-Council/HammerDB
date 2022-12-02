@@ -199,7 +199,7 @@ proc myerrorproc { id info } {
         } else {
             if { [ info exists threadsbytid($id) ] } {
                 set vuser [expr $threadsbytid($id) + 1]
-                set info "Error in Virtual User [$vuser]: $info"
+                set info "Error in Virtual User $vuser: $info"
                 putscli $info
                 hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $info)}
             }  else {
