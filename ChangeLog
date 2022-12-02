@@ -1003,7 +1003,7 @@ Version 4.5 Jul 2022
 Pull Requests & Issues
 
 Add SSL options to MySQL #376 
-Fix for o_all_local value update and insert #375 [#374)
+Fix for o_all_local value update and insert #375 (#374)
 SQL Server Schema/Stored Procedure Updates #372 (#371)
 Fix RAISEEROR error in Asynch connect #366 (#365)
 use correct transaction boundaries in MySQL / MariaDB and PG #356
@@ -1016,3 +1016,26 @@ set MariaDB autocommit to 1 for Monitor VU #333
 Move history file tracking to interactive #332 (#320)
 Add SSL connection options to MariaDB #331
 Dependency build automation for Linux #323 (#36)
+
+
+---------------------------------------------------------------------
+
+Version 4.6 Nov 2022
+
+Pull Requests & Issues
+
+Job Storage #453 (#420)
+Add Alternative python CLI interface #452
+Fix for issue #451 (#450)
+Fix for keepalive issue #446 (#445)
+Improve CLI diset error message #437
+Add drop schema functionality #430
+Fix MySQL/MariaDB TX Count Error Handling on Connection #419
+Deprecate CLI runtimer #415
+Add set virtual user to available cpus #409
+Passwordless MariaDB connection #408
+Allow to skip CA for MariaDB #407
+Add SQL Server encrypt connection and trust certificate #406
+Remove reconnect for PostgreSQL on windows #402
+Hdb docker #401
+fix typos #388
