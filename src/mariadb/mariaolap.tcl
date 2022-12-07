@@ -105,9 +105,9 @@ proc CreateDatabase { maria_handler db } {
     return
 }
 
-proc CreateTables { maria_handler maria_tpch_storage_engine } {
-    puts "CREATING TPCH TABLES"
-    set sql(1) "CREATE TABLE `ORDERS` (
+proc GenerateTableQueries { maria_tpch_storage_engine } {
+    set queries {}
+    lset queries 0 "CREATE TABLE `ORDERS` (
 `O_ORDERDATE` DATE NULL,
 `O_ORDERKEY` INT NOT NULL,
 `O_CUSTKEY` INT NOT NULL,
@@ -121,7 +121,7 @@ PRIMARY KEY (`O_ORDERKEY`),
 FOREIGN KEY ORDERS_FK1(`O_CUSTKEY`) REFERENCES CUSTOMER(`C_CUSTKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(2) "CREATE TABLE `PARTSUPP` (
+    lset queries 1 "CREATE TABLE `PARTSUPP` (
 PS_PARTKEY INT NOT NULL,
 PS_SUPPKEY INT NOT NULL,
 PS_SUPPLYCOST INT NOT NULL,
@@ -134,7 +134,7 @@ FOREIGN KEY PARTSUPP_FK1(`PS_PARTKEY`) REFERENCES PART(`P_PARTKEY`),
 FOREIGN KEY PARTSUPP_FK2(`PS_SUPPKEY`) REFERENCES SUPPLIER(`S_SUPPKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(3) "CREATE TABLE `CUSTOMER` (
+    lset queries 2 "CREATE TABLE `CUSTOMER` (
 C_CUSTKEY INT NOT NULL,
 C_MKTSEGMENT CHAR(10) BINARY NULL,
 C_NATIONKEY INT NULL,
@@ -148,7 +148,7 @@ INDEX CUSTOMER_NATION_FKIDX (`C_NATIONKEY`),
 FOREIGN KEY CUSTOMER_FK1(`C_NATIONKEY`) REFERENCES NATION(`N_NATIONKEY`)
 ) 
 ENGINE = $maria_tpch_storage_engine"
-    set sql(4) "CREATE TABLE `PART` (
+    lset queries 3 "CREATE TABLE `PART` (
 P_PARTKEY INT NOT NULL,
 P_TYPE VARCHAR(25) BINARY NULL,
 P_SIZE INT NULL,
@@ -161,7 +161,7 @@ P_COMMENT VARCHAR(23) BINARY NULL,
 PRIMARY KEY (`P_PARTKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(5) "CREATE TABLE `SUPPLIER` (
+    lset queries 4 "CREATE TABLE `SUPPLIER` (
 S_SUPPKEY INT NOT NULL,
 S_NATIONKEY INT NULL,
 S_COMMENT VARCHAR(102) BINARY NULL,
@@ -174,7 +174,7 @@ INDEX SUPPLIER_NATION_FKIDX (`S_NATIONKEY`),
 FOREIGN KEY SUPPLIER_FK1(`S_NATIONKEY`) REFERENCES NATION(`N_NATIONKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(6) "CREATE TABLE `NATION` (
+    lset queries 5 "CREATE TABLE `NATION` (
 N_NATIONKEY INT NOT NULL,
 N_NAME CHAR(25) BINARY NULL,
 N_REGIONKEY INT NULL,
@@ -184,14 +184,14 @@ INDEX NATION_REGIONKEY_FKIDX (`N_REGIONKEY`),
 FOREIGN KEY NATION_FK1(`N_REGIONKEY`) REFERENCES REGION(`R_REGIONKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(7) "CREATE TABLE `REGION` (
+    lset queries 6 "CREATE TABLE `REGION` (
 R_REGIONKEY INT NOT NULL,
 R_NAME CHAR(25) BINARY NULL,
 R_COMMENT VARCHAR(152) BINARY NULL,
 PRIMARY KEY (`R_REGIONKEY`)
 )
 ENGINE = $maria_tpch_storage_engine"
-    set sql(8) "CREATE TABLE `LINEITEM` (
+    lset queries 7 "CREATE TABLE `LINEITEM` (
 L_SHIPDATE DATE NULL,
 L_ORDERKEY INT NOT NULL,
 L_DISCOUNT DECIMAL(10,2) NOT NULL,
@@ -215,8 +215,104 @@ FOREIGN KEY LINEITEM_FK1(`L_ORDERKEY`) REFERENCES ORDERS(`O_ORDERKEY`),
 FOREIGN KEY LINEITEM_FK2(`L_PARTKEY`, `L_SUPPKEY`) REFERENCES PARTSUPP(`PS_PARTKEY`, `PS_SUPPKEY`)
 ) 
 ENGINE = $maria_tpch_storage_engine"
-    for { set i 1 } { $i <= 8 } { incr i } {
-        mariaexec $maria_handler $sql($i)
+    return $queries
+}
+
+proc GenerateColumnstoreTableQueries {} {
+    set queries {}
+    lset queries 0 "CREATE TABLE `ORDERS` (
+`O_ORDERDATE` DATE NULL,
+`O_ORDERKEY` INT NOT NULL,
+`O_CUSTKEY` INT NOT NULL,
+`O_ORDERPRIORITY` CHAR(15) NULL,
+`O_SHIPPRIORITY` INT NULL,
+`O_CLERK` CHAR(15) NULL,
+`O_ORDERSTATUS` CHAR(1) NULL,
+`O_TOTALPRICE` DECIMAL(10,2) NULL,
+`O_COMMENT` VARCHAR(79) NULL
+)
+ENGINE = Columnstore"
+    lset queries 1 "CREATE TABLE `PARTSUPP` (
+PS_PARTKEY INT NOT NULL,
+PS_SUPPKEY INT NOT NULL,
+PS_SUPPLYCOST INT NOT NULL,
+PS_AVAILQTY INT NULL,
+PS_COMMENT VARCHAR(199) NULL
+)
+ENGINE = Columnstore"
+    lset queries 2 "CREATE TABLE `CUSTOMER` (
+C_CUSTKEY INT NOT NULL,
+C_MKTSEGMENT CHAR(10) NULL,
+C_NATIONKEY INT NULL,
+C_NAME VARCHAR(25) NULL,
+C_ADDRESS VARCHAR(40) NULL,
+C_PHONE CHAR(15) NULL,
+C_ACCTBAL DECIMAL(10,2) NULL,
+C_COMMENT VARCHAR(118) NULL
+)
+ENGINE = Columnstore"
+    lset queries 3 "CREATE TABLE `PART` (
+P_PARTKEY INT NOT NULL,
+P_TYPE VARCHAR(25) NULL,
+P_SIZE INT NULL,
+P_BRAND CHAR(10) NULL,
+P_NAME VARCHAR(55) NULL,
+P_CONTAINER CHAR(10) NULL,
+P_MFGR CHAR(25) NULL,
+P_RETAILPRICE DECIMAL(10,2) NULL,
+P_COMMENT VARCHAR(23) NULL
+)
+ENGINE = Columnstore"
+    lset queries 4 "CREATE TABLE `SUPPLIER` (
+S_SUPPKEY INT NOT NULL,
+S_NATIONKEY INT NULL,
+S_COMMENT VARCHAR(102) NULL,
+S_NAME CHAR(25) NULL,
+S_ADDRESS VARCHAR(40) NULL,
+S_PHONE CHAR(15) NULL,
+S_ACCTBAL DECIMAL(10,2) NULL
+)
+ENGINE = Columnstore"
+    lset queries 5 "CREATE TABLE `NATION` (
+N_NATIONKEY INT NOT NULL,
+N_NAME CHAR(25) NULL,
+N_REGIONKEY INT NULL,
+N_COMMENT VARCHAR(152) NULL
+)
+ENGINE = Columnstore"
+    lset queries 6 "CREATE TABLE `REGION` (
+R_REGIONKEY INT NOT NULL,
+R_NAME CHAR(25) NULL,
+R_COMMENT VARCHAR(152) NULL
+)
+ENGINE = Columnstore"
+    lset queries 7 "CREATE TABLE `LINEITEM` (
+L_SHIPDATE DATE NULL,
+L_ORDERKEY INT NOT NULL,
+L_DISCOUNT DECIMAL(10,2) NOT NULL,
+L_EXTENDEDPRICE DECIMAL(10,2) NOT NULL,
+L_SUPPKEY INT NOT NULL,
+L_QUANTITY INT NOT NULL,
+L_RETURNFLAG CHAR(1) NULL,
+L_PARTKEY INT NOT NULL,
+L_LINESTATUS CHAR(1) NULL,
+L_TAX DECIMAL(10,2) NOT NULL,
+L_COMMITDATE DATE NULL,
+L_RECEIPTDATE DATE NULL,
+L_SHIPMODE CHAR(10) NULL,
+L_LINENUMBER INT NOT NULL,
+L_SHIPINSTRUCT CHAR(25) NULL,
+L_COMMENT VARCHAR(44) NULL
+)
+ENGINE = Columnstore"
+    return $queries
+}
+
+proc CreateTables { maria_handler maria_tpch_storage_engine } {
+    puts "CREATING TPCH TABLES"
+    set queries [if { [ string tolower $maria_tpch_storage_engine ] eq "columnstore" } { GenerateColumnstoreTableQueries } else { GenerateTableQueries $maria_tpch_storage_engine } ]
+    foreach sql $queries {
+        mariaexec $maria_handler $sql
     }
     return
 }
@@ -228,7 +324,7 @@ proc mk_region { maria_handler } {
         set comment [ TEXT_1 72 ]
         maria::exec $maria_handler "INSERT INTO REGION (`R_REGIONKEY`,`R_NAME`,`R_COMMENT`) VALUES ('$code' , '$text' , '$comment')"
     }
-    maria::commit $maria_handler 
+    maria::commit $maria_handler
 }
 
 proc mk_nation { maria_handler } {
@@ -675,9 +771,11 @@ proc standsql { maria_handler sql RAISEERROR } {
             error "Query Error : $mariastatus(message)"
         } else { 
             puts $mariastatus(message)
+            return "$mariastatus(message)"
         }
+    } else {
+        return $oput
     }
-    return $oput
 }
 
 proc chk_socket { host socket } {
@@ -1484,3 +1582,4 @@ proc drop_schema { host port socket ssl_options user password dbase } {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase"
     } else { return }
 }
+
