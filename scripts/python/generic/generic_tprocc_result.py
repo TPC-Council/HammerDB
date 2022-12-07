@@ -55,7 +55,7 @@ tclpy.eval(redirect_stdout)
 filename=outputfile
 jobident = getjobid(filename)
 jobid = jobident.strip()
-filename = "".join([filename, ".", jobid, ".out"])
+filename = "".join([filename, "_", jobid, ".out"])
 cmd = 'stdout off ' + filename 
 tclpy.eval(cmd)
 tclpy.eval('puts \"\nTRANSACTION RESPONSE TIMES\"')

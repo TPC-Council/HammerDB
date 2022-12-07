@@ -52,7 +52,7 @@ return $output
 }
 set filename $::outputfile
 set jobid [ getjobid $filename ]
-set filename $filename.$jobid.out
+set filename "${filename}_${jobid}.out"
 stdout off $filename
 puts "HAMMERDB RESULT"
 job $jobid 1

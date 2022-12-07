@@ -23,6 +23,6 @@ vucreate
 set jobid [ vurun ]
 vudestroy
 puts "TEST COMPLETE"
-set of [ open $tmpdir/maria_tproch_jobid w ]
+set of [ open $tmpdir/maria_tproch w ]
 puts $of $jobid
 close $of

@@ -29,6 +29,6 @@ set jobid [ vurun ]
 vudestroy
 tcstop
 puts "TEST COMPLETE"
-set of [ open $tmpdir/maria_tprocc_jobid w ]
+set of [ open $tmpdir/maria_tprocc w ]
 puts $of $jobid
 close $of
