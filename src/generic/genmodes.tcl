@@ -467,7 +467,7 @@ proc distribute { } {
 }
 
 proc remote_command { command } {
-    upvar 1 opmode opmode
+    upvar #0 opmode opmode
     global masterlist
     if { $opmode eq "Primary" } {
         foreach f $masterlist {
