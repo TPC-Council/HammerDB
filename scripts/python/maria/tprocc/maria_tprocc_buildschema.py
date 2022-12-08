@@ -13,10 +13,10 @@ vu = tclpy.eval('numberOfCPUs')
 warehouse = int(vu) * 5
 diset('tpcc','maria_count_ware',warehouse)
 diset('tpcc','maria_num_vu',vu)
-diset('tpcc','maria_user root')
-diset('tpcc','maria_pass maria')
-diset('tpcc','maria_dbase tpcc')
-diset('tpcc','maria_storage_engine innodb')
+diset('tpcc','maria_user','root')
+diset('tpcc','maria_pass','maria')
+diset('tpcc','maria_dbase','tpcc')
+diset('tpcc','maria_storage_engine','innodb')
 if (warehouse >= 200): 
     diset('tpcc','maria_partition','true') 
 else:

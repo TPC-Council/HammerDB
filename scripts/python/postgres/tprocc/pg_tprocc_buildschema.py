@@ -6,17 +6,20 @@ dbset('db','pg')
 dbset('bm','TPC-C')
 
 diset('connection','pg_host','localhost')
-diset('connection','pg_port','3306')
-diset('connection','pg_socket','/tmp/pgdb.sock')
+diset('connection','pg_port','5432')
+diset('connection','pg_sslmode','prefer')
 
 vu = tclpy.eval('numberOfCPUs')
 warehouse = int(vu) * 5
 diset('tpcc','pg_count_ware',warehouse)
 diset('tpcc','pg_num_vu',vu)
-diset('tpcc','pg_user root')
-diset('tpcc','pg_pass pg')
-diset('tpcc','pg_dbase tpcc')
-diset('tpcc','pg_storage_engine innodb')
+diset('tpcc','pg_superuser','postgres')
+diset('tpcc','pg_superuserpass,','postgres')
+diset('tpcc','pg_defaultdbase',' postgres')
+diset('tpcc','pg_user','tpcc')
+diset('tpcc','pg_pass','tpcc')
+diset('tpcc','pg_dbase','tpcc')
+diset('tpcc','pg_tspase','pg_default')
 if (warehouse >= 200): 
     diset('tpcc','pg_partition','true') 
 else:
