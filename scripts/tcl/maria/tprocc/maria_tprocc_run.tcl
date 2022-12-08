@@ -14,8 +14,8 @@ diset tpcc maria_user root
 diset tpcc maria_pass maria
 diset tpcc maria_dbase tpcc
 diset tpcc maria_driver timed
-diset tpcc maria_rampup 1
-diset tpcc maria_duration 1
+diset tpcc maria_rampup 2
+diset tpcc maria_duration 5
 diset tpcc maria_allwarehouse true
 diset tpcc maria_timeprofile true
 
