@@ -1018,8 +1018,8 @@ proc buildschema {} {
     }
     set jobid [guid]
     if { [jobmain $jobid] eq 1 } {
-        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
-        #return
+        puts "Error: Jobid $jobid already exists or error in creating jobid in JOBMAIN table"
+        return
     }
     upvar #0 dbdict dbdict
     foreach { key } [ dict keys $dbdict ] {
@@ -1095,6 +1095,11 @@ proc buildschema {} {
     #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
     #Add automated waittocomplete to buildschema
     _waittocomplete
+     if { [ info exists jobid ] } {
+        return "jobid=$jobid"
+    } else {
+        return
+    }
 }
 
 proc keepalive {} {
