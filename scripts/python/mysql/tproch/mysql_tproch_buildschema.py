@@ -15,7 +15,7 @@ diset('tpch','mysql_num_tpch_threads',vu)
 diset('tpch','mysql_tpch_user','root')
 diset('tpch','mysql_tpch_pass','mysql')
 diset('tpch','mysql_tpch_dbase','tpch')
-diset('tpch','mysql_storage_engine','innodb')
+diset('tpch','mysql_tpch_storage_engine','innodb')
 
 print("SCHEMA BUILD STARTED")
 buildschema()

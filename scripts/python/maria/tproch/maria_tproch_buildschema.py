@@ -15,7 +15,7 @@ diset('tpch','maria_num_tpch_threads',vu)
 diset('tpch','maria_tpch_user','root')
 diset('tpch','maria_tpch_pass','maria')
 diset('tpch','maria_tpch_dbase','tpch')
-diset('tpch','maria_storage_engine','innodb')
+diset('tpch','maria_tpch_storage_engine','innodb')
 
 print("SCHEMA BUILD STARTED")
 buildschema()

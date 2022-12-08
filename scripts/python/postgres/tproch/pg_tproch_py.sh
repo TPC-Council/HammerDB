@@ -1,16 +1,15 @@
 export TMP=`pwd`/TMP
 mkdir -p $TMP
-
 echo "BUILD HAMMERDB SCHEMA"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
-./hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_buildschema.tcl 
+./hammerdbcli py auto ./scripts/python/pg/tproch/pg_tproch_buildschema.py
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "RUN HAMMERDB TEST"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
-./hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_run.tcl 
+./hammerdbcli py auto ./scripts/python/pg/tproch/pg_tproch_run.py
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "DROP HAMMERDB SCHEMA"
-./hammerdbcli auto ./scripts/tcl/postgres//tprocc/pg_tprocc_deleteschema.tcl
+./hammerdbcli py auto ./scripts/python/pg/tproch/pg_tproch_deleteschema.py
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "HAMMERDB RESULT"
-./hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_result.tcl 
+./hammerdbcli py auto ./scripts/python/pg/tproch/pg_tproch_result.py

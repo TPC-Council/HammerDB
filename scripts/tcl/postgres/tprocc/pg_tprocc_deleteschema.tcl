@@ -13,7 +13,9 @@ diset tpcc pg_superuserpass postgres
 diset tpcc pg_defaultdbase postgres
 diset tpcc pg_user tpcc
 diset tpcc pg_pass tpcc
-diset tpcc pg_tspace tpcc
+diset tpcc pg_dbase tpcc
+diset tpcc pg_tspace pg_default
+
 
 puts "DROP SCHEMA STARTED"
 buildschema

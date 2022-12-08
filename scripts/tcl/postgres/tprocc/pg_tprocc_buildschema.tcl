@@ -18,13 +18,15 @@ diset tpcc pg_superuserpass postgres
 diset tpcc pg_defaultdbase postgres
 diset tpcc pg_user tpcc
 diset tpcc pg_pass tpcc
-diset tpcc pg_tspace tpcc
+diset tpcc pg_dbase tpcc
+diset tpcc pg_tspace pg_default
 diset tpcc pg_storedprocs true
 if { $warehouse >= 200 } { 
 diset tpcc pg_partition true 
 	} else {
 diset tpcc pg_partition false 
 	}
+
 puts "SCHEMA BUILD STARTED"
 buildschema
 puts "SCHEMA BUILD COMPLETED"
