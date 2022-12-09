@@ -7,7 +7,7 @@ print("SETTING CONFIGURATION")
 dbset('db','pg')
 dbset('bm','TPC-C')
 
-iset('connection','pg_host','localhost')
+diset('connection','pg_host','localhost')
 diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
 
