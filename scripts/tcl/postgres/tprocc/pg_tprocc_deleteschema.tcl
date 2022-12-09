@@ -18,5 +18,5 @@ diset tpcc pg_tspace pg_default
 
 
 puts "DROP SCHEMA STARTED"
-buildschema
+deleteschema
 puts "DROP SCHEMA COMPLETED"
