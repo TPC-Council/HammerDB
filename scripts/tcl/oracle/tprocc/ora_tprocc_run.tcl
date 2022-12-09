@@ -10,10 +10,6 @@ diset connection system_user system
 diset connection system_password manager
 diset connection instance oracle
 
-set vu [ numberOfCPUs ]
-set warehouse [ expr {$vu * 5} ]
-diset tpcc count_ware $warehouse
-diset tpcc num_vu $vu
 diset tpcc tpcc_user tpcc
 diset tpcc tpcc_pass tpcc
 
