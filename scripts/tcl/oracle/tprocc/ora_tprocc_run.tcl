@@ -13,13 +13,13 @@ diset connection instance oracle
 diset tpcc tpcc_user tpcc
 diset tpcc tpcc_pass tpcc
 
-iset tpcc ora_driver timed
-diset tpcc ora_total_iterations 10000000
-diset tpcc ora_rampup 2
-diset tpcc ora_duration 5
+diset tpcc ora_driver timed
+diset tpcc total_iterations 10000000
+diset tpcc rampup 2
+diset tpcc duration 5
 diset tpcc ora_timeprofile true
 diset tpcc allwarehouse true
-diset tpcc checkpoint true
+diset tpcc checkpoint false
 
 loadscript
 puts "TEST STARTED"

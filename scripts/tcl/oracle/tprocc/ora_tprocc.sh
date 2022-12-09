@@ -10,7 +10,7 @@ echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 ./hammerdbcli auto ./scripts/tcl/oracle/tprocc/ora_tprocc_run.tcl 
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "DROP HAMMERDB SCHEMA"
-./hammerdbcli auto ./scripts/tcl/oracle//tprocc/ora_tprocc_deleteschema.tcl
+./hammerdbcli auto ./scripts/tcl/oracle/tprocc/ora_tprocc_deleteschema.tcl
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "HAMMERDB RESULT"
 ./hammerdbcli auto ./scripts/tcl/oracle/tprocc/ora_tprocc_result.tcl 

@@ -17,5 +17,5 @@ diset tpcc tpcc_pass tpcc
 
 
 puts "DROP SCHEMA STARTED"
-buildschema
+deleteschema
 puts "DROP SCHEMA COMPLETED"

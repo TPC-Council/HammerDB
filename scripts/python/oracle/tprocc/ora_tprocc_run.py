@@ -19,7 +19,7 @@ diset('tpcc','rampup','2')
 diset('tpcc','duration','5')
 diset('tpcc','allwarehouse','true')
 diset('tpcc','ora_timeprofile','true')
-diset('tpcc','checkpoint','true')
+diset('tpcc','checkpoint','false')
 
 loadscript()
 print("TEST STARTED")
