@@ -15,6 +15,7 @@ set vu [ numberOfCPUs ]
 set warehouse [ expr {$vu * 5} ]
 diset tpcc mssqls_count_ware $warehouse
 diset tpcc mssqls_num_vu $vu
+diset tpcc mssqls_dbase tpcc
 
 puts "SCHEMA BUILD STARTED"
 buildschema
