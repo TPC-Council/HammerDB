@@ -6,9 +6,11 @@ puts "SETTING CONFIGURATION"
 dbset db mssqls
 dbset bm TPC-C
 
-diset connection mssqls_server (local)
-diset connection mssqls_authentication windows
-diset connection mssqls_odbc_driver "ODBC Driver 18 for SQL Server"
+iset connection mssqls_linux_server localhost
+diset connection mssqls_uid sa
+diset connection mssqls_pass admin
+diset connection mssqls_linux_authent sql
+diset connection mssqls_linux_odbc "ODBC Driver 18 for SQL Server"
 diset connection mssqls_encrypt_connection true
 diset connection mssqls_trust_server_cert true
 
@@ -17,7 +19,7 @@ diset tpcc mssqls_driver timed
 diset tpcc mssqls_total_iterations 10000000
 diset tpcc mssqls_rampup 2
 diset tpcc mssqls_duration 5
-diset tpcc mssqls_checkpoint true
+diset tpcc mssqls_checkpoint false
 diset tpcc mssqls_timeprofile true
 diset tpcc mssqls_allwarehouse true
 
