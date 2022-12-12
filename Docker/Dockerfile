@@ -60,19 +60,22 @@ RUN apt install -y libpq-dev
 # Install and configuring MySQL client libraries
 RUN apt install -y libmysqlclient21
 
-# Install configure HammerDB-v4.5
-RUN wget https://github.com/TPC-Council/HammerDB/releases/download/v4.5/HammerDB-4.5-Linux.tar.gz && \
-    tar -xvzf HammerDB-4.5-Linux.tar.gz && ls && \
+#Install Python3.8
+RUN apt install -y python3
+
+# Install configure HammerDB-v4.6
+RUN wget https://github.com/TPC-Council/HammerDB/releases/download/v4.6/HammerDB-4.6-Linux.tar.gz && \
+    tar -xvzf HammerDB-4.6-Linux.tar.gz && ls && \
     echo 'export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH'  >> ~/.bashrc && \
     rm -rf *.tar.gz *.zip unixODBC-2.3.9    
-WORKDIR /home/hammerdb/HammerDB-4.5
+WORKDIR /home/hammerdb/HammerDB-4.6
 
 # Adding some sample scripts to be used with HammerDB command line interface
-ADD sample_scripts /home/hammerdb/HammerDB-4.5/sample_scripts
+ADD scripts /home/hammerdb/HammerDB-4.6/scripts
 
 CMD "bash"
 
 #To create an image: Go to the folder containing the Dockerfile 
-#     docker build -t hammerdb-v4.5 .
+#     docker build -t hammerdb-v4.6 .
 #To start a container with that image
-#     docker run -it -name hammerdb hammerdb-v4.5 bash
+#     docker run -it --name hammerdb hammerdb-v4.6 bash
