@@ -26,8 +26,9 @@ Type \"help command\" for more details on specific commands below\n"
                 jobs {
                     putscli "jobs - Usage: jobs"
                     putscli "list all jobs.\n"
-                    putscli {jobs - Usage: jobs [jobid|result|timestamp]}
+                    putscli {jobs - Usage: jobs [jobid|joblist|result|timestamp]}
                     putscli "jobid: list VU output for jobid."
+                    putscli "joblist: returns text list of jobs wthout newlines."
                     putscli "result: list result for all jobs."
                     putscli "timestamp: list starting timestamp for all jobs.\n"
                     putscli {jobs format - Usage: jobs format [ text | JSON ]}

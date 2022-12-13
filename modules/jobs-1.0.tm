@@ -161,18 +161,20 @@ proc jobs { args } {
     1 {
       set param [ lindex [ split  $args ]  0 ]
       if [ string equal $param "result" ] {
-        set alljobs [ jobs ]
+        set alljobs [ getjob "joblist" ]
         foreach jobres $alljobs {
           set res [ getjob "jobid=$jobres&result" ]
           puts $res
         }
       } elseif [ string equal $param "timestamp" ] {
-        set alljobs [ jobs ]
+        set alljobs [ getjob "joblist" ]
         foreach jobres $alljobs {
           set res [ getjob "jobid=$jobres&timestamp" ]
           puts $res
         }	
-      } else {
+      } elseif [ string equal $param "joblist" ] {
+	return [ getjob "joblist" ]
+	} else {
         set jobid $param
         set res [getjob "jobid=$jobid" ]
         puts $res
@@ -287,10 +289,15 @@ if { $val eq 0 } {
 
 proc job_format { format } {
   upvar #0 genericdict genericdict
-if { $format != "text" && [ string toupper $format ] != "JSON" } {
+if { [ string tolower $format ] != "text" && [ string toupper $format ] != "JSON" } {
       puts {Error: Usage: jobs format [ text | JSON ]}
       return
 	} else {
+	if { [ string tolower $format ] == "text" } { 
+		set format "text" 
+		} else  { 
+		set format "JSON" 
+		}
     puts "Setting jobs output format to $format"
     if [catch {dict set genericdict commandline jobsoutput $format} message ] {
       puts "Error: Setting jobs format $message"
@@ -536,7 +543,7 @@ proc getjob { query } {
           } else {
                   puts $jobtiming
 	}
-            return
+            return $jobtiming
           } else {
             puts "No Timing Data for VU $vuid for JOB $jobid: jobs jobid timing vuid"
             return
@@ -549,7 +556,9 @@ proc getjob { query } {
     }
   }
   if { $paramlen eq 1 } {
-    if { [ dict keys $paramdict ] eq "jobid" } {
+    if { [ dict keys $paramdict ] eq "joblist" } {
+    	return [ hdbjobs eval {SELECT DISTINCT JOBID FROM JOBMAIN} ]
+	} elseif { [ dict keys $paramdict ] eq "jobid" } {
       set jobid [ dict get $paramdict jobid ]
       set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid} ]
       if { $query eq 0 } {
@@ -625,24 +634,40 @@ proc getjob { query } {
           puts "Deleted Jobid $jobid"
         } else {
           if { [ dict keys $paramdict ] eq "jobid result" } {
-            if { $bm eq "TPC-C" } { 
-              set tstamp ""
-              set tstamp [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+			set jobbm ""
+                        set jobbm [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                        if { $jobbm != "TPC-C" && $jobbm != "TPC-H" } {
+                            set joboutput [ list $jobid "Jobid has no test result" ]
+			    puts $joboutput
+			    return
+			}
+            set tstamp ""
+            set tstamp [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+            if { $jobbm eq "TPC-C" } { 
               set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
               set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
               set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
             } else {
               set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
+              set geomean [ lsearch -all -glob -inline $joboutput "*Geometric mean*" ]
               set result [ lsearch -all -glob -inline $joboutput "Completed*" ]
             }
             if { $result eq {} } {
               set joboutput [ list $jobid "Jobid has no test result" ]
             } else {
+            if { $jobbm eq "TPC-C" } { 
               if { $activevu eq {} } {
                 set joboutput [ list $jobid $tstamp $result ]
               } else {
                 set joboutput [ list $jobid $tstamp $activevu $result ]
               }
+		} else {
+              if { $geomean eq {} } {
+                set joboutput [ list $jobid $tstamp [ join $result ] ]
+              } else {
+                set joboutput [ list $jobid $tstamp [ join $geomean ] [ join $result ] ]
+              }
+	     }
             }
           } else {
             if { [ dict keys $paramdict ] eq "jobid timing" } {
@@ -667,7 +692,12 @@ proc getjob { query } {
             } else {
               if { [ dict keys $paramdict ] eq "jobid timestamp" } {
                 set joboutput [ hdbjobs eval {SELECT jobid, timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]
-                puts $joboutput
+		set huddleobj [ huddle compile {dict * dict} $joboutput ]
+          	if { $outputformat eq "JSON" } {
+            	puts [ huddle jsondump $huddleobj ]
+          	} else {
+                  puts $joboutput
+		}
                 return
               } else {
                 if { [ dict keys $paramdict ] eq "jobid dict" } {
