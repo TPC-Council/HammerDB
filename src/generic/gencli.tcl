@@ -1472,7 +1472,9 @@ proc _waittocomplete {} {
     }
     set wcomplete "false"
     wait_to_complete_loop
-    vwait timevar
+    if {![ info exists timevar ] || $timevar != 1 } { 
+    	vwait timevar
+    	}
     return
 }
 
@@ -1504,7 +1506,9 @@ proc _runtimer { seconds } {
     set elapsed 0
     set timevar 0
     runtimer_loop $seconds
-    vwait timevar
+    if {![ info exists timevar ] || $timevar != 1 } { 
+    	vwait timevar
+    	}
     return
 }
 
