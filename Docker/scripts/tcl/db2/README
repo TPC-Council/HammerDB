@@ -1,4 +1,0 @@
-
-Placeholder for Db2 scripts.
-Awaiting addition of sqlecrea and sqledrpd APIs to db2tcl to create and delete Db2 database from within HammerDB.  
-Track this issue with https://github.com/TPC-Council/HammerDB/issues/431

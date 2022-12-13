@@ -40,16 +40,16 @@ RUN wget https://download.oracle.com/otn_software/linux/instantclient/215000/ins
   
 # Install and configure IBM Db2 client libraries, 
 # You will need to pre-download IDB Db2 client libraries and place in the local folder
- RUN mkdir -p db2_cli_odbc_driver/odbc_cli
- ADD odbc_cli db2_cli_odbc_driver/odbc_cli/
- RUN apt update && \
-    echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
-    apt -y install libxml2 && \
-    echo 'export DB2_CLI_DRIVER_INSTALL_PATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver"' >> ~/.bashrc && \
-    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
-    echo 'export LIBPATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
-    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/bin"' >> ~/.bashrc && \
-    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/adm"' >>  ~/.bashrc
+# RUN mkdir -p db2_cli_odbc_driver/odbc_cli
+# ADD odbc_cli db2_cli_odbc_driver/odbc_cli/
+# RUN apt update && \
+#    echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
+#    apt -y install libxml2 && \
+#    echo 'export DB2_CLI_DRIVER_INSTALL_PATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver"' >> ~/.bashrc && \
+#    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
+#    echo 'export LIBPATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
+#    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/bin"' >> ~/.bashrc && \
+#    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/adm"' >>  ~/.bashrc
 
 # Install and Configure MariaDB client libraries
 RUN apt install -y libmariadb3
