@@ -1,8 +1,9 @@
 
 This folder provides a Dockerfile for building a HammerDb-v4.6 client container that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, Except for IBM Db2. We intend to add it in Future releases. you can follow the updates here.
-	https://github.com/TPC-Council/HammerDB/issues/404
+	Add Db2 libraries to Docker build
+	Track this issue with TPC-Council#404
 	Awaiting addition of sqlecrea and sqledrpd APIs to db2tcl to create and delete Db2 database from within HammerDB.  
-Track this issue with TPC-Council#431
+	Track this issue with TPC-Council#431
 
 
 To create an image: Go to the folder containing the Dockerfile
