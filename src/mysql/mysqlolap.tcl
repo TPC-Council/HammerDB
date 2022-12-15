@@ -213,6 +213,84 @@ ENGINE = $mysql_tpch_storage_engine"
     return
 }
 
+proc UpdateHeatwaveSchema { mysql_handler } {
+    # https://github.com/oracle/heatwave-tpch/blob/0e4ad91b3f17b5a8fd9f099c94b223d861c09846/HeatWave/secondary_load.sql
+    set sql(1) "
+alter table NATION secondary_engine NULL;
+alter table REGION secondary_engine NULL;
+alter table LINEITEM secondary_engine NULL;
+alter table SUPPLIER secondary_engine NULL;
+alter table ORDERS secondary_engine NULL;
+alter table CUSTOMER secondary_engine NULL;
+alter table PART secondary_engine NULL;
+alter table PARTSUPP secondary_engine NULL;
+"
+   set sql(2) "
+alter table NATION change N_NAME N_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table NATION change N_COMMENT N_COMMENT VARCHAR(152) COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table REGION change R_NAME R_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table REGION change R_COMMENT R_COMMENT VARCHAR(152) COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_NAME P_NAME VARCHAR(55) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_MFGR P_MFGR CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_BRAND P_BRAND CHAR(10) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_TYPE P_TYPE VARCHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_CONTAINER P_CONTAINER CHAR(10) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PART change P_COMMENT P_COMMENT VARCHAR(23) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table SUPPLIER change S_NAME S_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table SUPPLIER change S_ADDRESS S_ADDRESS VARCHAR(40) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table SUPPLIER change S_PHONE S_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(101) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table PARTSUPP change PS_COMMENT PS_COMMENT VARCHAR(199) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_NAME C_NAME VARCHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_ADDRESS C_ADDRESS VARCHAR(40) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_PHONE C_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_MKTSEGMENT C_MKTSEGMENT CHAR(10) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_COMMENT C_COMMENT VARCHAR(117) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table ORDERS change O_ORDERSTATUS O_ORDERSTATUS CHAR(1) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table ORDERS change O_ORDERPRIORITY O_ORDERPRIORITY CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table ORDERS change O_CLERK O_CLERK CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table ORDERS change O_COMMENT O_COMMENT VARCHAR(79) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table LINEITEM change L_RETURNFLAG L_RETURNFLAG CHAR(1) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table LINEITEM change L_LINESTATUS L_LINESTATUS CHAR(1) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table LINEITEM change L_SHIPINSTRUCT L_SHIPINSTRUCT CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table LINEITEM change L_COMMENT L_COMMENT VARCHAR(44) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table LINEITEM change L_SHIPMODE L_SHIPMODE CHAR(10) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+
+alter table CUSTOMER change C_PHONE C_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+alter table ORDERS change O_COMMENT O_COMMENT VARCHAR(79) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+alter table PART change P_NAME P_NAME VARCHAR(55) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+alter table PART change P_TYPE P_TYPE VARCHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(101) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+"
+   set sql(3) "
+alter table LINEITEM change L_ORDERKEY L_ORDERKEY BIGINT NOT NULL COMMENT 'RAPID_COLUMN=DATA_PLACEMENT_KEY=1';
+"
+   set sql(4) "
+alter table NATION secondary_engine RAPID;
+alter table REGION secondary_engine RAPID;
+alter table LINEITEM secondary_engine RAPID;
+alter table SUPPLIER secondary_engine RAPID;
+alter table ORDERS secondary_engine RAPID;
+alter table CUSTOMER secondary_engine RAPID;
+alter table PART secondary_engine RAPID;
+alter table PARTSUPP secondary_engine RAPID;
+"
+    set sql(5) "
+ALTER TABLE LINEITEM SECONDARY_LOAD;
+ALTER TABLE ORDERS SECONDARY_LOAD;
+ALTER TABLE CUSTOMER SECONDARY_LOAD;
+ALTER TABLE SUPPLIER SECONDARY_LOAD;
+ALTER TABLE NATION SECONDARY_LOAD;
+ALTER TABLE REGION SECONDARY_LOAD;
+ALTER TABLE PART SECONDARY_LOAD;
+ALTER TABLE PARTSUPP SECONDARY_LOAD;
+"
+    for { set i 1 } { $i <= 5 } { incr i } {
+        mysqlexec $mysql_handler $sql($i)
+    }
+    return
+}
+
 proc mk_region { mysql_handler } {
     for { set i 1 } { $i <= 5 } {incr i} {
         set code [ expr {$i - 1} ]
@@ -453,7 +531,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } } {
     global mysqlstatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -590,6 +668,9 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
         }
+    }
+    if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
+        UpdateHeatwaveSchema $mysql_handler
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         GatherStatistics $mysql_handler
@@ -912,10 +993,10 @@ proc set_heatwave_query { myposition } {
     set sql(22) "select /*+ set_var(use_secondary_engine=forced) */ cntrycode, count(*) as numcust, sum(c_acctbal) as totacctbal from ( select substr(c_phone, 1, 2) as cntrycode, c_acctbal from CUSTOMER where substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7') and c_acctbal > ( select avg(c_acctbal) from CUSTOMER where c_acctbal > 0.00 and substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7')) and not exists ( select * from ORDERS where o_custkey = c_custkey)) custsale group by cntrycode order by cntrycode"
 }
 
-proc get_query { query_no myposition heatwave } {
+proc get_query { query_no myposition storage_engine } {
     global sql
     if { ![ array exists sql ] } { 
-        if { $heatwave } { 
+        if { [string equal -nocase $storage_engine "Heatwave"] } { 
             set_heatwave_query $myposition
         } else {
             set_mysql_query $myposition
@@ -924,11 +1005,11 @@ proc get_query { query_no myposition heatwave } {
     return $sql($query_no)
 }
 
-proc sub_query { query_no scale_factor myposition heatwave } {
+proc sub_query { query_no scale_factor myposition storage_engine } {
     set P_SIZE_MIN 1
     set P_SIZE_MAX 50
     set MAX_PARAM 10
-    set q2sub [get_query $query_no $myposition $heatwave ]
+    set q2sub [get_query $query_no $myposition $storage_engine ]
     switch $query_no {
         1 {
             regsub -all {:1} $q2sub [RandomNumber 60 120] q2sub
@@ -1111,14 +1192,14 @@ proc sub_query { query_no scale_factor myposition heatwave } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition { heatwave 0 } } {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition storage_engine } {
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set start [ clock seconds ]
         for { set q 1 } { $q <= 22 } { incr q } {
-            set dssquery($q)  [sub_query $q $scale_factor $myposition $heatwave ]
+            set dssquery($q)  [sub_query $q $scale_factor $myposition $storage_engine ]
             if {$q != 15} {
                 ;
             } else {
@@ -1134,7 +1215,7 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
         set o_s_list [ ordered_set $myposition ]
         unset -nocomplain qlist
         set autocommit 0
-        if { $heatwave } { set autocommit 1 }
+        if { [string equal -nocase $storage_engine "Heatwave"] } { set autocommit 1 }
         mysql::autocommit $mysql_handler $autocommit
         for { set q 1 } { $q <= 22 } { incr q } {
             set rowcount 0
@@ -1214,7 +1295,7 @@ if { $refresh_on } {
         set update_sets 1
         set REFRESH_VERBOSE "false"
         do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0 $storage_engine
         do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
@@ -1222,12 +1303,12 @@ if { $refresh_on } {
                 do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ] $storage_engine
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition $storage_engine
 }}
 }
 
