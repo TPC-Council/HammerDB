@@ -12,7 +12,7 @@ proc build_mysqltpch {} {
     #Set it now if it doesn't exist
     if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
-    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} { 
+    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} {
         if { $mysql_num_tpch_threads eq 1 } {
             set maxvuser 1
         } else {
@@ -99,6 +99,11 @@ proc CreateDatabase { mysql_handler db } {
 }
 
 proc CreateTables { mysql_handler mysql_tpch_storage_engine } {
+    # if storage_engine is set to heatwave, create the data with innodb engine first
+    if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
+        set mysql_tpch_storage_engine "InnoDB"
+    }
+
     puts "CREATING TPCH TABLES"
     set sql(1) "CREATE TABLE `ORDERS` (
 `O_ORDERDATE` DATE NULL,
@@ -139,7 +144,7 @@ C_COMMENT VARCHAR(118) BINARY NULL,
 PRIMARY KEY (`C_CUSTKEY`),
 INDEX CUSTOMER_NATION_FKIDX (`C_NATIONKEY`),
 FOREIGN KEY CUSTOMER_FK1(`C_NATIONKEY`) REFERENCES NATION(`N_NATIONKEY`)
-) 
+)
 ENGINE = $mysql_tpch_storage_engine"
     set sql(4) "CREATE TABLE `PART` (
 P_PARTKEY INT NOT NULL,
@@ -205,7 +210,7 @@ INDEX LINEITEM_PART_SUPP_FKIDX (`L_PARTKEY`,`L_SUPPKEY`),
 INDEX IDX_LINEITEM_ORDERKEY_FKIDX (`L_ORDERKEY`),
 FOREIGN KEY LINEITEM_FK1(`L_ORDERKEY`) REFERENCES ORDERS(`O_ORDERKEY`),
 FOREIGN KEY LINEITEM_FK2(`L_PARTKEY`, `L_SUPPKEY`) REFERENCES PARTSUPP(`PS_PARTKEY`, `PS_SUPPKEY`)
-) 
+)
 ENGINE = $mysql_tpch_storage_engine"
     for { set i 1 } { $i <= 8 } { incr i } {
         mysqlexec $mysql_handler $sql($i)
@@ -215,6 +220,7 @@ ENGINE = $mysql_tpch_storage_engine"
 
 proc UpdateHeatwaveSchema { mysql_handler } {
     # https://github.com/oracle/heatwave-tpch/blob/0e4ad91b3f17b5a8fd9f099c94b223d861c09846/HeatWave/secondary_load.sql
+    # With updated varchar values to be compatible with HammerDB schema
     set sql(1) "
 alter table NATION secondary_engine NULL;
 alter table REGION secondary_engine NULL;
@@ -225,7 +231,7 @@ alter table CUSTOMER secondary_engine NULL;
 alter table PART secondary_engine NULL;
 alter table PARTSUPP secondary_engine NULL;
 "
-   set sql(2) "
+  set sql(2) "
 alter table NATION change N_NAME N_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table NATION change N_COMMENT N_COMMENT VARCHAR(152) COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table REGION change R_NAME R_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
@@ -239,13 +245,13 @@ alter table PART change P_COMMENT P_COMMENT VARCHAR(23) NOT NULL COMMENT 'RAPID_
 alter table SUPPLIER change S_NAME S_NAME CHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table SUPPLIER change S_ADDRESS S_ADDRESS VARCHAR(40) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table SUPPLIER change S_PHONE S_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
-alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(101) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(102) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table PARTSUPP change PS_COMMENT PS_COMMENT VARCHAR(199) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table CUSTOMER change C_NAME C_NAME VARCHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table CUSTOMER change C_ADDRESS C_ADDRESS VARCHAR(40) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table CUSTOMER change C_PHONE C_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table CUSTOMER change C_MKTSEGMENT C_MKTSEGMENT CHAR(10) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
-alter table CUSTOMER change C_COMMENT C_COMMENT VARCHAR(117) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
+alter table CUSTOMER change C_COMMENT C_COMMENT VARCHAR(118) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table ORDERS change O_ORDERSTATUS O_ORDERSTATUS CHAR(1) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table ORDERS change O_ORDERPRIORITY O_ORDERPRIORITY CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
 alter table ORDERS change O_CLERK O_CLERK CHAR(15) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=SORTED';
@@ -260,10 +266,10 @@ alter table CUSTOMER change C_PHONE C_PHONE CHAR(15) NOT NULL COMMENT 'RAPID_COL
 alter table ORDERS change O_COMMENT O_COMMENT VARCHAR(79) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
 alter table PART change P_NAME P_NAME VARCHAR(55) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
 alter table PART change P_TYPE P_TYPE VARCHAR(25) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
-alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(101) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
+alter table SUPPLIER change S_COMMENT S_COMMENT VARCHAR(102) NOT NULL COMMENT 'RAPID_COLUMN=ENCODING=VARLEN';
 "
    set sql(3) "
-alter table LINEITEM change L_ORDERKEY L_ORDERKEY BIGINT NOT NULL COMMENT 'RAPID_COLUMN=DATA_PLACEMENT_KEY=1';
+alter table LINEITEM change L_ORDERKEY L_ORDERKEY INT NOT NULL COMMENT 'RAPID_COLUMN=DATA_PLACEMENT_KEY=1';
 "
    set sql(4) "
 alter table NATION secondary_engine RAPID;
@@ -286,7 +292,11 @@ ALTER TABLE PART SECONDARY_LOAD;
 ALTER TABLE PARTSUPP SECONDARY_LOAD;
 "
     for { set i 1 } { $i <= 5 } { incr i } {
-        mysqlexec $mysql_handler $sql($i)
+        set separate [split $sql($i) ";"]
+        foreach query $separate {
+          if { [string trim $query] eq "" } { continue }
+          mysql::exec $mysql_handler $query
+        }
     }
     return
 }
@@ -298,7 +308,7 @@ proc mk_region { mysql_handler } {
         set comment [ TEXT_1 72 ]
         mysql::exec $mysql_handler "INSERT INTO REGION (`R_REGIONKEY`,`R_NAME`,`R_COMMENT`) VALUES ('$code' , '$text' , '$comment')"
     }
-    mysql::commit $mysql_handler 
+    mysql::commit $mysql_handler
 }
 
 proc mk_nation { mysql_handler } {
@@ -345,7 +355,7 @@ proc mk_supp { mysql_handler start_rows end_rows } {
             }
         }
         append supp_val_list ('$suppkey', '$nation_code', '$comment', '$name', '$address', '$phone', '$acctbal')
-        if { ![ expr {$i % 1000} ] || $i eq $end_rows } {    
+        if { ![ expr {$i % 1000} ] || $i eq $end_rows } {
             mysql::exec $mysql_handler "INSERT INTO SUPPLIER (`S_SUPPKEY`, `S_NATIONKEY`, `S_COMMENT`, `S_NAME`, `S_ADDRESS`, `S_PHONE`, `S_ACCTBAL`) VALUES $supp_val_list"
             mysql::commit $mysql_handler
             unset supp_val_list
@@ -371,12 +381,12 @@ proc mk_cust { mysql_handler start_rows end_rows } {
         set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])} ] / 100} ] ]
         set mktsegment [ pick_str_1 msegmnt ]
         set comment [ TEXT_1 73 ]
-        append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment') 
-        if { ![ expr {$i % 1000} ] || $i eq $end_rows } {    
+        append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment')
+        if { ![ expr {$i % 1000} ] || $i eq $end_rows } {
             mysql::exec $mysql_handler "INSERT INTO CUSTOMER (`C_CUSTKEY`, `C_MKTSEGMENT`, `C_NATIONKEY`, `C_NAME`, `C_ADDRESS`, `C_PHONE`, `C_ACCTBAL`, `C_COMMENT`) values $cust_val_list"
             mysql::commit $mysql_handler
             unset cust_val_list
-        } else { 
+        } else {
             append cust_val_list ,
         }
         if { ![ expr {$i % 10000} ] } {
@@ -399,9 +409,9 @@ proc mk_part { mysql_handler start_rows end_rows scale_factor } {
         set mf [ RandomNumber 1 5 ]
         set mfgr [ concat Manufacturer#$mf ]
         set brand [ concat Brand#[ expr {$mf * 10 + [ RandomNumber 1 5 ]} ] ]
-        set type [ pick_str_1 p_types ] 
+        set type [ pick_str_1 p_types ]
         set size [ RandomNumber 1 50 ]
-        set container [ pick_str_1 p_cntr ] 
+        set container [ pick_str_1 p_cntr ]
         set price [ rpb_routine $i ]
         set comment [ TEXT_1 14 ]
         append part_val_list ('$partkey', '$type', '$size', '$brand', '$name', '$container', '$mfgr', '$price', '$comment')
@@ -412,13 +422,13 @@ proc mk_part { mysql_handler start_rows end_rows scale_factor } {
             set psupp_qty [ RandomNumber 1 9999 ]
             set psupp_scost [format %4.2f [ expr {double([ RandomNumber 100 100000 ]) / 100} ] ]
             set psupp_comment [ TEXT_1 124 ]
-            append psupp_val_list ('$psupp_pkey', '$psupp_suppkey', '$psupp_scost', '$psupp_qty', '$psupp_comment') 
-            if { $k<=2 } { 
+            append psupp_val_list ('$psupp_pkey', '$psupp_suppkey', '$psupp_scost', '$psupp_qty', '$psupp_comment')
+            if { $k<=2 } {
                 append psupp_val_list ,
             }
         }
         # end of psupp loop
-        if { ![ expr {$i % 1000} ]  || $i eq $end_rows } {     
+        if { ![ expr {$i % 1000} ]  || $i eq $end_rows } {
             mysql::exec $mysql_handler "INSERT INTO PART (`P_PARTKEY`, `P_TYPE`, `P_SIZE`, `P_BRAND`, `P_NAME`, `P_CONTAINER`, `P_MFGR`, `P_RETAILPRICE`, `P_COMMENT`) VALUES $part_val_list"
             mysql::exec $mysql_handler "INSERT INTO PARTSUPP (`PS_PARTKEY`, `PS_SUPPKEY`, `PS_SUPPLYCOST`, `PS_AVAILQTY`, `PS_COMMENT`) VALUES $psupp_val_list"
             mysql::commit $mysql_handler
@@ -463,7 +473,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
         }
         set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
         set date $ascdate([ expr {$tmp_date - 92001} ])
-        set opriority [ pick_str_1 o_oprio ] 
+        set opriority [ pick_str_1 o_oprio ]
         set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
         set clerk [ concat Clerk#[format %1.9d $clk_num]]
         set comment [ TEXT_1 49 ]
@@ -479,8 +489,8 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
             set lquantity [ RandomNumber 1 50 ]
             set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
             set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-            set linstruct [ pick_str_1 instruct ] 
-            set lsmode [ pick_str_1 smode ] 
+            set linstruct [ pick_str_1 instruct ]
+            set lsmode [ pick_str_1 smode ]
             set lcomment [ TEXT_1 27 ]
             set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
             set rprice [ rpb_routine $lpartkey ]
@@ -489,7 +499,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
             set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
             set s_date [ RandomNumber 1 121 ]
-            set s_date [ expr {$s_date + $tmp_date} ] 
+            set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
             set r_date [ RandomNumber 1 30 ]
@@ -498,21 +508,21 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
             set lcdate $ascdate([ expr {$c_date - 92001} ])
             set lrdate $ascdate([ expr {$r_date - 92001} ])
             if { [ julian $r_date ] <= 95168 } {
-                set lrflag [ pick_str_1 rflag ] 
+                set lrflag [ pick_str_1 rflag ]
             } else { set lrflag "N" }
             if { [ julian $s_date ] <= 95168 } {
                 incr ocnt
                 set lstatus "F"
             } else { set lstatus "O" }
-            append lineit_val_list (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment') 
-            if { $l < [ expr $lcnt - 1 ] } { 
+            append lineit_val_list (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')
+            if { $l < [ expr $lcnt - 1 ] } {
                 append lineit_val_list ,
-            } 
+            }
         }
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        append order_val_list (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
-        if { ![ expr {$i % 1000} ]  || $i eq $end_rows } {     
+        append order_val_list (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')
+        if { ![ expr {$i % 1000} ]  || $i eq $end_rows } {
             mysql::exec $mysql_handler "INSERT INTO LINEITEM (`L_SHIPDATE`, `L_ORDERKEY`, `L_DISCOUNT`, `L_EXTENDEDPRICE`, `L_SUPPKEY`, `L_QUANTITY`, `L_RETURNFLAG`, `L_PARTKEY`, `L_LINESTATUS`, `L_TAX`, `L_COMMITDATE`, `L_RECEIPTDATE`, `L_SHIPMODE`, `L_LINENUMBER`, `L_SHIPINSTRUCT`, `L_COMMENT`) VALUES $lineit_val_list"
             mysql::exec $mysql_handler "INSERT INTO ORDERS (`O_ORDERDATE`, `O_ORDERKEY`, `O_CUSTKEY`, `O_ORDERPRIORITY`, `O_SHIPPRIORITY`, `O_CLERK`, `O_ORDERSTATUS`, `O_TOTALPRICE`, `O_COMMENT`) VALUES $order_val_list"
             mysql::commit $mysql_handler
@@ -531,7 +541,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } } {
+proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } {
     global mysqlstatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -562,7 +572,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         set threaded "MULTI-THREADED"
         set rema [ lassign [ findvuhposition ] myposition totalvirtualusers ]
         switch $myposition {
-            1 { 
+            1 {
                 puts "Monitor Thread"
                 if { $threaded eq "MULTI-THREADED" } {
                     tsv::lappend common thrdlst monitor
@@ -572,7 +582,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
                     tsv::set application load "WAIT"
                 }
             }
-            default { 
+            default {
                 puts "Worker Thread"
                 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             }
@@ -638,8 +648,8 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
                 }
                 after 5000
             }
-    	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
-    	    mysqluse $mysql_handler $db
+            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+            mysqluse $mysql_handler $db
             mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
@@ -650,8 +660,8 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             tsv::lreplace common thrdlst $myposition $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]" 
+            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
             set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
         }
         puts "Start:[ clock format [ clock seconds ] ]"
@@ -662,7 +672,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         puts "Loading PART and PARTSUPP..."
         mk_part $mysql_handler [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact
         puts "Loading ORDERS and LINEITEM..."
-        mk_order $mysql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact 
+        mk_order $mysql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact
         puts "Loading TPCH TABLES COMPLETE"
         puts "End:[ clock format [ clock seconds ] ]"
         if { $threaded eq "MULTI-THREADED" } {
@@ -706,7 +716,7 @@ set total_querysets $mysql_total_querysets ;# Number of query sets before loggin
 set RAISEERROR \"$mysql_raise_query_error\" ;# Exit script on MySQL query error (true or false)
 set VERBOSE \"$mysql_verbose\" ;# Show query text and output
 set scale_factor $mysql_scale_fact ;#Scale factor of the tpc-h schema
-set host \"$mysql_host\" ;# Address of the server hosting MySQL 
+set host \"$mysql_host\" ;# Address of the server hosting MySQL
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
@@ -799,7 +809,7 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
     set O_CKEY_MAX [ expr {150000 * $scale_factor} ]
     set O_ODATE_MAX [ expr {(92001 + 2557 - (121 + 30) - 1)} ]
-    set sfrows [ expr {$scale_factor * 1500} ] 
+    set sfrows [ expr {$scale_factor * 1500} ]
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -823,7 +833,7 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
         }
         set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
         set date $ascdate([ expr {$tmp_date - 92001} ])
-        set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ] 
+        set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ]
         set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
         set clerk [ concat Clerk#[format %1.9d $clk_num]]
         set comment [ TEXT_2 49 ]
@@ -845,8 +855,8 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
             set lquantity [ RandomNumber 1 50 ]
             set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
             set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-            set linstruct [ pick_str_2 [ get_dists instruct ] instruct ] 
-            set lsmode [ pick_str_2 [ get_dists smode ] smode ] 
+            set linstruct [ pick_str_2 [ get_dists instruct ] instruct ]
+            set lsmode [ pick_str_2 [ get_dists smode ] smode ]
             set lcomment [ TEXT_2 27 ]
             set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
             set rprice [ rpb_routine $lpartkey ]
@@ -855,7 +865,7 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
             set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
             set s_date [ RandomNumber 1 121 ]
-            set s_date [ expr {$s_date + $tmp_date} ] 
+            set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
             set r_date [ RandomNumber 1 30 ]
@@ -864,7 +874,7 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
             set lcdate $ascdate([ expr {$c_date - 92001} ])
             set lrdate $ascdate([ expr {$r_date - 92001} ])
             if { [ julian $r_date ] <= 95168 } {
-                set lrflag [ pick_str_2 [ get_dists rflag ] rflag ] 
+                set lrflag [ pick_str_2 [ get_dists rflag ] rflag ]
             } else { set lrflag "N" }
             if { [ julian $s_date ] <= 95168 } {
                 incr ocnt
@@ -872,7 +882,7 @@ proc mk_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_V
             } else { set lstatus "O" }
             mysql::exec $mysql_handler "INSERT INTO LINEITEM (`L_SHIPDATE`, `L_ORDERKEY`, `L_DISCOUNT`, `L_EXTENDEDPRICE`, `L_SUPPKEY`, `L_QUANTITY`, `L_RETURNFLAG`, `L_PARTKEY`, `L_LINESTATUS`, `L_TAX`, `L_COMMITDATE`, `L_RECEIPTDATE`, `L_SHIPMODE`, `L_LINENUMBER`, `L_SHIPINSTRUCT`, `L_COMMENT`) VALUES (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
         }
-        if { ![ expr {$i % 1000} ] } {     
+        if { ![ expr {$i % 1000} ] } {
             mysql::commit $mysql_handler
         }
     }
@@ -886,7 +896,7 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
     #DELETE FROM LINEITEM WHERE L_ORDERKEY = [value]
     #END LOOP
     set refresh 100
-    set sfrows [ expr {$scale_factor * 1500} ] 
+    set sfrows [ expr {$scale_factor * 1500} ]
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -901,7 +911,7 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
         if { $REFRESH_VERBOSE } {
             puts "Refresh Delete Orderkey $okey..."
         }
-        if { ![ expr {$i % 1000} ] } {     
+        if { ![ expr {$i % 1000} ] } {
             mysql::commit $mysql_handler
         }
     }
@@ -909,7 +919,7 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
 }
 
 proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-	set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
     set upd_num 1
     for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
         if {  [ tsv::get application abort ]  } { break }
@@ -995,8 +1005,8 @@ proc set_heatwave_query { myposition } {
 
 proc get_query { query_no myposition storage_engine } {
     global sql
-    if { ![ array exists sql ] } { 
-        if { [string equal -nocase $storage_engine "Heatwave"] } { 
+    if { ![ array exists sql ] } {
+        if { [string equal -nocase $storage_engine "Heatwave"] } {
             set_heatwave_query $myposition
         } else {
             set_mysql_query $myposition
@@ -1058,7 +1068,7 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
         8 {
             set nationlist [ get_dists nations2 ]
             set regionlist [ get_dists regions ]
-            set qc [ pick_str_2 $nationlist nations2 ] 
+            set qc [ pick_str_2 $nationlist nations2 ]
             regsub -all {:1} $q2sub $qc q2sub
             set nind [ lsearch -glob $nationlist [concat \*$qc\*] ]
             switch $nind {
@@ -1122,26 +1132,26 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
             regsub -all {:1} $q2sub $tmp_date q2sub
         }
         16 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             set p_type [ split [ pick_str_2 [ get_dists p_types ] p_types ] ]
             set qc [ concat [ lindex $p_type 0 ] [ lindex $p_type 1 ] ]
             regsub -all {:2} $q2sub $qc q2sub
             set permute [list]
             for {set i 3} {$i <= $MAX_PARAM} {incr i} {
-                set tmp3 [RandomNumber 1 50] 
+                set tmp3 [RandomNumber 1 50]
                 while { [ lsearch $permute $tmp3 ] != -1  } {
-                    set tmp3 [RandomNumber 1 50] 
-                } 
+                    set tmp3 [RandomNumber 1 50]
+                }
                 lappend permute $tmp3
                 set qc $tmp3
                 regsub -all ":$i" $q2sub $qc q2sub
             }
         }
         17 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             set qc [ pick_str_2 [ get_dists p_cntr ] p_cntr ]
             regsub -all {:2} $q2sub $qc q2sub
@@ -1150,14 +1160,14 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
             regsub -all {:1} $q2sub [RandomNumber 312 315] q2sub
         }
         19 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:2} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:3} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             regsub -all {:4} $q2sub [RandomNumber 1 10] q2sub
             regsub -all {:5} $q2sub [RandomNumber 10 20] q2sub
@@ -1178,10 +1188,10 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
         22 {
             set permute [list]
             for {set i 0} {$i <= 7} {incr i} {
-                set tmp3 [RandomNumber 10 34] 
+                set tmp3 [RandomNumber 10 34]
                 while { [ lsearch $permute $tmp3 ] != -1  } {
-                    set tmp3 [RandomNumber 10 34] 
-                } 
+                    set tmp3 [RandomNumber 10 34]
+                }
                 lappend permute $tmp3
                 set qc $tmp3
                 regsub -all ":$i" $q2sub $qc q2sub
@@ -1195,6 +1205,7 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
 proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition storage_engine } {
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set start [ clock seconds ]
@@ -1230,9 +1241,9 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
                 set value [expr {double($t1-$t0)/1000}]
                 set rowcount [ llength $oput ]
                 if { $rowcount > 0 } { lappend qlist $value }
-                if {$VERBOSE} { 
+                if {$VERBOSE} {
                     puts "query $qos returned $rowcount rows"
-                    printlist $oput 
+                    printlist $oput
                 }
                 puts "query $qos completed in $value seconds"
             } else {
@@ -1243,7 +1254,7 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
                             if { $mysqlstatus(code)  } {
                                 if { $RAISEERROR } {
                                     error "Query Error : $mysqlstatus(message)"
-                                } else { 
+                                } else {
                                     puts $mysqlstatus(message)
                                 }
                             }
@@ -1254,7 +1265,7 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
                         if { $mysqlstatus(code)  } {
                             if { $RAISEERROR } {
                                 error "Query Error : $mysqlstatus(message)"
-                            } else { 
+                            } else {
                                 puts $mysqlstatus(message)
                             }
                         }
@@ -1262,7 +1273,7 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
                         set value [expr {double($t1-$t0)/1000}]
                         set rowcount [ llength $oput ]
                         if { $rowcount > 0 } { lappend qlist $value }
-                        if {$VERBOSE} { 
+                        if {$VERBOSE} {
                             puts "query $qos returned $rowcount rows"
                             printlist $oput
                         }
@@ -1308,7 +1319,7 @@ if { $refresh_on } {
         }
     }
 } else {
-    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition $storage_engine
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition "heatwave" # TODO: get from variable
 }}
 }
 
@@ -1333,7 +1344,7 @@ proc loadmysqlcloud {} {
 set library $library ;# MySQL Library
 set RAISEERROR \"$mysql_raise_query_error\" ;# Exit script on MySQL query error (true or false)
 set VERBOSE \"$mysql_verbose\" ;# Show query text and output
-set host \"$mysql_host\" ;# Address of the server hosting MySQL 
+set host \"$mysql_host\" ;# Address of the server hosting MySQL
 set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
@@ -1456,7 +1467,7 @@ proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE
         puts "$rowcount rows returned in $value seconds"
         if {$VERBOSE} { printlist $oput }
         if { $rowcount > 0 } { lappend qlist $value }
-    } 
+    }
     set end [ clock seconds ]
     set wall [ expr $end - $start ]
     puts "Completed query set in $wall seconds"
