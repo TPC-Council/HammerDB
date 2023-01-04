@@ -739,6 +739,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { mysql_handler sql RAISEERROR } {
     global mysqlstatus
+    set oput ""
     catch { set oput [ join [ mysql::sel $mysql_handler "$sql" -list ] ] }
     if { $mysqlstatus(code)  } {
         if { $RAISEERROR } {
@@ -1212,7 +1213,6 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set engine [ standsql $mysql_handler "SELECT case when count(NAME) = 8 then 'Heatwave' else 'InnoDB' end as hw_loaded_all FROM performance_schema.rpd_table_id where NAME like '$db.%'" FALSE ]
-        puts "Using engine $engine"
         set start [ clock seconds ]
         for { set q 1 } { $q <= 22 } { incr q } {
             set dssquery($q)  [sub_query $q $scale_factor $myposition $engine ]
@@ -1365,6 +1365,7 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc standsql { mysql_handler sql RAISEERROR } {
     global mysqlstatus
+    set oput ""
     catch { set oput [ join [ mysql::sel $mysql_handler "$sql" -list ] ] }
     if { $mysqlstatus(code)  } {
         if { $RAISEERROR } {
