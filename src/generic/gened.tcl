@@ -3050,11 +3050,7 @@ proc select_rdbms { preselect } {
         if { $oldbm eq $bm && $oldrdbms eq $rdbms } { 
             tk_messageBox -title "Confirm Benchmark" -message "No Change Made : [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
         } else {
-            if { $rdbms eq "Trafodion" } {
-                .ed_mainFrame.buttons.pencil configure -state disabled 
-            } else {
-                .ed_mainFrame.buttons.pencil configure -state normal 
-            }
+            .ed_mainFrame.buttons.pencil configure -state normal 
             set oldbm $bm
             set oldrdbms $rdbms
             disable_bm_menu

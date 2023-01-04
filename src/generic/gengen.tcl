@@ -15,7 +15,6 @@ proc gendata_tpcc {} {
         "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
         "Redis" { set db "redis" }
-        "Trafodion" { set db "traf" }
     }
     set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPROC-C schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
@@ -471,7 +470,6 @@ proc gendata_tpch {} {
         "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
         "Redis" { set db "redis" }
-        "Trafodion" { set db "traf" }
     }
     set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPROC-H schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
