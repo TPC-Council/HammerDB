@@ -99,11 +99,6 @@ proc CreateDatabase { mysql_handler db } {
 }
 
 proc CreateTables { mysql_handler mysql_tpch_storage_engine } {
-    # if storage_engine is set to heatwave, create the data with innodb engine first
-    if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
-        set mysql_tpch_storage_engine "InnoDB"
-    }
-
     puts "CREATING TPCH TABLES"
     set sql(1) "CREATE TABLE `ORDERS` (
 `O_ORDERDATE` DATE NULL,
@@ -597,7 +592,12 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         CreateDatabase $mysql_handler $db
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
-        CreateTables $mysql_handler $mysql_tpch_storage_engine
+        # If storage_engine is set to heatwave, first, create the db schema using InnoDB and migrate it after data generation.
+        if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
+            CreateTables $mysql_handler "InnoDB"
+        } else {
+            CreateTables $mysql_handler $mysql_tpch_storage_engine
+        }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -679,6 +679,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             tsv::lreplace common thrdlst $myposition $myposition done
         }
     }
+    # Update schema and set secondary_engine. Start data migration to Heatwave.
     if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
         UpdateHeatwaveSchema $mysql_handler
     }
@@ -1003,10 +1004,10 @@ proc set_heatwave_query { myposition } {
     set sql(22) "select /*+ set_var(use_secondary_engine=forced) */ cntrycode, count(*) as numcust, sum(c_acctbal) as totacctbal from ( select substr(c_phone, 1, 2) as cntrycode, c_acctbal from CUSTOMER where substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7') and c_acctbal > ( select avg(c_acctbal) from CUSTOMER where c_acctbal > 0.00 and substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7')) and not exists ( select * from ORDERS where o_custkey = c_custkey)) custsale group by cntrycode order by cntrycode"
 }
 
-proc get_query { query_no myposition storage_engine } {
+proc get_query { query_no myposition engine } {
     global sql
     if { ![ array exists sql ] } {
-        if { [string equal -nocase $storage_engine "Heatwave"] } {
+        if { [string equal -nocase $engine "Heatwave"] } {
             set_heatwave_query $myposition
         } else {
             set_mysql_query $myposition
@@ -1015,11 +1016,11 @@ proc get_query { query_no myposition storage_engine } {
     return $sql($query_no)
 }
 
-proc sub_query { query_no scale_factor myposition storage_engine } {
+proc sub_query { query_no scale_factor myposition engine } {
     set P_SIZE_MIN 1
     set P_SIZE_MAX 50
     set MAX_PARAM 10
-    set q2sub [get_query $query_no $myposition $storage_engine ]
+    set q2sub [get_query $query_no $myposition $engine ]
     switch $query_no {
         1 {
             regsub -all {:1} $q2sub [RandomNumber 60 120] q2sub
@@ -1202,15 +1203,16 @@ proc sub_query { query_no scale_factor myposition storage_engine } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition storage_engine } {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
 
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
+        set engine [ standsql $maria_handler "select distinct(engine) from information_Schema.tables where table_schema = '$db'" FALSE ]
         set start [ clock seconds ]
         for { set q 1 } { $q <= 22 } { incr q } {
-            set dssquery($q)  [sub_query $q $scale_factor $myposition $storage_engine ]
+            set dssquery($q)  [sub_query $q $scale_factor $myposition $engine ]
             if {$q != 15} {
                 ;
             } else {
@@ -1226,7 +1228,7 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
         set o_s_list [ ordered_set $myposition ]
         unset -nocomplain qlist
         set autocommit 0
-        if { [string equal -nocase $storage_engine "Heatwave"] } { set autocommit 1 }
+        if { [string equal -nocase $engine "Heatwave"] } { set autocommit 1 }
         mysql::autocommit $mysql_handler $autocommit
         for { set q 1 } { $q <= 22 } { incr q } {
             set rowcount 0
@@ -1306,7 +1308,7 @@ if { $refresh_on } {
         set update_sets 1
         set REFRESH_VERBOSE "false"
         do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0 $storage_engine
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
         do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
@@ -1314,12 +1316,12 @@ if { $refresh_on } {
                 do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ] $storage_engine
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition "heatwave" # TODO: get from variable
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
 }}
 }
 
