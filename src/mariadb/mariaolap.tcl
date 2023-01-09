@@ -985,7 +985,7 @@ proc do_refresh { host port socket ssl_options user password db scale_factor upd
 
 #########################
 #TPCH QUERY GENERATION
-proc set_query { myposition } {
+proc set_query { myposition engine } {
     global sql
     set sql(1) "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= date '1998-12-01' - interval ':1' day group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus"
     set sql(2) "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment from PART, SUPPLIER, PARTSUPP, NATION, REGION where p_partkey = ps_partkey and s_suppkey = ps_suppkey and p_size = :1 and p_type like '%:2' and s_nationkey = n_nationkey and n_regionkey = r_regionkey and r_name = ':3' and ps_supplycost = ( select min(ps_supplycost) from PARTSUPP, SUPPLIER, NATION, REGION where p_partkey = ps_partkey and s_suppkey = ps_suppkey and s_nationkey = n_nationkey and n_regionkey = r_regionkey and r_name = ':3') order by s_acctbal desc, n_name, s_name, p_partkey limit 100"
@@ -1009,19 +1009,25 @@ proc set_query { myposition } {
     set sql(20) "select s_name, s_address from SUPPLIER, NATION where s_suppkey in ( select ps_suppkey from PARTSUPP where ps_partkey in ( select p_partkey from PART where p_name like ':1%') and ps_availqty > ( select 0.5 * sum(l_quantity) from LINEITEM where l_partkey = ps_partkey and l_suppkey = ps_suppkey and l_shipdate >= date ':2' and l_shipdate < date ':2' + interval '1' year)) and s_nationkey = n_nationkey and n_name = ':3' order by s_name"
     set sql(21) "select s_name, count(*) as numwait from SUPPLIER, LINEITEM l1, ORDERS, NATION where s_suppkey = l1.l_suppkey and o_orderkey = l1.l_orderkey and o_orderstatus = 'F' and l1.l_receiptdate > l1.l_commitdate and exists ( select * from LINEITEM l2 where l2.l_orderkey = l1.l_orderkey and l2.l_suppkey <> l1.l_suppkey) and not exists ( select * from LINEITEM l3 where l3.l_orderkey = l1.l_orderkey and l3.l_suppkey <> l1.l_suppkey and l3.l_receiptdate > l3.l_commitdate) and s_nationkey = n_nationkey and n_name = ':1' group by s_name order by numwait desc, s_name limit 100"
     set sql(22) "select cntrycode, count(*) as numcust, sum(c_acctbal) as totacctbal from ( select substr(c_phone, 1, 2) as cntrycode, c_acctbal from CUSTOMER where substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7') and c_acctbal > ( select avg(c_acctbal) from CUSTOMER where c_acctbal > 0.00 and substr(c_phone, 1, 2) in (':1', ':2', ':3', ':4', ':5', ':6', ':7')) and not exists ( select * from ORDERS where o_custkey = c_custkey)) custsale group by cntrycode order by cntrycode"
+
+    if { [string equal -nocase $engine "Columnstore" ] } {
+        set sql(2) "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment from PART, SUPPLIER, PARTSUPP pso, NATION, REGION where p_partkey = pso.ps_partkey and s_suppkey = pso.ps_suppkey and p_size = :1 and p_type like '%:2' and s_nationkey = n_nationkey and n_regionkey = r_regionkey and r_name = ':3' and pso.ps_supplycost = ( select min(psi.ps_supplycost) from PARTSUPP psi, SUPPLIER, NATION, REGION where pso.ps_partkey = psi.ps_partkey and s_suppkey = psi.ps_suppkey and s_nationkey = n_nationkey and n_regionkey = r_regionkey and r_name = ':3') order by s_acctbal desc, n_name, s_name, p_partkey limit 100"
+        set sql(17) "select sum(l_extendedprice) / 7.0 as avg_yearly from LINEITEM lo, PART where p_partkey = l_partkey and p_brand = ':1' and p_container = ':2' and l_quantity < ( select 0.2 * avg(l_quantity) from LINEITEM where l_partkey = lo.l_partkey)"
+        set sql(19) "select sum(l_extendedprice* (1 - l_discount)) as revenue from LINEITEM, PART where p_partkey = l_partkey and (( p_brand = ':1' and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG') and l_quantity >= :4 and l_quantity <= :4 + 10 and p_size between 1 and 5 and l_shipmode in ('AIR', 'AIR REG') and l_shipinstruct = 'DELIVER IN PERSON') or ( p_brand = ':2' and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK') and l_quantity >= :5 and l_quantity <= :5 + 10 and p_size between 1 and 10 and l_shipmode in ('AIR', 'AIR REG') and l_shipinstruct = 'DELIVER IN PERSON') or ( p_brand = ':3' and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG') and l_quantity >= :6 and l_quantity <= :6 + 10 and p_size between 1 and 15 and l_shipmode in ('AIR', 'AIR REG') and l_shipinstruct = 'DELIVER IN PERSON'))"
+    }
 }
 
-proc get_query { query_no myposition } {
+proc get_query { query_no myposition engine } {
     global sql
-    if { ![ array exists sql ] } { set_query $myposition }
+    if { ![ array exists sql ] } { set_query $myposition $engine }
     return $sql($query_no)
 }
 
-proc sub_query { query_no scale_factor myposition } {
+proc sub_query { query_no scale_factor myposition engine } {
     set P_SIZE_MIN 1
     set P_SIZE_MAX 50
     set MAX_PARAM 10
-    set q2sub [get_query $query_no $myposition ]
+    set q2sub [get_query $query_no $myposition $engine ]
     switch $query_no {
         1 {
             regsub -all {:1} $q2sub [RandomNumber 60 120] q2sub
@@ -1210,9 +1216,10 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
+        set engine [ standsql $maria_handler "select distinct(engine) from information_Schema.tables where table_schema = '$db'" FALSE ]
         set start [ clock seconds ]
         for { set q 1 } { $q <= 22 } { incr q } {
-            set dssquery($q)  [sub_query $q $scale_factor $myposition ]
+            set dssquery($q)  [sub_query $q $scale_factor $myposition $engine ]
             if {$q != 15} {
                 ;
             } else {
