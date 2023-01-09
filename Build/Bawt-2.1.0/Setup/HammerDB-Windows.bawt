@@ -15,6 +15,7 @@ Setup twapi		twapi-4.6.0.7z		       twapi.bawt
 Setup tksvg             tksvg-0.5.7z                   tksvg.bawt
 Setup tkblt             tkblt-3.2.23.7z                tkblt.bawt
 Setup tclpy             tclpy-0.4.7z                   tclpy_NMake.bawt
+Setup tkpath		tkpath-0.3.3.7z		       tkpath.bawt
 # Compiled Tcl Database interface packages.
 Setup oratcl            oratcl-4.6.7z                  oratcl_NMake.bawt	
 Setup mariatcl          mariatcl-0.1.7z                mariatcl_NMake.bawt
