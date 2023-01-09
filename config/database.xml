@@ -59,14 +59,4 @@
 	<commands>redis</commands>
 </redis>
 -->
-<!--Trafodion deprecated, uncomment to enable as unsupported
-<trafodion>
-	<name>Trafodion</name>
-	<description>Trafodion</description>
-	<prefix>traf</prefix>
-	<library>tdbc::odbc</library>
-	<workloads>TPROC-C</workloads>
-	<commands>tdbc::odbc</commands>
-</trafodion>
--->
 </database>
