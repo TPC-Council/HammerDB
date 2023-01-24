@@ -44,6 +44,7 @@
             <tc_log_to_temp>0</tc_log_to_temp>
 	    <tc_unique_log_name>0</tc_unique_log_name>
 	    <tc_log_timestamps>0</tc_log_timestamps>
+	    <tc_graph_ribbon>false</tc_graph_ribbon>
 	</settings>
     </transaction_counter>
     <metrics>

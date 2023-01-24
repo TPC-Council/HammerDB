@@ -857,26 +857,64 @@ proc transcount { } {
     .ed_mainFrame.notebook select .ed_mainFrame.tc 
     set old 0
     global win_scale_fact
-    set scale_width [ expr {(525 / 1.333333) * $win_scale_fact} ]
+    global tc_scale
+    unset -nocomplain tc_scale
+    set scale_width [ expr {(550 / 1.333333) * $win_scale_fact} ]
     set tcc_height [ expr {(60 / 1.333333) * $win_scale_fact} ]
-    set tcg_height [ expr {(250 / 1.333333) * $win_scale_fact} ]
-    set emug_height [ expr {(150 / 1.333333) * $win_scale_fact} ]
+    set tcg_height [ expr {(275 / 1.333333) * $win_scale_fact} ]
+    set emug_height [ expr {(160 / 1.333333) * $win_scale_fact} ]
     set axistextoffset [ expr {(20 / 1.333333) *  $win_scale_fact * 0.50} ]
     set ticklen [ expr {(10 / 1.333333) *  $win_scale_fact * 0.60} ]
     set xref [ expr {(75 / 1.333333) *  $win_scale_fact * 0.90} ]
     #canvas for black on white numbers
-    pack [ canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -fill both -expand 1 -side top
+    .ed_mainFrame.tc configure -background white
+    pack [ tkp::canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -side top -anchor ne -padx [ list 0 [ expr {$scale_width * 0.05} ] ] 
     #Emu graph canvas
-    pack [ canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left
+    pack [ tkp::canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left
+    unset -nocomplain tc_scale
+    foreach param {scale_width tcc_height tcg_height emug_height axistextoffset ticklen xref} { dict set tc_scale $param [ set $param ] }
+    dict set tc_scale width $scale_width
+    dict set tc_scale height $tcg_height
+    dict set tc_scale last_resize_width [ dict get $tc_scale width ]
+    dict set tc_scale last_resize_height [ dict get $tc_scale height ] 
+    dict set tc_scale emu_width $scale_width
+    dict set tc_scale emu_height $emug_height
+    dict set tc_scale resize_count 0
+    dict set tc_scale last_resize 0
+    bind .ed_mainFrame.tc.g <Configure> {
+    #Configure is triggered dynamically whenever we resize the canvas
+	    global tc_scale
+	    dict set tc_scale resize_count [ expr {[ dict get $tc_scale resize_count ] + 1}]
+	    if  { ([ dict get $tc_scale last_resize ] eq 0) } {
+	    dict set tc_scale old_width [ dict get $tc_scale width ]
+	    dict set tc_scale old_height [ dict get $tc_scale height ]
+	    } else {
+	    dict set tc_scale old_width [ dict get $tc_scale last_resize_width ]
+	    dict set tc_scale old_height [ dict get $tc_scale last_resize_height ]
+    	    }
+	    dict set tc_scale width %w.0
+	    dict set tc_scale height %h.0
+	    #We capture canvas % scale this is passed to redraw and use to scale the emu graph
+	    dict set tc_scale width_percent [ expr {(([ dict get $tc_scale width ] - [ dict get $tc_scale old_width ]) / [ dict get $tc_scale old_width ]) * 100}]
+	    dict set tc_scale height_percent [ expr {(([ dict get $tc_scale height ] - [ dict get $tc_scale old_height ]) / [ dict get $tc_scale old_height ]) * 100}]
+	    if  { ![ dict exists $tc_scale graph ] } { 
+		dict set tc_scale graph tce
+		dict set tc_scale timelist {}
+		dict set tc_scale timelength {}
+	    }
+    #Keep the LCD Number to 5% of the top right corner
+                pack .ed_mainFrame.tc.c -padx [ list 0 [ expr {[ dict get $tc_scale width ] * 0.05} ] ] 
+    #Redraw the graph to same percent as the canvas has been resized
+		emu_graph::redraw [ dict get $tc_scale graph ] [ dict get $tc_scale timelist ] [ dict get $tc_scale timelength ] 
+    }
     set graph [ create_image graph icons ]
-    #.ed_mainFrame.tc.g create image 300 100 -image $graph
-    .ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.75} ] [ expr {[ winfo reqwidth .ed_mainFrame.tc.g ]/6} ] -image $graph -anchor center
+    .ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.6} ] [ expr {[ winfo reqheight .ed_mainFrame.tc.g ]/3} ] -image $graph -anchor center 
     set tcdata {}
     set timedata {}
     #Set Up LCD Pixels for Canvas size X pixels by Y Pixels Pixel On Rim Colour, Pixel On Fill Colour, Pixel Off Rim Colour, Pixel Off Fill Colour
     #Black & White
     #7 x 87 is the number of pixels we create 7 in height and 87 in length. This remains fixed as we scale up pixel size.
-    LCD_Pixels 7 87 #626262 black white white $win_scale_fact
+    LCD_Pixels 7 87 #626262 #626262 white white $win_scale_fact
     #Add same padding
     set varLCDx 3
     set varLCDy 3
@@ -906,8 +944,6 @@ proc transcount { } {
     incr varLCDx 3
     #showLCD 0
 
-    #emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width $scale_width -height $emug_height \
-#-axistextoffset 10 -autorange 1 -ticklen 5 -xref 75
     emu_graph::emu_graph tce -canvas .ed_mainFrame.tc.g -width $scale_width -height $emug_height \
 -axistextoffset $axistextoffset -autorange 1 -ticklen $ticklen -xref $xref
 
@@ -969,7 +1005,7 @@ proc show_tc_errmsg {} {
     LCD_Display "   TX ERROR   " 0 0 0
     #attempt to delete canvas
     catch { .ed_mainFrame.tc.g delete "all" }
-    .ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.75} ] [ expr {[ winfo reqwidth .ed_mainFrame.tc.g ]/6} ] -image $ban -anchor center
+    .ed_mainFrame.tc.g create image [ expr {[winfo reqwidth .ed_mainFrame.tc.g ]/1.6} ] [ expr {[ winfo reqheight .ed_mainFrame.tc.g ]/3} ] -image $ban -anchor center
     #error message is always followed by thread release before loop enter
     #so remove tc_threadID to prevent false positive on startup
     post_kill_transcount_cleanup
