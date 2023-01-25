@@ -859,16 +859,18 @@ proc transcount { } {
     global win_scale_fact
     global tc_scale
     unset -nocomplain tc_scale
-    set scale_width [ expr {(550 / 1.333333) * $win_scale_fact} ]
-    set tcc_height [ expr {(60 / 1.333333) * $win_scale_fact} ]
-    set tcg_height [ expr {(275 / 1.333333) * $win_scale_fact} ]
-    set emug_height [ expr {(160 / 1.333333) * $win_scale_fact} ]
-    set axistextoffset [ expr {(20 / 1.333333) *  $win_scale_fact * 0.50} ]
-    set ticklen [ expr {(10 / 1.333333) *  $win_scale_fact * 0.60} ]
-    set xref [ expr {(75 / 1.333333) *  $win_scale_fact * 0.90} ]
-    #canvas for black on white numbers
-    .ed_mainFrame.tc configure -background white
-    pack [ tkp::canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -side top -anchor ne -padx [ list 0 [ expr {$scale_width * 0.05} ] ] 
+    set scale_width [ expr {(535 / 1.333333) * $win_scale_fact} ]
+set tcc_height [ expr {(60 / 1.333333) * $win_scale_fact} ]
+set tcg_height [ expr {(250 / 1.333333) * $win_scale_fact} ]
+set emug_height [ expr {(150 / 1.333333) * $win_scale_fact} ]
+set axistextoffset [ expr {(20 / 1.333333) * $win_scale_fact * 0.50} ]
+set ticklen [ expr {(10 / 1.333333) * $win_scale_fact * 0.60} ]
+set xref [ expr {(75 / 1.333333) * $win_scale_fact * 0.90} ]
+
+
+#canvas for black on white numbers
+.ed_mainFrame.tc configure -background white
+pack [ tkp::canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -side top -anchor ne -padx [ list 0 [ expr {$scale_width * 0.05} ] ] -ipadx [ expr {$scale_width * 0.10} ]
     #Emu graph canvas
     pack [ tkp::canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left
     unset -nocomplain tc_scale
