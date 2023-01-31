@@ -105,7 +105,7 @@ proc tcount_pg {bm interval masterthread} {
                     }
                     set transval [expr {[expr {abs($new - $old)}] * $mplier}]
                 if { [ catch [ subst {thread::send -async $MASTER {::showLCD $transval }} ] ] } { break }} 
-                if { $tcsize >= 4 } { 
+                if { $tcsize >= 2 } { 
                     if { $iconflag eq 0 } {
                         if { [ catch [ subst {thread::send -async $MASTER { .ed_mainFrame.tc.g delete "all" }} ] ] } { break }
                         set iconflag 1

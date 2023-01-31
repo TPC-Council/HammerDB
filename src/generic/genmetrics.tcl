@@ -74,19 +74,19 @@ proc DoDisplay {maxcpu cpu_model caller} {
     set scrollheight [ expr {$height*2} ]
     frame $metframe.f -bd $S(border) -relief flat -bg $CLR(bg)
     if { $ttk::currentTheme eq "black" } {
-        set cnv1 [ canvas $metframe.sv -width 11 -highlightthickness 0 -background #424242 ]
+        set cnv1 [ tkp::canvas $metframe.sv -width 11 -highlightthickness 0 -background #424242 ]
     } else {
-        set cnv1 [ canvas $metframe.sv -width 11 -highlightthickness 0 -background #dcdad5 ]
+        set cnv1 [ tkp::canvas $metframe.sv -width 11 -highlightthickness 0 -background #dcdad5 ]
     }
     pack $cnv1 -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
     pack $metframe.f -fill both -expand 1
     #Create fixed header
-    canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height $S(hdscl) -bg $CLR(bg)
+    tkp::canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height $S(hdscl) -bg $CLR(bg)
     $metframe.f.header create text [ expr {$width/2 - $S(hdralign)} ] $S(txtalign) -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {basic} -tags "cpumodel"
     pack $metframe.f.header
     #Height for all objects is the height of the bar and text multiplied by all cpus add header
     set canvforbars $cnvpth.c 
-    canvas $canvforbars -highlightthickness 0 -bd 0 -width $width -height $height -bg $CLR(bg) -scrollregion "0 0 $width $scrollheight" -yscrollcommand "$metframe.sv.scrollY set" -yscrollincrement 10
+    tkp::canvas $canvforbars -highlightthickness 0 -bd 0 -width $width -height $height -bg $CLR(bg) -scrollregion "0 0 $width $scrollheight" -yscrollcommand "$metframe.sv.scrollY set" -yscrollincrement 10
     #Add scrollbar but now can't scroll multiple canvases or a frame so have to put all ojects in one canvas to scroll
     set scr1 [ ttk::scrollbar $metframe.sv.scrollY -orient vertical -command "$canvforbars yview" ]
     pack $canvforbars -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0
@@ -110,12 +110,15 @@ proc DoDisplay {maxcpu cpu_model caller} {
             set x0 [ expr {$x0 - $rowdeduction} ]
             set x1 [expr {$x0 + $S(bar,width)}]
         }
+	#colour gradients for usr and sys
+	set usr [$canvforbars gradient create linear -stops {{0 lightgreen} {1 green}}]
+	set sys [$canvforbars gradient create linear -stops {{0 indianred} {1 darkred}}]
         #hold array of coords for each CPU for later update
         set cpucoords($cpu) [ list $x0 $y0 $x1 $y1 ]
-        $canvforbars create rect $x0 $y1 $x1 $y1 -tag bar$cpu-sys -fill $CLR(sys)
-        $canvforbars create rect $x0 $y1 $x1 $y1 -tag bar$cpu-usr -fill $CLR(usr)
+        $canvforbars create prect $x0 $y1 $x1 $y1 -tag bar$cpu-sys -fill $sys
+        $canvforbars create prect $x0 $y1 $x1 $y1 -tag bar$cpu-usr -fill $usr
         for { set ymask $y0 } { $ymask <= $y1 } { incr ymask $S(mask) } {
-            $canvforbars create rect $x0 $ymask $x1 [ expr $ymask + $S(maskplus) ] -tag bar$cpu-mask -fill $CLR(bg) -outline $CLR(bg)
+           $canvforbars create prect $x0 $ymask $x1 [ expr $ymask + $S(maskplus) ] -tag bar$cpu-mask -fill $CLR(bg)
         }
         #Set CPU utilisation % value and hide with same as background colour
         $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ]  -tags "pcent$cpu"

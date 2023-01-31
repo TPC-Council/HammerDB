@@ -22,6 +22,9 @@
  #    4. draw all non-inside segments
  #
  proc ::Ribbon::Draw {w pxy dir length} {
+#we use gradients in gray for the ribbon. To prevent recreating the same gradients, once created it is stored in ribtransitions dict for reuse.
+upvar #0 ribtransitions ribtransitions
+if {![info exists ribtransitions]} { set ribtransitions [dict create] }
     set dx 4
     set dy -10
 
@@ -64,11 +67,30 @@
     for {set i 0; set i1 1} {$i < $CNT-1} {incr i; incr i1} {
         if {$Q($i,badR) || $Q($i1,badL)} continue
         set xy [concat $P($i) $Q($i) $Q($i1) $P($i1)]
-        set clr gray[expr {99-round(abs($P($i,beta) - 360))}]
+#For each polygon in ribbon create a grayscale gradient for effect
+	set gval [expr {99-round(abs($P($i,beta) - 360))}]
+	set gvallight [expr {$gval + 20 }]
+	if { $gvallight > 100 } { 
+	   set gvallight 100 
+	}
+	set gvaldark [expr {$gval - 20 }]
+	if { $gvaldark < 0 } { 
+	   set gvaldark 0 
+	}
+	if {![ dict exists $ribtransitions $gval ] } {
+#create the gradient for the angle and save for reuse
+	set transition [ subst {$w gradient create linear -method pad -lineartransition {1 0 0 0} \
+	-stops {{0 white} {0.33 [ concat gray$gvallight ]} {0.66 [ concat gray$gval ]} {1 [ concat gray$gvaldark ]}}}]
+	set grad [ eval $transition ]
+	dict set ribtransitions $gval $grad
+	} else {
+#gradient already created so reuse
+	set grad [ dict get $ribtransitions $gval ]
+	}
 	#modify original to give all segments a tag for deletion
-        $w create poly $xy -fill $clr -outline black -tags 3dribbon
-	$w lower 3dribbon
+        eval "$w create ppolygon $xy -fill $grad -tags 3dribbon"
     }
+	$w raise 3dribbon
  }
 
  ##+##########################################################################
@@ -247,7 +269,7 @@ proc emu_graph args {
 	error "Usage: emu_graph graph \[options\] ($restargs)"
     }
     set emu_graph($graph,datasets) {}
-    set emu_graph($graph,gradsets) {}
+    #set emu_graph($graph,gradsets) {}
     
     # define the widget command
     namespace eval :: \
@@ -398,7 +420,29 @@ proc destroy {graph} {
 }
 
 proc redraw {graph timelist timelength} {
-    variable emu_graph
+global tc_scale
+if { [ llength $timelist ] != 0 } {
+dict set tc_scale timelist $timelist
+dict set tc_scale timelength [ llength [ join $timelist ]]
+} 
+variable emu_graph
+if { ([ dict get $tc_scale resize_count ] > 1) && ([ dict get $tc_scale resize_count ] > [ dict get $tc_scale last_resize ]) } {
+#draw with resize
+set new_height [ expr {(($emu_graph(tce,height) / 100) * [ dict get $tc_scale height_percent ]) + $emu_graph(tce,height)} ]
+set new_width [ expr {(($emu_graph(tce,width) / 100) * [ dict get $tc_scale width_percent ]) + $emu_graph(tce,width)} ]
+set emu_graph(tce,height) $new_height
+set emu_graph(tce,width) $new_width
+dict set tc_scale emu_width $new_width
+dict set tc_scale emu_height $new_height
+dict set tc_scale last_resize_width [ dict get $tc_scale width ]
+dict set tc_scale last_resize_height [ dict get $tc_scale height ] 
+dict set tc_scale last_resize [ dict get $tc_scale resize_count ]
+} else {
+#do draw without resize
+dict set tc_scale emu_width $emu_graph(tce,width)
+dict set tc_scale emu_height $emu_graph(tce,height)
+}
+
     if {![is_graph $graph]} {
         error "$graph is not an emu_graph"
     }
@@ -419,7 +463,6 @@ proc is_graph {graph} {
 }
 
 proc auto_range {graph} {
-
     variable emu_graph
 
     if {![is_graph $graph]} {
@@ -455,9 +498,11 @@ proc auto_range {graph} {
 				[$emu_graph($graph,$tag,trackdata) end]]
 		set xyrange [list $xrange $yrange]
 	    } elseif { [info exists emu_graph($graph,$tag,coords)] } {
+		## pad coordinates to correctly autorange
+		set padcoords [ pad_coords $emu_graph($graph,$tag,coords) ]
 		set xyrange [maxrange $xyrange \
 				 [range\
-				      $emu_graph($graph,$tag,coords)\
+				      $padcoords\
 				      $mask $maskthresh]]
 	    		} 
         }
@@ -539,6 +584,9 @@ proc assign_colors {graph dataset} {
     }
 
 proc plot_data {graph} {
+upvar #0 genericdict genericdict
+catch {set ribenable [ dict get $genericdict transaction_counter tc_graph_ribbon ]}
+if { ![ info exists ribenable ] } { set ribenable false }
 
     variable emu_graph
 
@@ -551,20 +599,18 @@ proc plot_data {graph} {
     set x_min_c [x2canvas $graph $x_min]
     set x_max_c [x2canvas $graph $x_max]
     set y_min_c [y2canvas $graph $y_min]
-
     set canvas $emu_graph($graph,canvas)
-    foreach tag $emu_graph($graph,gradsets) {
-        $canvas delete -withtag $tag 
-    }
-    set emu_graph($graph,gradsets) {}
-
+    #foreach tag $emu_graph($graph,gradsets) {
+    #    $canvas delete -withtag $tag 
+    #}
+    #set emu_graph($graph,gradsets) {}
+    #If the data has not been queried we do not enter this foreach or plot data
     foreach tag $emu_graph($graph,datasets) {
         # plot the points, first delete any old ones
         $canvas delete -withtag $tag 
 	$canvas delete -withtag 3dribbon
 
         set tags [list graph$graph data$graph $tag]
-
 	if { [info exists emu_graph($graph,$tag,trackdata)] } {
 	    ## get coords data from an emu trackdata object
 	    set coords \
@@ -575,13 +621,12 @@ proc plot_data {graph} {
 		     $emu_graph($graph,ymin) $emu_graph($graph,ymax)\
 		     $emu_graph($graph,yfactor) $emu_graph($graph,yref)]
 	} elseif { [info exists emu_graph($graph,$tag,coords)] } {
-	    ## coords have been supplied
-	    set coords \
-		[scale_points $graph $emu_graph($graph,$tag,coords)]
+	    ## coords have been supplied, these are the transaction count numbers
+	   set padcoords [ pad_coords $emu_graph($graph,$tag,coords) ]
+	   set coords [ scale_points $graph $padcoords ]
 	} else {
 	    set coords {}
 	}
-	
 	# we may have a masking vector
 	if { [info exists emu_graph($graph,$tag,mask)] } {
 	    set mask $emu_graph($graph,$tag,mask)
@@ -614,67 +659,59 @@ proc plot_data {graph} {
 
 	set ribcoords $coords
 	set coords [concat $x_min_c $y_min_c $coords $x_max_c $y_min_c ]
-	    #grab last 6 points for gradient poly
-	set lastsixcoords [ lrange $coords end-5 end ]
-            #complete grad coordinates by adding pair at bottom of line in line with last point
-        set gradcoords [ concat [ lindex $lastsixcoords 0 ] [ lindex $lastsixcoords end ] $lastsixcoords ]
-            #delete last 6 points
-        set coordscopy [ lreplace $coords end-5 end ]
-            #complete coords by adding same pair
-        lappend coordscopy [ expr [ lindex $lastsixcoords 0 ] + 2 ] [ lindex $lastsixcoords 1 ] [ expr [ lindex $lastsixcoords 0 ] + 2 ] [ lindex $lastsixcoords end ] 
-	set x1 [ lindex $gradcoords 0 ]
-	set x2 [ lindex $gradcoords end-1 ]
-	set z1 [ lindex $gradcoords 3 ]
-	set z2 [ lindex $gradcoords 4 ]
-	set z3 [ lindex $gradcoords 5 ]
-	set width [expr {$x2-$x1}]
-	eval "$canvas create poly $coordscopy -fill $colour1 -tag {$tag}"
+        set coordscopy2 [ lreplace $coords end-1 end ]
+        set coordscopy2 [ lreplace $coordscopy2 0 1 ]
+	set transition [ subst {$canvas gradient create linear -method pad -lineartransition {0 1 0 0} -stops {{0 white} {0.4 $colour1}}}]
+	set gradcolour1 [ eval $transition ]
+	eval "$canvas create polyline $coords -stroke white -strokewidth 0 -strokelinejoin round -fill $gradcolour1 -fillopacity 0.25 -tag {$tag}"
+	#$canvas lower $tag
+	$canvas raise $tag
+	if { $ribenable } {
     	::Ribbon::Draw $canvas $ribcoords l 18
-	$canvas lower $tag
-	#create gradient poly as a number of polys from colour to white
-	for {set x 1} {$x < $width} {incr x} {
-	set gradcolour [ get_colour $rgb1 $rgb2 $width $x ]
-	eval "$canvas create poly [expr $x1+$x] $z1 $z2 $z3 [expr $x1+$x+1] [ lindex $gradcoords end ] -fill $gradcolour -tag {$tag-g-$x}" 
-        lappend emu_graph($graph,gradsets) $tag-g-$x
+	} else {
+	eval "$canvas create polyline $coordscopy2 -stroke $colour1 -strokewidth 5 -strokelinejoin round -tag {$tag}"
 	}
+	#$canvas lower $tag
+	$canvas raise $tag
+	$canvas raise prect
 	}
 
-        for {set i 0} {$i < [llength $coords]-1} {incr i 2} {
-	    ## we'll draw the point if were either not masking or if
-	    ## the mask value is over the threshold
-	    if { $mask == 0 || \
-		     [lindex $mask [expr {$i/2}]] >= $maskthresh } {
-		set point [lrange $coords $i [expr {$i+1}]]
-		if { [point_in_bounds $graph $point] } {
-		    
-		    if { $labelcolors } {
-			## find the colour for this point via its label
-			set ll [lindex $emu_graph($graph,$tag,labels) \
-				    [expr {$i/2}]]
-			set color $emu_graph($graph,$tag,colour,$ll)
-		    } else {
-			set ll {}
-			set color $emu_graph($graph,$tag,colour)
-		    }
-
-		    if { $emu_graph($graph,$tag,points) } {
-
-			set thesetags [linsert $tags end point \
-					   "index[expr {$i/2}]" "label$ll"]
-
-			set ox [lindex $point 0]
-			set oy [lindex $point 1]
-			$canvas create oval \
-			    [expr {$ox-2}] [expr {$oy-2}]\
-			    [expr {$ox+2}] [expr {$oy+2}]\
-			    -fill $color \
-			    -outline black\
-			    -width 0 \
-			    -tag $thesetags
-		    }
-		}
-	    }
-	}
+#        for {set i 0} {$i < [llength $coords]-1} {incr i 2} {
+#	    ## we'll draw the point if were either not masking or if
+#	    ## the mask value is over the threshold
+#	    if { $mask == 0 || \
+#		     [lindex $mask [expr {$i/2}]] >= $maskthresh } {
+#		set point [lrange $coords $i [expr {$i+1}]]
+#		if { [point_in_bounds $graph $point] } {
+#		    
+#		    if { $labelcolors } {
+#			## find the colour for this point via its label
+#			set ll [lindex $emu_graph($graph,$tag,labels) \
+#				    [expr {$i/2}]]
+#			set color $emu_graph($graph,$tag,colour,$ll)
+#		    } else {
+#			set ll {}
+#			set color $emu_graph($graph,$tag,colour)
+#		    }
+#
+#		    if { $emu_graph($graph,$tag,points) } {
+#
+#			set thesetags [linsert $tags end point \
+#					   "index[expr {$i/2}]" "label$ll"]
+#
+#			set ox [lindex $point 0]
+#			set oy [lindex $point 1]
+#			$canvas create oval \
+#			    [expr {$ox-2}] [expr {$oy-2}]\
+#			    [expr {$ox+2}] [expr {$oy+2}]\
+#			    -fill $color \
+#			    -outline black\
+#			    -width 0 \
+#			    -tag $thesetags
+#		    }
+#		}
+#	    }
+#	}
     }
 }
                    
@@ -698,7 +735,6 @@ proc point_in_bounds {graph point} {
 
 
 proc scale_factor {graph} {
-
     variable emu_graph
 
     if {![is_graph $graph]} {
@@ -718,10 +754,13 @@ proc scale_factor {graph} {
 
     set emu_graph($graph,xfactor) $xfactor
     set emu_graph($graph,yfactor) $yfactor
-
 }
 
 proc axes {graph timelist timelength} {
+set timelist [ pad_time $timelist ]
+set timelength [ llength $timelist ]
+set padstroke [ pad_stroke ]
+
     # generate axes for a plot
     variable emu_graph
 
@@ -737,7 +776,6 @@ proc axes {graph timelist timelength} {
     set x_max $emu_graph($graph,xmax)
     set y_min $emu_graph($graph,ymin)  
     set y_max $emu_graph($graph,ymax)
-
     set y_min_c [y2canvas $graph $y_min]
     set y_max_c [y2canvas $graph $y_max]
     set x_min_c [x2canvas $graph $x_min]
@@ -754,12 +792,12 @@ proc axes {graph timelist timelength} {
 	
     # clear up any existing axes
     $canvas delete -withtag axis
-
-    $canvas create rect $x_min_c $y_min_c $x_max_c [ expr $y_max_c - 20 ]\
-        -outline black -tag [list graph$graph axis]
+    $canvas delete prect
+    $canvas create prect $x_min_c [ expr {$y_min_c + $padstroke} ] $x_max_c [ expr $y_max_c - 30 ] -stroke "#c8c8c8" -tag prect
                                           
     # y-pos of tick end points and of axis tick labels
-    set ticky [expr {$y_min_c-$ticklen}]
+    #set ticky [expr {$y_min_c-$ticklen}]
+    set ticky [expr {$y_max_c - 30 }]
     set texty [expr {$y_min_c+$axistextoffset}]
     # put ticks and numbers on the axis 
     # starting at next nice number above x_min
@@ -772,21 +810,18 @@ proc axes {graph timelist timelength} {
 	if {$t >= $x_min} {
 	    #puts "t=$t, next t [expr {$t+$delta_x}]"
 	    set x [x2canvas $graph $t]
-	    $canvas create line $x $y_min_c $x $ticky \
-		-fill black -tag [list graph$graph axis]
-	    $canvas create line $x [expr $y_max_c-20] $x [expr {$y_max_c+$ticklen-20}]\
-		-fill black -tag [list graph$graph axis]
+	    $canvas create pline $x  [ expr {$y_min_c + $padstroke} ] $x $ticky -stroke "#c8c8c8" -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
 if { ($t eq 1) || ($t eq 4) || ($t eq 7) || ($t eq 10) || ($t eq 13) || ($t eq 16) || ($t eq 19) } {
 		set n [ expr {$t * 2 - 1} ]
 		set tind [ lindex [ split $timelist ] $n ]
 		regsub -all {\}} $tind tind
 	    $canvas create text [x2canvas $graph $t] $texty \
-		-fill black -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
+		-fill "#626262" -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
 		-anchor w
 		}
 	}
     }
-
+set padstroke [ pad_stroke ]
     # now the y axis
     set tickx1   [expr {[x2canvas $graph $x_min]+$ticklen}]
     set tickx2   [expr {[x2canvas $graph $x_max]-$ticklen}]
@@ -800,16 +835,56 @@ if { ($t eq 1) || ($t eq 4) || ($t eq 7) || ($t eq 10) || ($t eq 13) || ($t eq 1
 	## this is because of a problem with rounding down in nicenum
 	if {$f >= $y_min} {
 	    set y [y2canvas $graph $f]
-	    $canvas create line [x2canvas $graph $x_min]\
-	$y $tickx1 $y -fill black -tag [list graph$graph axis]
-	    $canvas create line [x2canvas $graph $x_max]\
-	$y $tickx2 $y -fill black -tag [list graph$graph axis]
+	    $canvas create pline  [x2canvas $graph $x_min] [ expr {$y + $padstroke} ] [x2canvas $graph $x_max] [ expr {$y + $padstroke} ] -stroke "#c8c8c8" -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
 	    # and add the label
 		set dispf [ expr {int($f)} ]
 	    $canvas create text $textx $y -text $dispf -anchor e \
-		-fill black -tag [list graph$graph axis] -font "$graphfont 7"
+		-fill "#626262" -tag [list graph$graph axis] -font "$graphfont 7"
         }
     }
+$canvas raise prect
+$canvas lower [list graph$graph axis]
+}
+
+proc pad_coords { coords } {
+for {set i 1} {$i <= 20} {incr i} { lappend padcoords $i 0 }
+set bcindex [ llength $padcoords ]
+set datapoints [ llength $coords ]
+if { $datapoints <= 40 } {
+for {set i $datapoints} {$i >= 1} {incr i -2} { 
+set coordinate [ lindex $coords [ expr {$i-1} ]]
+set padcoords [ lreplace $padcoords [ expr {$bcindex - 1}] [ expr {$bcindex - 1}] $coordinate ] 
+incr bcindex -2
+}
+return $padcoords
+} else {
+return $coords
+}
+}
+
+proc pad_time { timelist } {
+for {set i 1} {$i <= 20} {incr i} { lappend padtime $i --:--:-- }
+set ptindex [ llength $padtime ]
+set datapoints [ llength [ join $timelist ]]
+if { $datapoints <= 40 } {
+for {set i $datapoints} {$i >= 1} {incr i -2} { 
+set tstamp [ lindex [ join $timelist ] [ expr {$i-1} ]]
+set padtime [ lreplace $padtime [ expr {$ptindex - 1}] [ expr {$ptindex - 1}] $tstamp ] 
+incr ptindex -2
+}
+return $padtime
+} else {
+return $timelist
+}
+}
+
+proc pad_stroke {} {
+#If graph has ribbon effect we do not need extra padding to allow for the stroke width
+upvar #0 genericdict genericdict
+catch {set ribenable [ dict get $genericdict transaction_counter tc_graph_ribbon ]}
+if { ![ info exists ribenable ] } { set ribenable false }
+if { $ribenable } { set padstroke 0 } else { set padstroke 3 }
+return $padstroke
 }
 
 # scale_points with inlined scaling, Mark Koennecke
@@ -822,7 +897,6 @@ proc scale_points {graph coords} {
 
     set result {}
     foreach {x y} $coords {
-#	puts "x: $x, y: $y"
 	lappend result [expr {int(($x - $emu_graph($graph,xmin)) \
                 * $emu_graph($graph,xfactor) + $emu_graph($graph,xref))}]
 
@@ -887,7 +961,6 @@ proc canvas2x {graph cx} {
 
 proc x2canvas {graph x} {
     variable emu_graph
-
     if {![is_graph $graph]} {
         error "$graph is not an emu_graph"
     }
