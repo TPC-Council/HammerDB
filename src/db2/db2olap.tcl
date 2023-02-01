@@ -1185,25 +1185,17 @@ if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules direct
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc drop_schema { dbname user password } {
-    global tcl_platform
-        set force "db2 force applications all"
-        set drop "db2 drop database $dbname"
-    if {$tcl_platform(platform) == "windows"} {
-        set prefix "db2cmd -c"
-    } else {
-        set prefix ""
-    }
-
-    if {[ catch {eval exec [ concat $prefix $force ]} message ]} {
+    if {[ catch {db2_force_off} message ]} {
         error $message
     } else {
         puts "force applications all complete."
- if {[ catch {eval exec [ concat $prefix $drop ]} message ]} {
-        error $message
-    } else {
-        puts "$dbname TPROC-H schema has been deleted successfully."
+        if {[ catch {db2_drop_db $dbname} message ]} {
+            error $message
+        } else {
+            puts "$dbname TPROC-H schema has been deleted successfully."
+        }
     }
-}
+
     return
 }
 }
