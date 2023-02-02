@@ -1046,6 +1046,8 @@ Version 4.7 Feb 2023
 
 Pull Requests & Issues
 
+Fix calculation of geomean in TPROC-H #504
+Fix TPROC-H query 5 for Columnstore #503
 Use db2tcl to create and drop database for DB2 #501 (#431)
 Improve Transaction counter look and feel and resize when window resized #494 (#487)
 remove trafodion configuration and files #485 (#484)
