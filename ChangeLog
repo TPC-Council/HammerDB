@@ -1039,3 +1039,22 @@ Add SQL Server encrypt connection and trust certificate #406
 Remove reconnect for PostgreSQL on windows #402
 Hdb docker #401
 fix typos #388
+
+---------------------------------------------------------------------
+
+Version 4.7 Feb 2023
+
+Pull Requests & Issues
+
+Use db2tcl to create and drop database for DB2 #501 (#431)
+Improve Transaction counter look and feel and resize when window resized #494 (#487)
+remove trafodion configuration and files #485 (#484)
+MySQL Heatwave TPROC-H support #483 (#482)
+Query update for tpch columnstore benchmark #481 (#480)
+Add tkpath to build #478
+Prevent CLI hang when scripts finishes before enters event loop #473 (#472)
+Updates to jobs for Docker scripts #471
+Fix for Issue #467 CLI myerrproc and remote_command opmode #468 (#467)
+Update omitted Changelog for v4.6 release #466
+Fixing queries for Columnstore issue 459 #460 (#459)
+Make jobs functionality modular #458
