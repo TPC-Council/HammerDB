@@ -14,7 +14,7 @@ WORKDIR /home/hammerdb
 RUN apt update && \
     apt -y upgrade && \
     apt -y install -q \
-    apt -y wget unzip gnupg apt-utils libaio1  iputils-ping vim netcat
+    apt -y wget unzip gnupg apt-utils libaio1  iputils-ping vim netcat libxft-dev libcairo2-dev xauth
 
 # Install and configure Microsoft SQLServer client libraries
 RUN apt -y install -q \
@@ -83,6 +83,13 @@ ADD scripts /home/hammerdb/HammerDB-4.6/scripts
 CMD "bash"
 
 #To create an image: Go to the folder containing the Dockerfile 
-#     docker build -t hammerdb-v4.6 .
+#       docker build -t hammerdb-v4.6 .
 #To start a container with that image
-#     docker run -it --name hammerdb hammerdb-v4.6 bash
+#       docker run -it --name hammerdb hammerdb-v4.6 bash
+#To use HammerDB in GUI Mode, make sure X11 forwarding is configured, Environemnt variable DISPLAY is set appropriately,  for example on Ubuntu,
+#       export DISPLAY=localhost:10.0
+# and also  disable host control, by executing the following.
+#       xhost+
+#you can then start container:
+#       docker run -it --rm -v /root/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb-v4.6 bash
+
