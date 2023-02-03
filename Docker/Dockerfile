@@ -17,20 +17,27 @@ RUN apt update && \
     apt -y wget unzip gnupg apt-utils libaio1  iputils-ping vim netcat
 
 # Install and configure Microsoft SQLServer client libraries
-RUN apt -y install -q \ 
+RUN apt -y install -q \
     apt -y curl gcc make && \
-    curl https://packages.microsoft.com/keys/microsoft.asc |  apt-key add - && \
-    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | tee /etc/apt/sources.list.d/msprod.list && \
+    apt update && apt install -y lsb-release && \
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
-    ACCEPT_EULA=Y apt-get -yq install mssql-tools  && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile && \
-    wget http://www.unixodbc.org/unixODBC-2.3.9.tar.gz && tar -xzvf unixODBC-2.3.9.tar.gz && cd unixODBC-2.3.9 && \ 
+    ACCEPT_EULA=Y apt-get install -y msodbcsql18 && \
+    ACCEPT_EULA=Y apt-get install -y mssql-tools18 && echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc && \
+    wget http://www.unixodbc.org/unixODBC-2.3.11.tar.gz && tar -xvzf unixODBC-2.3.11.tar.gz && cd unixODBC-2.3.11 && \
     ./configure --prefix=/usr/local/unixODBC --enable-gui=no --enable-drivers=no --enable-iconv --with-iconv-char-enc=UTF8 \
-    --with-iconv-ucode-enc=UTF16LE --enable-threads=yes --enable-fastvalidate && make && make install && cd .. && \ 
-    echo 'export PATH="$PATH:/opt/mssql-tools/bin:/usr/local/unixODBC/bin"' >> ~/.bashrc && \
-    echo 'export ODBCINI="/usr/local/unixODBC/etc/odbc.ini"'  >> ~/.bashrc && \
-    echo 'export ODBCSYSINI="/usr/local/unixODBC/etc"'  >> ~/.bashrc && \
-    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/unixODBC/lib"'  >> ~/.bashrc && \
-    rm -rf *.tar.gz *.zip unixODBC-2.3.9 
+    --with-iconv-ucode-enc=UTF16LE --enable-threads=yes --enable-fastvalidate && make && make install && cd .. && \
+    echo 'export PATH="$PATH:/opt/mssql-tools18/bin:/usr/local/unixODBC/bin" \n\
+    export ODBCINI="/usr/local/unixODBC/etc/odbc.ini" \n\
+    export ODBCSYSINI="/usr/local/unixODBC/etc" \n\
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/unixODBC/lib"'  >> ~/.bashrc && \
+    echo "[ODBC Driver 18 for SQL Server] \n\
+    Description=Microsoft ODBC Driver 18 for SQL Server \n\
+    Driver=/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.1.so.2.1 \n\
+    UsageCount=1 " >> /usr/local/unixODBC/etc/odbcinst.ini && \
+    odbcinst -j && \
+    rm -rf *.tar.gz *.zip unixODBC-2.3.11
    
 # Install and configure Oracle client libraries
 RUN wget https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip && \
