@@ -1277,7 +1277,12 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
                         }
                         set t1 [clock clicks -millisec]
                         set value [expr {double($t1-$t0)/1000}]
-                        if {$VERBOSE} { printlist $oput }
+                        set rowcount [ llength $oput ]
+                        if { $rowcount > 0 } { lappend qlist $value }
+                        if {$VERBOSE} {
+                            puts "query $qos returned $rowcount rows"
+                            printlist $oput
+                        }
                         puts "query $qos completed in $value seconds"
                     }
                     incr q15c
