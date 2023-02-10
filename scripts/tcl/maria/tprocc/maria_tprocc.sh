@@ -3,7 +3,7 @@ mkdir -p $TMP
 
 echo "BUILD HAMMERDB SCHEMA"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
-./hammerdbcli auto ./scripts/tcl//maria/tprocc/maria_tprocc_buildschema.tcl 
+./hammerdbcli auto ./scripts/tcl/maria/tprocc/maria_tprocc_buildschema.tcl 
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "RUN HAMMERDB TEST"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
