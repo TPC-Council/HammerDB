@@ -1046,6 +1046,7 @@ Version 4.7 Feb 2023
 
 Pull Requests & Issues
 
+Add Windows powershell driver script to sample scripts #511 (#510)
 Fix calculation of geomean in TPROC-H #504
 Fix TPROC-H query 5 for Columnstore #503
 Use db2tcl to create and drop database for DB2 #501 (#431)
