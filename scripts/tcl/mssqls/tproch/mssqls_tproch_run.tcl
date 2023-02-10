@@ -12,7 +12,7 @@ diset connection mssqls_azure false
 diset connection mssqls_encrypt_connection true
 diset connection mssqls_trust_server_cert true
 diset connection mssqls_authentication windows
-diset connection mssqls_server {(local)\SQLEXPRESS}
+diset connection mssqls_server {(local)}
 diset connection mssqls_linux_server {localhost}
 diset connection mssqls_uid sa
 diset connection mssqls_pass admin
