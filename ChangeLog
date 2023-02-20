@@ -1046,6 +1046,7 @@ Version 4.7 Feb 2023
 
 Pull Requests & Issues
 
+HammerDB 4.7 fails to start on Windows if 4.6 SQLite files present #513 (#512)
 Fix calculation of geomean in TPROC-H #504
 Fix TPROC-H query 5 for Columnstore #503
 Use db2tcl to create and drop database for DB2 #501 (#431)
