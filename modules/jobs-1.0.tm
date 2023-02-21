@@ -539,11 +539,10 @@ proc getjob { query } {
           if { ![ dict size $jobtiming ] eq 0 } {
           set huddleobj [ huddle compile {dict * dict} $jobtiming ]
           if { $outputformat eq "JSON" } {
-            puts [ huddle jsondump $huddleobj ]
+          return [ huddle jsondump $huddleobj ]
           } else {
-                  puts $jobtiming
-	}
-            return $jobtiming
+          return $jobtiming
+	  }
           } else {
             puts "No Timing Data for VU $vuid for JOB $jobid: jobs jobid timing vuid"
             return

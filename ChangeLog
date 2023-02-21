@@ -1046,6 +1046,8 @@ Version 4.7 Feb 2023
 
 Pull Requests & Issues
 
+Jobs query for VU specific timing prints data twice, with second always in text #515 (#514)
+HammerDB 4.7 fails to start on Windows if 4.6 SQLite files present #513 (#512)
 Add Windows powershell driver script to sample scripts #511 (#510)
 Fix calculation of geomean in TPROC-H #504
 Fix TPROC-H query 5 for Columnstore #503
