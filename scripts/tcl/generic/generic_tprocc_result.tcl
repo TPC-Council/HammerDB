@@ -4,7 +4,7 @@
         rename puts __puts
         if { [ string length $file ] } {
            eval [ subst -nocommands {proc puts { args } {
-              set fid [ open $file a+ ]
+              set fid [ open [ file normalize $file ] a+ ]
               if { [ llength \$args ] > 1 && \
                    [ lsearch \$args stdout ] == 0 } {
                  set args [ lreplace \$args 0 0 \$fid ]
@@ -52,7 +52,7 @@ return $output
 }
 set filename $::outputfile
 set jobid [ getjobid $filename ]
-set filename "${filename}_${jobid}.out"
+set filename [ file normalize "${filename}_${jobid}.out"  ]
 stdout off $filename
 puts "TRANSACTION RESPONSE TIMES"
 job $jobid timing

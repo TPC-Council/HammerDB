@@ -4,7 +4,7 @@ redirect_stdout = (r'''proc stdout { switch { file "" } } {
         rename puts __puts
         if { [ string length $file ] } {
            eval [ subst -nocommands {proc puts { args } {
-              set fid [ open $file a+ ]
+              set fid [ open [ file normalize $file ] a+ ]
               if { [ llength \$args ] > 1 && \
                    [ lsearch \$args stdout ] == 0 } {
                  set args [ lreplace \$args 0 0 \$fid ]
@@ -56,6 +56,7 @@ filename=outputfile
 jobident = getjobid(filename)
 jobid = jobident.strip()
 filename = "".join([filename, "_", jobid, ".out"])
+filename = filename.replace(os.sep, '/')
 cmd = 'stdout off ' + filename 
 tclpy.eval(cmd)
 tclpy.eval('puts \"\nHAMMERDB RESULT\"')
