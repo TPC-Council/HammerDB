@@ -55,6 +55,17 @@ proc ConnectToDb2 { dbname user password } {
         return $db_handle
 }}
 
+proc CreateDatabase { dbname } {
+    puts "CREATING DATABASE $dbname"
+    if {[ catch {db2_create_db $dbname} message ]} {
+        error $message
+    } else {
+        puts "DATABASE $dbname has been created successfully."
+    }
+
+    return
+}
+
 proc CreateTables { db_handle tspace organization } {
     puts "CREATING TPCH TABLES"
     if { $organization eq "DATE" } { 
@@ -494,6 +505,7 @@ proc do_tpch { dbname scale_fact user password tpch_def_tab column_based num_vu 
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
+        CreateDatabase $dbname
         set db_handle [ ConnectToDb2 $dbname $user $password ]
         switch [ string toupper $column_based ] {
             COLUMN { set organization "organize by column" }
@@ -1184,30 +1196,22 @@ set library $library
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc drop_schema { dbname user password } {
-    global tcl_platform
-        set force "db2 force applications all"
-        set drop "db2 drop database $dbname"
-    if {$tcl_platform(platform) == "windows"} {
-        set prefix "db2cmd -c"
-    } else {
-        set prefix ""
-    }
-
-    if {[ catch {eval exec [ concat $prefix $force ]} message ]} {
+proc drop_schema { dbname } {
+    if {[ catch {db2_force_off} message ]} {
         error $message
     } else {
         puts "force applications all complete."
- if {[ catch {eval exec [ concat $prefix $drop ]} message ]} {
-        error $message
-    } else {
-        puts "$dbname TPROC-H schema has been deleted successfully."
+        if {[ catch {db2_drop_db $dbname} message ]} {
+            error $message
+        } else {
+            puts "$dbname TPROC-H schema has been deleted successfully."
+        }
     }
-}
+
     return
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_tpch_dbase $db2_tpch_user $db2_tpch_pass"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_tpch_dbase"
     } else { return }
 }
 
