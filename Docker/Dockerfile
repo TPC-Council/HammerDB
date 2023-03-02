@@ -93,3 +93,4 @@ CMD "bash"
 #you can then start container:
 #       docker run -it --rm -v /root/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb-v4.6 bash
 
+
