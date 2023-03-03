@@ -40,7 +40,7 @@ To use HammerDB in GUI Mode, make sure X11 forwarding is configured, Environemnt
 Additionally disable host control, by executing the following.
        xhost+
 you can then start container:
-       docker run -it --rm -v /root/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb bash
+       docker run -it --rm -v ~/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb bash
 
 
 **********************************************************************************************************
