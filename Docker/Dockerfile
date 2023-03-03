@@ -80,7 +80,8 @@ WORKDIR /home/hammerdb/HammerDB-4.6
 # Adding some sample scripts to be used with HammerDB command line interface
 ADD scripts /home/hammerdb/HammerDB-4.6/scripts
 
-CMD "bash"
+#CMD "bash"
+CMD tail -f /dev/null
 
 #To create an image: Go to the folder containing the Dockerfile 
 #       docker build -t hammerdb-v4.6 .
