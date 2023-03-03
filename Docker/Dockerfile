@@ -81,14 +81,14 @@ WORKDIR /home/hammerdb/HammerDB-4.7
 CMD tail -f /dev/null
 
 #To create an image: Go to the folder containing the Dockerfile 
-#       docker build -t hammerdb-v4.7 .
+#       docker build -t hammerdb .
 #To start a container with that image
-#       docker run -it --name hammerdb hammerdb-v4.7 bash
+#       docker run -it --name hammerdb hammerdb bash
 #To use HammerDB in GUI Mode, make sure X11 forwarding is configured, Environemnt variable DISPLAY is set appropriately,  for example on Ubuntu,
 #       export DISPLAY=localhost:10.0
 # and also  disable host control, by executing the following.
 #       xhost+
 #you can then start container:
-#       docker run -it --rm -v /root/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb-v4.7 bash
+#       docker run -it --rm -v /root/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb bash
 
 
