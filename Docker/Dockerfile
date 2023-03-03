@@ -77,9 +77,6 @@ RUN wget https://github.com/TPC-Council/HammerDB/releases/download/v4.7/HammerDB
     rm -rf *.tar.gz *.zip
 WORKDIR /home/hammerdb/HammerDB-4.7
 
-# Adding some sample scripts to be used with HammerDB command line interface
-ADD scripts /home/hammerdb/HammerDB-4.6/scripts
-
 #CMD "bash"
 CMD tail -f /dev/null
 
