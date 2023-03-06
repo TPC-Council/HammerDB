@@ -971,6 +971,22 @@ proc customscript { customscript } {
     }
 }
 
+proc custommonitor { monitor } {
+global lprefix
+if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
+if { $monitor eq "test" } {
+set lprefix "load"
+putscli "Monitor Virtual User disabled for custom script"
+return
+} elseif { $monitor eq "timed" } {
+set lprefix "loadtimed"
+putscli "Monitor Virtual User enabled for customscript"
+} else {
+putscli "Usage: custommonitor test|timed"
+}
+return
+}
+
 proc savescript { savefile } {
 	global _ED
 	 if { [ string length $_ED(package) ] eq 0 } {
