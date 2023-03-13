@@ -1,6 +1,6 @@
 **********************************************************************************************************
 ********************************
-3Release Notes for HammerDB 4.7
+Release Notes for HammerDB 4.7
 ********************************
 
 This folder provides a Dockerfile for building a HammerDb-v4.7 client container that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, Except for IBM Db2. We intend to add it in Future releases. you can follow the updates here.
@@ -18,6 +18,11 @@ To start a container named "hammerdb" with the image, "hammerdb" built from from
 You will need to add networking to communicate with a remote database when starting the container
 For example, adding host network to the container.
         docker run --network=host -it --name hammerdb hammerdb bash
+
+HammerDB prebuild Docker images can downloaded directly from Official TPC-Council HammerDB DockerHub, https://hub.docker.com/r/tpcorg/hammerdb
+        docker pull tpcorg/hammerdb
+
+You can view all the images available here: https://hub.docker.com/r/tpcorg/hammerdb/tags
 
 CLI sample scripts for each database are included under "scripts folder". Samples for TPROC-C and TPROC-H workloads are given both in python and tcl language.
 
@@ -43,6 +48,8 @@ you can then start container:
        docker run -it --rm -v ~/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb bash
 
 
+Refer to the HammerDB blog for more information.
+https://www.hammerdb.com/blog/uncategorized/how-to-deploy-hammerdb-cli-fast-with-docker/ 
 **********************************************************************************************************
 ********************************
 Release Notes for HammerDB 4.6
