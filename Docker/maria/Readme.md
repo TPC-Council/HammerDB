@@ -12,5 +12,5 @@ Networking is needed to communicate with a remote database when starting the con
 ##### For example, adding host network to the container.
         docker run --network=host -it --name hammerdb-maria hammerdb:maria bash
 
-##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
+##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb/tags)
         docker pull tpcorg/hammerdb:maria
