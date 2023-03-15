@@ -12,10 +12,24 @@ Networking is needed to communicate with a remote database when starting the con
         docker pull tpcorg/hammerdb
 View all the Official TPC-Council HammerDB DockerHub images available [here](https://hub.docker.com/r/tpcorg/hammerdb/tags)
 
+## Database specific Docker container images
+Given the wide usage of docker containers is in cloud and emphasizes on being light weight. Here are Database specific Dockerfiles which builds client libarries only for the desired database. Find them here:
+1. [MySQL](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mysql/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mysql/Readme.md)
+2. [MariaDB](https://github.com/TPC-Council/HammerDB/tree/master/Docker/maria/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/maria/Readme.md)
+3. [PostgreSQL](https://github.com/TPC-Council/HammerDB/tree/master/Docker/postgres/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/postgres/Readme.md)
+4. [Oracle Database](https://github.com/TPC-Council/HammerDB/tree/master/Docker/oracle/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/oracle/Readme.md)
+5. [Microsoft SQL Server](https://github.com/TPC-Council/HammerDB/tree/master/Docker/myssqls/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mssqls/Readme.md)
+
+##### Alternatively, these pre built images can be downloaded from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
+         docker pull tpcorg/hammerdb:mysql
+         docker pull tpcorg/hammerdb:maria
+         docker pull tpcorg/hammerdb:oracle
+         docker pull tpcorg/hammerdb:postgres
+         docker pull tpcorg/hammerdb:mssqls
+         
 ## Example Scripts
 CLI example scripts for each database are included under "scripts folder". Examples for TPROC-C and TPROC-H workloads are given both in python and tcl languages.
 These scripts are recommended to run from the HammerDB home directory, "~/HammerDB-4.7/"
-
 This example Python script for MariaDB Database and HammerDB TPROC-C workload automate the following:
 1. builds schema 
 2. run an TPROC-C workload test
@@ -29,8 +43,7 @@ This example Python script for MariaDB Database and HammerDB TPROC-C workload au
         ./scripts/python/maria/tprocc/maria_tprocc_run.py
         ./scripts/python/maria/tprocc/maria_tprocc_deleteschema.py
         ./scripts/python/maria/tprocc/maria_tprocc_result.py
-
-Format is similar for every database in while using both TCL or Python 
+Format is similar for every database while using both TCL or Python 
 
 ## Enable GUI Interface for HammerDB in Docker
 To use HammerDB in GUI Mode from running within a Docker container, make sure X11 forwarding is configured and environemnt variable DISPLAY is set appropriately.
@@ -40,5 +53,6 @@ To use HammerDB in GUI Mode from running within a Docker container, make sure X1
         xhost+
 ##### To start HammerDB container:
         docker run -it --rm -v ~/.Xauthority:/root/.Xauthority -e DISPLAY=$DISPLAY --network=host --name hammerdb hammerdb bash
+
 
 Refer to HammerDB blog "[How to deploy HammerDB CLI fast with Docker](https://www.hammerdb.com/blog/uncategorized/how-to-deploy-hammerdb-cli-fast-with-docker/) for more information.
