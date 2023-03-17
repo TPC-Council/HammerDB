@@ -4,11 +4,11 @@ proc help { args } {
     if [ llength [ info commands wapp-default ]] { set wsmode 1 } else { set wsmode 0 }
     if $wsmode { set helpbanner "HammerDB $hdb_version WS Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
+        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     } else {
         set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript customscript datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
+        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
     }
     if {[ llength $args ] != 1} {
         puts $helpbanner
@@ -139,9 +139,17 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
                     putscli "clearscript - Usage: clearscript"
                     putscli "Clears the script. Equivalent to the \"Clear the Screen\" button in the graphical interface." 
                 }
+                savescript {
+                    putscli "savescript - Usage: savescript"
+                    putscli "Save the script to a file. Equivalent to the \"Save\" button in the graphical interface." 
+                }
                 customscript {
                     putscli "customscript - Usage: customscript scriptname.tcl"
                     putscli "Load an external script. Equivalent to the \"Open Existing File\" button in the graphical interface."  
+                }
+                custommonitor {
+                    putscli "custommonitor - Usage: custommonitor test|timed"
+                    putscli "Causes an additional Virtual User to be created when running vucreate. Used when loading a custom script."  
                 }
                 dgset {
                     putscli "dgset - Usage: dgset \[vu|ware|directory\]" 
