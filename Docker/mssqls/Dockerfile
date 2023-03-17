@@ -38,34 +38,6 @@ RUN apt -y install -q \
     UsageCount=1 " >> /usr/local/unixODBC/etc/odbcinst.ini && \
     odbcinst -j && \
     rm -rf *.tar.gz *.zip unixODBC-2.3.11
-   
-# Install and configure Oracle client libraries
-RUN wget https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip && \
-    unzip *.zip && \
-    echo 'export LD_LIBRARY_PATH=/home/hammerdb/instantclient_21_5/:$LD_LIBRARY_PATH'  >> ~/.bashrc && \
-    echo 'export ORACLE_LIBRARY=/home/hammerdb/instantclient_21_5/libclntsh.so'  >> ~/.bashrc
-  
-# Install and configure IBM Db2 client libraries, 
-# You will need to pre-download IDB Db2 client libraries and place in the local folder
-# RUN mkdir -p db2_cli_odbc_driver/odbc_cli
-# ADD odbc_cli db2_cli_odbc_driver/odbc_cli/
-# RUN apt update && \
-#    echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
-#    apt -y install libxml2 && \
-#    echo 'export DB2_CLI_DRIVER_INSTALL_PATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver"' >> ~/.bashrc && \
-#    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
-#    echo 'export LIBPATH="/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/lib"' >> ~/.bashrc && \
-#    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/bin"' >> ~/.bashrc && \
-#    echo 'export PATH="$PATH:/home/hammerdb/db2_cli_odbc_driver/odbc_cli/clidriver/adm"' >>  ~/.bashrc
-
-# Install and Configure MariaDB client libraries
-RUN apt install -y libmariadb3
-
-# Install and configure PostgreSQL client libraries
-RUN apt install -y libpq-dev 
-
-# Install and configuring MySQL client libraries
-RUN apt install -y libmysqlclient21
 
 #Install Python3.8
 RUN apt install -y python3
