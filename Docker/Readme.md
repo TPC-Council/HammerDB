@@ -1,6 +1,10 @@
 # Release Notes for HammerDB 4.7
 
-This Dockerfile builds a HammerDb-v4.7 client container that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in Future releases. TPC-Council#404
+##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
+        docker pull tpcorg/hammerdb
+        docker tag  tpcorg/hammerdb hammerdb
+        
+Alternatively, [Dockerfile](https://github.com/TPC-Council/HammerDB/blob/master/Docker/Dockerfile) can be used to build a HammerDb-v4.7 client container **_locally_** that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in future releases. TPC-Council#404
 ##### To create an image: Go to the folder containing the Dockerfile
         docker build -t hammerdb .
 ##### To start a container named "hammerdb" with the image, "hammerdb"
