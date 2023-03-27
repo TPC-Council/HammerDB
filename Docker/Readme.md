@@ -3,18 +3,18 @@
 ##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
         docker pull tpcorg/hammerdb
         docker tag  tpcorg/hammerdb hammerdb
-        
-Alternatively, [Dockerfile](https://github.com/TPC-Council/HammerDB/blob/master/Docker/Dockerfile) can be used to build a HammerDb-v4.7 client container **_locally_** that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in future releases. TPC-Council#404
-##### To create an image: Go to the folder containing the Dockerfile
+View all the Official TPC-Council HammerDB DockerHub images available [here](https://hub.docker.com/r/tpcorg/hammerdb/tags)
+
+Alternatively, [Dockerfile](https://github.com/TPC-Council/HammerDB/blob/master/Docker/Dockerfile) can be used to build the same HammerDb-v4.7 client docker image that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in future releases. TPC-Council#404
+##### To build an image: Go to the folder containing the Dockerfile
         docker build -t hammerdb .
-##### To start a container named "hammerdb" with the image, "hammerdb"
+##### To create a container named "hammerdb" from the image, "hammerdb"
         docker run -it --name hammerdb hammerdb bash
 Networking is needed to communicate with a remote database when starting the container
 ##### For example, adding host network to the container.
         docker run --network=host -it --name hammerdb hammerdb bash
 ##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
         docker pull tpcorg/hammerdb
-View all the Official TPC-Council HammerDB DockerHub images available [here](https://hub.docker.com/r/tpcorg/hammerdb/tags)
 
 ## Database specific Docker container images
 Given the wide usage of docker containers is in cloud and emphasizes on being light weight. Here are Database specific Dockerfiles which builds client libarries only for the desired database. Find them here:
