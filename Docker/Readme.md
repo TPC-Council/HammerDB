@@ -18,7 +18,7 @@ Given the wide usage of docker containers is in cloud and emphasizes on being li
 2. [MariaDB](https://github.com/TPC-Council/HammerDB/tree/master/Docker/maria/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/maria/Readme.md)
 3. [PostgreSQL](https://github.com/TPC-Council/HammerDB/tree/master/Docker/postgres/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/postgres/Readme.md)
 4. [Oracle Database](https://github.com/TPC-Council/HammerDB/tree/master/Docker/oracle/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/oracle/Readme.md)
-5. [Microsoft SQL Server](https://github.com/TPC-Council/HammerDB/tree/master/Docker/myssqls/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mssqls/Readme.md)
+5. [Microsoft SQL Server](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mssqls/Dockerfile), [Readme](https://github.com/TPC-Council/HammerDB/tree/master/Docker/mssqls/Readme.md)
 
 ##### Alternatively, these pre built images can be downloaded from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
          docker pull tpcorg/hammerdb:mysql
