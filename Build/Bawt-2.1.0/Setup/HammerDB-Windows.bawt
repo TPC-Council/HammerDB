@@ -26,3 +26,4 @@ Setup db2tcl            db2tcl-2.0.1.7z                db2tcl_NMake.bawt
 Setup awthemes          awthemes-9.3.1.7z              awthemes.bawt
 Setup clearlooks        clearlooks-1.0.7z              clearlooks.bawt
 Setup redis             redis-0.1.7z                   redis.bawt
+Setup ticklecharts      ticklecharts-3.1.7z            ticklecharts.bawt

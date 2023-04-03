@@ -24,3 +24,4 @@ Setup pgtcl             pgtcl-2.1.1.7z                 pgtcl.bawt
 Setup awthemes          awthemes-9.3.1.7z              awthemes.bawt
 Setup clearlooks        clearlooks-1.0.7z              clearlooks.bawt
 Setup redis             redis-0.1.7z                   redis.bawt
+Setup ticklecharts	ticklecharts-3.1.7z	       ticklecharts.bawt
