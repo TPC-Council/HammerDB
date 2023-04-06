@@ -971,6 +971,69 @@ proc customscript { customscript } {
     }
 }
 
+proc custommonitor { monitor } {
+global lprefix
+if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }
+if { $monitor eq "test" } {
+set lprefix "load"
+putscli "Monitor Virtual User disabled for custom script"
+return
+} elseif { $monitor eq "timed" } {
+set lprefix "loadtimed"
+putscli "Monitor Virtual User enabled for customscript"
+} else {
+putscli "Usage: custommonitor test|timed"
+}
+return
+}
+
+proc savescript { savefile } {
+	global _ED
+	 if { [ string length $_ED(package) ] eq 0 } {
+		putscli "Error: No script loaded to save, use loadscript to load"
+		return
+	 }
+	if { [ file extension $savefile ] != ".tcl" } {
+		#extension is not tcl
+	if { [ file extension $savefile ] eq "" } {
+		#There is no extension add one
+		set savefile [ concat $savefile.tcl ]
+	} else {
+		#There is an extension but its not tcl, change it
+		set savefile "[ file rootname $savefile ].tcl"
+	}
+	}
+		#filename has .tcl extension
+	if { [ file dirname $savefile ] eq "." } {
+		#only filename given save to temp
+		set save_directory [ findtempdir ] 
+		set savefile [ file join $save_directory $savefile ]
+	} else {
+		#directory given, check its writable
+		set directory [ file dirname $savefile ]
+		if { [ file writable $directory ] } {
+		#directory is writable, save file
+		} else {
+		#directory given is not writable, show error
+		putscli "Error: directory $directory not writable to write $savefile for savescript"
+		return
+		}
+	}
+		#filename now in a writable format
+                if { [ catch {set fd [open $savefile w]} message ] } {
+		putscli "Error: Failed to open $savefile for writing"
+		return
+		} else {
+                if { [ catch {puts $fd $_ED(package)} message ] } {
+		putscli "Error: Failed to write to $savefile"
+		} else {
+		putscli "Success ... wrote script to $savefile"
+		catch {close $fd} 
+		return
+		}
+	}
+}
+
 proc distributescript {} {
     global opmode masterlist
     if { $opmode != "Primary" } { 
