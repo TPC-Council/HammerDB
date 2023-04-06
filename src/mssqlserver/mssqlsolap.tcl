@@ -1067,6 +1067,19 @@ proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp a
         if {!$azure} {odbc evaldirect "use $db"}
         odbc evaldirect "set implicit_transactions OFF"
     }
+
+    puts "Verifying the scale factor of the existing schema..."
+    set countsql "SELECT count(*) FROM SUPPLIER"
+    set rows [ standsql odbc $countsql $RAISEERROR ]
+    set count [ lindex {*}$rows 1 ]
+    if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+            puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
+            set scale_factor $actual_scale_factor 
+        }
+    }
+
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         unset -nocomplain qlist

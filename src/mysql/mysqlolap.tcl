@@ -1210,6 +1210,17 @@ proc do_tpch { host port socket ssl_options user password db scale_factor RAISEE
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
 
+    puts "Verifying the scale factor of the existing schema..."
+    set countsql "SELECT count(*) FROM SUPPLIER"
+    set count [ standsql $mysql_handler $countsql $RAISEERROR ]
+    if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+            puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
+            set scale_factor $actual_scale_factor 
+        }
+    }
+    
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         catch {set engine [ join [ mysql::sel $mysql_handler "SELECT case when count(NAME) = 8 then 'Heatwave' else 'InnoDB' end as hw_loaded_all FROM performance_schema.rpd_table_id where NAME like '$db.%'" -list ] ]}

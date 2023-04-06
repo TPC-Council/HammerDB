@@ -1431,6 +1431,18 @@ proc do_tpch { connect  scale_factor RAISEERROR VERBOSE degree_of_parallel total
         #Parallel Query currently not supported in TimesTen
         set degree_of_parallel 1
     }
+
+    puts "Verifying the scale factor of the existing schema..."
+    set countsql "SELECT count(*) FROM SUPPLIER"
+    set count [ standsql $curn1 $countsql $RAISEERROR ]
+    if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+            puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
+            set scale_factor $actual_scale_factor 
+        }
+    }
+
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         unset -nocomplain qlist
