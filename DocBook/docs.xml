@@ -3138,7 +3138,7 @@ host  all  all  192.168.1.67/32 md5
                 Virtual Users to be created on the Load Generation Server that
                 will complete your multi-threaded schema build. You should set
                 this value to either the number of warehouses you are going to
-                create (You cannot set the number of virtual users lower than
+                create (You cannot set the number of virtual users higher than
                 the number of warehouses value) or the number of
                 cores/Hyper-Threads on your Load Generation Server. If you
                 have a significantly larger core/Hyper-Thread count on your
@@ -3433,7 +3433,7 @@ GO
                     that will complete your multi-threaded schema build. You
                     should set this value to either the number of warehouses
                     you are going to create (You cannot set the number of
-                    virtual users lower than the number of warehouses value)
+                    virtual users higher than the number of warehouses value)
                     or the number of cores/Hyper-Threads on your Load
                     Generation Server. If you have a significantly larger
                     core/Hyper-Thread count on your Database Server then also
@@ -3543,7 +3543,7 @@ GO
                   that will complete your multi-threaded schema build. You
                   should set this value to either the number of warehouses you
                   are going to create (You cannot set the number of virtual
-                  users lower than the number of warehouses value) or the
+                  users higher than the number of warehouses value) or the
                   number of cores/Hyper-Threads on your Load Generation
                   Server. If you have a significantly larger core/Hyper-Thread
                   count on your Database Server then also installing HammerDB
@@ -3722,7 +3722,7 @@ GO
                   that will complete your multi-threaded schema build. You
                   should set this value to either the number of warehouses you
                   are going to create (You cannot set the number of virtual
-                  users lower than the number of warehouses value) or the
+                  users higher than the number of warehouses value) or the
                   number of cores/Hyper-Threads on your Load Generation
                   Server. If you have a significantly larger core/Hyper-Thread
                   count on your Database Server then also installing HammerDB
@@ -3902,7 +3902,7 @@ GO
                   that will complete your multi-threaded schema build. You
                   should set this value to either the number of warehouses you
                   are going to create (You cannot set the number of virtual
-                  users lower than the number of warehouses value) or the
+                  users higher than the number of warehouses value) or the
                   number of cores/Hyper-Threads on your Load Generation
                   Server. If you have a significantly larger core/Hyper-Thread
                   count on your Database Server then also installing HammerDB
@@ -4078,7 +4078,7 @@ GO
                   that will complete your multi-threaded schema build. You
                   should set this value to either the number of warehouses you
                   are going to create (You cannot set the number of virtual
-                  users lower than the number of warehouses value) or the
+                  users higher than the number of warehouses value) or the
                   number of cores/Hyper-Threads on your Load Generation
                   Server. If you have a significantly larger core/Hyper-Thread
                   count on your Database Server then also installing HammerDB
