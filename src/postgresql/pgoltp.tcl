@@ -415,9 +415,10 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             ORDER BY o_id DESC)
             WHERE ROWNUM = 1;
             EXCEPTION
-            WHEN NO_DATA_FOUND THEN
+            WHEN serialization_failure OR deadlock_detected OR no_data_found THEN
             dbms_output.put_line('No orders for customer');
-            END;
+            ROLLBACK;
+            WHEN OTHERS THEN
             i := 0;
             FOR os_c_line IN c_line
             LOOP
@@ -429,9 +430,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             i := i+1;
             END LOOP;
             COMMIT;
-            EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
-            THEN ROLLBACK;
         END; }
         set sql(6) { CREATE OR REPLACE PROCEDURE SLEV (
             st_w_id			INTEGER,
