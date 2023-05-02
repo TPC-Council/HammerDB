@@ -1215,6 +1215,18 @@ proc sub_query { query_no scale_factor myposition engine } {
 proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mariastatus
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
+
+    puts "Verifying the scale factor of the existing schema..."
+    set countsql "SELECT count(*) FROM SUPPLIER"
+    set count [ standsql $maria_handler $countsql $RAISEERROR ]
+    if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+            puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
+            set scale_factor $actual_scale_factor 
+        }
+    }
+
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         set engine [ standsql $maria_handler "select distinct(engine) from information_Schema.tables where table_schema = '$db'" FALSE ]

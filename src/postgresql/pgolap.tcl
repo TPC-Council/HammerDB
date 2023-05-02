@@ -1203,6 +1203,30 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
     } else {
         pg_result $result -clear
     }
+
+    puts "Verifying the scale factor of the existing schema..."
+    set countsql "SELECT count(*) FROM SUPPLIER;"
+    if {[catch { 
+        pg_select $lda $countsql var {
+            foreach index [array names var] {
+                if { $index > 2} {
+                    set count $var($index)
+                }
+            }
+            set actual_scale_factor [ expr {$count / 10000} ]
+            if { $actual_scale_factor != $scale_factor } {
+                puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
+                set scale_factor $actual_scale_factor 
+            }
+        } 
+    } message]} {
+        if { $RAISEERROR } {
+            error "Query Error : $message"
+        } else {
+            puts "Query Failed : $countsql : $message"
+        }
+    } 
+
     for {set it 0} {$it < $total_querysets} {incr it} {
         if {  [ tsv::get application abort ]  } { break }
         unset -nocomplain qlist
