@@ -2,6 +2,10 @@ proc help { args } {
     #Modified help procedure for both CLI and Web Service.
     global hdb_version
     if [ llength [ info commands wapp-default ]] { set wsmode 1 } else { set wsmode 0 }
+    if $wsmode {
+	helpws
+	return
+    }
     if $wsmode { set helpbanner "HammerDB $hdb_version WS Help Index\n
 Type \"help command\" for more details on specific commands below\n"
         set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
@@ -50,10 +54,6 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "vuid: list VU output for VU with vuid for jobid.\n"
                     putscli {jobs jobid timing - Usage: jobs jobid timing vuid}
                     putscli "timing vuid: list xtprof timings for vuid for jobid.\n"
-                    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount]}
-                    putscli "result: generate html chart for TPROC-C/TPROC-H result."
-                    putscli "timing: generate html chart for TPROC-C/TPROC-H timings."
-                    putscli "tcount: generate html chart for TPROC-C transaction count.\n"
                 }
                 print {
                     putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen|tcconf]}
@@ -196,111 +196,35 @@ proc helpws {} {
 
 proc wapp-page-help {} {
     set B [wapp-param BASE_URL]
+    wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
     wapp-trim {
         <html>
         <head>
         <meta content=\"text/html;charset=ISO-8859-1\" http-equiv=\"Content-Type\">
         <title>HammerDB Web Service</title>
-        <h1>HammerDB Web Service</h1>
         </head>
         <body>
-        <h2>HammerDB API</h2>
-        <pre><b>GET db</b>: Show the configured database.
-        get http://localhost:8080/print?db / get http://localhost:8080/db
-        <br>
-        <b>GET bm</b>: Show the configured benchmark.
-        get http://localhost:8080/print?bm / get http://localhost:8080/bm
-        {\"benchmark\": \"TPC-C\"}
-        <br>
-        <b>GET dict</b>: Show the dictionary for the current database, i.e. all active variables.
-        get http://localhost:8080/print?dict /  http://localhost:8080/dict
-        <br> 
-        <b>GET script</b>: Show the loaded script.
-        get http://localhost:8080/print?script / http://localhost:8080/script
-        <br> 
-        <b>GET vuconf</b>: Show the virtual user configuration.
-        get http://localhost:8080/print?vuconf / http://localhost:8080/vuconf
-        <br> 
-        <b>GET vucreate</b>: Create the virtual users. Equivalent to the Virtual User Create option in the graphical interface. Use vucreated to see the number created, vustatus to see the status and vucomplete to see whether all active virtual users have finished the workload. A script must be loaded before virtual users can be created.
-        get http://localhost:8080/vucreate
-        <br> 
-        <b>GET vucreated</b>: Show the number of virtual users created.
-        get http://localhost:8080/print?vucreated / get http://localhost:8080/vucreated
-        <br> 
-        <b>GET vustatus</b>: Show the status of virtual users, status will be \"WAIT IDLE\" for virtual users that are created but not running a workload,\"RUNNING\" for virtual users that are running a workload, \"FINISH SUCCESS\" for virtual users that completed successfully or \"FINISH FAILED\" for virtual users that encountered an error.
-        get http://localhost:8080/print?vustatus / get http://localhost:8080/vustatus
-        <br> 
-        <b>GET datagen</b>: Show the datagen configuration
-        get http://localhost:8080/print?datagen /  get http://localhost:8080/datagen
-        <br> 
-        <b>GET vucomplete</b>: Show if virtual users have completed. returns \"true\" or \"false\" depending on whether all virtual users that started a workload have completed regardless of whether the status was \"FINISH SUCCESS\" or \"FINISH FAILED\".
-        get http://localhost:8080/vucomplete
-        <br> 
-        <b>GET vudestroy</b>: Destroy the virtual users. Equivalent to the Destroy Virtual Users button in the graphical interface that replaces the Create Virtual Users button after virtual user creation.
-        get http://localhost:8080/vudestroy
-        <br> 
-        <b>GET loadscript</b>: Load the script for the database and benchmark set with dbset and the dictionary variables set with diset. Use print?script to see the script that is loaded. Equivalent to loading a Driver Script in the Script Editor window in the graphical interface. Driver script must be set to timed for the script to be loaded. Test scripts should be run in the GUI environment.  
-        get http://localhost:8080/loadscript
-        <br> 
-        <b>GET clearscript</b>: Clears the script. Equivalent to the \"Clear the Screen\" button in the graphical interface.
-        get http://localhost:8080/clearscript
-        <br> 
-        <b>GET vurun</b>: Send the loaded script to the created virtual users for execution. Equivalent to the Run command in the graphical interface. Creates a job id associated with all output. 
-        get http://localhost:8080/vurun
-        <br>
-        <b>GET buildschema</b>: Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface. Creates a job id associated with all output. 
-        get http://localhost:8080/buildschema
-        <br>
-        <b>GET deleteschema</b>: Runs the schema delete for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Delete command in the graphical interface. Creates a job id associated with all output. 
-        get http://localhost:8080/deleteschema
+        <h3>Help:</h3>
         <br>
         <b>GET jobs</b>: Show the job ids, configuration, output, status, results and timings of jobs created by buildschema and vurun. Job output is equivalent to the output viewed in the graphical interface or command line.
-        get http://localhost:8080/jobs
-        get http://localhost:8080/jobs?jobid=TEXT
-        get http://localhost:8080/jobs?jobid=TEXT&bm
-        get http://localhost:8080/jobs?jobid=TEXT&db
-        get http://localhost:8080/jobs?jobid=TEXT&delete
-        get http://localhost:8080/jobs?jobid=TEXT&dict
-        get http://localhost:8080/jobs?jobid=TEXT&result
-        get http://localhost:8080/jobs?jobid=TEXT&status
-        get http://localhost:8080/jobs?jobid=TEXT&tcount
-        get http://localhost:8080/jobs?jobid=TEXT&amp;timestamp
-        get http://localhost:8080/jobs?jobid=TEXT&timing
-        get http://localhost:8080/jobs?jobid=TEXT&timing&vuid=INTEGER
-        get http://localhost:8080/jobs?jobid=TEXT&vu=INTEGER
+	get http://localhost:8080/jobs<br>
+	get http://localhost:8080/jobs?jobid=TEXT<br>
+	get http://localhost:8080/jobs?jobid=TEXT&bm<br>
+	get http://localhost:8080/jobs?jobid=TEXT&db<br>
+	get http://localhost:8080/jobs?jobid=TEXT&delete<br>
+	get http://localhost:8080/jobs?jobid=TEXT&dict<br>
+	get http://localhost:8080/jobs?jobid=TEXT&index<br>
+	get http://localhost:8080/jobs?jobid=TEXT&result<br>
+	get http://localhost:8080/jobs?jobid=TEXT&resultdata<br>
+	get http://localhost:8080/jobs?jobid=TEXT&status<br>
+	get http://localhost:8080/jobs?jobid=TEXT&tcount<br>
+	get http://localhost:8080/jobs?jobid=TEXT&tcountdata<br>
+	get http://localhost:8080/jobs?jobid=TEXT&timestamp<br>
+	get http://localhost:8080/jobs?jobid=TEXT&timing<br>
+	get http://localhost:8080/jobs?jobid=TEXT&timingdata<br>
+	get http://localhost:8080/jobs?jobid=TEXT&timing&vuid=INTEGER<br>
+	get http://localhost:8080/jobs?jobid=TEXT&vu=INTEGER<br>
         <br>
-        <b>GET librarycheck</b>: Attempts to load the vendor provided 3rd party library for all databases and reports whether the attempt was successful.
-        get http://localhost:8080/librarycheck
-        <br>
-        <b>GET tcstart</b>: Starts the Transaction Counter. 
-        get http://localhost:8080/tcstart
-        <br>
-        <b>GET tcstop</b>: Stops the Transaction Counter. 
-        get http://localhost:8080/tcstop
-        <br>
-        <b>GET tcstatus</b>: Checks the status of the Transaction Counter. 
-        get http://localhost:8080/tcstatus
-        <br>
-        <b>GET quit</b>: Terminates the webservice and reports message to the console.
-        get http://localhost:8080/quit
-        <br>
-        <b>POST dbset</b>: Usage: dbset \[db|bm\] value. Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu in the graphical interface. Database value is set by the database prefix in the XML configuration.
-        post http://localhost:8080/dbset { \"db\": \"ora\" }
-        <br>
-        <b>POST diset</b>: Usage: diset dict key value. Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use print?dict to see what these variables are and diset to change.
-        post http://localhost:8080/diset { \"dict\": \"tpcc\", \"key\": \"duration\", \"value\": \"1\" }
-        <br>
-        <b>POST vuset</b>: Usage: vuset \[vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps\]. Configure the virtual user options. Equivalent to the Virtual User Options window in the graphical interface.
-        post http://localhost:8080/vuset { \"vu\": \"4\" }
-        <br>
-        <b>POST tcset</b>: Usage: tcset \[refreshrate\] 
-        post http://localhost:8080/tcset { \"refreshrate\": \"20\" }
-        <br>
-        <b>POST dgset</b>: Usage: dgset \[vu|ware|directory\]. Set the Datagen options. Equivalent to the Datagen Options dialog in the graphical interface.
-        post http://localhost:8080/dgset { \"directory\": \"/home/oracle\" }
-        <br>
-        <b>POST customscript</b>: Load an external script. Equivalent to the \"Open Existing File\" button in the graphical interface. Script must be converted to JSON format before post.
-        post http://localhost:8080/customscript { \"script\": \"customscript\"}
         </body>
         </html>
 }}

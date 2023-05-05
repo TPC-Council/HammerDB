@@ -51,7 +51,7 @@ exit
       }
 }
 
-append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle jobs }
+append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle jobs ticklecharts }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m
@@ -62,7 +62,7 @@ for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
         }
     }
 
-append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl gentccmn.tcl gentcws.tcl geninitws.tcl genws.tcl genhelp.tcl genstep.tcl }
+append loadlist { genvu.tcl genxml.tcl geninitws.tcl genws.tcl genhelp.tcl }
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
 		set loadtext $f
