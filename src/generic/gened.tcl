@@ -1650,7 +1650,7 @@ proc vurun {} {
     }
     
     #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         if { [ catch {run_virtual} message ] } {
             puts "Error: $message"
             unset -nocomplain jobid
@@ -1658,6 +1658,11 @@ proc vurun {} {
     } else {
         puts "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
+    }
+      if { [ info exists jobid ] } {
+        puts "Benchmark Run jobid=$jobid"
+    } else {
+        return
     }
 }
 
@@ -3155,18 +3160,26 @@ proc build_schema {} {
         #Yes was pressed at schema creation run
         run_virtual
     }
+      if { [ info exists jobid ] } {
+        puts "Schema Build jobid=$jobid"
+    } 
 }
 
 proc delete_schema {} {
     #This runs the schema deletion
     upvar #0 dbdict dbdict
-    global _ED bm rdbms threadscreated
+    global _ED bm rdbms threadscreated jobid
     #Clear the Script Editor first to make sure a genuine schema is run
     ed_edit_clear
     if { [ info exists threadscreated ] } {
         tk_messageBox -icon error -message "Cannot delete schema with Virtual Users active, destroy Virtual Users first"
         #clear script editor so cannot be re-run with incorrect v user count
         return 1
+    }
+set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
     }
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
@@ -3192,6 +3205,9 @@ proc delete_schema {} {
     } else {
         #Yes was pressed at schema deletion run
         run_virtual
+    }
+    if { [ info exists jobid ] } {
+        puts "Schema Delete jobid=$jobid"
     }
 }
 

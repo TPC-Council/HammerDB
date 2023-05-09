@@ -67,7 +67,7 @@ namespace eval jobs {
       set sqlite_db ":memory:"
     }
     if [catch {sqlite3 hdbjobs $sqlite_db} message ] {
-      puts "Error initializing SQLite database : $message"
+      puts "Error initializing Jobs database : $message"
       return
     } else {
       catch {hdbjobs timeout 30000}
@@ -99,7 +99,7 @@ namespace eval jobs {
           catch {hdbjobs eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBCHART_IDX ON JOBCHART(jobid)}}
-          puts "Initialized new SQLite in-memory database"
+          puts "Initialized new Jobs in-memory database"
         }
       } else {
         if [catch {set tblname [ hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
@@ -128,11 +128,11 @@ namespace eval jobs {
               catch {hdbjobs eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBCHART_IDX ON JOBCHART(jobid)}}
-              puts "Initialized new SQLite on-disk database $sqlite_db"
+              puts "Initialized new Jobs on-disk database $sqlite_db"
             }
           } else {
             set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] KB" 
-            puts "Initialized SQLite on-disk database $sqlite_db using existing tables ($size)"
+            puts "Initialized Jobs on-disk database $sqlite_db using existing tables ($size)"
           }
         }
       }
@@ -812,9 +812,11 @@ wapp-subst {<h3 class="title">Job Index:</h3>}
     set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$job} ]]]
     set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$job} ]]
     set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=0} ]]
-        if { [ string match "*Ready to create*" $output ] } {
+    if { [ string match "*Ready to create*" $output ] } {
     set jobtype "Schema Build"
-	} else {
+	} elseif { [ string match "*Do you want to delete*" $output ] } {
+    set jobtype "Schema Delete"
+    } else {
     set jobtype "Benchmark Run"
 	}
     wapp-subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($bm)</td><td>%html($date)</td><td>%html($jobtype)</td></tr>\n}
@@ -929,7 +931,7 @@ if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobi
 if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobid has no transaction counter data" ] } {
 		;#No result exclude link
   		} else {
-    		wapp-subst {<li><a href='%html($url)'>%html($option)</a>\n}
+    		wapp-subst {<li><a href='%html($url)'>%html(transaction count)</a>\n}
   		}
 	}
 	timing {
@@ -985,6 +987,8 @@ if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobi
         return
 		}
           if { [ dict keys $paramdict ] eq "jobid DELETE" } {
+	  set jobstatus [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0} ]
+	  if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
             set joboutput [ hdbjobs eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
@@ -992,6 +996,10 @@ if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobi
             set joboutput [ hdbjobs eval {DELETE FROM JOBCHART WHERE JOBID=$jobid} ]
             dict set jsondict success message "Deleted Jobid $jobid"
             wapp-2-json 2 $jsondict
+		} else {
+            dict set jsondict error message "Cannot delete Jobid $jobid Job not complete"
+            wapp-2-json 2 $jsondict
+		}
           } else {
             if { [ dict keys $paramdict ] eq "jobid result" } {
 		wapp-content-security-policy off

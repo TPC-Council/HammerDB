@@ -1233,12 +1233,17 @@ proc delete_schema {} {
 }
 
 proc deleteschema {} {
-    global virtual_users maxvuser rdbms bm threadscreated
+    global virtual_users maxvuser rdbms bm threadscreated jobid
     if { [ info exists threadscreated ] } {
         puts "Error: Cannot delete schema with Virtual Users active, destroy Virtual Users first"
         return
     }
     upvar #0 dbdict dbdict
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
@@ -1254,6 +1259,9 @@ proc deleteschema {} {
     if { [ catch {delete_schema} message ] } {
         puts "Error: $message"
     }
+	if { [ info exists jobid ] } {
+        return "jobid=$jobid"
+    } 
 }
 
 proc vurun {} {
