@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs wapp-page-logo.png getjob savechart
+  namespace export init_job_tables_gui init_job_tables jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png getjob savechart
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -342,6 +342,30 @@ wapp-subst {<h3 class="title">Env:</h3><br>}
     </body>
     </html>
   }
+}
+
+proc wapp-page-tick.png {} {
+wapp-mimetype image/png
+wapp-cache-control max-age=3600
+ wapp-unsafe [ binary decode base64 {
+R0lGODlhEAAQAIIAAPwCBMT+xATCBASCBARCBAQCBEQCBAAAACH5BAEAAAAA
+LAAAAAAQABAAAAM2CLrc/itAF8RkdVyVye4FpzUgJwijORCGUhDDOZbLG6Nd
+2xjwibIQ2y80sRGIl4IBuWk6Af4EACH+aENyZWF0ZWQgYnkgQk1QVG9HSUYg
+UHJvIHZlcnNpb24gMi41DQqpIERldmVsQ29yIDE5OTcsMTk5OC4gQWxsIHJp
+Z2h0cyByZXNlcnZlZC4NCmh0dHA6Ly93d3cuZGV2ZWxjb3IuY29tADs=
+}]
+}
+
+proc wapp-page-cross.png {} {
+wapp-mimetype image/png
+wapp-cache-control max-age=3600
+ wapp-unsafe [ binary decode base64 {
+R0lGODlhEAAQAIIAAASC/PwCBMQCBEQCBIQCBAAAAAAAAAAAACH5BAEAAAAA
+LAAAAAAQABAAAAMuCLrc/hCGFyYLQjQsquLDQ2ScEEJjZkYfyQKlJa2j7AQn
+MM7NfucLze1FLD78CQAh/mhDcmVhdGVkIGJ5IEJNUFRvR0lGIFBybyB2ZXJz
+aW9uIDIuNQ0KqSBEZXZlbENvciAxOTk3LDE5OTguIEFsbCByaWdodHMgcmVz
+ZXJ2ZWQuDQpodHRwOi8vd3d3LmRldmVsY29yLmNvbQA7
+}]
 }
 
 proc wapp-page-logo.png {} {
@@ -789,6 +813,17 @@ gAAAOw==
 }]
 }
 
+  proc string_occurrences {needleString haystackString} {
+    set j [string first $needleString $haystackString 0]
+    if {$j == -1} {return 0}
+    set i 0
+    while {$j != -1 } {
+        set j [string first $needleString $haystackString [incr j]]
+        incr i
+    }
+    return $i
+ }
+
   proc wapp-page-jobs {} {
     global bm
     set query [ wapp-param QUERY_STRING ]
@@ -804,7 +839,7 @@ wapp-subst {<h3 class="title">Job Index:</h3>}
   set jcount 0
   wapp-subst {<div><ol style='column-width: 20ex;'>\n}
   wapp-subst {<br><table>\n}
-  wapp-subst {<th>Jobid</th><th>Database</th><th>Benchmark</th><th>Date</th><th>Workload</th>\n}
+  wapp-subst {<th>Jobid</th><th>Database</th><th>Benchmark</th><th>Date</th><th>Workload</th><th>Status</th>\n}
   foreach job [ getjob joblist ] {
     incr jcount
     set url "[wapp-param BASE_URL]/jobs?jobid=$job&index"
@@ -819,7 +854,17 @@ wapp-subst {<h3 class="title">Job Index:</h3>}
     } else {
     set jobtype "Benchmark Run"
 	}
-    wapp-subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($bm)</td><td>%html($date)</td><td>%html($jobtype)</td></tr>\n}
+      set statusimg ""
+        if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $output ] } {
+        if { [ string match "*FINISHED FAILED*" $output ] } {
+                set statusimg "<img src='[wapp-param BASE_URL]/cross.png'>"
+                } else {
+                if { [ llength [string_occurrences ":RUNNING" $output] ] eq [ llength [string_occurrences ":FINISHED SUCCESS" $output] ] } {
+                set statusimg "<img src='[wapp-param BASE_URL]/tick.png'>"
+                }
+        }
+   }
+    wapp-subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($bm)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%unsafe($statusimg)</td></tr>\n}
   }
   wapp-subst {</table>\n}
     if { $jcount eq 0 } {
