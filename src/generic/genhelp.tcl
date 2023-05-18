@@ -6,14 +6,9 @@ proc help { args } {
 	helpws
 	return
     }
-    if $wsmode { set helpbanner "HammerDB $hdb_version WS Help Index\n
+    set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset jobs librarycheck loadscript print quit tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
-    } else {
-        set helpbanner "HammerDB $hdb_version CLI Help Index\n
-Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus ]
-    }
+        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsstart wsstatus wsstop ]
     if {[ llength $args ] != 1} {
         puts $helpbanner
         foreach helpcmd $helpcmds { puts "\t$helpcmd" } 
@@ -183,6 +178,18 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
                     putscli "tcstop - Usage: tcstop"
                     putscli "Stops the Transaction Counter."
                 }
+                wsstart {
+                    putscli "wsstart - Usage: wsstart"
+                    putscli "Start the Web Service."
+                }
+                wsstatus {
+                    putscli "wsstart - Usage: wsstatus"
+                    putscli "Checks the status of the Web Service."
+                }
+                wsstop {
+                    putscli "wsstop - Usage: wsstop"
+                    putscli "Stops the Web Service."
+                }
             }
         }
     }
@@ -190,8 +197,12 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
 
 proc helpws {} {
     global ws_port
-    set res [rest::get http://localhost:$ws_port/help "" ]
-    putscli [ strip_html $res ]
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/help]} message ] {
+        putscli $message
+    } else {
+        putscli [ strip_html [ http::data $tok ] ]
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
 }
 
 proc wapp-page-help {} {

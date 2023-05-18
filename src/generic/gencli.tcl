@@ -1731,3 +1731,59 @@ proc tcset {args} {
                 puts {Usage: tcset [refreshrate|logtotemp|unique|timestamps] value}
             }
 }}}
+
+
+proc get_ws_port {} {
+ upvar #0 genericdict genericdict
+    if {[dict exists $genericdict webservice ws_port ]} {
+        set ws_port [ dict get $genericdict webservice ws_port ]
+        if { ![string is integer -strict $ws_port ] } {
+            putscli "Warning port not set to integer in config setting to default"
+            set ws_port 8080
+        }
+    } else {
+        putscli "Warning port not found in config setting to default"
+        set ws_port 8080
+    }
+return $ws_port
+}
+
+proc strip_html { htmlText } {
+    regsub -all {<[^>]+>} $htmlText "" newText
+    return $newText
+}
+
+proc wsstart {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+    	}
+	exec [ auto_execok ./hammerdbws ] &
+	after 100
+}
+
+proc wsstop {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+    	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
+	putscli $message
+    } else {
+	putscli [ strip_html [ http::data $tok ]]
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+}
+
+proc wsstatus {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+    	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
+	putscli $message
+    } else {
+	putscli [ strip_html [ http::data $tok ]]
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+}

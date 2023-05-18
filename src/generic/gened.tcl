@@ -138,6 +138,7 @@ proc ed_start_gui { dbdict icons iconalt } {
         {{command}  {Metrics} {-command "metricsopts" -underline 0}}
         {{command}  {Mode} {-command "select_mode" -underline 0}}
         {{command}  {Datagen} {-command "dgopts" -underline 0}}
+        {{command}  {Jobs} {-command "jobopts" -underline 0}}
         {{tearoff}  {no} {}}
     }
     construct_menu $Name Options\  $Menu_string($Name)
@@ -202,6 +203,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.dashboard bar dashboard dashboard.ppm "metrics" "Start Metrics" 
     construct_button $Parent.buttons.mode bar mode mode.ppm "select_mode" "Mode" 
     construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate TPROC Data" 
+    construct_button $Parent.buttons.results bar results results.ppm "run_job_browser" "Browse Jobs Data" 
     #bindtags to call to prevent highlighting of buttons when status changed
     bind BreakTag <Enter> {break}
     bind BreakTag2 <Leave> {break}
@@ -546,6 +548,20 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name item $rdbms.$bm.datagen.start -tags dgstart
     tooltip::tooltip $Name -item $rdbms.$bm.datagen.start "Start Data Generation"
     $Name tag bind dgstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.datagen invoke } }
+    $Name insert $rdbms.$bm end -id $rdbms.$bm.jobs -text "Jobs" -image [ create_image results icons ]
+    dict set treeidicons $rdbms.$bm.jobs results
+    $Name item $rdbms.$bm.jobs -tags {jobhlp}
+    tooltip::tooltip $Name -item $rdbms.$bm.jobs "Configure and Browse Job Output and Results"
+    $Name insert $rdbms.$bm.jobs end -id $rdbms.$bm.jobs.options -text "Options" -image [ create_image option icons ]
+    dict set treeidicons $rdbms.$bm.jobs.options option 
+    $Name item $rdbms.$bm.jobs.options -tags jobopt
+    tooltip::tooltip $Name -item $rdbms.$bm.jobs.options "Job Options"
+    $Name tag bind jobopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { jobopts } }
+    $Name insert $rdbms.$bm.jobs end -id $rdbms.$bm.jobs.start -text "Browse" -image [ create_image results icons ]
+    dict set treeidicons $rdbms.$bm.jobs.start results 
+    $Name item $rdbms.$bm.jobs.start -tags jobstart
+    tooltip::tooltip $Name -item $rdbms.$bm.jobs.start "Start Job Browser"
+    $Name tag bind jobstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.results invoke } }
 }
 
 proc ed_stop_gui {} {

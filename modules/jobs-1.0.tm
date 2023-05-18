@@ -1204,7 +1204,7 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
   proc getjobtcount { jobid } {
     set jobtcount [ dict create ]
     set jobheader [ hdbjobs eval {select distinct(db), metric from JOBTCOUNT, JOBMAIN WHERE JOBTCOUNT.JOBID=$jobid AND JOBMAIN.JOBID=$jobid} ]
-    set joboutput [ hdbjobs eval {select counter, JOBTCOUNT.timestamp from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
+    set joboutput [ hdbjobs eval {select JOBTCOUNT.timestamp, counter from JOBTCOUNT WHERE JOBTCOUNT.JOBID=$jobid order by JOBTCOUNT.timestamp asc} ]
     dict append jobtcount $jobheader $joboutput
     if { $jobheader eq "" && $joboutput eq "" } {
       set jobtcount [ list $jobid "Jobid has no transaction counter data" ]
@@ -1412,8 +1412,13 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
           if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
           set header [ dict keys $chartdata ]
-          set xaxisvals [ dict values [ join [ dict values $chartdata ]]]
-          set lineseries [ dict keys [ join [ dict values $chartdata ]]]
+          set xaxisvals [ dict keys [ join [ dict values $chartdata ]]]
+          set lineseries [ dict values [ join [ dict values $chartdata ]]]
+	    #Delete the first value if it is 0, so we start the chart from the first measurement
+	  if { [ lindex $lineseries 0 ] eq 0 } {
+		set lineseries [ lreplace $lineseries 0 0 ]
+		set xaxisvals [ lreplace $xaxisvals 0 0 ]
+		}
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
           $line SetOptions -title [ subst {text "$dbdescription TPROC-C Transaction Count $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}

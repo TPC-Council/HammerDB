@@ -32,26 +32,7 @@ puts "Type \"help\" for a list of commands"
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/modules"
 
-namespace eval autostart {
-    set autostartap "false"
-    if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
-puts {Usage: hammerdbws [ auto [ script_to_autoload.tcl  ] ]}
-exit
-        } else {
-        set autostartap "true"
-        set autoloadscript [lindex $argv 1]
-if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
-;# autostart selected and tcl file exists
-             } else {
-puts {Usage: hammerdbws [ auto [ script_to_autoload.tcl  ] ]}
-exit
-                }
-           }
-      }
-}
-
-append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle jobs ticklecharts }
+append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp http huddle jobs ticklecharts }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m
@@ -80,10 +61,16 @@ for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccoun
                 puts stderr "Error loading database source files/$f"
         }
     }
-if { $autostart::autostartap == "true" } {
-        start_webservice -nowait
-        source $autostart::autoloadscript
-        } else {
+	if { $argc eq 0 } {
+	set argv0 "wait" 
+	} else { 
+	set argv0 [ string tolower [lindex $argv 0 ]] 
+	}
+	if { $argv0 == "wait" } {
+        start_webservice -wait
+        } elseif { $argv0 == "nowait" } {
         start_webservice -nowait
         TclReadLine::interactws
-        }
+        } else {
+                puts stderr "Error starting HammerDB webservice: argument should be wait or nowait"
+	}
