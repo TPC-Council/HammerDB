@@ -138,7 +138,7 @@ proc ed_start_gui { dbdict icons iconalt } {
         {{command}  {Metrics} {-command "metricsopts" -underline 0}}
         {{command}  {Mode} {-command "select_mode" -underline 0}}
         {{command}  {Datagen} {-command "dgopts" -underline 0}}
-        {{command}  {Jobs} {-command "jobopts" -underline 0}}
+        {{command}  {Jobs} {-command "job_options" -underline 0}}
         {{tearoff}  {no} {}}
     }
     construct_menu $Name Options\  $Menu_string($Name)
@@ -204,6 +204,12 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.mode bar mode mode.ppm "select_mode" "Mode" 
     construct_button $Parent.buttons.datagen bar datagen datagen.ppm "run_datagen" "Generate TPROC Data" 
     construct_button $Parent.buttons.results bar results results.ppm "run_job_browser" "Browse Jobs Data" 
+    upvar #0 genericdict genericdict
+    if {[dict exists $genericdict commandline jobs_disable ]} {
+    if { [ dict get $genericdict commandline jobs_disable ] eq 1 } {
+    .ed_mainFrame.buttons.results configure -state disabled
+    	} 
+    }
     #bindtags to call to prevent highlighting of buttons when status changed
     bind BreakTag <Enter> {break}
     bind BreakTag2 <Leave> {break}
@@ -556,7 +562,7 @@ proc populate_tree {rdbms bm icons iconalt} {
     dict set treeidicons $rdbms.$bm.jobs.options option 
     $Name item $rdbms.$bm.jobs.options -tags jobopt
     tooltip::tooltip $Name -item $rdbms.$bm.jobs.options "Job Options"
-    $Name tag bind jobopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { jobopts } }
+    $Name tag bind jobopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { job_options } }
     $Name insert $rdbms.$bm.jobs end -id $rdbms.$bm.jobs.start -text "Browse" -image [ create_image results icons ]
     dict set treeidicons $rdbms.$bm.jobs.start results 
     $Name item $rdbms.$bm.jobs.start -tags jobstart
@@ -573,6 +579,7 @@ proc ed_stop_gui {} {
         #can only be used before final application exit
         catch {thread::exit $ij}
     }
+    catch {wsstop}
     exit
 }
 
@@ -2557,9 +2564,12 @@ proc autopilot_options {} {
     set Prompt $Parent.f1.h2
     ttk::label $Prompt -text "Autopilot Options"
     grid $Prompt -column 1 -row 0 -sticky w
+    set Prompt $Parent.f1.b1a
+    ttk::label $Prompt -text "Autopilot Disabled :"
     set Name $Parent.f1.b1
-    ttk::radiobutton $Name -text "Autopilot Disabled" -variable apmode -value "disabled" 
-    grid $Name -column 0 -row 2 -sticky e                                    
+    ttk::radiobutton $Name -text "" -variable apmode -value "disabled" 
+    grid $Prompt -column 0 -row 2 -sticky e
+    grid $Name -column 1 -row 2 -sticky w                                    
     bind $Parent.f1.b1 <Button> {
         set suppo 0
         set optlog 0
@@ -2574,9 +2584,12 @@ proc autopilot_options {} {
         .apopt.f1.e6 configure -state disabled
         .apopt.f1.e7 configure -state disabled
     }
+    set Prompt $Parent.f1.b2a
+    ttk::label $Prompt -text "Autopilot Enabled :"
     set Name $Parent.f1.b2
-    ttk::radiobutton $Name -text "Autopilot Enabled" -variable apmode -value "enabled" 
-    grid $Name -column 0 -row 3 -sticky e                                          
+    ttk::radiobutton $Name -text "" -variable apmode -value "enabled" 
+    grid $Prompt -column 0 -row 3 -sticky e
+    grid $Name -column 1 -row 3 -sticky w
     bind $Parent.f1.b2 <Button> {
         set suppo 1
         .apopt.f1.e1 configure -state enabled 
@@ -2714,6 +2727,114 @@ proc autopilot_options {} {
     wm geometry .apopt +50+50
     wm deiconify .apopt
     raise .apopt
+    update
+}
+
+proc job_options {} {
+    upvar #0 icons icons
+    upvar #0 genericdict genericdict
+    global jobs_disable ws_port
+    	set jobs_disable 1 
+    if {[dict exists $genericdict commandline jobs_disable ]} {
+    if { [ dict get $genericdict commandline jobs_disable ] eq 0 } {
+	set jobs_disable 0
+    	}}
+    if {[dict exists $genericdict webservice ws_port ]} {
+        set ws_port [ dict get $genericdict webservice ws_port ]
+        if { ![string is integer -strict $ws_port ] } {
+            set ws_port 8080
+        }
+    } else {
+        set ws_port 8080
+    }
+
+    ttk::toplevel .jobopt
+    wm transient .jobopt .ed_mainFrame
+    wm withdraw .jobopt
+    wm title .jobopt {Job Options}
+    set Parent .jobopt
+    set Name $Parent.f1
+    ttk::frame $Name
+    pack $Name -anchor nw -fill x -side top -padx 5 
+    set Prompt $Parent.f1.h1
+    ttk::label $Prompt -image [ create_image results icons ]
+    grid $Prompt -column 0 -row 0 -sticky e
+    set Prompt $Parent.f1.h2
+    ttk::label $Prompt -text "Job Options"
+    grid $Prompt -column 1 -row 0 -sticky w
+    set Prompt $Parent.f1.p1a
+    ttk::label $Prompt -text "Jobs Disabled :"
+    set Name $Parent.f1.b1
+    ttk::radiobutton $Name -text "" -variable jobs_disable -value 1
+    grid $Prompt -column 0 -row 2 -sticky e                                    
+    grid $Name -column 1 -row 2 -sticky w                                    
+    bind $Parent.f1.b1 <Button> {
+            after 50 {tk_messageBox -message "Jobs will be disabled on HammerDB restart"}
+    }
+    set Prompt $Parent.f1.p2a
+    ttk::label $Prompt -text "Jobs Enabled :"
+    set Name $Parent.f1.b2
+    ttk::radiobutton $Name -text "" -variable jobs_disable -value 0 
+    grid $Prompt -column 0 -row 4 -sticky e                                    
+    grid $Name -column 1 -row 4 -sticky w                                          
+    bind $Parent.f1.b2 <Button> {
+            after 50 {tk_messageBox -message "Jobs will be enabled on HammerDB restart"}
+    }
+    set Name $Parent.f1.e1
+    set Prompt $Parent.f1.p1
+    ttk::label $Prompt -text "Webservice Port :"
+    ttk::entry $Name -width 30 -textvariable ws_port
+    grid $Prompt -column 0 -row 5 -sticky e
+    grid $Name -column 1 -row 5
+    if {$jobs_disable != "0" } {
+        $Name configure -state disabled
+    }
+    set Name $Parent.f1.e2
+    set Prompt $Parent.f1.p2
+    ttk::label $Prompt -text "Web Service Start :"
+    ttk::button $Name -command {wsstart} -text Start
+    grid $Prompt -column 0 -row 6 -sticky e
+    grid $Name -column 1 -row 6 -sticky w
+    if {$jobs_disable != "0" } {
+        $Name configure -state disabled
+    }
+    set Name $Parent.f1.e3
+    set Prompt $Parent.f1.p3
+    ttk::label $Prompt -text "Web Service Stop :"
+    ttk::button $Name -command {wsstop} -text Stop
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7 -sticky w
+    if {$jobs_disable != "0" } {
+        $Name configure -state disabled
+    }
+    set Name $Parent.f1.e4
+    set Prompt $Parent.f1.p4
+    ttk::label $Prompt -text "Web Service Status :"
+    ttk::button $Name -command {wsstatus} -text Status
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8 -sticky w
+    if {$jobs_disable != "0" } {
+        $Name configure -state disabled
+    }
+    set Name $Parent.b3
+    ttk::button $Name -command {destroy .jobopt} -text Cancel
+    pack $Name -anchor w -side right -padx 3 -pady 3
+    set Name $Parent.b4
+    ttk::button $Name -command {
+        if { $jobs_disable eq "0" } {
+            .ed_mainFrame.buttons.results configure -state normal
+        } else {
+            .ed_mainFrame.buttons.results configure -state disabled
+        }
+	dict set genericdict "commandline" "jobs_disable" $jobs_disable
+	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+        catch "destroy .jobopt"
+    } -text {OK}     
+    pack $Name -anchor w -side right -padx 3 -pady 3
+    wm geometry .jobopt +50+50
+    wm deiconify .jobopt
+    raise .jobopt
     update
 }
 
@@ -3388,6 +3509,95 @@ proc verify_build_threads { num_vu count_ware maximum } {
     }
     if { $num_vu > $count_ware } { set num_vu $count_ware }
     return $num_vu
+}
+
+proc get_ws_port {} {
+ upvar #0 genericdict genericdict
+    if {[dict exists $genericdict webservice ws_port ]} {
+        set ws_port [ dict get $genericdict webservice ws_port ]
+        if { ![string is integer -strict $ws_port ] } {
+            putscli "Warning port not set to integer in config setting to default"
+            set ws_port 8080
+        }
+    } else {
+        putscli "Warning port not found in config setting to default"
+        set ws_port 8080
+    }
+return $ws_port
+}
+
+proc strip_html { htmlText } {
+    regsub -all {<[^>]+>} $htmlText "" newText
+    return $newText
+}
+
+proc wsstart {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+        } else {
+	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+        exec [ auto_execok ./hammerdbws ] gui &
+        after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
+}
+
+proc wsstop {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+        } else {
+	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
+        after 100 "tk_messageBox -message \"Web Service not running: $message\""
+    } else {
+        after 100 "tk_messageBox -message \"Stopping HammerDB Web Service on port $ws_port\""
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+}
+
+proc wsstatus {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+        } else {
+	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
+        after 100 "tk_messageBox -message \"Web Service not running: $message\""
+    } else {
+	set wsenv [ strip_html [ http::data $tok ]]
+	if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
+        after 100 "tk_messageBox -message \"Web Service running: $wsenv\""
+    } else {
+        after 100 "tk_messageBox -message \"Web Service output error: $wsenv\""
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+    }
+}
+
+proc run_job_browser {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+        } else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+        }
+    set url "http://localhost:$ws_port/"
+     global tcl_platform
+  if {$tcl_platform(platform)=="windows"} {
+    exec cmd /c start $url &
+  } elseif {$tcl_platform(os)=="Darwin"} {
+    exec open $url &
+  } elseif {[catch {exec xdg-open $url >/dev/null 2>&1 &} message ]} {
+    #puts "message is $message"
+    #exec firefox $url &
+  }
 }
 
 #A temporary dict is used to hold modified data before 

@@ -129,8 +129,26 @@ proc wapp-page-_dumpdb {} {
     wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
 }
 
+proc get_ws_port {} {
+ upvar #0 genericdict genericdict
+    if {[dict exists $genericdict webservice ws_port ]} {
+        set ws_port [ dict get $genericdict webservice ws_port ]
+        if { ![string is integer -strict $ws_port ] } {
+            putscli "Warning port not set to integer in config setting to default"
+            set ws_port 8080
+        }
+    } else {
+        putscli "Warning port not found in config setting to default"
+        set ws_port 8080
+    }
+return $ws_port
+}
+
 proc quit {} {
     global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+	}
     if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
         putscli $message
     } else {
@@ -140,7 +158,6 @@ proc quit {} {
 }
 
 proc wapp-page-quit {} {
-    putscli "Shutting down HammerDB Web Service"
     exit
 }
 
@@ -153,24 +170,33 @@ proc start_webservice { args } {
     if {[dict exists $genericdict webservice ws_port ]} {
         set ws_port [ dict get $genericdict webservice ws_port ]
         if { ![string is integer -strict $ws_port ] } {
+		if {$args != "gui" } {
             putscli "Warning port not set to integer in config setting to default"
+    		}
             set ws_port 8080  
         }
     } else { 
+		if {$args != "gui" } {
         putscli "Warning port not found in config setting to default"
+		}
         set ws_port 8080  
     }
-        tsv::set webservice wsport $ws_port
-	init_job_tables
+	init_job_tables_ws
+		if {$args != "gui" } {
         putscli "Starting HammerDB Web Service on port $ws_port"
-	if { $args eq "-wait" } {
+		}
+switch $args {
+"gui" {
+        if [catch {wapp-start [ list --server $ws_port ]} message ] { }
+}
+"wait" {
         if [catch {wapp-start [ list --server $ws_port ]} message ] {
             putscli "Error starting HammerDB webservice on port $ws_port in wait mode : $message"
         }
-	} else {
-        if [catch {wapp-start [ list --server $ws_port $args ]} message ] {
+}
+"nowait" {
+        if [catch {wapp-start [ list --server $ws_port --nowait ]} message ] {
             putscli "Error starting HammerDB webservice on port $ws_port in nowait mode : $message"
-        } else {
-            #Readline::interactws called from main script
-        }
+}
+}
 }}

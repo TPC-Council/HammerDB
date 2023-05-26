@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png getjob savechart
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png getjob savechart
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -38,10 +38,9 @@ namespace eval jobs {
   }
 
   proc init_job_tables_gui { } {
-    #In the GUI, we disable the jobs output even though it works by running the jobs command in the console
     #rename jobs {}
     #uplevel #0 {proc hdbjobs { args } { return "" }}
-    #If we want to enable jobs output in the GUI comment out previous 2 lines and uncomment the following line
+    #If we want to fully disable jobs output in the GUI uncomment previous 2 lines and comment the following line
     init_job_tables
   }
 
@@ -137,6 +136,30 @@ namespace eval jobs {
         }
       }
       tsv::set commandline sqldb $sqlite_db
+    }
+  }
+
+proc init_job_tables_ws { } {
+    upvar #0 genericdict genericdict
+    if {[dict exists $genericdict commandline jobs_disable ]} {
+      if { [ dict get $genericdict commandline jobs_disable ] eq 1 } {
+        uplevel #0 {proc hdbjobs { args } { return "" }}
+        return 
+      }
+    }
+    if {[dict exists $genericdict commandline sqlite_db ]} {
+      set sqlite_db [ dict get $genericdict commandline sqlite_db ]
+      if { [string toupper $sqlite_db] eq "TMP" || [string toupper $sqlite_db] eq "TEMP" } {
+        set tmpdir [ findtempdir ]
+        if { $tmpdir != "notmpdir" } {
+          set sqlite_db [ file join $tmpdir hammer.DB ]
+        } 
+      }
+    } else {
+      set sqlite_db ":memory:"
+    }
+    if [catch {sqlite3 hdbjobs $sqlite_db} message ] {} else {
+      catch {hdbjobs timeout 30000}
     }
   }
 
@@ -963,6 +986,15 @@ common-footer
   	foreach option "bm db dict result status tcount timestamp timing delete" {
     	set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&$option"
 	switch $option {
+	bm {
+    	wapp-subst {<li><a href='%html($url)'>%html(benchmark)</a>\n}
+	}
+	db {
+    	wapp-subst {<li><a href='%html($url)'>%html(database)</a>\n}
+	}
+	dict {
+    	wapp-subst {<li><a href='%html($url)'>%html(dict configuration)</a>\n}
+	}
 	result {
                 set jobresult [ getjobresult $jobid 1 ]
 if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
@@ -985,14 +1017,14 @@ if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobi
         if { [ string match "Geometric*" [ lindex $jobresult 2 ] ] } {
           #TPROC-H
 	set tproch 1
-	wapp-subst {<li><a href='%html($url)'>%html($option)</a>\n}
+	wapp-subst {<li><a href='%html($url)'>%html(timing data)</a>\n}
 	} else {
 	 #TPROC-C
                 set jobtiming [ getjobtiming $jobid ]
 	if { [ llength $jobtiming ] eq 2 && [ string match [ lindex $jobtiming 1 ] "Jobid has no timing data" ] } {
 		;#No result exclude link
   		} else {
-    		wapp-subst {<li><a href='%html($url)'>%html($option)</a>\n}
+    		wapp-subst {<li><a href='%html($url)'>%html(timing data)</a>\n}
   		}
 	}
 	}
@@ -1032,8 +1064,11 @@ if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobi
         return
 		}
           if { [ dict keys $paramdict ] eq "jobid DELETE" } {
+          set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	  set current_time [ clock format [clock seconds] -format "%y-%m-%d %H:%M:%S"] 
+	  set job_age_hrs [expr {([clock scan $current_time ] - [clock scan $date])/3600}]
 	  set jobstatus [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0} ]
-	  if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
+	  if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] || $job_age_hrs > 24 } {
             set joboutput [ hdbjobs eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
@@ -1042,7 +1077,7 @@ if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobi
             dict set jsondict success message "Deleted Jobid $jobid"
             wapp-2-json 2 $jsondict
 		} else {
-            dict set jsondict error message "Cannot delete Jobid $jobid Job not complete"
+            dict set jsondict error message "Cannot delete Jobid $jobid from $date did not complete and ran less than 24 hours ago"
             wapp-2-json 2 $jsondict
 		}
           } else {

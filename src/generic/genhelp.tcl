@@ -8,7 +8,7 @@ proc help { args } {
     }
     set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsstart wsstatus wsstop ]
+        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
     if {[ llength $args ] != 1} {
         puts $helpbanner
         foreach helpcmd $helpcmds { puts "\t$helpcmd" } 
@@ -177,6 +177,10 @@ Changed tpcc:count_ware from 1 to 10 for Oracle"
                 tcstop {
                     putscli "tcstop - Usage: tcstop"
                     putscli "Stops the Transaction Counter."
+                }
+                wsport {
+                    putscli "wsport - Usage: wsport \[ port number \]"
+                    putscli "Set or report the Web Service Port."
                 }
                 wsstart {
                     putscli "wsstart - Usage: wsstart"

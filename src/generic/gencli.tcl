@@ -1753,11 +1753,43 @@ proc strip_html { htmlText } {
     return $newText
 }
 
+proc wsport { args } {
+	global ws_port
+    	if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+	switch [ llength $args ] {
+	0 {
+        putscli "Web Service Port set to $ws_port"
+	}
+	1 {
+	set tmp_port $args
+        if { ![string is integer -strict $tmp_port ] } {
+        putscli "Error: Web Service port should be an integer"
+        } else {
+	set ws_port $tmp_port
+        putscli "Setting Web Service port to $ws_port"
+   	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+	}
+	default {
+        putscli "Error :wsport accepts none or one integer argument"
+	} 
+	}
+}
+
 proc wsstart {} {
     global ws_port
     if { ![info exists ws_port ] } {
     	set ws_port [ get_ws_port ]
-    	}
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
 	exec [ auto_execok ./hammerdbws ] &
 	after 100
 }
@@ -1766,11 +1798,14 @@ proc wsstop {} {
     global ws_port
     if { ![info exists ws_port ] } {
     	set ws_port [ get_ws_port ]
-    	}
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
     if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
-	putscli $message
+	putscli "Web Service not running: $message"
     } else {
-	putscli [ strip_html [ http::data $tok ]]
+	putscli "Stopping HammerDB Web Service on port $ws_port"
     }
     if { [ info exists tok ] } { http::cleanup $tok }
 }
@@ -1779,11 +1814,19 @@ proc wsstatus {} {
     global ws_port
     if { ![info exists ws_port ] } {
     	set ws_port [ get_ws_port ]
-    	}
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
     if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
-	putscli $message
+	putscli "Web Service not running: $message"
     } else {
-	putscli [ strip_html [ http::data $tok ]]
+	set wsenv [ strip_html [ http::data $tok ]]
+	if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
+	putscli "Web Service running: $wsenv"
+	} else {
+	putscli "Web Service output error: $wsenv"
+	}
     }
     if { [ info exists tok ] } { http::cleanup $tok }
 }

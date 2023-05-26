@@ -399,9 +399,9 @@ proc wappInt-start-listener {port wappmode fromip} {
   if {$wappmode=="local"} {
     wappInt-start-browser http://127.0.0.1:$port/
   } elseif {$fromip!=""} {
-    puts "Listening for $type requests on TCP port $port from IP $fromip"
+    #puts "Listening for $type requests on TCP port $port from IP $fromip"
   } else {
-    puts "Listening for $type requests on TCP port $port"
+    #puts "Listening for $type requests on TCP port $port"
   }
 }
 
