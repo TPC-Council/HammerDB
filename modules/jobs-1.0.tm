@@ -160,6 +160,15 @@ proc init_job_tables_ws { } {
     }
     if [catch {sqlite3 hdbjobs $sqlite_db} message ] {} else {
       catch {hdbjobs timeout 30000}
+      if [catch {set tblname [ hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
+          puts "Error querying  JOBOUTPUT table in SQLite on-disk database : $message"
+          return
+        } else {
+          if { $tblname eq "" } {
+puts "Error: Job tables not created, create and populate Jobs database with GUI or CLI and run Web Service to browse Jobs"
+exit
+        }
+     }
     }
   }
 
