@@ -3594,7 +3594,7 @@ proc run_job_browser {} {
     exec cmd /c start $url &
   } elseif {$tcl_platform(os)=="Darwin"} {
     exec open $url &
-  } elseif {[catch {exec xdg-open $url >/dev/null 2>&1 &} message ]} {
+  } elseif {[catch {exec xdg-open $url >/dev/null 2>/dev/null &} message ]} {
     #puts "message is $message"
     #exec firefox $url &
   }
