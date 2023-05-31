@@ -106,7 +106,7 @@ proc Log {id msg lastline} {
     if {[winfo exists $Name.a.t]} {
         if { [ info exists threadsbytid($id) ] } {
             if { [ expr $threadsbytid($id) + 1 ] eq 1 } {
-                $Name.a.t insert end "$lastline" 
+                $Name.a.t insert end "$lastline\n" 
                 $Name.a.t see end
             }
         }

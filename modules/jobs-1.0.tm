@@ -1268,6 +1268,12 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
   }
 
   proc getchart { jobid vuid chart } {
+	set chartcolors [ list MariaDB { color1 "#42ADB6" color2 "#9fd7dc" } PostgreSQL { color1 "#062671" color2 "#457af5" } \
+	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#FFFF00" color2 "#ffff80" } \
+	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } \
+	Redis { color1 "#D00000" color2 "#ff6868" } ]
+	set color1 "#808080"
+	set color2 "#bfbfbf"
     switch $chart {
       "result" {
         set chartdata [ getjobresult $jobid $vuid ]
@@ -1287,6 +1293,7 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
           if { [ string match "Geometric*" [ lindex $chartdata 2 ] ] } {
             #TPROC-H result
             set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	    foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
             if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
             set qsetcount [ llength [regexp -all -inline (?=Geometric) $chartdata] ]
             #Create chart and insert into JOBCHART for future retrieval
@@ -1311,8 +1318,8 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Result $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name GEOMEAN -data [list "$geomeantime "] 
-            $bar AddBarSeries -name "QUERY SET" -data [list "$qsettime "]              
+            $bar AddBarSeries -name GEOMEAN -data [list "$geomeantime "] -itemStyle [ subst {color $color1 opacity 0.90} ]
+            $bar AddBarSeries -name "QUERY SET" -data [list "$qsettime "] -itemStyle [ subst {color $color2 opacity 0.90} ]
             set html [ $bar RenderX -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
@@ -1339,14 +1346,15 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
               set nopm $seconddigit
               set tpm $firstdigit
             }
+	    foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
             if { $dbdescription eq "SQL" } { set dbdescription "SQL Server" }
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Result $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list [ subst {"$dbdescription $vus"}]] -axisLabel [list show "True"]
             $bar Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name NOPM -data [list "$nopm "]    
-            $bar AddBarSeries -name TPM -data [list "$tpm "]              
+            $bar AddBarSeries -name NOPM -data [list "$nopm "] -itemStyle [ subst {color $color1 opacity 0.90} ]
+            $bar AddBarSeries -name TPM -data [list "$tpm "] -itemStyle [ subst {color $color2 opacity 0.90} ]            
             set html [ $bar RenderX -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
@@ -1385,6 +1393,7 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
             return $html
           }
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	  foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
           if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
           set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
           if { $tproch } {
@@ -1405,7 +1414,7 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Power Query Times $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name "VU 1 Query Set" -data [list $barseries ]    
+            $bar AddBarSeries -name "VU 1 Query Set" -data [list $barseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
             set html [ $bar RenderX -title "$jobid Query Times" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'timing',$html)}
             return $html
@@ -1454,21 +1463,26 @@ set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where na
             return $html
           }
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+	  foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
           if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
           set header [ dict keys $chartdata ]
           set xaxisvals [ dict keys [ join [ dict values $chartdata ]]]
           set lineseries [ dict values [ join [ dict values $chartdata ]]]
-	    #Delete the first value if it is 0, so we start the chart from the first measurement
+	    #Delete the first and trailing values if it is 0, so we start from the first measurement and only chart when running
 	  if { [ lindex $lineseries 0 ] eq 0 } {
 		set lineseries [ lreplace $lineseries 0 0 ]
 		set xaxisvals [ lreplace $xaxisvals 0 0 ]
+		}
+	while { [ lindex $lineseries end ] eq 0 } {
+		set lineseries [ lreplace $lineseries end end ]
+		set xaxisvals [ lreplace $xaxisvals end end ]
 		}
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
           $line SetOptions -title [ subst {text "$dbdescription TPROC-C Transaction Count $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "TPM" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-          $line AddLineSeries -name [ join $header ] -data [ list $lineseries ]
+          $line AddLineSeries -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
           set html [ $line RenderX -title "$jobid Transaction Count" ]
 	  #If we query the tcount chart while the job is running it will not be generated again
 	  #meaning the output will be truncated
