@@ -1,6 +1,9 @@
 proc check_ap_threads {} {
     global tc_threadID
     set thlist [ thread::names ]
+    if { [ info exists tc_threadID ] } {
+	set thlist [lsearch -inline -all -not -exact $thlist $tc_threadID]
+    }
     set thlen [ llength $thlist ] 
     if { $thlen > 1 } {
         return 1
@@ -12,7 +15,7 @@ proc check_ap_threads {} {
 proc start_autopilot {} {
     global apduration apsequence virtual_users maxvuser lprefix aptime apmode
     if { [ check_ap_threads ] } { 
-        tk_messageBox -icon error -message "Cannot Enable Autopilot with Virtual Users, Transaction Counter or Database Metrics still active" 
+        tk_messageBox -icon error -message "Cannot Enable Autopilot with Virtual Users or Database Metrics still active" 
         return 1
     }
     if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }
