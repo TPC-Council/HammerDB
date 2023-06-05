@@ -1158,10 +1158,11 @@ proc buildschema {} {
     #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
     #Add automated waittocomplete to buildschema
     _waittocomplete
-     if { [ info exists jobid ] } {
-        return "jobid=$jobid"
+     if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Schema Build jobid=$jobid"
     } else {
-        return
+	unset -nocomplain jobid
+        return "Schema Build (No jobid)"
     }
 }
 
@@ -1259,9 +1260,12 @@ proc deleteschema {} {
     if { [ catch {delete_schema} message ] } {
         puts "Error: $message"
     }
-	if { [ info exists jobid ] } {
-        return "jobid=$jobid"
-    } 
+	if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Schema Delete jobid=$jobid"
+    } else {
+	unset -nocomplain jobid
+	return "Schema Delete (No jobid)"
+    }
 }
 
 proc vurun {} {
@@ -1291,10 +1295,11 @@ proc vurun {} {
         putscli "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
     }
-     if { [ info exists jobid ] } {
-        return "jobid=$jobid"
+     if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Benchmark Run jobid=$jobid"
     } else {
-        return
+	unset -nocomplain jobid
+        return "Benchmark Run (No jobid)"
     }
 }
 

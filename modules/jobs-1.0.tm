@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png getjob savechart
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png getjob savechart
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -174,6 +174,7 @@ namespace eval jobs {
 
   proc jobmain { jobid } {
     global rdbms bm
+    if [ job_disable_check ] { return 0 }
     set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid} ]
     if { $query eq 0 } {
       set tmpdictforpt [ find_current_dict ]
@@ -326,6 +327,14 @@ namespace eval jobs {
       }
     }
   }
+
+  proc job_disable_check {} {
+	if [catch {hdbjobs} message ] { 
+	return false
+	} else {
+	return true
+	}
+	}
 
   proc job_format { format } {
     upvar #0 genericdict genericdict

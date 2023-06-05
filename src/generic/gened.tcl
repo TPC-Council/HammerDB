@@ -1682,10 +1682,10 @@ proc vurun {} {
         puts "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
     }
-      if { [ info exists jobid ] } {
+      if { [ info exists jobid ] && ![ job_disable_check ] } {
         puts "Benchmark Run jobid=$jobid"
     } else {
-        return
+        unset -nocomplain jobid
     }
 }
 
@@ -3297,9 +3297,11 @@ proc build_schema {} {
         #Yes was pressed at schema creation run
         run_virtual
     }
-      if { [ info exists jobid ] } {
+      if { [ info exists jobid ] && ![ job_disable_check ] } {
         puts "Schema Build jobid=$jobid"
-    } 
+    } else {
+        unset -nocomplain jobid
+    }
 }
 
 proc delete_schema {} {
@@ -3343,8 +3345,10 @@ set jobid [guid]
         #Yes was pressed at schema deletion run
         run_virtual
     }
-    if { [ info exists jobid ] } {
+    if { [ info exists jobid ] && ![ job_disable_check ] } {
         puts "Schema Delete jobid=$jobid"
+    } else {
+	unset -nocomplain jobid
     }
 }
 
@@ -3534,16 +3538,16 @@ proc strip_html { htmlText } {
 proc wsstart {} {
     global ws_port
     if { ![info exists ws_port ] } {
-        set ws_port [ get_ws_port ]
-        } else {
-	dict set genericdict "webservice" "ws_port" $ws_port
-        Dict2SQLite "generic" $genericdict
-	}
-	if {[string match windows $::tcl_platform(platform)]} {
-        exec [ auto_execok ./hammerdbws.bat ] gui &
+	set ws_port [ get_ws_port ]
 	} else {
-        exec [ auto_execok ./hammerdbws ] gui &
+	dict set genericdict "webservice" "ws_port" $ws_port
+	Dict2SQLite "generic" $genericdict
 	}
+        if {[string match windows $::tcl_platform(platform)]} {
+        exec [ auto_execok ./hammerdbws.bat ] gui &
+        } else {
+	exec [ auto_execok ./hammerdbws ] gui &
+        }
         after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
 }
 
