@@ -1435,8 +1435,9 @@ namespace eval jobs {
               set nopm $seconddigit
               set tpm $firstdigit
             }
+            if { $dbdescription eq "SQL" } { set dbdescription "MSSQLServer" }
             foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
-            if { $dbdescription eq "SQL" } { set dbdescription "SQL Server" }
+            if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Result $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
