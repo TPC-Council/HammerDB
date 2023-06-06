@@ -132,9 +132,19 @@ namespace eval jobs {
           } else {
             set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] KB" 
             puts "Initialized Jobs on-disk database $sqlite_db using existing tables ($size)"
-          }
-        }
-      }
+            if [catch {set chartname [ hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBCHART'}]} message ] {
+            puts "Error querying  JOBCHART table in SQLite on-disk database : $message"
+	    return
+		} else {
+	  if { $chartname eq "" } {
+          if [ catch {hdbjobs eval {CREATE TABLE JOBCHART(jobid TEXT, chart TEXT, html TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+              puts "Error upgrading database with Job Charts: $message"
+              return
+          } else {
+              catch {hdbjobs eval {CREATE INDEX JOBCHART_IDX ON JOBCHART(jobid)}}
+              puts "Upgraded database $sqlite_db with Job Charts"
+		}
+           }}}}}
       tsv::set commandline sqldb $sqlite_db
     }
   }
