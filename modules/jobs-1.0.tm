@@ -1248,6 +1248,9 @@ namespace eval jobs {
     if { $jobbm eq "TPC-C" } { 
       set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
       set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
+	 if { [ string match "Gathering*" $activevu ] } {
+      set activevu [ lsearch -glob -inline $joboutput "*Active Sessions*" ]
+        }
       set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
     } else {
       set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
