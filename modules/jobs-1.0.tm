@@ -1247,9 +1247,10 @@ namespace eval jobs {
     set tstamp [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
     if { $jobbm eq "TPC-C" } { 
       set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
-      set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
-	 if { [ string match "Gathering*" $activevu ] } {
+      if { [ string match "*Active Sessions*" $joboutput ] } {
       set activevu [ lsearch -glob -inline $joboutput "*Active Sessions*" ]
+	} else {
+      set activevu [ lsearch -glob -inline $joboutput "*Active Virtual Users*" ]
         }
       set result [ lsearch -glob -inline $joboutput "TEST RESULT*" ]
     } else {
