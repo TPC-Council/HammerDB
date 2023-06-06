@@ -15,7 +15,7 @@ diset('tpch','pg_tpch_defaultdbase','postgres')
 diset('tpch','pg_tpch_user','tpch')
 diset('tpch','pg_tpch_pass','tpch')
 diset('tpch','pg_tpch_dbase','tpch')
-diset('tpch','pg_tpch_tspase','pg_default')
+diset('tpch','pg_tpch_tspace','pg_default')
 
 print("DROP SCHEMA STARTED")
 deleteschema()
