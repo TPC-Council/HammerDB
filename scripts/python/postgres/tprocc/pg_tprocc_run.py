@@ -23,7 +23,7 @@ diset('tpcc','pg_rampup','2')
 diset('tpcc','pg_duration','5')
 diset('tpcc','pg_allwarehouse','true')
 diset('tpcc','pg_timeprofile','true')
-diset('tpcc','pg_vaccum','true')
+diset('tpcc','pg_vacuum','true')
 
 loadscript()
 print("TEST STARTED")
