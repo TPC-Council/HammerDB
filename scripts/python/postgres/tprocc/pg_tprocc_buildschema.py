@@ -14,7 +14,7 @@ warehouse = int(vu) * 5
 diset('tpcc','pg_count_ware',warehouse)
 diset('tpcc','pg_num_vu',vu)
 diset('tpcc','pg_superuser','postgres')
-diset('tpcc','pg_superuserpass,','postgres')
+diset('tpcc','pg_superuserpass','postgres')
 diset('tpcc','pg_defaultdbase',' postgres')
 diset('tpcc','pg_user','tpcc')
 diset('tpcc','pg_pass','tpcc')

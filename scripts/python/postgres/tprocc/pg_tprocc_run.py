@@ -12,7 +12,7 @@ diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
 
 diset('tpcc','pg_superuser','postgres')
-diset('tpcc','pg_superuserpass,','postgres')
+diset('tpcc','pg_superuserpass','postgres')
 diset('tpcc','pg_defaultdbase',' postgres')
 diset('tpcc','pg_user','tpcc')
 diset('tpcc','pg_pass','tpcc')
