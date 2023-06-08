@@ -954,7 +954,11 @@ namespace eval jobs {
           } else {
         set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
         if { [ string match "*TEST RESULT*" $output ] } {
+              if { [ dict values $topjobs $job ] eq $job } {
+                set statusimg "<img src='[wapp-param BASE_URL]/star.png'>"
+              } else {
               set statusimg "<img src='[wapp-param BASE_URL]/tick.png'>"
+		}
 	} else {
               set statusimg "<img src='[wapp-param BASE_URL]/nostatus.png'>"
 	}
