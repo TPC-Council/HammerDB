@@ -1579,6 +1579,13 @@ namespace eval jobs {
           foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
           if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
           set header [ dict keys $chartdata ]
+        if { [ string match "*qph*" $header ] } {
+	  set workload "TPROC-H Query"
+	  set axisname "QPH"
+		} else {
+	  set workload "TPROC-C Transaction"
+	  set axisname "TPM"
+		}
           set xaxisvals [ dict keys [ join [ dict values $chartdata ]]]
           set lineseries [ dict values [ join [ dict values $chartdata ]]]
           #Delete the first and trailing values if it is 0, so we start from the first measurement and only chart when running
@@ -1592,9 +1599,9 @@ namespace eval jobs {
           }
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
-          $line SetOptions -title [ subst {text "$dbdescription TPROC-C Transaction Count $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
+          $line SetOptions -title [ subst {text "$dbdescription $workload Count $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-          $line Yaxis -name "TPM" -position "left" -axisLabel {formatter "<0123>value<0125>"}
+          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
           $line AddLineSeries -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
           set html [ $line RenderX -title "$jobid Transaction Count" ]
           #If we query the tcount chart while the job is running it will not be generated again

@@ -579,7 +579,6 @@ proc ed_stop_gui {} {
         #can only be used before final application exit
         catch {thread::exit $ij}
     }
-    catch {wsstop}
     exit
 }
 
