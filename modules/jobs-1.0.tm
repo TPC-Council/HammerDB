@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png getjob savechart
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format wapp-page-jobs wapp-page-logo.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -419,6 +419,18 @@ namespace eval jobs {
     }]
   }
 
+  proc wapp-page-nostatus.png {} {
+    wapp-mimetype image/png
+    wapp-cache-control max-age=3600
+    wapp-unsafe [ binary decode base64 {
+   R0lGODlhEAAQAIIAAPwCBDRy7AQ2rFyq/EyWzEyW3Jzi9KTK/CH5BAEAAAAA
+   LAAAAAAQABAAAAM7CArRLiuyQYQtxcpg8goDBn3VRo1KQAzo5EUg+4WtYo3B
+   UUpbV/OcF28mHKZORokmyWQ2minDrrmU+BMAIf5oQ3JlYXRlZCBieSBCTVBU
+   b0dJRiBQcm8gdmVyc2lvbiAyLjUNCqkgRGV2ZWxDb3IgMTk5NywxOTk4LiBB
+   bGwgcmlnaHRzIHJlc2VydmVkLg0KaHR0cDovL3d3dy5kZXZlbGNvci5jb20A
+   Ow==
+    }]
+  }
 
   proc wapp-page-star.png {} {
     wapp-mimetype image/png
@@ -935,7 +947,19 @@ namespace eval jobs {
               }
             }
           }
-        }
+	#Didn't get ALL VU COMPLETE MESSAGE, usually threads waiting to close, check to see if we got a result and mark as complete if we did
+        } else {
+	if { [ string match "*FINISHED FAILED*" $output ] } {
+            set statusimg "<img src='[wapp-param BASE_URL]/cross.png'>"
+          } else {
+        set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
+        if { [ string match "*TEST RESULT*" $output ] } {
+              set statusimg "<img src='[wapp-param BASE_URL]/tick.png'>"
+	} else {
+              set statusimg "<img src='[wapp-param BASE_URL]/nostatus.png'>"
+	}
+	}
+	}
         wapp-subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($bm)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%unsafe($statusimg)</td></tr>\n}
       }
       wapp-subst {</table>\n}
@@ -1579,13 +1603,13 @@ namespace eval jobs {
           foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
           if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
           set header [ dict keys $chartdata ]
-        if { [ string match "*qph*" $header ] } {
-	  set workload "TPROC-H Query"
-	  set axisname "QPH"
-		} else {
-	  set workload "TPROC-C Transaction"
-	  set axisname "TPM"
-		}
+	if { [ string match "*qph*" $header ] } {
+	set workload "TPROC-H Query"
+	set axisname "QPH"
+	} else {
+	set workload "TPROC-C Transaction"
+	set axisname "TPM"
+	}
           set xaxisvals [ dict keys [ join [ dict values $chartdata ]]]
           set lineseries [ dict values [ join [ dict values $chartdata ]]]
           #Delete the first and trailing values if it is 0, so we start from the first measurement and only chart when running
