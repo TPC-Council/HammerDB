@@ -1260,6 +1260,8 @@ proc deleteschema {} {
     if { [ catch {delete_schema} message ] } {
         puts "Error: $message"
     }
+    #Add automated waittocomplete to deleteschema
+    _waittocomplete
 	if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Schema Delete jobid=$jobid"
     } else {
