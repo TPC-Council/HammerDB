@@ -1070,8 +1070,7 @@ Version 4.8 Jun 2023
 
 Pull Requests & Issues
 
-Enhancement for storing and retrieval of HammerDB results and configurations
-#558 (#352)
+Enhancement for storing and retrieval of HammerDB results and configurations #558 (#352)
 MySQL/MariaDB L_ORDERKEY to BIGINT #556 (#551)
 Update mssqlsoltp.tcl #541 (#538)
 Auto scale factor for TPC-H (issue 23) #539 (#23)
