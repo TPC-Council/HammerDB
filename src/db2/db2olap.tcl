@@ -58,12 +58,16 @@ proc ConnectToDb2 { dbname user password } {
 proc CreateDatabase { dbname } {
     puts "CREATING DATABASE $dbname"
     if {[ catch {db2_create_db $dbname} message ]} {
+       if { [ string match "SQL1005N*" $message ] } {
+        puts "DATABASE $dbname already exists"
+        return false
+        } else {
         error $message
+        }
     } else {
         puts "DATABASE $dbname has been created successfully."
+        return true
     }
-
-    return
 }
 
 proc CreateTables { db_handle tspace organization } {
@@ -505,8 +509,19 @@ proc do_tpch { dbname scale_fact user password tpch_def_tab column_based num_vu 
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
-        CreateDatabase $dbname
-        set db_handle [ ConnectToDb2 $dbname $user $password ]
+	set newdb [ CreateDatabase $dbname ]
+         set db_handle [ ConnectToDb2 $dbname $user $password ]
+         if { !$newdb }  {
+         set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
+         set tabcount [ db2_fetchrow $newdb_handle ]
+         db2_finish $newdb_handle
+         if { [ llength $tabcount ] > 0 } {
+         #tabcount len will be 0 for empty, 1 for table exists
+                error "DATABASE $dbname is not empty, if $dbname is pre-created it must be empty"
+        } else {
+                puts "DATABASE $dbname is empty, using $dbname"
+        }
+        }
         switch [ string toupper $column_based ] {
             COLUMN { set organization "organize by column" }
             ROW { set organization "organize by row" }
