@@ -1070,6 +1070,7 @@ Version 4.8 Jun 2023
 
 Pull Requests & Issues
 
+Allow using existing empty database for Db2 TPROC-C and TPROC-H #560 (#548)
 Enhancement for storing and retrieval of HammerDB results and configurations #558 (#352)
 MySQL/MariaDB L_ORDERKEY to BIGINT #556 (#551)
 Update mssqlsoltp.tcl #541 (#538)
