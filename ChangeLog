@@ -1063,3 +1063,20 @@ Fix for Issue #467 CLI myerrproc and remote_command opmode #468 (#467)
 Update omitted Changelog for v4.6 release #466
 Fixing queries for Columnstore issue 459 #460 (#459)
 Make jobs functionality modular #458
+
+---------------------------------------------------------------------
+
+Version 4.8 Jun 2023
+
+Pull Requests & Issues
+
+Allow using existing empty database for Db2 TPROC-C and TPROC-H #560 (#548)
+Enhancement for storing and retrieval of HammerDB results and configurations #558 (#352)
+MySQL/MariaDB L_ORDERKEY to BIGINT #556 (#551)
+Update mssqlsoltp.tcl #541 (#538)
+Auto scale factor for TPC-H (issue 23) #539 (#23)
+Fix doc bug for VU/warehouse count #535 (#534)
+Repair ora_compatible OSTAT procedure #531
+Add jobs getchart command #530
+Add CLI savescript and custommonitor commands #522 (#521)
+Create CONTRIBUTING.md #517
