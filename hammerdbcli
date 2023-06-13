@@ -79,7 +79,7 @@ namespace eval autostart {
 #Common CLI initialisation between Tcl and Python
 set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
   ::tcl::tm::path add "$UserDefaultDir/modules"
-  append modulelist { Thread msgcat xml comm tclreadline task reformat_tcl sqlite3 huddle jobs ticklecharts }
+  append modulelist { Thread msgcat xml comm tclreadline task http reformat_tcl sqlite3 huddle jobs ticklecharts }
   for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
     set loadtext $m

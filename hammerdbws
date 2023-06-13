@@ -24,51 +24,43 @@ exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 # You should have received a copy of the GNU General Public
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
+if { $argc eq 0 } {
+set argv0 "wait" 
+} else { 
+set argv0 [ string tolower [lindex $argv 0 ]] 
+}
 global hdb_version
 set hdb_version "v4.8"
+	if { $argv0 != "gui" } {
 puts "HammerDB Web Service $hdb_version"
 puts "Copyright (C) 2003-2023 Steve Shaw"
 puts "Type \"help\" for a list of commands"
+	}
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/modules"
 
-namespace eval autostart {
-    set autostartap "false"
-    if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
-puts {Usage: hammerdbws [ auto [ script_to_autoload.tcl  ] ]}
-exit
-        } else {
-        set autostartap "true"
-        set autoloadscript [lindex $argv 1]
-if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
-;# autostart selected and tcl file exists
-             } else {
-puts {Usage: hammerdbws [ auto [ script_to_autoload.tcl  ] ]}
-exit
-                }
-           }
-      }
-}
-
-append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest huddle jobs }
+append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest http huddle jobs ticklecharts }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
 		set loadtext $m
 	if [catch { package require $m }] {
+	if { $argv0 != "gui" } {
                 puts stderr "While loading module\
                         \"$m\"...\n$errorInfo"
+		}
                 exit 1
         }
     }
 
-append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl gentccmn.tcl gentcws.tcl geninitws.tcl genws.tcl genhelp.tcl genstep.tcl }
+append loadlist { genvu.tcl genxml.tcl geninitws.tcl genws.tcl genhelp.tcl }
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
 		set loadtext $f
 	if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
+	if { $argv0 != "gui" } {
                 puts stderr "While loading component file\
                         \"$f\"...\n$errorInfo"
+		}
                 exit 1
         }
     }
@@ -77,13 +69,31 @@ for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccoun
     set f [lindex $dbsrclist $dbsrccount]
 		set loadtext $f
 	if [catch {source [ file join $UserDefaultDir src $f ]}] {
+	if { $argv0 != "gui" } {
                 puts stderr "Error loading database source files/$f"
+	}
         }
     }
-if { $autostart::autostartap == "true" } {
-        start_webservice -nowait
-        source $autostart::autoloadscript
-        } else {
-        start_webservice -nowait
+
+switch $argv0 {
+"gui" {
+        start_webservice gui
+}
+"wait" {
+        start_webservice wait
+}
+"nowait" {
+        start_webservice nowait
         TclReadLine::interactws
-        }
+}
+"start" {
+        start_webservice wait
+}
+"stop" {
+	puts "Stopping HammerDB Web Service"
+	quit
+}
+default {
+puts stderr "Error starting HammerDB Web Service: argument should be start, stop, gui, wait or nowait"
+}
+}
