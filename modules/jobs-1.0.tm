@@ -1337,13 +1337,17 @@ namespace eval jobs {
     if { ![info exists discardedjobs] } { set discardedjobs [list] }
     set topscores [ list nopm 0 geo 2147483648.0 ]
     set topjobs [ list tprocc 0 tproch 0 ]
-    foreach jobid [ getjob joblist ] {
+    set joblist [ getjob joblist ]
+    set lastjob [ lindex $joblist end ]
+    foreach jobid $joblist {
       if { [ lsearch $discardedjobs $jobid ] != -1  } {
         continue
       }
       set jobresult [ getjobresult $jobid 1 ]
       if { [ lindex $jobresult 1 ] eq "Jobid has no test result" } {
+	if { $jobid != $lastjob } {
         lappend discardedjobs $jobid
+		}
         continue
       } elseif { [ string match "Geometric*" [ lindex $jobresult 2 ] ] } {
         set ctind 0
@@ -1390,7 +1394,9 @@ namespace eval jobs {
           dict set topscores nopm $nopm
         }
       } else {
+	if { $jobid != $lastjob } {
         lappend discardedjobs $jobid
+		}
         continue
       }
     }
