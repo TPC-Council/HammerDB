@@ -189,7 +189,7 @@ if [info exist env(Load_List)] {
     }
 }
 
-append modulelist { Thread msgcat tablelist_tile tooltip tkcon xml xscale ctext comm emu_graph socktest tkblt huddle jobs tkpath }
+append modulelist { Thread msgcat tablelist_tile tooltip tkcon xml xscale ctext comm emu_graph socktest tkblt http huddle jobs tkpath }
 
 set loadtext "Loading hammerdb modules"
 after 100

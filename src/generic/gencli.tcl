@@ -1158,10 +1158,11 @@ proc buildschema {} {
     #Dict2SQLite $dbname [ dict get [ set $dictname ] ]
     #Add automated waittocomplete to buildschema
     _waittocomplete
-     if { [ info exists jobid ] } {
-        return "jobid=$jobid"
+     if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Schema Build jobid=$jobid"
     } else {
-        return
+	unset -nocomplain jobid
+        return "Schema Build (No jobid)"
     }
 }
 
@@ -1233,12 +1234,17 @@ proc delete_schema {} {
 }
 
 proc deleteschema {} {
-    global virtual_users maxvuser rdbms bm threadscreated
+    global virtual_users maxvuser rdbms bm threadscreated jobid
     if { [ info exists threadscreated ] } {
         puts "Error: Cannot delete schema with Virtual Users active, destroy Virtual Users first"
         return
     }
     upvar #0 dbdict dbdict
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
     foreach { key } [ dict keys $dbdict ] {
         if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
@@ -1253,6 +1259,14 @@ proc deleteschema {} {
     puts "Deleting schema with 1 Virtual User"
     if { [ catch {delete_schema} message ] } {
         puts "Error: $message"
+    }
+    #Add automated waittocomplete to deleteschema
+    _waittocomplete
+	if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Schema Delete jobid=$jobid"
+    } else {
+	unset -nocomplain jobid
+	return "Schema Delete (No jobid)"
     }
 }
 
@@ -1283,10 +1297,11 @@ proc vurun {} {
         putscli "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
     }
-     if { [ info exists jobid ] } {
-        return "jobid=$jobid"
+     if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Benchmark Run jobid=$jobid"
     } else {
-        return
+	unset -nocomplain jobid
+        return "Benchmark Run (No jobid)"
     }
 }
 
@@ -1723,3 +1738,102 @@ proc tcset {args} {
                 puts {Usage: tcset [refreshrate|logtotemp|unique|timestamps] value}
             }
 }}}
+
+
+proc get_ws_port {} {
+ upvar #0 genericdict genericdict
+    if {[dict exists $genericdict webservice ws_port ]} {
+        set ws_port [ dict get $genericdict webservice ws_port ]
+        if { ![string is integer -strict $ws_port ] } {
+            putscli "Warning port not set to integer in config setting to default"
+            set ws_port 8080
+        }
+    } else {
+        putscli "Warning port not found in config setting to default"
+        set ws_port 8080
+    }
+return $ws_port
+}
+
+proc strip_html { htmlText } {
+    regsub -all {<[^>]+>} $htmlText "" newText
+    return $newText
+}
+
+proc wsport { args } {
+	global ws_port
+    	if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+	switch [ llength $args ] {
+	0 {
+        putscli "Web Service Port set to $ws_port"
+	}
+	1 {
+	set tmp_port $args
+        if { ![string is integer -strict $tmp_port ] } {
+        putscli "Error: Web Service port should be an integer"
+        } else {
+	set ws_port $tmp_port
+        putscli "Setting Web Service port to $ws_port"
+   	dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+	}
+	default {
+        putscli "Error :wsport accepts none or one integer argument"
+	} 
+	}
+}
+
+proc wsstart {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+	exec [ auto_execok ./hammerdbws ] &
+	after 100
+}
+
+proc wsstop {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
+	putscli "Web Service not running: $message"
+    } else {
+	putscli "Stopping HammerDB Web Service on port $ws_port"
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+}
+
+proc wsstatus {} {
+    global ws_port
+    if { ![info exists ws_port ] } {
+    	set ws_port [ get_ws_port ]
+	} else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+	}
+    if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
+	putscli "Web Service not running: $message"
+    } else {
+	set wsenv [ strip_html [ http::data $tok ]]
+	if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
+	putscli "Web Service running: $wsenv"
+	} else {
+	putscli "Web Service output error: $wsenv"
+	}
+    }
+    if { [ info exists tok ] } { http::cleanup $tok }
+}

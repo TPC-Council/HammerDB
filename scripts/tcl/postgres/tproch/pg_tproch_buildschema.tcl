@@ -11,9 +11,9 @@ diset connection pg_sslmode prefer
 
 diset tpch pg_scale_fact 1
 diset tpch pg_num_tpch_threads [ numberOfCPUs ]
-diset tpcc pg_tpch_superuser postgres
-diset tpcc pg_tpch_superuserpass postgres
-diset tpcc pg_tpch_defaultdbase postgres
+diset tpch pg_tpch_superuser postgres
+diset tpch pg_tpch_superuserpass postgres
+diset tpch pg_tpch_defaultdbase postgres
 diset tpch pg_tpch_user tpch
 diset tpch pg_tpch_pass tpch
 diset tpch pg_tpch_dbase tpch
