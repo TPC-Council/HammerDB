@@ -7,7 +7,7 @@ proc build_db2tpcc {} {
     upvar #0 configdb2 configdb2
     #set variables to values in dict
     setlocaltpccvars $configdb2
-    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in existing database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
+    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $db2_count_ware Warehouse Db2 TPROC-C schema\nunder user [ string toupper $db2_user ] in database [ string toupper $db2_dbase ]?" -type yesno ] == yes} { 
         if { $db2_num_vu eq 1 || $db2_count_ware eq 1 } {
             set maxvuser 1
         } else {
@@ -444,12 +444,16 @@ proc ConnectToDb2 { dbname user password } {
 proc CreateDatabase { dbname } {
     puts "CREATING DATABASE $dbname"
     if {[ catch {db2_create_db $dbname} message ]} {
+       if { [ string match "SQL1005N*" $message ] } {
+        puts "DATABASE $dbname already exists"
+        return false
+        } else {
         error $message
+        }
     } else {
         puts "DATABASE $dbname has been created successfully."
+        return true
     }
-
-    return
 }
 
 proc CreateTables { db_handle num_part count_ware tspace_dict } {
@@ -857,8 +861,19 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        CreateDatabase $dbname
-        set db_handle [ ConnectToDb2 $dbname $user $password ]
+	 set newdb [ CreateDatabase $dbname ]
+         set db_handle [ ConnectToDb2 $dbname $user $password ]
+         if { !$newdb }  {
+         set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
+         set tabcount [ db2_fetchrow $newdb_handle ]
+         db2_finish $newdb_handle
+         if { [ llength $tabcount ] > 0 } {
+         #tabcount len will be 0 for empty, 1 for table exists
+                error "DATABASE $dbname is not empty, if $dbname is pre-created it must be empty"
+        } else {
+                puts "DATABASE $dbname is empty, using $dbname"
+        }
+        }
         if { $partition eq "true" && [ expr $count_ware >= 10 ] } {
             set num_part 10
             set tspace_dict $tpcc_part_tabs
