@@ -140,7 +140,7 @@ proc countmssqlsopts { bm } {
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "SQL Server User Password :"   
-    ttk::entry $Name  -width 30 -textvariable mssqls_pass
+    ttk::entry $Name -show * -width 30 -textvariable mssqls_pass
     grid $Prompt -column 0 -row 11 -sticky e
     grid $Name -column 1 -row 11 -sticky ew
     if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {
@@ -366,7 +366,7 @@ proc configmssqlstpcc {option} {
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "SQL Server User Password :"   
-    ttk::entry $Name  -width 30 -textvariable mssqls_pass
+    ttk::entry $Name -show * -width 30 -textvariable mssqls_pass
     grid $Prompt -column 0 -row 11 -sticky e
     grid $Name -column 1 -row 11 -sticky ew
     if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {
@@ -808,7 +808,7 @@ proc configmssqlstpch {option} {
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "SQL Server User Password :"
-    ttk::entry $Name  -width 30 -textvariable mssqls_pass
+    ttk::entry $Name -show * -width 30 -textvariable mssqls_pass
     grid $Prompt -column 0 -row 11 -sticky e
     grid $Name -column 1 -row 11 -sticky ew
     if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {

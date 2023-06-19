@@ -262,9 +262,9 @@ proc countmysqlopts { bm } {
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "MySQL User Password :"   
     if { $bm eq "TPC-C" } {
-        ttk::entry $Name  -width 30 -textvariable mysql_pass
+        ttk::entry $Name -show * -width 30 -textvariable mysql_pass
     } else {
-        ttk::entry $Name  -width 30 -textvariable mysql_tpch_pass
+        ttk::entry $Name -show * -width 30 -textvariable mysql_tpch_pass
     }
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
@@ -550,7 +550,7 @@ proc configmysqltpcc {option} {
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "MySQL User Password :"   
-    ttk::entry $Name  -width 30 -textvariable mysql_pass
+    ttk::entry $Name -show * -width 30 -textvariable mysql_pass
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
     set Name $Parent.f1.e5
@@ -1003,7 +1003,7 @@ proc configmysqltpch {option} {
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "MySQL User Password :"   
-    ttk::entry $Name  -width 30 -textvariable mysql_tpch_pass
+    ttk::entry $Name -show * -width 30 -textvariable mysql_tpch_pass
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
     set Name $Parent.f1.e5
