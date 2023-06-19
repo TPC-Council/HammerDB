@@ -246,16 +246,16 @@ proc load_virtual {}  {
     $Name configure -state disabled
     for { set vuser 0 } {$vuser < $maxvuser } {incr vuser} {
         set threadID [thread::create {
-            proc runVuser { MASTER ID NTIMES DELAYMS OTSQL } {
+            proc runVuser { MASTER ID NTIMES CONPAUSE OTSQL } {
                 for { set cnta 0} {$cnta < $NTIMES} {incr cnta } {
                     eval [subst {thread::send -async $MASTER {::runninguser $ID}}]
                     if {[set op [catch "eval $OTSQL" result]]} {
                         eval [subst {thread::send -async $MASTER {::myerrorproc [list $ID $result]}}]
                     }
                     eval [subst {thread::send -async $MASTER {::printresult [list $op $ID]}}]
-                    set dms 0
-                    after $DELAYMS { set dms 1 }
-                    vwait dms
+                    set cp 0
+                    after $CONPAUSE { set cp 1 }
+                    vwait cp
                 }
             }
 
@@ -509,10 +509,10 @@ proc run_virtual {} {
                 return
             }
             for { set vuser 0} {$vuser < $maxvuser} {incr vuser} {
-                eval [ subst {thread::send -async $threadscreated($vuser) {runVuser $masterthread $threadscreated($vuser) $ntimes $delayms $script_to_send}}]
-                set cp 0
-                after $conpause { set cp 1 }
-                vwait cp
+                eval [ subst {thread::send -async $threadscreated($vuser) {runVuser $masterthread $threadscreated($vuser) $ntimes $conpause $script_to_send}}]
+                set dms 0
+                after $delayms { set dms 1 }
+                vwait dms
             }
             .ed_mainFrame configure -cursor {}
         } else {
