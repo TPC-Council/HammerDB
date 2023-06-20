@@ -49,6 +49,10 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "vuid: list VU output for VU with vuid for jobid.\n"
                     putscli {jobs jobid timing - Usage: jobs jobid timing vuid}
                     putscli "timing vuid: list xtprof timings for vuid for jobid.\n"
+		    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount]}
+                    putscli "result: generate html chart for TPROC-C/TPROC-H result."
+                    putscli "timing: generate html chart for TPROC-C/TPROC-H timings."
+                    putscli "tcount: generate html chart for TPROC-C transaction count.\n"
                 }
                 print {
                     putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen|tcconf]}
