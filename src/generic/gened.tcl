@@ -2781,7 +2781,7 @@ proc job_options {} {
     }
     set Name $Parent.f1.e1
     set Prompt $Parent.f1.p1
-    ttk::label $Prompt -text "Webservice Port :"
+    ttk::label $Prompt -text "Web Service Port :"
     ttk::entry $Name -width 30 -textvariable ws_port
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5
