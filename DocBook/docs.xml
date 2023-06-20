@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.7.</para>
+      <para>The following are the release notes for HammerDB v4.8.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -70,54 +70,18 @@
       </section>
 
       <section>
-        <title>MariaDB Columnstore and MySQL Heatwave Support</title>
+        <title>Storing, Retrieval and Visualization of Results</title>
 
-        <para>From v4.7 the TPROC-H workloads from MariaDB and MySQL have been
-        updated to run against MariaDB Columnstore and MySQL Heatwave
-        environments.</para>
-      </section>
-
-      <section>
-        <title>Transaction Counter Update and Deprecated Ribbon effect</title>
-
-        <para>From HammerDB v4.7 the ribbon effect transaction counter has
-        been deprecated. However if preferred it can be manually enabled
-        through the setting tc_graph_ribbon in generic.xml as shown. Note that
-        this should be at installation as at first startup the setting will be
-        made in the SQLite storage and subsequent changes to the xml file will
-        not be detected. For later changes to the xml to be detected you can
-        delete the generic.db file in the SQLite storage area and then the
-        settings in generic.xml will be applied for future use. It is not
-        planned to have a setting to enable/disable the ribbon effect during
-        use and may be fully deprecated in a future release.</para>
-
-        <programlisting>&lt;settings&gt;
-    &lt;tc_refresh_rate&gt;10&lt;/tc_refresh_rate&gt;
-    &lt;tc_log_to_temp&gt;0&lt;/tc_log_to_temp&gt;
-    &lt;tc_unique_log_name&gt;0&lt;/tc_unique_log_name&gt;
-    &lt;tc_log_timestamps&gt;0&lt;/tc_log_timestamps&gt;
-    <emphasis role="bold">&lt;tc_graph_ribbon&gt;true&lt;/tc_graph_ribbon&gt;</emphasis>
-&lt;/settings&gt;
-</programlisting>
-      </section>
-
-      <section>
-        <title>Removed Trafodion Support</title>
-
-        <para>From HammerDB v4.7 the previously deprecated Trafodion support
-        has been removed from HammerDB because the Trafodion project itself is
-        no longer in development.</para>
-      </section>
-
-      <section>
-        <title>Shell and Powershell scripts</title>
-
-        <para>From HammerDB v4.7 Linux shell and Windows powershell driver
-        scripts as well as build, run, delete, and report scripts for all
-        databases have been added to the main directory under the scripts
-        folder. These scripts are examples in both Python and Tcl to use as a
-        template for modifying and running scripts under the HammerDB CLI to
-        fully automate test workloads.</para>
+        <para>From v4.8 the HammerDB Web Service has been enhanced to provide
+        a read only interface to the jobs output from both the GUI and CLI
+        stored in a SQLite database using a web browser. This enables the
+        viewing of workload configuration as well as automatically generated
+        charts from the job output. These charts use Apache e-charts and
+        therefore to access the charts it is necessary for the viewing browser
+        to have an internet connection to download the the e-chart
+        functionality. If the browser cannot access the e-charts URL the chart
+        pages will remain blank. Chapter 10 provides further details on
+        viewing Jobs with the Web Service.</para>
       </section>
 
       <section>
@@ -187,26 +151,6 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
           xlink:href="https://github.com/TPC-Council/HammerDB/issues/404">Issue
           #404</link>.</para>
         </section>
-
-        <section>
-          <title>Db2 interface will not load under Python CLI</title>
-
-          <para>When running a Db2 workload from the Python CLI on Linux the
-          following error is received:</para>
-
-          <programlisting>Traceback (most recent call last): 
-File "&lt;stdin&gt;", line 1, in &lt;module&gt; 
-RuntimeError: couldn't load file "./lib/db2tcl2.0.1/libdb2tcl.so": 
-./lib/db2tcl2.0.1/libdb2tcl.so: undefined symbol: Tcl_GetChannel</programlisting>
-
-          <para>This only impacts the Python CLI on Linux and does not impact
-          Tcl on Linux or Python or Tcl on Windows where the Db2 interface
-          loads successfully.</para>
-
-          <para>The workaround for the CLI on Linux is to run the Tcl
-          interface directly and not to use the example Db2 Python scripts at
-          the current release.</para>
-        </section>
       </section>
 
       <section>
@@ -254,54 +198,35 @@ RuntimeError: couldn't load file "./lib/db2tcl2.0.1/libdb2tcl.so":
     </section>
 
     <section>
-      <title>HammerDB v4.7 New Features</title>
+      <title>HammerDB v4.8 New Features</title>
 
-      <para>HammerDB v4.7 New Features are all referenced to <link
+      <para>HammerDB v4.8 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Issues and Pull Requests</link>, where more details for each new feature
       and related pull requests can be found here:</para>
 
-      <para>[TPC-Council#515] Jobs query for VU specific timing prints data
-      twice, with second always in text</para>
+      <para>[TPC-Council#560] Allow using existing empty database for Db2
+      TPROC-C and TPROC-H</para>
 
-      <para>[TPC-Council#513] HammerDB 4.7 fails to start on Windows if 4.6
-      SQLite files present</para>
+      <para>[TPC-Council#558] Enhancement for storing and retrieval of
+      HammerDB results and configurations</para>
 
-      <para>[TPC-Council#511] Add Windows powershell driver script to sample
-      scripts</para>
+      <para>[TPC-Council#556] MySQL/MariaDB L_ORDERKEY to BIGINT</para>
 
-      <para>[TPC-Council#504] Fix calculation of geomean in TPROC-H</para>
+      <para>[TPC-Council#541] Update mssqlsoltp.tcl</para>
 
-      <para>[TPC-Council#503] Fix TPROC-H query 5 for Columnstore</para>
+      <para>[TPC-Council#539] Auto scale factor for TPC-H (issue 23)</para>
 
-      <para>[TPC-Council#501] Use db2tcl to create and drop database for
-      DB2</para>
+      <para>[TPC-Council#535] Fix doc bug for VU/warehouse count</para>
 
-      <para>[TPC-Council#494] Improve Transaction counter look and feel and
-      resize when window resized</para>
+      <para>[TPC-Council#531] Repair ora_compatible OSTAT procedure</para>
 
-      <para>[TPC-Council#485] remove trafodion configuration and files</para>
+      <para>[TPC-Council#530] Add jobs getchart command</para>
 
-      <para>[TPC-Council#483] MySQL Heatwave TPROC-H support</para>
+      <para>[TPC-Council#522] Add CLI savescript and custommonitor
+      commands</para>
 
-      <para>[TPC-Council#481] Query update for tpch columnstore
-      benchmark</para>
-
-      <para>[TPC-Council#478] Add tkpath to build</para>
-
-      <para>[TPC-Council#473] Prevent CLI hang when scripts finishes before
-      enters event loop</para>
-
-      <para>[TPC-Council#471] Updates to jobs for Docker scripts</para>
-
-      <para>[TPC-Council#468] Fix for Issue #467 CLI myerrproc and
-      remote_command opmode</para>
-
-      <para>[TPC-Council#466] Update omitted Changelog for v4.6 release</para>
-
-      <para>[TPC-Council#460] Fixing queries for Columnstore issue 459</para>
-
-      <para>[TPC-Council#458] Make jobs functionality modular</para>
+      <para>[TPC-Council#517] Create CONTRIBUTING.md</para>
     </section>
 
     <section>
@@ -392,7 +317,8 @@ RuntimeError: couldn't load file "./lib/db2tcl2.0.1/libdb2tcl.so":
             <row>
               <entry>MariaDB</entry>
 
-              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8 / 10.10</entry>
+              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8 / 10.10 /
+              11.1</entry>
             </row>
 
             <row>
@@ -426,12 +352,12 @@ RuntimeError: couldn't load file "./lib/db2tcl2.0.1/libdb2tcl.so":
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.7-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.8-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.7-Linux.tar.gz 
-sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.8-Linux.tar.gz 
+sha1sum HammerDB-4.8-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -516,7 +442,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch1-7.PNG"/>
+              <imagedata fileref="docs/images/ch1-8.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -541,6 +467,15 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
         will persist across restarts of HammerDB. To change the default order
         and understand how settings are persisted see section 9 XML
         Configuration further in this Chapter.</para>
+
+        <para>If it is the first time that HammerDB has run it will create a
+        new Jobs repository database called hammer.DB, in the configured
+        location in the config/generic.xml file which by default is set to TMP
+        &lt;commandline&gt;&lt;sqlite_db&gt;TMP&lt;/sqlite_db&gt;&lt;/commandline&gt;
+        to find a suitable temp location. Subsequent use will use the same
+        file for storing job related data. This file can moved if another
+        location is preferred or if deleted a new one will be
+        recreated.</para>
 
         <figure>
           <title>HammerDB Started</title>
@@ -643,7 +578,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.7.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.8.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
         HammerDB-4.7.</para>
@@ -672,11 +607,8 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
     <section>
       <title>HammerDB Docker Container Build &amp; Run</title>
 
-      <para>At v4.6 the HammerDB Docker Image and Container supports the CLI
-      interface on Linux only.</para>
-
       <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. Version 4.7 includes both a pre-built Docker
+      distribute and deploy. Version 4.8 includes both a pre-built Docker
       Image and a Dockerfile that can be used to create a HammerDB Docker
       containers. This container is based on an Ubuntu 20.04 base image and
       provides a ready to use environment to run HammerDB. HammerDB has a
@@ -691,8 +623,32 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
         <para>A pre-built Docker image is provided on the official TPC site on
         Docker Hub at <link
         xlink:href="https://hub.docker.com/u/tpcorg">https://hub.docker.com/u/tpcorg</link>
-        it is only necessary to follow the Dockerfile build instructions if
-        you wish to build your own Dockerfile from source.</para>
+        than be downloaded with the docker pull command either for a complete
+        image for all databases but also database specific images.</para>
+
+        <programlisting>docker pull tpcorg/hammerdb
+docker pull tpcorg/hammerdb:mysql
+docker pull tpcorg/hammerdb:maria
+docker pull tpcorg/hammerdb:oracle
+docker pull tpcorg/hammerdb:postgres
+docker pull tpcorg/hammerdb:mssqls
+</programlisting>
+
+        <para>The official HammerDB Docker images are hosted by the
+        TPC-Council and recognised by the Docker Sponsored OSS program.</para>
+
+        <figure>
+          <title>Docker Sponsored OSS</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch1-12aaa.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>It is only necessary to follow the Dockerfile build instructions
+        if you wish to build your own Dockerfile from source.</para>
       </section>
 
       <section>
@@ -739,7 +695,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
         <para>To create an image: Go to the folder containing the Dockerfile
         and run the docker build command.</para>
 
-        <programlisting>docker build -t hammerdb-v4.7 . </programlisting>
+        <programlisting>docker build -t hammerdb-v4.8 . </programlisting>
 
         <figure>
           <title>docker build</title>
@@ -770,7 +726,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
         build is successful but the client libraries for IBM are not
         installed.</para>
 
-        <programlisting>	docker run -it --name hammerdb hammerdb-v4.7 bash</programlisting>
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.8 bash</programlisting>
 
         <figure>
           <title>docker run</title>
@@ -812,7 +768,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
         communicate with remote databases. The following is an example of
         adding host network to the container.</para>
 
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.7 bash</programlisting>
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.8 bash</programlisting>
       </section>
     </section>
 
@@ -842,7 +798,7 @@ sha1sum HammerDB-4.7-Linux.tar.gz</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.7
+      <programlisting>HammerDB CLI v4.8
 Copyright (C) 2003-2023 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -863,28 +819,7 @@ Success ... loaded library mariatcl for MariaDB
 hammerdb&gt;
 </programlisting>
 
-      <para>librarycheck is also provided in the HammerDB Web Service.</para>
-
-      <programlisting>HammerDB Web Service v4.7
-Copyright (C) 2003-2023 Steve Shaw
-Type "help" for a list of commands
-The xml is well-formed, applying configuration
-Initialized SQLite on-disk database C:/Users/Steve/AppData/Local/Temp/hammer.DB using existing tables
-Starting HammerDB Web Service on port 8080
-Listening for HTTP requests on TCP port 8080
-hammerws&gt;librarycheck
-[
-  "success ... loaded library Oratcl for Oracle",
-  "success ... loaded library tdbc::odbc for MSSQLServer",
-  "success ... loaded library db2tcl for Db2",
-  "success ... loaded library mysqltcl for MySQL",
-  "success ... loaded library Pgtcl for PostgreSQL",
-  "success ... loaded library mariatcl for MariaDB"
-]
-
-hammerws&gt;</programlisting>
-
-      <para>in the examples it can be seen that the libraries for all
+      <para>In the examples it can be seen that the libraries for all
       databases were found and loaded. The following table illustrates the
       first level library that HammerDB requires however there may be
       additional dependencies. Refer to the Test Matrix to determine which
@@ -1166,7 +1101,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.7 (4.X and version 3.3) has been built and
+        <para>HammerDB version 4.8 (4.X and version 3.3) has been built and
         tested against a MySQL 8.0 client installation, hammerDB version
         3.0-3.2 has been built against MySQL 5.7. On Linux this means that
         HammerDB will require a MySQL client library called
@@ -1180,7 +1115,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.7 has been built and tested against MariaDB
+        <para>HammerDB version 4.8 has been built and tested against MariaDB
         10.5.10 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
@@ -1270,7 +1205,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         version of HammerDB is detected from the one that created the existing
         database files, reporting the following message at startup.</para>
 
-        <programlisting>The existing SQLite DBs are from version v4.6. SQLite DBs will be reset to v4.7.</programlisting>
+        <programlisting>The existing SQLite DBs are from version v4.7. SQLite DBs will be reset to v4.8.</programlisting>
 
         <para>For this reason before running another version any existing
         configuration that is wished to be saved should be exported using
@@ -1600,7 +1535,12 @@ expect.bawt        oratcl.bawt        tclpy.bawt      tksvg.bawt</programlisting
            Total: 3.70 minutes</programlisting>
 
         <para>On Windows a graphical viewer monitors the progress of the
-        build.</para>
+        build. Note that on Windows with the Windows Defender virus real-time
+        protection enabled the build can be slower as more time is taken as
+        each source file is scanned. If preferred disabling real-time
+        protection for the duration of the build will enable it to complete in
+        approximately half of the time of a build with virus scanning
+        enabled.</para>
 
         <figure>
           <title>Windows build</title>
@@ -6999,6 +6939,29 @@ done
       <para>Equivalent functionality exists in the CLI to enable transaction
       counter logging with the tcset command.</para>
     </section>
+
+    <section>
+      <title>Ribbon effect</title>
+
+      <para>From HammerDB v4.7 the ribbon effect transaction counter has been
+      deprecated. However if preferred it can be manually enabled through the
+      setting tc_graph_ribbon in generic.xml as shown. Note that this should
+      be at installation as at first startup the setting will be made in the
+      SQLite storage and subsequent changes to the xml file will not be
+      detected. For later changes to the xml to be detected you can delete the
+      generic.db file in the SQLite storage area and then the settings in
+      generic.xml will be applied for future use. It is not planned to have a
+      setting to enable/disable the ribbon effect during use and may be fully
+      deprecated in a future release.</para>
+
+      <programlisting>&lt;settings&gt;
+    &lt;tc_refresh_rate&gt;10&lt;/tc_refresh_rate&gt;
+    &lt;tc_log_to_temp&gt;0&lt;/tc_log_to_temp&gt;
+    &lt;tc_unique_log_name&gt;0&lt;/tc_unique_log_name&gt;
+    &lt;tc_log_timestamps&gt;0&lt;/tc_log_timestamps&gt;
+    <emphasis role="bold">&lt;tc_graph_ribbon&gt;true&lt;/tc_graph_ribbon&gt;</emphasis>
+&lt;/settings&gt;</programlisting>
+    </section>
   </chapter>
 
   <chapter>
@@ -7689,19 +7652,16 @@ hammerdb&gt;</programlisting>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB CLI v4.6
-Copyright (C) 2003-2022 Steve Shaw
-Type "help" for a list of commands
-The xml is well-formed, applying configuration
-hammerdb&gt;help
-HammerDB v4.1 CLI Help Index
+      <programlisting>HammerDB v4.8 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
         buildschema
         deleteschema
         clearscript
+        savescript
         customscript
+        custommonitor
         datagenrun
         dbset
         dgset
@@ -7724,7 +7684,10 @@ Type "help command" for more details on specific commands below
         vurun
         vuset
         vustatus
-
+        wsport
+        wsstart
+        wsstatus
+        wsstop
 
 hammerdb&gt;
 </programlisting>
@@ -7787,12 +7750,30 @@ hammerdb&gt;
               </row>
 
               <row>
+                <entry>savescript</entry>
+
+                <entry>Usage: savescript</entry>
+
+                <entry>Save the script to a file. Equivalent to the "Save"
+                button in the graphical interface.</entry>
+              </row>
+
+              <row>
                 <entry>customscript</entry>
 
                 <entry>Usage: customscript scriptname.tcl</entry>
 
                 <entry>Load an external script. Equivalent to the "Open
                 Existing File" button in the graphical interface.</entry>
+              </row>
+
+              <row>
+                <entry>custommonitor</entry>
+
+                <entry>Usage: custommonitor test|timed</entry>
+
+                <entry>Causes an additional Virtual User to be created when
+                running vucreate. Used when loading a custom script.</entry>
               </row>
 
               <row>
@@ -7849,8 +7830,9 @@ hammerdb&gt;
               <row>
                 <entry>jobs (alias job)</entry>
 
-                <entry>Usage: jobs : jobs [jobid|result|timestamp] : jobs
-                format [ text | JSON ] : jobs disable [ 0 | 1 ] : jobs jobid
+                <entry>Usage: jobs : jobs [jobid|joblist|result|timestamp] :
+                jobs format [ text | JSON ] : jobs disable [ 0 | 1 ] : jobs
+                jobid
                 [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]
                 : jobs jobid timing vuid</entry>
 
@@ -8036,6 +8018,38 @@ hammerdb&gt;
                 workload, "FINISH SUCCESS" for virtual users that completed
                 successfully or "FINISH FAILED" for virtual users that
                 encountered an error.</entry>
+              </row>
+
+              <row>
+                <entry>wsport</entry>
+
+                <entry>Usage: wsport [ port number ]</entry>
+
+                <entry>Set or report the Web Service Port.</entry>
+              </row>
+
+              <row>
+                <entry>wsstart</entry>
+
+                <entry>Usage: wsstart</entry>
+
+                <entry>Start the Web Service.</entry>
+              </row>
+
+              <row>
+                <entry>wsstop</entry>
+
+                <entry>Usage: wsstop</entry>
+
+                <entry>Stops the Web Service.</entry>
+              </row>
+
+              <row>
+                <entry>wsstatus</entry>
+
+                <entry>Usage: wsstatus</entry>
+
+                <entry>Checks the status of the Web Service.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -9360,12 +9374,31 @@ HAMMERDB RESULT
     <section>
       <title>CLI Jobs Interface</title>
 
-      <para>From v4.6 the HammerDB includes a jobs interface that stores the
-      configuration, output, transaction count and timing data for a HammerDB
-      workload that can be queried at a later point in time. This data is
-      stored in a SQLite database called hammer.DB. The location of this is
-      set in the generic.xml configuration file in the commandline section as
-      sqlite_db, be default this area will be in the Temp directory.</para>
+      <para>From v4.6 the HammerDB CLI includes a jobs interface that stores
+      the configuration, output, transaction count and timing data for a
+      HammerDB workload that can be queried at a later point in time. This
+      data is stored in a SQLite database called hammer.DB. From v4.8 the GUI
+      environment also uses this Jobs database. The location of this is set in
+      the generic.xml configuration file in the commandline section as
+      sqlite_db, by default this area will be in the Temp directory. A
+      flexible way to set the location is to set the TMP environment variable
+      to a preferred location. For example on Linux.</para>
+
+      <programlisting>export TMP=`pwd`/TMP</programlisting>
+
+      <para>and on Windows.</para>
+
+      <programlisting>C:\Program Files\HammerDB-4.8&gt;set TEMP=C:\temp
+C:\Program Files\HammerDB-4.8&gt;hammerdbcli.bat
+HammerDB CLI v4.8
+Copyright (C) 2003-2023 Steve Shaw
+Type "help" for a list of commands
+Initialized new Jobs on-disk database C:/temp/hammer.DB
+hammerdb&gt;
+</programlisting>
+
+      <para>The Jobs database can be relocated to any alternative preferred
+      location as desired.</para>
 
       <programlisting>  &lt;commandline&gt;
 &lt;sqlite_db&gt;TMP&lt;/sqlite_db&gt; 
@@ -9429,7 +9462,7 @@ hammerdb&gt;</programlisting>
             </row>
 
             <row>
-              <entry>jobs [jobid|result|timestamp]</entry>
+              <entry>jobs [jobid|joblist||result|timestamp]</entry>
 
               <entry>Query all jobs, list the VU output for the jobid, list
               the results for all jobs, list the timestamp for all
@@ -9463,6 +9496,13 @@ hammerdb&gt;</programlisting>
               <entry>jobs jobid timing - Usage: jobs jobid timing vuid</entry>
 
               <entry>Show the timing data for an individual vuid.</entry>
+            </row>
+
+            <row>
+              <entry>jobs jobid getchart [result | timing | tcount]</entry>
+
+              <entry>Generate html chart for TPROC-C/TPROC-H results, timing
+              and transaction counts</entry>
             </row>
           </tbody>
         </tgroup>
@@ -9977,17 +10017,12 @@ hammerdb&gt;job 637CF9B73C8D03E243636303 timestamp
   </chapter>
 
   <chapter>
-    <title>Web Service Interface (WS)</title>
+    <title>Viewing Jobs with the Web Service Interface (WS)</title>
 
-    <para>From version 4.3 the HammerDB HTTP Web Service has been enhanced to
-    include a CLI interface as well as an extended SQLite repository database
-    for all log output. The CLI interface translates the CLI commands to the
-    HTTP/REST client passing parameters and returning output in JSON format.
-    The key difference from the configuration of the standard CLI is the
-    addition of jobs. Under the web service output from schema builds, tests,
-    timing, transaction counter and configuration are stored in a SQLite
-    database and retrieved at a later point using a query based on a job
-    id.</para>
+    <para>From version 4.8 the HammerDB HTTP Web Service has been enhanced to
+    provide a read-only interface to the SQLite Jobs repository database. The
+    Web Service can be started, and stopped with the GUI, CLI and
+    manually.</para>
 
     <section>
       <title>Web Service Configuration</title>
@@ -9995,133 +10030,130 @@ hammerdb&gt;job 637CF9B73C8D03E243636303 timestamp
       <para>There are 2 configuration parameters for the web service in the
       file generic.xml in the config directory, ws_port and sqlite_db. ws_port
       defines the port on which the service will run and sqlite_db defines the
-      location of the SQLite database file. By default a temporary file
-      location is used by specifying TMP. If :memory: is used an in-memory
-      SQLite database will be used, however the data in this location will not
-      be stored after the webservice stops and is incompatible with
-      functionality such as time profiling, for this reason an on-disk
-      location is recommended.</para>
+      location of the SQLite database file where job related data is stored.
+      By default a temporary file location is used by specifying TMP. If
+      :memory: is used an in-memory SQLite database will be used, however the
+      data in this location will not be stored after the webservice stops and
+      is incompatible with functionality such as time profiling, for this
+      reason an on-disk location is recommended.</para>
 
-      <programlisting>  &lt;webservice&gt;
+      <programlisting>   &lt;sqlitedb&gt;
+        &lt;sqlitedb_dir&gt;TMP&lt;/sqlitedb_dir&gt;
+   &lt;/sqlitedb&gt;
+
+  &lt;webservice&gt;
    &lt;ws_port&gt;8080&lt;/ws_port&gt; 
-   &lt;sqlite_db&gt;TMP&lt;/sqlite_db&gt; 
   &lt;/webservice&gt;</programlisting>
-    </section>
 
-    <section>
-      <title>Starting the Web Service and Help Screen</title>
-
-      <para>On starting the Web service with the hammerdbws command HammerDB
-      will return a hammerws prompt and also listen on the specified port for
-      HTTP requests. Navigating to the prompt returns the home page.</para>
+      <para>The webservice can be configured under the GUI under the new Jobs
+      option.</para>
 
       <para><figure>
-          <title>Web Service Home Page</title>
+          <title>Jobs Option</title>
 
           <mediaobject>
             <imageobject>
               <imagedata fileref="../DocBook/docs/images/ch10ws-1.PNG"/>
             </imageobject>
           </mediaobject>
-        </figure>The help command at the CLI prompt shows the available
-      commands.</para>
+        </figure>Under Options you can Enable/Disable the Jobs interface. If
+      disabled no Job related information will be stored in the SQLite
+      database. When enabled you have the option to set the port that the Web
+      Service will listen on and to start and stop the Web Service.</para>
 
-      <programlisting>HammerDB Web Service v4.3
-Copyright (C) 2003-2021 Steve Shaw
+      <figure>
+        <title>Jobs and Web Service Configuration</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>When running the Status button will show the Web Service
+      environment.</para>
+
+      <figure>
+        <title>Web Service Status</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1b.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The same commands can also be run from the CLI to enable or
+      disable Jobs and to start/stop the Web Service.</para>
+
+      <programlisting>hammerdb&gt;jobs disable 0
+Enabling jobs repository, restart HammerDB to take effect
+
+hammerdb&gt;jobs disable 1
+Disabling jobs repository, restart HammerDB to take effect
+
+hammerdb&gt;wsport
+Web Service Port set to 8080
+
+hammerdb&gt;wsstart
+HammerDB Web Service v4.8
+Copyright (C) 2003-2023 Steve Shaw
 Type "help" for a list of commands
-The xml is well-formed, applying configuration
-Initialized new SQLite on-disk database C:/Users/Steve/AppData/Local/Temp/hammer.DB
-Starting HammerDB Web Service on port 8080
-Listening for HTTP requests on TCP port 8080
-hammerws&gt;help
-HammerDB v4.3 WS Help Index
 
-Type "help command" for more details on specific commands below
+hammerdb&gt;Starting HammerDB Web Service on port 8080
 
-        buildschema
-        clearscript
-        customscript
-        datagenrun
-        dbset
-        dgset
-        diset
-        jobs
-        librarycheck
-        loadscript
-        print
-        quit
-        runtimer
-        tcset
-        tcstart
-        tcstatus
-        tcstop
-        vucomplete
-        vucreate
-        vudestroy
-        vurun
-        vuset
-        vustatus
-        waittocomplete
+hammerdb&gt;wsstatus
+Web Service running: Service Environment
 
-hammerws&gt;
+BASE_URL = http://localhost:8080
+DOCUMENT_ROOT = {C:/Program Files/HammerDB-4.8}
+HTTP_ACCEPT_ENCODING = gzip,deflate,compress
+HTTP_HOST = localhost:8080
+HTTP_USER_AGENT = {Mozilla/5.0 (Windows; U; Windows NT 10.0) http/2.9.5 Tcl/8.6.12}
+PATH_HEAD = env
+PATH_INFO = /env
+PATH_TAIL = {}
+QUERY_STRING = {}
+REMOTE_ADDR = ::1
+REMOTE_PORT = 63830
+REQUEST_METHOD = GET
+REQUEST_URI = /env
+SAME_ORIGIN = 0
+SCRIPT_FILENAME = {C:/Program Files/HammerDB-4.8/wait}
+SCRIPT_NAME = {}
+SELF_URL = http://localhost:8080/env
+WAPP_MODE = server
+[pwd] = {C:/Program Files/HammerDB-4.8}
+
+hammerdb&gt;wsstop
+Stopping HammerDB Web Service on port 8080
+
 </programlisting>
 
-      <para>hammerws supports all commands supported by the CLI except for the
-      remote modes commands of switchmode and steprun at release v4.3.
-      Clicking on the Web Service API link returns the underlying interface.
-      The Web Service can be interacted with either through the CLI commands
-      or directly over HTTP. As noted when using the CLI it will automatically
-      translate the command and call the local HTTP interface for you with the
-      API as shown.</para>
+      <para>You can also start and stop the Web Service directly. With no
+      arguments or the argument of wait the Web Service will wait in listening
+      mode.</para>
 
-      <programlisting>HammerDB Web Service
-HammerDB API
-GET db: Show the configured database.
-get http://localhost:8080/print?db / get http://localhost:8080/db
+      <programlisting>:\Program Files\HammerDB-4.8&gt;hammerdbws
+HammerDB Web Service v4.8
+Copyright (C) 2003-2023 Steve Shaw
+Type "help" for a list of commands
+Starting HammerDB Web Service on port 8080</programlisting>
 
-GET bm: Show the configured benchmark.
-get http://localhost:8080/print?bm / get http://localhost:8080/bm
-{"benchmark": "TPC-C"}
+      <para>With the argument of nowait the Web Service will return a prompt.
+      This allows you to manually interact with the Web Service API and return
+      Job related html to the prompt.</para>
 
-GET dict: Show the dictionary for the current database ie all active variables.
-get http://localhost:8080/print?dict /  http://localhost:8080/dict
+      <programlisting>C:\Program Files\HammerDB-4.8&gt;hammerdbws nowait
+HammerDB Web Service v4.8
+Copyright (C) 2003-2023 Steve Shaw
+Type "help" for a list of commands
+Starting HammerDB Web Service on port 8080
 
-GET script: Show the loaded script.
-get http://localhost:8080/print?script / http://localhost:8080/script
-
-GET vuconf: Show the virtual user configuration.
-get http://localhost:8080/print?vuconf / http://localhost:8080/vuconf
-
-GET vucreate: Create the virtual users. Equivalent to the Virtual User Create option in the graphical interface. Use vucreated to see the number created, vustatus to see the status and vucomplete to see whether all active virtual users have finished the workload. A script must be loaded before virtual users can be created.
-get http://localhost:8080/vucreate
- 
-GET vucreated: Show the number of virtual users created.
-get http://localhost:8080/print?vucreated / get http://localhost:8080/vucreated
-
-GET vustatus: Show the status of virtual users, status will be "WAIT IDLE" for virtual users that are created but not running a workload,"RUNNING" for virtual users that are running a workload, "FINISH SUCCESS" for virtual users that completed successfully or "FINISH FAILED" for virtual users that encountered an error.
-get http://localhost:8080/print?vustatus / get http://localhost:8080/vustatus
-
-GET datagen: Show the datagen configuration
-get http://localhost:8080/print?datagen /  get http://localhost:8080/datagen
-
-GET vucomplete: Show if virtual users have completed. returns "true" or "false" depending on whether all virtual users that started a workload have completed regardless of whether the status was "FINISH SUCCESS" or "FINISH FAILED".
-get http://localhost:8080/vucomplete
-
-GET vudestroy: Destroy the virtual users. Equivalent to the Destroy Virtual Users button in the graphical interface that replaces the Create Virtual Users button after virtual user creation.
-get http://localhost:8080/vudestroy
-
-GET loadscript: Load the script for the database and benchmark set with dbset and the dictionary variables set with diset. Use print?script to see the script that is loaded. Equivalent to loading a Driver Script in the Script Editor window in the graphical interface. Driver script must be set to timed for the script to be loaded. Test scripts should be run in the GUI environment.  
-get http://localhost:8080/loadscript
-
-GET clearscript: Clears the script. Equivalent to the "Clear the Screen" button in the graphical interface.
-get http://localhost:8080/clearscript
-
-GET vurun: Send the loaded script to the created virtual users for execution. Equivalent to the Run command in the graphical interface. Creates a job id associated with all output. 
-get http://localhost:8080/vurun
-
-GET buildschema: Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface. Creates a job id associated with all output. 
-get http://localhost:8080/buildschema
-
+hammerws&gt;help
+HammerDB Web Service
+Help:
 GET jobs: Show the job ids, configuration, output, status, results and timings of jobs created by buildschema and vurun. Job output is equivalent to the output viewed in the graphical interface or command line.
 get http://localhost:8080/jobs
 get http://localhost:8080/jobs?jobid=TEXT
@@ -10129,775 +10161,151 @@ get http://localhost:8080/jobs?jobid=TEXT&amp;bm
 get http://localhost:8080/jobs?jobid=TEXT&amp;db
 get http://localhost:8080/jobs?jobid=TEXT&amp;delete
 get http://localhost:8080/jobs?jobid=TEXT&amp;dict
+get http://localhost:8080/jobs?jobid=TEXT&amp;index
 get http://localhost:8080/jobs?jobid=TEXT&amp;result
+get http://localhost:8080/jobs?jobid=TEXT&amp;resultdata
 get http://localhost:8080/jobs?jobid=TEXT&amp;status
 get http://localhost:8080/jobs?jobid=TEXT&amp;tcount
+get http://localhost:8080/jobs?jobid=TEXT&amp;tcountdata
 get http://localhost:8080/jobs?jobid=TEXT&amp;timestamp
 get http://localhost:8080/jobs?jobid=TEXT&amp;timing
+get http://localhost:8080/jobs?jobid=TEXT&amp;timingdata
 get http://localhost:8080/jobs?jobid=TEXT&amp;timing&amp;vuid=INTEGER
 get http://localhost:8080/jobs?jobid=TEXT&amp;vu=INTEGER
 
-GET librarycheck: Attempts to load the vendor provided 3rd party library for all databases and reports whether the attempt was successful.
-get http://localhost:8080/librarycheck
-
-GET tcstart: Starts the Transaction Counter. 
-get http://localhost:8080/tcstart
-
-GET tcstop: Stops the Transaction Counter. 
-get http://localhost:8080/tcstop
-
-GET tcstatus: Checks the status of the Transaction Counter. 
-get http://localhost:8080/tcstatus
-
-GET quit: Terminates the webservice and reports message to the console.
-get http://localhost:8080/quit
-
-POST dbset: Usage: dbset [db|bm] value. Sets the database (db) or benchmark (bm). Equivalent to the Benchmark Menu in the graphical interface. Database value is set by the database prefix in the XML configuration.
-post http://localhost:8080/dbset { "db": "ora" }
-
-POST diset: Usage: diset dict key value. Set the dictionary variables for the current database. Equivalent to the Schema Build and Driver Options windows in the graphical interface. Use print?dict to see what these variables are and diset to change.
-post http://localhost:8080/diset { "dict": "tpcc", "key": "duration", "value": "1" }
-
-POST vuset: Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps]. Configure the virtual user options. Equivalent to the Virtual User Options window in the graphical interface.
-post http://localhost:8080/vuset { "vu": "4" }
-
-POST tcset: Usage: tcset [refreshrate] 
-post http://localhost:8080/tcset { "refreshrate": "20" }
-
-POST dgset: Usage: dgset [vu|ware|directory]. Set the Datagen options. Equivalent to the Datagen Options dialog in the graphical interface.
-post http://localhost:8080/dgset { "directory": "/home/oracle" }
-
-POST customscript: Load an external script. Equivalent to the "Open Existing File" button in the graphical interface. Script must be converted to JSON format before post.
-post http://localhost:8080/customscript { "script": "customscript"}
-</programlisting>
+hammerws&gt;jobs
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;meta http-equiv="content-type" content="text/html; charset=UTF-8"&gt;
+&lt;link href="http://localhost:8080/style.css" rel="stylesheet"&gt;
+&lt;title&gt;HammerDB Results&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;p&gt;&lt;img src='http://localhost:8080/logo.png' width='347' height='60'&gt;&lt;/p&gt;&lt;h3 class="title"&gt;Job Index:&lt;/h3&gt;&lt;div class='hammerdb' data-title='Jobs'&gt;&lt;div&gt;&lt;ol style='column-width: 20ex;'&gt;
+&lt;br&gt;&lt;table&gt;</programlisting>
     </section>
 
     <section>
-      <title>Retrieving Output</title>
-
-      <para>The key difference from the standard CLI is the addition of the
-      jobs command. job can also be used as an alias for jobs. All build and
-      tests are assigned a jobid and the associated output is stored in the
-      SQLite database. The jobs command can then be used to retrieve
-      information about any particular job.</para>
-
-      <table>
-        <title>Jobs commands</title>
-
-        <tgroup cols="3">
-          <colspec colwidth="224*"/>
-
-          <colspec colwidth="373*"/>
-
-          <colspec colwidth="403*"/>
-
-          <thead>
-            <row>
-              <entry align="center">CLI Command</entry>
-
-              <entry align="center">API</entry>
-
-              <entry align="center">Description</entry>
-            </row>
-          </thead>
-
-          <tbody>
-            <row>
-              <entry>jobs</entry>
-
-              <entry>get http://localhost:8080/jobs</entry>
-
-              <entry>list all jobs in the SQLite database.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid</entry>
-
-              <entry>get http://localhost:8080/jobs?jobid=TEXT</entry>
-
-              <entry>list VU output for jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs result</entry>
-
-              <entry>N/A</entry>
-
-              <entry>list all results found in the SQLite database.</entry>
-            </row>
-
-            <row>
-              <entry>jobs timestamp</entry>
-
-              <entry>N/A</entry>
-
-              <entry>list all timestamps found in the SQLite database.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid bm</entry>
-
-              <entry>get http://localhost:8080/jobs?jobid=TEXT&amp;bm</entry>
-
-              <entry>list the configured benchmark for the jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid db</entry>
-
-              <entry>get http://localhost:8080/jobs?jobid=TEXT&amp;db</entry>
-
-              <entry>list the configured database for the jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid delete</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;delete</entry>
-
-              <entry>delete the jobid from the SQLite database.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid dict</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;dict</entry>
-
-              <entry>list the configured dict for the jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid result</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;result</entry>
-
-              <entry>list the result for the jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid status</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;status</entry>
-
-              <entry>list the current status for the jobid.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid tcount</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;tcount</entry>
-
-              <entry>list the transaction count for the jobid if the
-              transaction counter was run.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid timestamp</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;timestamp</entry>
-
-              <entry>list the timestamp for when the job started.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid timing</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;timing</entry>
-
-              <entry>list the xtprof timing for the job if time profiling was
-              run.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid vuid</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;vu=INTEGER</entry>
-
-              <entry>list the output for the jobid for the specified virtual
-              user.</entry>
-            </row>
-
-            <row>
-              <entry>jobs jobid timing vuid</entry>
-
-              <entry>get
-              http://localhost:8080/jobs?jobid=TEXT&amp;timing&amp;vuid=INTEGER</entry>
-
-              <entry>list the time profile for the jobid for the specified
-              virtual user.</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </table>
-    </section>
-
-    <section>
-      <title>CLI &amp; Scripted Commands</title>
-
-      <para>The web service CLI can also be used for both interactive and
-      scripted commands. Note that whether using the GUI, CLI or Web Service
-      the Virtual Users run exactly the same workloads. There is no difference
-      in the Virtual User workload based on the chosen interface. As an
-      example the following script executes a schema build and then exits
-      using waittocomplete.</para>
-
-      <programlisting>dbset db mssqls
-dbset bm TPC-C
-diset connection mssqls_server {(local)\\SQLDEVELOP}
-diset tpcc mssqls_count_ware 20
-diset tpcc mssqls_num_vu 8
-buildschema
-waittocomplete
-</programlisting>
-
-      <para>When run at the CLI the following output is shown.</para>
-
-      <programlisting>HammerDB Web Service v4.3
-Copyright (C) 2003-2021 Steve Shaw
-Type "help" for a list of commands
-The xml is well-formed, applying configuration
-Initialized SQLite on-disk database C:/Users/Steve/AppData/Local/Temp/hammer.DB using existing tables
-Starting HammerDB Web Service on port 8080
-Listening for HTTP requests on TCP port 8080
-hammerws&gt;source sqlbuild.tcl
-{"success": {"message": "Database set to MSSQLServer"}}
-{"success": {"message": "Benchmark set to TPC-C for MSSQLServer"}}
-{"success": {"message": "Changed connection:mssqls_server from (local) to (local)\\SQLDEVELOP for MSSQLServer"}}
-{"success": {"message": "Changed tpcc:mssqls_count_ware from 1 to 20 for MSSQLServer"}}
-{"success": {"message": "Changed tpcc:mssqls_num_vu from 1 to 8 for MSSQLServer"}}
-{"success": {"message": "Building 20 Warehouses with 9 Virtual Users, 8 active + 1 Monitor VU(dict value mssqls_num_vu is set to 8): JOBID=618E54ED9E5D03E233732393"}}</programlisting>
-
-      <para>The key difference from the standard CLI is that no output is
-      printed to stdout and is instead stored in the SQLite database under
-      jobid "618E54ED9E5D03E233732393".</para>
-
-      <para>The interface is closed after the build (as we used
-      waittocomplete) and restarted and the output remains persisted to the
-      database to be queried at any time. For example the list below shows
-      querying the timestamp when the job started, the dict configuration for
-      the build and the status of the build having completed
-      successfully.</para>
-
-      <programlisting>hammerws&gt;jobs 618E54ED9E5D03E233732393 timestamp
-
-{"618E54ED9E5D03E233732393": {"2021-11-12": "11:50:05"}}
-
-hammerws&gt;jobs 618E54ED9E5D03E233732393 dict
-
-{
-  "connection": {
-    "mssqls_server": "(local)\\SQLDEVELOP",
-    "mssqls_linux_server": "localhost",
-    "mssqls_tcp": "false",
-    "mssqls_port": "1433",
-    "mssqls_azure": "false",
-    "mssqls_authentication": "windows",
-    "mssqls_linux_authent": "sql",
-    "mssqls_odbc_driver": "ODBC Driver 17 for SQL Server",
-    "mssqls_linux_odbc": "ODBC Driver 17 for SQL Server",
-    "mssqls_uid": "sa",
-    "mssqls_pass": "admin"
-  },
-  "tpcc": {
-    "mssqls_count_ware": "20",
-    "mssqls_num_vu": "8",
-    "mssqls_dbase": "tpcc",
-    "mssqls_imdb": "false",
-    "mssqls_bucket": "1",
-    "mssqls_durability": "SCHEMA_AND_DATA",
-    "mssqls_total_iterations": "10000000",
-    "mssqls_raiseerror": "false",
-    "mssqls_keyandthink": "false",
-    "mssqls_checkpoint": "false",
-    "mssqls_driver": "test",
-    "mssqls_rampup": "2",
-    "mssqls_duration": "5",
-    "mssqls_allwarehouse": "false",
-    "mssqls_timeprofile": "false",
-    "mssqls_async_scale": "false",
-    "mssqls_async_client": "10",
-    "mssqls_async_verbose": "false",
-    "mssqls_async_delay": "1000",
-    "mssqls_connect_pool": "false"
-  }
-}
-
-hammerws&gt;jobs 618E54ED9E5D03E233732393 status
-
-[
-  "0",
-  "Ready to create a 20 Warehouse MS SQL Server TPROC-C schema\nin host (LOCAL)\\SQLDEVELOP in database TPCC?",
-  "0",
-  "Vuser 1:RUNNING",
-  "0",
-  "Vuser 2:RUNNING",
-  "0",
-  "Vuser 3:RUNNING",
-  "0",
-  "Vuser 4:RUNNING",
-  "0",
-  "Vuser 5:RUNNING",
-  "0",
-  "Vuser 6:RUNNING",
-  "0",
-  "Vuser 7:RUNNING",
-  "0",
-  "Vuser 8:RUNNING",
-  "0",
-  "Vuser 9:RUNNING",
-  "0",
-  "Vuser 6:FINISHED SUCCESS",
-  "0",
-  "Vuser 9:FINISHED SUCCESS",
-  "0",
-  "Vuser 7:FINISHED SUCCESS",
-  "0",
-  "Vuser 8:FINISHED SUCCESS",
-  "0",
-  "Vuser 4:FINISHED SUCCESS",
-  "0",
-  "Vuser 5:FINISHED SUCCESS",
-  "0",
-  "Vuser 2:FINISHED SUCCESS",
-  "0",
-  "Vuser 3:FINISHED SUCCESS",
-  "0",
-  "Vuser 1:FINISHED SUCCESS",
-  "0",
-  "ALL VIRTUAL USERS COMPLETE"
-]
-
-hammerws&gt;</programlisting>
-
-      <para>The output can also be queried using the HTTP interface
-      directly.</para>
+      <title>Viewing Jobs</title>
+
+      <para>With Jobs enabling all schema builds and benchmark runs will be
+      registered and recorded with a Jobid.</para>
+
+      <para><figure>
+          <title>Running Jobs</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch10ws-1c.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>When running the Web Service directing a browser to the
+      configured port will return a list of Jobs and their status of either
+      successfully completed, failed or unknown. The browse option under Jobs
+      in the menu will start the system default browser and direct it
+      automatically to the correct port. The top job result for both TPROC-C
+      and TPROC-H will be starred for quick identification. Note that if for
+      example running jobs through the CLI the web service can be used to
+      query from the same or separate system the status of currently running
+      jobs. This means for example an automated scripted CLI workload can be
+      monitored from a remote location and higher performance workloads
+      identified.</para>
 
       <figure>
-        <title>Query Build Job</title>
+        <title>Browse Results</title>
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="../DocBook/docs/images/ch10ws-2.PNG"/>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1d.PNG"/>
           </imageobject>
         </mediaobject>
       </figure>
 
-      <para>For the run script this is the same as would be run using the CLI
-      except for the addition of the jobs command. Note that as the command
-      line parameters are converted to JSON a backslash will be recognised as
-      an escape character, therefore in this example the database name has the
-      backslash itself preceded by the escape character {(local)\\SQLDEVELOP}.
-      This behaviour is different from the CLI where the brackets will prevent
-      this happening. An example is shown below of the incorrect and correct
-      usage.</para>
-
-      <programlisting>hammerws&gt;diset connection mssqls_server {(local)\SQLDEVELOP}
-{"error": {"message": "Not a valid escaped JSON character: 'S' in { \"dict\": \"connection\", \"key\": \"mssqls_server\", \"value\": \"(local)\\SQLDEVELOP\" }"}}
-
-hammerws&gt;diset connection mssqls_server {(local)\\SQLDEVELOP}
-{"success": {"message": "Changed connection:mssqls_server from (local) to (local)\\SQLDEVELOP for MSSQLServer"}}
-</programlisting>
-
-      <para>The example run script is configured as follows.</para>
-
-      <programlisting>dbset db mssqls
-dbset bm TPC-C
-diset connection mssqls_server {(local)\\SQLDEVELOP}
-diset tpcc mssqls_driver timed
-diset tpcc mssqls_rampup 1
-diset tpcc mssqls_duration 2
-diset tpcc mssqls_timeprofile true
-diset tpcc mssqls_allwarehouse true
-tcset refreshrate 10
-loadscript
-foreach z {1 2} {
-puts "$z VU TEST"
-vuset vu $z
-vucreate
-tcstart
-set jobid [ vurun ]
-runtimer 200
-tcstop
-jobs $jobid result
-jobs $jobid timing
-vudestroy
-}</programlisting>
-
-      <para>When the script is run it again reports a jobid that can be
-      queried for all of the job output. In the example the job result and
-      summary timing data is queried automatically after the job.</para>
-
-      <programlisting>HammerDB Web Service v4.3
-Copyright (C) 2003-2021 Steve Shaw
-Type "help" for a list of commands
-The xml is well-formed, applying configuration
-Initialized SQLite on-disk database C:/Users/Steve/AppData/Local/Temp/hammer.DB using existing tables
-Starting HammerDB Web Service on port 8080
-Listening for HTTP requests on TCP port 8080
-hammerws&gt;source sqlrun.tcl
-{"success": {"message": "Database set to MSSQLServer"}}
-{"success": {"message": "Benchmark set to TPC-C for MSSQLServer"}}
-{"success": {"message": "Changed connection:mssqls_server from (local) to (local)\\SQLDEVELOP for MSSQLServer"}}
-{"success": {"message": "Set driver script to timed, clearing Script, reload script to activate new setting"}}
-{"success": {"message": "Changed tpcc:mssqls_rampup from 2 to 1 for MSSQLServer"}}
-{"success": {"message": "Changed tpcc:mssqls_duration from 5 to 2 for MSSQLServer"}}
-{"success": {"message": "Changed tpcc:mssqls_timeprofile from false to true for MSSQLServer"}}
-{"success": {"message": "Changed tpcc:mssqls_allwarehouse from false to true for MSSQLServer"}}
-{"success": {"message": "Transaction Counter refresh rate set to 10"}}
-{"success": {"message": "script loaded"}}
-1 VU TEST
-{"success": {"message": "Virtual users set to 1"}}
-{"success": {"message": "2 Virtual Users Created with Monitor VU"}}
-{"success": {"message": "Transaction Counter Thread Started"}}
-{"success": {"message": "Running Virtual Users: JOBID=618E6DD7782203E263932303"}}
-{"success": {"message": "Timer: 1 minutes elapsed"}}
-{"success": {"message": "Timer: 2 minutes elapsed"}}
-{"success": {"message": "Timer: 3 minutes elapsed"}}
-{"success": {"message": "runtimer returned after 181 seconds"}}
-{"success": {"message": "Transaction Counter thread running with threadid:tid0000000000003C54"}}{"success": {"message": "Stopping Transaction Counter"}}
-[
-  "618E6DD7782203E263932303",
-  "2021-11-12 13:36:23",
-  "1 Active Virtual Users configured",
-  "TEST RESULT : System achieved 35839 NOPM from 82362 SQL Server TPM"
-]
-{
-  "NEWORD": {
-    "elapsed_ms": "179711.0",
-    "calls": "107839",
-    "min_ms": "0.414",
-    "avg_ms": "0.687",
-    "max_ms": "62.606",
-    "total_ms": "74062.174",
-    "p99_ms": "1.0",
-    "p95_ms": "0.887",
-    "p50_ms": "0.679",
-    "sd": "3590.836",
-    "ratio_pct": "41.212"
-  },
-  "PAYMENT": {
-    "elapsed_ms": "179711.0",
-    "calls": "107137",
-    "min_ms": "0.331",
-    "avg_ms": "0.583",
-    "max_ms": "153.081",
-    "total_ms": "62447.329",
-    "p99_ms": "1.136",
-    "p95_ms": "0.926",
-    "p50_ms": "0.554",
-    "sd": "5546.55",
-    "ratio_pct": "34.749"
-  },
-  "DELIVERY": {
-    "elapsed_ms": "179711.0",
-    "calls": "10662",
-    "min_ms": "1.245",
-    "avg_ms": "1.498",
-    "max_ms": "336.131",
-    "total_ms": "15974.446",
-    "p99_ms": "1.832",
-    "p95_ms": "1.659",
-    "p50_ms": "1.442",
-    "sd": "32468.41",
-    "ratio_pct": "8.889"
-  },
-  "SLEV": {
-    "elapsed_ms": "179711.0",
-    "calls": "10837",
-    "min_ms": "0.581",
-    "avg_ms": "1.284",
-    "max_ms": "442.591",
-    "total_ms": "13913.749",
-    "p99_ms": "1.029",
-    "p95_ms": "0.913",
-    "p50_ms": "0.768",
-    "sd": "142934.778",
-    "ratio_pct": "7.742"
-  },
-  "OSTAT": {
-    "elapsed_ms": "179711.0",
-    "calls": "10805",
-    "min_ms": "0.19",
-    "avg_ms": "0.72",
-    "max_ms": "405.053",
-    "total_ms": "7776.908",
-    "p99_ms": "1.303",
-    "p95_ms": "1.014",
-    "p50_ms": "0.495",
-    "sd": "77492.84",
-    "ratio_pct": "4.327"
-  }
-}
-{"success": {"message": "vudestroy success"}}
-2 VU TEST
-{"success": {"message": "Virtual users set to 2"}}
-{"success": {"message": "3 Virtual Users Created with Monitor VU"}}
-{"success": {"message": "Transaction Counter Thread Started"}}
-{"success": {"message": "Running Virtual Users: JOBID=618E6E8EE53403E243832333"}}
-{"success": {"message": "Timer: 1 minutes elapsed"}}
-{"success": {"message": "Timer: 2 minutes elapsed"}}
-{"success": {"message": "Timer: 3 minutes elapsed"}}
-{"success": {"message": "runtimer returned after 181 seconds"}}
-{"success": {"message": "Transaction Counter thread running with threadid:tid0000000000003374"}}{"success": {"message": "Stopping Transaction Counter"}}
-[
-  "618E6E8EE53403E243832333",
-  "2021-11-12 13:39:26",
-  "2 Active Virtual Users configured",
-  "TEST RESULT : System achieved 68606 NOPM from 157773 SQL Server TPM"
-]
-{
-  "NEWORD": {
-    "elapsed_ms": "179673.5",
-    "calls": "100437",
-    "min_ms": "0.433",
-    "avg_ms": "0.724",
-    "max_ms": "937.718",
-    "total_ms": "72671.06",
-    "p99_ms": "1.252",
-    "p95_ms": "0.877",
-    "p50_ms": "0.671",
-    "sd": "36684.99",
-    "ratio_pct": "40.532"
-  },
-  "PAYMENT": {
-    "elapsed_ms": "179673.5",
-    "calls": "100658",
-    "min_ms": "0.341",
-    "avg_ms": "0.64",
-    "max_ms": "1558.282",
-    "total_ms": "64373.678",
-    "p99_ms": "1.259",
-    "p95_ms": "0.987",
-    "p50_ms": "0.556",
-    "sd": "66749.215",
-    "ratio_pct": "35.905"
-  },
-  "DELIVERY": {
-    "elapsed_ms": "179673.5",
-    "calls": "10196",
-    "min_ms": "1.273",
-    "avg_ms": "1.582",
-    "max_ms": "89.852",
-    "total_ms": "16134.015",
-    "p99_ms": "2.57",
-    "p95_ms": "1.791",
-    "p50_ms": "1.503",
-    "sd": "13087.684",
-    "ratio_pct": "8.999"
-  },
-  "SLEV": {
-    "elapsed_ms": "179673.5",
-    "calls": "10190",
-    "min_ms": "0.619",
-    "avg_ms": "1.157",
-    "max_ms": "448.198",
-    "total_ms": "11792.671",
-    "p99_ms": "1.221",
-    "p95_ms": "0.986",
-    "p50_ms": "0.824",
-    "sd": "81906.924",
-    "ratio_pct": "6.577"
-  },
-  "OSTAT": {
-    "elapsed_ms": "179673.5",
-    "calls": "9943",
-    "min_ms": "0.212",
-    "avg_ms": "0.811",
-    "max_ms": "480.319",
-    "total_ms": "8064.587",
-    "p99_ms": "1.429",
-    "p95_ms": "1.105",
-    "p50_ms": "0.572",
-    "sd": "76772.016",
-    "ratio_pct": "4.498"
-  }
-}
-{"success": {"message": "vudestroy success"}}
-
-hammerws&gt;
-</programlisting>
-
-      <para>Later we can use the jobs command to query the information about
-      the jobs. In the example below it queries the database, workload and
-      timestamp when the job started and verifies that the job finished
-      successfully. It also retrieves the configuration that was set for the
-      job and the result. It also queries the xtprof timing data for virtual
-      user 2 only.</para>
-
-      <programlisting>hammerws&gt;job 618E6DD7782203E263932303 db
-
-["MSSQLServer"]
-
-hammerws&gt;job 618E6DD7782203E263932303 bm
-
-["TPC-C"]
-
-hammerws&gt;job 618E6DD7782203E263932303 timestamp
-
-{"618E6DD7782203E263932303": {"2021-11-12": "13:36:23"}}
-
-hammerws&gt;job 618E6DD7782203E263932303 status
-
-[
-  "0",
-  "Vuser 1:RUNNING",
-  "0",
-  "Vuser 2:RUNNING",
-  "0",
-  "Vuser 2:FINISHED SUCCESS",
-  "0",
-  "Vuser 1:FINISHED SUCCESS",
-  "0",
-  "ALL VIRTUAL USERS COMPLETE"
-]
-
-hammerws&gt;job 618E6DD7782203E263932303 dict
-
-{
-  "connection": {
-    "mssqls_server": "(local)\\SQLDEVELOP",
-    "mssqls_linux_server": "localhost",
-    "mssqls_tcp": "false",
-    "mssqls_port": "1433",
-    "mssqls_azure": "false",
-    "mssqls_authentication": "windows",
-    "mssqls_linux_authent": "sql",
-    "mssqls_odbc_driver": "ODBC Driver 17 for SQL Server",
-    "mssqls_linux_odbc": "ODBC Driver 17 for SQL Server",
-    "mssqls_uid": "sa",
-    "mssqls_pass": "admin"
-  },
-  "tpcc": {
-    "mssqls_count_ware": "1",
-    "mssqls_num_vu": "1",
-    "mssqls_dbase": "tpcc",
-    "mssqls_imdb": "false",
-    "mssqls_bucket": "1",
-    "mssqls_durability": "SCHEMA_AND_DATA",
-    "mssqls_total_iterations": "10000000",
-    "mssqls_raiseerror": "false",
-    "mssqls_keyandthink": "false",
-    "mssqls_checkpoint": "false",
-    "mssqls_driver": "timed",
-    "mssqls_rampup": "1",
-    "mssqls_duration": "2",
-    "mssqls_allwarehouse": "true",
-    "mssqls_timeprofile": "true",
-    "mssqls_async_scale": "false",
-    "mssqls_async_client": "10",
-    "mssqls_async_verbose": "false",
-    "mssqls_async_delay": "1000",
-    "mssqls_connect_pool": "false"
-  }
-}
-
-hammerws&gt;job 618E6DD7782203E263932303 result
-
-[
-  "618E6DD7782203E263932303",
-  "2021-11-12 13:36:23",
-  "1 Active Virtual Users configured",
-  "TEST RESULT : System achieved 35839 NOPM from 82362 SQL Server TPM"
-]
-
-hammerws&gt;job 618E6DD7782203E263932303 timing 2
-
-{
-  "NEWORD": {
-    "elapsed_ms": "179711.0",
-    "calls": "107839",
-    "min_ms": "0.414",
-    "avg_ms": "0.687",
-    "max_ms": "62.606",
-    "total_ms": "74062.174",
-    "p99_ms": "1.0",
-    "p95_ms": "0.887",
-    "p50_ms": "0.679",
-    "sd": "3590.836",
-    "ratio_pct": "41.212"
-  },
-  "PAYMENT": {
-    "elapsed_ms": "179711.0",
-    "calls": "107137",
-    "min_ms": "0.331",
-    "avg_ms": "0.583",
-    "max_ms": "153.081",
-    "total_ms": "62447.329",
-    "p99_ms": "1.136",
-    "p95_ms": "0.926",
-    "p50_ms": "0.554",
-    "sd": "5546.55",
-    "ratio_pct": "34.749"
-  },
-  "DELIVERY": {
-    "elapsed_ms": "179711.0",
-    "calls": "10662",
-    "min_ms": "1.245",
-    "avg_ms": "1.498",
-    "max_ms": "336.131",
-    "total_ms": "15974.446",
-    "p99_ms": "1.832",
-    "p95_ms": "1.659",
-    "p50_ms": "1.442",
-    "sd": "32468.41",
-    "ratio_pct": "8.889"
-  },
-  "SLEV": {
-    "elapsed_ms": "179711.0",
-    "calls": "10837",
-    "min_ms": "0.581",
-    "avg_ms": "1.284",
-    "max_ms": "442.591",
-    "total_ms": "13913.749",
-    "p99_ms": "1.029",
-    "p95_ms": "0.913",
-    "p50_ms": "0.768",
-    "sd": "142934.778",
-    "ratio_pct": "7.742"
-  },
-  "OSTAT": {
-    "elapsed_ms": "179711.0",
-    "calls": "10805",
-    "min_ms": "0.19",
-    "avg_ms": "0.72",
-    "max_ms": "405.053",
-    "total_ms": "7776.908",
-    "p99_ms": "1.303",
-    "p95_ms": "1.014",
-    "p50_ms": "0.495",
-    "sd": "77492.84",
-    "ratio_pct": "4.327"
-  }
-}
-
-hammerws&gt;</programlisting>
-
-      <para>This output can also be queried over HTTP, for example querying
-      the transaction counter output.</para>
+      <para>Clicking on a particular job will return the job index. The
+      entries for a job will depend on the data gathered for that job. For
+      example if the transaction counter is not running then transaction count
+      data will not be gathered. Similarly for response time data.</para>
 
       <figure>
-        <title>Query Transaction Count</title>
+        <title>Job Index</title>
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="../DocBook/docs/images/ch10ws-3.PNG"/>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1e.PNG"/>
           </imageobject>
         </mediaobject>
       </figure>
 
-      <para>The Web Service provides an alternative to the CLI where it is
-      wished to store the output of jobs in a database repository that can be
-      queried returning JSON output rather than using the log file output.
-      This scenario is most likely when building automated testing
-      systems.</para>
+      <para>Text based data will be reported in JSON format.</para>
+
+      <figure>
+        <title>JSON data</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1f.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>For both TPROC-C and TPROC-H result, transaction/query count and
+      timing data will be reported in Chart form. The Charts use Apache
+      e-charts and therefore access to the URL
+      https://cdn.jsdelivr.net/npm/echarts@5.4.1/dist/echarts.min.js is
+      required to access this functionality. The following example shows a
+      TPROC-C result.</para>
+
+      <figure>
+        <title>Result Chart</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1g.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>A transaction count.</para>
+
+      <figure>
+        <title>Transaction Count</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1h.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>and response time measurements.</para>
+
+      <figure>
+        <title>Response Times</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1i.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>TPROC-H data will also be reported with Timing data for the first
+      Virtual User.</para>
+
+      <figure>
+        <title>TPROC-H Timing</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1j.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>All charts are interactive and underlying data accessed through a
+      link below the chart. Additional data for a job is also available
+      through querying the job with the CLI interface.</para>
     </section>
   </chapter>
 
@@ -13093,9 +12501,9 @@ SET
               was used for the Build. This option is required in the Driver
               Script when the refresh function is run to ensure that the data
               is created to insert in the correction location without errors.
-              The Scale Factor is also used as input to some queries. This is
-              especially important if you have restarted HammerDB as you may
-              need to set the Scale Factor in the Build Options again.</entry>
+              The Scale Factor is also used as input to some queries. From
+              v4.8 HammerDB will automatically detect and set the Scale Factor
+              if it is set incorrectly.</entry>
             </row>
 
             <row>
@@ -13222,9 +12630,8 @@ SET
       and also modified directly there. The Load option can also be used to
       refresh the script to the configured Options. Pay particular attention
       to the Scale Factor value shown as "scale_factor" if different from the
-      schema that you have loaded. The "scale factor" value is inherited from
-      the schema build so you may have to change it manually in the script to
-      the same size of the schema that you paln to test.</para>
+      schema that you have loaded. From v4.8 HammerDB will automatically
+      detect and set the Scale Factor if it is set incorrectly.</para>
 
       <figure>
         <title>Driver Script Loaded</title>
@@ -13510,7 +12917,8 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
 
       <para>When loaded note that the refresh_on option is set in the script.
       You should also ensure that the scale factor setting matches the setting
-      for your schema.</para>
+      for your schema. From v4.8 HammerDB will automatically detect and set
+      the Scale Factor if it is set incorrectly.</para>
 
       <figure>
         <title>TPROC-H refresh on</title>
@@ -13667,8 +13075,9 @@ Cannot insert duplicate key in object 'dbo.orders'. The duplicate key value is (
         <para>Once set the refresh and queries will run as expected. If you
         observe foreign key or constraint violation errors after having
         restored a schema verify the scale factor in the driver script is set
-        to the same value as the scale factor of the schema you have
-        restored.</para>
+        to the same value as the scale factor of the schema you have restored.
+        From v4.8 HammerDB will automatically detect and set the Scale Factor
+        if it is set incorrectly.</para>
 
         <figure>
           <title>SQL Server with Snapshot Isolation</title>
