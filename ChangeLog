@@ -1070,6 +1070,11 @@ Version 4.8 Jun 2023
 
 Pull Requests & Issues
 
+Fix typo in Web Service port label #567
+Add password blank to GUI #566
+Fix commit 3de91e5 removed getchart help message #565
+Fix User and Repeat delay reversed #564
+Update Documentation to v4.8 #562
 Allow using existing empty database for Db2 TPROC-C and TPROC-H #560 (#548)
 Enhancement for storing and retrieval of HammerDB results and configurations #558 (#352)
 MySQL/MariaDB L_ORDERKEY to BIGINT #556 (#551)
