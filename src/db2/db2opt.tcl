@@ -57,7 +57,7 @@ proc countdb2opts { bm } {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
-    ttk::entry $Name  -width 30 -textvariable $tmp_db2_pass
+    ttk::entry $Name -show * -width 30 -textvariable $tmp_db2_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
     set Name $Parent.f1.e3
@@ -209,7 +209,7 @@ proc configdb2tpcc {option} {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
-    ttk::entry $Name  -width 30 -textvariable db2_pass
+    ttk::entry $Name -show * -width 30 -textvariable db2_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
     set Name $Parent.f1.e3
@@ -563,7 +563,7 @@ proc configdb2tpch {option} {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "TPROC-H Db2 User Password :" -image [ create_image hdbicon icons ] -compound left
-    ttk::entry $Name  -width 30 -textvariable db2_tpch_pass
+    ttk::entry $Name -show * -width 30 -textvariable db2_tpch_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
     set Name $Parent.f1.e3

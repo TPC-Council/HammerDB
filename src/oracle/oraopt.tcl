@@ -70,7 +70,7 @@ proc countoraopts { bm } {
     set Name $Parent.f1.e3
     set Prompt $Parent.f1.p3
     ttk::label $Prompt -text "System User Password :"   
-    ttk::entry $Name  -width 30 -textvariable system_password
+    ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
     set Name $Parent.f1.e4
@@ -226,7 +226,7 @@ proc configoratpcc {option} {
     set Name $Parent.f1.e3
     set Prompt $Parent.f1.p3
     ttk::label $Prompt -text "System User Password :"   
-    ttk::entry $Name  -width 30 -textvariable system_password
+    ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
     set Name $Parent.f1.e4
@@ -238,7 +238,7 @@ proc configoratpcc {option} {
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "TPROC-C User Password :" -image [ create_image hdbicon icons ] -compound left
-    ttk::entry $Name  -width 30 -textvariable tpcc_pass
+    ttk::entry $Name -show * -width 30 -textvariable tpcc_pass
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5 -sticky ew
     if { $option eq "all" || $option eq "build" } {
@@ -651,7 +651,7 @@ proc configoratpch {option} {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "System User Password :"
-    ttk::entry $Name -width 30 -textvariable system_password
+    ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -columnspan 4 -sticky ew
     set Name $Parent.f1.e3
@@ -663,7 +663,7 @@ proc configoratpch {option} {
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "TPROC-H User Password :" -image [ create_image hdbicon icons ] -compound left
-    ttk::entry $Name  -width 30 -textvariable tpch_pass
+    ttk::entry $Name -show * -width 30 -textvariable tpch_pass
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5 -columnspan 4 -sticky ew
     if { $option eq "all" || $option eq "build" } {
@@ -930,7 +930,7 @@ proc metoraopts {} {
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "System User Password :"
-    ttk::entry $Name  -width 30 -textvariable system_password
+    ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky ew
     set Name $Parent.b4

@@ -79,9 +79,9 @@ proc countpgopts { bm } {
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
     if { $bm eq "TPC-C" } {
-        ttk::entry $Name  -width 30 -textvariable pg_superuserpass
+        ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
     } else {
-        ttk::entry $Name  -width 30 -textvariable pg_tpch_superuserpass
+        ttk::entry $Name -show * -width 30 -textvariable pg_tpch_superuserpass
     }
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
@@ -268,7 +268,7 @@ proc configpgtpcc {option} {
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
-    ttk::entry $Name  -width 30 -textvariable pg_superuserpass
+    ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
     set Name $Parent.f1.e5
@@ -286,7 +286,7 @@ proc configpgtpcc {option} {
     set Name $Parent.f1.e7
     set Prompt $Parent.f1.p7
     ttk::label $Prompt -text "TPROC-C PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left 
-    ttk::entry $Name  -width 30 -textvariable pg_pass
+    ttk::entry $Name -show * -width 30 -textvariable pg_pass
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky ew
     set Name $Parent.f1.e8
@@ -698,7 +698,7 @@ proc configpgtpch {option} {
         set Name $Parent.f1.e4
         set Prompt $Parent.f1.p4
         ttk::label $Prompt -text "PostgreSQL Superuser Password :"
-        ttk::entry $Name  -width 30 -textvariable pg_tpch_superuserpass
+        ttk::entry $Name -show * -width 30 -textvariable pg_tpch_superuserpass
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky ew
         set Name $Parent.f1.e5
@@ -717,7 +717,7 @@ proc configpgtpch {option} {
     set Name $Parent.f1.e7
     set Prompt $Parent.f1.p7
     ttk::label $Prompt -text "TPROC-H PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left
-    ttk::entry $Name  -width 30 -textvariable pg_tpch_pass
+    ttk::entry $Name -show * -width 30 -textvariable pg_tpch_pass
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky ew
     set Name $Parent.f1.e8
@@ -1012,9 +1012,9 @@ proc metpgopts {} {
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
     if { $bm eq "TPC-C" } {
-        ttk::entry $Name  -width 30 -textvariable pg_superuserpass
+        ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
     } else {
-        ttk::entry $Name  -width 30 -textvariable pg_tpch_superuserpass
+        ttk::entry $Name -show * -width 30 -textvariable pg_tpch_superuserpass
     }
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
