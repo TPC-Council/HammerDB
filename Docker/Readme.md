@@ -50,7 +50,7 @@ This example Python script for MariaDB Database and HammerDB TPROC-C workload au
 Format is similar for every database while using both TCL or Python 
 
 ## Enable GUI Interface for HammerDB in Docker
-To use HammerDB in GUI Mode from running within a Docker container, make sure X11 forwarding is configured and environemnt variable DISPLAY is set appropriately.
+To use HammerDB in GUI Mode from running within a Docker container, make sure X11 forwarding is configured and environment variable DISPLAY is set appropriately.
 ##### For example on Ubuntu,
         export DISPLAY=localhost:10.0
 ##### Additionally disable host control, by executing the following.
