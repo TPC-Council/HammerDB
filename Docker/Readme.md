@@ -1,11 +1,11 @@
-# Release Notes for HammerDB 4.7
+# Release Notes for HammerDB Docker images
 
 ##### HammerDB prebuild Docker images can be downloaded directly from [Official TPC-Council HammerDB DockerHub](https://hub.docker.com/r/tpcorg/hammerdb)
         docker pull tpcorg/hammerdb
         docker tag  tpcorg/hammerdb hammerdb
 View all the Official TPC-Council HammerDB DockerHub images available [here](https://hub.docker.com/r/tpcorg/hammerdb/tags)
 
-Alternatively, [Dockerfile](https://github.com/TPC-Council/HammerDB/blob/master/Docker/Dockerfile) can be used to build the same HammerDb-v4.7 client docker image that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in future releases. TPC-Council#404
+Alternatively, [Dockerfile](https://github.com/TPC-Council/HammerDB/blob/master/Docker/Dockerfile) can be used to build the same HammerDB client docker image that supports all the databases HammerDB is enabled for, i.e. Oracle, Microsoft SQL Server, MySQL, PostgreSQL and MariaDB, except for IBM Db2. We intend to add it in future releases. TPC-Council#404
 ##### To build an image: Go to the folder containing the Dockerfile
         docker build -t hammerdb .
 ##### To create a container named "hammerdb" from the image, "hammerdb"
@@ -33,12 +33,12 @@ Given the wide usage of docker containers is in cloud and emphasizes on being li
          
 ## Example Scripts
 CLI example scripts for each database are included under "scripts folder". Examples for TPROC-C and TPROC-H workloads are given both in python and tcl languages.
-These scripts are recommended to run from the HammerDB home directory, "~/HammerDB-4.7/"
+These scripts are recommended to run from the HammerDB home directory, "/home/hammerdb/" 
 This example Python script for MariaDB Database and HammerDB TPROC-C workload automate the following:
 1. builds schema 
 2. run an TPROC-C workload test
 3. delete schema and
-4. write the results to "~/HammerDB-4.7/TMP" directory.
+4. write the results to "/home/hammerdb/TMP" directory.
         
 ##### This script can be executed as followed. 
         ./scripts/python/maria/tprocc/maria_tprocc_py.sh
