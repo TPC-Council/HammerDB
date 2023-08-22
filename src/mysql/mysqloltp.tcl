@@ -507,7 +507,7 @@ proc CreateTables { mysql_handler mysql_storage_engine num_part history_pk } {
     set pkmin_version "8.0.30"
     set version [ list [ mysql::sel $mysql_handler "select version()" -list ] ]
     if { [ package vcompare $version $pkmin_version ]  eq -1 } {
-	    puts "Minimum MySQL version for invisible PK is 8.0.30"
+	    puts "Minimum MySQL version for invisible PK is $pkmin_version"
 	    set history_pk "false"
     }
     } else {
@@ -555,7 +555,6 @@ PRIMARY KEY (`d_w_id`,`d_id`)
 )
 ENGINE = $mysql_storage_engine"
 if $history_pk {
-
     set sql(3) "CREATE TABLE `history` (
   `h_c_id` INT NULL,
   `h_c_d_id` INT NULL,
