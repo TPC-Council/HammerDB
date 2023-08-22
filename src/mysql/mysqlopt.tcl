@@ -372,7 +372,7 @@ proc configmysqltpcc {option} {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpccvars $configmysql
-    set tpccfields [ dict create tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared mysql_connect_pool $mysql_connect_pool} ]
+    set tpccfields [ dict create tpcc {mysql_user {.tpc.f1.e3 get} mysql_pass {.tpc.f1.e4 get} mysql_dbase {.tpc.f1.e5 get} mysql_storage_engine {.tpc.f1.e6 get} mysql_total_iterations {.tpc.f1.e14 get} mysql_rampup {.tpc.f1.e17 get} mysql_duration {.tpc.f1.e18 get} mysql_async_client {.tpc.f1.e22 get} mysql_async_delay {.tpc.f1.e23 get} mysql_count_ware $mysql_count_ware mysql_num_vu $mysql_num_vu mysql_partition $mysql_partition mysql_driver $mysql_driver mysql_raiseerror $mysql_raiseerror mysql_keyandthink $mysql_keyandthink mysql_allwarehouse $mysql_allwarehouse mysql_timeprofile $mysql_timeprofile mysql_async_scale $mysql_async_scale mysql_async_verbose $mysql_async_verbose mysql_prepared $mysql_prepared mysql_connect_pool $mysql_connect_pool mysql_history_pk $mysql_history_pk} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
         set mysqlconn [ dict create connection {mysql_host {.tpc.f1.e1 get} mysql_port {.tpc.f1.e2 get} mysql_socket {.tpc.f1.e2a get} mysql_ssl_ca {.tpc.f1.e2d get} mysql_ssl_cert {.tpc.f1.e2e get} mysql_ssl_key {.tpc.f1.e2f get} mysql_ssl_cipher {.tpc.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath $mysql_ssl_linux_capath} ]
@@ -605,22 +605,30 @@ proc configmysqltpcc {option} {
         if {$mysql_count_ware <= 200 } {
             $Name configure -state disabled
         }
+	grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19 -sticky ew
+        set Prompt $Parent.f1.p11
+        ttk::label $Prompt -text "History Table Primary Key :"
+        set Name $Parent.f1.e11
+        ttk::checkbutton $Name -text "" -variable mysql_history_pk -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky w
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
             set Prompt $Parent.f1.h3
             ttk::label $Prompt -image [ create_image driveroptlo icons ]
-            grid $Prompt -column 0 -row 19 -sticky e
+            grid $Prompt -column 0 -row 21 -sticky e
             set Prompt $Parent.f1.h4
             ttk::label $Prompt -text "Driver Options"
-            grid $Prompt -column 1 -row 19 -sticky w
+            grid $Prompt -column 1 -row 21 -sticky w
         }
         set Prompt $Parent.f1.p12
         ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
-        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Prompt -column 0 -row 22 -sticky e
         set Name $Parent.f1.r1
         ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mysql_driver
-        grid $Name -column 1 -row 20 -sticky w
+        grid $Name -column 1 -row 22 -sticky w
         bind .tpc.f1.r1 <ButtonPress-1> {
             set mysql_allwarehouse "false"
             set mysql_timeprofile "false"
@@ -637,7 +645,7 @@ proc configmysqltpcc {option} {
         }
         set Name $Parent.f1.r2
         ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable mysql_driver
-        grid $Name -column 1 -row 21 -sticky w
+        grid $Name -column 1 -row 23 -sticky w
         bind .tpc.f1.r2 <ButtonPress-1> {
             .tpc.f1.e17 configure -state normal
             .tpc.f1.e18 configure -state normal
@@ -654,14 +662,14 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p14
         ttk::label $Prompt -text "Total Transactions per User :"
         ttk::entry $Name -width 30 -textvariable mysql_total_iterations
-        grid $Prompt -column 0 -row 22 -sticky e
-        grid $Name -column 1 -row 22 -sticky ew
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky ew
         set Prompt $Parent.f1.p15
         ttk::label $Prompt -text "Exit on MySQL Error :"
         set Name $Parent.f1.e15
         ttk::checkbutton $Name -text "" -variable mysql_raiseerror -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 23 -sticky e
-        grid $Name -column 1 -row 23 -sticky w
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
         set Prompt $Parent.f1.p16
         ttk::label $Prompt -text "Keying and Thinking Time :"
         set Name $Parent.f1.e16
@@ -677,20 +685,20 @@ proc configmysqltpcc {option} {
                 }
             }
         }
-        grid $Prompt -column 0 -row 24 -sticky e
-        grid $Name -column 1 -row 24 -sticky w
+        grid $Prompt -column 0 -row 26 -sticky e
+        grid $Name -column 1 -row 26 -sticky w
         set Prompt $Parent.f1.p16a
         ttk::label $Prompt -text "Prepare Statements :"
         set Name $Parent.f1.e16a
         ttk::checkbutton $Name -text "" -variable mysql_prepared -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 25 -sticky e
-        grid $Name -column 1 -row 25 -sticky w
+        grid $Prompt -column 0 -row 27 -sticky e
+        grid $Name -column 1 -row 27 -sticky w
         set Name $Parent.f1.e17
         set Prompt $Parent.f1.p17
         ttk::label $Prompt -text "Minutes of Rampup Time :"
         ttk::entry $Name -width 30 -textvariable mysql_rampup
-        grid $Prompt -column 0 -row 26 -sticky e
-        grid $Name -column 1 -row 26 -sticky ew
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky ew
         if {$mysql_driver == "test" } {
             $Name configure -state disabled
         }
@@ -698,8 +706,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p18
         ttk::label $Prompt -text "Minutes for Test Duration :"
         ttk::entry $Name -width 30 -textvariable mysql_duration
-        grid $Prompt -column 0 -row 27 -sticky e
-        grid $Name -column 1 -row 27 -sticky ew
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky ew
         if {$mysql_driver == "test" } {
             $Name configure -state disabled
         }
@@ -707,8 +715,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p19
         ttk::label $Prompt -text "Use All Warehouses :"
         ttk::checkbutton $Name -text "" -variable mysql_allwarehouse -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 28 -sticky e
-        grid $Name -column 1 -row 28 -sticky ew
+        grid $Prompt -column 0 -row 30 -sticky e
+        grid $Name -column 1 -row 30 -sticky ew
         if {$mysql_driver == "test" } {
             $Name configure -state disabled
         }
@@ -716,8 +724,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p20
         ttk::label $Prompt -text "Time Profile :"
         ttk::checkbutton $Name -text "" -variable mysql_timeprofile -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 29 -sticky e
-        grid $Name -column 1 -row 29 -sticky ew
+        grid $Prompt -column 0 -row 31 -sticky e
+        grid $Name -column 1 -row 31 -sticky ew
         if {$mysql_driver == "test" } {
             $Name configure -state disabled
         }
@@ -725,8 +733,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p21
         ttk::label $Prompt -text "Asynchronous Scaling :"
         ttk::checkbutton $Name -text "" -variable mysql_async_scale -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 30 -sticky e
-        grid $Name -column 1 -row 30 -sticky ew
+        grid $Prompt -column 0 -row 32 -sticky e
+        grid $Name -column 1 -row 32 -sticky ew
         if {$mysql_driver == "test" } {
             set mysql_async_scale "false"
             $Name configure -state disabled
@@ -750,8 +758,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p22
         ttk::label $Prompt -text "Asynch Clients per Virtual User :"
         ttk::entry $Name -width 30 -textvariable mysql_async_client
-        grid $Prompt -column 0 -row 31 -sticky e
-        grid $Name -column 1 -row 31 -sticky ew
+        grid $Prompt -column 0 -row 33 -sticky e
+        grid $Name -column 1 -row 33 -sticky ew
         if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -759,8 +767,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p23
         ttk::label $Prompt -text "Asynch Client Login Delay :"
         ttk::entry $Name -width 30 -textvariable mysql_async_delay
-        grid $Prompt -column 0 -row 32 -sticky e
-        grid $Name -column 1 -row 32 -sticky ew
+        grid $Prompt -column 0 -row 34 -sticky e
+        grid $Name -column 1 -row 34 -sticky ew
         if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -768,8 +776,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p24
         ttk::label $Prompt -text "Asynchronous Verbose :"
         ttk::checkbutton $Name -text "" -variable mysql_async_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 33 -sticky e
-        grid $Name -column 1 -row 33 -sticky ew
+        grid $Prompt -column 0 -row 35 -sticky e
+        grid $Name -column 1 -row 35 -sticky ew
         if {$mysql_driver == "test" || $mysql_async_scale == "false" } {
             set mysql_async_verbose "false"
             $Name configure -state disabled
@@ -778,8 +786,8 @@ proc configmysqltpcc {option} {
         set Prompt $Parent.f1.p25
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable mysql_connect_pool -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 34 -sticky e
-        grid $Name -column 1 -row 34 -sticky ew
+        grid $Prompt -column 0 -row 36 -sticky e
+        grid $Name -column 1 -row 36 -sticky ew
     }
     #This is the Cancel button variables stay as before
     set Name $Parent.b2

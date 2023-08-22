@@ -501,8 +501,18 @@ proc CreateDatabase { mysql_handler db } {
     return
 }
 
-proc CreateTables { mysql_handler mysql_storage_engine num_part } {
+proc CreateTables { mysql_handler mysql_storage_engine num_part history_pk } {
     puts "CREATING TPCC TABLES"
+    if { [ string toupper $mysql_storage_engine ] eq "INNODB" && $history_pk } {
+    set pkmin_version "8.0.30"
+    set version [ list [ mysql::sel $mysql_handler "select version()" -list ] ]
+    if { [ package vcompare $version $pkmin_version ]  eq -1 } {
+	    puts "Minimum MySQL version for invisible PK is 8.0.30"
+	    set history_pk "false"
+    }
+    } else {
+    set history_pk "false"
+    }
     set sql(1) "CREATE TABLE `customer` (
   `c_id` INT(5) NOT NULL,
   `c_d_id` INT(2) NOT NULL,
@@ -544,6 +554,22 @@ ENGINE = $mysql_storage_engine"
 PRIMARY KEY (`d_w_id`,`d_id`)
 )
 ENGINE = $mysql_storage_engine"
+if $history_pk {
+
+    set sql(3) "CREATE TABLE `history` (
+  `h_c_id` INT NULL,
+  `h_c_d_id` INT NULL,
+  `h_c_w_id` INT NULL,
+  `h_d_id` INT NULL,
+  `h_w_id` INT NULL,
+  `h_date` DATETIME NULL,
+  `h_amount` DECIMAL(6, 2) NULL,
+  `h_data` VARCHAR(24) BINARY NULL,
+  `id` INT NOT NULL AUTO_INCREMENT INVISIBLE,
+PRIMARY KEY (`id`)
+)
+ENGINE = $mysql_storage_engine"
+	} else {
     set sql(3) "CREATE TABLE `history` (
   `h_c_id` INT NULL,
   `h_c_d_id` INT NULL,
@@ -555,6 +581,7 @@ ENGINE = $mysql_storage_engine"
   `h_data` VARCHAR(24) BINARY NULL
 )
 ENGINE = $mysql_storage_engine"
+	}
     set sql(4) "CREATE TABLE `item` (
   `i_id` INT(6) NOT NULL,
   `i_im_id` INT NULL,
@@ -944,7 +971,7 @@ proc chk_socket { host socket } {
     }
 }
 
-proc do_tpcc { host port socket ssl_options count_ware user password db mysql_storage_engine partition num_vu } {
+proc do_tpcc { host port socket ssl_options count_ware user password db mysql_storage_engine partition history_pk num_vu } {
     global mysqlstatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -989,7 +1016,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
         } else {
             set num_part 0
         }
-        CreateTables $mysql_handler $mysql_storage_engine $num_part
+        CreateTables $mysql_handler $mysql_storage_engine $num_part $history_pk
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $mysql_handler $MAXITEMS
@@ -1058,7 +1085,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_history_pk $mysql_num_vu"
     } else { return }
 }
 
