@@ -922,7 +922,7 @@ proc LoadWare { maria_handler ware_start count_ware MAXITEMS DIST_PER_WARE } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
     puts "Loading Warehouse"
-    set w_ytd 3000000.00
+    set w_ytd 300000.00
     for {set w_id $ware_start } {$w_id <= $count_ware } {incr w_id } {
         set w_name [ MakeAlphaString 6 10 $globArray $chalen ]
         set add [ MakeAddress $globArray $chalen ]

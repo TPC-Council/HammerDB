@@ -1690,7 +1690,7 @@ proc LoadWare { lda ware_start count_ware MAXITEMS DIST_PER_WARE timesten } {
     set curn2 [oraopen $lda ]
     set sql "INSERT INTO WAREHOUSE (w_id, w_name, w_street_1, w_street_2, w_city, w_state, w_zip, w_tax, w_ytd) values (:w_id, :w_name, :w_street_1, :w_street_2, :w_city, :w_state, :w_zip, :w_tax, :w_ytd)"
     oraparse $curn2 $sql
-    set w_ytd 3000000.00
+    set w_ytd 300000.00
     for {set w_id $ware_start } {$w_id <= $count_ware } {incr w_id } {
         set w_name [ MakeAlphaString 6 10 $globArray $chalen ]
         set add [ MakeAddress $globArray $chalen ]
