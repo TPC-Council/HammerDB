@@ -1278,6 +1278,13 @@ proc gettimestamp { } {
     return $tstamp
 }
 
+# bcp command to copy from file to specified tables
+# -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
+# network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
+proc bcpComm { tableName filePath uid pwd server} {
+    exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
+}
+
 proc Customer { odbc d_id w_id CUST_PER_DIST } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set namearr [list BAR OUGHT ABLE PRI PRES ESE ANTI CALLY ATION EING]
@@ -1325,6 +1332,90 @@ proc Customer { odbc d_id w_id CUST_PER_DIST } {
         }
     }
     puts "Customer Done"
+    return
+}
+
+# customer table loading procedure that implements the exec bcp command
+proc Customer_use_bcp { odbc d_id w_id CUST_PER_DIST } {
+    set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
+    set namearr [list BAR OUGHT ABLE PRI PRES ESE ANTI CALLY ATION EING]
+    set chalen [ llength $globArray ]
+    set c_d_id $d_id
+    set c_w_id $w_id
+    set c_middle "OE"
+    set c_balance -10.0
+    set c_credit_lim 50000
+    set h_amount 10.0
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create files for customer and history tables
+    set tmp_env $::env(TMP)
+    set CustomerFilePath "$tmp_env/CustomerTable$w_id.csv"
+    set HistoryFilePath "$tmp_env/HistoryTable$w_id.csv"
+
+    set cust_list ""
+    set hist_list ""
+
+    file delete $CustomerFilePath
+    file delete $HistoryFilePath
+
+    for {set c_id 1} {$c_id <= $CUST_PER_DIST } {incr c_id } {
+        set c_first [ MakeAlphaString 8 16 $globArray $chalen ]
+        if { $c_id <= 1000 } {
+            set c_last [ Lastname [ expr {$c_id - 1} ] $namearr ]
+        } else {
+            set nrnd [ NURand 255 0 999 123 ]
+            set c_last [ Lastname $nrnd $namearr ]
+        }
+        set c_add [ MakeAddress $globArray $chalen ]
+        set c_phone [ MakeNumberString ]
+        if { [RandomNumber 0 1] eq 1 } {
+            set c_credit "GC"
+        } else {
+            set c_credit "BC"
+        }
+        set disc_ran [ RandomNumber 0 50 ]
+        set c_discount [ expr {$disc_ran / 100.0} ]
+        set c_data [ MakeAlphaString 300 500 $globArray $chalen ]
+        set h_data [ MakeAlphaString 12 24 $globArray $chalen ]
+        set h_date [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+        set c_street_1 [ lindex $c_add 0 ]
+        set c_street_2 [ lindex $c_add 1 ]
+        set c_city [ lindex $c_add 2 ]
+        set c_state [ lindex $c_add 3 ]
+        set c_zip [ lindex $c_add 4 ]
+        append hist_list "$c_id,$c_d_id,$c_w_id,$c_d_id,$c_w_id,$h_date,$h_amount,$h_data\n"
+        append cust_list "$c_id,$c_d_id,$c_w_id,$c_discount,$c_credit_lim,$c_last,$c_first,$c_credit,$c_balance,10,1,0,$c_street_1,$c_street_2,$c_city,$c_state,$c_zip,$c_phone,$h_date,$c_middle,$c_data\n"
+
+    }
+    if {$hist_list ne ""} {
+        set fileHandle [open $HistoryFilePath "a"]
+        puts -nonewline $fileHandle $hist_list
+        close $fileHandle
+        unset hist_list
+    }
+    if {$cust_list ne ""} {
+        set fileHandle [open $CustomerFilePath "a"]
+        puts -nonewline $fileHandle $cust_list
+        close $fileHandle
+        unset cust_list
+    }
+    # bcp command to copy to history table
+    set tableName $db.dbo.history
+    bcpComm $tableName $HistoryFilePath $userid $pass $serv
+
+    # bcp command to copy to customer table
+    set tableName $db.dbo.customer
+    bcpComm $tableName $CustomerFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $HistoryFilePath
+    file delete $CustomerFilePath
     return
 }
 
@@ -1406,6 +1497,123 @@ proc Orders { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
     return
 }
 
+# orders table loading procedure that implements the exec bcp command
+proc Orders_use_bcp { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
+    set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
+    set chalen [ llength $globArray ]
+    # create files for orders, order line and new order tables
+    set tmp_env $::env(TMP)
+    set ordersFilePath "$tmp_env/Orders$w_id.csv"
+    set orderLineFilePath "$tmp_env/OrderLine$w_id.csv"
+    set newOrderFilePath "$tmp_env/NewOrder$w_id.csv"
+
+    set orders_list ""
+    set order_line_list ""
+    set new_order_list ""
+
+    file delete $ordersFilePath
+    file delete $newOrderFilePath
+    file delete $orderLineFilePath
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    set o_d_id $d_id
+    set o_w_id $w_id
+    for {set i 1} {$i <= $ORD_PER_DIST } {incr i } {
+        set cust($i) $i
+    }
+    for {set i 1} {$i <= $ORD_PER_DIST } {incr i } {
+        set r [ RandomNumber $i $ORD_PER_DIST ]
+        set t $cust($i)
+        set cust($i) $cust($r)
+        set $cust($r) $t
+    }
+    set e ""
+    # populate lists for inserting into tables for order line, new order and orders
+    for {set o_id 1} {$o_id <= $ORD_PER_DIST } {incr o_id } {
+        set o_c_id $cust($o_id)
+        set o_carrier_id [ RandomNumber 1 10 ]
+        set o_ol_cnt [ RandomNumber 5 15 ]
+        if { $o_id > 2100 } {
+            set e "o1"
+            set o_entry_d ""
+            append orders_list "$o_id,$o_d_id,$o_w_id,$o_c_id,$o_carrier_id,$o_ol_cnt,1,$o_entry_d\n"
+            set e "no1"
+            append new_order_list "$o_id,$o_d_id,$o_w_id\n"
+        } else {
+            set e "o3"
+            set o_entry_d [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+            append orders_list "$o_id,$o_d_id,$o_w_id,$o_c_id,$o_carrier_id,$o_ol_cnt,1,$o_entry_d\n"
+        }
+        for {set ol 1} {$ol <= $o_ol_cnt } {incr ol } {
+            set ol_i_id [ RandomNumber 1 $MAXITEMS ]
+            set ol_supply_w_id $o_w_id
+            set ol_quantity 5
+            set ol_amount 0.0
+            set ol_dist_info [ MakeAlphaString 24 24 $globArray $chalen ]
+            if { $o_id > 2100 } {
+                set e "ol1"
+                set o_entry_d ""
+                append order_line_list "$o_id,$o_d_id,$o_w_id,$ol,$ol_i_id,$o_entry_d,$ol_amount,$ol_supply_w_id,$ol_quantity,$ol_dist_info\n"
+            } else {
+                set amt_ran [ RandomNumber 10 10000 ]
+                set ol_amount [ expr {$amt_ran / 100.0} ]
+                set e "ol2"
+                set o_entry_d [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+                append order_line_list "$o_id,$o_d_id,$o_w_id,$ol,$ol_i_id,$o_entry_d,$ol_amount,$ol_supply_w_id,$ol_quantity,$ol_dist_info\n"
+            }
+        }
+    }
+
+    if {$orders_list ne ""} {
+         set fileHandle [open $ordersFilePath "a"]
+         puts -nonewline $fileHandle $orders_list
+         close $fileHandle
+         unset orders_list
+    }
+
+    if {$order_line_list ne ""} {
+         set fileHandle [open $orderLineFilePath "a"]
+         puts -nonewline $fileHandle $order_line_list
+         close $fileHandle
+         unset order_line_list
+    }
+
+    if {$new_order_list ne ""} {
+        set fileHandle [open $newOrderFilePath "a"]
+        puts -nonewline $fileHandle $new_order_list
+        close $fileHandle
+        unset -nocomplain new_order_list
+    }
+
+    # bcp command to copy to orders table
+    set tableName $db.dbo.orders
+    bcpComm $tableName $ordersFilePath $userid $pass $serv
+    # delete file when copy is complete
+    file delete $ordersFilePath
+
+
+    # only bcp copy to new order table when o_id is greater than 2100
+    if {$o_id > 2100} {
+        set tableName $db.dbo.new_order
+        bcpComm $tableName $newOrderFilePath $userid $pass $serv
+        # delete file when copy is complete
+        file delete $newOrderFilePath
+    }
+
+    # bcp command to copy to order line table
+    set tableName $db.dbo.order_line
+    bcpComm $tableName $orderLineFilePath $userid $pass $serv
+    # delete file when copy is complete
+    file delete $orderLineFilePath
+
+    return
+}
+
 proc LoadItems { odbc MAXITEMS } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
@@ -1432,7 +1640,7 @@ proc LoadItems { odbc MAXITEMS } {
         }
         $odbc evaldirect "insert into item (i_id, i_im_id, i_name, i_price, i_data) VALUES ('$i_id', '$i_im_id', '$i_name', '$i_price', '$i_data')"
         if { ![ expr {$i_id % 50000} ] } {
-            puts "Loading Items - $i_id"
+            puts "Loading Items - $i_id [ clock format [ clock seconds ] ]"
         }
     }
     puts "Item done"
@@ -1490,6 +1698,76 @@ proc Stock { odbc w_id MAXITEMS } {
     return
 }
 
+# stock table loading procedure that implements the exec bcp command
+proc Stock_use_bcp { odbc w_id MAXITEMS } {
+    set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
+    set chalen [ llength $globArray ]
+    puts "Loading Stock Wid=$w_id [ clock format [ clock seconds ] ]"
+    set s_w_id $w_id
+    for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
+        set orig($i) 0
+    }
+    for {set i 0} {$i < [ expr {$MAXITEMS/10} ] } {incr i } {
+        set pos [ RandomNumber 0 $MAXITEMS ]
+        set orig($pos) 1
+    }
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for the stock table
+    set tmp_env $::env(TMP)
+    set StockFilePath "$tmp_env/StockTable$s_w_id.csv"
+    set stock_list ""
+    file delete $StockFilePath
+
+    set value_list ""
+    for {set s_i_id 1} {$s_i_id <= $MAXITEMS } {incr s_i_id } {
+        set s_quantity [ RandomNumber 10 100 ]
+        set s_dist_01 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_02 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_03 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_04 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_05 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_06 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_07 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_08 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_09 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_dist_10 [ MakeAlphaString 24 24 $globArray $chalen ]
+        set s_data [ MakeAlphaString 26 50 $globArray $chalen ]
+        if { [ info exists orig($s_i_id) ] } {
+            if { $orig($s_i_id) eq 1 } {
+                set first [ RandomNumber 0 [ expr {[ string length $s_data]} - 8 ] ]
+                set last [ expr {$first + 8} ]
+                set s_data [ string replace $s_data $first $last "original" ]
+            }
+        }
+        # populate lists with appropriate row information
+        append stock_list "$s_i_id,$s_w_id,$s_quantity,0,0,0,$s_data,$s_dist_01,$s_dist_02,$s_dist_03,$s_dist_04,$s_dist_05,$s_dist_06,$s_dist_07,$s_dist_08,$s_dist_09,$s_dist_10\n"
+        if {![ expr {$s_i_id % 20000}]} {
+            puts "Loading Stock - $s_i_id"
+        }
+    }
+    # add any remaining data to stock table
+    if {$stock_list ne ""} {
+        set fileHandle [open $StockFilePath "a"]
+        puts -nonewline $fileHandle $stock_list
+        close $fileHandle
+        unset stock_list
+    }
+
+    # bcp command to copy from file to stock table
+    set tableName $db.dbo.stock
+    bcpComm $tableName $StockFilePath $userid $pass $serv
+
+    # delete file when copy is complete
+    file delete $StockFilePath
+    return
+}
+
 proc District { odbc w_id DIST_PER_WARE } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
@@ -1508,7 +1786,7 @@ proc District { odbc w_id DIST_PER_WARE } {
     return
 }
 
-proc LoadWare { odbc ware_start count_ware MAXITEMS DIST_PER_WARE } {
+proc LoadWare { odbc ware_start count_ware MAXITEMS DIST_PER_WARE use_bcp } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
     puts "Loading Warehouse"
@@ -1519,24 +1797,38 @@ proc LoadWare { odbc ware_start count_ware MAXITEMS DIST_PER_WARE } {
         set w_tax_ran [ RandomNumber 10 20 ]
         set w_tax [ string replace [ format "%.2f" [ expr {$w_tax_ran / 100.0} ] ] 0 0 "" ]
         $odbc evaldirect "insert into warehouse (w_id, w_name, w_street_1, w_street_2, w_city, w_state, w_zip, w_tax, w_ytd) values ('$w_id', '$w_name', '[ lindex $add 0 ]', '[ lindex $add 1 ]', '[ lindex $add 2 ]' , '[ lindex $add 3 ]', '[ lindex $add 4 ]', '$w_tax', '$w_ytd')"
-        Stock $odbc $w_id $MAXITEMS
+        if { $use_bcp eq "true"} {
+            Stock_use_bcp $odbc $w_id $MAXITEMS
+        } else {
+            Stock $odbc $w_id $MAXITEMS
+        }
         District $odbc $w_id $DIST_PER_WARE
     }
 }
 
-proc LoadCust { odbc ware_start count_ware CUST_PER_DIST DIST_PER_WARE } {
+proc LoadCust { odbc ware_start count_ware CUST_PER_DIST DIST_PER_WARE use_bcp } {
     for {set w_id $ware_start} {$w_id <= $count_ware } {incr w_id } {
+        puts "Loading Customer for WID=$w_id [ clock format [ clock seconds ] ]"
         for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
-            Customer $odbc $d_id $w_id $CUST_PER_DIST
+            if { $use_bcp eq "true"}  {
+                Customer_use_bcp $odbc $d_id $w_id $CUST_PER_DIST
+            } else {
+                Customer $odbc $d_id $w_id $CUST_PER_DIST
+            }
         }
     }
     return
 }
 
-proc LoadOrd { odbc ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE } {
+proc LoadOrd { odbc ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE use_bcp } {
     for {set w_id $ware_start} {$w_id <= $count_ware } {incr w_id } {
+        puts "Loading Orders for W=$w_id [ clock format [ clock seconds ] ]"
         for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
-            Orders $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
+            if { $use_bcp eq "true"} {
+                Orders_use_bcp $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
+            } else {
+                Orders $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
+            }
         }
     }
     return
@@ -1560,7 +1852,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
-proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_ware db imdb bucket_factor durability num_vu encrypt trust_cert } {
+proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_ware db imdb bucket_factor durability num_vu encrypt trust_cert use_bcp } {
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
     set DIST_PER_WARE 10
@@ -1651,9 +1943,9 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
             set myend $count_ware
         }
         puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare odbc $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust odbc $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
-        LoadOrd odbc $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
+        LoadWare odbc $mystart $myend $MAXITEMS $DIST_PER_WARE $use_bcp
+        LoadCust odbc $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $use_bcp
+        LoadOrd odbc $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $use_bcp
         puts "End:[ clock format [ clock seconds ] ]"
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
@@ -1669,7 +1961,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu $mssqls_encrypt_connection $mssqls_trust_server_cert"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_use_bcp"
     } else { return }
 }
 
@@ -3202,6 +3494,8 @@ set version $version
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require csv} ] { error "Failed to load csv functions" } else { namespace import csv::* }
+# added above line for csv functionality
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
