@@ -3494,8 +3494,6 @@ set version $version
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
-if [catch {package require csv} ] { error "Failed to load csv functions" } else { namespace import csv::* }
-# added above line for csv functionality
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
     if { $tcp eq "true" } { set server tcp:$server,$port }

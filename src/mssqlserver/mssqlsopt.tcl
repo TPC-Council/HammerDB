@@ -228,7 +228,7 @@ proc configmssqlstpcc {option} {
     upvar #0 configmssqlserver configmssqlserver
     #set variables to values in dict
     setlocaltpccvars $configmssqlserver
-    set tpccfields [ dict create tpcc {mssqls_dbase {.tpc.f1.e6 get} mssqls_bucket {.tpc.f1.e8 get} mssqls_total_iterations {.tpc.f1.e14 get} mssqls_rampup {.tpc.f1.e18 get} mssqls_duration {.tpc.f1.e19 get} mssqls_async_client {.tpc.f1.e23 get} mssqls_async_delay {.tpc.f1.e24 get} mssqls_imdb $mssqls_imdb mssqls_durability $mssqls_durability mssqls_count_ware $mssqls_count_ware mssqls_num_vu $mssqls_num_vu mssqls_driver $mssqls_driver mssqls_raiseerror $mssqls_raiseerror mssqls_keyandthink $mssqls_keyandthink mssqls_checkpoint $mssqls_checkpoint mssqls_allwarehouse $mssqls_allwarehouse mssqls_timeprofile $mssqls_timeprofile mssqls_async_scale $mssqls_async_scale mssqls_async_verbose $mssqls_async_verbose mssqls_connect_pool $mssqls_connect_pool} ]
+    set tpccfields [ dict create tpcc {mssqls_dbase {.tpc.f1.e6 get} mssqls_bucket {.tpc.f1.e8 get} mssqls_total_iterations {.tpc.f1.e14 get} mssqls_rampup {.tpc.f1.e18 get} mssqls_duration {.tpc.f1.e19 get} mssqls_async_client {.tpc.f1.e23 get} mssqls_async_delay {.tpc.f1.e24 get} mssqls_imdb $mssqls_imdb mssqls_durability $mssqls_durability mssqls_count_ware $mssqls_count_ware mssqls_num_vu $mssqls_num_vu mssqls_driver $mssqls_driver mssqls_raiseerror $mssqls_raiseerror mssqls_keyandthink $mssqls_keyandthink mssqls_checkpoint $mssqls_checkpoint mssqls_allwarehouse $mssqls_allwarehouse mssqls_timeprofile $mssqls_timeprofile mssqls_async_scale $mssqls_async_scale mssqls_async_verbose $mssqls_async_verbose mssqls_connect_pool $mssqls_connect_pool mssqls_use_bcp $mssqls_use_bcp} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
         set mssqlsconn [ dict create connection { mssqls_linux_server {.tpc.f1.e1 get} mssqls_port {.tpc.f1.e2 get} mssqls_linux_odbc {.tpc.f1.e3 get} mssqls_uid {.tpc.f1.e4 get} mssqls_pass {.tpc.f1.e5 get} mssqls_tcp $mssqls_tcp mssqls_azure $mssqls_azure mssqls_encrypt_connection $mssqls_encrypt_connection mssqls_trust_server_cert $mssqls_trust_server_cert mssqls_linux_authent $mssqls_linux_authent} ]
@@ -342,6 +342,8 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r1 <ButtonPress-1> {
         .tpc.f1.e4 configure -state disabled
         .tpc.f1.e5 configure -state disabled
+        .tpc.f1.e12 configure -state disabled
+	set mssqls_use_bcp false
     }
     set Name $Parent.f1.r2
     if { $platform eq "lin" } {
@@ -353,6 +355,7 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r2 <ButtonPress-1> {
         .tpc.f1.e4 configure -state normal
         .tpc.f1.e5 configure -state normal
+        .tpc.f1.e12 configure -state normal
     }
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
@@ -453,6 +456,10 @@ proc configmssqlstpcc {option} {
         ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 19 -sticky e
         grid $Name -column 1 -row 19 -sticky ew
+    if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {
+        $Name configure -state disabled
+	set mssqls_use_bcp false
+    }
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
