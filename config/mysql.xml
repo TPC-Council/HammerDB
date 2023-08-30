@@ -23,6 +23,7 @@
             <mysql_storage_engine>innodb</mysql_storage_engine>
             <mysql_partition>false</mysql_partition>
             <mysql_prepared>false</mysql_prepared>
+            <mysql_history_pk>false</mysql_history_pk>
         </schema>
         <driver>
             <mysql_total_iterations>10000000</mysql_total_iterations>
