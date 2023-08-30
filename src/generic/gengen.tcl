@@ -314,7 +314,7 @@ proc LoadWare { file1 file2 file3 ware_start count_ware MAXITEMS DIST_PER_WARE d
             set statement {_puts $file1 $w_id|$w_ytd|$w_tax|$w_name|[ lindex $add 0 ]|[ lindex $add 1 ]|[ lindex $add 2 ]|[ lindex $add 3 ]|[ lindex $add 4 ]}
         }
     }
-    set w_ytd 3000000.00
+    set w_ytd 300000.00
     for {set w_id $ware_start } {$w_id <= $count_ware } {incr w_id } {
         set w_name [ MakeAlphaString 6 10 $globArray $chalen ]
         set add [ MakeAddress $globArray $chalen ]
