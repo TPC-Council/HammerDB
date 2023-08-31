@@ -228,7 +228,7 @@ proc configmssqlstpcc {option} {
     upvar #0 configmssqlserver configmssqlserver
     #set variables to values in dict
     setlocaltpccvars $configmssqlserver
-    set tpccfields [ dict create tpcc {mssqls_dbase {.tpc.f1.e6 get} mssqls_bucket {.tpc.f1.e8 get} mssqls_total_iterations {.tpc.f1.e14 get} mssqls_rampup {.tpc.f1.e18 get} mssqls_duration {.tpc.f1.e19 get} mssqls_async_client {.tpc.f1.e23 get} mssqls_async_delay {.tpc.f1.e24 get} mssqls_imdb $mssqls_imdb mssqls_durability $mssqls_durability mssqls_count_ware $mssqls_count_ware mssqls_num_vu $mssqls_num_vu mssqls_driver $mssqls_driver mssqls_raiseerror $mssqls_raiseerror mssqls_keyandthink $mssqls_keyandthink mssqls_checkpoint $mssqls_checkpoint mssqls_allwarehouse $mssqls_allwarehouse mssqls_timeprofile $mssqls_timeprofile mssqls_async_scale $mssqls_async_scale mssqls_async_verbose $mssqls_async_verbose mssqls_connect_pool $mssqls_connect_pool} ]
+    set tpccfields [ dict create tpcc {mssqls_dbase {.tpc.f1.e6 get} mssqls_bucket {.tpc.f1.e8 get} mssqls_total_iterations {.tpc.f1.e14 get} mssqls_rampup {.tpc.f1.e18 get} mssqls_duration {.tpc.f1.e19 get} mssqls_async_client {.tpc.f1.e23 get} mssqls_async_delay {.tpc.f1.e24 get} mssqls_imdb $mssqls_imdb mssqls_durability $mssqls_durability mssqls_count_ware $mssqls_count_ware mssqls_num_vu $mssqls_num_vu mssqls_driver $mssqls_driver mssqls_raiseerror $mssqls_raiseerror mssqls_keyandthink $mssqls_keyandthink mssqls_checkpoint $mssqls_checkpoint mssqls_allwarehouse $mssqls_allwarehouse mssqls_timeprofile $mssqls_timeprofile mssqls_async_scale $mssqls_async_scale mssqls_async_verbose $mssqls_async_verbose mssqls_connect_pool $mssqls_connect_pool mssqls_use_bcp $mssqls_use_bcp} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
         set mssqlsconn [ dict create connection { mssqls_linux_server {.tpc.f1.e1 get} mssqls_port {.tpc.f1.e2 get} mssqls_linux_odbc {.tpc.f1.e3 get} mssqls_uid {.tpc.f1.e4 get} mssqls_pass {.tpc.f1.e5 get} mssqls_tcp $mssqls_tcp mssqls_azure $mssqls_azure mssqls_encrypt_connection $mssqls_encrypt_connection mssqls_trust_server_cert $mssqls_trust_server_cert mssqls_linux_authent $mssqls_linux_authent} ]
@@ -342,6 +342,8 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r1 <ButtonPress-1> {
         .tpc.f1.e4 configure -state disabled
         .tpc.f1.e5 configure -state disabled
+        .tpc.f1.e12 configure -state disabled
+	set mssqls_use_bcp false
     }
     set Name $Parent.f1.r2
     if { $platform eq "lin" } {
@@ -353,6 +355,7 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r2 <ButtonPress-1> {
         .tpc.f1.e4 configure -state normal
         .tpc.f1.e5 configure -state normal
+        .tpc.f1.e12 configure -state normal
     }
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
@@ -447,22 +450,32 @@ proc configmssqlstpcc {option} {
         event add <<Any-Button-Any-Key>> <KeyRelease>
         grid $Prompt -column 0 -row 18 -sticky e
         grid $Name -column 1 -row 18 -sticky ew
+        set Prompt $Parent.f1.p12
+        set Name $Parent.f1.e12
+        ttk::label $Prompt -text "Use BCP Option :"
+        ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19 -sticky ew
+    if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {
+        $Name configure -state disabled
+	set mssqls_use_bcp false
+    }
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
             set Prompt $Parent.f1.h3
             ttk::label $Prompt -image [ create_image driveroptlo icons ]
-            grid $Prompt -column 0 -row 19 -sticky e
+            grid $Prompt -column 0 -row 20 -sticky e
             set Prompt $Parent.f1.h4
             ttk::label $Prompt -text "Driver Options"
-            grid $Prompt -column 1 -row 19 -sticky w
+            grid $Prompt -column 1 -row 20 -sticky w
         }
         set Prompt $Parent.f1.p12
         ttk::label $Prompt -text "TPROC-C Driver Script :" -image [ create_image hdbicon icons ] -compound left
-        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Prompt -column 0 -row 21 -sticky e
         set Name $Parent.f1.r3
         ttk::radiobutton $Name -value "test" -text "Test Driver Script" -variable mssqls_driver
-        grid $Name -column 1 -row 20 -sticky w
+        grid $Name -column 1 -row 21 -sticky w
         bind .tpc.f1.r3 <ButtonPress-1> {
             set mssqls_checkpoint "false"
             set mssqls_allwarehouse "false"
@@ -481,7 +494,7 @@ proc configmssqlstpcc {option} {
         }
         set Name $Parent.f1.r4
         ttk::radiobutton $Name -value "timed" -text "Timed Driver Script" -variable mssqls_driver
-        grid $Name -column 1 -row 21 -sticky w
+        grid $Name -column 1 -row 22 -sticky w
         bind .tpc.f1.r4 <ButtonPress-1> {
             .tpc.f1.e17 configure -state normal
             .tpc.f1.e18 configure -state normal
@@ -499,14 +512,14 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p14
         ttk::label $Prompt -text "Total Transactions per User :"
         ttk::entry $Name -width 30 -textvariable mssqls_total_iterations
-        grid $Prompt -column 0 -row 22 -sticky e
-        grid $Name -column 1 -row 22 -sticky ew
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23 -sticky ew
         set Prompt $Parent.f1.p15
         ttk::label $Prompt -text "Exit on SQL Server Error :"
         set Name $Parent.f1.e15
         ttk::checkbutton $Name -text "" -variable mssqls_raiseerror -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 23 -sticky e
-        grid $Name -column 1 -row 23 -sticky w
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky w
         set Prompt $Parent.f1.p16
         ttk::label $Prompt -text "Keying and Thinking Time :"
         set Name $Parent.f1.e16
@@ -522,14 +535,14 @@ proc configmssqlstpcc {option} {
                 }
             }
         }
-        grid $Prompt -column 0 -row 24 -sticky e
-        grid $Name -column 1 -row 24 -sticky w
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
         set Prompt $Parent.f1.p17
         ttk::label $Prompt -text "Checkpoint when complete :"
         set Name $Parent.f1.e17
         ttk::checkbutton $Name -text "" -variable mssqls_checkpoint -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 25 -sticky e
-        grid $Name -column 1 -row 25 -sticky w
+        grid $Prompt -column 0 -row 26 -sticky e
+        grid $Name -column 1 -row 26 -sticky w
         if {$mssqls_driver == "test" } {
             $Name configure -state disabled
         }
@@ -537,8 +550,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p18
         ttk::label $Prompt -text "Minutes of Rampup Time :"
         ttk::entry $Name -width 30 -textvariable mssqls_rampup
-        grid $Prompt -column 0 -row 26 -sticky e
-        grid $Name -column 1 -row 26 -sticky ew
+        grid $Prompt -column 0 -row 27 -sticky e
+        grid $Name -column 1 -row 27 -sticky ew
         if {$mssqls_driver == "test" } {
             $Name configure -state disabled
         }
@@ -546,8 +559,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p19
         ttk::label $Prompt -text "Minutes for Test Duration :"
         ttk::entry $Name -width 30 -textvariable mssqls_duration
-        grid $Prompt -column 0 -row 27 -sticky e
-        grid $Name -column 1 -row 27 -sticky ew
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky ew
         if {$mssqls_driver == "test" } {
             $Name configure -state disabled
         }
@@ -555,8 +568,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p20
         ttk::label $Prompt -text "Use All Warehouses :"
         ttk::checkbutton $Name -text "" -variable mssqls_allwarehouse -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 28 -sticky e
-        grid $Name -column 1 -row 28 -sticky ew
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky ew
         if {$mssqls_driver == "test" } {
             $Name configure -state disabled
         }
@@ -564,8 +577,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p21
         ttk::label $Prompt -text "Time Profile :"
         ttk::checkbutton $Name -text "" -variable mssqls_timeprofile -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 29 -sticky e
-        grid $Name -column 1 -row 29 -sticky ew
+        grid $Prompt -column 0 -row 30 -sticky e
+        grid $Name -column 1 -row 30 -sticky ew
         if {$mssqls_driver == "test" } {
             $Name configure -state disabled
         }
@@ -573,8 +586,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p22
         ttk::label $Prompt -text "Asynchronous Scaling :"
         ttk::checkbutton $Name -text "" -variable mssqls_async_scale -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 30 -sticky e
-        grid $Name -column 1 -row 30 -sticky ew
+        grid $Prompt -column 0 -row 31 -sticky e
+        grid $Name -column 1 -row 31 -sticky ew
         if {$mssqls_driver == "test" } {
             set mssqls_async_scale "false"
             $Name configure -state disabled
@@ -598,8 +611,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p23
         ttk::label $Prompt -text "Asynch Clients per Virtual User :"
         ttk::entry $Name -width 30 -textvariable mssqls_async_client
-        grid $Prompt -column 0 -row 31 -sticky e
-        grid $Name -column 1 -row 31 -sticky ew
+        grid $Prompt -column 0 -row 32 -sticky e
+        grid $Name -column 1 -row 32 -sticky ew
         if {$mssqls_driver == "test" || $mssqls_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -607,8 +620,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p24
         ttk::label $Prompt -text "Asynch Client Login Delay :"
         ttk::entry $Name -width 30 -textvariable mssqls_async_delay
-        grid $Prompt -column 0 -row 32 -sticky e
-        grid $Name -column 1 -row 32 -sticky ew
+        grid $Prompt -column 0 -row 33 -sticky e
+        grid $Name -column 1 -row 33 -sticky ew
         if {$mssqls_driver == "test" || $mssqls_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -616,8 +629,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p25
         ttk::label $Prompt -text "Asynchronous Verbose :"
         ttk::checkbutton $Name -text "" -variable mssqls_async_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 33 -sticky e
-        grid $Name -column 1 -row 33 -sticky ew
+        grid $Prompt -column 0 -row 34 -sticky e
+        grid $Name -column 1 -row 34 -sticky ew
         if {$mssqls_driver == "test" || $mssqls_async_scale == "false" } {
             set mssqls_async_verbose "false"
             $Name configure -state disabled
@@ -626,8 +639,8 @@ proc configmssqlstpcc {option} {
         set Prompt $Parent.f1.p26
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable mssqls_connect_pool -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 34 -sticky e
-        grid $Name -column 1 -row 34 -sticky ew
+        grid $Prompt -column 0 -row 35 -sticky e
+        grid $Name -column 1 -row 35 -sticky ew
     }
     #This is the Cancel button variables stay as before
     set Name $Parent.b2
