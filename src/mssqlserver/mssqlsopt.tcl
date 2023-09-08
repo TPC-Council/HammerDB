@@ -342,8 +342,6 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r1 <ButtonPress-1> {
         .tpc.f1.e4 configure -state disabled
         .tpc.f1.e5 configure -state disabled
-        .tpc.f1.e12 configure -state disabled
-	set mssqls_use_bcp false
     }
     set Name $Parent.f1.r2
     if { $platform eq "lin" } {
@@ -355,7 +353,6 @@ proc configmssqlstpcc {option} {
     bind .tpc.f1.r2 <ButtonPress-1> {
         .tpc.f1.e4 configure -state normal
         .tpc.f1.e5 configure -state normal
-        .tpc.f1.e12 configure -state normal
     }
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
@@ -456,10 +453,6 @@ proc configmssqlstpcc {option} {
         ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 19 -sticky e
         grid $Name -column 1 -row 19 -sticky ew
-    if {($platform eq "win" && $mssqls_authentication == "windows") || ($platform eq "lin" && $mssqls_linux_authent == "windows") } {
-        $Name configure -state disabled
-	set mssqls_use_bcp false
-    }
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {

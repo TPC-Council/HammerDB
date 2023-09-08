@@ -23,7 +23,7 @@
             <mssqls_imdb>false</mssqls_imdb>
             <mssqls_bucket>1</mssqls_bucket>
             <mssqls_durability>SCHEMA_AND_DATA</mssqls_durability>
-            <mssqls_use_bcp>false</mssqls_use_bcp>
+            <mssqls_use_bcp>true</mssqls_use_bcp>
         </schema>
         <driver>
             <mssqls_total_iterations>10000000</mssqls_total_iterations>
