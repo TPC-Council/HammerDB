@@ -1282,6 +1282,7 @@ proc gettimestamp { } {
 # -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
 # network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
 proc bcpComm { tableName filePath uid pwd server} {
+    upvar 3 authentication authentication
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t ","
     } else {
