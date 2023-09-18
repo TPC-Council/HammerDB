@@ -188,6 +188,7 @@ proc convert_to_oratcl { } {
             } 
             if {!([string match {BINDS*} $line])} {
                 if {![regexp {^[[:space:]]} $line match]}  {
+		if { [ string is space $line ] } { continue }
                     unset -nocomplain execlist($in_bind)
                     if {$nbinds > 0} {
                         if {[array exists bindexec]} {
