@@ -1,5 +1,6 @@
 ::if 0 {--*-tcl-*--
  @echo off
+cd /D "%~dp0"
 set path=..\.\bin;%PATH%
  if "%OS%" == "Windows_NT" goto WinNT
  tclsh86t "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9

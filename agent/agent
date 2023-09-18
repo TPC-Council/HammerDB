@@ -1,6 +1,8 @@
 #!/bin/sh
 ########################################################################
 # \
+cd "$(dirname "$0")"
+# \
 export LD_LIBRARY_PATH=.././lib:.././lib64:$LD_LIBRARY_PATH
 # \
 export PATH=.././bin:$PATH
