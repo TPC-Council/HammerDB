@@ -1517,11 +1517,12 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
       set cust_id_to_query [ mysql::sel $mysql_handler "SELECT c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_credit, c_credit_lim, c_discount, c_balance, c_since FROM customer WHERE c_w_id = $p_c_w_id AND c_d_id = $p_c_d_id AND c_id = $p_c_id" -flatlist ]
       lassign $cust_id_to_query p_c_first p_c_middle p_c_last p_c_street_1 p_c_street_2 p_c_city p_c_state p_c_zip p_c_phone p_c_credit p_c_credit_lim p_c_discount p_c_balance p_c_since
     }
+    if { $p_c_balance eq "" } { set p_c_balance 0 }
     set p_c_balance [ expr {$p_c_balance + $p_h_amount} ]
     if { $p_c_credit eq "BC" } {
       set c_data [ join [ mysql::sel $mysql_handler "SELECT c_data FROM customer WHERE c_w_id = $p_c_w_id AND c_d_id = $p_c_d_id AND c_id = $p_c_id" -flatlist ]]
       set h_data [ concat $p_w_name $p_d_name ]
-      set p_c_new_data [ concat p_c_id $p_c_id p_c_d_id $p_c_d_id p_c_w_id $p_c_w_id p_d_id $p_d_id p_w_id $p_w_id p_h_amount [ format %4.2f $p_h_amount ] h_date $h_date h_data.... $h_data ]
+      set p_c_new_data [ concat p_c_id $p_c_id p_c_d_id $p_c_d_id p_c_w_id $p_c_w_id p_d_id $p_d_id p_w_id $p_w_id p_h_amount [ format %4.2f $p_h_amount ] h_date $h_date h_data $h_data ]
       set p_c_new_data [ string range [ concat $p_c_new_data $c_data ] 1 [ expr 500 - [ string length $p_c_new_data ] ] ]
       mysqlexec $mysql_handler "UPDATE customer SET c_balance = $p_c_balance, c_data = '$p_c_new_data' WHERE c_w_id = $p_c_w_id AND c_d_id = $p_c_d_id AND c_id = $p_c_id"
     } else {
@@ -1584,7 +1585,8 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
     mysqlexec $mysql_handler "start transaction"
     while { $loop_counter <= 10 } {
 	set d_d_id $loop_counter
-	set no_o_id [ list [ mysql::sel $mysql_handler "SELECT no_o_id FROM new_order WHERE no_w_id = $w_id AND no_d_id = $d_d_id LIMIT 1" -list ]]
+	set no_o_id [ mysql::sel $mysql_handler "SELECT no_o_id FROM new_order WHERE no_w_id = $w_id AND no_d_id = $d_d_id LIMIT 1" -flatlist ]
+	if { $no_o_id eq "" } { break }
 	mysqlexec $mysql_handler "DELETE FROM new_order WHERE no_w_id = $w_id AND no_d_id = $d_d_id AND no_o_id = $no_o_id"
 	set o_c_id [ list [ mysql::sel $mysql_handler "SELECT o_c_id FROM orders WHERE o_id = $no_o_id AND o_d_id = $d_d_id AND o_w_id = $w_id" -list ]]
 	mysqlexec $mysql_handler "UPDATE orders SET o_carrier_id = $carrier_id WHERE o_id = $no_o_id AND o_d_id = $d_d_id AND o_w_id = $w_id"
@@ -1592,9 +1594,9 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
    	set d_ol_total [ list [ mysql::sel $mysql_handler "SELECT SUM(ol_amount) FROM order_line WHERE ol_o_id = $no_o_id AND ol_d_id = $d_d_id AND ol_w_id = $w_id" -list ]]
 	mysqlexec $mysql_handler "UPDATE customer SET c_balance = c_balance + $d_ol_total WHERE c_id = $o_c_id AND c_d_id = $d_d_id AND c_w_id = $w_id"
 	incr loop_counter
+       	}
 	mysql::commit $mysql_handler
-       	}}
-	 set delivbody [ string trimright $delivbody \} ]
+        }
 	 set stockbody {
     global mysqlstatus
     set threshold [ RandomNumber 10 20 ]
@@ -1621,7 +1623,7 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
 	append neword_no_sp $newordargs $newordbody $newordtail "\}"
 	append pay_no_sp $payargs $paybody $paytail "\}" 
 	append ostat_no_sp $ostatargs $ostatbody $ostattail "\t\}\n\t\}" 
-	append deliv_no_sp $delivargs $delivbody $delivtail "\t\}\n\t\}" 
+	append deliv_no_sp $delivargs $delivbody $delivtail "\}" 
 	append stock_no_sp $stockargs $stockbody $stocktail "\}" 
 
         set index_sp_1 [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "\#NEW ORDER" 1.0 ]
