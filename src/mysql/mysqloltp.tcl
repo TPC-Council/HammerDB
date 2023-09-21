@@ -1574,9 +1574,9 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
       lappend os_ol_quantity_array "$ol_quantity,"
       lappend os_ol_amount_array "$ol_amount,"
       lappend os_ol_delivery_d_array "$ol_delivery_d,"
+      }
       mysql::commit $mysql_handler
- }}
-      set ostatbody [ string trimright $ostatbody \} ]
+      }
       set delivbody {
     global mysqlstatus
     set carrier_id [ RandomNumber 1 10 ]
@@ -1622,7 +1622,7 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
 	#Build procs for correct workload
 	append neword_no_sp $newordargs $newordbody $newordtail "\}"
 	append pay_no_sp $payargs $paybody $paytail "\}" 
-	append ostat_no_sp $ostatargs $ostatbody $ostattail "\t\}\n\t\}" 
+	append ostat_no_sp $ostatargs $ostatbody $ostattail "\}" 
 	append deliv_no_sp $delivargs $delivbody $delivtail "\}" 
 	append stock_no_sp $stockargs $stockbody $stocktail "\}" 
 
