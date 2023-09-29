@@ -158,6 +158,28 @@ namespace eval tpchcommon {
     set day [ format %02d $day ]
     return [ concat $year-$month-$day ]
   }
+#MK_TIME_BCP
+#Used for the TPCH loads that use BCP to import data. BCP Requires the month to be in integer format, 
+#and can't use the abbreviation of the Month name.
+proc mk_time_bcp { index } {
+    set list {01 31 31 02 28 59 03 31 90 04 30 120 05 31 151 06 30 181 07 31 212 08 31 243 09 30 273 10 31 304 11 30 334 12 31 365}
+    set timekey [ expr {$index + 8035} ]
+    set jyd [ julian [ expr {($index + 92001 - 1)} ] ] 
+    set y [ expr {$jyd / 1000} ]
+    set d [ expr {$jyd % 1000} ]
+    set year [ expr {1900 + $y} ]
+    set m 2
+    set n [ llength $list ]
+    set month [ lindex $list [ expr {$m - 2} ] ]
+    set day $d
+    while { ($d > [ expr {[ lindex $list $m ] + [ LEAP_ADJ $y [ expr {($m + 1) / 3} ]]}]) } {
+      set month [ lindex $list [ expr $m + 1 ] ]
+      set day [ expr {$d - [ lindex $list $m ] - [ LEAP_ADJ $y [ expr ($m + 1) / 3 ] ]} ]
+      incr m +3
+    }
+    set day [ format %02d $day ]
+    return [ concat $year-$month-$day ]
+  }
   #MK_SPARSE
   proc mk_sparse { i seq } {
     set ok $i

@@ -447,8 +447,9 @@ proc configmssqlstpcc {option} {
         event add <<Any-Button-Any-Key>> <KeyRelease>
         grid $Prompt -column 0 -row 18 -sticky e
         grid $Name -column 1 -row 18 -sticky ew
+
         set Prompt $Parent.f1.p12
-        set Name $Parent.f1.e12
+        set Name $Parent.f1.e12     
         ttk::label $Prompt -text "Use BCP Option :"
         ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 19 -sticky e
@@ -675,9 +676,12 @@ proc configmssqlstpcc {option} {
 proc configmssqlstpch {option} {
     upvar #0 icons icons
     upvar #0 configmssqlserver configmssqlserver
+
     #set variables to values in dict
     setlocaltpchvars $configmssqlserver
-    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose} ]
+    
+    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose mssqls_use_bcp $mssqls_use_bcp} ]
+
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
         set mssqlsconn [ dict create connection { mssqls_linux_server {.mssqlstpch.f1.e1 get} mssqls_port {.mssqlstpch.f1.e2 get} mssqls_linux_odbc {.mssqlstpch.f1.e3 get} mssqls_uid {.mssqlstpch.f1.e4 get} mssqls_pass {.mssqlstpch.f1.e5 get} mssqls_tcp $mssqls_tcp mssqls_azure $mssqls_azure mssqls_encrypt_connection $mssqls_encrypt_connection mssqls_trust_server_cert $mssqls_trust_server_cert mssqls_linux_authent $mssqls_linux_authent} ]
@@ -790,6 +794,7 @@ proc configmssqlstpch {option} {
     bind .mssqlstpch.f1.r1 <ButtonPress-1> {
         .mssqlstpch.f1.e4 configure -state disabled
         .mssqlstpch.f1.e5 configure -state disabled
+        
     }
     set Name $Parent.f1.r2
     if { $platform eq "lin" } {
@@ -801,6 +806,7 @@ proc configmssqlstpch {option} {
     bind .mssqlstpch.f1.r2 <ButtonPress-1> {
         .mssqlstpch.f1.e4 configure -state normal
         .mssqlstpch.f1.e5 configure -state normal
+        .mssqlstpch.f1.e10 configure -state normal
     }
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
@@ -880,40 +886,47 @@ proc configmssqlstpch {option} {
         ttk::spinbox $Name -from 1 -to 512 -textvariable mssqls_num_tpch_threads
         grid $Prompt -column 0 -row 16 -sticky e
         grid $Name -column 1 -row 16 -sticky ew
+
+        set Prompt $Parent.f1.p10
+        set Name $Parent.f1.e10
+        ttk::label $Prompt -text "Use BCP Option:"
+        ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 17 -sticky e
+        grid $Name -column 1 -row 17 -sticky w
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
             set Prompt $Parent.f1.h3
             ttk::label $Prompt -image [ create_image driveroptlo icons ]
-            grid $Prompt -column 0 -row 17 -sticky e
+            grid $Prompt -column 0 -row 18 -sticky e
             set Prompt $Parent.f1.h4
             ttk::label $Prompt -text "Driver Options"
-            grid $Prompt -column 1 -row 17 -sticky w
+            grid $Prompt -column 1 -row 18 -sticky w
         }
         set Name $Parent.f1.e10
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Total Query Sets per User :"
         ttk::entry $Name -width 30 -textvariable mssqls_total_querysets
-        grid $Prompt -column 0 -row 18 -sticky e
-        grid $Name -column 1 -row 18  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19  -columnspan 4 -sticky ew
         set Prompt $Parent.f1.p11
         ttk::label $Prompt -text "Exit on SQL Server Error :"
         set Name $Parent.f1.e11
         ttk::checkbutton $Name -text "" -variable mssqls_raise_query_error -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 19 -sticky e
-        grid $Name -column 1 -row 19 -sticky w
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky w
         set Prompt $Parent.f1.p12
         ttk::label $Prompt -text "Verbose Output :"
         set Name $Parent.f1.e12
         ttk::checkbutton $Name -text "" -variable mssqls_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 20 -sticky e
-        grid $Name -column 1 -row 20 -sticky w
+        grid $Prompt -column 0 -row 21 -sticky e
+        grid $Name -column 1 -row 21 -sticky w
         set Prompt $Parent.f1.p13
         ttk::label $Prompt -text "Refresh Function :"
         set Name $Parent.f1.e13
         ttk::checkbutton $Name -text "" -variable mssqls_refresh_on -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 21 -sticky e
-        grid $Name -column 1 -row 21 -sticky w
+        grid $Prompt -column 0 -row 22 -sticky e
+        grid $Name -column 1 -row 22 -sticky w
         bind $Parent.f1.e13 <Button> {
             if {$mssqls_refresh_on eq "true"} { 
                 set mssqls_refresh_verbose "false"
@@ -930,8 +943,8 @@ proc configmssqlstpch {option} {
         set Prompt $Parent.f1.p14
         ttk::label $Prompt -text "Number of Update Sets :"
         ttk::entry $Name -width 30 -textvariable mssqls_update_sets
-        grid $Prompt -column 0 -row 22 -sticky e
-        grid $Name -column 1 -row 22  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23  -columnspan 4 -sticky ew
         if {$mssqls_refresh_on == "false" } {
             $Name configure -state disabled
         }
@@ -939,8 +952,8 @@ proc configmssqlstpch {option} {
         set Prompt $Parent.f1.p15
         ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
         ttk::entry $Name -width 30 -textvariable mssqls_trickle_refresh
-        grid $Prompt -column 0 -row 23 -sticky e
-        grid $Name -column 1 -row 23  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24  -columnspan 4 -sticky ew
         if {$mssqls_refresh_on == "false" } {
             $Name configure -state disabled
         }
@@ -948,8 +961,8 @@ proc configmssqlstpch {option} {
         ttk::label $Prompt -text "Refresh Verbose :"
         set Name $Parent.f1.e16
         ttk::checkbutton $Name -text "" -variable mssqls_refresh_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 24 -sticky e
-        grid $Name -column 1 -row 24 -sticky w
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
         if {$mssqls_refresh_on == "false" } {
             $Name configure -state disabled
         }
