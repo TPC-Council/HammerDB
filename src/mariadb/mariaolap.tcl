@@ -840,6 +840,7 @@ proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_V
     #INSERT a new row into the LINEITEM table
     #END LOOP
     #END LOOP
+    mariaexec $maria_handler "SET FOREIGN_KEY_CHECKS = 0"
     set refresh 100
     set delta 1
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
