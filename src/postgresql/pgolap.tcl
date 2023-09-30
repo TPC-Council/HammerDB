@@ -534,7 +534,7 @@ proc CreateIndexes { lda greenplum gpcompress } {
         set sql(13) "ALTER TABLE SUPPLIER ADD CONSTRAINT SUPPLIER_NATION_FK FOREIGN KEY (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(14) "ALTER TABLE CUSTOMER ADD CONSTRAINT CUSTOMER_NATION_FK FOREIGN KEY (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(15) "ALTER TABLE NATION ADD CONSTRAINT NATION_REGION_FK FOREIGN KEY (N_REGIONKEY) REFERENCES REGION (R_REGIONKEY) NOT DEFERRABLE"
-        set sql(16) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) NOT DEFERRABLE"
+        set sql(16) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) DEFERRABLE"
         set sql(17) "CREATE INDEX LINEITEM_PART_SUPP_FKIDX ON LINEITEM (L_PARTKEY,L_SUPPKEY)"
         set sql(18) "CREATE INDEX ORDER_CUSTOMER_FKIDX ON ORDERS (O_CUSTKEY)"
         set sql(19) "CREATE INDEX PARTSUPP_PART_FKIDX ON PARTSUPP (PS_PARTKEY)"
@@ -809,6 +809,10 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
+    set result [ pg_exec $lda "BEGIN" ]
+    pg_result $result -clear
+    set result [ pg_exec $lda "SET CONSTRAINTS LINEITEM_ORDER_FK DEFERRED" ]
+    pg_result $result -clear
         after $trickle_refresh
         if { $upd_num == 0 } {
             set okey [ mk_sparse $i $upd_num ]
