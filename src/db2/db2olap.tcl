@@ -364,7 +364,8 @@ proc mk_order { db_handle start_rows end_rows upd_num scale_factor } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -383,6 +384,7 @@ proc mk_order { db_handle start_rows end_rows upd_num scale_factor } {
             } else { set lstatus "O" }
             lappend lineit_val_list $lsdate $lokey $ldiscount $leprice $lsuppkey $lquantity $lrflag $lpartkey $lstatus $ltax $lcdate $lrdate $lsmode $llcnt $linstruct $lcomment
         }
+        set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
         lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
@@ -745,16 +747,6 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
         set lcnt [ RandomNumber 1 7 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        if { $REFRESH_VERBOSE } {
-            puts "Refresh Insert Orderkey $okey..."
-        }
-        lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
-        if {[ catch {db2_bind_exec $stmnt_handle_or "$order_val_list"} message ] } {
-            puts "Error in statement: $message"
-            unset -nocomplain order_val_list
-        } else {
-            unset order_val_list
-        }
         #Lineitem Loop
         for { set l 0 } { $l < $lcnt } {incr l} {
             set lokey $okey
@@ -770,7 +762,8 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -794,6 +787,17 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
             } else {
                 unset lineit_val_list
             }
+        }
+	set totalprice [ expr double($totalprice) / 100 ]
+        if { $REFRESH_VERBOSE } {
+            puts "Refresh Insert Orderkey $okey..."
+        }
+        lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
+        if {[ catch {db2_bind_exec $stmnt_handle_or "$order_val_list"} message ] } {
+            puts "Error in statement: $message"
+            unset -nocomplain order_val_list
+        } else {
+            unset order_val_list
         }
     }
     db2_finish $stmnt_handle_or
