@@ -729,7 +729,7 @@ proc CreateIndexes { lda timesten } {
         set sql(18) "ALTER TABLE SUPPLIER ADD CONSTRAINT SUPPLIER_NATION_FK FOREIGN KEY (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(19) "ALTER TABLE CUSTOMER ADD CONSTRAINT CUSTOMER_NATION_FK FOREIGN KEY (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(20) "ALTER TABLE NATION ADD CONSTRAINT NATION_REGION_FK FOREIGN KEY (N_REGIONKEY) REFERENCES REGION (R_REGIONKEY) NOT DEFERRABLE"
-        set sql(21) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) NOT DEFERRABLE"
+        set sql(21) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) DEFERRABLE"
     }
     for { set i 1 } { $i <= $stmt_cnt } { incr i } {
         if {[ catch {orasql $curn1 $sql($i)} message ] } {
@@ -1003,6 +1003,13 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
+    set curn_defer [oraopen $lda ]
+    set defer(1) "set constraints LINEITEM_ORDER_FK DEFERRED"
+    if {[ catch {orasql $curn_defer $defer(1)} message ] } {
+        puts "$message $defer(1)"
+        puts [ oramsg $curn_defer all ]
+    }
+    oraclose $curn_defer
         after $trickle_refresh
         if { $upd_num == 0 } {
             set okey [ mk_sparse $i $upd_num ]
