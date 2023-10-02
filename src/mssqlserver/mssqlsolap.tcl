@@ -694,6 +694,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
     #INSERT a new row into the LINEITEM table
     #END LOOP
     #END LOOP
+    $odbc evaldirect "ALTER TABLE LINEITEM NOCHECK CONSTRAINT LINEITEM_ORDER_FK"
     set refresh 100
     set delta 1
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
@@ -767,7 +768,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
                 incr ocnt
                 set lstatus "F"
             } else { set lstatus "O" }
-            odbc evaldirect "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
+            $odbc evaldirect "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
         }
 	set totalprice [ expr double($totalprice) / 100 ]
         if { $REFRESH_VERBOSE } {
@@ -777,6 +778,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
         if { ![ expr {$i % 1000} ] } {     
         }
     }
+    $odbc evaldirect "ALTER TABLE LINEITEM WITH CHECK CHECK CONSTRAINT LINEITEM_ORDER_FK"
 }
 
 proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
