@@ -789,8 +789,8 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
-            set s_date [ RandomNumber 1 121 ]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
@@ -809,6 +809,7 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
 
             append line_item_val_list "$lsdate|$lokey|$ldiscount|$leprice|$lsuppkey|$lquantity|$lrflag|$lpartkey|$lstatus|$ltax|$lcdate|$lrdate|$lsmode|$llcnt|$linstruct|$lcomment\n"
         }
+        set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
 
