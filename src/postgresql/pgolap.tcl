@@ -1287,7 +1287,9 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
                     } else {
                         set t0 [clock clicks -millisec]
                         if {[catch { pg_select $lda $dssquery($qos,$q15c) var { 
-                                    set rowcount [ expr $var(.tupno) + 1 ]		
+                                    set rowcount [ expr $var(.tupno) + 1 ]		                            set t1 [clock clicks -millisec]
+                                    set value [expr {double($t1-$t0)/1000}]
+                                    if { $rowcount > 0 } { lappend qlist $value }
                                     if { $VERBOSE } { 
                             foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
                             set rowcount 0
@@ -1297,9 +1299,6 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
                                 puts "Query Failed : $dssquery($qos,$q15c) : $message"
                             }
                         } 
-                        set t1 [clock clicks -millisec]
-                        set value [expr {double($t1-$t0)/1000}]
-                        if { $rowcount > 0 } { lappend qlist $value }
                         puts "query $qos completed in $value seconds"
                     }
                     incr q15c
