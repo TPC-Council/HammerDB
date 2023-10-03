@@ -1092,6 +1092,7 @@ Version 4.9 Oct 2023
 
 Pull Requests & Issues
 
+Alter MSSQL TPCH Colstore Index Steps #613
 Implement BCP Option for MSSQLS TPCH Load build database #611 (#593)
 Fix for TPROC-H calculates o_totalprice incorrectly #610 (#609)
 Add MariaDB/MySQL No Stored Procedures option to TPROC-C #602 (#600)
