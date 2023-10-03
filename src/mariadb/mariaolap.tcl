@@ -109,7 +109,7 @@ proc GenerateTableQueries { maria_tpch_storage_engine } {
     set queries {}
     lset queries 0 "CREATE TABLE `ORDERS` (
 `O_ORDERDATE` DATE NULL,
-`O_ORDERKEY` INT NOT NULL,
+`O_ORDERKEY` BIGINT NOT NULL,
 `O_CUSTKEY` INT NOT NULL,
 `O_ORDERPRIORITY` CHAR(15) BINARY NULL,
 `O_SHIPPRIORITY` INT NULL,
