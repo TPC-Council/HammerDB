@@ -24,6 +24,7 @@
             <mysql_partition>false</mysql_partition>
             <mysql_prepared>false</mysql_prepared>
             <mysql_history_pk>false</mysql_history_pk>
+            <mysql_no_stored_procs>false</mysql_no_stored_procs>
         </schema>
         <driver>
             <mysql_total_iterations>10000000</mysql_total_iterations>

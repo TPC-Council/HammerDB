@@ -384,7 +384,7 @@ proc configmariatpcc {option} {
 
     #set variables to values in dict
     setlocaltpccvars $configmariadb
-    set tpccfields [ dict create tpcc {maria_user {.tpc.f1.e3 get} maria_pass {.tpc.f1.e4 get} maria_dbase {.tpc.f1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk} ]
+    set tpccfields [ dict create tpcc {maria_user {.tpc.f1.e3 get} maria_pass {.tpc.f1.e4 get} maria_dbase {.tpc.f1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_no_stored_procs $maria_no_stored_procs maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
     set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
@@ -723,12 +723,36 @@ proc configmariatpcc {option} {
         ttk::checkbutton $Name -text "" -variable maria_prepared -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 27 -sticky e
         grid $Name -column 1 -row 27 -sticky w
+	 if { $maria_connect_pool } { set maria_prepared "true"
+        .tpc.f1.e16a configure -state disabled
+        }
+         bind .tpc.f1.e16a <Any-ButtonRelease> {
+            if { $maria_prepared eq "false" } {
+                set maria_no_stored_procs "false"
+                .tpc.f1.e16b configure -state disabled
+            } else {
+                    if { $maria_connect_pool eq "false" } {
+                .tpc.f1.e16b configure -state normal
+                        }
+            }
+    }
+	set Prompt $Parent.f1.p16b
+        ttk::label $Prompt -text "No Stored Procedures :"
+        set Name $Parent.f1.e16b
+        ttk::checkbutton $Name -text "" -variable maria_no_stored_procs -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky w
+        if { $maria_connect_pool || $maria_prepared } {
+        set maria_no_stored_procs "false"
+        .tpc.f1.e16b configure -state disabled
+        }
+
         set Name $Parent.f1.e17
         set Prompt $Parent.f1.p17
         ttk::label $Prompt -text "Minutes of Rampup Time :"
         ttk::entry $Name -width 30 -textvariable maria_rampup
-        grid $Prompt -column 0 -row 28 -sticky e
-        grid $Name -column 1 -row 28 -sticky ew
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky ew
 
         if {$maria_driver == "test" } {
             $Name configure -state disabled
@@ -738,8 +762,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p18
         ttk::label $Prompt -text "Minutes for Test Duration :"
         ttk::entry $Name -width 30 -textvariable maria_duration
-        grid $Prompt -column 0 -row 29 -sticky e
-        grid $Name -column 1 -row 29 -sticky ew
+        grid $Prompt -column 0 -row 30 -sticky e
+        grid $Name -column 1 -row 30 -sticky ew
 
         if {$maria_driver == "test" } {
             $Name configure -state disabled
@@ -749,8 +773,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p19
         ttk::label $Prompt -text "Use All Warehouses :"
         ttk::checkbutton $Name -text "" -variable maria_allwarehouse -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 30 -sticky e
-        grid $Name -column 1 -row 30 -sticky ew
+        grid $Prompt -column 0 -row 31 -sticky e
+        grid $Name -column 1 -row 31 -sticky ew
 
         if {$maria_driver == "test" } {
             $Name configure -state disabled
@@ -760,8 +784,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p20
         ttk::label $Prompt -text "Time Profile :"
         ttk::checkbutton $Name -text "" -variable maria_timeprofile -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 31 -sticky e
-        grid $Name -column 1 -row 31 -sticky ew
+        grid $Prompt -column 0 -row 32 -sticky e
+        grid $Name -column 1 -row 32 -sticky ew
 
         if {$maria_driver == "test" } {
             $Name configure -state disabled
@@ -771,8 +795,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p21
         ttk::label $Prompt -text "Asynchronous Scaling :"
         ttk::checkbutton $Name -text "" -variable maria_async_scale -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 32 -sticky e
-        grid $Name -column 1 -row 32 -sticky ew
+        grid $Prompt -column 0 -row 33 -sticky e
+        grid $Name -column 1 -row 33 -sticky ew
 
         if {$maria_driver == "test" } {
             set maria_async_scale "false"
@@ -799,8 +823,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p22
         ttk::label $Prompt -text "Asynch Clients per Virtual User :"
         ttk::entry $Name -width 30 -textvariable maria_async_client
-        grid $Prompt -column 0 -row 33 -sticky e
-        grid $Name -column 1 -row 33 -sticky ew
+        grid $Prompt -column 0 -row 34 -sticky e
+        grid $Name -column 1 -row 34 -sticky ew
 
         if {$maria_driver == "test" || $maria_async_scale == "false" } {
             $Name configure -state disabled
@@ -810,8 +834,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p23
         ttk::label $Prompt -text "Asynch Client Login Delay :"
         ttk::entry $Name -width 30 -textvariable maria_async_delay
-        grid $Prompt -column 0 -row 34 -sticky e
-        grid $Name -column 1 -row 34 -sticky ew
+        grid $Prompt -column 0 -row 35 -sticky e
+        grid $Name -column 1 -row 35 -sticky ew
 
         if {$maria_driver == "test" || $maria_async_scale == "false" } {
             $Name configure -state disabled
@@ -821,8 +845,8 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p24
         ttk::label $Prompt -text "Asynchronous Verbose :"
         ttk::checkbutton $Name -text "" -variable maria_async_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 35 -sticky e
-        grid $Name -column 1 -row 35 -sticky ew
+        grid $Prompt -column 0 -row 36 -sticky e
+        grid $Name -column 1 -row 36 -sticky ew
 
         if {$maria_driver == "test" || $maria_async_scale == "false" } {
             set maria_async_verbose "false"
@@ -833,8 +857,27 @@ proc configmariatpcc {option} {
         set Prompt $Parent.f1.p25
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable maria_connect_pool -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 36 -sticky e
-        grid $Name -column 1 -row 36 -sticky ew
+        grid $Prompt -column 0 -row 37 -sticky e
+        grid $Name -column 1 -row 37 -sticky ew
+
+	    if {$maria_connect_pool == "true" } {
+        set maria_prepared "true"
+        set maria_no_stored_procs "false"
+        }
+
+         bind .tpc.f1.e25 <Any-ButtonRelease> {
+            if { $maria_connect_pool eq "false" } {
+                set maria_prepared "true"
+                set maria_no_stored_procs "false"
+                .tpc.f1.e16a configure -state disabled
+                if { $maria_prepared eq "true" } {
+                .tpc.f1.e16b configure -state disabled
+                        }
+            } else {
+                set maria_no_stored_procs "false"
+                .tpc.f1.e16a configure -state normal
+            }
+    }
     }
 
     #This is the Cancel button variables stay as before
