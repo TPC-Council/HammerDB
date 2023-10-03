@@ -1085,3 +1085,22 @@ Repair ora_compatible OSTAT procedure #531
 Add jobs getchart command #530
 Add CLI savescript and custommonitor commands #522 (#521)
 Create CONTRIBUTING.md #517
+
+---------------------------------------------------------------------
+
+Version 4.9 Oct 2023
+
+Pull Requests & Issues
+
+Alter MSSQL TPCH Colstore Index Steps #613
+Implement BCP Option for MSSQLS TPCH Load build database #611 (#593)
+Fix for TPROC-H calculates o_totalprice incorrectly #610 (#609)
+Add MariaDB/MySQL No Stored Procedures option to TPROC-C #602 (#600)
+Fix MySQL/MariaDB TPROC-H build FK error #599 (#598)
+Edited Dockerfile to install a specific version of msodbcsql18 #596 (#595)
+Added use_bcp default as true and enabled bcp with windows authentication #592 (#589)
+Skip blank lines in binds in recent Oracle trace files #591 (#590)
+Added Use bcp as a user option #587 (#584)
+Add Optional Invisible Primary Key to History for Replication in MySQL and MariaDB #586 (#580)
+Update precision of w_ytd to prevent numeric field overflow #585 (#577)
+Container file simplication #569

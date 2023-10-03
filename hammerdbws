@@ -30,7 +30,7 @@ set argv0 "wait"
 set argv0 [ string tolower [lindex $argv 0 ]] 
 }
 global hdb_version
-set hdb_version "v4.8"
+set hdb_version "v4.9"
 	if { $argv0 != "gui" } {
 puts "HammerDB Web Service $hdb_version"
 puts "Copyright (C) 2003-2023 Steve Shaw"
