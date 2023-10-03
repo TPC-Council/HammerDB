@@ -513,7 +513,8 @@ proc mk_order { maria_handler start_rows end_rows upd_num scale_factor } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -543,6 +544,7 @@ proc mk_order { maria_handler start_rows end_rows upd_num scale_factor } {
                 append lineit_val_list ,
             } 
         }
+        set totalprice [ expr double($totalprice) / 100 ]
 
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
@@ -838,6 +840,7 @@ proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_V
     #INSERT a new row into the LINEITEM table
     #END LOOP
     #END LOOP
+    mariaexec $maria_handler "SET FOREIGN_KEY_CHECKS = 0"
     set refresh 100
     set delta 1
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
@@ -878,10 +881,6 @@ proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_V
         set lcnt [ RandomNumber 1 7 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        if { $REFRESH_VERBOSE } {
-            puts "Refresh Insert Orderkey $okey..."
-        }
-        maria::exec $maria_handler "INSERT INTO ORDERS (`O_ORDERDATE`, `O_ORDERKEY`, `O_CUSTKEY`, `O_ORDERPRIORITY`, `O_SHIPPRIORITY`, `O_CLERK`, `O_ORDERSTATUS`, `O_TOTALPRICE`, `O_COMMENT`) VALUES (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')"
         #Lineitem Loop
         for { set l 0 } { $l < $lcnt } {incr l} {
             set lokey $okey
@@ -897,7 +896,8 @@ proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_V
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -916,6 +916,12 @@ proc mk_order_ref { maria_handler upd_num scale_factor trickle_refresh REFRESH_V
             } else { set lstatus "O" }
             maria::exec $maria_handler "INSERT INTO LINEITEM (`L_SHIPDATE`, `L_ORDERKEY`, `L_DISCOUNT`, `L_EXTENDEDPRICE`, `L_SUPPKEY`, `L_QUANTITY`, `L_RETURNFLAG`, `L_PARTKEY`, `L_LINESTATUS`, `L_TAX`, `L_COMMITDATE`, `L_RECEIPTDATE`, `L_SHIPMODE`, `L_LINENUMBER`, `L_SHIPINSTRUCT`, `L_COMMENT`) VALUES (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')"
         }
+	set totalprice [ expr double($totalprice) / 100 ]
+        if { $REFRESH_VERBOSE } {
+            puts "Refresh Insert Orderkey $okey..."
+        }
+        maria::exec $maria_handler "INSERT INTO ORDERS (`O_ORDERDATE`, `O_ORDERKEY`, `O_CUSTKEY`, `O_ORDERPRIORITY`, `O_SHIPPRIORITY`, `O_CLERK`, `O_ORDERSTATUS`, `O_TOTALPRICE`, `O_COMMENT`) VALUES (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')"
+
         if { ![ expr {$i % 1000} ] } {   
             maria::commit $maria_handler
         }

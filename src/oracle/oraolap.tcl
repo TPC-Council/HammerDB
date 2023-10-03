@@ -522,7 +522,8 @@ proc mk_order { lda start_rows end_rows upd_num scale_factor } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -543,6 +544,7 @@ proc mk_order { lda start_rows end_rows upd_num scale_factor } {
                 lappend $x [set $y]
             }
         }
+	set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
         foreach x {date_1 okey_1 custkey_1 opriority_1 spriority_1 clerk_1 orderstatus_1 totalprice_1 comment_1} y {date okey custkey opriority spriority clerk orderstatus totalprice comment} {
@@ -637,7 +639,8 @@ proc mk_TTorder { lda start_rows end_rows upd_num scale_factor timesten} {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -660,6 +663,7 @@ proc mk_TTorder { lda start_rows end_rows upd_num scale_factor timesten} {
                 puts [ oramsg $curn2 all ]
             }
         }
+	set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
         eval $statement
@@ -725,7 +729,7 @@ proc CreateIndexes { lda timesten } {
         set sql(18) "ALTER TABLE SUPPLIER ADD CONSTRAINT SUPPLIER_NATION_FK FOREIGN KEY (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(19) "ALTER TABLE CUSTOMER ADD CONSTRAINT CUSTOMER_NATION_FK FOREIGN KEY (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(20) "ALTER TABLE NATION ADD CONSTRAINT NATION_REGION_FK FOREIGN KEY (N_REGIONKEY) REFERENCES REGION (R_REGIONKEY) NOT DEFERRABLE"
-        set sql(21) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) NOT DEFERRABLE"
+        set sql(21) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) DEFERRABLE"
     }
     for { set i 1 } { $i <= $stmt_cnt } { incr i } {
         if {[ catch {orasql $curn1 $sql($i)} message ] } {
@@ -999,6 +1003,13 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
+    set curn_defer [oraopen $lda ]
+    set defer(1) "set constraints LINEITEM_ORDER_FK DEFERRED"
+    if {[ catch {orasql $curn_defer $defer(1)} message ] } {
+        puts "$message $defer(1)"
+        puts [ oramsg $curn_defer all ]
+    }
+    oraclose $curn_defer
         after $trickle_refresh
         if { $upd_num == 0 } {
             set okey [ mk_sparse $i $upd_num ]
@@ -1030,14 +1041,6 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
         set lcnt [ RandomNumber 1 7 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        if { $REFRESH_VERBOSE } {
-            puts "Refresh Insert Orderkey $okey..."
-        }
-        eval $statement
-        if {[ catch {oraexec $curn1} message ] } {
-            puts "Error in cursor 1:$curn1 $message"
-            puts [ oramsg $curn1 all ]
-        }
         #Lineitem Loop
         for { set l 0 } { $l < $lcnt } {incr l} {
             set lokey $okey
@@ -1053,7 +1056,8 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+	    foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -1075,6 +1079,15 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
                 puts "Error in cursor 2:$curn2 $message"
                 puts [ oramsg $curn2 all ]
             }
+        }
+	set totalprice [ expr double($totalprice) / 100 ]
+        if { $REFRESH_VERBOSE } {
+            puts "Refresh Insert Orderkey $okey..."
+        }
+        eval $statement
+        if {[ catch {oraexec $curn1} message ] } {
+            puts "Error in cursor 1:$curn1 $message"
+            puts [ oramsg $curn1 all ]
         }
         if { ![ expr {$i % 1000} ] } {     
             oracommit $lda
