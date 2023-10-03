@@ -49,7 +49,7 @@
 	    <mssqls_tpch_dbase>tpch</mssqls_tpch_dbase>
 	    <mssqls_num_tpch_threads>1</mssqls_num_tpch_threads> 
 	    <mssqls_colstore>false</mssqls_colstore>
-            <mssqls_tpch_use_bcp>true</mssqls_tpch_use_bcp>
+	    <mssqls_tpch_use_bcp>true</mssqls_tpch_use_bcp>
         </schema>
         <driver>
 	    <mssqls_total_querysets>1</mssqls_total_querysets>
