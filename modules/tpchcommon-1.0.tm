@@ -1,6 +1,6 @@
 package provide tpchcommon 1.0
 namespace eval tpchcommon {
-  namespace export chk_thread start_end findvuhposition RandomNumber set_dists get_dists set_dist_list LEAP LEAP_ADJ julian mk_time mk_sparse PART_SUPP_BRIDGE rpb_routine gen_phone MakeAlphaString calc_weight pick_str_1 pick_str_2 txt_vp_1 txt_vp_2 txt_np_1 txt_np_2 txt_sentence_1 txt_sentence_2 dbg_text_1 dbg_text_2 V_STR TEXT_1 TEXT_2 ordered_set gmean printlist
+  namespace export chk_thread start_end findvuhposition RandomNumber set_dists get_dists set_dist_list LEAP LEAP_ADJ julian mk_time mk_time_bcp mk_sparse PART_SUPP_BRIDGE rpb_routine gen_phone MakeAlphaString calc_weight pick_str_1 pick_str_2 txt_vp_1 txt_vp_2 txt_np_1 txt_np_2 txt_sentence_1 txt_sentence_2 dbg_text_1 dbg_text_2 V_STR TEXT_1 TEXT_2 ordered_set gmean printlist
   #TPCH BUILD PROCEDURES
   proc chk_thread {} {
     set chk [package provide Thread]
@@ -141,6 +141,28 @@ namespace eval tpchcommon {
   #MK_TIME
   proc mk_time { index } {
     set list {JAN 31 31 FEB 28 59 MAR 31 90 APR 30 120 MAY 31 151 JUN 30 181 JUL 31 212 AUG 31 243 SEP 30 273 OCT 31 304 NOV 30 334 DEC 31 365}
+    set timekey [ expr {$index + 8035} ]
+    set jyd [ julian [ expr {($index + 92001 - 1)} ] ] 
+    set y [ expr {$jyd / 1000} ]
+    set d [ expr {$jyd % 1000} ]
+    set year [ expr {1900 + $y} ]
+    set m 2
+    set n [ llength $list ]
+    set month [ lindex $list [ expr {$m - 2} ] ]
+    set day $d
+    while { ($d > [ expr {[ lindex $list $m ] + [ LEAP_ADJ $y [ expr {($m + 1) / 3} ]]}]) } {
+      set month [ lindex $list [ expr $m + 1 ] ]
+      set day [ expr {$d - [ lindex $list $m ] - [ LEAP_ADJ $y [ expr ($m + 1) / 3 ] ]} ]
+      incr m +3
+    }
+    set day [ format %02d $day ]
+    return [ concat $year-$month-$day ]
+  }
+#MK_TIME_BCP
+#Used for the TPCH loads that use BCP to import data. BCP Requires the month to be in integer format, 
+#and can't use the abbreviation of the Month name.
+proc mk_time_bcp { index } {
+    set list {01 31 31 02 28 59 03 31 90 04 30 120 05 31 151 06 30 181 07 31 212 08 31 243 09 30 273 10 31 304 11 30 334 12 31 365}
     set timekey [ expr {$index + 8035} ]
     set jyd [ julian [ expr {($index + 92001 - 1)} ] ] 
     set y [ expr {$jyd / 1000} ]

@@ -8,15 +8,17 @@ proc build_mssqlstpch {} {
         set version [ lindex $library 1 ]
         set library [ lindex $library 0 ]
     }
+
     upvar #0 configmssqlserver configmssqlserver
     #set variables to values in dict
     setlocaltpchvars $configmssqlserver
+
     if {![string match windows $::tcl_platform(platform)]} {
         set mssqls_server $mssqls_linux_server
         set mssqls_odbc_driver $mssqls_linux_odbc
         set mssqls_authentication $mssqls_linux_authent
     }
-    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPROC-H schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} { 
+    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mssqls_scale_fact MS SQL Server TPROC-H schema\nin host [string toupper $mssqls_server ] in database [ string toupper $mssqls_tpch_dbase ]?" -type yesno ] == yes} {
         if { $mssqls_num_tpch_threads eq 1 } {
             set maxvuser 1
         } else {
@@ -185,6 +187,26 @@ proc CreateIndexes { odbc maxdop colstore } {
     return
 }
 
+# bcp command to copy from file to specified tables
+# -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
+# network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
+proc bcpComm { tableName filePath uid pwd server} {
+    upvar 3 authentication authentication
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t "\\|"
+    } else {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t "\\|"
+    }
+}
+
+proc load_region { odbc use_bcp } {
+    if { $use_bcp eq "true"}  {
+        mk_region_bcp $odbc
+    } else {
+        mk_region $odbc
+    }
+}
+
 proc mk_region { odbc } {
     for { set i 1 } { $i <= 5 } {incr i} {
         set code [ expr {$i - 1} ]
@@ -193,6 +215,108 @@ proc mk_region { odbc } {
         $odbc evaldirect "INSERT INTO region (r_regionkey,r_name,r_comment) VALUES ('$code' , '$text' , '$comment')"
     }
 }
+
+# region table loading procedure that implements the exec bcp command
+proc mk_region_bcp { odbc } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for region table
+    set tmp_env $::env(TMP)
+    set RegionFilePath "$tmp_env/RegionTable.csv"
+
+    set region_list ""
+
+    file delete $RegionFilePath
+
+    for {set i 1} {$i <= 5 } {incr i } {
+        set code [ expr {$i - 1} ]
+        set text [ lindex [ lindex [ get_dists regions ] [ expr {$i - 1} ] ] 0 ]
+        set comment [ TEXT_1 72 ]
+
+        append region_list "$code|$text|$comment\n"
+
+    }
+
+    if {$region_list ne ""} {
+        set fileHandle [open $RegionFilePath "a"]
+        puts -nonewline $fileHandle $region_list
+        close $fileHandle
+        unset region_list
+    }
+
+    # bcp command to copy to region table
+    set tableName $db.dbo.region
+    bcpComm $tableName $RegionFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $RegionFilePath
+
+    return
+}
+
+proc load_nation { odbc use_bcp } {
+    if { $use_bcp eq "true"}  {
+        mk_nation_bcp $odbc
+    } else {
+        mk_nation $odbc
+    }
+}
+
+
+# nation table loading procedure that implements the exec bcp command
+proc mk_nation_bcp { odbc } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for regio table
+    set tmp_env $::env(TMP)
+    set NationFilePath "$tmp_env/NationTable.csv"
+
+    set nation_list ""
+
+    file delete $NationFilePath
+
+    for { set i 1 } { $i <= 25 } {incr i} {
+        set code [ expr {$i - 1} ]
+        set text [ lindex [ lindex [ get_dists nations ] [ expr {$i - 1} ] ] 0 ]
+        set nind [ lsearch -glob [ get_dists nations ] \*$text\* ]
+        switch $nind {
+            0 - 4 - 5 - 14 - 15 - 16 { set join 0 }
+            1 - 2 - 3 - 17 - 24 { set join 1 }
+            8 - 9 - 12 - 18 - 21 { set join 2 }
+            6 - 7 - 19 - 22 - 23 { set join 3 }
+            10 - 11 - 13 - 20 { set join 4 }
+        }
+        set comment [ TEXT_1 72 ]
+
+        append nation_list "$code|$text|$join|$comment\n"
+    }
+
+    if {$nation_list ne ""} {
+        set fileHandle [open $NationFilePath "a"]
+        puts -nonewline $fileHandle $nation_list
+        close $fileHandle
+        unset nation_list
+    }
+
+    # bcp command to copy to nation table
+    set tableName $db.dbo.nation
+    bcpComm $tableName $NationFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $NationFilePath
+    return
+}
+
 
 proc mk_nation { odbc } {
     for { set i 1 } { $i <= 25 } {incr i} {
@@ -209,6 +333,88 @@ proc mk_nation { odbc } {
         set comment [ TEXT_1 72 ]
         $odbc evaldirect "INSERT INTO nation (n_nationkey, n_name, n_regionkey, n_comment) VALUES ('$code' , '$text' , '$join' , '$comment')"
     }
+}
+
+
+proc load_supp { odbc start_rows end_rows use_bcp } {
+    upvar 1 rows_per_bcp rows_per_bcp
+    if { $use_bcp eq "true"}  {
+        for { set i $start_rows } { $i <= $end_rows } { set i [expr {$i + $rows_per_bcp}] } {
+            if { [expr {$i + $rows_per_bcp}] > $end_rows}  {
+                mk_supp_bcp $odbc $i $end_rows
+            } else {
+                mk_supp_bcp $odbc $i [expr {$i + [expr {$rows_per_bcp - 1}] }]
+            }
+        }
+    } else {
+        mk_supp $odbc $start_rows $end_rows
+    }
+}
+
+
+# nation table loading procedure that implements the exec bcp command
+proc mk_supp_bcp { odbc start_rows end_rows } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for supply table
+    set tmp_env $::env(TMP)
+    set SupplierFilePath "$tmp_env/SupplierTable$start_rows.csv"
+
+    set supp_list ""
+
+    file delete $SupplierFilePath
+
+    set bld_cnt 1
+    set BBB_COMMEND   "Recommends"
+    set BBB_COMPLAIN  "Complaints"
+    for { set i $start_rows } { $i <= $end_rows } { incr i } {
+        set suppkey $i
+        set name [ concat Supplier#[format %1.9d $i]]
+        set address [ V_STR 25 ]
+        set nation_code [ RandomNumber 0 24 ]
+        set phone [ gen_phone ]
+        #random format to 2 floating point places 1681.00
+        set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])} ] / 100} ] ]
+        set comment [ TEXT_1 63 ]
+        set bad_press [ RandomNumber 1 10000 ]
+        set type [ RandomNumber 0 100 ]
+        set noise [ RandomNumber 0 19 ]
+        set offset [ RandomNumber 0 [ expr {19 + $noise} ] ]
+        if { $bad_press <= 10 } {
+            set st [ expr {9 + $offset + $noise} ]
+            set fi [ expr {$st + 10} ]
+            if { $type < 50 } {
+                set comment [ string replace $comment $st $fi $BBB_COMPLAIN ]
+            } else {
+                set comment [ string replace $comment $st $fi $BBB_COMMEND ]
+            }
+        }
+
+        append supp_list "$suppkey|$nation_code|$comment|$name|$address|$phone|$acctbal\n"
+        incr bld_cnt
+    }
+
+    if {$supp_list ne ""} {
+        set fileHandle [open $SupplierFilePath "a"]
+        puts -nonewline $fileHandle $supp_list
+        close $fileHandle
+        unset supp_list
+    }
+
+    # bcp command to copy to supplier table
+    set tableName $db.dbo.supplier
+    bcpComm $tableName $SupplierFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $SupplierFilePath
+
+    puts "SUPPLIER Done Rows $start_rows..$end_rows"
+    return
 }
 
 proc mk_supp { odbc start_rows end_rows } {
@@ -239,7 +445,7 @@ proc mk_supp { odbc start_rows end_rows } {
         }
         append supp_val_list ('$suppkey', '$nation_code', '$comment', '$name', '$address', '$phone', '$acctbal')
         incr bld_cnt
-        if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
+        if { ![ expr {$i % 2} ] || $i eq $end_rows } {
             $odbc evaldirect "INSERT INTO supplier (s_suppkey, s_nationkey, s_comment, s_name, s_address, s_phone, s_acctbal) VALUES $supp_val_list"
             set bld_cnt 1
             unset supp_val_list
@@ -254,6 +460,72 @@ proc mk_supp { odbc start_rows end_rows } {
     return
 }
 
+proc load_customer { odbc start_rows end_rows use_bcp } {
+    upvar 1 rows_per_bcp rows_per_bcp
+    if { $use_bcp eq "true"}  {
+        for { set i $start_rows } { $i <= $end_rows } { set i [expr {$i + $rows_per_bcp}] } {
+            if { [expr {$i + $rows_per_bcp}] > $end_rows}  {
+                mk_customer_bcp $odbc $i $end_rows
+            } else {
+                mk_customer_bcp $odbc $i [expr {$i + [expr {$rows_per_bcp - 1}]}]
+            }
+        }
+    } else {
+        mk_cust $odbc $start_rows $end_rows
+    }
+}
+
+# customer table loading procedure that implements the exec bcp command
+proc mk_customer_bcp { odbc start_rows end_rows } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for customer table
+    set tmp_env $::env(TMP)
+    set CustomerFilePath "$tmp_env/CustomerTable$start_rows.csv"
+
+    set customer_list ""
+
+    file delete $CustomerFilePath
+
+    set bld_cnt 1
+    for { set i $start_rows } { $i <= $end_rows } { incr i } {
+        set custkey $i
+        set name [ concat Customer#[format %1.9d $i]]
+        set address [ V_STR 25 ]
+        set nation_code [ RandomNumber 0 24 ]
+        set phone [ gen_phone ]
+        set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])} ] / 100} ] ]
+        set mktsegment [ pick_str_1 msegmnt ]
+        set comment [ TEXT_1 73 ]
+
+        append customer_list "$custkey|$mktsegment|$nation_code|$name|$address|$phone|$acctbal|$comment\n"
+        incr bld_cnt
+    }
+
+
+    if {$customer_list ne ""} {
+        set fileHandle [open $CustomerFilePath "a"]
+        puts -nonewline $fileHandle $customer_list
+        close $fileHandle
+        unset customer_list
+    }
+
+    # bcp command to copy to customer table
+    set tableName $db.dbo.customer
+    bcpComm $tableName $CustomerFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $CustomerFilePath
+
+    puts "CUSTOMER Done Rows $start_rows..$end_rows"
+    return
+}
+
 proc mk_cust { odbc start_rows end_rows } {
     set bld_cnt 1
     for { set i $start_rows } { $i <= $end_rows } { incr i } {
@@ -265,9 +537,9 @@ proc mk_cust { odbc start_rows end_rows } {
         set acctbal [format %4.2f [ expr {[ expr {double([ RandomNumber -99999 999999 ])} ] / 100} ] ]
         set mktsegment [ pick_str_1 msegmnt ]
         set comment [ TEXT_1 73 ]
-        append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment') 
+        append cust_val_list ('$custkey', '$mktsegment', '$nation_code', '$name', '$address', '$phone', '$acctbal', '$comment')
         incr bld_cnt
-        if { ![ expr {$i % 2} ] || $i eq $end_rows } {    
+        if { ![ expr {$i % 2} ] || $i eq $end_rows } {
             $odbc evaldirect "INSERT INTO customer (c_custkey, c_mktsegment, c_nationkey, c_name, c_address, c_phone, c_acctbal, c_comment) values $cust_val_list"
             set bld_cnt 1
             unset cust_val_list
@@ -279,6 +551,105 @@ proc mk_cust { odbc start_rows end_rows } {
         }
     }
     puts "CUSTOMER Done Rows $start_rows..$end_rows"
+    return
+}
+
+proc load_part { odbc start_rows end_rows scale_fact use_bcp } {
+    upvar 1 rows_per_bcp rows_per_bcp
+    if { $use_bcp eq "true"}  {
+        for { set i $start_rows } { $i <= $end_rows } { set i [expr {$i + $rows_per_bcp}] } {
+            if { [expr {$i + $rows_per_bcp}] > $end_rows}  {
+                mk_part_bcp $odbc $i $end_rows $scale_fact
+            } else {
+                mk_part_bcp $odbc $i [expr {$i + [expr {$rows_per_bcp - 1 }]}]  $scale_fact
+            }
+        }
+    } else {
+        mk_part $odbc $start_rows $end_rows $scale_fact
+    }
+}
+
+
+# customer table loading procedure that implements the exec bcp command
+proc mk_part_bcp { odbc start_rows end_rows scale_factor } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for part and part supply tables
+    set tmp_env $::env(TMP)
+    set PartFilePath "$tmp_env/PartFilePath$start_rows.csv"
+    set PartSupplyFilePath "$tmp_env/PartSupplyFilePath$start_rows.csv"
+
+    set part_val_list ""
+    set psupp_val_list ""
+
+    file delete $PartFilePath
+    file delete $PartSupplyFilePath
+
+    set bld_cnt 1
+    for { set i $start_rows } { $i <= $end_rows } { incr i } {
+        set partkey $i
+        unset -nocomplain name
+        for {set j 0} {$j < [ expr {5 - 1} ] } {incr j } {
+            append name [ pick_str_1 colors ] " "
+        }
+        append name [ pick_str_1 colors ]
+        set mf [ RandomNumber 1 5 ]
+        set mfgr [ concat Manufacturer#$mf ]
+        set brand [ concat Brand#[ expr {$mf * 10 + [ RandomNumber 1 5 ]} ] ]
+        set type [ pick_str_1 p_types ]
+        set size [ RandomNumber 1 50 ]
+        set container [ pick_str_1 p_cntr ]
+        set price [ rpb_routine $i ]
+        set comment [ TEXT_1 14 ]
+
+        append part_val_list "$partkey|$type|$size|$brand|$name|$container|$mfgr|$price|$comment\n"
+
+        #Part Supp Loop
+        for {set k 0} {$k < 4 } {incr k } {
+            set psupp_pkey $partkey
+            set psupp_suppkey [ PART_SUPP_BRIDGE $i $k $scale_factor ]
+            set psupp_qty [ RandomNumber 1 9999 ]
+            set psupp_scost [format %4.2f [ expr {double([ RandomNumber 100 100000 ]) / 100} ] ]
+            set psupp_comment [ TEXT_1 124 ]
+            append psupp_val_list "$psupp_pkey|$psupp_suppkey|$psupp_scost|$psupp_qty|$psupp_comment\n"
+        }
+
+        incr bld_cnt
+
+    }
+
+    if {$part_val_list ne ""} {
+        set fileHandle [open $PartFilePath "a"]
+        puts -nonewline $fileHandle $part_val_list
+        close $fileHandle
+        unset part_val_list
+    }
+
+    if {$psupp_val_list ne ""} {
+        set fileHandle [open $PartSupplyFilePath "a"]
+        puts -nonewline $fileHandle $psupp_val_list
+        close $fileHandle
+        unset psupp_val_list
+    }
+
+    # bcp command to copy to region table
+    set tableName $db.dbo.part
+    bcpComm $tableName $PartFilePath $userid $pass $serv
+
+    # bcp command to copy to region table
+    set tableName $db.dbo.partsupp
+    bcpComm $tableName $PartSupplyFilePath $userid $pass $serv
+
+    # delete files when PartFilePath is complete
+    file delete $PartFilePath
+    file delete $PartSupplyFilePath
+
+    puts "PART and PARTSUPP Done Rows $start_rows..$end_rows"
     return
 }
 
@@ -294,9 +665,9 @@ proc mk_part { odbc start_rows end_rows scale_factor } {
         set mf [ RandomNumber 1 5 ]
         set mfgr [ concat Manufacturer#$mf ]
         set brand [ concat Brand#[ expr {$mf * 10 + [ RandomNumber 1 5 ]} ] ]
-        set type [ pick_str_1 p_types ] 
+        set type [ pick_str_1 p_types ]
         set size [ RandomNumber 1 50 ]
-        set container [ pick_str_1 p_cntr ] 
+        set container [ pick_str_1 p_cntr ]
         set price [ rpb_routine $i ]
         set comment [ TEXT_1 14 ]
         append part_val_list ('$partkey', '$type', '$size', '$brand', '$name', '$container', '$mfgr', '$price', '$comment')
@@ -307,14 +678,14 @@ proc mk_part { odbc start_rows end_rows scale_factor } {
             set psupp_qty [ RandomNumber 1 9999 ]
             set psupp_scost [format %4.2f [ expr {double([ RandomNumber 100 100000 ]) / 100} ] ]
             set psupp_comment [ TEXT_1 124 ]
-            append psupp_val_list ('$psupp_pkey', '$psupp_suppkey', '$psupp_scost', '$psupp_qty', '$psupp_comment') 
-            if { $k<=2 } { 
+            append psupp_val_list ('$psupp_pkey', '$psupp_suppkey', '$psupp_scost', '$psupp_qty', '$psupp_comment')
+            if { $k<=2 } {
                 append psupp_val_list ,
             }
         }
         incr bld_cnt
         # end of psupp loop
-        if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
+        if { ![ expr {$i % 2} ]  || $i eq $end_rows } {
             $odbc evaldirect "INSERT INTO part (p_partkey, p_type, p_size, p_brand, p_name, p_container, p_mfgr, p_retailprice, p_comment) VALUES $part_val_list"
             $odbc evaldirect "INSERT INTO partsupp (ps_partkey, ps_suppkey, ps_supplycost, ps_availqty, ps_comment) VALUES $psupp_val_list"
             set bld_cnt 1
@@ -329,6 +700,154 @@ proc mk_part { odbc start_rows end_rows scale_factor } {
         }
     }
     puts "PART and PARTSUPP Done Rows $start_rows..$end_rows"
+
+    return
+}
+
+proc load_order { odbc start_rows end_rows upd_num scale_fact use_bcp } {
+    upvar 1 rows_per_bcp rows_per_bcp
+    if { $use_bcp eq "true"}  {
+        for { set i $start_rows } { $i <= $end_rows } { set i [expr {$i + $rows_per_bcp}] } {
+            if { [expr {$i + $rows_per_bcp}] > $end_rows}  {
+                mk_order_bcp $odbc $i $end_rows $upd_num $scale_fact
+            } else {
+                mk_order_bcp $odbc $i [expr {$i + [expr {$rows_per_bcp - 1}]}] $upd_num $scale_fact
+            }
+        }
+    } else {
+        mk_order $odbc $start_rows $end_rows $upd_num $scale_fact
+    }
+}
+
+proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create file for order and line item tables
+    set tmp_env $::env(TMP)
+    set OrderPath "$tmp_env/OrderPath$start_rows.csv"
+    set LineItemFilePath "$tmp_env/LineItemFilePath$start_rows.csv"
+
+    set order_val_list ""
+    set line_item_val_list ""
+
+    file delete $OrderPath
+    file delete $LineItemFilePath
+
+    set bld_cnt 1
+    set refresh 100
+    set delta 1
+    set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
+    set O_CKEY_MAX [ expr {150000 * $scale_factor} ]
+    set O_ODATE_MAX [ expr {(92001 + 2557 - (121 + 30) - 1)} ]
+    for { set i $start_rows } { $i <= $end_rows } { incr i } {
+        if { $upd_num == 0 } {
+            set okey [ mk_sparse $i $upd_num ]
+        } else {
+            set okey [ mk_sparse $i [ expr {1 + $upd_num / (10000 / $refresh)} ] ]
+        }
+        set custkey [ RandomNumber 1 $O_CKEY_MAX ]
+        while { $custkey % 3 == 0 } {
+            set custkey [ expr {$custkey + $delta} ]
+            if { $custkey < $O_CKEY_MAX } { set min $custkey } else { set min $O_CKEY_MAX }
+            set custkey $min
+            set delta [ expr {$delta * -1} ]
+        }
+        if { ![ array exists ascdate ] } {
+            for { set d 1 } { $d <= 2557 } {incr d} {
+                set ascdate($d) [ mk_time_bcp $d ]
+            }
+        }
+        set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
+        set date $ascdate([ expr {$tmp_date - 92001}])
+        set opriority [ pick_str_1 o_oprio ]
+        set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
+        set clerk [ concat Clerk#[format %1.9d $clk_num]]
+        set comment [ TEXT_1 49 ]
+        set spriority 0
+        set totalprice 0
+        set orderstatus "O"
+        set ocnt 0
+        set lcnt [ RandomNumber 1 7 ]
+
+        #Lineitem Loop
+        for { set l 0 } { $l < $lcnt } {incr l} {
+            set lokey $okey
+            set llcnt [ expr {$l + 1} ]
+            set lquantity [ RandomNumber 1 50 ]
+            set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
+            set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
+            set linstruct [ pick_str_1 instruct ]
+            set lsmode [ pick_str_1 smode ]
+            set lcomment [ TEXT_1 27 ]
+            set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
+            set rprice [ rpb_routine $lpartkey ]
+            set supp_num [ RandomNumber 0 3 ]
+            set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
+            set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
+            set s_date [ RandomNumber 1 121 ]
+            set s_date [ expr {$s_date + $tmp_date} ]
+            set c_date [ RandomNumber 30 90 ]
+            set c_date [ expr {$c_date + $tmp_date} ]
+            set r_date [ RandomNumber 1 30 ]
+            set r_date [ expr {$r_date + $s_date} ]
+            set lsdate $ascdate([ expr {$s_date - 92001} ])
+            set lcdate $ascdate([ expr {$c_date - 92001} ])
+            set lrdate $ascdate([ expr {$r_date - 92001} ])
+            if { [ julian $r_date ] <= 95168 } {
+                set lrflag [ pick_str_1 rflag ]
+            } else { set lrflag "N" }
+            if { [ julian $s_date ] <= 95168 } {
+                incr ocnt
+                set lstatus "F"
+            } else { set lstatus "O" }
+
+            append line_item_val_list "$lsdate|$lokey|$ldiscount|$leprice|$lsuppkey|$lquantity|$lrflag|$lpartkey|$lstatus|$ltax|$lcdate|$lrdate|$lsmode|$llcnt|$linstruct|$lcomment\n"
+        }
+        set totalprice [ expr double($totalprice) / 100 ]
+        if { $ocnt > 0} { set orderstatus "P" }
+        if { $ocnt == $lcnt } { set orderstatus "F" }
+
+        append order_val_list "$date|$okey|$custkey|$opriority|$spriority|$clerk|$orderstatus|$totalprice|$comment\n"
+
+        incr bld_cnt
+    }
+
+
+    if {$order_val_list ne ""} {
+        set fileHandle [open $OrderPath "a"]
+        puts -nonewline $fileHandle $order_val_list
+        close $fileHandle
+        unset order_val_list
+    }
+
+    if {$line_item_val_list ne ""} {
+        set fileHandle [open $LineItemFilePath "a"]
+        puts -nonewline $fileHandle $line_item_val_list
+        close $fileHandle
+        unset line_item_val_list
+    }
+
+
+    # bcp command to copy to orders table
+    set tableName $db.dbo.orders
+    bcpComm $tableName $OrderPath $userid $pass $serv
+
+    # bcp command to copy to lineitem table
+    set tableName $db.dbo.lineitem
+    bcpComm $tableName $LineItemFilePath $userid $pass $serv
+
+    # delete files when loading is complete
+    file delete $OrderPath
+    file delete $LineItemFilePath
+
+    puts "ORDERS and LINEITEM Done Rows $start_rows..$end_rows"
     return
 }
 
@@ -359,7 +878,7 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
         }
         set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
         set date $ascdate([ expr {$tmp_date - 92001} ])
-        set opriority [ pick_str_1 o_oprio ] 
+        set opriority [ pick_str_1 o_oprio ]
         set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
         set clerk [ concat Clerk#[format %1.9d $clk_num]]
         set comment [ TEXT_1 49 ]
@@ -375,8 +894,8 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
             set lquantity [ RandomNumber 1 50 ]
             set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
             set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-            set linstruct [ pick_str_1 instruct ] 
-            set lsmode [ pick_str_1 smode ] 
+            set linstruct [ pick_str_1 instruct ]
+            set lsmode [ pick_str_1 smode ]
             set lcomment [ TEXT_1 27 ]
             set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
             set rprice [ rpb_routine $lpartkey ]
@@ -386,7 +905,7 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
             foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
             set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
-            set s_date [ expr {$s_date + $tmp_date} ] 
+            set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
             set r_date [ RandomNumber 1 30 ]
@@ -395,23 +914,23 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
             set lcdate $ascdate([ expr {$c_date - 92001} ])
             set lrdate $ascdate([ expr {$r_date - 92001} ])
             if { [ julian $r_date ] <= 95168 } {
-                set lrflag [ pick_str_1 rflag ] 
+                set lrflag [ pick_str_1 rflag ]
             } else { set lrflag "N" }
             if { [ julian $s_date ] <= 95168 } {
                 incr ocnt
                 set lstatus "F"
             } else { set lstatus "O" }
-            append lineit_val_list ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment') 
-            if { $l < [ expr $lcnt - 1 ] } { 
+            append lineit_val_list ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')
+            if { $l < [ expr $lcnt - 1 ] } {
                 append lineit_val_list ,
-            } 
+            }
         }
         set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        append order_val_list ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
+        append order_val_list ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')
         incr bld_cnt
-        if { ![ expr {$i % 2} ]  || $i eq $end_rows } {     
+        if { ![ expr {$i % 2} ]  || $i eq $end_rows } {
             $odbc evaldirect "INSERT INTO lineitem (l_shipdate, l_orderkey, l_discount, l_extendedprice, l_suppkey, l_quantity, l_returnflag, l_partkey, l_linestatus, l_tax, l_commitdate, l_receiptdate, l_shipmode, l_linenumber, l_shipinstruct, l_comment) VALUES $lineit_val_list"
             $odbc evaldirect "INSERT INTO orders (o_orderdate, o_orderkey, o_custkey, o_orderpriority, o_shippriority, o_clerk, o_orderstatus, o_totalprice, o_comment) VALUES $order_val_list"
             set bld_cnt 1
@@ -447,7 +966,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
-proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu } {
+proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp } {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -461,6 +980,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     #SF * 6000K rows in Lineitem table
     ###############################################
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
+    set rows_per_bcp 100000
     #update number always zero for first load
     set upd_num 0
     if { ![ array exists dists ] } { set_dists }
@@ -478,7 +998,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         set threaded "MULTI-THREADED"
         set rema [ lassign [ findvuhposition ] myposition totalvirtualusers ]
         switch $myposition {
-            1 { 
+            1 {
                 puts "Monitor Thread"
                 if { $threaded eq "MULTI-THREADED" } {
                     tsv::lappend common thrdlst monitor
@@ -488,7 +1008,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
                     tsv::set application load "WAIT"
                 }
             }
-            default { 
+            default {
                 puts "Worker Thread"
                 if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             }
@@ -509,10 +1029,10 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
-            mk_region odbc
+            load_region odbc $use_bcp
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
-            mk_nation odbc
+            load_nation odbc $use_bcp
             puts "Loading NATION COMPLETE"
             puts "Monitoring Workers..."
             after 10000
@@ -534,10 +1054,10 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
                 after 10000
             }} else {
             puts "Loading REGION..."
-            mk_region odbc
+            load_region odbc $use_bcp
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
-            mk_nation odbc
+            load_nation odbc $use_bcp
             puts "Loading NATION COMPLETE"
     }}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
@@ -561,7 +1081,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             } else {
                 if {!$azure} {odbc evaldirect "use $db"}
                 odbc evaldirect "set implicit_transactions OFF"
-            } 
+            }
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
             set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
@@ -571,21 +1091,21 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             tsv::lreplace common thrdlst $myposition $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]" 
+            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
             set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
         }
         puts "Start:[ clock format [ clock seconds ] ]"
+
         puts "Loading SUPPLIER..."
-        mk_supp odbc [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ]
+        load_supp odbc [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ] $use_bcp
         puts "Loading CUSTOMER..."
-        mk_cust odbc [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ]
+        load_customer odbc [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ] $use_bcp
         puts "Loading PART and PARTSUPP..."
-        mk_part odbc [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact
+        load_part odbc [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $use_bcp
         puts "Loading ORDERS and LINEITEM..."
-        mk_order odbc [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact 
+        load_order odbc [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
         puts "Loading TPCH TABLES COMPLETE"
-        puts "End:[ clock format [ clock seconds ] ]"
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
         }
@@ -599,7 +1119,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp"
     } else { return }
 }
 
@@ -635,7 +1155,7 @@ set maxdop $mssqls_maxdop ;# Maximum Degree of Parallelism
 set scale_factor $mssqls_scale_fact ;#Scale factor of the tpc-h schema
 set authentication \"$mssqls_authentication\";# Authentication Mode (WINDOWS or SQL)
 set server {$mssqls_server};# Microsoft SQL Server Database Server
-set port \"$mssqls_port\";# Microsoft SQL Server Port 
+set port \"$mssqls_port\";# Microsoft SQL Server Port
 set odbc_driver {$mssqls_odbc_driver};# ODBC Driver
 set uid \"$mssqls_uid\";#User ID for SQL Server Authentication
 set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
@@ -683,10 +1203,10 @@ proc standsql { odbc sql RAISEERROR } {
     } else {
         return $rows
     }
-} 
+}
 #########################
 #TPCH REFRESH PROCEDURE
-proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } { 
+proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
     #2.27.2 Refresh Function Definition
     #LOOP (SF * 1500) TIMES
     #INSERT a new row into the ORDERS table
@@ -700,7 +1220,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
     set O_CKEY_MAX [ expr {150000 * $scale_factor} ]
     set O_ODATE_MAX [ expr {(92001 + 2557 - (121 + 30) - 1)} ]
-    set sfrows [ expr {$scale_factor * 1500} ] 
+    set sfrows [ expr {$scale_factor * 1500} ]
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -724,7 +1244,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
         }
         set tmp_date [ RandomNumber 92002 $O_ODATE_MAX ]
         set date $ascdate([ expr {$tmp_date - 92001} ])
-        set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ] 
+        set opriority [ pick_str_2 [ get_dists o_oprio ] o_oprio ]
         set clk_num [ RandomNumber 1 [ expr {$scale_factor * 1000} ] ]
         set clerk [ concat Clerk#[format %1.9d $clk_num]]
         set comment [ TEXT_2 49 ]
@@ -742,8 +1262,8 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
             set lquantity [ RandomNumber 1 50 ]
             set ldiscount [format %1.2f [ expr [ RandomNumber 0 10 ] / 100.00 ]]
             set ltax [format %1.2f [ expr [ RandomNumber 0 8 ] / 100.00 ]]
-            set linstruct [ pick_str_2 [ get_dists instruct ] instruct ] 
-            set lsmode [ pick_str_2 [ get_dists smode ] smode ] 
+            set linstruct [ pick_str_2 [ get_dists instruct ] instruct ]
+            set lsmode [ pick_str_2 [ get_dists smode ] smode ]
             set lcomment [ TEXT_2 27 ]
             set lpartkey [ RandomNumber 1 $L_PKEY_MAX ]
             set rprice [ rpb_routine $lpartkey ]
@@ -753,7 +1273,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
             foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
             set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
-            set s_date [ expr {$s_date + $tmp_date} ] 
+            set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
             set r_date [ RandomNumber 1 30 ]
@@ -762,7 +1282,7 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
             set lcdate $ascdate([ expr {$c_date - 92001} ])
             set lrdate $ascdate([ expr {$r_date - 92001} ])
             if { [ julian $r_date ] <= 95168 } {
-                set lrflag [ pick_str_2 [ get_dists rflag ] rflag ] 
+                set lrflag [ pick_str_2 [ get_dists rflag ] rflag ]
             } else { set lrflag "N" }
             if { [ julian $s_date ] <= 95168 } {
                 incr ocnt
@@ -788,7 +1308,7 @@ proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE }
     #DELETE FROM LINEITEM WHERE L_ORDERKEY = [value]
     #END LOOP
     set refresh 100
-    set sfrows [ expr {$scale_factor * 1500} ] 
+    set sfrows [ expr {$scale_factor * 1500} ]
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
@@ -803,7 +1323,7 @@ proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE }
         if { $REFRESH_VERBOSE } {
             puts "Refresh Delete Orderkey $okey..."
         }
-        if { ![ expr {$i % 1000} ] } {     
+        if { ![ expr {$i % 1000} ] } {
         }
     }
 }
@@ -931,7 +1451,7 @@ proc sub_query { query_no scale_factor maxdop myposition } {
         8 {
             set nationlist [ get_dists nations2 ]
             set regionlist [ get_dists regions ]
-            set qc [ pick_str_2 $nationlist nations2 ] 
+            set qc [ pick_str_2 $nationlist nations2 ]
             regsub -all {:1} $q2sub $qc q2sub
             set nind [ lsearch -glob $nationlist [concat \*$qc\*] ]
             switch $nind {
@@ -995,26 +1515,26 @@ proc sub_query { query_no scale_factor maxdop myposition } {
             regsub -all {:1} $q2sub $tmp_date q2sub
         }
         16 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             set p_type [ split [ pick_str_2 [ get_dists p_types ] p_types ] ]
             set qc [ concat [ lindex $p_type 0 ] [ lindex $p_type 1 ] ]
             regsub -all {:2} $q2sub $qc q2sub
             set permute [list]
             for {set i 3} {$i <= $MAX_PARAM} {incr i} {
-                set tmp3 [RandomNumber 1 50] 
+                set tmp3 [RandomNumber 1 50]
                 while { [ lsearch $permute $tmp3 ] != -1  } {
-                    set tmp3 [RandomNumber 1 50] 
-                } 
+                    set tmp3 [RandomNumber 1 50]
+                }
                 lappend permute $tmp3
                 set qc $tmp3
                 regsub -all ":$i" $q2sub $qc q2sub
             }
         }
         17 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             set qc [ pick_str_2 [ get_dists p_cntr ] p_cntr ]
             regsub -all {:2} $q2sub $qc q2sub
@@ -1023,14 +1543,14 @@ proc sub_query { query_no scale_factor maxdop myposition } {
             regsub -all {:1} $q2sub [RandomNumber 312 315] q2sub
         }
         19 {
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:1} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:2} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
-            set tmp1 [RandomNumber 1 5] 
-            set tmp2 [RandomNumber 1 5] 
+            set tmp1 [RandomNumber 1 5]
+            set tmp2 [RandomNumber 1 5]
             regsub {:3} $q2sub [ concat Brand\#$tmp1$tmp2 ] q2sub
             regsub -all {:4} $q2sub [RandomNumber 1 10] q2sub
             regsub -all {:5} $q2sub [RandomNumber 10 20] q2sub
@@ -1051,10 +1571,10 @@ proc sub_query { query_no scale_factor maxdop myposition } {
         22 {
             set permute [list]
             for {set i 0} {$i <= 7} {incr i} {
-                set tmp3 [RandomNumber 10 34] 
+                set tmp3 [RandomNumber 10 34]
                 while { [ lsearch $permute $tmp3 ] != -1  } {
-                    set tmp3 [RandomNumber 10 34] 
-                } 
+                    set tmp3 [RandomNumber 10 34]
+                }
                 lappend permute $tmp3
                 set qc $tmp3
                 regsub -all ":$i" $q2sub $qc q2sub
@@ -1082,7 +1602,7 @@ proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp a
         set actual_scale_factor [ expr {$count / 10000} ]
         if { $actual_scale_factor != $scale_factor } {
             puts "The setting of the scale factor ($scale_factor) is different from the scale factor of the existing schema ($actual_scale_factor), updating the scale factor to $actual_scale_factor."
-            set scale_factor $actual_scale_factor 
+            set scale_factor $actual_scale_factor
         }
     }
 
@@ -1165,7 +1685,7 @@ if { $refresh_on } {
         set update_sets 1
         set REFRESH_VERBOSE "false"
         do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0
+        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
         do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
@@ -1173,12 +1693,12 @@ if { $refresh_on } {
                 do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]
+                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ] 
             }
         }
     }
 } else {
-    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition
+    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition 
 }}
 }
 
@@ -1200,7 +1720,7 @@ proc delete_mssqlstpch {} {
         set mssqls_odbc_driver $mssqls_linux_odbc
         set mssqls_authentication $mssqls_linux_authent
     }
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mssqls_tpch_dbase ] TPROC-H schema\nin host [string toupper $mssqls_server ]?" -type yesno ] == yes} { 
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mssqls_tpch_dbase ] TPROC-H schema\nin host [string toupper $mssqls_server ]?" -type yesno ] == yes} {
         set maxvuser 1
         set suppo 1
         set ntimes 1
