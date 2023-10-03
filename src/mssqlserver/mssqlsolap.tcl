@@ -790,7 +790,8 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
             foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
-            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]set s_date [ RandomNumber 1 121 ]
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
+            set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ]
             set c_date [ RandomNumber 30 90 ]
             set c_date [ expr {$c_date + $tmp_date} ]
@@ -846,8 +847,7 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
     file delete $OrderPath
     file delete $LineItemFilePath
 
-    puts "Time to load Orders $start_rows-$end_rows:  $elapsedTime seconds"
-
+    puts "ORDERS and LINEITEM Done Rows $start_rows..$end_rows"
     return
 }
 
@@ -1117,7 +1117,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_use_bcp"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp"
     } else { return }
 }
 
@@ -1579,7 +1579,7 @@ proc sub_query { query_no scale_factor maxdop myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition use_bcp } {
+proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition } {
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
@@ -1679,7 +1679,7 @@ if { $refresh_on } {
         set update_sets 1
         set REFRESH_VERBOSE "false"
         do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 $mssqls_use_bcp
+        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
         do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
@@ -1687,12 +1687,12 @@ if { $refresh_on } {
                 do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default {
-                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ] $mssqls_use_bcp
+                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ] 
             }
         }
     }
 } else {
-    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition $mssqls_use_bcp
+    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition 
 }}
 }
 

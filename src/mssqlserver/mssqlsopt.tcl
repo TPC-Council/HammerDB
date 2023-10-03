@@ -680,7 +680,7 @@ proc configmssqlstpch {option} {
     #set variables to values in dict
     setlocaltpchvars $configmssqlserver
     
-    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose mssqls_use_bcp $mssqls_use_bcp} ]
+    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose mssqls_tpch_use_bcp $mssqls_tpch_use_bcp} ]
 
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
@@ -890,7 +890,7 @@ proc configmssqlstpch {option} {
         set Prompt $Parent.f1.p10
         set Name $Parent.f1.e10
         ttk::label $Prompt -text "Use BCP Option:"
-        ttk::checkbutton $Name -text "" -variable mssqls_use_bcp -onvalue "true" -offvalue "false"
+        ttk::checkbutton $Name -text "" -variable mssqls_tpch_use_bcp -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 17 -sticky e
         grid $Name -column 1 -row 17 -sticky w
     }
