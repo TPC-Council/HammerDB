@@ -23,6 +23,7 @@
             <maria_storage_engine>innodb</maria_storage_engine>
             <maria_partition>false</maria_partition>
             <maria_prepared>false</maria_prepared>
+            <maria_no_stored_procs>false</maria_no_stored_procs>
             <maria_history_pk>false</maria_history_pk>
         </schema>
         <driver>

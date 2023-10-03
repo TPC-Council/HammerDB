@@ -428,7 +428,8 @@ proc mk_order { lda start_rows end_rows upd_num scale_factor greenplum } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -461,6 +462,7 @@ proc mk_order { lda start_rows end_rows upd_num scale_factor greenplum } {
             }
         }
         #End Lineitem Loop
+        set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
         append order_val_list ([ date_function ]('$date','YYYY-Mon-DD'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment') 
@@ -532,7 +534,7 @@ proc CreateIndexes { lda greenplum gpcompress } {
         set sql(13) "ALTER TABLE SUPPLIER ADD CONSTRAINT SUPPLIER_NATION_FK FOREIGN KEY (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(14) "ALTER TABLE CUSTOMER ADD CONSTRAINT CUSTOMER_NATION_FK FOREIGN KEY (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY) NOT DEFERRABLE"
         set sql(15) "ALTER TABLE NATION ADD CONSTRAINT NATION_REGION_FK FOREIGN KEY (N_REGIONKEY) REFERENCES REGION (R_REGIONKEY) NOT DEFERRABLE"
-        set sql(16) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) NOT DEFERRABLE"
+        set sql(16) "ALTER TABLE LINEITEM ADD CONSTRAINT LINEITEM_ORDER_FK FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY) DEFERRABLE"
         set sql(17) "CREATE INDEX LINEITEM_PART_SUPP_FKIDX ON LINEITEM (L_PARTKEY,L_SUPPKEY)"
         set sql(18) "CREATE INDEX ORDER_CUSTOMER_FKIDX ON ORDERS (O_CUSTKEY)"
         set sql(19) "CREATE INDEX PARTSUPP_PART_FKIDX ON PARTSUPP (PS_PARTKEY)"
@@ -807,6 +809,10 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
     set startindex [ expr {(($upd_num * $sfrows) - $sfrows) + 1 } ]
     set endindex [ expr {$upd_num * $sfrows} ]
     for { set i $startindex } { $i <= $endindex } { incr i } {
+    set result [ pg_exec $lda "BEGIN" ]
+    pg_result $result -clear
+    set result [ pg_exec $lda "SET CONSTRAINTS LINEITEM_ORDER_FK DEFERRED" ]
+    pg_result $result -clear
         after $trickle_refresh
         if { $upd_num == 0 } {
             set okey [ mk_sparse $i $upd_num ]
@@ -838,15 +844,6 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
         set lcnt [ RandomNumber 1 7 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        if { $REFRESH_VERBOSE } {
-            puts "Refresh Insert Orderkey $okey..."
-        }
-        set result [ pg_exec $lda "INSERT INTO ORDERS (O_ORDERDATE, O_ORDERKEY, O_CUSTKEY, O_ORDERPRIORITY, O_SHIPPRIORITY, O_CLERK, O_ORDERSTATUS, O_TOTALPRICE, O_COMMENT) VALUES ([ date_function ]('$date','YYYY-Mon-DD'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')" ]
-        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-            error "[pg_result $result -error]"
-        } else {
-            pg_result $result -clear
-        }
         #Lineitem Loop
         for { set l 0 } { $l < $lcnt } {incr l} {
             set lokey $okey
@@ -862,7 +859,8 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -885,6 +883,16 @@ proc mk_order_ref { lda upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
             } else {
                 pg_result $result -clear
             }
+        }
+	set totalprice [ expr double($totalprice) / 100 ]
+        if { $REFRESH_VERBOSE } {
+            puts "Refresh Insert Orderkey $okey..."
+        }
+        set result [ pg_exec $lda "INSERT INTO ORDERS (O_ORDERDATE, O_ORDERKEY, O_CUSTKEY, O_ORDERPRIORITY, O_SHIPPRIORITY, O_CLERK, O_ORDERSTATUS, O_TOTALPRICE, O_COMMENT) VALUES ([ date_function ]('$date','YYYY-Mon-DD'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')" ]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
+        } else {
+            pg_result $result -clear
         }
         if { ![ expr {$i % 1000} ] } {     
             set result [ pg_exec $lda "commit" ]
@@ -1279,7 +1287,10 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
                     } else {
                         set t0 [clock clicks -millisec]
                         if {[catch { pg_select $lda $dssquery($qos,$q15c) var { 
-                                    set rowcount [ expr $var(.tupno) + 1 ]		
+                                    set rowcount [ expr $var(.tupno) + 1 ]		                           
+				    set t1 [clock clicks -millisec]
+                                    set value [expr {double($t1-$t0)/1000}]
+                                    if { $rowcount > 0 } { lappend qlist $value }
                                     if { $VERBOSE } { 
                             foreach index [array names var] { if { $index > 2} {puts $var($index)} } } } } message]} {
                             set rowcount 0
@@ -1289,9 +1300,6 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
                                 puts "Query Failed : $dssquery($qos,$q15c) : $message"
                             }
                         } 
-                        set t1 [clock clicks -millisec]
-                        set value [expr {double($t1-$t0)/1000}]
-                        if { $rowcount > 0 } { lappend qlist $value }
                         puts "query $qos completed in $value seconds"
                     }
                     incr q15c

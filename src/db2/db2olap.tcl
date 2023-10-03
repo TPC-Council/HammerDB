@@ -364,7 +364,8 @@ proc mk_order { db_handle start_rows end_rows upd_num scale_factor } {
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -383,6 +384,7 @@ proc mk_order { db_handle start_rows end_rows upd_num scale_factor } {
             } else { set lstatus "O" }
             lappend lineit_val_list $lsdate $lokey $ldiscount $leprice $lsuppkey $lquantity $lrflag $lpartkey $lstatus $ltax $lcdate $lrdate $lsmode $llcnt $linstruct $lcomment
         }
+        set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
         lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
@@ -408,20 +410,20 @@ proc CreateIndexes { db_handle } {
     set sql(1) "ALTER TABLE REGION ADD PRIMARY KEY (R_REGIONKEY)"
     set sql(2) "ALTER TABLE NATION ADD PRIMARY KEY (N_NATIONKEY)"
     set sql(3) "ALTER TABLE SUPPLIER ADD PRIMARY KEY (S_SUPPKEY)"
-    set sql(4) "ALTER TABLE PARTSUPP ADD PRIMARY KEY(PS_PARTKEY,PS_SUPPKEY)"
+    set sql(4) "ALTER TABLE PARTSUPP ADD PRIMARY KEY (PS_PARTKEY,PS_SUPPKEY)"
     set sql(5) "ALTER TABLE PART ADD PRIMARY KEY (P_PARTKEY)"
     set sql(6) "ALTER TABLE ORDERS ADD PRIMARY KEY (O_ORDERKEY)"
     set sql(7) "ALTER TABLE LINEITEM ADD PRIMARY KEY (L_LINENUMBER, L_ORDERKEY)"
     set sql(8) "ALTER TABLE CUSTOMER ADD PRIMARY KEY (C_CUSTKEY)"
-    set sql(9) "ALTER TABLE LINEITEM ADD FOREIGN KEY (L_PARTKEY, L_SUPPKEY) REFERENCES PARTSUPP(PS_PARTKEY, PS_SUPPKEY)"
-    set sql(10) "ALTER TABLE ORDERS ADD FOREIGN KEY (O_CUSTKEY) REFERENCES CUSTOMER (C_CUSTKEY)"
-    set sql(11) "ALTER TABLE PARTSUPP ADD FOREIGN KEY (PS_PARTKEY) REFERENCES PART (P_PARTKEY)"
-    set sql(12) "ALTER TABLE PARTSUPP ADD FOREIGN KEY (PS_SUPPKEY) REFERENCES SUPPLIER (S_SUPPKEY)"
-    set sql(13) "ALTER TABLE SUPPLIER ADD FOREIGN KEY (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY)"
-    set sql(14) "ALTER TABLE CUSTOMER ADD FOREIGN KEY (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY)"
-    set sql(15) "ALTER TABLE NATION ADD FOREIGN KEY N_REGIONKEY) REFERENCES REGION (R_REGIONKEY)"
-    set sql(16) "ALTER TABLE LINEITEM ADD FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY)"
-    for { set i 1 } { $i <= 8 } { incr i } {
+    set sql(9) "ALTER TABLE LINEITEM ADD FOREIGN KEY LINEITEM_PARTSUPP_FK (L_PARTKEY, L_SUPPKEY) REFERENCES PARTSUPP(PS_PARTKEY, PS_SUPPKEY)"
+    set sql(10) "ALTER TABLE ORDERS ADD FOREIGN KEY ORDER_CUSTOMER_FK (O_CUSTKEY) REFERENCES CUSTOMER (C_CUSTKEY)"
+    set sql(11) "ALTER TABLE PARTSUPP ADD FOREIGN KEY PARTSUPP_PART_FK (PS_PARTKEY) REFERENCES PART (P_PARTKEY)"
+    set sql(12) "ALTER TABLE PARTSUPP ADD FOREIGN KEY PARTSUPP_SUPPLIER_FK (PS_SUPPKEY) REFERENCES SUPPLIER (S_SUPPKEY)"
+    set sql(13) "ALTER TABLE SUPPLIER ADD FOREIGN KEY SUPPLIER_NATION_FK (S_NATIONKEY) REFERENCES NATION (N_NATIONKEY)"
+    set sql(14) "ALTER TABLE CUSTOMER ADD FOREIGN KEY CUSTOMER_NATION_FK (C_NATIONKEY) REFERENCES NATION (N_NATIONKEY)"
+    set sql(15) "ALTER TABLE NATION ADD FOREIGN KEY NATION_REGION_FK (N_REGIONKEY) REFERENCES REGION (R_REGIONKEY)"
+    set sql(16) "ALTER TABLE LINEITEM ADD FOREIGN KEY LINEITEM_ORDER_FK (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY)"
+    for { set i 1 } { $i <= 16 } { incr i } {
         db2_exec_direct $db_handle $sql($i)
     }
     return
@@ -703,6 +705,7 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
     #INSERT a new row into the LINEITEM table
     #END LOOP
     #END LOOP
+    db2_exec_direct $db_handle "ALTER TABLE LINEITEM ALTER FOREIGN KEY LINEITEM_ORDER_FK NOT ENFORCED"
     set stmnt_handle_or [ db2_prepare $db_handle "INSERT INTO ORDERS (O_ORDERDATE, O_ORDERKEY, O_CUSTKEY, O_ORDERPRIORITY, O_SHIPPRIORITY, O_CLERK, O_ORDERSTATUS, O_TOTALPRICE, O_COMMENT) VALUES (timestamp_format(?,'YYYY-MON-DD'), ?, ?, ?, ?, ?, ?, ?, ?)" ]
     set stmnt_handle_li [ db2_prepare $db_handle "INSERT INTO LINEITEM (L_SHIPDATE, L_ORDERKEY, L_DISCOUNT, L_EXTENDEDPRICE, L_SUPPKEY, L_QUANTITY, L_RETURNFLAG, L_PARTKEY, L_LINESTATUS, L_TAX, L_COMMITDATE, L_RECEIPTDATE, L_SHIPMODE, L_LINENUMBER, L_SHIPINSTRUCT, L_COMMENT) VALUES (timestamp_format(?,'YYYY-MON-DD'), ?, ?, ?, ?, ?, ?, ?, ?, ?, timestamp_format(?,'YYYY-MON-DD'), timestamp_format(?,'YYYY-MON-DD'), ?, ?, ?, ?)" ]
     set refresh 100
@@ -745,16 +748,6 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
         set lcnt [ RandomNumber 1 7 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        if { $REFRESH_VERBOSE } {
-            puts "Refresh Insert Orderkey $okey..."
-        }
-        lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
-        if {[ catch {db2_bind_exec $stmnt_handle_or "$order_val_list"} message ] } {
-            puts "Error in statement: $message"
-            unset -nocomplain order_val_list
-        } else {
-            unset order_val_list
-        }
         #Lineitem Loop
         for { set l 0 } { $l < $lcnt } {incr l} {
             set lokey $okey
@@ -770,7 +763,8 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
             set supp_num [ RandomNumber 0 3 ]
             set lsuppkey [ PART_SUPP_BRIDGE $lpartkey $supp_num $scale_factor ]
             set leprice [format %4.2f [ expr {$rprice * $lquantity} ]]
-            set totalprice [format %4.2f [ expr {$totalprice + [ expr {(($leprice * (100 - $ldiscount)) / 100) * (100 + $ltax) / 100} ]}]]
+            foreach price { ldiscount ltax leprice } intprice { ldiscountint ltaxint lepriceint } { set $intprice [ expr { int(round([ set $price ] * 100)) } ]}
+            set totalprice [ expr {$totalprice + (($lepriceint * (100 - $ldiscountint)) / 100) * (100 + $ltaxint) / 100} ]
             set s_date [ RandomNumber 1 121 ]
             set s_date [ expr {$s_date + $tmp_date} ] 
             set c_date [ RandomNumber 30 90 ]
@@ -795,7 +789,19 @@ proc mk_order_ref { db_handle upd_num scale_factor trickle_refresh REFRESH_VERBO
                 unset lineit_val_list
             }
         }
+	set totalprice [ expr double($totalprice) / 100 ]
+        if { $REFRESH_VERBOSE } {
+            puts "Refresh Insert Orderkey $okey..."
+        }
+        lappend order_val_list $date $okey $custkey $opriority $spriority $clerk $orderstatus $totalprice $comment
+        if {[ catch {db2_bind_exec $stmnt_handle_or "$order_val_list"} message ] } {
+            puts "Error in statement: $message"
+            unset -nocomplain order_val_list
+        } else {
+            unset order_val_list
+        }
     }
+    db2_exec_direct $db_handle "ALTER TABLE LINEITEM ALTER FOREIGN KEY LINEITEM_ORDER_FK ENFORCED"
     db2_finish $stmnt_handle_or
     db2_finish $stmnt_handle_li 
 }
