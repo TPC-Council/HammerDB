@@ -146,7 +146,6 @@ proc CreateIndexes { odbc maxdop colstore bcp } {
         set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(34) "alter table dbo.orders check constraint order_customer_fk"
         for { set i 1 } { $i <= 34 } { incr i } {
-            set startTime [clock seconds]
             $odbc evaldirect $sql($i)
         }
    } elseif { $colstore } {
@@ -193,7 +192,6 @@ proc CreateIndexes { odbc maxdop colstore bcp } {
         set sql(41) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(42) "alter table dbo.orders check constraint order_customer_fk"
         for { set i 1 } { $i <= 42 } { incr i } {
-            set startTime [clock seconds]
             $odbc evaldirect $sql($i)
         }    
    } else {
@@ -232,7 +230,6 @@ proc CreateIndexes { odbc maxdop colstore bcp } {
         set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(34) "alter table dbo.orders check constraint order_customer_fk"
         for { set i 1 } { $i <= 34 } { incr i } {
-            set startTime [clock seconds]
             $odbc evaldirect $sql($i)
         }
     }
