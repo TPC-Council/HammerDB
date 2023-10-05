@@ -1341,11 +1341,10 @@ proc Customer { odbc d_id w_id CUST_PER_DIST } {
 }
 
 # customer table loading procedure that implements the exec bcp command
-proc Customer_use_bcp { odbc d_id w_id CUST_PER_DIST } {
+proc Customer_use_bcp { odbc w_id CUST_PER_DIST DIST_PER_WARE} {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set namearr [list BAR OUGHT ABLE PRI PRES ESE ANTI CALLY ATION EING]
     set chalen [ llength $globArray ]
-    set c_d_id $d_id
     set c_w_id $w_id
     set c_middle "OE"
     set c_balance -10.0
@@ -1369,7 +1368,9 @@ proc Customer_use_bcp { odbc d_id w_id CUST_PER_DIST } {
     file delete $CustomerFilePath
     file delete $HistoryFilePath
 
-    for {set c_id 1} {$c_id <= $CUST_PER_DIST } {incr c_id } {
+    for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+      set c_d_id $d_id
+      for {set c_id 1} {$c_id <= $CUST_PER_DIST } {incr c_id } {
         set c_first [ MakeAlphaString 8 16 $globArray $chalen ]
         if { $c_id <= 1000 } {
             set c_last [ Lastname [ expr {$c_id - 1} ] $namearr ]
@@ -1397,6 +1398,7 @@ proc Customer_use_bcp { odbc d_id w_id CUST_PER_DIST } {
         append hist_list "$c_id,$c_d_id,$c_w_id,$c_d_id,$c_w_id,$h_date,$h_amount,$h_data\n"
         append cust_list "$c_id,$c_d_id,$c_w_id,$c_discount,$c_credit_lim,$c_last,$c_first,$c_credit,$c_balance,10,1,0,$c_street_1,$c_street_2,$c_city,$c_state,$c_zip,$c_phone,$h_date,$c_middle,$c_data\n"
 
+      }
     }
     if {$hist_list ne ""} {
         set fileHandle [open $HistoryFilePath "a"]
@@ -1503,7 +1505,7 @@ proc Orders { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
 }
 
 # orders table loading procedure that implements the exec bcp command
-proc Orders_use_bcp { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
+proc Orders_use_bcp { odbc w_id MAXITEMS ORD_PER_DIST DIST_PER_WARE} {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
     # create files for orders, order line and new order tables
@@ -1526,8 +1528,9 @@ proc Orders_use_bcp { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
     upvar 2 server serv
     upvar 2 db db
 
-    set o_d_id $d_id
     set o_w_id $w_id
+  for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+     set o_d_id $d_id
     for {set i 1} {$i <= $ORD_PER_DIST } {incr i } {
         set cust($i) $i
     }
@@ -1573,7 +1576,7 @@ proc Orders_use_bcp { odbc d_id w_id MAXITEMS ORD_PER_DIST } {
             }
         }
     }
-
+  }
     if {$orders_list ne ""} {
          set fileHandle [open $ordersFilePath "a"]
          puts -nonewline $fileHandle $orders_list
@@ -1814,12 +1817,12 @@ proc LoadWare { odbc ware_start count_ware MAXITEMS DIST_PER_WARE use_bcp } {
 proc LoadCust { odbc ware_start count_ware CUST_PER_DIST DIST_PER_WARE use_bcp } {
     for {set w_id $ware_start} {$w_id <= $count_ware } {incr w_id } {
         puts "Loading Customer for WID=$w_id [ clock format [ clock seconds ] ]"
-        for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
-            if { $use_bcp eq "true"}  {
-                Customer_use_bcp $odbc $d_id $w_id $CUST_PER_DIST
-            } else {
-                Customer $odbc $d_id $w_id $CUST_PER_DIST
-            }
+        if { $use_bcp eq "true"}  {
+          Customer_use_bcp $odbc $w_id $CUST_PER_DIST $DIST_PER_WARE
+        } else {
+          for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+            Customer $odbc $d_id $w_id $CUST_PER_DIST
+          }
         }
     }
     return
@@ -1828,13 +1831,13 @@ proc LoadCust { odbc ware_start count_ware CUST_PER_DIST DIST_PER_WARE use_bcp }
 proc LoadOrd { odbc ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE use_bcp } {
     for {set w_id $ware_start} {$w_id <= $count_ware } {incr w_id } {
         puts "Loading Orders for W=$w_id [ clock format [ clock seconds ] ]"
-        for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
-            if { $use_bcp eq "true"} {
-                Orders_use_bcp $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
-            } else {
-                Orders $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
-            }
-        }
+        if { $use_bcp eq "true"} {
+           Orders_use_bcp $odbc $w_id $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
+        } else {
+          for {set d_id 1} {$d_id <= $DIST_PER_WARE } {incr d_id } {
+             Orders $odbc $d_id $w_id $MAXITEMS $ORD_PER_DIST
+          }
+       }
     }
     return
 }
