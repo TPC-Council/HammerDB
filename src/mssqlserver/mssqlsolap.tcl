@@ -81,9 +81,9 @@ proc CreateDatabase { odbc db azure } {
     }
 }
 
-proc CreateTables { odbc colstore } {
+proc CreateTables { odbc colstore bcp } {
     puts "CREATING TPCH TABLES"
-    if { $colstore } {
+    if { $colstore  && $bcp } {
         set sql(1) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal money null, c_comment varchar(118) null, index cust_cs clustered columnstore)" 
         set sql(2) "create table dbo.lineitem (l_shipdate date null, l_orderkey bigint not null, l_discount money not null, l_extendedprice money not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax money not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null, index lineit_cs clustered columnstore)" 
         set sql(3) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null, index nation_cs clustered columnstore)" 
@@ -108,9 +108,9 @@ proc CreateTables { odbc colstore } {
     return
 }
 
-proc CreateIndexes { odbc maxdop colstore } {
+proc CreateIndexes { odbc maxdop colstore bcp } {
     puts "CREATING TPCH INDEXES"
-    if { $colstore } {
+    if { $colstore  && $bcp } {
         set sql(1) "create unique index nation_pk on dbo.nation(n_nationkey)"
         set sql(2) "create unique index region_pk on dbo.region(r_regionkey)"
         set sql(3) "create unique index customer_pk on dbo.customer(c_custkey) with (maxdop=$maxdop)"
@@ -145,7 +145,56 @@ proc CreateIndexes { odbc maxdop colstore } {
         set sql(32) "alter table dbo.partsupp check constraint partsupp_part_fk"
         set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(34) "alter table dbo.orders check constraint order_customer_fk"
-    } else {
+        for { set i 1 } { $i <= 34 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }
+   } elseif { $colstore } {
+        set sql(1) "create clustered columnstore index cust_cs ON dbo.customer" 
+        set sql(2) "create clustered columnstore index lineit_cs ON dbo.lineitem" 
+        set sql(3) "create clustered columnstore index nation_cs ON dbo.nation" 
+        set sql(4) "create clustered columnstore index ord_cs ON dbo.orders"
+        set sql(5) "create clustered columnstore index part_cs ON dbo.part" 
+        set sql(6) "create clustered columnstore index psupp_cs ON dbo.partsupp"
+        set sql(7) "create clustered columnstore index region_cs ON dbo.region"
+        set sql(8) "create clustered columnstore index suppl_cs ON dbo.supplier" 
+        set sql(9) "create unique index customer_pk on dbo.customer(c_custkey) with (maxdop=$maxdop)"
+        set sql(10) "create unique index nation_pk on dbo.nation(n_nationkey)"
+        set sql(11) "create unique index part_pk on dbo.part(p_partkey) with (maxdop=$maxdop)"
+        set sql(12) "create unique index region_pk on dbo.region(r_regionkey)"
+        set sql(13) "create unique index supplier_pk on dbo.supplier(s_suppkey) with (maxdop=$maxdop)"
+        set sql(14) "create index l_shipdate_ind on dbo.lineitem(l_shipdate) with (fillfactor=95, sort_in_tempdb=off, maxdop=$maxdop)"
+        set sql(15) "create index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(16) "create index l_partkey_ind on dbo.lineitem(l_partkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(17) "create unique index partsupp_pk on dbo.partsupp(ps_partkey, ps_suppkey) with (maxdop=$maxdop)"
+        set sql(18) "create unique index orders_pk on dbo.orders(o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
+        set sql(19) "create index n_regionkey_ind on dbo.nation(n_regionkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(20) "create index ps_suppkey_ind on dbo.partsupp(ps_suppkey) with(fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(21) "create index s_nationkey_ind on dbo.supplier(s_nationkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(22) "create index l_orderkey_ind on dbo.lineitem(l_orderkey) with ( fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(23) "alter table dbo.customer with nocheck add constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
+        set sql(24) "alter table dbo.lineitem with nocheck add constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
+        set sql(25) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
+        set sql(26) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
+        set sql(27) "alter table dbo.lineitem with nocheck add constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
+        set sql(28) "alter table dbo.nation with nocheck add constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
+        set sql(29) "alter table dbo.partsupp with nocheck add constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
+        set sql(30) "alter table dbo.partsupp with nocheck add constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
+        set sql(31) "alter table dbo.supplier with nocheck add constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
+        set sql(32) "alter table dbo.orders with nocheck add constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
+        set sql(33) "alter table dbo.customer check constraint customer_nation_fk"
+        set sql(34) "alter table dbo.lineitem check constraint lineitem_order_fk"
+        set sql(35) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
+        set sql(36) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
+        set sql(37) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
+        set sql(38) "alter table dbo.nation check constraint nation_region_fk"
+        set sql(39) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(40) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(41) "alter table dbo.supplier check constraint supplier_nation_fk"
+        set sql(42) "alter table dbo.orders check constraint order_customer_fk"
+        for { set i 1 } { $i <= 42 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }    
+   } else {
         set sql(1) "alter table dbo.nation add constraint nation_pk primary key (n_nationkey)"
         set sql(2) "alter table dbo.region add constraint region_pk primary key (r_regionkey)"
         set sql(3) "alter table dbo.customer add constraint customer_pk primary key (c_custkey) with (maxdop=$maxdop)"
@@ -180,10 +229,11 @@ proc CreateIndexes { odbc maxdop colstore } {
         set sql(32) "alter table dbo.partsupp check constraint partsupp_part_fk"
         set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(34) "alter table dbo.orders check constraint order_customer_fk"
+        for { set i 1 } { $i <= 34 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }
     }
-    for { set i 1 } { $i <= 34 } { incr i } {
-        $odbc evaldirect $sql($i)
-    }
+
     return
 }
 
@@ -1024,7 +1074,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         } else {
             CreateDatabase odbc $db $azure
             if {!$azure} {odbc evaldirect "use $db"}
-            CreateTables odbc $colstore
+            CreateTables odbc $colstore $use_bcp
         }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
@@ -1111,7 +1161,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        CreateIndexes odbc $maxdop $colstore
+        CreateIndexes odbc $maxdop $colstore $use_bcp
         UpdateStatistics odbc $db $azure
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         odbc close
