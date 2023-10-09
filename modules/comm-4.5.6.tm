@@ -910,7 +910,9 @@ proc ::comm::commIncoming {chan fid addr remport} {
 	close $fid
 	if {[info exists comm($chan,silent)] && 
 	    [string is true -strict $comm($chan,silent)]} then return
-	error "Unknown offered protocols \"$protoline\" from $addr/$remport"
+	#error "Unknown offered protocols \"$protoline\" from $addr/$remport"
+	puts "Warning: Connection from $addr/$remport received on $chan with unknown protocol \"$protoline\"\r"
+	return
     }
 
     # If the remote host addr isn't our local host addr,
