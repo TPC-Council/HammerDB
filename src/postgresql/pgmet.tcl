@@ -2239,6 +2239,10 @@ namespace eval pgmet {
 
     proc pg_HowManyProcessorsWindows {} {
         global S cpu_model
+        if [catch {package require twapi} ] {
+        set ::S(cpus) 1
+        return
+        }
         set cpu_model [lindex [twapi::get_processor_info 0 -processorname] 1]
         set ::S(cpus) [twapi::get_processor_count]
         set proc_groups [ twapi::get_processor_group_config ]
