@@ -2150,6 +2150,8 @@ proc purge { maria_handler verbose } {
 	    puts "history list length $history_list_length has not reduced in 10 seconds, ending purge"
 	    break
 	    	}
+	    } else {
+	    set freezecount 0
 	    }
 	    incr loop_counter
 	    if {[expr {$loop_counter % 300}] eq 0} {
@@ -2198,6 +2200,8 @@ proc purge { maria_handler verbose } {
 	    puts "dirty buffer pages has not reduced in 10 seconds, ending write back"
 	    break
 	    	}
+	    } else {
+	    set freezecount 0
 	    }
 	    incr loop_counter
 	    if {[expr {$loop_counter % 300}] eq 0} {
@@ -2718,6 +2722,8 @@ proc purge { maria_handler verbose } {
 	    puts "history list length $history_list_length has not reduced in 10 seconds, ending purge"
 	    break
 	    	}
+	    } else {
+	    set freezecount 0
 	    }
 	    incr loop_counter
 	    if {[expr {$loop_counter % 300}] eq 0} {
@@ -2766,6 +2772,8 @@ proc purge { maria_handler verbose } {
 	    puts "dirty buffer pages has not reduced in 10 seconds, ending write back"
 	    break
 	    	}
+	    } else {
+	    set freezecount 0
 	    }
 	    incr loop_counter
 	    if {[expr {$loop_counter % 300}] eq 0} {
