@@ -2031,6 +2031,7 @@ set user \"$maria_user\" ;# Maria user
 set password \"$maria_pass\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
 set prepare \"$maria_prepared\" ;# Use prepared statements
+set purge \"$maria_purge\" ;# Purge undo when complete
 #EDITABLE OPTIONS##################################################
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
@@ -2094,6 +2095,136 @@ proc ConnectToMaria { host port socket ssl_options user password db } {
     }
 }
 
+proc purge { maria_handler verbose } {
+            set pgmin_version "10.7.0"
+            set version [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]
+            if { [ package vcompare $version $pgmin_version ]  eq -1 } {
+            puts "Minimum MariaDB version for dynamic innodb_purge_threads is $pgmin_version, not purging"
+	    return
+            }
+	    if {[catch {set history_list_length [ list [ maria::sel $maria_handler "select variable_value from information_schema.global_status where variable_name = 'INNODB_HISTORY_LIST_LENGTH'" -list ]]}]} {
+		set history_list_length 0
+	    }
+	    puts "Starting purge: history list length $history_list_length"
+	    if { [ string is entier $history_list_length ] && $history_list_length > 0 } {
+	    if { $verbose } { puts "wait for transactions to settle before doing purge" }
+	    set commit_rate 101
+	    set old_com_comm 0
+	    while { $commit_rate > 100 } {
+	    if { $verbose } { puts "transaction rate @ $commit_rate" }
+            if {[catch {set transactions [ list [ maria::sel $maria_handler "show global status where Variable_name = 'Com_commit'" -list ] ]}]} {
+                puts stderr {error, failed to query transaction rate}
+                return
+            } else {
+                regexp {\{\{Com_commit\ ([0-9]+)\}\}} $transactions all com_comm
+                set commit_rate [ expr {$com_comm - $old_com_comm} ]
+		set old_com_comm $com_comm
+            }
+	    after 1000
+    	    }
+	    if { $verbose } { puts "transaction rate settled" }
+	    if { $verbose } { puts "starting purge history list length is $history_list_length" }
+	    if { $verbose } { puts "saving and setting purge settings" }
+            if {[ catch {mariaexec $maria_handler "SET @save_threads=@@innodb_purge_threads"}]} {puts stderr {error, saving purge_threads setting}}
+	    if { $verbose } { puts "saving batch size" }
+            if {[ catch {mariaexec $maria_handler "SET @save_batch=@@innodb_purge_batch_size"}]} {puts stderr {error, saving batch_size setting}}
+	    if { $verbose } { puts "setting purge threads" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_threads=32"}]} {puts stderr {error, setting purge_threads setting}}
+	     if { $verbose } { puts "setting batch size" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_batch_size=5000"}]} {puts stderr {error, setting batch_size setting}}
+	     if { $verbose } { puts "setting lag wait" }
+	     if { $verbose } { puts "waiting for history list length $history_list_length to reach 0" }
+	    set loop_counter 1
+	    set freezecount 0
+	    while { $history_list_length > 0 } {
+            set old_history_list $history_list_length
+	    if {[ catch {set history_list_length [ list [ maria::sel $maria_handler "select variable_value from information_schema.global_status where variable_name = 'INNODB_HISTORY_LIST_LENGTH'" -list ]]}]} {
+                puts stderr {error, failed to query history list}
+		break
+	    } 
+	    after 1000
+	    if { $old_history_list eq $history_list_length } {
+	    if { $verbose } { puts "history list has frozen for $freezecount" }
+	    incr freezecount
+	    if { $freezecount eq 10 } {
+	    puts "history list length $history_list_length has not reduced in 10 seconds, ending purge"
+	    break
+	    	}
+	    } else {
+	    set freezecount 0
+	    }
+	    incr loop_counter
+	    if {[expr {$loop_counter % 300}] eq 0} {
+	    puts "history list length $history_list_length"
+	    		}
+    		}
+	     if { $verbose } { puts "restoring purge settings" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_threads=@save_threads"}]} {puts stderr {error, restoring purge_threads setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_batch_size=@save_batch"}]} {puts stderr {error, restoring batch_size setting}}
+	    set purge_secs [expr { $loop_counter % 60 }]
+	    set purge_hrs  [expr { $loop_counter / 3600}]
+            set purge_mins [expr { ($loop_counter / 60) % 60 }]
+            puts [format "Purge complete in %d hrs:%02d mins:%02d secs" $purge_hrs $purge_mins $purge_secs]
+    	} else {
+		puts "History list is 0 or cannot be queried, not purging"
+	}
+	    if {[catch {set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]}]} {
+		set bp_pages_dirty 0
+	    }
+	    if { [ string is entier $bp_pages_dirty ] && $bp_pages_dirty > 0 } {
+	    puts "Starting write back: dirty buffer pages $bp_pages_dirty"
+	    if { $verbose } { puts "saving and setting write back settings" }
+            if {[ catch {mariaexec $maria_handler "SET @save_pct= @@GLOBAL.innodb_max_dirty_pages_pct"}]} {puts stderr {error, saving max_dirty_pages_pct setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_pct_lwm= @@GLOBAL.innodb_max_dirty_pages_pct_lwm"}]} {puts stderr {error, saving max_dirty_pages_pct_lwm setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_lru_flush_size= @@GLOBAL.innodb_lru_flush_size"}]} {puts stderr {error, saving lru_flush_size setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_lru_scan_depth= @@GLOBAL.innodb_lru_scan_depth"}]} {puts stderr {error, saving lru_scan_depth setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_io_capacity= @@GLOBAL.innodb_io_capacity"}]} {puts stderr {error, saving io_capacity setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_io_capacity_max= @@GLOBAL.innodb_io_capacity_max"}]} {puts stderr {error, saving io_capacity_max setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct=0.0"}]} {puts stderr {error, setting max_dirty_pages_pct setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct_lwm=0.0"}]} {puts stderr {error, setting max_dirty_pages_pct_lwm setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_flush_size=2048"}]} {puts stderr {error, setting lru_flush_size setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_scan_depth=4096"}]} {puts stderr {error, setting lru_scan_depth setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity=120000"}]} {puts stderr {error, setting io_capacity setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity_max=120000"}]} {puts stderr {error, setting io_capacity_max setting}}
+	    set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]
+	    set loop_counter 1
+	    set freezecount 0
+	    while { $bp_pages_dirty > 0 } {
+            set old_bp_pages_dirty $bp_pages_dirty
+	    set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]
+	    after 1000
+	    if { $old_bp_pages_dirty eq $bp_pages_dirty } {
+	    if { $verbose } { puts "dirty buffer pages has frozen for $freezecount" }
+	    incr freezecount
+	    if { $freezecount eq 10 } {
+	    puts "dirty buffer pages has not reduced in 10 seconds, ending write back"
+	    break
+	    	}
+	    } else {
+	    set freezecount 0
+	    }
+	    incr loop_counter
+	    if {[expr {$loop_counter % 300}] eq 0} {
+	    puts "dirty buffer pages $bp_pages_dirty"
+	    		}
+    		}
+	     if { $verbose } { puts "restoring write back settings" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct=@save_pct"}]} {puts stderr {error, restoring max_dirty_pages_pct setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct_lwm=@save_pct_lwm"}]} {puts stderr {error, restoring max_dirty_pages_pct_lwm setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_flush_size=@save_lru_flush_size"}]} {puts stderr {error, restoring lru_flush_size setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_scan_depth=@save_lru_scan_depth"}]} {puts stderr {error, restoring lru_scan_depth setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity=@save_io_capacity"}]} {puts stderr {error, restoring io_capacity setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity_max=@save_io_capacity_max"}]} {puts stderr {error, restoring io_capacity_max setting}}
+	    set wb_secs [expr { $loop_counter % 60 }]
+	    set wb_hrs  [expr { $loop_counter / 3600}]
+            set wb_mins [expr { ($loop_counter / 60) % 60 }]
+            puts [format "Write back complete in %d hrs:%02d mins:%02d secs" $wb_hrs $wb_mins $wb_secs]
+	    return
+    } else {
+                puts "Dirty buffer pool pages is 0 or cannot be queried, not writing back"
+        }
+}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2153,6 +2284,7 @@ switch $myposition {
             puts [ testresult $nopm $tpm MariaDB ]
             tsv::set application abort 1
             if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+	    if { $purge } { purge $maria_handler false }
             catch { mariaclose $maria_handler }
         } else {
             puts "Operating in Replica Mode, No Snapshots taken..."
@@ -2418,6 +2550,7 @@ set user \"$maria_user\" ;# Maria user
 set password \"$maria_pass\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
 set prepare \"$maria_prepared\" ;# Use prepared statements
+set purge \"$maria_purge\" ;# Purge undo when complete
 set async_client $maria_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $maria_async_verbose;# Report activity of asynchronous clients
 set async_delay $maria_async_delay;# Delay in ms between logins of asynchronous clients
@@ -2534,6 +2667,136 @@ proc ConnectToMariaAsynch { host port socket ssl_options user password db client
     }
 }
 
+proc purge { maria_handler verbose } {
+            set pgmin_version "10.7.0"
+            set version [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]
+            if { [ package vcompare $version $pgmin_version ]  eq -1 } {
+            puts "Minimum MariaDB version for dynamic innodb_purge_threads is $pgmin_version, not purging"
+	    return
+            }
+	    if {[catch {set history_list_length [ list [ maria::sel $maria_handler "select variable_value from information_schema.global_status where variable_name = 'INNODB_HISTORY_LIST_LENGTH'" -list ]]}]} {
+		set history_list_length 0
+	    }
+	    puts "Starting purge: history list length $history_list_length"
+	    if { [ string is entier $history_list_length ] && $history_list_length > 0 } {
+	    if { $verbose } { puts "wait for transactions to settle before doing purge" }
+	    set commit_rate 101
+	    set old_com_comm 0
+	    while { $commit_rate > 100 } {
+	    if { $verbose } { puts "transaction rate @ $commit_rate" }
+            if {[catch {set transactions [ list [ maria::sel $maria_handler "show global status where Variable_name = 'Com_commit'" -list ] ]}]} {
+                puts stderr {error, failed to query transaction rate}
+                return
+            } else {
+                regexp {\{\{Com_commit\ ([0-9]+)\}\}} $transactions all com_comm
+                set commit_rate [ expr {$com_comm - $old_com_comm} ]
+		set old_com_comm $com_comm
+            }
+	    after 1000
+    	    }
+	    if { $verbose } { puts "transaction rate settled" }
+	    if { $verbose } { puts "starting purge history list length is $history_list_length" }
+	    if { $verbose } { puts "saving and setting purge settings" }
+            if {[ catch {mariaexec $maria_handler "SET @save_threads=@@innodb_purge_threads"}]} {puts stderr {error, saving purge_threads setting}}
+	    if { $verbose } { puts "saving batch size" }
+            if {[ catch {mariaexec $maria_handler "SET @save_batch=@@innodb_purge_batch_size"}]} {puts stderr {error, saving batch_size setting}}
+	    if { $verbose } { puts "setting purge threads" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_threads=32"}]} {puts stderr {error, setting purge_threads setting}}
+	     if { $verbose } { puts "setting batch size" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_batch_size=5000"}]} {puts stderr {error, setting batch_size setting}}
+	     if { $verbose } { puts "setting lag wait" }
+	     if { $verbose } { puts "waiting for history list length $history_list_length to reach 0" }
+	    set loop_counter 1
+	    set freezecount 0
+	    while { $history_list_length > 0 } {
+            set old_history_list $history_list_length
+	    if {[ catch {set history_list_length [ list [ maria::sel $maria_handler "select variable_value from information_schema.global_status where variable_name = 'INNODB_HISTORY_LIST_LENGTH'" -list ]]}]} {
+                puts stderr {error, failed to query history list}
+		break
+	    } 
+	    after 1000
+	    if { $old_history_list eq $history_list_length } {
+	    if { $verbose } { puts "history list has frozen for $freezecount" }
+	    incr freezecount
+	    if { $freezecount eq 10 } {
+	    puts "history list length $history_list_length has not reduced in 10 seconds, ending purge"
+	    break
+	    	}
+	    } else {
+	    set freezecount 0
+	    }
+	    incr loop_counter
+	    if {[expr {$loop_counter % 300}] eq 0} {
+	    puts "history list length $history_list_length"
+	    		}
+    		}
+	     if { $verbose } { puts "restoring purge settings" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_threads=@save_threads"}]} {puts stderr {error, restoring purge_threads setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_purge_batch_size=@save_batch"}]} {puts stderr {error, restoring batch_size setting}}
+	    set purge_secs [expr { $loop_counter % 60 }]
+	    set purge_hrs  [expr { $loop_counter / 3600}]
+            set purge_mins [expr { ($loop_counter / 60) % 60 }]
+            puts [format "Purge complete in %d hrs:%02d mins:%02d secs" $purge_hrs $purge_mins $purge_secs]
+    	} else {
+		puts "History list is 0 or cannot be queried, not purging"
+	}
+	    if {[catch {set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]}]} {
+		set bp_pages_dirty 0
+	    }
+	    if { [ string is entier $bp_pages_dirty ] && $bp_pages_dirty > 0 } {
+	    puts "Starting write back: dirty buffer pages $bp_pages_dirty"
+	    if { $verbose } { puts "saving and setting write back settings" }
+            if {[ catch {mariaexec $maria_handler "SET @save_pct= @@GLOBAL.innodb_max_dirty_pages_pct"}]} {puts stderr {error, saving max_dirty_pages_pct setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_pct_lwm= @@GLOBAL.innodb_max_dirty_pages_pct_lwm"}]} {puts stderr {error, saving max_dirty_pages_pct_lwm setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_lru_flush_size= @@GLOBAL.innodb_lru_flush_size"}]} {puts stderr {error, saving lru_flush_size setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_lru_scan_depth= @@GLOBAL.innodb_lru_scan_depth"}]} {puts stderr {error, saving lru_scan_depth setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_io_capacity= @@GLOBAL.innodb_io_capacity"}]} {puts stderr {error, saving io_capacity setting}}
+            if {[ catch {mariaexec $maria_handler "SET @save_io_capacity_max= @@GLOBAL.innodb_io_capacity_max"}]} {puts stderr {error, saving io_capacity_max setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct=0.0"}]} {puts stderr {error, setting max_dirty_pages_pct setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct_lwm=0.0"}]} {puts stderr {error, setting max_dirty_pages_pct_lwm setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_flush_size=2048"}]} {puts stderr {error, setting lru_flush_size setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_scan_depth=4096"}]} {puts stderr {error, setting lru_scan_depth setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity=120000"}]} {puts stderr {error, setting io_capacity setting}}
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity_max=120000"}]} {puts stderr {error, setting io_capacity_max setting}}
+	    set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]
+	    set loop_counter 1
+	    set freezecount 0
+	    while { $bp_pages_dirty > 0 } {
+            set old_bp_pages_dirty $bp_pages_dirty
+	    set bp_pages_dirty [ list [ maria::sel $maria_handler "SELECT variable_value FROM information_schema.global_status WHERE variable_name = 'INNODB_BUFFER_POOL_PAGES_DIRTY'" -list ]]
+	    after 1000
+	    if { $old_bp_pages_dirty eq $bp_pages_dirty } {
+	    if { $verbose } { puts "dirty buffer pages has frozen for $freezecount" }
+	    incr freezecount
+	    if { $freezecount eq 10 } {
+	    puts "dirty buffer pages has not reduced in 10 seconds, ending write back"
+	    break
+	    	}
+	    } else {
+	    set freezecount 0
+	    }
+	    incr loop_counter
+	    if {[expr {$loop_counter % 300}] eq 0} {
+	    puts "dirty buffer pages $bp_pages_dirty"
+	    		}
+    		}
+	     if { $verbose } { puts "restoring write back settings" }
+             if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct=@save_pct"}]} {puts stderr {error, restoring max_dirty_pages_pct setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_max_dirty_pages_pct_lwm=@save_pct_lwm"}]} {puts stderr {error, restoring max_dirty_pages_pct_lwm setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_flush_size=@save_lru_flush_size"}]} {puts stderr {error, restoring lru_flush_size setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_lru_scan_depth=@save_lru_scan_depth"}]} {puts stderr {error, restoring lru_scan_depth setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity=@save_io_capacity"}]} {puts stderr {error, restoring io_capacity setting}}
+            if {[ catch {mariaexec $maria_handler "SET GLOBAL innodb_io_capacity_max=@save_io_capacity_max"}]} {puts stderr {error, restoring io_capacity_max setting}}
+	    set wb_secs [expr { $loop_counter % 60 }]
+	    set wb_hrs  [expr { $loop_counter / 3600}]
+            set wb_mins [expr { ($loop_counter / 60) % 60 }]
+            puts [format "Write back complete in %d hrs:%02d mins:%02d secs" $wb_hrs $wb_mins $wb_secs]
+	    return
+    } else {
+                puts "Dirty buffer pool pages is 0 or cannot be queried, not writing back"
+        }
+}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2593,6 +2856,7 @@ switch $myposition {
             puts [ testresult $nopm $tpm MariaDB ]
             tsv::set application abort 1
             if { $mode eq "Primary" } { eval [subst {thread::send -async $MASTER { remote_command ed_kill_vusers }}] }
+	    if { $purge } { purge $maria_handler false }
             catch { mariaclose $maria_handler }
         } else {
             puts "Operating in Replica Mode, No Snapshots taken..."

@@ -40,6 +40,7 @@
             <maria_async_verbose>false</maria_async_verbose>
             <maria_async_delay>1000</maria_async_delay>
             <maria_connect_pool>false</maria_connect_pool>
+            <maria_purge>false</maria_purge>
         </driver>
     </tpcc>
     <tpch>
