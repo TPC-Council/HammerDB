@@ -1271,6 +1271,11 @@ proc deleteschema {} {
 }
 
 proc vurun {} {
+global threadscreated
+if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
+        putscli "Error: Cannot call vurun with Virtual Users already active"
+	return
+	}
     global _ED opmode jobid
 
     set jobid [guid]
