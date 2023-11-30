@@ -648,7 +648,7 @@ proc giset { args } {
                                 putscli "Changed $dct:$key2 from $previous to [ concat $val ] for generic"
                               	#Save new value to SQLite
                                 SQLiteUpdateKeyValue "generic" $dct $key2 $val
-                                remote_command [ concat diset $dct $key2 [ list \{$val\} ]]
+                                remote_command [ concat giset $dct $key2 [ list \{$val\} ]]
                         }}
                     		} else {
                         	putscli "Dictionary \"$dct\" exists but key \"$key2\" doesn't"
