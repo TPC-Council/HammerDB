@@ -625,6 +625,41 @@ proc diset { args } {
                 }
 }}}}
 
+proc giset { args } {
+    global rdbms opmode
+    if {[ llength $args ] != 3} {
+        putscli "Error: Invalid number of arguments\nUsage: giset dict key value"
+        putscli "Type \"print generic\" for valid dictionaries and keys" 
+    } else {
+        set dct [ lindex $args 0 ]
+        set key2 [ lindex $args 1 ]
+        set val [ lindex $args 2 ]
+
+                upvar #0 genericdict genericdict
+                if {[dict exists $genericdict $dct ]} {
+                    if {[dict exists $genericdict $dct $key2 ]} {
+                        set previous [ dict get $genericdict $dct $key2 ]
+                        if { $previous eq [ concat $val ] } {
+                            putscli "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
+                        } else {
+                            if { [catch {dict set genericdict $dct $key2 [ concat $val ] } message]} {
+                                putscli "Failed to set Dictionary value: $message"
+                            } else {
+                                putscli "Changed $dct:$key2 from $previous to [ concat $val ] for generic"
+                              	#Save new value to SQLite
+                                SQLiteUpdateKeyValue "generic" $dct $key2 $val
+                                remote_command [ concat giset $dct $key2 [ list \{$val\} ]]
+                        }}
+                    		} else {
+                        	putscli "Dictionary \"$dct\" exists but key \"$key2\" doesn't"
+                        	putscli "Type \"print generic\" for valid dictionaries and keys"
+                    	}
+                } else {
+                    putscli {Usage: giset dict key value}
+                    putscli "Type \"print generic\" for valid dictionaries and keys"
+                }
+}}
+
 proc librarycheck {} {
     upvar #0 dbdict dbdict
     dict for {database attributes} $dbdict {
@@ -724,12 +759,12 @@ proc dbset { args } {
 proc print { args } {
     global _ED rdbms bm virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps gen_count_ware gen_scale_fact gen_directory gen_num_vu
     if {[ llength $args ] != 1} {
-        puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
+        puts {Usage: print [db|bm|dict|generic|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
     } else {
-        set ind [ lsearch {db bm dict script vuconf vucreated vustatus vucomplete datagen tcconf} $args ]
+        set ind [ lsearch {db bm dict generic script vuconf vucreated vustatus vucomplete datagen tcconf} $args ]
         if { $ind eq -1 } {
             puts "Error: invalid option"
-            puts {Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
+            puts {Usage: print [db|bm|dict|generic|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
             return
         }
         switch $args {
@@ -773,6 +808,11 @@ proc print { args } {
                         pdict 2 $tmpdictforpt
                 }}
             }
+	    generic {
+                        puts "Generic Dictionary Settings"
+                upvar #0 genericdict genericdict
+                        pdict 2 $genericdict
+	    }
             vuconf {
                 foreach i { "Virtual Users" "User Delay(ms)" "Repeat Delay(ms)" "Iterations" "Show Output" "Log Output" "Unique Log Name" "No Log Buffer" "Log Timestamps" } j { virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps } {
                     puts "$i = [ set $j ]"
