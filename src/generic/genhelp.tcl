@@ -8,7 +8,7 @@ proc help { args } {
     }
     set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
+        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript giset jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
     if {[ llength $args ] != 1} {
         puts $helpbanner
         foreach helpcmd $helpcmds { puts "\t$helpcmd" } 
@@ -55,11 +55,12 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "tcount: generate html chart for TPROC-C transaction count.\n"
                 }
                 print {
-                    putscli {print - Usage: print [db|bm|dict|script|vuconf|vucreated|vustatus|datagen|tcconf]}
+                    putscli {print - Usage: print [db|bm|dict|generic|script|vuconf|vucreated|vustatus|datagen|tcconf]}
                     putscli "prints the current configuration: 
 db: database 
 bm: benchmark
 dict: the dictionary for the current database, i.e. all active variables
+generic: the dictionary for generic settings
 script: the loaded script
 vuconf: the virtual user configuration
 vucreated: the number of virtual users created
@@ -89,6 +90,13 @@ tcconf: the transaction counter configuration"
 Example:
 hammerdb>diset tpcc count_ware 10
 Changed tpcc:count_ware from 1 to 10 for Oracle"
+                }
+                giset {
+                    putscli "giset - Usage: giset dict key value"
+                    putscli "Set the dictionary variables for the generic settings. Use \"print generic\" to see what these variables are and giset to change
+Example:
+hammerdb>giset commandline keepalive_margin 60
+Changed commandline:keepalive_margin from 10 to 60 for generic"
                 }
                 distributescript {
                     putscli "distributescript - Usage: distributescript"
