@@ -81,148 +81,313 @@ proc CreateDatabase { odbc db azure } {
     }
 }
 
-proc CreateTables { odbc colstore bcp } {
+proc CreateTables { odbc colstore bcp partition_orders_and_lineitems} {
     puts "CREATING TPCH TABLES"
-    if { $colstore  && $bcp } {
-        set sql(1) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal decimal(12, 2) null, c_comment varchar(118) null, index cust_cs clustered columnstore)" 
-        set sql(2) "create table dbo.lineitem (l_shipdate date null, l_orderkey bigint not null, l_discount decimal(12, 2) not null, l_extendedprice decimal(12, 2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12, 2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null, index lineit_cs clustered columnstore)" 
-        set sql(3) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null, index nation_cs clustered columnstore)" 
-        set sql(4) "create table dbo.part( p_partkey bigint not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice decimal(12, 2) null, p_comment varchar(23) null, index part_cs clustered columnstore)" 
-        set sql(5) "create table dbo.partsupp( ps_partkey bigint not null, ps_suppkey int not null, ps_supplycost decimal(12, 2) not null, ps_availqty int null, ps_comment varchar(199) null, index psupp_cs clustered columnstore)" 
-        set sql(6) "create table dbo.region(r_regionkey int not null, r_name char(25) null, r_comment varchar(152) null, index region_cs clustered columnstore)"
-        set sql(7) "create table dbo.supplier( s_suppkey int not null, s_nationkey int null, s_comment varchar(102) null, s_name char(25) null, s_address varchar(40) null, s_phone char(15) null, s_acctbal decimal(12, 2) null, index suppl_cs clustered columnstore)" 
-        set sql(8) "create table dbo.orders( o_orderdate date null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12, 2) null, o_comment varchar(79) null, index ord_cs clustered columnstore)"
+    if { $colstore && $bcp } {
+        if {$partition_orders_and_lineitems } {
+            set sql(1) "create table dbo.lineitem (l_shipdate date not null, l_orderkey bigint not null, l_discount decimal(12,2) not null, l_extendedprice decimal(12,2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12,2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)  ON date_scheme(l_shipdate)" 
+            set sql(2) "create table dbo.orders( o_orderdate date not null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12,2) null, o_comment varchar(79) null) ON date_scheme(o_orderdate)"
+            set sql(11) "create clustered columnstore index lineit_cs ON dbo.lineitem WITH (DROP_EXISTING = ON) ON date_scheme(l_shipdate)" 
+            set sql(12) "create clustered columnstore index ord_cs ON dbo.orders WITH (DROP_EXISTING = ON) ON date_scheme(o_orderdate)"
+        } else {
+            set sql(1) "create table dbo.lineitem (l_shipdate date not null, l_orderkey bigint not null, l_discount decimal(12,2) not null, l_extendedprice decimal(12,2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12,2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)" 
+            set sql(2) "create table dbo.orders( o_orderdate date not null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12,2) null, o_comment varchar(79) null)"
+            set sql(11) "create clustered columnstore index lineit_cs ON dbo.lineitem WITH (DROP_EXISTING = ON)" 
+            set sql(12) "create clustered columnstore index ord_cs ON dbo.orders WITH (DROP_EXISTING = ON)"
+        }
+        set sql(3) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal decimal(12,2) null, c_comment varchar(118) null, index cust_cs clustered columnstore)" 
+        set sql(4) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null, index nation_cs clustered columnstore)" 
+        set sql(5) "create table dbo.part( p_partkey bigint not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice decimal(12,2) null, p_comment varchar(23) null, index part_cs clustered columnstore)" 
+        set sql(6) "create table dbo.partsupp( ps_partkey bigint not null, ps_suppkey int not null, ps_supplycost decimal(12,2) not null, ps_availqty int null, ps_comment varchar(199) null, index psupp_cs clustered columnstore)" 
+        set sql(7) "create table dbo.region(r_regionkey int not null, r_name char(25) null, r_comment varchar(152) null, index region_cs clustered columnstore)"
+        set sql(8) "create table dbo.supplier( s_suppkey int not null, s_nationkey int null, s_comment varchar(102) null, s_name char(25) null, s_address varchar(40) null, s_phone char(15) null, s_acctbal decimal(12,2) null, index suppl_cs clustered columnstore)" 
+        set sql(9) "create clustered index lineit_cs ON dbo.lineitem(l_shipdate)"
+        set sql(10) "create clustered index ord_cs ON dbo.orders(o_orderdate)"
+
+        for { set i 1 } { $i <= 12 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }
     } else {
-        set sql(1) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal decimal(12, 2) null, c_comment varchar(118) null)" 
-        set sql(2) "create table dbo.lineitem (l_shipdate date null, l_orderkey bigint not null, l_discount decimal(12, 2) not null, l_extendedprice decimal(12, 2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12, 2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)" 
-        set sql(3) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null)" 
-        set sql(4) "create table dbo.part( p_partkey bigint not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice decimal(12, 2) null, p_comment varchar(23) null)" 
-        set sql(5) "create table dbo.partsupp( ps_partkey bigint not null, ps_suppkey int not null, ps_supplycost decimal(12, 2) not null, ps_availqty int null, ps_comment varchar(199) null)" 
-        set sql(6) "create table dbo.region(r_regionkey int not null, r_name char(25) null, r_comment varchar(152) null)"
-        set sql(7) "create table dbo.supplier( s_suppkey int not null, s_nationkey int null, s_comment varchar(102) null, s_name char(25) null, s_address varchar(40) null, s_phone char(15) null, s_acctbal decimal(12, 2) null)" 
-        set sql(8) "create table dbo.orders( o_orderdate date null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12, 2) null, o_comment varchar(79) null)"
+        if {$partition_orders_and_lineitems } {
+            set sql(1) "create table dbo.lineitem (l_shipdate date not null, l_orderkey bigint not null, l_discount decimal(12,2) not null, l_extendedprice decimal(12,2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12,2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)  ON date_scheme(l_shipdate)" 
+            set sql(2) "create table dbo.orders( o_orderdate date not null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12,2) null, o_comment varchar(79) null) ON date_scheme(o_orderdate)"
+        } else {
+            set sql(1) "create table dbo.lineitem (l_shipdate date not null, l_orderkey bigint not null, l_discount decimal(12,2) not null, l_extendedprice decimal(12,2) not null, l_suppkey int not null, l_quantity bigint not null, l_returnflag char(1) null, l_partkey bigint not null, l_linestatus char(1) null, l_tax decimal(12,2) not null, l_commitdate date null, l_receiptdate date null, l_shipmode char(10) null, l_linenumber bigint not null, l_shipinstruct char(25) null, l_comment varchar(44) null)" 
+            set sql(2) "create table dbo.orders( o_orderdate date not null, o_orderkey bigint not null, o_custkey bigint not null, o_orderpriority char(15) null, o_shippriority int null, o_clerk char(15) null, o_orderstatus char(1) null, o_totalprice decimal(12,2) null, o_comment varchar(79) null)"
+        }
+        set sql(3) "create table dbo.customer (c_custkey bigint not null, c_mktsegment char(10) null, c_nationkey int null, c_name varchar(25) null, c_address varchar(40) null, c_phone char(15) null, c_acctbal decimal(12,2) null, c_comment varchar(118) null)" 
+        set sql(4) "create table dbo.nation(n_nationkey int not null, n_name char(25) null, n_regionkey int null, n_comment varchar(152) null)" 
+        set sql(5) "create table dbo.part( p_partkey bigint not null, p_type varchar(25) null, p_size int null, p_brand char(10) null, p_name varchar(55) null, p_container char(10) null, p_mfgr char(25) null, p_retailprice decimal(12,2) null, p_comment varchar(23) null)" 
+        set sql(6) "create table dbo.partsupp( ps_partkey bigint not null, ps_suppkey int not null, ps_supplycost decimal(12,2) not null, ps_availqty int null, ps_comment varchar(199) null)" 
+        set sql(7) "create table dbo.region(r_regionkey int not null, r_name char(25) null, r_comment varchar(152) null)"
+        set sql(8) "create table dbo.supplier( s_suppkey int not null, s_nationkey int null, s_comment varchar(102) null, s_name char(25) null, s_address varchar(40) null, s_phone char(15) null, s_acctbal decimal(12,2) null)" 
+        
+        for { set i 1 } { $i <= 8 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }
     }
-    for { set i 1 } { $i <= 8 } { incr i } {
-        $odbc evaldirect $sql($i)
-    }
+
     return
 }
 
-proc CreateIndexes { odbc maxdop colstore bcp } {
+proc CreateIndexes { odbc maxdop colstore bcp partition_orders_and_lineitems} {
     puts "CREATING TPCH INDEXES"
-    if { $colstore  && $bcp } {
-        set sql(1) "create unique index nation_pk on dbo.nation(n_nationkey)"
-        set sql(2) "create unique index region_pk on dbo.region(r_regionkey)"
-        set sql(3) "create unique index customer_pk on dbo.customer(c_custkey) with (maxdop=$maxdop)"
-        set sql(4) "create unique index part_pk on dbo.part(p_partkey) with (maxdop=$maxdop)"
-        set sql(5) "create unique index partsupp_pk on dbo.partsupp(ps_partkey, ps_suppkey) with (maxdop=$maxdop)"
-        set sql(6) "create unique index supplier_pk on dbo.supplier(s_suppkey) with (maxdop=$maxdop)"
-        set sql(7) "create index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(8) "create unique index orders_pk on dbo.orders(o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
-        set sql(9) "alter table dbo.customer with nocheck add  constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
-        set sql(10) "alter table dbo.lineitem with nocheck add  constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
-        set sql(11) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
-        set sql(12) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
-        set sql(13) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
-        set sql(14) "alter table dbo.nation  with nocheck add  constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
-        set sql(15) "alter table dbo.partsupp  with nocheck add  constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
-        set sql(16) "alter table dbo.partsupp  with nocheck add  constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
-        set sql(17) "alter table dbo.supplier  with nocheck add  constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
-        set sql(18) "alter table dbo.orders  with nocheck add  constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
-        set sql(19) "alter table dbo.customer check constraint customer_nation_fk"
-        set sql(20) "alter table dbo.lineitem check constraint lineitem_order_fk"
+    if { $colstore && $bcp  } {
+        set sql(1) "CREATE UNIQUE NONCLUSTERED INDEX customer_pk ON dbo.customer(c_custkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(2) "CREATE UNIQUE NONCLUSTERED INDEX nation_pk ON dbo.nation(n_nationkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(3) "CREATE UNIQUE NONCLUSTERED INDEX part_pk ON dbo.part(p_partkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(4) "CREATE UNIQUE NONCLUSTERED INDEX region_pk ON dbo.region(r_regionkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(5) "CREATE UNIQUE NONCLUSTERED INDEX supplier_pk ON dbo.supplier(s_suppkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(6) "alter table dbo.customer with nocheck add constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
+        set sql(7) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
+        set sql(8) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
+        set sql(9) "alter table dbo.nation  with nocheck add constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
+        set sql(10) "alter table dbo.partsupp  with nocheck add constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
+        set sql(11) "alter table dbo.partsupp  with nocheck add constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
+        set sql(12) "alter table dbo.supplier  with nocheck add constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
+        set sql(13) "alter table dbo.orders  with nocheck add constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
+        set sql(14) "alter table dbo.customer check constraint customer_nation_fk"
+        set sql(15) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
+        set sql(16) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
+        set sql(17) "alter table dbo.nation check constraint nation_region_fk"
+        set sql(18) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(19) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(20) "alter table dbo.supplier check constraint supplier_nation_fk"
+        set sql(21) "alter table dbo.orders check constraint order_customer_fk"
+
+        set num_commands 21
+
+        if { [expr {$partition_orders_and_lineitems != true } ] } {
+            set num_commands 28        
+            set sql(22) "alter table dbo.partsupp add constraint partsupp_pk primary key (ps_partkey, ps_suppkey) with (maxdop=$maxdop)"   
+            set sql(23) "CREATE UNIQUE NONCLUSTERED INDEX orders_pk ON dbo.orders(o_orderkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+            set sql(24) "CREATE NONCLUSTERED INDEX lineitem_pk ON dbo.lineitem(l_orderkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+            set sql(25) "alter table dbo.lineitem with nocheck add constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
+            set sql(26) "alter table dbo.lineitem with nocheck add constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
+            set sql(27) "alter table dbo.lineitem check constraint lineitem_order_fk"
+            set sql(28) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"  
+        }
+
+
+   }   elseif { $colstore } {
+        set sql(1) "create clustered columnstore index cust_cs ON dbo.customer" 
+        set sql(2) "create clustered columnstore index nation_cs ON dbo.nation" 
+        set sql(3) "create clustered columnstore index part_cs ON dbo.part" 
+        set sql(4) "create clustered columnstore index psupp_cs ON dbo.partsupp"
+        set sql(5) "create clustered columnstore index region_cs ON dbo.region"
+        set sql(6) "create clustered columnstore index suppl_cs ON dbo.supplier"         
+        set sql(7) "CREATE UNIQUE NONCLUSTERED INDEX customer_pk ON dbo.customer(c_custkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(8) "CREATE UNIQUE NONCLUSTERED INDEX nation_pk ON dbo.nation(n_nationkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(9) "CREATE UNIQUE NONCLUSTERED INDEX part_pk ON dbo.part(p_partkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(10) "CREATE UNIQUE NONCLUSTERED INDEX region_pk ON dbo.region(r_regionkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(11) "CREATE UNIQUE NONCLUSTERED INDEX supplier_pk ON dbo.supplier(s_suppkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"
+        set sql(12) "alter table dbo.customer with nocheck add  constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
+        set sql(13) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
+        set sql(14) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
+        set sql(15) "alter table dbo.nation  with nocheck add  constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
+        set sql(16) "alter table dbo.partsupp  with nocheck add  constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
+        set sql(17) "alter table dbo.partsupp  with nocheck add  constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
+        set sql(18) "alter table dbo.supplier  with nocheck add  constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
+        set sql(19) "alter table dbo.orders  with nocheck add  constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
+        set sql(20) "alter table dbo.customer check constraint customer_nation_fk"
         set sql(21) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
         set sql(22) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
-        set sql(23) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
-        set sql(24) "alter table dbo.nation check constraint nation_region_fk"
+        set sql(23) "alter table dbo.nation check constraint nation_region_fk"
+        set sql(24) "alter table dbo.partsupp check constraint partsupp_part_fk"
         set sql(25) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(26) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(27) "alter table dbo.supplier check constraint supplier_nation_fk"
-        set sql(28) "alter table dbo.orders check constraint order_customer_fk"
-        for { set i 1 } { $i <= 28 } { incr i } {
-            $odbc evaldirect $sql($i)
+        set sql(26) "alter table dbo.supplier check constraint supplier_nation_fk"
+        set sql(27) "alter table dbo.orders check constraint order_customer_fk"
+        set sql(28) "CREATE UNIQUE NONCLUSTERED INDEX partsupp_pk ON dbo.partsupp(ps_partkey, ps_suppkey) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)"   
+
+        if { [expr {$partition_orders_and_lineitems != true } ] } {
+            set num_commands 32  
+            set sql(29) "create clustered columnstore index lineit_cs ON dbo.lineitem" 
+            set sql(30) "create clustered columnstore index ord_cs ON dbo.orders"
+            set sql(31) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
+            set sql(32) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
+        } else {
+            set num_commands 30
+            set sql(29) "create clustered columnstore index lineit_cs  ON dbo.lineitem ON date_scheme(l_shipdate)" 
+            set sql(30) "create clustered columnstore index ord_cs ON dbo.orders ON date_scheme(o_orderdate)"
         }
-   } elseif { $colstore } {
-        set sql(1) "create clustered columnstore index cust_cs ON dbo.customer" 
-        set sql(2) "create clustered columnstore index lineit_cs ON dbo.lineitem" 
-        set sql(3) "create clustered columnstore index nation_cs ON dbo.nation" 
-        set sql(4) "create clustered columnstore index ord_cs ON dbo.orders"
-        set sql(5) "create clustered columnstore index part_cs ON dbo.part" 
-        set sql(6) "create clustered columnstore index psupp_cs ON dbo.partsupp"
-        set sql(7) "create clustered columnstore index region_cs ON dbo.region"
-        set sql(8) "create clustered columnstore index suppl_cs ON dbo.supplier" 
-        set sql(9) "create unique index customer_pk on dbo.customer(c_custkey) with (maxdop=$maxdop)"
-        set sql(10) "create unique index nation_pk on dbo.nation(n_nationkey)"
-        set sql(11) "create unique index part_pk on dbo.part(p_partkey) with (maxdop=$maxdop)"
-        set sql(12) "create unique index region_pk on dbo.region(r_regionkey)"
-        set sql(13) "create unique index supplier_pk on dbo.supplier(s_suppkey) with (maxdop=$maxdop)"
-        set sql(14) "create index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(15) "create unique index partsupp_pk on dbo.partsupp(ps_partkey, ps_suppkey) with (maxdop=$maxdop)"
-        set sql(16) "create unique index orders_pk on dbo.orders(o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
-        set sql(17) "alter table dbo.customer with nocheck add constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
-        set sql(18) "alter table dbo.lineitem with nocheck add constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
-        set sql(19) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
-        set sql(20) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
-        set sql(21) "alter table dbo.lineitem with nocheck add constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
-        set sql(22) "alter table dbo.nation with nocheck add constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
-        set sql(23) "alter table dbo.partsupp with nocheck add constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
-        set sql(24) "alter table dbo.partsupp with nocheck add constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
-        set sql(25) "alter table dbo.supplier with nocheck add constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
-        set sql(26) "alter table dbo.orders with nocheck add constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
-        set sql(27) "alter table dbo.customer check constraint customer_nation_fk"
-        set sql(28) "alter table dbo.lineitem check constraint lineitem_order_fk"
-        set sql(29) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
-        set sql(30) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
-        set sql(31) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
-        set sql(32) "alter table dbo.nation check constraint nation_region_fk"
-        set sql(33) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(34) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(35) "alter table dbo.supplier check constraint supplier_nation_fk"
-        set sql(36) "alter table dbo.orders check constraint order_customer_fk"
-        for { set i 1 } { $i <= 36 } { incr i } {
-            $odbc evaldirect $sql($i)
-        }    
+
    } else {
+
         set sql(1) "alter table dbo.nation add constraint nation_pk primary key (n_nationkey)"
         set sql(2) "alter table dbo.region add constraint region_pk primary key (r_regionkey)"
         set sql(3) "alter table dbo.customer add constraint customer_pk primary key (c_custkey) with (maxdop=$maxdop)"
         set sql(4) "alter table dbo.part add constraint part_pk primary key (p_partkey) with (maxdop=$maxdop)"
         set sql(5) "alter table dbo.partsupp add constraint partsupp_pk primary key (ps_partkey, ps_suppkey) with (maxdop=$maxdop)"
         set sql(6) "alter table dbo.supplier add constraint supplier_pk primary key (s_suppkey) with (maxdop=$maxdop)"
-        set sql(7) "create clustered index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(8) "alter table dbo.orders add constraint orders_pk primary key (o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
-        set sql(9) "create index n_regionkey_ind on dbo.nation(n_regionkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(10) "create index ps_suppkey_ind on dbo.partsupp(ps_suppkey) with(fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(11) "create index s_nationkey_ind on dbo.supplier(s_nationkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(12) "create clustered index l_shipdate_ind on dbo.lineitem(l_shipdate) with (fillfactor=95, sort_in_tempdb=off, maxdop=$maxdop)"
-        set sql(13) "create index l_orderkey_ind on dbo.lineitem(l_orderkey) with ( fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(14) "create index l_partkey_ind on dbo.lineitem(l_partkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-        set sql(15) "alter table dbo.customer with nocheck add  constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
-        set sql(16) "alter table dbo.lineitem with nocheck add  constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
-        set sql(17) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
-        set sql(18) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
-        set sql(19) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
-        set sql(20) "alter table dbo.nation  with nocheck add  constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
-        set sql(21) "alter table dbo.partsupp  with nocheck add  constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
-        set sql(22) "alter table dbo.partsupp  with nocheck add  constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
-        set sql(23) "alter table dbo.supplier  with nocheck add  constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
-        set sql(24) "alter table dbo.orders  with nocheck add  constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
-        set sql(25) "alter table dbo.customer check constraint customer_nation_fk"
-        set sql(26) "alter table dbo.lineitem check constraint lineitem_order_fk"
-        set sql(27) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
-        set sql(28) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
-        set sql(29) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
-        set sql(30) "alter table dbo.nation check constraint nation_region_fk"
-        set sql(31) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(32) "alter table dbo.partsupp check constraint partsupp_part_fk"
-        set sql(33) "alter table dbo.supplier check constraint supplier_nation_fk"
-        set sql(34) "alter table dbo.orders check constraint order_customer_fk"
-        for { set i 1 } { $i <= 34 } { incr i } {
-            $odbc evaldirect $sql($i)
+        set sql(7) "create index n_regionkey_ind on dbo.nation(n_regionkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(8) "create index ps_suppkey_ind on dbo.partsupp(ps_suppkey) with(fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(9) "create index s_nationkey_ind on dbo.supplier(s_nationkey) with (fillfactor=100, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(10) "create clustered index l_shipdate_ind on dbo.lineitem(l_shipdate) with (fillfactor=95, sort_in_tempdb=off, maxdop=$maxdop)"
+        set sql(11) "create index l_orderkey_ind on dbo.lineitem(l_orderkey) with ( fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(12) "create index l_partkey_ind on dbo.lineitem(l_partkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+        set sql(13) "alter table dbo.customer with nocheck add  constraint customer_nation_fk foreign key(c_nationkey) references dbo.nation (n_nationkey)"
+        set sql(14) "alter table dbo.lineitem with nocheck add constraint lineitem_partkey_fk foreign key (l_partkey) references dbo.part(p_partkey)"
+        set sql(15) "alter table dbo.lineitem with nocheck add constraint lineitem_suppkey_fk foreign key (l_suppkey) references dbo.supplier(s_suppkey)"
+        set sql(16) "alter table dbo.nation  with nocheck add  constraint nation_region_fk foreign key(n_regionkey) references dbo.region (r_regionkey)"
+        set sql(17) "alter table dbo.partsupp  with nocheck add  constraint partsupp_part_fk foreign key(ps_partkey) references dbo.part (p_partkey)"
+        set sql(18) "alter table dbo.partsupp  with nocheck add  constraint partsupp_supplier_fk foreign key(ps_suppkey) references dbo.supplier (s_suppkey)"
+        set sql(19) "alter table dbo.supplier  with nocheck add  constraint supplier_nation_fk foreign key(s_nationkey) references dbo.nation (n_nationkey)"
+        set sql(20) "alter table dbo.orders  with nocheck add  constraint order_customer_fk foreign key(o_custkey) references dbo.customer (c_custkey)"
+        set sql(21) "alter table dbo.customer check constraint customer_nation_fk"
+        set sql(22) "alter table dbo.lineitem check constraint lineitem_partkey_fk"
+        set sql(23) "alter table dbo.lineitem check constraint lineitem_suppkey_fk"
+        set sql(24) "alter table dbo.nation check constraint nation_region_fk"
+        set sql(25) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(26) "alter table dbo.partsupp check constraint partsupp_part_fk"
+        set sql(27) "alter table dbo.supplier check constraint supplier_nation_fk"
+        set sql(28) "alter table dbo.orders check constraint order_customer_fk" 
+   
+        set num_commands 28
+        if { [expr {$partition_orders_and_lineitems != true } ] } {
+            set num_commands 34
+            set sql(29) "create clustered index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+            set sql(30) "alter table dbo.orders add constraint orders_pk primary key (o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
+            set sql(31) "alter table dbo.lineitem with nocheck add  constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
+            set sql(32) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
+            set sql(33) "alter table dbo.lineitem check constraint lineitem_order_fk"
+            set sql(34) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
         }
+
+    }
+
+   for { set i 1} {$i <= $num_commands} {incr i} {
+        $odbc evaldirect $sql($i)
     }
 
     return
+}
+
+proc CreateDateScheme { odbc } {
+    set sql(1) "CREATE PARTITION FUNCTION date_partition(date) AS RANGE LEFT FOR VALUES \
+                    (N'1992-01-07T00:00:00.000', N'1992-01-14T00:00:00.000', N'1992-01-21T00:00:00.000', \
+                     N'1992-01-28T00:00:00.000', N'1992-02-04T00:00:00.000', N'1992-02-11T00:00:00.000', \
+                     N'1992-02-18T00:00:00.000', N'1992-02-25T00:00:00.000', N'1992-03-03T00:00:00.000', \
+                     N'1992-03-10T00:00:00.000', N'1992-03-17T00:00:00.000', N'1992-03-24T00:00:00.000', \
+                     N'1992-03-31T00:00:00.000', N'1992-04-07T00:00:00.000', N'1992-04-14T00:00:00.000', \
+                     N'1992-04-21T00:00:00.000', N'1992-04-28T00:00:00.000', N'1992-05-05T00:00:00.000', \
+                     N'1992-05-12T00:00:00.000', N'1992-05-19T00:00:00.000', N'1992-05-26T00:00:00.000', \
+                     N'1992-06-02T00:00:00.000', N'1992-06-09T00:00:00.000', N'1992-06-16T00:00:00.000', \
+                     N'1992-06-23T00:00:00.000', N'1992-06-30T00:00:00.000', N'1992-07-07T00:00:00.000', \
+                     N'1992-07-14T00:00:00.000', N'1992-07-21T00:00:00.000', N'1992-07-28T00:00:00.000', \
+                     N'1992-08-04T00:00:00.000', N'1992-08-11T00:00:00.000', N'1992-08-18T00:00:00.000', \
+                     N'1992-08-25T00:00:00.000', N'1992-09-01T00:00:00.000', N'1992-09-08T00:00:00.000', \
+                     N'1992-09-15T00:00:00.000', N'1992-09-22T00:00:00.000', N'1992-09-29T00:00:00.000', \
+                     N'1992-10-06T00:00:00.000', N'1992-10-13T00:00:00.000', N'1992-10-20T00:00:00.000', \
+                     N'1992-10-27T00:00:00.000', N'1992-11-03T00:00:00.000', N'1992-11-10T00:00:00.000', \
+                     N'1992-11-17T00:00:00.000', N'1992-11-24T00:00:00.000', N'1992-12-01T00:00:00.000', \
+                     N'1992-12-08T00:00:00.000', N'1992-12-15T00:00:00.000', N'1992-12-22T00:00:00.000', \
+                     N'1992-12-29T00:00:00.000', N'1993-01-05T00:00:00.000', N'1993-01-12T00:00:00.000', \
+                     N'1993-01-19T00:00:00.000', N'1993-01-26T00:00:00.000', N'1993-02-02T00:00:00.000', \
+                     N'1993-02-09T00:00:00.000', N'1993-02-16T00:00:00.000', N'1993-02-23T00:00:00.000', \
+                     N'1993-03-02T00:00:00.000', N'1993-03-09T00:00:00.000', N'1993-03-16T00:00:00.000', \
+                     N'1993-03-23T00:00:00.000', N'1993-03-30T00:00:00.000', N'1993-04-06T00:00:00.000', \
+                     N'1993-04-13T00:00:00.000', N'1993-04-20T00:00:00.000', N'1993-04-27T00:00:00.000', \
+                     N'1993-05-04T00:00:00.000', N'1993-05-11T00:00:00.000', N'1993-05-18T00:00:00.000', \
+                     N'1993-05-25T00:00:00.000', N'1993-06-01T00:00:00.000', N'1993-06-08T00:00:00.000', \
+                     N'1993-06-15T00:00:00.000', N'1993-06-22T00:00:00.000', N'1993-06-29T00:00:00.000', \
+                     N'1993-07-06T00:00:00.000', N'1993-07-13T00:00:00.000', N'1993-07-20T00:00:00.000', \
+                     N'1993-07-27T00:00:00.000', N'1993-08-03T00:00:00.000', N'1993-08-10T00:00:00.000', \
+                     N'1993-08-17T00:00:00.000', N'1993-08-24T00:00:00.000', N'1993-08-31T00:00:00.000', \
+                     N'1993-09-07T00:00:00.000', N'1993-09-14T00:00:00.000', N'1993-09-21T00:00:00.000', \
+                     N'1993-09-28T00:00:00.000', N'1993-10-05T00:00:00.000', N'1993-10-12T00:00:00.000', \
+                     N'1993-10-19T00:00:00.000', N'1993-10-26T00:00:00.000', N'1993-11-02T00:00:00.000', \
+                     N'1993-11-09T00:00:00.000', N'1993-11-16T00:00:00.000', N'1993-11-23T00:00:00.000', \
+                     N'1993-11-30T00:00:00.000', N'1993-12-07T00:00:00.000', N'1993-12-14T00:00:00.000', \
+                     N'1993-12-21T00:00:00.000', N'1993-12-28T00:00:00.000', N'1994-01-04T00:00:00.000', \
+                     N'1994-01-11T00:00:00.000', N'1994-01-18T00:00:00.000', N'1994-01-25T00:00:00.000', \
+                     N'1994-02-01T00:00:00.000', N'1994-02-08T00:00:00.000', N'1994-02-15T00:00:00.000', \
+                     N'1994-02-22T00:00:00.000', N'1994-03-01T00:00:00.000', N'1994-03-08T00:00:00.000', \
+                     N'1994-03-15T00:00:00.000', N'1994-03-22T00:00:00.000', N'1994-03-29T00:00:00.000', \
+                     N'1994-04-05T00:00:00.000', N'1994-04-12T00:00:00.000', N'1994-04-19T00:00:00.000', \
+                     N'1994-04-26T00:00:00.000', N'1994-05-03T00:00:00.000', N'1994-05-10T00:00:00.000', \
+                     N'1994-05-17T00:00:00.000', N'1994-05-24T00:00:00.000', N'1994-05-31T00:00:00.000', \
+                     N'1994-06-07T00:00:00.000', N'1994-06-14T00:00:00.000', N'1994-06-21T00:00:00.000', \
+                     N'1994-06-28T00:00:00.000', N'1994-07-05T00:00:00.000', N'1994-07-12T00:00:00.000', \
+                     N'1994-07-19T00:00:00.000', N'1994-07-26T00:00:00.000', N'1994-08-02T00:00:00.000', \
+                     N'1994-08-09T00:00:00.000', N'1994-08-16T00:00:00.000', N'1994-08-23T00:00:00.000', \
+                     N'1994-08-30T00:00:00.000', N'1994-09-06T00:00:00.000', N'1994-09-13T00:00:00.000', \
+                     N'1994-09-20T00:00:00.000', N'1994-09-27T00:00:00.000', N'1994-10-04T00:00:00.000', \
+                     N'1994-10-11T00:00:00.000', N'1994-10-18T00:00:00.000', N'1994-10-25T00:00:00.000', \
+                     N'1994-11-01T00:00:00.000', N'1994-11-08T00:00:00.000', N'1994-11-15T00:00:00.000', \
+                     N'1994-11-22T00:00:00.000', N'1994-11-29T00:00:00.000', N'1994-12-06T00:00:00.000', \
+                     N'1994-12-13T00:00:00.000', N'1994-12-20T00:00:00.000', N'1994-12-27T00:00:00.000', \
+                     N'1995-01-03T00:00:00.000', N'1995-01-10T00:00:00.000', N'1995-01-17T00:00:00.000', \
+                     N'1995-01-24T00:00:00.000', N'1995-01-31T00:00:00.000', N'1995-02-07T00:00:00.000', \
+                     N'1995-02-14T00:00:00.000', N'1995-02-21T00:00:00.000', N'1995-02-28T00:00:00.000', \
+                     N'1995-03-07T00:00:00.000', N'1995-03-14T00:00:00.000', N'1995-03-21T00:00:00.000', \
+                     N'1995-03-28T00:00:00.000', N'1995-04-04T00:00:00.000', N'1995-04-11T00:00:00.000', \
+                     N'1995-04-18T00:00:00.000', N'1995-04-25T00:00:00.000', N'1995-05-02T00:00:00.000', \
+                     N'1995-05-09T00:00:00.000', N'1995-05-16T00:00:00.000', N'1995-05-23T00:00:00.000', \
+                     N'1995-05-30T00:00:00.000', N'1995-06-06T00:00:00.000', N'1995-06-13T00:00:00.000', \
+                     N'1995-06-20T00:00:00.000', N'1995-06-27T00:00:00.000', N'1995-07-04T00:00:00.000', \
+                     N'1995-07-11T00:00:00.000', N'1995-07-18T00:00:00.000', N'1995-07-25T00:00:00.000', \
+                     N'1995-08-01T00:00:00.000', N'1995-08-08T00:00:00.000', N'1995-08-15T00:00:00.000', \
+                     N'1995-08-22T00:00:00.000', N'1995-08-29T00:00:00.000', N'1995-09-05T00:00:00.000', \
+                     N'1995-09-12T00:00:00.000', N'1995-09-19T00:00:00.000', N'1995-09-26T00:00:00.000', \
+                     N'1995-10-03T00:00:00.000', N'1995-10-10T00:00:00.000', N'1995-10-17T00:00:00.000', \
+                     N'1995-10-24T00:00:00.000', N'1995-10-31T00:00:00.000', N'1995-11-07T00:00:00.000', \
+                     N'1995-11-14T00:00:00.000', N'1995-11-21T00:00:00.000', N'1995-11-28T00:00:00.000', \
+                     N'1995-12-05T00:00:00.000', N'1995-12-12T00:00:00.000', N'1995-12-19T00:00:00.000', \
+                     N'1995-12-26T00:00:00.000', N'1996-01-02T00:00:00.000', N'1996-01-09T00:00:00.000', \
+                     N'1996-01-16T00:00:00.000', N'1996-01-23T00:00:00.000', N'1996-01-30T00:00:00.000', \
+                     N'1996-02-06T00:00:00.000', N'1996-02-13T00:00:00.000', N'1996-02-20T00:00:00.000', \
+                     N'1996-02-27T00:00:00.000', N'1996-03-05T00:00:00.000', N'1996-03-12T00:00:00.000', \
+                     N'1996-03-19T00:00:00.000', N'1996-03-26T00:00:00.000', N'1996-04-02T00:00:00.000', \
+                     N'1996-04-09T00:00:00.000', N'1996-04-16T00:00:00.000', N'1996-04-23T00:00:00.000', \
+                     N'1996-04-30T00:00:00.000', N'1996-05-07T00:00:00.000', N'1996-05-14T00:00:00.000', \
+                     N'1996-05-21T00:00:00.000', N'1996-05-28T00:00:00.000', N'1996-06-04T00:00:00.000', \
+                     N'1996-06-11T00:00:00.000', N'1996-06-18T00:00:00.000', N'1996-06-25T00:00:00.000', \
+                     N'1996-07-02T00:00:00.000', N'1996-07-09T00:00:00.000', N'1996-07-16T00:00:00.000', \
+                     N'1996-07-23T00:00:00.000', N'1996-07-30T00:00:00.000', N'1996-08-06T00:00:00.000', \
+                     N'1996-08-13T00:00:00.000', N'1996-08-20T00:00:00.000', N'1996-08-27T00:00:00.000', \
+                     N'1996-09-03T00:00:00.000', N'1996-09-10T00:00:00.000', N'1996-09-17T00:00:00.000', \
+                     N'1996-09-24T00:00:00.000', N'1996-10-01T00:00:00.000', N'1996-10-08T00:00:00.000', \
+                     N'1996-10-15T00:00:00.000', N'1996-10-22T00:00:00.000', N'1996-10-29T00:00:00.000', \
+                     N'1996-11-05T00:00:00.000', N'1996-11-12T00:00:00.000', N'1996-11-19T00:00:00.000', \
+                     N'1996-11-26T00:00:00.000', N'1996-12-03T00:00:00.000', N'1996-12-10T00:00:00.000', \
+                     N'1996-12-17T00:00:00.000', N'1996-12-24T00:00:00.000', N'1996-12-31T00:00:00.000', \
+                     N'1997-01-07T00:00:00.000', N'1997-01-14T00:00:00.000', N'1997-01-21T00:00:00.000', \
+                     N'1997-01-28T00:00:00.000', N'1997-02-04T00:00:00.000', N'1997-02-11T00:00:00.000', \
+                     N'1997-02-18T00:00:00.000', N'1997-02-25T00:00:00.000', N'1997-03-04T00:00:00.000', \
+                     N'1997-03-11T00:00:00.000', N'1997-03-18T00:00:00.000', N'1997-03-25T00:00:00.000', \
+                     N'1997-04-01T00:00:00.000', N'1997-04-08T00:00:00.000', N'1997-04-15T00:00:00.000', \
+                     N'1997-04-22T00:00:00.000', N'1997-04-29T00:00:00.000', N'1997-05-06T00:00:00.000', \
+                     N'1997-05-13T00:00:00.000', N'1997-05-20T00:00:00.000', N'1997-05-27T00:00:00.000', \
+                     N'1997-06-03T00:00:00.000', N'1997-06-10T00:00:00.000', N'1997-06-17T00:00:00.000', \
+                     N'1997-06-24T00:00:00.000', N'1997-07-01T00:00:00.000', N'1997-07-08T00:00:00.000', \
+                     N'1997-07-15T00:00:00.000', N'1997-07-22T00:00:00.000', N'1997-07-29T00:00:00.000', \
+                     N'1997-08-05T00:00:00.000', N'1997-08-12T00:00:00.000', N'1997-08-19T00:00:00.000', \
+                     N'1997-08-26T00:00:00.000', N'1997-09-02T00:00:00.000', N'1997-09-09T00:00:00.000', \
+                     N'1997-09-16T00:00:00.000', N'1997-09-23T00:00:00.000', N'1997-09-30T00:00:00.000', \
+                     N'1997-10-07T00:00:00.000', N'1997-10-14T00:00:00.000', N'1997-10-21T00:00:00.000', \
+                     N'1997-10-28T00:00:00.000', N'1997-11-04T00:00:00.000', N'1997-11-11T00:00:00.000', \
+                     N'1997-11-18T00:00:00.000', N'1997-11-25T00:00:00.000', N'1997-12-02T00:00:00.000', \
+                     N'1997-12-09T00:00:00.000', N'1997-12-16T00:00:00.000', N'1997-12-23T00:00:00.000', \
+                     N'1997-12-30T00:00:00.000', N'1998-01-06T00:00:00.000', N'1998-01-13T00:00:00.000', \
+                     N'1998-01-20T00:00:00.000', N'1998-01-27T00:00:00.000', N'1998-02-03T00:00:00.000', \
+                     N'1998-02-10T00:00:00.000', N'1998-02-17T00:00:00.000', N'1998-02-24T00:00:00.000', \
+                     N'1998-03-03T00:00:00.000', N'1998-03-10T00:00:00.000', N'1998-03-17T00:00:00.000', \
+                     N'1998-03-24T00:00:00.000', N'1998-03-31T00:00:00.000', N'1998-04-07T00:00:00.000', \
+                     N'1998-04-14T00:00:00.000', N'1998-04-21T00:00:00.000', N'1998-04-28T00:00:00.000', \
+                     N'1998-05-05T00:00:00.000', N'1998-05-12T00:00:00.000', N'1998-05-19T00:00:00.000', \
+                     N'1998-05-26T00:00:00.000', N'1998-06-02T00:00:00.000', N'1998-06-09T00:00:00.000', \
+                     N'1998-06-16T00:00:00.000', N'1998-06-23T00:00:00.000', N'1998-06-30T00:00:00.000', \
+                     N'1998-07-07T00:00:00.000', N'1998-07-14T00:00:00.000', N'1998-07-21T00:00:00.000', \
+                     N'1998-07-28T00:00:00.000', N'1998-08-04T00:00:00.000', N'1998-08-11T00:00:00.000', \
+                     N'1998-08-18T00:00:00.000', N'1998-08-25T00:00:00.000', N'1998-09-01T00:00:00.000', \
+                     N'1998-09-08T00:00:00.000', N'1998-09-15T00:00:00.000', N'1998-09-22T00:00:00.000', \
+                     N'1998-09-29T00:00:00.000', N'1998-10-06T00:00:00.000', N'1998-10-13T00:00:00.000', \
+                     N'1998-10-20T00:00:00.000', N'1998-10-27T00:00:00.000', N'1998-11-03T00:00:00.000', \
+                     N'1998-11-10T00:00:00.000', N'1998-11-17T00:00:00.000', N'1998-11-24T00:00:00.000')"
+    set sql(2) "CREATE PARTITION SCHEME date_scheme AS PARTITION date_partition ALL TO ( \[PRIMARY\] ) "
+    for { set i 1 } { $i <= 2 } { incr i } {
+        $odbc evaldirect $sql($i)
+    }
 }
 
 # bcp command to copy from file to specified tables
@@ -742,14 +907,14 @@ proc mk_part { odbc start_rows end_rows scale_factor } {
     return
 }
 
-proc load_order { odbc start_rows end_rows upd_num scale_fact use_bcp } {
+proc load_order { odbc w_id start_rows end_rows upd_num scale_fact use_bcp } {
     upvar 1 rows_per_bcp rows_per_bcp
     if { $use_bcp eq "true"}  {
         for { set i $start_rows } { $i <= $end_rows } { set i [expr {$i + $rows_per_bcp}] } {
             if { [expr {$i + $rows_per_bcp}] > $end_rows}  {
-                mk_order_bcp $odbc $i $end_rows $upd_num $scale_fact
+                mk_order_bcp $odbc $w_id $i $end_rows $upd_num $scale_fact
             } else {
-                mk_order_bcp $odbc $i [expr {$i + [expr {$rows_per_bcp - 1}]}] $upd_num $scale_fact
+                mk_order_bcp $odbc $w_id $i [expr {$i + [expr {$rows_per_bcp - 1}]}] $upd_num $scale_fact
             }
         }
     } else {
@@ -757,7 +922,7 @@ proc load_order { odbc start_rows end_rows upd_num scale_fact use_bcp } {
     }
 }
 
-proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
+proc mk_order_bcp { odbc w_id start_rows end_rows upd_num scale_factor } {
 
     # pass in values for secure connection to server and database name for bcp
     upvar 2 uid userid
@@ -767,8 +932,8 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
 
     # create file for order and line item tables
     set tmp_env $::env(TMP)
-    set OrderPath "$tmp_env/OrderPath$start_rows.csv"
-    set LineItemFilePath "$tmp_env/LineItemFilePath$start_rows.csv"
+    set OrderPath "$tmp_env/OrderPath$w_id.csv"
+    set LineItemFilePath "$tmp_env/LineItemFilePath$w_id.csv"
 
     set order_val_list ""
     set line_item_val_list ""
@@ -782,6 +947,7 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
     set O_CKEY_MAX [ expr {150000 * $scale_factor} ]
     set O_ODATE_MAX [ expr {(92001 + 2557 - (121 + 30) - 1)} ]
+
     for { set i $start_rows } { $i <= $end_rows } { incr i } {
         if { $upd_num == 0 } {
             set okey [ mk_sparse $i $upd_num ]
@@ -842,7 +1008,7 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
                 set lrflag [ pick_str_1 rflag ]
             } else { set lrflag "N" }
             if { [ julian $s_date ] <= 95168 } {
-                incr ocnt
+                incr ocnt 
                 set lstatus "F"
             } else { set lstatus "O" }
 
@@ -857,7 +1023,6 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
         incr bld_cnt
     }
 
-
     if {$order_val_list ne ""} {
         set fileHandle [open $OrderPath "a"]
         puts -nonewline $fileHandle $order_val_list
@@ -871,7 +1036,6 @@ proc mk_order_bcp { odbc start_rows end_rows upd_num scale_factor } {
         close $fileHandle
         unset line_item_val_list
     }
-
 
     # bcp command to copy to orders table
     set tableName $db.dbo.orders
@@ -1004,7 +1168,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
-proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp } {
+proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp partition_orders_and_lineitems} {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -1018,7 +1182,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     #SF * 6000K rows in Lineitem table
     ###############################################
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
-    set rows_per_bcp 100000
+    set rows_per_bcp 1000000
     #update number always zero for first load
     set upd_num 0
     if { ![ array exists dists ] } { set_dists }
@@ -1062,7 +1226,8 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         } else {
             CreateDatabase odbc $db $azure
             if {!$azure} {odbc evaldirect "use $db"}
-            CreateTables odbc $colstore $use_bcp
+            if {$partition_orders_and_lineitems} { CreateDateScheme odbc }
+            CreateTables odbc $colstore $use_bcp $partition_orders_and_lineitems
         }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
@@ -1142,14 +1307,14 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         puts "Loading PART and PARTSUPP..."
         load_part odbc [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $use_bcp
         puts "Loading ORDERS and LINEITEM..."
-        load_order odbc [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
+        load_order odbc $myposition [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
         puts "Loading TPCH TABLES COMPLETE"
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        CreateIndexes odbc $maxdop $colstore $use_bcp
+        CreateIndexes odbc $maxdop $colstore $use_bcp $partition_orders_and_lineitems
         UpdateStatistics odbc $db $azure
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         odbc close
@@ -1157,7 +1322,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems"
     } else { return }
 }
 
