@@ -1371,6 +1371,7 @@ set refresh_on \"$mssqls_refresh_on\" ;#First User does refresh function
 set update_sets $mssqls_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$mssqls_refresh_verbose\" ;#report refresh function activity
+set partition_orders_and_lineitems \"$mssqls_tpch_partition_orders_and_lineitems\" ;#Order and Lineitem Tables are partitioned
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1409,7 +1410,7 @@ proc standsql { odbc sql RAISEERROR } {
 }
 #########################
 #TPCH REFRESH PROCEDURE
-proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
+proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE partition_orders_and_lineitems } {
     #2.27.2 Refresh Function Definition
     #LOOP (SF * 1500) TIMES
     #INSERT a new row into the ORDERS table
@@ -1417,7 +1418,9 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
     #INSERT a new row into the LINEITEM table
     #END LOOP
     #END LOOP
-    $odbc evaldirect "ALTER TABLE LINEITEM NOCHECK CONSTRAINT LINEITEM_ORDER_FK"
+    if { [expr {$partition_orders_and_lineitems != true } ] } {
+        $odbc evaldirect "ALTER TABLE LINEITEM NOCHECK CONSTRAINT LINEITEM_ORDER_FK"
+    }
     set refresh 100
     set delta 1
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
@@ -1501,7 +1504,9 @@ proc mk_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } 
         if { ![ expr {$i % 1000} ] } {     
         }
     }
-    $odbc evaldirect "ALTER TABLE LINEITEM WITH CHECK CHECK CONSTRAINT LINEITEM_ORDER_FK"
+    if { [expr {$partition_orders_and_lineitems != true } ] } {
+        $odbc evaldirect "ALTER TABLE LINEITEM WITH CHECK CHECK CONSTRAINT LINEITEM_ORDER_FK"
+    }
 }
 
 proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE } {
@@ -1531,7 +1536,7 @@ proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE }
     }
 }
 
-proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database encrypt trust_cert update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
+proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database encrypt trust_cert update_sets trickle_refresh REFRESH_VERBOSE RF_SET partition_orders_and_lineitems} {
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
@@ -1545,7 +1550,7 @@ proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tc
         if { $RF_SET eq "RF1" || $RF_SET eq "BOTH" } {
             puts "New Sales refresh"
             set r0 [clock clicks -millisec]
-            mk_order_ref odbc $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE
+            mk_order_ref odbc $upd_num $scale_factor $trickle_refresh $REFRESH_VERBOSE $partition_orders_and_lineitems
             set r1 [clock clicks -millisec]
             set rvalnew [expr {double($r1-$r0)/1000}]
             puts "New Sales refresh complete in $rvalnew seconds"
@@ -1788,7 +1793,7 @@ proc sub_query { query_no scale_factor maxdop myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition } {
+proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition} {
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
@@ -1887,16 +1892,16 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $partition_orders_and_lineitems
         do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $partition_orders_and_lineitems
     } else {
         switch $myposition {
             1 {
-                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $partition_orders_and_lineitems
             }
             default {
-                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ] 
+                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]  
             }
         }
     }
