@@ -40,7 +40,7 @@ set version $version
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
-proc UpdateStatistics { odbc db azure } {
+proc UpdateStatistics { odbc db azure advanced_stats } {
     puts "UPDATING SCHEMA STATISTICS"
     if {!$azure} {
         $odbc evaldirect "CREATE OR ALTER PROCEDURE dbo.sp_updstats
@@ -53,6 +53,72 @@ exec sp_updatestats
         set sql(1) "USE $db"
         set sql(2) "EXEC sp_updatestats"
         for { set i 1 } { $i <= 2 } { incr i } {
+            $odbc evaldirect $sql($i)
+        }
+    }
+
+    if { $advanced_stats } {
+        set sql(1) "create statistics li_commitdate on lineitem(l_commitdate)  WITH SAMPLE 20 PERCENT"
+        set sql(2) "create statistics li_discount on lineitem(l_discount) WITH SAMPLE 20 PERCENT"
+        set sql(3) "create statistics li_extendedprice on lineitem(l_extendedprice)  WITH SAMPLE 20 PERCENT"
+        set sql(4) "create statistics li_linenumber on lineitem(l_linenumber)  WITH SAMPLE 20 PERCENT" 
+        set sql(5) "create statistics li_linestatus on lineitem(l_linestatus)  WITH SAMPLE 20 PERCENT"
+        set sql(6) "create statistics li_orderkey on lineitem(l_orderkey)  WITH SAMPLE 20 PERCENT"
+        set sql(7) "create statistics li_partkey on lineitem(l_partkey)  WITH SAMPLE 20 PERCENT"
+        set sql(8) "create statistics li_quantity on lineitem(l_quantity)  WITH SAMPLE 20 PERCENT"
+        set sql(9) "create statistics li_receiptdate on lineitem(l_receiptdate)  WITH SAMPLE 20 PERCENT" 
+        set sql(10) "create statistics LINEITEM_L_RETURNFLAG on LINEITEM(L_RETURNFLAG)  WITH SAMPLE 20 PERCENT"
+        set sql(11) "create statistics LINEITEM_L_SHIPDATE on LINEITEM(L_SHIPDATE)  WITH SAMPLE 20 PERCENT"
+        set sql(12) "create statistics LINEITEM_L_SHIPINSTRUCT on LINEITEM(L_SHIPINSTRUCT)  WITH SAMPLE 20 PERCENT"
+        set sql(13) "create statistics LINEITEM_L_SHIPMODE on LINEITEM(L_SHIPMODE)  WITH SAMPLE 20 PERCENT"
+        set sql(14) "create statistics LINEITEM_L_SUPPKEY on LINEITEM(L_SUPPKEY)  WITH SAMPLE 20 PERCENT"
+        set sql(15) "create statistics LINEITEM_L_TAX on LINEITEM(L_TAX)  WITH SAMPLE 20 PERCENT"
+        set sql(16) "create statistics ORDERS_O_CLERK on ORDERS(O_CLERK) WITH FULLSCAN"
+        set sql(17) "create statistics ORDERS_O_CUSTKEY on ORDERS(O_CUSTKEY) WITH FULLSCAN"
+        set sql(18) "create statistics ORDERS_O_ORDERDATE on ORDERS(O_ORDERDATE) WITH FULLSCAN"
+        set sql(19) "create statistics ORDERS_O_ORDERKEY on ORDERS(O_ORDERKEY) WITH FULLSCAN"
+        set sql(20) "create statistics ORDERS_O_ORDERPRIORITY on ORDERS(O_ORDERPRIORITY) WITH FULLSCAN"
+        set sql(21) "create statistics ORDERS_O_ORDERSTATUS on ORDERS(O_ORDERSTATUS) WITH FULLSCAN"
+        set sql(22) "create statistics ORDERS_O_SHIPPRIORITY on ORDERS(O_SHIPPRIORITY) WITH FULLSCAN"
+        set sql(23) "create statistics ORDERS_O_TOTALPRICE on ORDERS(O_TOTALPRICE) WITH FULLSCAN"
+        set sql(24) "create statistics CUSTOMER_C_ACCTBAL on CUSTOMER(C_ACCTBAL) WITH FULLSCAN"
+        set sql(25) "create statistics CUSTOMER_C_ADDRESS on CUSTOMER(C_ADDRESS) WITH FULLSCAN"
+        set sql(26) "create statistics CUSTOMER_C_CUSTKEY on CUSTOMER(C_CUSTKEY) WITH FULLSCAN"
+        set sql(27) "create statistics CUSTOMER_C_MKTSEGMENT on CUSTOMER(C_MKTSEGMENT) WITH FULLSCAN"
+        set sql(28) "create statistics CUSTOMER_C_NAME on CUSTOMER(C_NAME) WITH FULLSCAN"
+        set sql(29) "create statistics CUSTOMER_C_NATIONKEY on CUSTOMER(C_NATIONKEY) WITH FULLSCAN"
+        set sql(30) "create statistics CUSTOMER_C_PHONE on CUSTOMER(C_PHONE) WITH FULLSCAN"
+        set sql(31) "create statistics SUPPLIER_S_ACCTBAL on SUPPLIER(S_ACCTBAL) WITH FULLSCAN"
+        set sql(32) "create statistics SUPPLIER_S_ADDRESS on SUPPLIER(S_ADDRESS) WITH FULLSCAN"
+        set sql(33) "create statistics SUPPLIER_S_NAME on SUPPLIER(S_NAME) WITH FULLSCAN"
+        set sql(34) "create statistics SUPPLIER_S_NATIONKEY on SUPPLIER(S_NATIONKEY) WITH FULLSCAN"
+        set sql(35) "create statistics SUPPLIER_S_PHONE on SUPPLIER(S_PHONE) WITH FULLSCAN"
+        set sql(36) "create statistics SUPPLIER_S_SUPPKEY on SUPPLIER(S_SUPPKEY) WITH FULLSCAN"
+        set sql(37) "create statistics PARTSUPP_PS_AVAILQTY on PARTSUPP(PS_AVAILQTY) WITH FULLSCAN"
+        set sql(38) "create statistics PARTSUPP_PS_PARTKEY on PARTSUPP(PS_PARTKEY) WITH FULLSCAN"
+        set sql(39) "create statistics PARTSUPP_PS_SUPPKEY on PARTSUPP(PS_SUPPKEY) WITH FULLSCAN"
+        set sql(40) "create statistics PARTSUPP_PS_SUPPLYCOST on PARTSUPP(PS_SUPPLYCOST) WITH FULLSCAN"
+        set sql(41) "create statistics PART_P_BRAND on PART(P_BRAND) WITH FULLSCAN"
+        set sql(42) "create statistics PART_P_CONTAINER on PART(P_CONTAINER) WITH FULLSCAN"
+        set sql(43) "create statistics PART_P_MFGR on PART(P_MFGR) WITH FULLSCAN"
+        set sql(44) "create statistics PART_P_NAME on PART(P_NAME) WITH FULLSCAN"
+        set sql(45) "create statistics PART_P_PARTKEY on PART(P_PARTKEY) WITH FULLSCAN"
+        set sql(46) "create statistics PART_P_RETAILPRICE on PART(P_RETAILPRICE) WITH FULLSCAN"
+        set sql(47) "create statistics PART_P_SIZE on PART(P_SIZE) WITH FULLSCAN"
+        set sql(48) "create statistics PART_P_TYPE on PART(P_TYPE) WITH FULLSCAN"
+        set sql(49) "create statistics REGION_R_NAME on REGION(R_NAME) WITH FULLSCAN"
+        set sql(50) "create statistics REGION_R_REGIONKEY on REGION(R_REGIONKEY) WITH FULLSCAN"
+        set sql(51) "create statistics NATION_N_NAME on NATION(N_NAME) WITH FULLSCAN"
+        set sql(52) "create statistics NATION_N_NATIONKEY on NATION(N_NATIONKEY) WITH FULLSCAN"
+        set sql(53) "create statistics NATION_N_REGIONKEY on NATION(N_REGIONKEY) WITH FULLSCAN"
+        set sql(54) "create statiSTICS NATION_N_COMMENT ON NATION(N_COMMENT)"
+        set sql(55) "create statiSTICS REGION_R_COMMENT ON REGION(R_COMMENT)"
+        set sql(56) "create statiSTICS PART_P_COMMENT ON PART(P_COMMENT)"
+        set sql(57) "create statiSTICS PARTSUPP_PS_COMMENT ON PARTSUPP(PS_COMMENT)"
+        set sql(58) "create statiSTICS SUPPLIER_S_COMMENT ON SUPPLIER(S_COMMENT)"
+        set sql(59) "create statiSTICS ORDERS_O_COMMENT ON ORDERS(O_COMMENT)"
+        set sql(60) "create statiSTICS LINEITEM_L_COMMENT ON LINEITEM(L_COMMENT)"
+        for { set i 1 } { $i <= 60 } { incr i } {
             $odbc evaldirect $sql($i)
         }
     }
@@ -563,7 +629,6 @@ proc mk_supp_bcp { odbc start_rows end_rows } {
     upvar 2 pwd pass
     upvar 2 server serv
     upvar 2 db db
-
     # create file for supply table
     set tmp_env $::env(TMP)
     set SupplierFilePath "$tmp_env/SupplierTable$start_rows.csv"
@@ -686,7 +751,6 @@ proc mk_customer_bcp { odbc start_rows end_rows } {
     upvar 2 pwd pass
     upvar 2 server serv
     upvar 2 db db
-
     # create file for customer table
     set tmp_env $::env(TMP)
     set CustomerFilePath "$tmp_env/CustomerTable$start_rows.csv"
@@ -781,7 +845,6 @@ proc mk_part_bcp { odbc start_rows end_rows scale_factor } {
     upvar 2 pwd pass
     upvar 2 server serv
     upvar 2 db db
-
     # create file for part and part supply tables
     set tmp_env $::env(TMP)
     set PartFilePath "$tmp_env/PartFilePath$start_rows.csv"
@@ -929,7 +992,6 @@ proc mk_order_bcp { odbc w_id start_rows end_rows upd_num scale_factor } {
     upvar 2 pwd pass
     upvar 2 server serv
     upvar 2 db db
-
     # create file for order and line item tables
     set tmp_env $::env(TMP)
     set OrderPath "$tmp_env/OrderPath$w_id.csv"
@@ -1168,7 +1230,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
-proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp partition_orders_and_lineitems} {
+proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp partition_orders_and_lineitems advanced_stats} {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -1315,14 +1377,14 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         CreateIndexes odbc $maxdop $colstore $use_bcp $partition_orders_and_lineitems
-        UpdateStatistics odbc $db $azure
+        UpdateStatistics odbc $db $azure $advanced_stats
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         odbc close
         return
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_advanced_stats"
     } else { return }
 }
 
@@ -1372,6 +1434,7 @@ set update_sets $mssqls_update_sets ;#Number of sets of refresh function to comp
 set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$mssqls_refresh_verbose\" ;#report refresh function activity
 set partition_orders_and_lineitems \"$mssqls_tpch_partition_orders_and_lineitems\" ;#Order and Lineitem Tables are partitioned
+set advanced_stats \"$mssqls_tpch_advanced_stats\" ;#Create advanced statistics
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1892,13 +1955,13 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $partition_orders_and_lineitems
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
         do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $partition_orders_and_lineitems
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
     } else {
         switch $myposition {
             1 {
-                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $partition_orders_and_lineitems
+                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
             }
             default {
                 do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]  

@@ -680,7 +680,7 @@ proc configmssqlstpch {option} {
     #set variables to values in dict
     setlocaltpchvars $configmssqlserver
     
-    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose mssqls_tpch_use_bcp $mssqls_tpch_use_bcp mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_partition_orders_and_lineitems} ]
+    set tpchfields [ dict create tpch {mssqls_tpch_dbase {.mssqlstpch.f1.e6 get} mssqls_maxdop {.mssqlstpch.f1.e6a get} mssqls_total_querysets {.mssqlstpch.f1.e10 get} mssqls_update_sets {.mssqlstpch.f1.e14 get} mssqls_trickle_refresh {.mssqlstpch.f1.e15 get} mssqls_colstore $mssqls_colstore mssqls_scale_fact $mssqls_scale_fact mssqls_num_tpch_threads $mssqls_num_tpch_threads mssqls_raise_query_error $mssqls_raise_query_error mssqls_verbose $mssqls_verbose mssqls_refresh_on $mssqls_refresh_on mssqls_refresh_verbose $mssqls_refresh_verbose mssqls_tpch_use_bcp $mssqls_tpch_use_bcp mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_partition_orders_and_lineitems mssqls_tpch_advanced_stats $mssqls_tpch_advanced_stats} ]
 
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
@@ -901,6 +901,14 @@ proc configmssqlstpch {option} {
         ttk::checkbutton $Name -text "" -variable mssqls_tpch_partition_orders_and_lineitems -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 18 -sticky e
         grid $Name -column 1 -row 18 -sticky w
+        
+        set Prompt $Parent.f1.p12
+        set Name $Parent.f1.e12
+        ttk::label $Prompt -text "Create Advanced Statistics:"
+        ttk::checkbutton $Name -text "" -variable mssqls_tpch_advanced_stats -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19 -sticky w
+
         
     }
     if { $option eq "all" || $option eq "drive" } {
