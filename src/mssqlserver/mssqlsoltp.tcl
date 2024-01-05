@@ -1286,7 +1286,21 @@ proc bcpComm { tableName filePath uid pwd server} {
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t ","
     } else {
+    upvar #0 tcl_platform tcl_platform
+	    if {$tcl_platform(platform) == "windows"} {
+#bcp on Windows uses ODBC driver 17 that does not support the -u option and may need updating when bcp driver changes
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
+	} else { 
+#bcp on Linux can use ODBC driver 18 and trust the server certificate with -u option
+    upvar 3 trust_cert trust_cert
+    upvar 3 odbc_driver odbc_driver
+    regexp {ODBC\ Driver\ ([0-9]+)\ for\ SQL\ Server} $odbc_driver all odbc_version 
+    if { $trust_cert && $odbc_version >= 18 } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -u -c  -t ","
+		} else {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
+	   }
+	}
     }
 }
 
