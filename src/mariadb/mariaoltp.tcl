@@ -1103,7 +1103,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
 }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user $maria_pass $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu" 
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu" 
     } else {
         return 
     }
@@ -1126,7 +1126,7 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set Maria connect string
-                set $id [ list $maria_host $maria_port $maria_socket $maria_ssl_options $maria_user $maria_pass $maria_dbase ]
+                set $id [ list $maria_host $maria_port $maria_socket $maria_ssl_options $maria_user [ quotemeta $maria_pass ] $maria_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
@@ -1691,7 +1691,7 @@ set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
 set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
-set password \"$maria_pass\" ;# Password for the Maria user
+set password \"[ quotemeta $maria_pass ]\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
 set prepare \"$maria_prepared\" ;# Use prepared statements
 #EDITABLE OPTIONS##################################################
@@ -2028,7 +2028,7 @@ set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
 set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
-set password \"$maria_pass\" ;# Password for the Maria user
+set password \"[ quotemeta $maria_pass ]\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
 set prepare \"$maria_prepared\" ;# Use prepared statements
 set purge \"$maria_purge\" ;# Purge undo when complete
@@ -2547,7 +2547,7 @@ set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
 set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_user\" ;# Maria user
-set password \"$maria_pass\" ;# Password for the Maria user
+set password \"[ quotemeta $maria_pass ]\" ;# Password for the Maria user
 set db \"$maria_dbase\" ;# Database containing the TPC Schema
 set prepare \"$maria_prepared\" ;# Use prepared statements
 set purge \"$maria_purge\" ;# Purge undo when complete

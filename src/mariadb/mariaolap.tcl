@@ -718,7 +718,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_scale_fact $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_scale_fact $maria_tpch_user [ quotemeta $maria_tpch_pass ] $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads"
     } else { return }
 }
 
@@ -752,7 +752,7 @@ set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
 set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_tpch_user\" ;# Maria user
-set password \"$maria_tpch_pass\" ;# Password for the Maria user
+set password \"[ quotemeta $maria_tpch_pass ]\" ;# Password for the Maria user
 set db \"$maria_tpch_dbase\" ;# Database containing the TPC Schema
 set refresh_on \"$maria_refresh_on\" ;#First User does refresh function
 set update_sets $maria_update_sets ;#Number of sets of refresh function to complete
@@ -1376,7 +1376,7 @@ set port \"$maria_port\" ;# Port of the Maria Server, defaults to 3306
 set socket \"$maria_socket\" ;# Maria Socket for local connections
 set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_tpch_user\" ;# Maria user
-set password \"$maria_tpch_pass\" ;# Password for the Maria user
+set password \"[ quotemeta $maria_tpch_pass ]\" ;# Password for the Maria user
 set db \"$maria_tpch_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -1610,7 +1610,7 @@ proc drop_schema { host port socket ssl_options user password dbase } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_tpch_user $maria_tpch_pass $maria_tpch_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_tpch_user [ quotemeta $maria_tpch_pass ] $maria_tpch_dbase"
     } else { return }
 }
 
