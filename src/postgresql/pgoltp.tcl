@@ -2197,7 +2197,7 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_count_ware $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase $pg_tspace $pg_user $pg_pass $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_count_ware $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_tspace $pg_user [ quotemeta $pg_pass ] $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu"
     } else { return }
 }
 
@@ -2244,7 +2244,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set PostgreSQL connect string
-                set $id [ list $pg_host $pg_port $pg_sslmode $pg_user $pg_pass $pg_dbase ]
+                set $id [ list $pg_host $pg_port $pg_sslmode $pg_user [ quotemeta $pg_pass ] $pg_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
@@ -2515,7 +2515,7 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_user\" ;# PostgreSQL user
-set password \"$pg_pass\" ;# Password for the PostgreSQL user
+set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -2824,10 +2824,10 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set superuser \"$pg_superuser\" ;# Superuser privilege user
-set superuser_password \"$pg_superuserpass\" ;# Password for Superuser
+set superuser_password \"[ quotemeta $pg_superuserpass ]\" ;# Password for Superuser
 set default_database \"$pg_defaultdbase\" ;# Default Database for Superuser
 set user \"$pg_user\" ;# PostgreSQL user
-set password \"$pg_pass\" ;# Password for the PostgreSQL user
+set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -3247,10 +3247,10 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set superuser \"$pg_superuser\" ;# Superuser privilege user
-set superuser_password \"$pg_superuserpass\" ;# Password for Superuser
+set superuser_password \"[ quotemeta $pg_superuserpass ]\" ;# Password for Superuser
 set default_database \"$pg_defaultdbase\" ;# Default Database for Superuser
 set user \"$pg_user\" ;# PostgreSQL user
-set password \"$pg_pass\" ;# Password for the PostgreSQL user
+set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
 set async_client $pg_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $pg_async_verbose;# Report activity of asynchronous clients
@@ -3764,6 +3764,6 @@ proc drop_schema { host port sslmode user superuser superuser_password default_d
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase"
     } else { return }
 }
