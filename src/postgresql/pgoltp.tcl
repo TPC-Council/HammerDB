@@ -2244,7 +2244,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set PostgreSQL connect string
-                set $id [ list $pg_host $pg_port $pg_sslmode $pg_user [ quotemeta $pg_pass ] $pg_dbase ]
+                set $id [ list $pg_host $pg_port $pg_sslmode $pg_user $pg_pass $pg_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection

@@ -2007,7 +2007,7 @@ proc insert_mssqlsconnectpool_drivescript { testtype timedtype } {
                     set mssqls_odbc_driver $mssqls_linux_odbc
                     set mssqls_authentication $mssqls_linux_authent 
                 }
-                set $id [ list $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert ]
+                set $id [ list $mssqls_server $mssqls_port $mssqls_odbc_driver $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert ]
             }
         }
         #For the connect keys c1, c2 etc make a connection

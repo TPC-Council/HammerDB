@@ -1126,7 +1126,7 @@ proc insert_mariaconnectpool_drivescript { testtype timedtype } {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
                 #set Maria connect string
-                set $id [ list $maria_host $maria_port $maria_socket $maria_ssl_options $maria_user [ quotemeta $maria_pass ] $maria_dbase ]
+                set $id [ list $maria_host $maria_port $maria_socket $maria_ssl_options $maria_user $maria_pass $maria_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
