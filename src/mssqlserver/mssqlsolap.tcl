@@ -1397,7 +1397,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_advanced_stats"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_advanced_stats"
     } else { return }
 }
 
@@ -1436,7 +1436,7 @@ set server {$mssqls_server};# Microsoft SQL Server Database Server
 set port \"$mssqls_port\";# Microsoft SQL Server Port
 set odbc_driver {$mssqls_odbc_driver};# ODBC Driver
 set uid \"$mssqls_uid\";#User ID for SQL Server Authentication
-set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
+set pwd \"[ quotemeta $mssqls_pass ]\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_tpch_dbase\";# Database containing the TPC Schema
@@ -2075,6 +2075,6 @@ return
 }
 }
 }
-	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
+	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }

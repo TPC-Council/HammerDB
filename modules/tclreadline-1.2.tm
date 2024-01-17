@@ -909,9 +909,26 @@ proc TclReadLine::tclline {} {
 
             set trailing [string range $CMDLINE $x end]
             set CMDLINE [string replace $CMDLINE $x end]
+#if setting a password quote special 
+if {[string match diset*pass* $CMDLINE]} {
+	    set quotechar [ quotemeta $char ]
+if { $quotechar eq $char } { 
+#append char only
             append CMDLINE $char
             append CMDLINE $trailing
             incr CMDLINE_CURSOR
+		} else {
+#append escaped special char
+            append CMDLINE $quotechar
+            append CMDLINE $trailing
+            incr CMDLINE_CURSOR 2
+		}
+#not setting a password
+		} else {
+            append CMDLINE $char
+            append CMDLINE $trailing
+            incr CMDLINE_CURSOR
+		}
         } elseif {$char == "\t"} {
             handleCompletion
         } elseif {$char == "\n" || $char == "\r"} {

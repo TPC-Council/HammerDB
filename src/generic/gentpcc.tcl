@@ -86,3 +86,9 @@ proc setlocaltpccvars { configdict } {
                     set $val [ dict get $attributes $val ]
     }}}}
 }
+
+proc quotemeta {str} {
+    regsub -all -- {[][#$\;{}]} $str {\\\0} str
+    regsub -all {\\\\} $str "\\" str
+   return $str
+}

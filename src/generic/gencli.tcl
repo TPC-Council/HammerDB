@@ -581,6 +581,11 @@ proc diset { args } {
         set dct [ lindex $args 0 ]
         set key2 [ lindex $args 1 ]
         set val [ lindex $args 2 ]
+	if { [ string match *pass* [ lindex $args 1 ]] } {
+        set val [ quotemeta [ lindex $args 2 ]]
+                } else {
+        set val [ lindex $args 2 ]
+        }
         upvar #0 dbdict dbdict
         foreach { key } [ dict keys $dbdict ] {
             set dictname config$key

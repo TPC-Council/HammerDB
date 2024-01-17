@@ -152,5 +152,5 @@ proc tcount_mssqls {bm interval masterthread} {
     }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $version {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_encrypt_connection $mssqls_trust_server_cert $db $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $version {$mssqls_server} $mssqls_port $mssqls_authentication {$mssqls_odbc_driver} $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_encrypt_connection $mssqls_trust_server_cert $db $interval $old tce $bm }}]
 } 
