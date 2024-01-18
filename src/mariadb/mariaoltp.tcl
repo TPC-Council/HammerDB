@@ -3236,6 +3236,6 @@ proc drop_schema { host port socket ssl_options user password dbase } {
     return
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user $maria_pass $maria_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user [ quotemeta $maria_pass ] $maria_dbase"
     } else { return }
 }
