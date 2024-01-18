@@ -968,7 +968,7 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $db2_dbase $db2_user $db2_pass $db2_count_ware $db2_partition $db2_num_vu $db2_def_tab \{$db2_tab_list\}"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $db2_dbase $db2_user [ quotemeta $db2_pass ] $db2_count_ware $db2_partition $db2_num_vu $db2_def_tab \{$db2_tab_list\}"
     } else { return }
 }
 
@@ -1273,7 +1273,7 @@ set total_iterations $db2_total_iterations ;# Number of transactions before logg
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 Error (true or false)
 set KEYANDTHINK \"$db2_keyandthink\" ;# Time for user thinking and keying (true or false)
 set user \"$db2_user\" ;# Db2 user
-set password \"$db2_pass\" ;# Password for the Db2 user
+set password \"[ quotemeta $db2_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -1574,7 +1574,7 @@ set duration $db2_duration;  # Duration in minutes before second Transaction Cou
 set monreportinterval $db2_monreport; #Portion of duration to capture monreport
 set mode \"$opmode\" ;# HammerDB operational mode
 set user \"$db2_user\" ;# Db2 user
-set password \"$db2_pass\" ;# Password for the Db2 user
+set password \"[ quotemeta $db2_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -1937,7 +1937,7 @@ set duration $db2_duration;  # Duration in minutes before second Transaction Cou
 set monreportinterval $db2_monreport; #Portion of duration to capture monreport
 set mode \"$opmode\" ;# HammerDB operational mode
 set user \"$db2_user\" ;# Db2 user
-set password \"$db2_pass\" ;# Password for the Db2 user
+set password \"[ quotemeta $db2_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 set async_client $db2_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $db2_async_verbose;# Report activity of asynchronous clients
