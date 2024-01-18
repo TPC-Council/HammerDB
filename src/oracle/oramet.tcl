@@ -1878,7 +1878,7 @@ namespace eval oramet {
         setlocaltcountvars $configoracle 0
         set public(connected) 0
         set public(un) $system_user
-        set public(pw) $system_password
+        set public(pw) [ quotemeta $system_password ]
         set public(db) $instance
         set remote "@$public(db)"
         set con $public(un)/$public(pw)$remote
