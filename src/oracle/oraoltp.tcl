@@ -1878,7 +1878,7 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $system_user $system_password $instance  $count_ware $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $partition $tpcc_tt_compat $hash_clusters $num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $system_user [ quotemeta $system_password ] $instance  $count_ware $tpcc_user [ quotemeta $tpcc_pass ] $tpcc_def_tab $tpcc_ol_tab $tpcc_def_temp $partition $tpcc_tt_compat $hash_clusters $num_vu"
     } else { return }
 }
 
@@ -2157,7 +2157,7 @@ set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
 set KEYANDTHINK \"$keyandthink\" ;# Time for user thinking and keying (true or false)
-set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
+set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect string for tpc-c user
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -2445,8 +2445,8 @@ set rampup $rampup;  # Rampup time in minutes before first snapshot is taken
 set duration $duration;  # Duration in minutes before second AWR snapshot is taken
 set mode \"$opmode\" ;# HammerDB operational mode
 set timesten \"$tpcc_tt_compat\" ;# Database is TimesTen
-set systemconnect $system_user/$system_password@$instance ;# Oracle connect string for system user
-set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
+set systemconnect $system_user/[ quotemeta $system_password ]@$instance ;# Oracle connect string for system user
+set connect $tpcc_user/[ quotemeta $tpcc_pass]@$instance ;# Oracle connect string for tpc-c user
 #EDITABLE OPTIONS##################################################
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -2851,8 +2851,8 @@ set rampup $rampup;  # Rampup time in minutes before first snapshot is taken
 set duration $duration;  # Duration in minutes before second AWR snapshot is taken
 set mode \"$opmode\" ;# HammerDB operational mode
 set timesten \"$tpcc_tt_compat\" ;# Database is TimesTen
-set systemconnect $system_user/$system_password@$instance ;# Oracle connect string for system user
-set connect $tpcc_user/$tpcc_pass@$instance ;# Oracle connect string for tpc-c user
+set systemconnect $system_user/[ quotemeta $system_password ]@$instance ;# Oracle connect string for system user
+set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect string for tpc-c user
 set async_client $async_client;# Number of asynchronous clients per Vuser
 set async_verbose $async_verbose;# Report activity of asynchronous clients
 set async_delay $async_delay;# Delay in ms between logins of asynchronous clients
@@ -3338,6 +3338,6 @@ proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } 
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc $system_user $system_password $instance $tpcc_user $hash_clusters"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc $system_user [ quotemeta $system_password ] $instance $tpcc_user $hash_clusters"
     } else { return }
 }

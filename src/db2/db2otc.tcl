@@ -130,5 +130,5 @@ proc tcount_db2 {bm interval masterthread} {
     setlocaltcountvars $configdb2 1
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $db2_user $db2_pass $db2_dbase $db2_tpch_user $db2_tpch_pass $db2_tpch_dbase $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $db2_user [ quotemeta $db2_pass ] $db2_dbase $db2_tpch_user [ quotemeta $db2_tpch_pass ] $db2_tpch_dbase $interval $old tce $bm }}]
 } 

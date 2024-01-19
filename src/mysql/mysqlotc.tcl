@@ -166,5 +166,5 @@ proc tcount_mysql {bm interval masterthread} {
     if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user $mysql_pass $mysql_tpch_user $mysql_tpch_pass $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $interval $old tce $bm }}]
 } 

@@ -694,7 +694,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
     } else { return }
 }
 
@@ -726,7 +726,7 @@ set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
-set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
+set password \"[ quotemeta $mysql_tpch_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
 set refresh_on \"$mysql_refresh_on\" ;#First User does refresh function
 set update_sets $mysql_update_sets ;#Number of sets of refresh function to complete
@@ -1376,7 +1376,7 @@ set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
-set password \"$mysql_tpch_pass\" ;# Password for the MySQL user
+set password \"[ quotemeta $mysql_tpch_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -1601,6 +1601,6 @@ proc drop_schema { host port socket ssl_options user password dbase } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user $mysql_tpch_pass $mysql_tpch_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase"
     } else { return }
 }

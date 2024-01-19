@@ -1084,7 +1084,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_count_ware $mysql_user $mysql_pass $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_history_pk $mysql_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_count_ware $mysql_user [ quotemeta $mysql_pass ] $mysql_dbase $mysql_storage_engine $mysql_partition $mysql_history_pk $mysql_num_vu"
     } else { return }
 }
 
@@ -1669,7 +1669,7 @@ set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
-set password \"$mysql_pass\" ;# Password for the MySQL user
+set password \"[ quotemeta $mysql_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 set prepare \"$mysql_prepared\" ;# Use prepared statements
 #EDITABLE OPTIONS##################################################
@@ -1993,7 +1993,7 @@ set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
-set password \"$mysql_pass\" ;# Password for the MySQL user
+set password \"[ quotemeta $mysql_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 set prepare \"$mysql_prepared\" ;# Use prepared statements
 #EDITABLE OPTIONS##################################################
@@ -2364,7 +2364,7 @@ set port \"$mysql_port\" ;# Port of the MySQL Server, defaults to 3306
 set socket \"$mysql_socket\" ;# MySQL Socket for local connections
 set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_user\" ;# MySQL user
-set password \"$mysql_pass\" ;# Password for the MySQL user
+set password \"[ quotemeta $mysql_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 set prepare \"$mysql_prepared\" ;# Use prepared statements
 set async_client $mysql_async_client;# Number of asynchronous clients per Vuser
@@ -2902,6 +2902,6 @@ proc drop_schema { host port socket ssl_options user password dbase } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user $mysql_pass $mysql_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_dbase"
     } else { return }
 }

@@ -910,7 +910,7 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $system_user $system_password $instance $scale_fact $tpch_user $tpch_pass $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $system_user $system_password $instance $scale_fact $tpch_user [ quotemeta $tpch_pass ] $tpch_def_tab $tpch_def_temp $tpch_tt_compat $num_tpch_threads"
     } else { return }
 }
 
@@ -934,7 +934,7 @@ set VERBOSE \"$verbose\" ;# Show query text and output
 set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $scale_fact ;#Scale factor of the tpc-h schema
 set timesten \"$tpch_tt_compat\" ;# Database is TimesTen
-set connect $tpch_user/$tpch_pass@$instance ;# Oracle connect string for tpc-h user
+set connect $tpch_user/[ quotemeta $tpch_pass ]@$instance ;# Oracle connect string for tpc-h user
 set refresh_on \"$refresh_on\" ;#First User does refresh function
 set update_sets $update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $trickle_refresh ;#time delay (ms) to trickle refresh function
@@ -1569,7 +1569,7 @@ set total_querysets $total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
 set VERBOSE \"$verbose\" ;# Show query text and output
 set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
-set connect $tpch_user/$tpch_pass@$instance ;# Oracle connect string for tpc-h user
+set connect $tpch_user/[ quotemeta $tpch_pass ]@$instance ;# Oracle connect string for tpc-h user
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1720,6 +1720,6 @@ proc drop_tpch { system_user system_password instance tpch_user } {
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch $system_user $system_password $instance $tpch_user"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch $system_user [ quotemeta $system_password ] $instance $tpch_user"
     } else { return }
 }

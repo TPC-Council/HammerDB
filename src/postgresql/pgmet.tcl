@@ -1928,17 +1928,17 @@ namespace eval pgmet {
         set public(sslmode) $pg_sslmode
         if { $bm eq "TPC-C" } {
             set public(suser) $pg_superuser
-            set public(suser_pw) $pg_superuserpass
+            set public(suser_pw) [ quotemeta $pg_superuserpass ]
             set public(default_db) $pg_defaultdbase
             set public(user) $pg_user
-            set public(user_pw) $pg_pass
+            set public(user_pw) [ quotemeta $pg_pass ]
             set public(tproc_db) $pg_dbase
         } else {
             set public(suser) $pg_tpch_superuser
-            set public(suser_pw) $pg_tpch_superuserpass
+            set public(suser_pw) [ quotemeta $pg_tpch_superuserpass ]
             set public(default_db) $pg_tpch_defaultdbase
             set public(user) $pg_tpch_user
-            set public(user_pw) $pg_tpch_pass
+            set public(user_pw) [ quotemeta $pg_tpch_pass ]
             set public(tproc_db) $pg_tpch_dbase
         }
 

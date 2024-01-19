@@ -1873,12 +1873,11 @@ namespace eval oramet {
 
     proc connect_to_oracle {} {
         global public masterthread dbmon_threadID
-
         upvar #0 configoracle configoracle
         setlocaltcountvars $configoracle 0
         set public(connected) 0
         set public(un) $system_user
-        set public(pw) $system_password
+        set public(pw) [ quotemeta $system_password ]
         set public(db) $instance
         set remote "@$public(db)"
         set con $public(un)/$public(pw)$remote
@@ -1889,7 +1888,7 @@ namespace eval oramet {
             return 1
         }
         #Do logon in thread
-        thread::send  -async $dbmon_threadID "ora_logon $public(parent) $con public(handle)"
+        eval [subst -nocommands {thread::send -async $dbmon_threadID {ora_logon $public(parent) $con public(handle)}}]
         test_connect
         if { [ info exists dbmon_threadID ] } {
             tsv::set application themonitor $dbmon_threadID
@@ -1915,7 +1914,12 @@ namespace eval oramet {
                 catch {thread::release}
             }
             proc ora_logon { parent unpw var } {
-                thread::send $parent "putsm \"Metrics connecting to $unpw\""
+	    	proc quotemeta {str} {
+                regsub -all -- {[][#$\;{}]} $str {\\\0} str
+                regsub -all {\\\\} $str "\\" str
+                return $str
+		}
+                thread::send $parent "putsm \"Metrics connecting to [ quotemeta $unpw ]\""
                 set cur_proc ora_logon 
                 set handle none
                 set err "unknown"
@@ -2084,9 +2088,6 @@ namespace eval oramet {
             thread_init    
         }
         set con $public(un)/$public(pw)$remote
-
-        puts "ora_logon $public(parent) $con public(handle)"
-
         display_tile $public(output)
         test_connect
     }
@@ -3366,6 +3367,7 @@ Order by tcnt, ash.sql_id, ash.cnt
         } else {
             set public(ORACLE_HOME) $env(HOME)
         }
+
         connect_to_oracle
     }
 }

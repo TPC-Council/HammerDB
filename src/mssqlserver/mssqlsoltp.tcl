@@ -1983,7 +1983,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_use_bcp"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_count_ware $mssqls_dbase $mssqls_imdb $mssqls_bucket $mssqls_durability $mssqls_num_vu $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_use_bcp"
     } else { return }
 }
 
@@ -2274,7 +2274,7 @@ set server \{$mssqls_server\};# Microsoft SQL Server Database Server
 set port \"$mssqls_port\";# Microsoft SQL Server Port 
 set odbc_driver \{$mssqls_odbc_driver\};# ODBC Driver
 set uid \"$mssqls_uid\";#User ID for SQL Server Authentication
-set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
+set pwd \"[ quotemeta $mssqls_pass ]\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
@@ -2631,7 +2631,7 @@ set server \{$mssqls_server\};# Microsoft SQL Server Database Server
 set port \"$mssqls_port\";# Microsoft SQL Server Port 
 set odbc_driver \{$mssqls_odbc_driver\};# ODBC Driver
 set uid \"$mssqls_uid\";#User ID for SQL Server Authentication
-set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
+set pwd \"[ quotemeta $mssqls_pass ]\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
@@ -3046,7 +3046,7 @@ set server \{$mssqls_server\};# Microsoft SQL Server Database Server
 set port \"$mssqls_port\";# Microsoft SQL Server Port 
 set odbc_driver \{$mssqls_odbc_driver\};# ODBC Driver
 set uid \"$mssqls_uid\";#User ID for SQL Server Authentication
-set pwd \"$mssqls_pass\";#Password for SQL Server Authentication
+set pwd \"[ quotemeta $mssqls_pass ]\";#Password for SQL Server Authentication
 set tcp \"$mssqls_tcp\";#Specify TCP Protocol
 set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_dbase\";# Database containing the TPC Schema
@@ -3569,6 +3569,6 @@ return
 }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid $mssqls_pass $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }

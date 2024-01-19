@@ -169,5 +169,5 @@ proc tcount_maria {bm interval masterthread} {
     if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user $maria_pass $maria_tpch_user $maria_tpch_pass $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user [ quotemeta $maria_pass ] $maria_tpch_user [ quotemeta $maria_tpch_pass ] $interval $old tce $bm }}]
 } 

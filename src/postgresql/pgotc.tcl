@@ -134,5 +134,5 @@ proc tcount_pg {bm interval masterthread} {
     setlocaltcountvars $configpostgresql 1
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_superuser $pg_superuserpass $pg_defaultdbase $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $interval $old tce $bm }}] 
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $interval $old tce $bm }}] 
 } 

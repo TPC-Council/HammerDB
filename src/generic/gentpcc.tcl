@@ -86,3 +86,12 @@ proc setlocaltpccvars { configdict } {
                     set $val [ dict get $attributes $val ]
     }}}}
 }
+
+proc quotemeta {str} {
+global quote_passwords
+if { $quote_passwords } {
+regsub -all -- {[][#$\;{}]} $str {\\\0} str
+regsub -all {\\\\} $str "\\" str
+	}
+   return $str
+}

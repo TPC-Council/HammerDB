@@ -718,7 +718,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_sslmode $pg_scale_fact $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user $pg_tpch_pass $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_sslmode $pg_scale_fact $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user [ quotemeta $pg_tpch_pass ] $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
     } else { return }
 }
 
@@ -746,7 +746,7 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_tpch_user\" ;# PostgreSQL user
-set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
+set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
 set refresh_on \"$pg_refresh_on\" ;#First User does refresh function
 set update_sets $pg_update_sets ;#Number of sets of refresh function to complete
@@ -1369,7 +1369,7 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_tpch_user\" ;# PostgreSQL user
-set password \"$pg_tpch_pass\" ;# Password for the PostgreSQL user
+set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
 #EDITABLE OPTIONS##################################################
 "
@@ -1578,6 +1578,6 @@ proc drop_schema { host port sslmode user superuser superuser_password default_d
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser $pg_tpch_superuserpass $pg_tpch_defaultdbase $pg_tpch_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase"
     } else { return }
 }

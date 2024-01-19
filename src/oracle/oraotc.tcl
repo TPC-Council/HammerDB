@@ -165,7 +165,7 @@ proc tcount_ora {bm interval masterthread} {
     if {[dict exists $configoracle tpch tpch_tt_compat ]} {
         set tpch_tt_compat [ dict get $configoracle tpch tpch_tt_compat ]
     } else { set tpch_tt_compat "false" }
-    set connectstr $system_user/$system_password@$instance
+    set connectstr $system_user/[ quotemeta $system_password ]@$instance
     set old 0
     #Call Transaction Counter to start read_more loop
     eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $connectstr $interval $old tce $rac $bm $tpcc_tt_compat $tpch_tt_compat }}]

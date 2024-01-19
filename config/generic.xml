@@ -10,6 +10,7 @@
    </sqlitedb>
    <code_highlight>
 	<highlight>true</highlight>
+	<quote_passwords>true</quote_passwords>
    </code_highlight>
    <benchmark>
 	<rdbms>Oracle</rdbms>

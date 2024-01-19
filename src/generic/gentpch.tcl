@@ -9,3 +9,12 @@ proc setlocaltpchvars { configdict } {
                     set $val [ dict get $attributes $val ]
     }}}}
 }
+#if quotemeta doesn't exist from tpcc create it for tpch
+if { [llength [info procs quotemeta]] eq 0} {
+global quote_passwords
+if { $quote_passwords } {
+regsub -all -- {[][#$\;{}]} $str {\\\0} str
+regsub -all {\\\\} $str "\\" str
+        }
+   return $str
+}

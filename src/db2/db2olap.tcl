@@ -634,7 +634,7 @@ proc do_tpch { dbname scale_fact user password tpch_def_tab column_based num_vu 
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $db2_tpch_dbase $db2_scale_fact $db2_tpch_user $db2_tpch_pass $db2_tpch_def_tab $db2_tpch_organizeby $db2_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $db2_tpch_dbase $db2_scale_fact $db2_tpch_user [ quotemeta $db2_tpch_pass ] $db2_tpch_def_tab $db2_tpch_organizeby $db2_num_tpch_threads"
     } else { return }
 }
 
@@ -659,7 +659,7 @@ set VERBOSE \"$db2_verbose\" ;# Show query text and output
 set degree_of_parallel \"$db2_degree_of_parallel\" ;# Degree of Parallelism
 set scale_factor $db2_scale_fact ;#Scale factor of the tpc-h schema
 set user \"$db2_tpch_user\" ;# Db2 user
-set password \"$db2_tpch_pass\" ;# Password for the Db2 user
+set password \"[ quotemeta $db2_tpch_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_tpch_dbase\" ;#Database containing the TPC Schema
 set refresh_on \"$db2_refresh_on\" ;#First User does refresh function
 set update_sets $db2_update_sets ;#Number of sets of refresh function to complete
