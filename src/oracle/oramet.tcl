@@ -1880,7 +1880,7 @@ namespace eval oramet {
         set public(pw) [ quotemeta $system_password ]
         set public(db) $instance
         set remote "@$public(db)"
-        set con $public(un)/[ quotemeta $public(pw) ]$remote
+        set con $public(un)/$public(pw)$remote
         if { ! [ info exists dbmon_threadID ] } {
             set public(parent) $masterthread
             thread_init 
