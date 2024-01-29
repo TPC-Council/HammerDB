@@ -58,6 +58,7 @@ proc .ed_mainFrame.buttons.boxes { args } { ; }
 proc .ed_mainFrame.buttons.test { args } { ; }
 proc .ed_mainFrame.buttons.runworld { args } { ; }
 proc .ed_mainFrame.buttons.delete { args } { ; }
+proc .ed_mainFrame.buttons.thumbup { args } { ; }
 proc ed_lvuser_button { args } { ; }
 proc .ed_mainFrame.editbuttons.test { args } { ; }
 proc .ed_mainFrame.editbuttons.distribute { args } { ; }
@@ -1250,6 +1251,69 @@ proc keepalive {} {
     _waittocomplete
     return
   }
+}
+
+proc check_schema {} {
+    global _ED
+    #This runs the schema deletion
+    upvar #0 dbdict dbdict
+    global _ED bm rdbms
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set prefix [ dict get $dbdict $key prefix ]
+            if { $bm == "TPC-C" }  {
+                set command [ concat [subst {check_$prefix}]tpcc ]
+            } else {
+                set command [ concat [subst {check_$prefix}]tpch ]
+            }
+            eval $command
+            break
+        }
+    }
+    if { [ string length $_ED(package) ] > 0 } { 
+        #yes was pressed
+        run_virtual
+    } else {
+        #no was pressed
+        puts "Schema check cancelled"
+    }
+}
+
+proc checkschema {} {
+    global virtual_users maxvuser rdbms bm threadscreated jobid
+    if { [ info exists threadscreated ] } {
+        puts "Error: Cannot check schema with Virtual Users active, destroy Virtual Users first"
+        return
+    }
+    upvar #0 dbdict dbdict
+    set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set dictname config$key
+            #set dbname $key
+            upvar #0 $dictname $dictname
+            break
+        }
+    }
+    set maxvuser 1
+    set virtual_users 1
+    clearscript
+    puts "Checking schema with 1 Virtual User"
+    if { [ catch {check_schema} message ] } {
+        puts "Error: $message"
+    }
+    #Add automated waittocomplete to deleteschema
+    _waittocomplete
+	if { [ info exists jobid ] && ![ job_disable_check ] } {
+        return "Schema Check jobid=$jobid"
+    } else {
+	unset -nocomplain jobid
+	return "Schema Check (No jobid)"
+    }
 }
 
 proc delete_schema {} {

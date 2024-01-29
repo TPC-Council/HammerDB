@@ -3572,3 +3572,164 @@ return
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }
+
+proc check_mssqlstpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict mssqlserver library ]} {
+        set library [ dict get $dbdict mssqlserver library ]
+    } else { set library "tdbc::odbc 1.0.6" }
+    if { [ llength $library ] > 1 } { 
+        set version [ lindex $library 1 ]
+        set library [ lindex $library 0 ]
+    }
+    upvar #0 configmssqlserver configmssqlserver
+    #set variables to values in dict
+    setlocaltpccvars $configmssqlserver
+    if {![string match windows $::tcl_platform(platform)]} {
+        set mssqls_server $mssqls_linux_server 
+        set mssqls_odbc_driver $mssqls_linux_odbc
+        set mssqls_authentication $mssqls_linux_authent 
+    }
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $mssqls_dbase ] TPROC-C schema\nin host [string toupper $mssqls_server ]?" -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+set version $version
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
+    if { $tcp eq "true" } { set server tcp:$server,$port }
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
+        set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
+    } else {
+        if {[ string toupper $authentication ] eq "SQL" } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+        } else {
+            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            set connection "DRIVER=$odbc_driver;SERVER=$server"
+        }
+    }
+    if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
+    return $connection
+}
+
+proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert count_ware } {
+	puts "Checking $db TPROC-C schema"
+    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
+    set sps [ list delivery neword ostat payment slev ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
+    if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+        error "Connection to $connection could not be established : $message"
+    } else {
+	    if {!$azure} {odbc evaldirect "use tempdb"}
+	    #Check 1 Database Exists
+    set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+    set db_exists [ lindex {*}$rows 1 ]
+    if { $db_exists } {
+        if {!$azure} {odbc evaldirect "use $db"}
+        set rows [ odbc allrows "select COUNT(*) from sys.tables" ]
+        set table_count [ lindex {*}$rows 1 ]
+        if { $table_count == 0 } {
+	error "TPROC-C Schema check failed $db schema is empty"
+	} else {
+	    #Check 2 Tables Exist
+	foreach table [dict keys $tables] {
+    	set rows [ odbc allrows "IF OBJECT_ID (N'$table', N'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
+        set table_exists [ lindex {*}$rows 1 ]
+        if { $table_exists == 0 } {
+	error "TPROC-C Schema check failed $db schema is missing table $table"
+	} else {
+	if { $table eq "warehouse" } {
+	    #Check 3 Warehouse count in schema is the same as dict setting
+        set rows [ odbc allrows "select max(w_id) from warehouse" ]
+        set w_id_input [ lindex {*}$rows 1 ]
+	if { $count_ware != $w_id_input } {
+	error "TPROC-C Schema check failed $db schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+	}
+	}
+	    #Check 4 Tables are indexed
+    	set rows [ odbc allrows "SP_HELPINDEX '$table'" ]
+        if { [ llength $rows ] eq 0 } {
+	error "TPROC-C Schema check failed $db schema on table $table no indicies"
+	}
+	    #Check 5 Tables are populated
+	set expected_rows [ dict get $tables $table ]
+        set rows [ odbc allrows "select count(*) from $table" ]
+        set row_count [ lindex {*}$rows 1 ]
+        if { $row_count < $expected_rows } {
+	error "TPROC-C Schema check failed $db schema on table $table row count of $row_count is less than expected count of $expected_rows"
+	} 
+	}
+	}
+	}
+	    #Check 6 Stored Procedures Exist
+	foreach sp $sps {
+    	set rows [ odbc allrows "IF OBJECT_ID ('$sp', 'P') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
+        set sp_exists [ lindex {*}$rows 1 ]
+        if { $sp_exists == 0 } {
+	error "TPROC-C Schema check failed $db schema is missing stored procedure $sp"
+	}
+	}
+	    #Create temporary sample table
+        set sql(1) [ subst -nocommands {CREATE TABLE [dbo].[temp_w]([t_w_id] [smallint] NULL) ON [PRIMARY]}]
+        odbc evaldirect $sql(1)
+	if { $w_id_input <= 10 } {
+	for  {set i 1} {$i <= $w_id_input} { incr i} {
+ 	odbc evaldirect "insert into temp_w values ($i)"
+	}
+	} else {
+	foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+	odbc evaldirect [ subst $statement ]
+	}
+	}
+	   #Consistency check 1
+	set rows [ odbc allrows "select d_w_id, (w_ytd - sum(d_ytd)) diff from warehouse, district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $db schema consistency check 1 failed"
+	} 
+	   #Consistency check 2
+	set rows [ odbc allrows "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $db schema consistency check 2 failed"
+	} 
+	   #Consistency check 3
+	set rows [ odbc allrows "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from new_order group by no_w_id, no_d_id) dt where nocount != total" ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $db schema consistency check 3 failed"
+	} 
+	   #Consistency check 4
+	set rows [ odbc allrows "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $db schema consistency check 4 failed"
+	} 
+	    #Drop temporary sample table
+        set sql(1) [ subst -nocommands {DROP TABLE [dbo].[temp_w]}]
+        odbc evaldirect $sql(1)
+	#All consistency checks have completed
+	puts "$db TPROC-C schema has been checked successfully"
+	} else {
+	error "Schema check failed $db TPROC-C schema does not exist"
+	}
+	odbc close
+	return
+	}
+	}
+	}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpcc {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_count_ware"
+    } else { return }
+}

@@ -193,6 +193,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Parent .ed_mainFrame
     construct_button $Parent.buttons.hmenu bar hmenu new.ppm "pop_up_menu"  "Open Edit Menu"
     construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
+    construct_button $Parent.buttons.thumbup bar thumbup thumbup.ppm "check_schema" "Check TPROC Schema" 
     construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
     construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
@@ -451,6 +452,11 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name item $rdbms.$bm.build.go -tags builsch
     tooltip::tooltip $Name -item $rdbms.$bm.build.go "Create $rdbms $bm Schema"
     $Name tag bind builsch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { build_schema } }
+    $Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.check -text "Check" -image [ create_image thumbup icons ]
+    dict set treeidicons $rdbms.$bm.build.check thumbup
+    $Name item $rdbms.$bm.build.check -tags checksch
+    tooltip::tooltip $Name -item $rdbms.$bm.build.check "Check $rdbms $bm Schema"
+    $Name tag bind checksch <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { check_schema } }
     $Name insert $rdbms.$bm.build end -id $rdbms.$bm.build.del -text "Delete" -image [ create_image delete icons ]
     dict set treeidicons $rdbms.$bm.build.del delete
     $Name item $rdbms.$bm.build.del -tags deletesch
@@ -3300,6 +3306,54 @@ proc build_schema {} {
         puts "Schema Build jobid=$jobid"
     } else {
         unset -nocomplain jobid
+    }
+}
+
+proc check_schema {} {
+    #This runs the schema consistency check
+    upvar #0 dbdict dbdict
+    global _ED bm rdbms threadscreated jobid
+    #Clear the Script Editor first to make sure a genuine schema is run
+    ed_edit_clear
+    if { [ info exists threadscreated ] } {
+        tk_messageBox -icon error -message "Cannot check schema with Virtual Users active, destroy Virtual Users first"
+        #clear script editor so cannot be re-run with incorrect v user count
+        return 1
+    }
+set jobid [guid]
+    if { [jobmain $jobid] eq 1 } {
+        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+        #return
+    }
+    foreach { key } [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
+            set prefix [ dict get $dbdict $key prefix ]
+            if { $bm == "TPC-C" }  {
+                set command [ concat [subst {check_$prefix}]tpcc ]
+            } else {
+                set command [ concat [subst {check_$prefix}]tpch ]
+            }
+            eval $command
+            break
+        }
+    }
+
+    .ed_mainFrame.notebook select .ed_mainFrame.mainwin
+    applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
+    .ed_mainFrame.notebook select .ed_mainFrame.tw
+    #Commit to update values in script editor
+    ed_edit_commit
+    if { [ string length $_ED(package)] eq 1 } {
+        #No was pressed at schema check and editor is empty do not run
+        return
+    } else {
+        #Yes was pressed at schema check run
+        run_virtual
+    }
+    if { [ info exists jobid ] && ![ job_disable_check ] } {
+        puts "Check Schema jobid=$jobid"
+    } else {
+	unset -nocomplain jobid
     }
 }
 

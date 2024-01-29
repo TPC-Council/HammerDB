@@ -932,6 +932,8 @@ namespace eval jobs {
           set jobtype "Schema Build"
         } elseif { [ string match "*Do you want to delete*" $output ] } {
           set jobtype "Schema Delete"
+        } elseif { [ string match "*Do you want to check*" $output ] } {
+          set jobtype "Schema Check"
         } else {
           set jobtype "Benchmark Run"
         }

@@ -513,6 +513,35 @@ gpnhAQ1w+2ZZwBLYmf0ZGDMfHYFLroK9QDRpDUQHGUWLwNUCGmCTaS8ZiJoTUGhSmSkdoAIGY4ii
 J6CWs6AAW/o7CN78s2vsgOnFtKMpuwZOdoAKmIDtB/Mg6wmiLfTAwUEK13MwEOwtaHTASgZaAUfR
 g8lRyEO3Q/StBGfO6qU77O1P8pfXeAfACjlJ4tupCQAAAABJRU5ErkJggg==
 }
+
+dict set icons thumbup {
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC6HpUWHRSYXcgcHJvZmlsZSB0eXBl
+IGV4aWYAAHja7ZZdstwoDIXfWUWWgCSExHIwP1XZwSw/B+z27b43M0lq5mWq2pQNFliSzyfTHcZf
+32f4hoNKjiGpeS45RxyppMIVA4/nUfaVYtrX6yY+Bi/2cE8wTIJezlur1/oKu3488IhBx6s9+DXD
+fjmi2/E+ZEVe4/6cJOx82ildjso4B7m4Pad6XI7atXCncp3pTuvs1n14MRhU6opAwjyEJO6rnxnI
+OpNU9IQri/Ia0bZIQIebyxkEeXm9W8D4LNCLyI9R+Kz+PfokPtfLLp+0zJdGGPx0gvSTXe4w/BxY
+7oz4dcL44eqryHN2n3Ocb1dThqL5qqgt9kOhtfCA5LIfy2iGUzG23QqaxxobkPfY4oHWqBCDygyU
+qFOlSWP3jRpSTDwYqTFzY9k2F+PCbRNLq9FkkyJdHPwajyACM9+50I5bdrxGjsidsJQJzgiP/G0L
+/zT5Jy3M2ZZEFP3WCnnxqmukscitK1YBCM2Lm26BH+3CH5/qB6UKgrpldrxgjcfp4lD6qC3ZnAXr
+FP35CVGwfjmARIitSAaVnihmEqVMqAc2IujoAFSROb4TPkCAVLkjSU4imYOx84qNZ4z2WlbOvMzY
+mwBCJYuBTZEKWCkp6seSo4aqiiZVzWrqQYvWLDllzTlbXptcNbFkatnM3IpVF0+unt3cvXgtXAR7
+oJZcrHgppVYOFYEqfFWsr7AcfMiRDj3yYYcf5agN5dNS05abNW+l1c5dOraJnrt176XXQWFgpxhp
+6MjDho8y6kStTZlp6szTps8y603tovql/QE1uqjxJrXW2U0N1mD2cEFrO9HFDMQ4EYjbIoCC5sUs
+OqXEi9xiFgvjo1BGkrrYhE6LGBCmQayTbnYf5H6LW1D/LW78K3JhofsvyAWg+8rtJ9T6+p1rm9j5
+FS5No+Dra9DBa8DvWVyDf9u/Hb0dvR29Hb0dvR29Hf3vHQn+OpTwAwxwm/2zVSPkAAABhmlDQ1BJ
+Q0MgcHJvZmlsZQAAeJx9kT1Iw1AUhU9bpVIqDnZQcchQnSyIioqTVqEIFUKt0KqDyUv/oElDkuLi
+KLgWHPxZrDq4OOvq4CoIgj8gzg5Oii5S4n1JoUWMFx7v47x7Du/dB/jrZaaaHaOAqllGKhEXMtlV
+IfgKH/oRwgymJGbqc6KYhGd93VM31V2MZ3n3/VndSs5kgE8gnmW6YRFvEE9uWjrnfeIIK0oK8Tnx
+iEEXJH7kuuzyG+eCw36eGTHSqXniCLFQaGO5jVnRUIkniKOKqlG+P+OywnmLs1qusuY9+QvDOW1l
+meu0BpHAIpYgQoCMKkoow0KMdo0UEyk6j3v4Bxy/SC6ZXCUwciygAhWS4wf/g9+zNfPjY25SOA50
+vtj2xxAQ3AUaNdv+PrbtxgkQeAautJa/UgemP0mvtbToEdCzDVxctzR5D7jcAfqedMmQHClAy5/P
+A+9n9E1ZoPcWCK25c2ue4/QBSNOskjfAwSEwXKDsdY93d7XP7d+e5vx+AOg2ctaGhDJWAAAABmJL
+R0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6AEZCwMO5nKTzwAAAKRJ
+REFUOMulkjEKwjAYhb9IoSA4OFjo7hFcvUwQD9HBe3gGoVMRHdx0Em/RTejcrV1+SgnNT9O8JS/h
+5SO8/MZai6IUeAMtcJwKJOg6AQeg9gVWyuU1cBF/XwI4A5n4RyhgAxSj/ScEsAWuwG50tvcBEqAT
+b2RtJnLuC35SrtqBpnxOiZqqWEAZA/gDzxhAOXeQfLrFAL7Ay50D44RMCHHpLwzqAUBwEx8B9wFx
+AAAAAElFTkSuQmCCi
+}
 return [ set icons ]
 }
 
@@ -845,6 +874,36 @@ YjFwD7ncffc3bmr56axgWUADTN+IAkrgKPcbMGSCDsA9l8EpQpLRFqgNZIi6GngooAF2mfKCQJJz
 AFwyclNLCVwkuo0WgE3UBaACesADFCZ1PetomCBY58XGuAfGN92uJe0KuGoDE2AEDh+c+ygzSCqh
 A84G4kzNXiDoFHSRdBopTW/AL3ptoi3FZ5xn+sI8drokf/mNT0IHPSwVihKdAAAAAElFTkSuQmCC
 }
+
+dict set icons thumbup {
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC9XpUWHRSYXcgcHJvZmlsZSB0eXBl
+IGV4aWYAAHja7ZddltwoDIXfWUWWgCSExHIwmHNmB7P8XPBPV3V3ks5MHvJQ5hiwACHfT6a6w/7v
+PyN8w0Ulp5DUPJecI65UUuGKjsfjKqummFZ9PsSr82QP9wDDJGjleLR6zq+w69uCaw/anu3BzxH2
+09Hl+XQoc2dGpz8GCTsfdkqno7IfnVzcHkPd+GjbOXGFct5iy/XtZD6HR0MyqNQVs4R5F5K4aj8i
+kHknqWgJNYvy7NGyWEBDcqkIQZ5e7xYwPgr0JPLVC+/Vv3vvxOd62uWdlvnUCJ1PB0g/F39J/LCx
+3BHx84Dp5eqjyGN0H2M/3q6mDEXzmVExXOrMNZi4QXJZyzKK4Vb0bZWC4rHGBjg9trihNCrEEHkE
+StSp0qB9tY0aQky8s6FlbizL5mJcuC1iaRYabFKki4Nf4z2IwMx3LLT2LWu/Ro6dO2EqE5wRlvyw
+hJ8N/k4JY7QpEUW/tUJcPDMXYUxys8YsAKFxctMl8FVO/PEhf5CqIKhLZscL1rgdLjalt9ySxVkw
+T9EeXwUF66cDSIS9FcEg7RPFTKKUKRqzEUFHB6CKyPGd8AYCpModQXISyRyMnefeWGO05rJy5mnG
+2QQQKlkMbIpUwEpJkT+WHDlUVTSpalZTD1q0Zskpa87Z8jzkqoklU8tm5lasunhy9ezm7sVr4SI4
+A7XkYsVLKbVyqNiowlfF/ArLxptsadMtb7b5VrbakD4tNW25WfNWWu3cpeOY6Llb91563SnsOCn2
+tOued9t9L3sdyLUhIw0dedjwUUa9qZ1UP5TfoEYnNV6k5jy7qcEazC4XNI8TncxAjBOBuE0CSGie
+zKJTSjzJTWaxMD4KZQSpk03oNIkBYdqJddDN7o3cl7gF9S9x41+RCxPdnyAXgO4jt0+o9fk71xax
+4yucmkbB19elstfA24AII6U4H/Hr9h/bEP+ng5ejl6OXo5ejl6OXo5ejv8OR4A8I/CMbvgOtAp48
+s9kJRwAAAYVpQ0NQSUNDIHByb2ZpbGUAAHicfZE9SMNQFIVPW0tFKw52UBHMUJ0siIo4ahWKUCHU
+Cq06mLz0D5o0JCkujoJrwcGfxaqDi7OuDq6CIPgD4uzgpOgiJd6XFFrEeOHxPs675/DefYC/Xmaq
+2TEOqJplpBJxIZNdFUKv8GEA3QhiWGKmPieKSXjW1z11U93FeJZ335/Vo+RMBvgE4lmmGxbxBvH0
+pqVz3ieOsKKkEJ8Tjxl0QeJHrssuv3EuOOznmREjnZonjhALhTaW25gVDZV4ijiqqBrl+zMuK5y3
+OKvlKmvek78wnNNWlrlOawgJLGIJIgTIqKKEMizEaNdIMZGi87iHf9Dxi+SSyVUCI8cCKlAhOX7w
+P/g9WzM/OeEmheNA8MW2P0aA0C7QqNn297FtN06AwDNwpbX8lTow80l6raVFj4DebeDiuqXJe8Dl
+DtD/pEuG5EgBWv58Hng/o2/KAn23QNeaO7fmOU4fgDTNKnkDHBwCowXKXvd4d2f73P7tac7vByq0
+corZE69qAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6AEZ
+CwcMbBA35wAAAKNJREFUOMulkjEKgzAYhb+IUCg4dKjg7hG6epvSO7RD79EzCE5S7NBNJ+kt3Aqd
+u9nlp0gwP8a8JS/h5SO8/GY8o2kDtMAXKOYCMbqOwAEYXIFIubwFruLvawAnIBXf+AIS4DLZdz6A
+HXAD9pOz3AWIgVG8kfUzk7Nf8JJy1Q40ZUtK1FSHAqoQwBt4hACqpYPkUhkC6IGnPQfGChkf4tpf
++OsHjfoTcXtQkNoAAAAASUVORK5CYII=i
+}
+
 return [ set icons ]
 }
 
@@ -3461,6 +3520,63 @@ dict set iconssvg deletesvg {
      d="M2 0l-2 3 2 3h6v-6h-6zm1.5.78l1.5 1.5 1.5-1.5.72.72-1.5 1.5 1.5 1.5-.72.72-1.5-1.5-1.5 1.5-.72-.72 1.5-1.5-1.5-1.5.72-.72z" />
 </svg>
 }
+dict set iconssvg thumbupsvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="thumb-up-g.svg"
+   id="svg865"
+   version="1.1"
+   viewBox="0 0 8 8"
+   height="8"
+   width="8">
+  <metadata
+     id="metadata871">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs869" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg865"
+     inkscape:window-maximized="0"
+     inkscape:window-y="63"
+     inkscape:window-x="57"
+     inkscape:cy="4"
+     inkscape:cx="4"
+     inkscape:zoom="106.25"
+     showgrid="false"
+     id="namedview867"
+     inkscape:window-height="863"
+     inkscape:window-width="820"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="fill:#626262;fill-opacity:1"
+     id="path863"
+     d="M4.47 0c-.19.02-.37.15-.47.34-.13.26-1.09 2.19-1.28 2.38-.19.19-.44.28-.72.28v4h3.5c.21 0 .39-.13.47-.31 0 0 1.03-2.91 1.03-3.19 0-.28-.22-.5-.5-.5h-1.5c-.28 0-.5-.25-.5-.5s.39-1.58.47-1.84c.08-.26-.05-.54-.31-.63-.07-.02-.12-.04-.19-.03zm-4.47 3v4h1v-4h-1z" />
+</svg>
+}
 return [ set iconssvg ]
 }
 
@@ -5664,6 +5780,63 @@ dict set iconssvg deletesvg {
      id="path20"
      transform="translate(0 1)"
      d="M2 0l-2 3 2 3h6v-6h-6zm1.5.78l1.5 1.5 1.5-1.5.72.72-1.5 1.5 1.5 1.5-.72.72-1.5-1.5-1.5 1.5-.72-.72 1.5-1.5-1.5-1.5.72-.72z" />
+</svg>
+}
+dict set iconssvg thumbupsvg {
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="thumb-up-o.svg"
+   id="svg865"
+   version="1.1"
+   viewBox="0 0 8 8"
+   height="8"
+   width="8">
+  <metadata
+     id="metadata871">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs869" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg865"
+     inkscape:window-maximized="0"
+     inkscape:window-y="63"
+     inkscape:window-x="57"
+     inkscape:cy="4"
+     inkscape:cx="4"
+     inkscape:zoom="106.25"
+     showgrid="false"
+     id="namedview867"
+     inkscape:window-height="863"
+     inkscape:window-width="820"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="fill:#ff7900;fill-opacity:1"
+     id="path863"
+     d="M4.47 0c-.19.02-.37.15-.47.34-.13.26-1.09 2.19-1.28 2.38-.19.19-.44.28-.72.28v4h3.5c.21 0 .39-.13.47-.31 0 0 1.03-2.91 1.03-3.19 0-.28-.22-.5-.5-.5h-1.5c-.28 0-.5-.25-.5-.5s.39-1.58.47-1.84c.08-.26-.05-.54-.31-.63-.07-.02-.12-.04-.19-.03zm-4.47 3v4h1v-4h-1z" />
 </svg>
 }
 return [ set iconssvg ]
