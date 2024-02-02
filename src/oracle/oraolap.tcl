@@ -1771,12 +1771,15 @@ proc check_tpch { system_user system_password instance tpch_user scale_factor } 
     set connect $system_user/$system_password@$instance
     set lda [ oralogon $connect ]
     set curn [oraopen $lda ]
+	      #Check 1 Schema Exists
+    puts "Check schema"
     set checkuserexists "SELECT created FROM all_users WHERE username = upper('$tpch_user')"
     set userexists [ standsql $curn $checkuserexists ]
     if {[ string length $userexists ] == 0} {
     error "TPROC-H Schema check failed $tpch_user does not exist"
     } else {
 	      #Check 2 Tables Exist
+	puts "Check tables and indices"
         foreach table [dict keys $tables] {
 	set checktableexists "select status from all_tables where owner = upper('$tpch_user') and table_name = upper('$table')"
     	set table_exists [ standsql $curn $checktableexists ]
@@ -1810,6 +1813,7 @@ proc check_tpch { system_user system_password instance tpch_user scale_factor } 
         }
         }
 	   #Consistency check
+	puts "Check consistency"
         set checkconsistency "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(trunc(trunc(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM $tpch_user.orders, $tpch_user.lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0"
 	set row_count [ standsql $curn $checkconsistency ]
         if {[ llength $row_count ] > 0} {

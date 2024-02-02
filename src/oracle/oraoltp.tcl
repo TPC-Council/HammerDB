@@ -3385,17 +3385,20 @@ proc standsql { curn sql } {
 
 proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
     puts "Checking $tpcc_user TPROC-C schema"
-    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
+    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
     set sps [ list delivery neword ostat payment slev ]
     set connect $system_user/$system_password@$instance
     set lda [ oralogon $connect ]
     set curn [oraopen $lda ]
+    	     #Check 1 Schema Exists
+	puts "Check schema"
     set checkuserexists "SELECT created FROM all_users WHERE username = upper('$tpcc_user')"
     set userexists [ standsql $curn $checkuserexists ]
     if {[ string length $userexists ] == 0} {
     error "TPROC-C Schema check failed $tpcc_user does not exist"
     } else {
 	      #Check 2 Tables Exist
+	puts "Check tables and indices"
         foreach table [dict keys $tables] {
 	set checktableexists "select status from all_tables where owner = upper('$tpcc_user') and table_name = upper('$table')"
     	set table_exists [ standsql $curn $checktableexists ]
@@ -3416,7 +3419,7 @@ proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
         if { $index_exists == 0 } {
 	    #History has no index for Oracle
 	if { $table != "history" } {
-        error "TPROC-C Schema check failed $tpcc_user schema on table $table no indicies"
+        error "TPROC-C Schema check failed $tpcc_user schema on table $table no indices"
 	}
         } 
             #Check 5 Tables are populated
@@ -3429,6 +3432,7 @@ proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
         }
         }
 	   #Check 6 Stored Procedures Exist
+	puts "Check procedures"
         foreach sp $sps {
 	set checkspexists "select max(line) from all_source where owner = upper('$tpcc_user') and name = upper('$sp')"
 	set sp_exists [ standsql $curn $checkspexists ]
@@ -3459,12 +3463,14 @@ proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
 } 
 }
           #Consistency check 1
+	puts "Check consistency 1"
         set consist1 "select d_w_id, (w_ytd - sum(d_ytd)) diff from $tpcc_user.warehouse, $tpcc_user.district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" 
 	set rows [ standsql $curn $consist1 ]
         if {[ llength $rows ] > 0} {
         error "TPROC-C Schema check failed $tpcc_user schema consistency check 1 failed $rows"
         }
            #Consistency check 2
+	puts "Check consistency 2"
         set consist2 "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from $tpcc_user.district, $tpcc_user.orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX"
 	set rows [ standsql $curn $consist2 ]
         if {[ llength $rows ] > 0} {
@@ -3472,12 +3478,14 @@ proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
         #error "TPROC-C Schema check failed $tpcc_user schema consistency check 2 failed"
         } 
            #Consistency check 3
+	puts "Check consistency 3"
         set consist3 "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from $tpcc_user.new_order group by no_w_id, no_d_id) dt where nocount != total"
 	set rows [ standsql $curn $consist3 ]
         if {[ llength $rows ] > 0} {
         #error "TPROC-C Schema check failed $tpcc_user schema consistency check 3 failed"
         }
            #Consistency check 4
+	puts "Check consistency 4"
         set consist4 "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from $tpcc_user.orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from $tpcc_user.order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count"
 	set rows [ standsql $curn $consist4 ]
         if {[ llength $rows ] > 0} {
