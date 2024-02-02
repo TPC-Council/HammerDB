@@ -2143,6 +2143,7 @@ proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db en
     } else {
 	    if {!$azure} {odbc evaldirect "use tempdb"}
 	    #Check 1 Database Exists
+        puts "Check database"
     set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
     set db_exists [ lindex {*}$rows 1 ]
     if { $db_exists } {
@@ -2153,6 +2154,7 @@ proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db en
 	error "TPROC-H Schema check failed $db schema is empty"
 	} else {
 	    #Check 2 Tables Exist
+	puts "Check tables and indices"
 	foreach table [dict keys $tables] {
     	set rows [ odbc allrows "IF OBJECT_ID (N'$table', N'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
         set table_exists [ lindex {*}$rows 1 ]
@@ -2185,6 +2187,7 @@ proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db en
 	}
 }
 	   #Consistency check
+	puts "Check consistency"
 	set rows [ odbc allrows "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(round(round(l_extendedprice * (1 - l_discount),2,1) * (1 + l_tax),2,1)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
 	if {[ llength $rows ] > 0} {
 	error "TPROC-H Schema check failed $db schema consistency check failed"

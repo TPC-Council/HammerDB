@@ -3630,7 +3630,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
 
 proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert count_ware } {
 	puts "Checking $db TPROC-C schema"
-    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
+    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
     set sps [ list delivery neword ostat payment slev ]
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
@@ -3638,6 +3638,7 @@ proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db en
     } else {
 	    if {!$azure} {odbc evaldirect "use tempdb"}
 	    #Check 1 Database Exists
+	puts "Check database"
     set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
     set db_exists [ lindex {*}$rows 1 ]
     if { $db_exists } {
@@ -3648,6 +3649,7 @@ proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db en
 	error "TPROC-C Schema check failed $db schema is empty"
 	} else {
 	    #Check 2 Tables Exist
+	puts "Check tables and indices"
 	foreach table [dict keys $tables] {
     	set rows [ odbc allrows "IF OBJECT_ID (N'$table', N'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
         set table_exists [ lindex {*}$rows 1 ]
@@ -3665,7 +3667,7 @@ proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db en
 	    #Check 4 Tables are indexed
     	set rows [ odbc allrows "SP_HELPINDEX '$table'" ]
         if { [ llength $rows ] eq 0 } {
-	error "TPROC-C Schema check failed $db schema on table $table no indicies"
+	error "TPROC-C Schema check failed $db schema on table $table no indices"
 	}
 	    #Check 5 Tables are populated
 	set expected_rows [ dict get $tables $table ]
@@ -3678,6 +3680,7 @@ proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db en
 	}
 	}
 	    #Check 6 Stored Procedures Exist
+	puts "Check procedures"
 	foreach sp $sps {
     	set rows [ odbc allrows "IF OBJECT_ID ('$sp', 'P') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
         set sp_exists [ lindex {*}$rows 1 ]
@@ -3686,39 +3689,43 @@ proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db en
 	}
 	}
 	    #Create temporary sample table
-        set sql(1) [ subst -nocommands {CREATE TABLE [dbo].[temp_w]([t_w_id] [smallint] NULL) ON [PRIMARY]}]
+        set sql(1) [ subst -nocommands {CREATE TABLE [dbo].[#temp_w]([t_w_id] [smallint] NULL) ON [PRIMARY]}]
         odbc evaldirect $sql(1)
 	if { $w_id_input <= 10 } {
 	for  {set i 1} {$i <= $w_id_input} { incr i} {
- 	odbc evaldirect "insert into temp_w values ($i)"
+ 	odbc evaldirect "insert into #temp_w values ($i)"
 	}
 	} else {
-	foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+	foreach statement {{insert into #temp_w values (1)} {insert into #temp_w values ([expr {0.1 * $w_id_input}])} {insert into #temp_w values ([expr {0.2 * $w_id_input}])} {insert into #temp_w values ([expr {0.3 * $w_id_input}])} {insert into #temp_w values ([expr {0.4 * $w_id_input}])} {insert into #temp_w values ([expr {0.5 * $w_id_input}])} {insert into #temp_w values ([expr {0.6 * $w_id_input}])} {insert into #temp_w values ([expr {0.7 * $w_id_input}])} {insert into #temp_w values ([expr {0.8 * $w_id_input}])} {insert into #temp_w values ([expr {0.9 * $w_id_input}])} {insert into #temp_w values ($w_id_input)}} {
 	odbc evaldirect [ subst $statement ]
 	}
 	}
 	   #Consistency check 1
+	puts "Check consistency 1"
 	set rows [ odbc allrows "select d_w_id, (w_ytd - sum(d_ytd)) diff from warehouse, district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" ]
 	if {[ llength $rows ] > 0} {
 	error "TPROC-C Schema check failed $db schema consistency check 1 failed"
 	} 
 	   #Consistency check 2
-	set rows [ odbc allrows "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" ]
+	puts "Check consistency 2"
+	set rows [ odbc allrows "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from #temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" ]
 	if {[ llength $rows ] > 0} {
 	error "TPROC-C Schema check failed $db schema consistency check 2 failed"
 	} 
 	   #Consistency check 3
+	puts "Check consistency 3"
 	set rows [ odbc allrows "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from new_order group by no_w_id, no_d_id) dt where nocount != total" ]
 	if {[ llength $rows ] > 0} {
 	error "TPROC-C Schema check failed $db schema consistency check 3 failed"
 	} 
 	   #Consistency check 4
-	set rows [ odbc allrows "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" ]
+	puts "Check consistency 4"
+	set rows [ odbc allrows "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, #temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, #temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" ]
 	if {[ llength $rows ] > 0} {
 	error "TPROC-C Schema check failed $db schema consistency check 4 failed"
 	} 
 	    #Drop temporary sample table
-        set sql(1) [ subst -nocommands {DROP TABLE [dbo].[temp_w]}]
+        set sql(1) [ subst -nocommands {DROP TABLE [dbo].[#temp_w]}]
         odbc evaldirect $sql(1)
 	#All consistency checks have completed
 	puts "$db TPROC-C schema has been checked successfully"
