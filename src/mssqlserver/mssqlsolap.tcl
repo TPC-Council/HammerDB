@@ -2136,7 +2136,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
 
 proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert scale_factor } {
 	puts "Checking $db TPROC-H schema"
-    set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 supplier [ expr {$scale_factor * 10000} ]]
+    set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
