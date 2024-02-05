@@ -1604,3 +1604,154 @@ proc drop_schema { host port socket ssl_options user password dbase } {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase"
     } else { return }
 }
+
+proc check_mysqltpch {} {
+    global maxvuser suppo ntimes threadscreated _ED mysql_ssl_options
+    upvar #0 dbdict dbdict
+
+    if {[dict exists $dbdict mysql library ]} {
+        set library [ dict get $dbdict mysql library ]
+    } else {
+        set library "mysqltcl" 
+    }
+
+    upvar #0 configmysql configmysql
+    #set variables to values in dict
+    setlocaltpchvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
+    if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { 
+        set mysql_connector "$mysql_host:$mysql_port" 
+    }
+
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $mysql_tpch_dbase ] TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-H check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc chk_socket { host socket } {
+    if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+        return "TRUE"
+    } else {
+        return "FALSE"
+    }
+}
+
+proc ConnectToMySQL { host port socket ssl_options user password } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mysqlconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set mysql_handler [eval $login_command]}] {
+		if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        mysql::autocommit $mysql_handler 0
+	catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
+}
+
+proc check_tpch { host port socket ssl_options user password dbase scale_factor } {
+    global mysqlstatus
+    puts "Checking $dbase TPROC-H schema"
+    set tables [ dict create  SUPPLIER [ expr {$scale_factor * 10000} ] CUSTOMER [ expr {$scale_factor * 150000} ] LINEITEM [ expr {$scale_factor * 6000000 * 0.99} ] NATION 25 ORDERS [ expr {$scale_factor * 1500000} ] PART [ expr {$scale_factor * 200000} ] PARTSUPP [ expr {$scale_factor * 800000} ] REGION 5 ]
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+   #Check 1 Database Exists
+    puts "Check database"
+        set db_exists [ mysql::sel $mysql_handler "select schema_name from information_schema.schemata where schema_name = '$dbase'" -flatlist  ]
+	if { [ string length $db_exists ] > 0 } {
+        mysqluse $mysql_handler $dbase
+        set table_exists [ mysql::sel $mysql_handler "show tables" -flatlist  ]
+	if {[ llength $table_exists ] == 0 } {
+	error "TPROC-H Schema check failed $dbase schema is empty"
+	} else {
+	#Check 2 Tables Exist
+	puts "Check tables and indices"
+	foreach table [dict keys $tables] {
+	set match [ lsearch $table_exists $table ]
+	if { $match == -1 } {
+	error "TPROC-H Schema check failed $dbase schema is missing table $table"
+	} else {
+	if { $table eq "supplier" } {
+	#Check 3 scale factor in schema is the same as dict setting
+        set count [  mysql::sel $mysql_handler "select count(*) from supplier" -flatlist ]
+	if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+	error "TPROC-H Schema check failed $dbase schema scale factor $actual_scale_factor does not equal dict scale factor if $scale_factor"
+        }
+        }
+	}
+        #Check 4 Tables are indexed
+    	set is_indexed [  mysql::sel $mysql_handler "show index from $table" -flatlist ]
+        if { [ llength $is_indexed ] eq 0 } {
+	error "TPROC-H Schema check failed $dbase schema on table $table no indices"
+	}
+	#Check 5 Tables are populated
+	set expected_rows [ dict get $tables $table ]
+        set row_count [  mysql::sel $mysql_handler "select count(*) from $table" -flatlist ]
+        if { $row_count < $expected_rows } {
+	error "TPROC-H Schema check failed $dbase schema on table $table row count of $row_count is less than expected count of $expected_rows"
+	} 
+	}
+	}
+        #Consistency check
+	puts "Check consistency"
+    	set checkconsistency [  mysql::sel $mysql_handler "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(truncate(truncate(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM ORDERS, LINEITEM WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" -flatlist ]
+	if {[ llength $checkconsistency ] > 0} {
+	error "TPROC-H Schema check failed $dbase schema consistency check failed"
+	} 
+	}
+	#Consistency check completed
+        puts "$dbase TPROC-H Schema has been checked successfully."
+	} else {
+	error "Schema check failed $dbase TPROC-H schema does not exist"
+	}
+    mysqlclose $mysql_handler
+    return
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_scale_fact"
+    } else { return }
+}
