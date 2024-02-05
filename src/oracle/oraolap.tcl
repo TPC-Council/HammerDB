@@ -1767,7 +1767,7 @@ proc standsql { curn sql } {
 
 proc check_tpch { system_user system_password instance tpch_user scale_factor } {
     puts "Checking $tpch_user TPROC-H schema"
-     set tables [ dict create customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 supplier [ expr {$scale_factor * 10000} ]]
+     set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
     set connect $system_user/$system_password@$instance
     set lda [ oralogon $connect ]
     set curn [oraopen $lda ]

@@ -3385,7 +3385,7 @@ proc standsql { curn sql } {
 
 proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
     puts "Checking $tpcc_user TPROC-C schema"
-    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
     set sps [ list delivery neword ostat payment slev ]
     set connect $system_user/$system_password@$instance
     set lda [ oralogon $connect ]

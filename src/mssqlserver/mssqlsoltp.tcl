@@ -3630,7 +3630,7 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
 
 proc check_tpcc { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert count_ware } {
 	puts "Checking $db TPROC-C schema"
-    set tables [ dict create customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] warehouse $count_ware ]
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
     set sps [ list delivery neword ostat payment slev ]
     set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
