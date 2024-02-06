@@ -3767,3 +3767,160 @@ proc drop_schema { host port sslmode user superuser superuser_password default_d
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase"
     } else { return }
 }
+
+proc check_pgtpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict postgresql library ]} {
+        set library [ dict get $dbdict postgresql library ]
+    } else { set library "Pgtcl" }
+    upvar #0 configpostgresql configpostgresql
+    #set variables to values in dict
+    setlocaltpccvars $configpostgresql
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $pg_dbase ] TPROC-C schema and role [ string toupper $pg_user ]\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_superuser ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc ConnectToPostgres { host port sslmode user password dbname } {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
+}
+
+proc check_tpcc { host port sslmode user superuser superuser_password default_dbase dbase count_ware } {
+    puts "Checking $dbase TPROC-C schema"
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
+    set sps [ list delivery neword ostat payment slev ]
+    set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
+    if { $suconnect eq "Failed" } {
+        error "error, the database connection to $host could not be established"
+    } else {
+  #Check 1 Database Exists
+    puts "Check database"
+    set result [ pg_exec $suconnect "SELECT 1 FROM pg_database WHERE datname = '$dbase'"]
+    if { [pg_result $result -numTuples] > 0} {
+    set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $dbase ]
+        if { $existing_db eq "Failed" } {
+            error "error, the database connection to $host could not be established"
+        } else {
+            set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+            if { [pg_result $result -numTuples] == 0 } {
+	    error "TPROC-C Schema check failed $dbase schema is empty"
+	    } else {
+	    #Check 2 Tables Exist
+            puts "Check tables and indices"
+	    foreach table [dict keys $tables] {
+	     pg_select $existing_db "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = '$table')" exists_arr {
+            set torf $exists_arr(exists)
+	}
+	        if { $torf == "f" } {
+        error "TPROC-C Schema check failed $dbase schema is missing table $table"
+        } else {
+		if { $table eq "warehouse" } {
+            pg_select $existing_db "select max(w_id) from warehouse" w_id_input_arr {
+            set w_id_input $w_id_input_arr(max)
+            }
+	    if { $count_ware != $w_id_input } {
+        error "TPROC-C Schema check failed $dbase schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+        }
+        }
+	    #Check 4 Tables are indexed
+            set result [ pg_exec $existing_db "select tablename,indexname from pg_indexes where tablename = '$table'" ]
+            if { [pg_result $result -numTuples] == 0 } {
+		     if { $table != "history" } {
+        error "TPROC-C Schema check failed $dbase schema on table $table no indices"
+        }
+	}
+	    #Check 5 Tables are populated
+	    set expected_rows [ dict get $tables $table ]
+            pg_select $existing_db "select count(*) as row_count from $table" arc_arr {
+            set  rows $arc_arr(row_count)
+            }
+	      if { $rows < $expected_rows } {
+        error "TPROC-C Schema check failed $dbase schema on table $table row count of $rows is less than expected count of $expected_rows"
+        }
+        }
+        }
+	    #Check 6 Stored Procedures Exist
+	puts "Check procedures"
+        foreach sp $sps {
+	     pg_select $existing_db "SELECT EXISTS ( SELECT * FROM pg_catalog.pg_proc JOIN pg_namespace ON pg_catalog.pg_proc.pronamespace = pg_namespace.oid WHERE proname = '$sp' AND pg_namespace.nspname = 'public')" exists_arr {
+            set torf $exists_arr(exists)
+	}
+	        if { $torf == "f" } {
+	error "TPROC-C Schema check failed $dbase schema is missing stored procedure $sp"
+        } 
+    }
+            #Create temporary sample table
+        pg_exec $existing_db "create temporary table temp_w (t_w_id smallint null)" 
+        if { $w_id_input <= 10 } {
+        for  {set i 1} {$i <= $w_id_input} { incr i} {
+        pg_exec $existing_db "insert into temp_w values ($i)"
+        }
+        } else {
+        foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+        pg_exec $existing_db [ subst $statement ]
+        }
+        }
+           #Consistency check 1
+        puts "Check consistency 1"
+            set result [ pg_exec $existing_db "select d_w_id, (w_ytd - sum(d_ytd)) diff from warehouse, district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" ]
+            if { [pg_result $result -numTuples] != 0 } {
+        error "TPROC-C Schema check failed $dbase schema consistency check 1 failed"
+        }
+           #Consistency check 2
+        puts "Check consistency 2"
+            set result [ pg_exec $existing_db "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" ]
+            if { [pg_result $result -numTuples] != 0 } {
+        error "TPROC-C Schema check failed $dbase schema consistency check 2 failed"
+        }
+           #Consistency check 3
+        puts "Check consistency 3"
+            set result [ pg_exec $existing_db "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from new_order group by no_w_id, no_d_id) dt where nocount != total" ]
+            if { [pg_result $result -numTuples] != 0 } {
+        error "TPROC-C Schema check failed $dbase schema consistency check 3 failed"
+        }
+           #Consistency check 4
+        puts "Check consistency 4"
+            set result [ pg_exec $existing_db "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" ]
+            if { [pg_result $result -numTuples] != 0 } {
+        error "TPROC-C Schema check failed $dbase schema consistency check 4 failed"
+        }
+    pg_exec $existing_db "drop table temp_w" 
+    puts "$dbase TPROC-C Schema has been checked successfully."
+    }
+    }
+    } else {
+     error "Schema check failed $dbase TPROC-C schema does not exist"
+    }
+    pg_disconnect $existing_db
+    pg_disconnect $suconnect
+    return
+    }
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpcc $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_count_ware"
+    } else { return }
+}

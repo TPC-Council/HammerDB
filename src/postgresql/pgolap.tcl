@@ -1581,3 +1581,121 @@ proc drop_schema { host port sslmode user superuser superuser_password default_d
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase"
     } else { return }
 }
+
+proc check_pgtpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict postgresql library ]} {
+        set library [ dict get $dbdict postgresql library ]
+    } else { set library "Pgtcl" }
+    upvar #0 configpostgresql configpostgresql
+    #set variables to values in dict
+    setlocaltpchvars $configpostgresql
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $pg_tpch_dbase ] TPROC-H schema and role [ string toupper $pg_tpch_user ]\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_tpch_superuser ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-H check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create threads for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc ConnectToPostgres { host port sslmode user password dbname } {
+    global tcl_platform
+    if {[catch {set lda [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} message]} {
+        set lda "Failed" ; puts $message
+        error $message
+    } else {
+        pg_notice_handler $lda puts
+        set result [ pg_exec $lda "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
+        pg_result $result -clear
+    }
+    return $lda
+}
+
+proc check_tpch { host port sslmode user superuser superuser_password default_dbase dbase scale_factor } {
+    puts "Checking $dbase TPROC-H schema"
+     set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
+    set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
+    if { $suconnect eq "Failed" } {
+        error "error, the database connection to $host could not be established"
+    } else {
+  #Check 1 Database Exists
+    puts "Check database"
+    set result [ pg_exec $suconnect "SELECT 1 FROM pg_database WHERE datname = '$dbase'"]
+    if { [pg_result $result -numTuples] > 0} {
+    set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $dbase ]
+        if { $existing_db eq "Failed" } {
+            error "error, the database connection to $host could not be established"
+        } else {
+            set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+            if { [pg_result $result -numTuples] == 0 } {
+	    error "TPROC-H Schema check failed $dbase schema is empty"
+	    } else {
+	    #Check 2 Tables Exist
+            puts "Check tables and indices"
+	    foreach table [dict keys $tables] {
+	     pg_select $existing_db "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = '$table')" exists_arr {
+            set torf $exists_arr(exists)
+	}
+	        if { $torf == "f" } {
+        error "TPROC-H Schema check failed $dbase schema is missing table $table"
+        } else {
+		if { $table eq "supplier" } {
+            pg_select $existing_db "select count(*) as row_count from supplier" supp_arr {
+            set count $supp_arr(row_count)
+        }
+        if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+        error "TPROC-H Schema check failed $dbase schema scale factor $actual_scale_factor does not equal dict scale factor if $scale_factor"
+        }
+        }
+        }
+	    #Check 4 Tables are indexed
+            set result [ pg_exec $existing_db "select tablename,indexname from pg_indexes where tablename = '$table'" ]
+            if { [pg_result $result -numTuples] == 0 } {
+        error "TPROC-H Schema check failed $dbase schema on table $table no indices"
+	}
+	    #Check 5 Tables are populated
+	    set expected_rows [ dict get $tables $table ]
+            pg_select $existing_db "select count(*) as row_count from $table" arc_arr {
+            set  rows $arc_arr(row_count)
+            }
+	      if { $rows < $expected_rows } {
+        error "TPROC-H Schema check failed $dbase schema on table $table row count of $rows is less than expected count of $expected_rows"
+        }
+        }
+        }
+           #Consistency check 4
+        puts "Check consistency"
+        set result [ pg_exec $existing_db "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(truncate(truncate(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
+         if { [pg_result $result -numTuples] != 0 } {
+	 error "TPROC-H Schema check failed $dbase schema consistency check failed"
+        }
+    #Consistency check completed
+    puts "$dbase TPROC-H Schema has been checked successfully."
+    }
+    }
+        } else {
+        error "Schema check failed $dbase TPROC-H schema does not exist"
+        }
+    pg_disconnect $existing_db
+    pg_disconnect $suconnect
+    return
+    }
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_scale_fact"
+    } else { return }
+}
