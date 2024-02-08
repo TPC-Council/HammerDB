@@ -1332,7 +1332,7 @@ proc check_tpch { dbase user password scale_factor } {
         }
 	#Consistency check
         puts "Check consistency"
-	   set stmnt_handle1 [ db2_select_direct $db_handle "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(trunc(trunc(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
+	   set stmnt_handle1 [ db2_select_direct $db_handle "SELECT * FROM (SELECT o_orderkey, decimal(decimal(o_totalprice,20,2) - decimal(SUM(trunc(trunc(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)),20,2),20,1) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
             set output [ db2_fetchrow $stmnt_handle1 ]
             if { $output != "" } {
 		    puts "output is $output"
