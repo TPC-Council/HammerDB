@@ -226,6 +226,10 @@ proc load_virtual {}  {
     if { $result != -1 }  {
         set virtual_users $maxvuser
 	} else {
+    set result [ lsearch [ lindex [ split [ join [ stacktrace ] ] ] ] "check_schema" ]
+    if { $result != -1 }  {
+        set virtual_users $maxvuser
+	} else {
         #Find if workload test or timed set when script is loaded as lprefix
         set maxvuser $virtual_users
         if { $lprefix eq "loadtimed" } {
@@ -233,12 +237,15 @@ proc load_virtual {}  {
             set suppo 1
         } else { ; }        
 	}
+      }
     } 
     #Moved to running of virtual users
     #disable_enable_options_menu disable
     set Name .ed_mainFrame.buttons.datagen 
     $Name configure -state disabled
     set Name .ed_mainFrame.buttons.boxes 
+    $Name configure -state disabled
+    set Name .ed_mainFrame.buttons.thumbup 
     $Name configure -state disabled
     set Name .ed_mainFrame.buttons.delete 
     $Name configure -state disabled
@@ -542,6 +549,8 @@ proc ed_kill_vusers {args} {
     set Name .ed_mainFrame.buttons.datagen 
     $Name configure -state normal
     set Name .ed_mainFrame.buttons.boxes 
+    $Name configure -state normal
+    set Name .ed_mainFrame.buttons.thumbup 
     $Name configure -state normal
     set Name .ed_mainFrame.buttons.delete 
     $Name configure -state normal

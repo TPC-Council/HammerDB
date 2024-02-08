@@ -2078,3 +2078,131 @@ return
 	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
     } else { return }
 }
+
+proc check_mssqlstpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict mssqlserver library ]} {
+        set library [ dict get $dbdict mssqlserver library ]
+    } else { set library "tdbc::odbc 1.0.6" }
+    if { [ llength $library ] > 1 } { 
+        set version [ lindex $library 1 ]
+        set library [ lindex $library 0 ]
+    }
+    upvar #0 configmssqlserver configmssqlserver
+    #set variables to values in dict
+    setlocaltpchvars $configmssqlserver
+    if {![string match windows $::tcl_platform(platform)]} {
+        set mssqls_server $mssqls_linux_server
+        set mssqls_odbc_driver $mssqls_linux_odbc
+        set mssqls_authentication $mssqls_linux_authent
+    }
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $mssqls_tpch_dbase ] TPROC-H schema\nin host [string toupper $mssqls_server ]?" -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-H check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+set version $version
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
+
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
+    if { $tcp eq "true" } { set server tcp:$server,$port }
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
+        set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
+    } else {
+        if {[ string toupper $authentication ] eq "SQL" } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+        } else {
+            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            set connection "DRIVER=$odbc_driver;SERVER=$server"
+        }
+    }
+    if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
+    if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
+    if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
+    return $connection
+}
+
+proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert scale_factor } {
+	puts "Checking $db TPROC-H schema"
+    set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
+    if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+        error "Connection to $connection could not be established : $message"
+    } else {
+	    if {!$azure} {odbc evaldirect "use tempdb"}
+	    #Check 1 Database Exists
+        puts "Check database"
+    set rows [ odbc allrows "IF DB_ID('$db') is not null SELECT 1 AS res ELSE SELECT 0 AS res" ]
+    set db_exists [ lindex {*}$rows 1 ]
+    if { $db_exists } {
+        if {!$azure} {odbc evaldirect "use $db"}
+        set rows [ odbc allrows "select COUNT(*) from sys.tables" ]
+        set table_count [ lindex {*}$rows 1 ]
+        if { $table_count == 0 } {
+	error "TPROC-H Schema check failed $db schema is empty"
+	} else {
+	    #Check 2 Tables Exist
+	puts "Check tables and indices"
+	foreach table [dict keys $tables] {
+    	set rows [ odbc allrows "IF OBJECT_ID (N'$table', N'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res" ]
+        set table_exists [ lindex {*}$rows 1 ]
+        if { $table_exists == 0 } {
+	error "TPROC-H Schema check failed $db schema is missing table $table"
+	} else {
+	if { $table eq "supplier" } {
+	    #Check 3 scale factor in schema is the same as dict setting
+    set rows [ odbc allrows "SELECT count(*) FROM SUPPLIER" ]
+    set count [ lindex {*}$rows 1 ]
+    if { $count } {
+        set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+	error "TPROC-H Schema check failed $db schema scale factor $actual_scale_factor does not equal dict scale factor if $scale_factor"
+        }
+    }
+    }
+	    #Check 4 Tables are indexed
+    	set rows [ odbc allrows "SP_HELPINDEX '$table'" ]
+        if { [ llength $rows ] eq 0 } {
+	error "TPROC-H Schema check failed $db schema on table $table no indicies"
+	}
+	    #Check 5 Tables are populated
+	set expected_rows [ dict get $tables $table ]
+        set rows [ odbc allrows "select count(*) from $table" ]
+        set row_count [ lindex {*}$rows 1 ]
+        if { $row_count < $expected_rows } {
+	error "TPROC-H Schema check failed $db schema on table $table row count of $row_count is less than expected count of $expected_rows"
+	} 
+	}
+}
+	   #Consistency check
+	puts "Check consistency"
+	set rows [ odbc allrows "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(round(round(l_extendedprice * (1 - l_discount),2,1) * (1 + l_tax),2,1)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-H Schema check failed $db schema consistency check failed"
+	} 
+}
+	#Consistency check completed
+	puts "$db TPROC-H schema has been checked successfully"
+	} else {
+	error "Schema check failed $db TPROC-H schema does not exist"
+	}
+	odbc close
+	return
+	}
+	}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_scale_fact"
+    } else { return }
+}

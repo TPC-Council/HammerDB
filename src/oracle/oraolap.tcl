@@ -1723,3 +1723,109 @@ proc drop_tpch { system_user system_password instance tpch_user } {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch $system_user [ quotemeta $system_password ] $instance $tpch_user"
     } else { return }
 }
+
+proc check_oratpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict oracle library ]} {
+        set library [ dict get $dbdict oracle library ]
+    } else { set library "Oratcl" } 
+    upvar #0 configoracle configoracle
+    setlocaltpchvars $configoracle
+        set check_message "Do you want to check the [ string toupper $tpch_user ] Oracle TPROC-H schema\nin the instance [string toupper $instance]?" 
+    if {[ tk_messageBox -title "Check Schema" -icon question -message $check_message -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-H check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create thread(s) for schema deletion: $message"
+            return 1
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
+
+proc standsql { curn sql } {
+    set ftch ""
+    if {[catch {orasql $curn $sql} message]} {
+	error "SQL statement failed: $sql : $message"
+    } else {
+	orafetch  $curn -datavariable output
+	while { [ oramsg  $curn ] == 0 } {
+	    lappend ftch $output
+	    orafetch  $curn -datavariable output
+	}
+	return $ftch
+    }
+}
+
+proc check_tpch { system_user system_password instance tpch_user scale_factor } {
+    puts "Checking $tpch_user TPROC-H schema"
+     set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
+    set connect $system_user/$system_password@$instance
+    set lda [ oralogon $connect ]
+    set curn [oraopen $lda ]
+	      #Check 1 Schema Exists
+    puts "Check schema"
+    set checkuserexists "SELECT created FROM all_users WHERE username = upper('$tpch_user')"
+    set userexists [ standsql $curn $checkuserexists ]
+    if {[ string length $userexists ] == 0} {
+    error "TPROC-H Schema check failed $tpch_user does not exist"
+    } else {
+	      #Check 2 Tables Exist
+	puts "Check tables and indices"
+        foreach table [dict keys $tables] {
+	set checktableexists "select status from all_tables where owner = upper('$tpch_user') and table_name = upper('$table')"
+    	set table_exists [ standsql $curn $checktableexists ]
+        if { [ string length $table_exists ] == 0 } {
+        error "TPROC-H Schema check failed $tpch_user schema is missing table $table"
+        } else {
+        if { $table eq "supplier" } {
+            #Check 3 Warehouse count in schema is the same as dict setting
+    set countsql "SELECT count(*) from $tpch_user.SUPPLIER"
+    set count [ standsql $curn $countsql ]
+        if { $count } {
+	set actual_scale_factor [ expr {$count / 10000} ]
+        if { $actual_scale_factor != $scale_factor } {
+        error "TPROC-H Schema check failed $tpch_user schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+        }
+        }
+	}
+            #Check 4 Tables are indexed
+	set checkindexexists "select count(*) from all_indexes where owner = upper('$tpch_user') and table_name = upper('$table')"
+        set index_exists [ standsql $curn $checkindexexists ]
+        if { $index_exists == 0 } {
+        error "TPROC-H Schema check failed $tpch_user schema on table $table no indicies"
+        } 
+            #Check 5 Tables are populated
+        set expected_rows [ dict get $tables $table ]
+	set checkrowcount "select num_rows from all_tables where owner = upper('$tpch_user') and table_name = upper('$table')"
+        set row_count [ standsql $curn $checkrowcount ] 
+        if { $row_count < $expected_rows } {
+        error "TPROC-H Schema check failed $tpch_user schema on table $table row count of $row_count is less than expected count of $expected_rows"
+        } 
+        }
+        }
+	   #Consistency check
+	puts "Check consistency"
+        set checkconsistency "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(trunc(trunc(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM $tpch_user.orders, $tpch_user.lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0"
+	set row_count [ standsql $curn $checkconsistency ]
+        if {[ llength $row_count ] > 0} {
+        error "TPROC-H Schema check failed $db schema consistency check failed"
+        }
+}
+        #All consistency checks have completed
+        puts "$tpch_user TPROC-H schema has been checked successfully"
+        oralogoff $lda
+        return
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $system_user [ quotemeta $system_password ] $instance $tpch_user $scale_fact"
+    } else { return }
+}

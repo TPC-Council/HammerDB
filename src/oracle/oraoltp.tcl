@@ -93,7 +93,7 @@ proc CreateStoredProcs { lda timesten num_part } {
             FROM customer, warehouse
             WHERE warehouse.w_id = no_w_id AND customer.c_w_id = no_w_id AND
             customer.c_d_id = no_d_id AND customer.c_id = no_c_id;
-            UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax;
+            UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id - 1, d_tax INTO no_d_next_o_id, no_d_tax;
             o_id := no_d_next_o_id;
             INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
             INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
@@ -265,7 +265,7 @@ proc CreateStoredProcs { lda timesten num_part } {
             ol_line_number_array(loop_counter) := loop_counter;
             END LOOP;
 
-            UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax;
+            UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id RETURNING d_next_o_id - 1, d_tax INTO no_d_next_o_id, no_d_tax;
 
             INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (no_d_next_o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
             INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id) VALUES (no_d_next_o_id, no_d_id, no_w_id);
@@ -3339,5 +3339,169 @@ proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } 
 }
 
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpcc $system_user [ quotemeta $system_password ] $instance $tpcc_user $hash_clusters"
+    } else { return }
+}
+
+proc check_oratpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict oracle library ]} {
+        set library [ dict get $dbdict oracle library ]
+    } else { set library "Oratcl" } 
+    upvar #0 configoracle configoracle
+    setlocaltpccvars $configoracle
+        set check_message "Do you want to check the [ string toupper $tpcc_user ] Oracle TPROC-C schema\nin the instance [string toupper $instance]?" 
+    if {[ tk_messageBox -title "Check Schema" -icon question -message $check_message -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create thread(s) for schema deletion: $message"
+            return 1
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc standsql { curn sql } {
+    set ftch ""
+    if {[catch {orasql $curn $sql} message]} {
+	error "SQL statement failed: $sql : $message"
+    } else {
+	orafetch  $curn -datavariable output
+	while { [ oramsg  $curn ] == 0 } {
+	    lappend ftch $output
+	    orafetch  $curn -datavariable output
+	}
+	return $ftch
+    }
+}
+
+proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
+    puts "Checking $tpcc_user TPROC-C schema"
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
+    set sps [ list delivery neword ostat payment slev ]
+    set connect $system_user/$system_password@$instance
+    set lda [ oralogon $connect ]
+    set curn [oraopen $lda ]
+    	     #Check 1 Schema Exists
+	puts "Check schema"
+    set checkuserexists "SELECT created FROM all_users WHERE username = upper('$tpcc_user')"
+    set userexists [ standsql $curn $checkuserexists ]
+    if {[ string length $userexists ] == 0} {
+    error "TPROC-C Schema check failed $tpcc_user does not exist"
+    } else {
+	      #Check 2 Tables Exist
+	puts "Check tables and indices"
+        foreach table [dict keys $tables] {
+	set checktableexists "select status from all_tables where owner = upper('$tpcc_user') and table_name = upper('$table')"
+    	set table_exists [ standsql $curn $checktableexists ]
+        if { [ string length $table_exists ] == 0 } {
+        error "TPROC-C Schema check failed $tpcc_user schema is missing table $table"
+        } else {
+        if { $table eq "warehouse" } {
+            #Check 3 Warehouse count in schema is the same as dict setting
+	set checkmaxwid "select max(w_id) from $tpcc_user.$table"
+    	set w_id_input [ standsql $curn $checkmaxwid ]
+        if { $count_ware != $w_id_input } {
+        error "TPROC-C Schema check failed $tpcc_user schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+        }
+        }
+            #Check 4 Tables are indexed
+	set checkindexexists "select count(*) from all_indexes where owner = upper('$tpcc_user') and table_name = upper('$table')"
+        set index_exists [ standsql $curn $checkindexexists ]
+        if { $index_exists == 0 } {
+	    #History has no index for Oracle
+	if { $table != "history" } {
+        error "TPROC-C Schema check failed $tpcc_user schema on table $table no indices"
+	}
+        } 
+            #Check 5 Tables are populated
+        set expected_rows [ dict get $tables $table ]
+	set checkrowcount "select num_rows from all_tables where owner = upper('$tpcc_user') and table_name = upper('$table')"
+        set row_count [ standsql $curn $checkrowcount ] 
+        if { $row_count < $expected_rows } {
+        error "TPROC-C Schema check failed $tpcc_user schema on table $table row count of $row_count is less than expected count of $expected_rows"
+        } 
+        }
+        }
+	   #Check 6 Stored Procedures Exist
+	puts "Check procedures"
+        foreach sp $sps {
+	set checkspexists "select max(line) from all_source where owner = upper('$tpcc_user') and name = upper('$sp')"
+	set sp_exists [ standsql $curn $checkspexists ]
+        if { ![ string is entier $sp_exists ] } {
+        error "TPROC-C Schema check failed $db schema is missing stored procedure $sp"
+        }
+        }
+	   #Create temporary sample table
+	#
+	set checktemptableexists "select status from all_tables where table_name = 'TEMP_W'"
+    	set table_exists [ standsql $curn $checktemptableexists ]
+        if { [ string length $table_exists ] == 0 } {
+	    set createtemptab "CREATE GLOBAL TEMPORARY TABLE TEMP_W (T_W_ID NUMBER(6, 0)) ON COMMIT DELETE ROWS"
+            if {[ catch {orasql $curn $createtemptab} message ] } {
+            error "TPROC-C Schema check failed $tpcc_user schema creating temporary table $message"
+            } else {
+		    if { $w_id_input <= 10 } {
+        for  {set i 1} {$i <= $w_id_input} { incr i} {
+		oraparse $curn "insert into temp_w values ($i)"
+		oraexec $curn
+        }
+        } else {
+        foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+        oraparse $curn [ subst $statement ]
+	oraexec $curn
+}
+}
+} 
+}
+          #Consistency check 1
+	puts "Check consistency 1"
+        set consist1 "select d_w_id, (w_ytd - sum(d_ytd)) diff from $tpcc_user.warehouse, $tpcc_user.district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" 
+	set rows [ standsql $curn $consist1 ]
+        if {[ llength $rows ] > 0} {
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 1 failed $rows"
+        }
+           #Consistency check 2
+	puts "Check consistency 2"
+        set consist2 "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from $tpcc_user.district, $tpcc_user.orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX"
+	set rows [ standsql $curn $consist2 ]
+        if {[ llength $rows ] > 0} {
+		puts "$rows"
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 2 failed"
+        } 
+           #Consistency check 3
+	puts "Check consistency 3"
+        set consist3 "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from $tpcc_user.new_order group by no_w_id, no_d_id) dt where nocount != total"
+	set rows [ standsql $curn $consist3 ]
+        if {[ llength $rows ] > 0} {
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 3 failed"
+        }
+           #Consistency check 4
+	puts "Check consistency 4"
+        set consist4 "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from $tpcc_user.orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from $tpcc_user.order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count"
+	set rows [ standsql $curn $consist4 ]
+        if {[ llength $rows ] > 0} {
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 4 failed"
+        }
+   #Drop temporary sample table
+        set droptable "drop table temp_w"
+        oraparse $curn $droptable
+	oraexec $curn
+        #All consistency checks have completed
+        puts "$tpcc_user TPROC-C schema has been checked successfully"
+        oralogoff $lda
+        return
+}
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpcc $system_user [ quotemeta $system_password ] $instance $tpcc_user $count_ware"
     } else { return }
 }

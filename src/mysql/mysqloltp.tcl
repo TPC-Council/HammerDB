@@ -2905,3 +2905,193 @@ proc drop_schema { host port socket ssl_options user password dbase } {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_dbase"
     } else { return }
 }
+
+proc check_mysqltpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED mysql_ssl_options
+    upvar #0 dbdict dbdict
+
+    if {[dict exists $dbdict mysql library ]} {
+        set library [ dict get $dbdict mysql library ]
+    } else {
+        set library "mysqltcl" 
+    }
+
+    upvar #0 configmysql configmysql
+    #set variables to values in dict
+    setlocaltpccvars $configmysql
+    #If the options menu has been run under the GUI mysql_ssl_options is set
+    #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
+    #Set it now if it doesn't exist
+    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
+    if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { 
+        set mysql_connector "$mysql_host:$mysql_port" 
+    }
+
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $mysql_dbase ] TPROC-C schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_user ]?" -type yesno ] == yes} {
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "TPROC-C check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to create thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
+if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc chk_socket { host socket } {
+    if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
+        return "TRUE"
+    } else {
+        return "FALSE"
+    }
+}
+
+proc ConnectToMySQL { host port socket ssl_options user password } {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { [ chk_socket $host $socket ] eq "TRUE" } {
+	set use_socket "true"
+	append connectstring " -socket $socket"
+	 } else {
+	set use_socket "false"
+	append connectstring " -host $host -port $port"
+	}
+	foreach key [ dict keys $ssl_options ] {
+	append connectstring " $key [ dict get $ssl_options $key ] "
+	}
+	append connectstring " -user $user -password $password"
+	set login_command "mysqlconnect [ dict get $connectstring ]"
+	#eval the login command
+        if [catch {set mysql_handler [eval $login_command]}] {
+		if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+    } else {
+            puts "the tcp connection to $host:$port could not be established"
+    }
+        set connected "false"
+        } else {
+        set connected "true"
+        }
+    if {$connected} {
+        mysql::autocommit $mysql_handler 0
+	catch {set ssl_status [ mysql::sel $mysql_handler "show session status like 'ssl_cipher'" -list ]}
+	if { [ info exists ssl_status ] } {
+	puts [ join $ssl_status ]
+	}
+        return $mysql_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }
+}
+
+proc check_tpcc { host port socket ssl_options user password dbase count_ware } {
+    global mysqlstatus
+    puts "Checking $dbase TPROC-C schema"
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
+    set sps [ list delivery neword ostat payment slev ]
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+   #Check 1 Database Exists
+    puts "Check database"
+        set db_exists [ mysql::sel $mysql_handler "select schema_name from information_schema.schemata where schema_name = '$dbase'" -flatlist  ]
+	if { [ string length $db_exists ] > 0 } {
+            mysqluse $mysql_handler $dbase
+        set table_exists [ mysql::sel $mysql_handler "show tables" -flatlist  ]
+	if {[ llength $table_exists ] == 0 } {
+	error "TPROC-C Schema check failed $dbase schema is empty"
+	} else {
+	#Check 2 Tables Exist
+	puts "Check tables and indices"
+	foreach table [dict keys $tables] {
+	set match [ lsearch $table_exists $table ]
+	if { $match == -1 } {
+	error "TPROC-C Schema check failed $dbase schema is missing table $table"
+	} else {
+	if { $table eq "warehouse" } {
+	#Check 3 Warehouse count in schema is the same as dict setting
+        set w_id_input [  mysql::sel $mysql_handler "select max(w_id) from warehouse" -flatlist ]
+	if { $count_ware != $w_id_input } {
+	error "TPROC-C Schema check failed $dbase schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+	}
+	}
+        #Check 4 Tables are indexed
+    	set is_indexed [  mysql::sel $mysql_handler "show index from $table" -flatlist ]
+        if { [ llength $is_indexed ] eq 0 } {
+	if { $table != "history" } {
+	error "TPROC-C Schema check failed $dbase schema on table $table no indices"
+		}
+	}
+	#Check 5 Tables are populated
+	set expected_rows [ dict get $tables $table ]
+        set row_count [  mysql::sel $mysql_handler "select count(*) from $table" -flatlist ]
+        if { $row_count < $expected_rows } {
+	error "TPROC-C Schema check failed $dbase schema on table $table row count of $row_count is less than expected count of $expected_rows"
+	} 
+	}
+	}
+        }
+        #Check 6 Stored Procedures Exist
+	puts "Check procedures"
+	foreach sp $sps {
+        set sp_exists [ mysql::sel $mysql_handler "show create procedure $sp" -flatlist  ]
+        if {  [ llength $sp_exists ] == 0 } {
+	error "TPROC-C Schema check failed $dbase schema is missing stored procedure $sp"
+	} 
+	}
+        #Create temporary sample table
+	mysqlexec $mysql_handler "create temporary table `temp_w` (`t_w_id` smallint null)"
+	if { $w_id_input <= 10 } {
+	for  {set i 1} {$i <= $w_id_input} { incr i} {
+ 	mysqlexec $mysql_handler "insert into temp_w values ($i)"
+	}
+	} else {
+	foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+	mysqlexec $mysql_handler [ subst $statement ]
+	}
+	}
+	mysqlexec $mysql_handler "create temporary table `temp_w_b` as select * from `temp_w`"
+	   #Consistency check 1
+	puts "Check consistency 1"
+	set rows [ mysql::sel $mysql_handler "select d_w_id, (w_ytd - sum(d_ytd)) diff from warehouse, district where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" -flatlist ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $dbase schema consistency check 1 failed"
+	} 
+	   #Consistency check 2
+	puts "Check consistency 2"
+	set rows [ mysql::sel $mysql_handler "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" -flatlist ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $dbase schema consistency check 2 failed"
+	} 
+	   #Consistency check 3
+	puts "Check consistency 3"
+	set rows [ mysql::sel $mysql_handler "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from new_order group by no_w_id, no_d_id) dt where nocount != total" -flatlist ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $dbase schema consistency check 3 failed"
+	} 
+	   #Consistency check 4
+	puts "Check consistency 4"
+	set rows [ mysql::sel $mysql_handler "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, temp_w_b where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" -flatlist ]
+	if {[ llength $rows ] > 0} {
+	error "TPROC-C Schema check failed $dbase schema consistency check 4 failed"
+	} 
+	mysqlexec $mysql_handler "drop table `temp_w`"
+	mysqlexec $mysql_handler "drop table `temp_w_b`"
+        puts "$dbase TPROC-C Schema has been checked successfully."
+	} else {
+	error "Schema check failed $dbase TPROC-C schema does not exist"
+	}
+    mysqlclose $mysql_handler
+    return
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpcc $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_dbase $mysql_count_ware"
+    } else { return }
+}

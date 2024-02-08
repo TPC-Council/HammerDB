@@ -8,7 +8,7 @@ proc help { args } {
     }
     set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript giset jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
+        set helpcmds [ list buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript giset jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
     if {[ llength $args ] != 1} {
         puts $helpbanner
         foreach helpcmd $helpcmds { puts "\t$helpcmd" } 
@@ -113,6 +113,10 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                 buildschema {
                     putscli "buildschema - Usage: buildschema"
                     putscli "Runs the schema build for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Build command in the graphical interface." 
+                }
+                checkschema {
+                    putscli "checkschema - Usage: checkschema"
+                    putscli "Runs the schema consistency check for the database and benchmark selected with dbset and variables selected with diset. Equivalent to the Check command in the graphical interface." 
                 }
                 deleteschema {
                     putscli "deleteschema - Usage: deleteschema"
