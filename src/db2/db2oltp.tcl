@@ -2379,3 +2379,150 @@ proc drop_schema { dbname } {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $db2_dbase"
     } else { return }
 }
+
+
+proc check_db2tpcc {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict db2 library ]} {
+        set library [ dict get $dbdict db2 library ]
+    } else { set library "db2tcl" }
+    upvar #0 configdb2 configdb2
+    #set variables to values in dict
+    setlocaltpccvars $configdb2
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $db2_dbase ] Db2 TPROC-C schema\nunder user [ string toupper $db2_user ]?" -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "Db2 TPROC-C check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+
+proc ConnectToDb2 { dbname user password } {
+    puts "Connecting to database $dbname"
+    if {[catch {set db_handle [db2_connect $dbname $user $password ]} message]} {
+     error "Schema check failed $dbname failed to to connect to TPROC-C schema"
+    } else {
+        puts "Connection established"
+        return $db_handle
+}}
+
+proc check_tpcc { dbase user password count_ware } {
+    puts "Checking $dbase TPROC-C schema"
+    set tables [ dict create warehouse $count_ware customer [ expr {$count_ware * 30000} ] district [ expr {$count_ware * 10} ] history [ expr {$count_ware * 30000} ] item 100000 new_order [ expr {$count_ware * 9000 * 0.90} ] order_line [ expr {$count_ware * 300000 * 0.99} ] orders [ expr {$count_ware * 30000} ] stock [ expr {$count_ware * 100000} ] ]
+    set sps [ list delivery neword ostat payment slev ]
+    set db_handle [ ConnectToDb2 $dbase $user $password ]
+          #Check 1 Database Exists
+          puts "Check database"
+          set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
+          set tabcount [ db2_fetchrow $newdb_handle ]
+          db2_finish $newdb_handle
+          if { [ llength $tabcount ] == 0 } {
+          #tabcount len will be 0 for empty, 1 for table exists
+	  error "TPROC-C Schema check failed $dbase schema is empty"
+          } else {
+	    #Check 2 Tables Exist
+            puts "Check tables and indices"
+	    foreach table [dict keys $tables] {
+            set tabexists [ db2_select_direct $db_handle "select status from syscat.tables where tabname = '[ string toupper $table]'" ]
+            set tabstatus [ db2_fetchrow $tabexists ]
+	    if { $tabstatus != "N" } {
+            error "TPROC-C Schema check failed $dbase schema is missing table $table"
+            } else {
+	    if { $table eq "warehouse" } {
+            set stmnt_handle1 [ db2_select_direct $db_handle "select max(w_id) from warehouse" ] 
+            set w_id_input [ db2_fetchrow $stmnt_handle1 ]
+	    if { $count_ware != $w_id_input } {
+            error "TPROC-C Schema check failed $dbase schema warehouse count $w_id_input does not equal dict warehouse count of $count_ware"
+            }
+            }
+	    #Check 4 Tables are indexed
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from syscat.indexes where tabname = '[ string toupper $table]'" ] 
+            set is_indexed [ db2_fetchrow $stmnt_handle1 ]
+	    if { $is_indexed eq 0 } {
+            if { $table != "history" } {
+            error "TPROC-C Schema check failed $dbase schema on table $table no indices"
+            }
+            }
+	    #Check 5 Tables are populated
+	    set expected_rows [ dict get $tables $table ]
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from [ string toupper $table]" ] 
+            set rows [ db2_fetchrow $stmnt_handle1 ]
+	      if { $rows < $expected_rows } {
+        error "TPROC-C Schema check failed $dbase schema on table $table row count of $rows is less than expected count of $expected_rows"
+        }
+        }
+        }
+	    #Check 6 Stored Procedures Exist
+	puts "Check procedures"
+        foreach sp $sps {
+            set stmnt_handle1 [ db2_select_direct $db_handle "select valid from syscat.procedures where procname = '[ string toupper $sp]'" ] 
+            set valid [ db2_fetchrow $stmnt_handle1 ]
+	        if { $valid != "Y" } {
+	error "TPROC-C Schema check failed $dbase schema is missing stored procedure $sp"
+        } 
+        }
+            #Create temporary sample tablespace and table
+            set stmnt_handle1 [ db2_select_direct $db_handle "select tbspaceid from syscat.tablespaces where tbspace = 'CHECK_TEMP_W'" ] 
+            set tbspaceid [ db2_fetchrow $stmnt_handle1 ]
+	    if { ![ string is entier $tbspaceid ] } {
+            db2_exec_direct $db_handle "CREATE USER TEMPORARY TABLESPACE CHECK_TEMP_W MANAGED BY AUTOMATIC STORAGE"
+    		}
+            db2_exec_direct $db_handle "create temporary table temp_w (t_w_id smallint null)" 
+        if { $w_id_input <= 10 } {
+        for  {set i 1} {$i <= $w_id_input} { incr i} {
+        db2_exec_direct $db_handle "insert into temp_w values ($i)"
+        }
+        } else {
+        foreach statement {{insert into temp_w values (1)} {insert into temp_w values ([expr {0.1 * $w_id_input}])} {insert into temp_w values ([expr {0.2 * $w_id_input}])} {insert into temp_w values ([expr {0.3 * $w_id_input}])} {insert into temp_w values ([expr {0.4 * $w_id_input}])} {insert into temp_w values ([expr {0.5 * $w_id_input}])} {insert into temp_w values ([expr {0.6 * $w_id_input}])} {insert into temp_w values ([expr {0.7 * $w_id_input}])} {insert into temp_w values ([expr {0.8 * $w_id_input}])} {insert into temp_w values ([expr {0.9 * $w_id_input}])} {insert into temp_w values ($w_id_input)}} {
+        db2_exec_direct $db_handle [ subst $statement ]
+        }
+        }
+           #Consistency check 1
+        puts "Check consistency 1"
+            set stmnt_handle1 [ db2_select_direct $db_handle "select d_w_id, (w_ytd - sum(d_ytd)) diff from WAREHOUSE, DISTRICT where d_w_id=w_id group by d_w_id, w_ytd having (w_ytd - sum(d_ytd)) != 0" ] 
+            set output [ db2_fetchrow $stmnt_handle1 ]
+	    if { $output != "" } { 
+            error "TPROC-C Schema check failed $dbase schema consistency check 1 failed"
+	    }
+           #Consistency check 2
+        puts "Check consistency 2"
+            set stmnt_handle1 [ db2_select_direct $db_handle "select * from (select d_w_id, d_id, max(o_id) AS ORDER_MAX, (d_next_o_id - 1) AS ORDER_NEXT from district, orders where d_w_id = o_w_id and d_id = o_d_id and d_w_id in (select t_w_id from temp_w) group by d_w_id, d_id, (d_next_o_id - 1)) dt where dt.ORDER_NEXT != dt.ORDER_MAX" ] 
+            set output [ db2_fetchrow $stmnt_handle1 ]
+	    if { $output != "" } { 
+            error "TPROC-C Schema check failed $dbase schema consistency check 2 failed"
+	    }
+           #Consistency check 3
+        puts "Check consistency 3"
+            set stmnt_handle1 [ db2_select_direct $db_handle "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from new_order group by no_w_id, no_d_id) dt where nocount != total" ] 
+            set output [ db2_fetchrow $stmnt_handle1 ]
+	    if { $output != "" } { 
+            error "TPROC-C Schema check failed $dbase schema consistency check 3 failed"
+	    }
+           #Consistency check 4
+        puts "Check consistency 4"
+            set stmnt_handle1 [ db2_select_direct $db_handle "select * from (select o_w_id, o_d_id, sum(o_ol_cnt) as ol_sum from orders, temp_w where o_w_id = t_w_id group by o_w_id, o_d_id) consist1, (select ol_w_id, ol_d_id, count(*) as ol_count from order_line, temp_w where ol_w_id = t_w_id group by ol_w_id, ol_d_id) consist2 where o_w_id = ol_w_id and o_d_id = ol_d_id and ol_sum != ol_count" ] 
+            set output [ db2_fetchrow $stmnt_handle1 ]
+	    if { $output != "" } { 
+            error "TPROC-C Schema check failed $dbase schema consistency check 4 failed"
+	    }
+            db2_exec_direct $db_handle "DROP TABLE TEMP_W"
+    puts "$dbase TPROC-C Schema has been checked successfully."
+    } 
+    db2_disconnect $db_handle
+    return
+}
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpcc $db2_dbase $db2_user [ quotemeta $db2_pass ] $db2_count_ware"
+    } else { return }
+}
