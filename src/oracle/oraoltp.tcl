@@ -3475,14 +3475,14 @@ proc check_tpcc { system_user system_password instance tpcc_user count_ware } {
 	set rows [ standsql $curn $consist2 ]
         if {[ llength $rows ] > 0} {
 		puts "$rows"
-        #error "TPROC-C Schema check failed $tpcc_user schema consistency check 2 failed"
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 2 failed"
         } 
            #Consistency check 3
 	puts "Check consistency 3"
         set consist3 "select * from (select count(*) as nocount, (max(no_o_id) - min(no_o_id) + 1) as total from $tpcc_user.new_order group by no_w_id, no_d_id) dt where nocount != total"
 	set rows [ standsql $curn $consist3 ]
         if {[ llength $rows ] > 0} {
-        #error "TPROC-C Schema check failed $tpcc_user schema consistency check 3 failed"
+        error "TPROC-C Schema check failed $tpcc_user schema consistency check 3 failed"
         }
            #Consistency check 4
 	puts "Check consistency 4"
