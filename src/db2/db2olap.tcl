@@ -1248,3 +1248,104 @@ proc drop_schema { dbname } {
     } else { return }
 }
 
+proc check_db2tpch {} {
+    global maxvuser suppo ntimes threadscreated _ED
+    upvar #0 dbdict dbdict
+    if {[dict exists $dbdict db2 library ]} {
+        set library [ dict get $dbdict db2 library ]
+    } else { set library "db2tcl" }
+    upvar #0 configdb2 configdb2
+    #set variables to values in dict
+    setlocaltpchvars $configdb2
+    if {[ tk_messageBox -title "Check Schema" -icon question -message "Do you want to check the [ string toupper $db2_tpch_dbase ] Db2 TPROC-H schema\nunder user [ string toupper $db2_tpch_user ]?" -type yesno ] == yes} { 
+        set maxvuser 1
+        set suppo 1
+        set ntimes 1
+        ed_edit_clear
+        set _ED(packagekeyname) "Db2 TPROC-H check"
+        if { [catch {load_virtual} message]} {
+            puts "Failed to created thread for schema check: $message"
+            return
+        }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+#LOAD LIBRARIES AND MODULES
+set library $library
+"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
+if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {package require tpchcommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpchcommon::* }
+
+proc ConnectToDb2 { dbname user password } {
+    puts "Connecting to database $dbname"
+    if {[catch {set db_handle [db2_connect $dbname $user $password ]} message]} {
+     error "Schema check failed $dbname failed to to connect to TPROC-H schema"
+    } else {
+        puts "Connection established"
+        return $db_handle
+}}
+
+proc check_tpch { dbase user password scale_factor } {
+    puts "Checking $dbase TPROC-H schema"
+      set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
+    set db_handle [ ConnectToDb2 $dbase $user $password ]
+          #Check 1 Database Exists
+          puts "Check database"
+          set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
+          set tabcount [ db2_fetchrow $newdb_handle ]
+          db2_finish $newdb_handle
+          if { [ llength $tabcount ] == 0 } {
+          #tabcount len will be 0 for empty, 1 for table exists
+	  error "TPROC-H Schema check failed $dbase schema is empty"
+          } else {
+	    #Check 2 Tables Exist
+            puts "Check tables and indices"
+	    foreach table [dict keys $tables] {
+            set tabexists [ db2_select_direct $db_handle "select status from syscat.tables where tabname = '[ string toupper $table]'" ]
+            set tabstatus [ db2_fetchrow $tabexists ]
+	    if { $tabstatus != "N" } {
+            error "TPROC-H Schema check failed $dbase schema is missing table $table"
+            } else {
+	    if { $table eq "supplier" } {
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from supplier" ] 
+            set count [ db2_fetchrow $stmnt_handle1 ]
+	    if { $count } {
+            set actual_scale_factor [ expr {$count / 10000} ]
+            if { $actual_scale_factor != $scale_factor } {
+            error "TPROC-H Schema check failed $dbase schema scale factor $actual_scale_factor does not equal dict scale factor if $scale_factor"
+            }
+            }
+            }
+	    #Check 4 Tables are indexed
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from syscat.indexes where tabname = '[ string toupper $table]'" ] 
+            set is_indexed [ db2_fetchrow $stmnt_handle1 ]
+	    if { $is_indexed eq 0 } {
+            error "TPROC-H Schema check failed $dbase schema on table $table no indices"
+            }
+	    #Check 5 Tables are populated
+	    set expected_rows [ dict get $tables $table ]
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from [ string toupper $table]" ] 
+            set rows [ db2_fetchrow $stmnt_handle1 ]
+	      if { $rows < $expected_rows } {
+        error "TPROC-H Schema check failed $dbase schema on table $table row count of $rows is less than expected count of $expected_rows"
+        }
+        }
+        }
+	#Consistency check
+        puts "Check consistency"
+	   set stmnt_handle1 [ db2_select_direct $db_handle "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(trunc(trunc(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" ]
+            set output [ db2_fetchrow $stmnt_handle1 ]
+            if { $output != "" } {
+		    puts "output is $output"
+            error "TPROC-H Schema check failed $dbase schema consistency check failed"
+            }
+        }
+        #Consistency check completed
+        puts "$dbase TPROC-H Schema has been checked successfully."
+    db2_finish $stmnt_handle1
+    db2_disconnect $db_handle
+    return
+        } 
+}
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $db2_tpch_dbase $db2_tpch_user [ quotemeta $db2_tpch_pass ] $db2_scale_fact"
+    } else { return }
+}
