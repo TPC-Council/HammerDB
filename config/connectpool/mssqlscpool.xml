@@ -7,7 +7,8 @@
         <mssqls_port>1433</mssqls_port>
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
-        <mssqls_linux_authent>sql</mssqls_linux_authent>
+        <mssqls_msi_object_id>null</mssqls_msi_object_id>
+        <mssqls_linux_authent>sql</mssqls_linux_authent>       
 	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
 	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
         <mssqls_uid>sa</mssqls_uid>
@@ -23,6 +24,7 @@
         <mssqls_port>1433</mssqls_port>
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
+        <mssqls_msi_object_id>null</mssqls_msi_object_id>
         <mssqls_linux_authent>sql</mssqls_linux_authent>
 	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
 	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
@@ -39,6 +41,7 @@
         <mssqls_port>1433</mssqls_port>
         <mssqls_azure>false</mssqls_azure>
         <mssqls_authentication>windows</mssqls_authentication>
+        <mssqls_msi_object_id>null</mssqls_msi_object_id>  
         <mssqls_linux_authent>sql</mssqls_linux_authent>
 	<mssqls_odbc_driver>ODBC Driver 18 for SQL Server</mssqls_odbc_driver>
 	<mssqls_linux_odbc>ODBC Driver 18 for SQL Server</mssqls_linux_odbc>
