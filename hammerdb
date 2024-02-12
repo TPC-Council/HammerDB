@@ -10,7 +10,7 @@ exec wish8.6 -file $0 ${1+"$@"}
 exit
 ########################################################################
 # HammerDB
-# Copyright (C) 2003-2023 Steve Shaw
+# Copyright (C) 2003-2024 Steve Shaw
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@ exit
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.9"
+set hdb_version "v4.10"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/modules"
