@@ -1225,25 +1225,33 @@ proc mk_order { odbc start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
     } else {
         if {[ string toupper $authentication ] eq "SQL" } {
             set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+     } else {
+        if {[ string toupper $authentication ] eq "ENTRA" } {
+        if {[ regexp {[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}} $msi_object_id ] } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryMsi;UID=$msi_object_id"
+	} else {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryInteractive"
+	}
         } else {
-            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            puts stderr "Error: neither WINDOWS, ENTRA or SQL Authentication has been specified"
             set connection "DRIVER=$odbc_driver;SERVER=$server"
         }
     }
+}
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
     if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
     if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert num_vu use_bcp partition_orders_and_lineitems advanced_stats} {
+proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azure db maxdop colstore encrypt trust_cert msi_object_id num_vu use_bcp partition_orders_and_lineitems advanced_stats} {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -1256,7 +1264,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     #SF * 1500K rows in Orders table
     #SF * 6000K rows in Lineitem table
     ###############################################
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert $msi_object_id ]
     set rows_per_bcp 1000000
     #update number always zero for first load
     set upd_num 0
@@ -1397,7 +1405,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_advanced_stats"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch {$mssqls_server} $mssqls_port $mssqls_scale_fact {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_maxdop $mssqls_colstore $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_msi_object_id $mssqls_num_tpch_threads $mssqls_tpch_use_bcp $mssqls_tpch_partition_orders_and_lineitems $mssqls_tpch_advanced_stats"
     } else { return }
 }
 
@@ -1442,6 +1450,7 @@ set azure \"$mssqls_azure\";#Azure Type Connection
 set database \"$mssqls_tpch_dbase\";# Database containing the TPC Schema
 set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
 set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
+set msi_object_id \"$mssqls_msi_object_id\";# MSI Object ID for Entra authentication
 set refresh_on \"$mssqls_refresh_on\" ;#First User does refresh function
 set update_sets $mssqls_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh function
@@ -1455,18 +1464,26 @@ if [catch {package require $library $version} message] { error "Failed to load $
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
     } else {
         if {[ string toupper $authentication ] eq "SQL" } {
             set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+     } else {
+        if {[ string toupper $authentication ] eq "ENTRA" } {
+        if {[ regexp {[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}} $msi_object_id ] } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryMsi;UID=$msi_object_id"
+	} else {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryInteractive"
+	}
         } else {
-            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            puts stderr "Error: neither WINDOWS, ENTRA or SQL Authentication has been specified"
             set connection "DRIVER=$odbc_driver;SERVER=$server"
         }
     }
+}
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
     if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
     if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
@@ -1612,8 +1629,8 @@ proc del_order_ref { odbc upd_num scale_factor trickle_refresh REFRESH_VERBOSE }
     }
 }
 
-proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database encrypt trust_cert update_sets trickle_refresh REFRESH_VERBOSE RF_SET partition_orders_and_lineitems} {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert ]
+proc do_refresh { server port scale_factor odbc_driver authentication uid pwd tcp azure database encrypt trust_cert msi_object_id update_sets trickle_refresh REFRESH_VERBOSE RF_SET partition_orders_and_lineitems} {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
@@ -1869,8 +1886,8 @@ proc sub_query { query_no scale_factor maxdop myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert RAISEERROR VERBOSE maxdop total_querysets myposition} {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert ]
+proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id RAISEERROR VERBOSE maxdop total_querysets myposition} {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure $db $encrypt $trust_cert $msi_object_id ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
@@ -1968,21 +1985,21 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
-        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
-        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $partition_orders_and_lineitems 
+        do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $RAISEERROR $VERBOSE $maxdop $total_querysets 0 
+        do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $partition_orders_and_lineitems 
     } else {
         switch $myposition {
             1 {
-                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $partition_orders_and_lineitems $mssqls_tpch_advanced_stats
+                do_refresh $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $partition_orders_and_lineitems 
             }
             default {
-                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]  
+                do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $RAISEERROR $VERBOSE $maxdop $total_querysets [ expr $myposition - 1 ]  
             }
         }
     }
 } else {
-    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition 
+    do_tpch $server $port $scale_factor $odbc_driver $authentication $uid $pwd $tcp $azure $database $encrypt $trust_cert $msi_object_id $RAISEERROR $VERBOSE $maxdop $total_querysets $myposition 
 }}
 }
 
@@ -2023,26 +2040,34 @@ set version $version
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
     } else {
         if {[ string toupper $authentication ] eq "SQL" } {
             set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+     } else {
+        if {[ string toupper $authentication ] eq "ENTRA" } {
+        if {[ regexp {[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}} $msi_object_id ] } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryMsi;UID=$msi_object_id"
+	} else {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryInteractive"
+	}
         } else {
-            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            puts stderr "Error: neither WINDOWS, ENTRA or SQL Authentication has been specified"
             set connection "DRIVER=$odbc_driver;SERVER=$server"
         }
     }
+}
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
     if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
     if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc drop_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert } {
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
+proc drop_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id } {
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert $msi_object_id ]
 
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
@@ -2075,7 +2100,7 @@ return
 }
 }
 }
-	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert"
+	 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_msi_object_id"
     } else { return }
 }
 
@@ -2116,28 +2141,36 @@ set version $version
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert} {
+proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
     if { $tcp eq "true" } { set server tcp:$server,$port }
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         set connection "DRIVER=$odbc_driver;SERVER=$server;TRUSTED_CONNECTION=YES"
     } else {
         if {[ string toupper $authentication ] eq "SQL" } {
             set connection "DRIVER=$odbc_driver;SERVER=$server;UID=$uid;PWD=$pwd"
+     } else {
+        if {[ string toupper $authentication ] eq "ENTRA" } {
+        if {[ regexp {[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}} $msi_object_id ] } {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryMsi;UID=$msi_object_id"
+	} else {
+            set connection "DRIVER=$odbc_driver;SERVER=$server;AUTHENTICATION=ActiveDirectoryInteractive"
+	}
         } else {
-            puts stderr "Error: neither WINDOWS or SQL Authentication has been specified"
+            puts stderr "Error: neither WINDOWS, ENTRA or SQL Authentication has been specified"
             set connection "DRIVER=$odbc_driver;SERVER=$server"
         }
     }
+}
     if { $azure eq "true" } { append connection ";" "DATABASE=$db" }
     if { $encrypt eq "true" } { append connection ";" "ENCRYPT=yes" } else { append connection ";" "ENCRYPT=no" }
     if { $trust_cert eq "true" } { append connection ";" "TRUSTSERVERCERTIFICATE=yes" }
     return $connection
 }
 
-proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert scale_factor } {
+proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id scale_factor } {
 	puts "Checking $db TPROC-H schema"
     set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
-    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert ]
+    set connection [ connect_string $server $port $odbc_driver $authentication $uid $pwd $tcp $azure tempdb $encrypt $trust_cert $msi_object_id ]
     if [catch {tdbc::odbc::connection create odbc $connection} message ] {
         error "Connection to $connection could not be established : $message"
     } else {
@@ -2203,6 +2236,6 @@ proc check_tpch { server port odbc_driver authentication uid pwd tcp azure db en
 	}
 	}
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_scale_fact"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch {$mssqls_server} $mssqls_port {$mssqls_odbc_driver} $mssqls_authentication $mssqls_uid [ quotemeta $mssqls_pass ] $mssqls_tcp $mssqls_azure $mssqls_tpch_dbase $mssqls_encrypt_connection $mssqls_trust_server_cert $mssqls_msi_object_id $mssqls_scale_fact"
     } else { return }
 }
