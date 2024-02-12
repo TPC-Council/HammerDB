@@ -1107,3 +1107,23 @@ Added Use bcp as a user option #587 (#584)
 Add Optional Invisible Primary Key to History for Replication in MySQL and MariaDB #586 (#580)
 Update precision of w_ytd to prevent numeric field overflow #585 (#577)
 Container file simplication #569
+
+---------------------------------------------------------------------
+
+Version 4.10 Feb 2024
+
+Pull Requests & Issues
+
+Increase default CLI timeouts #668 (#667)
+Add support for Microsoft Entra authentication for SQL Server #665 (#662)
+Add schema and consistency checks for all databases for TPROC-C and TPROC-H #664 (#659)
+Add quotemeta function to escape special characters in passwords #658 (#561,#606)
+Add bcp -u option for SQL Server to trust the server certificate #653 (#651)
+MSSQL TPCH Create Advanced Statistics #652
+MSSQLS TPCH Add Flag to Partition Orders and Lineitems #647
+Add giset command to set generic dictionary settings #646 (#645)
+Add check to vurun for pre-existing threads #644 (#643)
+Add optional purge and write back for MariaDB TPROC-C database #642 (#640)
+Docker cloudtk docker gui #641 (#631)
+Fix call ash_fetch,error on Windows client running PostgreSQL metrics #638 (#637)
+Alter MSSQLS TPCH Schema to use Decimal not Money #634
