@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.9.</para>
+      <para>The following are the release notes for HammerDB v4.10.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -85,20 +85,57 @@
       </section>
 
       <section>
-        <title>SQL Server Schema build BCP Option</title>
+        <title>Schema and Consistency Checks</title>
 
-        <para>From v4.9 HammerDB has been enhanced to improve schema build
-        performance using the SQL Server BCP utility. This option is selected
-        by default with an option to also build the schema using inserts as
-        done in previous versions.</para>
+        <para>From v4.10 HammerDB has added schema and data consistency checks
+        for all databases. These checks can be run after a schema build and
+        after running the workload to verify that the schema and data has
+        remained consistent.</para>
       </section>
 
       <section>
-        <title>MariaDB/MySQL No Stored Procedures option to TPROC-C</title>
+        <title>Docker CloudTK GUI</title>
 
-        <para>From v4.9 HammerDB has added an option to the TPROC-C workload
-        for MariaDB and MySQL that uses Client SQL instead of stored
-        procedures for comparative purposes.</para>
+        <para>HammerDB has added an additional Docker image to enable running
+        the GUI through a web browser.</para>
+      </section>
+
+      <section>
+        <title>Quotemeta to escape special characters in passwords</title>
+
+        <para>From v4.10 HammerDB has added an optional quotemeta function to
+        escape special characters in passwords. By default this functionality
+        is enabled and can be controlled with the quote_passwords setting in
+        the configuration.</para>
+
+        <programlisting> &lt;code_highlight&gt;
+	&lt;highlight&gt;true&lt;/highlight&gt;
+<emphasis role="bold">	&lt;quote_passwords&gt;true&lt;/quote_passwords&gt;</emphasis>
+   &lt;/code_highlight&gt;</programlisting>
+      </section>
+
+      <section>
+        <title>Microsoft SQL Server 2022 Entra Authentication</title>
+
+        <para>From v4.10 HammerDB has been enhanced to permit Microsoft Entra
+        authentication where configured for SQL Server 2022 with the ODBC
+        driver version 18.</para>
+      </section>
+
+      <section>
+        <title>MariaDB TPROC-C purge and write back option</title>
+
+        <para>From v4.10 HammerDB has added an option to the TPROC-C workload
+        for MariaDB to enable accelerated purge and writeback between runs.
+        This option is compatible with MariaDB versions 10.7.0 upwards.</para>
+      </section>
+
+      <section>
+        <title>Giset command to dynamically set generic dictionary
+        settings</title>
+
+        <para>From v4.10 HammerDB has added a giset command that can be used
+        to modify generic dictionary settings such as timeouts.</para>
       </section>
 
       <section>
@@ -204,7 +241,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     <section>
       <title>Documentation License and Copyright</title>
 
-      <para>Copyright (C) 2023 Steve Shaw.</para>
+      <para>Copyright (C) 2024 Steve Shaw.</para>
 
       <para>Permission is granted to copy, distribute and/or modify this
       document under the terms of the GNU Free Documentation License, Version
@@ -215,51 +252,46 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.9 New Features</title>
+      <title>HammerDB v4.10 New Features</title>
 
-      <para>HammerDB v4.9 New Features are all referenced to <link
+      <para>HammerDB v4.10 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
-      Issues and Pull Requests</link>, where more details for each new feature
-      and related pull requests can be found here:</para>
+      Pull Requests</link>, where more details for each new feature and
+      related pull requests can be found here:</para>
 
-      <para>[TPC-Council#619] Network Error When Loading Data</para>
+      <para>[TPC-Council#668] Increase default CLI timeouts</para>
 
-      <para>[TPC-Council#616] Remove Unneeded Indices From TPROC-H
-      MSSQL</para>
+      <para>[TPC-Council#665] Add support for Microsoft Entra authentication
+      for SQL Server</para>
 
-      <para>[TPC-Council#614] TPROCC MSSQLS BCP Load by Warehouse</para>
+      <para>[TPC-Council#664] Add schema and consistency checks for all
+      databases for TPROC-C and TPROC-H</para>
 
-      <para>[TPC-Council#613] Alter MSSQL TPCH Colstore Index Steps</para>
+      <para>[TPC-Council#658] Add quotemeta function to escape special
+      characters in passwords</para>
 
-      <para>[TPC-Council#611] Implement BCP Option for MSSQLS TPCH Load build
-      database</para>
+      <para>[TPC-Council#653] Add bcp -u option for SQL Server to trust the
+      server certificate</para>
 
-      <para>[TPC-Council#610] Fix for TPROC-H calculates o_totalprice
-      incorrectly</para>
+      <para>[TPC-Council#652] MSSQL TPCH Create Advanced Statistics</para>
 
-      <para>[TPC-Council#602] Add MariaDB/MySQL No Stored Procedures option to
-      TPROC-C</para>
+      <para>[TPC-Council#647] MSSQLS TPCH Add Flag to Partition Orders and
+      Lineitems</para>
 
-      <para>[TPC-Council#599] Fix MySQL/MariaDB TPROC-H build FK error </para>
+      <para>[TPC-Council#646] Add giset command to set generic dictionary
+      settings</para>
 
-      <para>[TPC-Council#596] Edited Dockerfile to install a specific version
-      of msodbcsql18</para>
+      <para>[TPC-Council#644] Add check to vurun for pre-existing
+      threads</para>
 
-      <para>[TPC-Council#592] Added use_bcp default as true and enabled bcp
-      with windows authentication</para>
+      <para>[TPC-Council#642] Add optional purge and write back for MariaDB
+      TPROC-C database[TPC-Council#641] Docker cloudtk docker gui</para>
 
-      <para>[TPC-Council#591] Skip blank lines in binds in recent Oracle trace
-      files</para>
+      <para>[TPC-Council#638] Fix call ash_fetch,error on Windows client
+      running PostgreSQL metrics</para>
 
-      <para>[TPC-Council#587] Added Use bcp as a user option</para>
-
-      <para>[TPC-Council#586] Add Optional Invisible Primary Key to History
-      for Replication in MySQL and MariaDB</para>
-
-      <para>[TPC-Council#585] Update precision of w_ytd to prevent numeric
-      field overflow</para>
-
-      <para>[TPC-Council#569] Container file simplification</para>
+      <para>[TPC-Council#634] Alter MSSQLS TPCH Schema to use Decimal not
+      Money</para>
     </section>
 
     <section>
@@ -352,8 +384,8 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>MariaDB</entry>
 
-              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8 / 10.10 / 11.1 /
-              11.2</entry>
+              <entry>10.2 / 10.3 / 10.4 / 10.5 / 10.6 / 10.8 / 10.10 /10.11 /
+              11.1 / 11.2</entry>
             </row>
 
             <row>
@@ -387,12 +419,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.9-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.10-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.9-Linux.tar.gz 
-sha1sum HammerDB-4.9-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.10-Linux.tar.gz 
+sha1sum HammerDB-4.10-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -614,10 +646,10 @@ sha1sum HammerDB-4.9-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.9.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.10.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
-        HammerDB-4.9.</para>
+        HammerDB-4.10.</para>
       </section>
 
       <section>
@@ -644,7 +676,7 @@ sha1sum HammerDB-4.9-Linux.tar.gz</programlisting>
       <title>HammerDB Docker Container Build &amp; Run</title>
 
       <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. Version 4.9 includes both a pre-built Docker
+      distribute and deploy. Version 4.10 includes both a pre-built Docker
       Image and a Dockerfile that can be used to create a HammerDB Docker
       containers. This container is based on an Ubuntu 20.04 base image and
       provides a ready to use environment to run HammerDB. HammerDB has a
@@ -685,6 +717,69 @@ docker pull tpcorg/hammerdb:mssqls
 
         <para>It is only necessary to follow the Dockerfile build instructions
         if you wish to build your own Dockerfile from source.</para>
+      </section>
+
+      <section>
+        <title>CloudTK Web Application Docker Image</title>
+
+        <para>HammerDB provides an additional Docker image for running the
+        HammerDB GUI as a Web Application accessed through a web browser. This
+        is particularly useful running in a cloud environment where a local
+        Desktop environment is not readily available. f you want access to
+        functionality such as CPU metrics then you should use the –net-host
+        option.</para>
+
+        <programlisting>$ sudo docker run --net=host --name hammerdb-cloudtk tpcorg/hammerdb:latest-cloudtk
+can't find package limit
+Running with default file descriptor limit
+/debug user "debug" password "sycu4xfc.gcw"
+httpd started on port 8081
+secure httpd started on SSL port 8082</programlisting>
+
+        <para>Otherwise you can only expose the ports as needed. </para>
+
+        <programlisting>docker run -p 8081:8081 -p 8082:8082 -p 8080:8080 --name hammerdb-cloudtk hammerdb:cloudtk</programlisting>
+
+        <para>You can connect to port 8081 for an unencrypted connection.
+        Alternatively you can use an encrypted connection on port 8082. By
+        default sample self-signed certificates are installed and these should
+        be replaced by your own. </para>
+
+        <figure>
+          <title>CloudTK Launcher</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch1-12aaaa.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Click Submit Query on the Launcher.</para>
+
+        <figure>
+          <title>Launch HammerDB</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch1-12aaaaa.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>HammerDB will then run fully contained within a browser, giving
+        access to the GUI from cloud environments where the Desktop may not be
+        readily available.</para>
+
+        <figure>
+          <title>HammerDB GUI within a browser</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch1-12aaaaaa.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
       </section>
 
       <section>
@@ -731,7 +826,7 @@ docker pull tpcorg/hammerdb:mssqls
         <para>To create an image: Go to the folder containing the Dockerfile
         and run the docker build command.</para>
 
-        <programlisting>docker build -t hammerdb-v4.9 . </programlisting>
+        <programlisting>docker build -t hammerdb-v4.10 . </programlisting>
 
         <figure>
           <title>docker build</title>
@@ -762,7 +857,7 @@ docker pull tpcorg/hammerdb:mssqls
         build is successful but the client libraries for IBM are not
         installed.</para>
 
-        <programlisting>	docker run -it --name hammerdb hammerdb-v4.9 bash</programlisting>
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.10 bash</programlisting>
 
         <figure>
           <title>docker run</title>
@@ -804,7 +899,7 @@ docker pull tpcorg/hammerdb:mssqls
         communicate with remote databases. The following is an example of
         adding host network to the container.</para>
 
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.9 bash</programlisting>
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.10 bash</programlisting>
       </section>
     </section>
 
@@ -813,17 +908,19 @@ docker pull tpcorg/hammerdb:mssqls
 
       <para>For all of the databases that HammerDB supports it is necessary to
       have a third-party client library installed that HammerDB can use to
-      connect and interact with the database. This client library will also
-      typically be installed with database server software. HammerDB does not
-      statically link the 3rd party libraries to minimise executable size and
-      provide flexibility in the third-party libraries used. For example if a
-      bug is detected in a particular library then this can be upgraded
-      without requiring the HammerDB libraries to be rebuilt. However as the
-      client libraries are dynamically linked it is essential that the correct
-      client libraries are already installed and environment variables set to
-      ensure that HammerDB can find the correct libraries. Note that it is
-      only necessary to load the libraries for the database that your are
-      testing.</para>
+      connect and interact with the database. Note that if you use the
+      official HammerDB Docker images this step has already been done for you
+      and all of the third-party client libraries have been preiinstalled.
+      This client library will also typically be installed with database
+      server software. HammerDB does not statically link the 3rd party
+      libraries to minimise executable size and provide flexibility in the
+      third-party libraries used. For example if a bug is detected in a
+      particular library then this can be upgraded without requiring the
+      HammerDB libraries to be rebuilt. However as the client libraries are
+      dynamically linked it is essential that the correct client libraries are
+      already installed and environment variables set to ensure that HammerDB
+      can find the correct libraries. Note that it is only necessary to load
+      the libraries for the database that your are testing.</para>
 
       <para>The HammerDB command line tool can be used to check the status of
       library availability for all databases.</para>
@@ -834,8 +931,8 @@ docker pull tpcorg/hammerdb:mssqls
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.9
-Copyright (C) 2003-2023 Steve Shaw
+      <programlisting>HammerDB CLI v4.10
+Copyright (C) 2003-2024 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;librarycheck
@@ -1204,7 +1301,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         be recreated from the XML configuration at the next HammerDB start.
         The hammer.DB file contains the data related to jobs storage.
         Similarly if this file is deleted it will be recreated on the next
-        HammerDB start. </para>
+        HammerDB start.</para>
 
         <programlisting>   &lt;sqlitedb&gt;
         &lt;sqlitedb_dir&gt;TMP&lt;/sqlitedb_dir&gt;
@@ -1249,7 +1346,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         version of HammerDB is detected from the one that created the existing
         database files, reporting the following message at startup.</para>
 
-        <programlisting>The existing SQLite DBs are from version v4.8. SQLite DBs will be reset to v4.9.</programlisting>
+        <programlisting>The existing SQLite DBs are from version v4.9. SQLite DBs will be reset to v4.10.</programlisting>
 
         <para>For this reason before running another version any existing
         configuration that is wished to be saved should be exported using
@@ -2605,7 +2702,10 @@ OK (30 msec)
         Administrator tool on Windows and the command database drivers on
         Linux. The driver name should be entered into HammerDB exactly as
         shown in the Data Source Administrator. The default value is “ODBC
-        Driver 18 for SQL Server” for both Windows and Linux.</para>
+        Driver 18 for SQL Server” for both Windows and Linux. From v4.10
+        HammerDB will also permit authentication with Microsoft Entra where
+        available with your configuration and a minimum version of SQL Server
+        2022. </para>
 
         <figure>
           <title>ODBC Drivers</title>
@@ -3330,7 +3430,13 @@ GO
                     SQL Server Authentication is specified and SQL
                     Authentication is enabled on your SQL Server then you will
                     be able connect by specifying a username and password that
-                    you have already configured on your SQL Server.</entry>
+                    you have already configured on your SQL Server. From v4.10
+                    Microsoft Entra Authentication can also be used with a
+                    minimum of ODBC Driver 18 and SQL Server 2022. Where Entra
+                    is used an MSI Object ID can also be specified. If Entra
+                    is chosen and the MSI Object ID is set to null then
+                    Interactive Entra Authentication will be used prompting
+                    for login credentials.</entry>
                   </row>
 
                   <row>
@@ -3740,8 +3846,8 @@ GO
                   workload is derived from the history table does not have a
                   primary key. However for MySQL replication all tables must
                   have a primary key. This option creates the history table
-                  with an invisible primary key at supported MySQL versions.
-                  </entry>
+                  with an invisible primary key at supported MySQL
+                  versions.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3931,8 +4037,8 @@ GO
                   workload is derived from the history table does not have a
                   primary key. However for MySQL replication all tables must
                   have a primary key. This option creates the history table
-                  with an invisible primary key at supported MySQL versions.
-                  </entry>
+                  with an invisible primary key at supported MySQL
+                  versions.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4178,6 +4284,117 @@ GO
           </imageobject>
         </mediaobject>
       </figure>
+    </section>
+
+    <section>
+      <title>Checking the Schema</title>
+
+      <para>From v4.10 a new schema check option has been added. This schema
+      check can be run after the build process to verify that the build
+      completed successfully and also after running the workload to ensure
+      that the data in your database remained consistent. This can also be
+      useful for example when testing clustered, distributed or replicated
+      database environments. </para>
+
+      <para>To check the schema choose the Check option from the treeview or
+      the top level menu. </para>
+
+      <figure>
+        <title>Check TPROC-C Schema</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch4-13a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>If the check completes without error it will report a message that
+      the check has been successful meaning that the schema is valid and the
+      data is consistent. </para>
+
+      <figure>
+        <title>TPROC-C Schema Check Complete</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch4-13aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following checks will be run against the schema and
+      data:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Database Exists.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables Exist.</para>
+        </listitem>
+
+        <listitem>
+          <para>Warehouse count in schema is the same as the HammerDB
+          configuration.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables are indexed.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables are populated.</para>
+        </listitem>
+
+        <listitem>
+          <para>Stored Procedures Exist.</para>
+        </listitem>
+
+        <listitem>
+          <para> Consistency Checks.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>The sum of balances (d_ytd) for all Districts within a
+              specific Warehouse is equal to the balance (w_ytd) of that
+              Warehouse.</para>
+            </listitem>
+
+            <listitem>
+              <para>For each District within a Warehouse, the next available
+              Order ID (d_next_o_id) minus one is equal to the most recent
+              Order ID [max(o_id)] for the ORDER table associated with the
+              preceding District and Warehouse. Additionally, that same
+              relationship exists for the most recent Order ID [max(o_id)] for
+              the NEW-ORDER table associated with the same District and
+              Warehouse. Those relationships can be illustrated as:
+              d_next_o_id – 1 = max(o_id) = max(no_o_id) where (d_w_id =
+              o_w_id = no_w_id) and (d_id = o_d_id = no_d_id)</para>
+            </listitem>
+
+            <listitem>
+              <para>For each District within a Warehouse, the value of the
+              most recent Order ID [max(no_o_id)] minus the first Order ID
+              [min(no_o_id)] plus one, for the NEW-ORDER table associated with
+              the District and Warehouse, equals the number of rows in that
+              NEW-ORDER table. That relationship can be illustrated as:
+              max(no_o_id) – min(no_o_id) + 1 = rows in NEW-ORDER where
+              (o_w_id = no_w_id) and (o_d_id = no_d_id)</para>
+            </listitem>
+
+            <listitem>
+              <para>For each District within a Warehouse, the sum of
+              Order-Line counts [sum(o_ol_cnt)] for the Orders associated with
+              the District equals the number of rows in the ORDER-LINE table
+              associated with the same District. That relationship can be
+              illustrated as: sum(o_ol_cnt) = rows in the ORDER-LINE table for
+              the Warehouse and District</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+      </orderedlist>
     </section>
 
     <section>
@@ -4788,13 +5005,23 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
             </row>
 
             <row>
-              <entry>Checkpoint/Vacuum when complete</entry>
+              <entry>No Stored Procedures</entry>
 
-              <entry>Where available the database will trigger a checkpoint
-              after the workload is complete to write out the modified data
-              from the in-memory cache to the disk. if the database is
-              correctly configured this will prevent this activity being
-              conducted during a test to result in higher performance.</entry>
+              <entry>For MariaDB and MySQL there is a no stored procedures
+              option that uses client side SQL instead of stored procedures to
+              drive the workload. Performance is expected to be higher when
+              using stored procedures.</entry>
+            </row>
+
+            <row>
+              <entry>Checkpoint/Vacuum/Purge when complete</entry>
+
+              <entry>Where available the database will trigger a checkpoint,
+              vacuum or purge after the workload is complete to write out the
+              modified data from the in-memory cache to the disk. If the
+              database is correctly configured this will prevent this activity
+              being conducted during a test to result in higher
+              performance.</entry>
             </row>
 
             <row>
@@ -5065,7 +5292,7 @@ Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 
         <programlisting>&lt;timeprofile&gt;
            &lt;profiler&gt;xtprof&lt;/profiler&gt;
            &lt;xt_unique_log_name&gt;0&lt;/xt_unique_log_name&gt;
-           &lt;xt_gather_timeout&gt;10&lt;/xt_gather_timeout&gt;
+           &lt;xt_gather_timeout&gt;60&lt;/xt_gather_timeout&gt;
 &lt;/timeprofile&gt;</programlisting>
 
         <para>When xtprof is selected HammerDB will collect time profiling
@@ -7455,7 +7682,7 @@ pgsentinel_ash.max_entries = 1000000</programlisting>
     <para>Note that communication between Primary and Replica is enabled by
     the comm module which opens a default channel called ::comm::comm. If an
     exterior application attempts to connect then an warning such as follows
-    will be shown. </para>
+    will be shown.</para>
 
     <programlisting>hammerdb&gt;Warning: Connection from 127.0.0.1/49436 received on ::comm::comm with unknown protocol "ddffdfdfd"</programlisting>
 
@@ -7685,9 +7912,9 @@ New replica joined : {18424 osprey}</programlisting>
 
       <para>To start the command line in interactive mode on Linux run:</para>
 
-      <programlisting>steve@CRANE:~/HammerDB-4.1$ ./hammerdbcli 
-HammerDB CLI v4.1
-Copyright (C) 2003-2021 Steve Shaw
+      <programlisting>steve@CRANE:~/HammerDB-4.10$ ./hammerdbcli 
+HammerDB CLI v4.10
+Copyright (C) 2003-2024 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
 hammerdb&gt;</programlisting>
@@ -7776,11 +8003,12 @@ hammerdb&gt;</programlisting>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB v4.9 CLI Help Index
+      <programlisting>HammerDB v4.10 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
         buildschema
+        checkschema
         deleteschema
         clearscript
         savescript
@@ -7791,6 +8019,7 @@ Type "help command" for more details on specific commands below
         dgset
         diset
         distributescript
+        giset
         jobs
         librarycheck
         loadscript
@@ -7851,6 +8080,17 @@ hammerdb&gt;
                 to the Yes or no prompt to proceed with the schema build. This
                 is to prevent the stalling of CLI scripts during
                 builds.</entry>
+              </row>
+
+              <row>
+                <entry>checkschema</entry>
+
+                <entry>Usage: checkschema</entry>
+
+                <entry>Runs the schema consistency check for the database and
+                benchmark selected with dbset and variables selected with
+                diset. Equivalent to the Check command in the graphical
+                interface.</entry>
               </row>
 
               <row>
@@ -7947,8 +8187,20 @@ hammerdb&gt;
 
                 <entry>Usage: distributescript</entry>
 
-                <entry>In Master mode distributes the script loaded by Master
-                to the connected Slaves.</entry>
+                <entry>In Primary mode distributes the script loaded by
+                Primary to the connected Replicas.</entry>
+              </row>
+
+              <row>
+                <entry>giset</entry>
+
+                <entry>Usage: giset dict key value</entry>
+
+                <entry>Set the dictionary variables for the generic settings.
+                Use "print generic" to see what these variables are and giset
+                to change Example: hammerdb&gt;giset commandline
+                keepalive_margin 60 Changed commandline:keepalive_margin from
+                10 to 60 for generic</entry>
               </row>
 
               <row>
@@ -7991,15 +8243,16 @@ hammerdb&gt;
               <row>
                 <entry>print</entry>
 
-                <entry>Usage: print [db|bm|dict|script|vuconf
+                <entry>Usage: print [db|bm|dict|generic|script|vuconf
                 |vucreated|vustatus|datagen]</entry>
 
                 <entry>prints the current configuration: db: database bm:
                 benchmark dict: the dictionary for the current database ie all
-                active variables script: the loaded script vuconf: the virtual
-                user configuration vucreated: the number of virtual users
-                created vustatus: the status of the virtual users datagen :
-                the configuration to build when datagen is run</entry>
+                active variables generic: the dictionary for generic settings
+                script: the loaded script vuconf: the virtual user
+                configuration vucreated: the number of virtual users created
+                vustatus: the status of the virtual users datagen : the
+                configuration to build when datagen is run</entry>
               </row>
 
               <row>
@@ -8181,12 +8434,12 @@ hammerdb&gt;
 
       <para>Note that the runtimer and waittocomplete parameters have been
       deprecated from v4.6. For this reason an additional configuration
-      parameter of keepalive_margin with a default value of 10 seconds has
-      been added to generic.xml in the commandline section to modify the
-      additional time that HammerDB will wait after completion before
-      terminating the workload. This can be useful if for example gathering
-      timing data for event driven scaling workloads with a large number of
-      asynchronous clients.</para>
+      parameter of keepalive_margin with a default value of 10 seconds
+      increasing to 60 seconds from v4.10 has been added to generic.xml in the
+      commandline section to modify the additional time that HammerDB will
+      wait after completion before terminating the workload. This can be
+      useful if for example gathering timing data for event driven scaling
+      workloads with a large number of asynchronous clients.</para>
 
       <section>
         <title>CLI commands in Python</title>
@@ -9514,8 +9767,8 @@ HAMMERDB RESULT
 
       <programlisting>C:\Program Files\HammerDB-4.9&gt;set TEMP=C:\temp
 C:\Program Files\HammerDB-4.9&gt;hammerdbcli.bat
-HammerDB CLI v4.9
-Copyright (C) 2003-2023 Steve Shaw
+HammerDB CLI v4.10
+Copyright (C) 2003-2024 Steve Shaw
 Type "help" for a list of commands
 Initialized new Jobs on-disk database C:/temp/hammer.DB
 hammerdb&gt;
@@ -11417,7 +11670,13 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
                   and password. If SQL Server Authentication is specified and
                   SQL Authentication is enabled on your SQL Server then you
                   will be able connect by specifying a username and password
-                  that you have already configured on your SQL Server.</entry>
+                  that you have already configured on your SQL Server. From
+                  v4.10 Microsoft Entra Authentication can also be used with a
+                  minimum of ODBC Driver 18 and SQL Server 2022. Where Entra
+                  is used an MSI Object ID can also be specified. If Entra is
+                  chosen and the MSI Object ID is set to null then Interactive
+                  Entra Authentication will be used prompting for login
+                  credentials.</entry>
                 </row>
 
                 <row>
@@ -11499,6 +11758,32 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
                   variable. When unselected an insert based build is used. A
                   BCP build offers vastly improved performance over an insert
                   based build.</entry>
+                </row>
+
+                <row>
+                  <entry>Partition Orders and Lineitems</entry>
+
+                  <entry>This option allows the Order and Lineitem tables to
+                  be partitioned. Each partition spans 1 week. Column Store
+                  and Row store are allowed to be partitioned. When
+                  paritioning is enabled certain primary and foreign key
+                  definitions defined in HammerDB are no longer valid.
+                  HammerDB will still create those keys/constraints when the
+                  Orders and Lineitem tables are not partitioned. For
+                  columnstore indices, the is an initial degredation of
+                  performance, however if the user calls Alter Index ...
+                  Reoganize or leaves the server running after the initial
+                  load for approximately 48 hours, the performance of power
+                  runs improves by appx 2x when compared to column store
+                  indices with no partitioning.</entry>
+                </row>
+
+                <row>
+                  <entry>Create Advanced Statistics</entry>
+
+                  <entry>Perform a more advanced statistical analysis
+                  benefiting performance at the expense of additional load
+                  time.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -12582,6 +12867,82 @@ SET
 SET
 ....</programlisting>
       </section>
+    </section>
+
+    <section>
+      <title>Checking the Schema</title>
+
+      <para>From v4.10 a schema and data check has been added that can be run
+      after a schema build and also after running a workload with a refresh
+      function to ensure that the data remains consistent. To run the check
+      select the Check option from the treeview or the main menu. </para>
+
+      <figure>
+        <title>Check TPROC-H Schema</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch13-16a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>When completed a message will be shown if the check was
+      successful. </para>
+
+      <figure>
+        <title>TPROC-H Schema Check Completed</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch13-16aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following checks will be run against the schema and
+      data:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Database Exists.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables Exist.</para>
+        </listitem>
+
+        <listitem>
+          <para>Scale Factor in schema is the same as the HammerDB
+          configuration.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables are indexed.</para>
+        </listitem>
+
+        <listitem>
+          <para>Tables are populated.</para>
+        </listitem>
+
+        <listitem>
+          <para>Consistency Check.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>A consistent state for the TPC-H database is defined to
+              exist when: O_TOTALPRICE =
+              SUM(L_EXTENDEDPRICE*(1-L_DISCOUNT)(1+L_TAX) for each ORDER and
+              LINEITEM defined by (O_ORDERKEY=L_ORDERKEY) and can be checked
+              by: SELECT DECIMAL(SUM(DECIMAL(INTEGER(INTEGER(DECIMAL
+              (INTEGER(100DECIMAL(L_EXTENDEDPRICE,20,3)),20,3)*
+              (1-L_DISCOUNT)) * (1+L_TAX)),20,3)/100.0),20,3) FROM LINEITEM
+              WHERE L_ORDERKEY = okey SELECT DECIMAL(SUM(O_TOTALPRICE, 20, 3))
+              from ORDERS WHERE O_ORDERKEY = okey</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+      </orderedlist>
     </section>
 
     <section>
