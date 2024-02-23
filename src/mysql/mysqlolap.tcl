@@ -113,16 +113,19 @@ proc PrepareOceanbase { host port socket ssl_options user password ob_tenant_nam
     }    
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password is_ob ob_tenant_name} {
+proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob_tenant_name} {
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { ($is_ob == "false" ) && ([ chk_socket $host $socket ] eq "TRUE")} {
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE")} {
         set use_socket "true"
         append connectstring " -socket $socket"
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
-        set user "$user@$ob_tenant_name"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
 
     foreach key [ dict keys $ssl_options ] {
@@ -276,13 +279,6 @@ FOREIGN KEY LINEITEM_FK2(`L_PARTKEY`, `L_SUPPKEY`) REFERENCES PARTSUPP(`PS_PARTK
 )
 ENGINE = $mysql_tpch_storage_engine"
     for { set i 1 } { $i <= 8 } { incr i } {
-        set regex_pattern {^CREATE TABLE `([^`]*)`}
-
-        if {[regexp $regex_pattern $sql($i) match submatch]} {
-            puts "CREATE TABLE $submatch"
-        } else {
-            puts "can not find table for $sql($i)"
-        }        
         mysqlexec $mysql_handler $sql($i)
     }
     return
@@ -915,7 +911,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads $mysql_tpch_obcompat $ob_partition_num $ob_tenant_name"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads $mysql_tpch_obcompat $mysql_ob_partition_num $mysql_ob_tenant_name"
     } else { return }
 }
 
@@ -954,8 +950,7 @@ set update_sets $mysql_update_sets ;#Number of sets of refresh function to compl
 set trickle_refresh $mysql_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$mysql_refresh_verbose\" ;#report refresh function activity
 set tpch_obcompat \"$mysql_tpch_obcompat\" ;# Oceanbase compatible
-set ob_partition_num \"$ob_partition_num\" ;# Oceanbase partition number
-set ob_tenant_name \"$ob_tenant_name\" ;# Oceanbase tenant name
+set ob_tenant_name \"$mysql_ob_tenant_name\" ;# Oceanbase tenant name
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -993,7 +988,10 @@ proc ConnectToMySQL { host port socket ssl_options user password db is_oceanbase
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
-        set user "$user@$ob_tenant_name"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1153,7 +1151,7 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
     mysql::commit $mysql_handler
 }
 
-proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET oceanbase_db ob_partition_num ob_tenant_name} {
+proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET oceanbase_db ob_tenant_name} {
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $oceanbase_db $ob_tenant_name]
     set upd_num 1
     for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
@@ -1437,7 +1435,7 @@ proc sub_query { query_no scale_factor myposition engine } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition mysql_tpch_obcompat ob_partition_num ob_tenant_name} {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition mysql_tpch_obcompat ob_tenant_name} {
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $mysql_tpch_obcompat $ob_tenant_name]
     
@@ -1558,21 +1556,21 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $tpch_obcompat $ob_partition_num $ob_tenant_name
-        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0 $tpch_obcompat $ob_partition_num $ob_tenant_name
-        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $tpch_obcompat $ob_partition_num $ob_tenant_name
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $tpch_obcompat $ob_tenant_name
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0 $tpch_obcompat $ob_tenant_name
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $tpch_obcompat $ob_tenant_name
     } else {
         switch $myposition {
             1 {
-                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $tpch_obcompat $ob_partition_num $ob_tenant_name
+                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $tpch_obcompat $ob_tenant_name
             }
             default {
-                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ] $tpch_obcompat $ob_partition_num $ob_tenant_name
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ] $tpch_obcompat $ob_tenant_name
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition $tpch_obcompat $ob_partition_num $ob_tenant_name
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition $tpch_obcompat $ob_tenant_name
 }}
 }
 
@@ -1604,6 +1602,8 @@ set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"[ quotemeta $mysql_tpch_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
+set tpch_obcompat \"$mysql_tpch_obcompat\" ;# Oceanbase compatible
+set ob_tenant_name \"$mysql_ob_tenant_name\" ;# Oceanbase tenant name
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1642,7 +1642,10 @@ proc ConnectToMySQL { host port socket ssl_options user password db is_oceanbase
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
-        set user "$user@$ob_tenant_name"
+	#if is_oceanbase is false and chk_socket is false we don't want to change the username
+            if { $is_oceanbase == "true" } {
+                set user "$user@$ob_tenant_name"
+                }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1731,7 +1734,7 @@ proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE
 }
 #########################
 #RUN CLOUD ANALYTIC TPC-H
-do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE $mysql_tpch_obcompat $ob_tenant_name}
+do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE $tpch_obcompat $ob_tenant_name}
 }
 
 proc delete_mysqltpch {} {
@@ -1783,7 +1786,10 @@ proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
-        set user "$user@$ob_tenant_name"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1829,7 +1835,7 @@ proc drop_schema { host port socket ssl_options user password dbase is_oceanbase
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_obcompat $ob_tenant_name"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_obcompat $mysql_ob_tenant_name"
     } else { return }
 }
 
@@ -1890,7 +1896,10 @@ proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob
 	 } else {
 	set use_socket "false"
 	append connectstring " -host $host -port $port"
-    set user "$user@$ob_tenant_name"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
 	}
 	foreach key [ dict keys $ssl_options ] {
 	append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1981,6 +1990,6 @@ proc check_tpch { host port socket ssl_options user password dbase scale_factor 
     return
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_scale_fact $mysql_tpch_obcompat $ob_tenant_name"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_scale_fact $mysql_tpch_obcompat $mysql_ob_tenant_name"
     } else { return }
 }

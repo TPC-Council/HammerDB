@@ -81,22 +81,25 @@ proc countmysqlopts { bm } {
             set tcstamp $tc_log_timestamps
     }}
     setlocaltcountvars $configmysql 1 
+    global default_mysql_port
+    set default_mysql_port $mysql_port
+    if { $mysql_port eq $mysql_oceanbase_port } { set default_mysql_port 3306 } 
     variable myoptsfields 
     if { $bm eq "TPC-C" } {
         if {![string match windows $::tcl_platform(platform)]} {
             set platform "lin"
-            set mysqloptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath $mysql_ssl_linux_capath} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
+            set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath $mysql_ssl_linux_capath} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
         } else {
             set platform "win"
-            set mysqloptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath}} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
+            set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath}} tpcc {mysql_user {.countopt.f1.e3 get} mysql_pass {.countopt.f1.e4 get}} ]
         }
     } else {
         if {![string match windows $::tcl_platform(platform)]} {
             set platform "lin"
-            set mysqloptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath $mysql_ssl_linux_capath} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get}} ]
+            set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath $mysql_ssl_linux_capath mysql_oceanbase_port $mysql_oceanbase_port} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get} mysql_tpch_obcompat $mysql_tpch_obcompat mysql_ob_tenant_name $mysql_ob_tenant_name} ]
         } else {
             set platform "win"
-            set mysqloptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath}} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get}} ]
+            set myoptsfields [ dict create connection {mysql_host {.countopt.f1.e1 get} mysql_port {.countopt.f1.e2 get} mysql_socket {.countopt.f1.e2a get} mysql_ssl_ca {.countopt.f1.e2d get} mysql_ssl_cert {.countopt.f1.e2e get} mysql_ssl_key {.countopt.f1.e2f get} mysql_ssl_cipher {.countopt.f1.e2g get} mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath} mysql_oceanbase_port $mysql_oceanbase_port} tpch {mysql_tpch_user {.countopt.f1.e3 get} mysql_tpch_pass {.countopt.f1.e4 get} mysql_tpch_obcompat $mysql_tpch_obcompat mysql_ob_tenant_name $mysql_ob_tenant_name} ]
         }
     }
     if { [ info exists afval ] } {
@@ -265,18 +268,53 @@ proc countmysqlopts { bm } {
     } else {
         ttk::entry $Name -show * -width 30 -textvariable mysql_tpch_pass
     }
+
+set Name $Parent.f1.e5a
+    set Prompt $Parent.f1.p5a
+    ttk::label $Prompt -text "Oceanbase Database Compatible :"
+    ttk::checkbutton $Name -text "" -variable mysql_tpch_obcompat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 13 -sticky e
-    grid $Name -column 1 -row 13 -sticky ew
+    grid $Name -column 1 -row 13 -sticky w
+    bind $Parent.f1.e5a <Button> {
+        if { $mysql_tpch_obcompat eq "true" } {
+             set mysql_port $default_mysql_port
+            .countopt.f1.e2b configure -state normal
+            .countopt.f1.e5b configure -state disabled
+        } else {
+             set mysql_ssl "false"
+             set mysql_port $mysql_oceanbase_port
+            .countopt.f1.e2b configure -state disabled
+            .countopt.f1.e2ba configure -state disabled
+            .countopt.f1.e2bb configure -state disabled
+            .countopt.f1.e2c configure -state disabled
+            .countopt.f1.e2d configure -state disabled
+            .countopt.f1.e2e configure -state disabled
+            .countopt.f1.e2f configure -state disabled
+            .countopt.f1.e2g configure -state disabled
+            .countopt.f1.e5b configure -state normal
+        }
+    }
+  set Name $Parent.f1.e5b
+    set Prompt $Parent.f1.5b
+    ttk::label $Prompt -text "Oceanbase Tenant Name:"
+    ttk::entry $Name -width 30 -textvariable mysql_ob_tenant_name
+    grid $Prompt -column 0 -row 14 -sticky e
+    grid $Name -column 1 -row 14 -sticky ew
+    if {$mysql_tpch_obcompat == "false" } {
+        $Name configure -state disabled
+    }
+    grid $Prompt -column 0 -row 15 -sticky e
+    grid $Name -column 1 -row 15 -sticky ew
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "Refresh Rate(secs) :"
     ttk::entry $Name -width 30 -textvariable interval
-    grid $Prompt -column 0 -row 14 -sticky e
-    grid $Name -column 1 -row 14 -sticky ew
+    grid $Prompt -column 0 -row 16 -sticky e
+    grid $Name -column 1 -row 16 -sticky ew
 
     set Name $Parent.f1.e7
     ttk::checkbutton $Name -text "Log Output to Temp" -variable tclog -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 15 -sticky w
+    grid $Name -column 1 -row 17 -sticky w
     bind .countopt.f1.e7 <Button> {
         set opst [ .countopt.f1.e7 cget -state ]
         if {$opst != "disabled" && $tclog == 0} {
@@ -291,14 +329,14 @@ proc countmysqlopts { bm } {
     }
     set Name $Parent.f1.e8
     ttk::checkbutton $Name -text "Use Unique Log Name" -variable uniquelog -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 16 -sticky w
+    grid $Name -column 1 -row 18 -sticky w
     if {$tclog == 0} {
         $Name configure -state disabled
     }
 
     set Name $Parent.f1.e9
     ttk::checkbutton $Name -text "Log Timestamps" -variable tcstamp -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 17 -sticky w
+    grid $Name -column 1 -row 19 -sticky w
     if {$tclog == 0} {
         $Name configure -state disabled
     }
@@ -875,14 +913,17 @@ proc configmysqltpch {option} {
     upvar #0 configmysql configmysql
     #set variables to values in dict
     setlocaltpchvars $configmysql
-    set tpchfields [ dict create tpch {mysql_tpch_user {.mytpch.f1.e3 get} mysql_tpch_pass {.mytpch.f1.e4 get} mysql_tpch_dbase {.mytpch.f1.e5 get} mysql_tpch_storage_engine {.mytpch.f1.e6 get} mysql_total_querysets {.mytpch.f1.e9 get} mysql_update_sets {.mytpch.f1.e13 get} mysql_trickle_refresh {.mytpch.f1.e14 get} mysql_tpch_obcompat $mysql_tpch_obcompat ob_partition_num $ob_partition_num ob_tenant_name $ob_tenant_name mysql_scale_fact $mysql_scale_fact  mysql_num_tpch_threads $mysql_num_tpch_threads mysql_refresh_on $mysql_refresh_on mysql_raise_query_error $mysql_raise_query_error mysql_verbose $mysql_verbose mysql_refresh_verbose $mysql_refresh_verbose mysql_cloud_query $mysql_cloud_query} ]
+    global default_mysql_port
+    set default_mysql_port $mysql_port
+    if { $mysql_port eq $mysql_oceanbase_port } { set default_mysql_port 3306 } 
+    set tpchfields [ dict create tpch {mysql_tpch_user {.mytpch.f1.e3 get} mysql_tpch_pass {.mytpch.f1.e4 get} mysql_tpch_dbase {.mytpch.f1.e5 get} mysql_tpch_storage_engine {.mytpch.f1.e6 get} mysql_total_querysets {.mytpch.f1.e9 get} mysql_update_sets {.mytpch.f1.e13 get} mysql_trickle_refresh {.mytpch.f1.e14 get} mysql_tpch_obcompat $mysql_tpch_obcompat mysql_ob_partition_num $mysql_ob_partition_num mysql_ob_tenant_name $mysql_ob_tenant_name mysql_scale_fact $mysql_scale_fact  mysql_num_tpch_threads $mysql_num_tpch_threads mysql_refresh_on $mysql_refresh_on mysql_raise_query_error $mysql_raise_query_error mysql_verbose $mysql_verbose mysql_refresh_verbose $mysql_refresh_verbose mysql_cloud_query $mysql_cloud_query} ]
     #set matching fields in dialog to temporary dict
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-    set mysqlconn [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get} mysql_ssl_ca {.mytpch.f1.e2d get} mysql_ssl_cert {.mytpch.f1.e2e get} mysql_ssl_key {.mytpch.f1.e2f get} mysql_ssl_cipher {.mytpch.f1.e2g get} oceanbase_port $oceanbase_port mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath {$mysql_ssl_linux_capath}} ]
+    set mysqlconn [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get} mysql_ssl_ca {.mytpch.f1.e2d get} mysql_ssl_cert {.mytpch.f1.e2e get} mysql_ssl_key {.mytpch.f1.e2f get} mysql_ssl_cipher {.mytpch.f1.e2g get} mysql_oceanbase_port $mysql_oceanbase_port mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_linux_capath {$mysql_ssl_linux_capath}} ]
         } else {
         set platform "win"
-    set mysqlconn [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get} mysql_ssl_ca {.mytpch.f1.e2d get} mysql_ssl_cert {.mytpch.f1.e2e get} mysql_ssl_key {.mytpch.f1.e2f get} mysql_ssl_cipher {.mytpch.f1.e2g get} oceanbase_port $oceanbase_port mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath}} ]
+    set mysqlconn [ dict create connection {mysql_host {.mytpch.f1.e1 get} mysql_port {.mytpch.f1.e2 get} mysql_socket {.mytpch.f1.e2a get} mysql_ssl_ca {.mytpch.f1.e2d get} mysql_ssl_cert {.mytpch.f1.e2e get} mysql_ssl_key {.mytpch.f1.e2f get} mysql_ssl_cipher {.mytpch.f1.e2g get} mysql_oceanbase_port $mysql_oceanbase_port mysql_ssl $mysql_ssl mysql_ssl_two_way $mysql_ssl_two_way mysql_ssl_windows_capath {$mysql_ssl_windows_capath}} ]
         }
     variable myfields
     set myfields [ dict merge $mysqlconn $tpchfields ]
@@ -895,8 +936,6 @@ proc configmysqltpch {option} {
         "build" { wm title .mytpch {MySQL TPROC-H Build Options} }
         "drive" {  wm title .mytpch {MySQL TPROC-H Driver Options} }
     }
-    global default_mysql_port
-    set default_mysql_port $mysql_port
     set Parent .mytpch
     set Name $Parent.f1
     ttk::frame $Name
@@ -961,6 +1000,7 @@ proc configmysqltpch {option} {
             .mytpch.f1.e2f configure -state disabled
             .mytpch.f1.e2g configure -state disabled
         } else {
+	if { !$mysql_tpch_obcompat } {
             .mytpch.f1.e2ba configure -state normal
             .mytpch.f1.e2bb configure -state normal
             .mytpch.f1.e2c configure -state normal
@@ -970,6 +1010,7 @@ proc configmysqltpch {option} {
                 .mytpch.f1.e2f configure -state normal
             }
             .mytpch.f1.e2g configure -state normal
+    	    }
         }
     }
     
@@ -1068,14 +1109,62 @@ proc configmysqltpch {option} {
     ttk::entry $Name -width 30 -textvariable mysql_tpch_dbase
     grid $Prompt -column 0 -row 14 -sticky e
     grid $Name -column 1 -row 14 -sticky ew
+    set Name $Parent.f1.e5a
+    set Prompt $Parent.f1.p5a
+    ttk::label $Prompt -text "Oceanbase Database Compatible :"
+    ttk::checkbutton $Name -text "" -variable mysql_tpch_obcompat -onvalue "true" -offvalue "false" 
+    grid $Prompt -column 0 -row 15 -sticky e
+    grid $Name -column 1 -row 15 -sticky w
+    bind $Parent.f1.e5a <Button> {
+        if { $mysql_tpch_obcompat eq "true" } {
+             set mysql_port $default_mysql_port
+            .mytpch.f1.e2b configure -state normal                       
+            .mytpch.f1.e5b configure -state disabled   
+	    #only disable partitions in build
+            if { [ llength [info commands .mytpch.f1.e6a ] ] != 0 } { .mytpch.f1.e6a configure -state disabled }
+        } else {
+             set mysql_ssl "false"
+             set mysql_port $mysql_oceanbase_port
+            .mytpch.f1.e2b configure -state disabled
+            .mytpch.f1.e2ba configure -state disabled
+            .mytpch.f1.e2bb configure -state disabled
+            .mytpch.f1.e2c configure -state disabled
+            .mytpch.f1.e2d configure -state disabled
+            .mytpch.f1.e2e configure -state disabled
+            .mytpch.f1.e2f configure -state disabled
+            .mytpch.f1.e2g configure -state disabled
+            .mytpch.f1.e5b configure -state normal            
+	    #only enable partitions in build
+            if { [ llength [info commands .mytpch.f1.e6a ] ] != 0  } { .mytpch.f1.e6a configure -state normal }            
+        }
+    } 
+    set Name $Parent.f1.e5b
+    set Prompt $Parent.f1.5b
+    ttk::label $Prompt -text "Oceanbase Tenant Name:"
+    ttk::entry $Name -width 30 -textvariable mysql_ob_tenant_name
+    grid $Prompt -column 0 -row 16 -sticky e
+    grid $Name -column 1 -row 16 -sticky ew
+    if {$mysql_tpch_obcompat == "false" } {
+        $Name configure -state disabled
+    }                 
 
     if { $option eq "all" || $option eq "build" } {
+
+    set Name $Parent.f1.e6a
+    set Prompt $Parent.f1.p6a
+    ttk::label $Prompt -text "Oceanbase Partitions:"
+    ttk::entry $Name -width 30 -textvariable mysql_ob_partition_num
+    grid $Prompt -column 0 -row 17 -sticky e
+    grid $Name -column 1 -row 17 -sticky ew
+    if {$mysql_tpch_obcompat == "false" } {
+        $Name configure -state disabled
+    }
         set Name $Parent.f1.e6
         set Prompt $Parent.f1.p6
         ttk::label $Prompt -text "Data Warehouse Storage Engine :"
         ttk::entry $Name -width 30 -textvariable mysql_tpch_storage_engine
-        grid $Prompt -column 0 -row 15 -sticky e
-        grid $Name -column 1 -row 15 -sticky ew
+        grid $Prompt -column 0 -row 18 -sticky e
+        grid $Name -column 1 -row 18 -sticky ew
         if {$mysql_tpch_obcompat == "true" } {
             $Name configure -state disabled
         } 
@@ -1083,10 +1172,10 @@ proc configmysqltpch {option} {
         set Name $Parent.f1.e7
         set Prompt $Parent.f1.p7 
         ttk::label $Prompt -text "Scale Factor :"
-        grid $Prompt -column 0 -row 16 -sticky e
+        grid $Prompt -column 0 -row 19 -sticky e
         set Name $Parent.f1.f2
         ttk::frame $Name -width 30
-        grid $Name -column 1 -row 16 -sticky ew
+        grid $Name -column 1 -row 19 -sticky ew
         set rcnt 1
         foreach item {1} {
             set Name $Parent.f1.f2.r$rcnt
@@ -1119,18 +1208,18 @@ proc configmysqltpch {option} {
         ttk::label $Prompt -text "Virtual Users to Build Schema :"
         set Name $Parent.f1.e8
         ttk::spinbox $Name -from 1 -to 512 -textvariable mysql_num_tpch_threads
-        grid $Prompt -column 0 -row 17 -sticky e
-        grid $Name -column 1 -row 17 -sticky ew
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky ew
     }
    
      if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
             set Prompt $Parent.f1.h3
             ttk::label $Prompt -image [ create_image driveroptlo icons ]
-            grid $Prompt -column 0 -row 18 -sticky e
+            grid $Prompt -column 0 -row 21 -sticky e
             set Prompt $Parent.f1.h4
             ttk::label $Prompt -text "Driver Options"
-            grid $Prompt -column 1 -row 18 -sticky w
+            grid $Prompt -column 1 -row 21 -sticky w
         }
         set Name $Parent.f1.e9
         set Prompt $Parent.f1.p9
@@ -1138,26 +1227,26 @@ proc configmysqltpch {option} {
      
      
         ttk::entry $Name -width 30 -textvariable mysql_total_querysets
-        grid $Prompt -column 0 -row 19 -sticky e
-        grid $Name -column 1 -row 19  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 22 -sticky e
+        grid $Name -column 1 -row 22  -columnspan 4 -sticky ew
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Exit on MySQL Error :"
         set Name $Parent.f1.e10
         ttk::checkbutton $Name -text "" -variable mysql_raise_query_error -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 20 -sticky e
-        grid $Name -column 1 -row 20 -sticky w
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23 -sticky w
         set Prompt $Parent.f1.p11
         ttk::label $Prompt -text "Verbose Output :"
         set Name $Parent.f1.e11
         ttk::checkbutton $Name -text "" -variable mysql_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 21 -sticky e
-        grid $Name -column 1 -row 21 -sticky w
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky w
         set Prompt $Parent.f1.p12
         ttk::label $Prompt -text "Refresh Function :"
         set Name $Parent.f1.e12
         ttk::checkbutton $Name -text "" -variable mysql_refresh_on -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 22 -sticky e
-        grid $Name -column 1 -row 22 -sticky w
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
         bind $Parent.f1.e12 <Button> {
             if {$mysql_refresh_on eq "true"} { 
                 set mysql_refresh_verbose "false"
@@ -1174,8 +1263,8 @@ proc configmysqltpch {option} {
         set Prompt $Parent.f1.p13
         ttk::label $Prompt -text "Number of Update Sets :"
         ttk::entry $Name -width 30 -textvariable mysql_update_sets
-        grid $Prompt -column 0 -row 23 -sticky e
-        grid $Name -column 1 -row 23  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 26 -sticky e
+        grid $Name -column 1 -row 26  -columnspan 4 -sticky ew
         if {$mysql_refresh_on == "false" } {
             $Name configure -state disabled
         }
@@ -1183,8 +1272,8 @@ proc configmysqltpch {option} {
         set Prompt $Parent.f1.p14
         ttk::label $Prompt -text "Trickle Refresh Delay(ms) :"
         ttk::entry $Name -width 30 -textvariable mysql_trickle_refresh
-        grid $Prompt -column 0 -row 24 -sticky e
-        grid $Name -column 1 -row 24  -columnspan 4 -sticky ew
+        grid $Prompt -column 0 -row 27 -sticky e
+        grid $Name -column 1 -row 27  -columnspan 4 -sticky ew
         if {$mysql_refresh_on == "false" } {
             $Name configure -state disabled
         }
@@ -1192,8 +1281,8 @@ proc configmysqltpch {option} {
         ttk::label $Prompt -text "Refresh Verbose :"
         set Name $Parent.f1.e15
         ttk::checkbutton $Name -text "" -variable mysql_refresh_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 25 -sticky e
-        grid $Name -column 1 -row 25 -sticky w
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky w
         if {$mysql_refresh_on == "false" } {
             $Name configure -state disabled
         }
@@ -1201,62 +1290,9 @@ proc configmysqltpch {option} {
         ttk::label $Prompt -text "Cloud Analytic Queries :"
         set Name $Parent.f1.e16
         ttk::checkbutton $Name -text "" -variable mysql_cloud_query -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 26 -sticky e
-        grid $Name -column 1 -row 26 -sticky w
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky w
     }
-
-    set Prompt $Parent.f1.p17
-    ttk::label $Prompt -text "Oceanbase Database Compatible :"
-    set Name $Parent.f1.e17
-    ttk::checkbutton $Name -text "" -variable mysql_tpch_obcompat -onvalue "true" -offvalue "false" 
-    grid $Prompt -column 0 -row 27 -sticky e
-    grid $Name -column 1 -row 27 -sticky w
-
-    set Name $Parent.f1.e18
-    set Prompt $Parent.f1.p18
-    ttk::label $Prompt -text "Partition numbers for Oceanbase tables:"
-    ttk::entry $Name -width 30 -textvariable ob_partition_num
-    grid $Prompt -column 0 -row 28 -sticky e
-    grid $Name -column 1 -row 28 -sticky ew
-    if {$mysql_tpch_obcompat == "false" } {
-        $Name configure -state disabled
-    }
-
-    set Name $Parent.f1.e19
-    set Prompt $Parent.f1.p19
-    ttk::label $Prompt -text "Oceanbase tenant name:"
-    ttk::entry $Name -width 30 -textvariable ob_tenant_name
-    grid $Prompt -column 0 -row 29 -sticky e
-    grid $Name -column 1 -row 29 -sticky ew
-    if {$mysql_tpch_obcompat == "false" } {
-        $Name configure -state disabled
-    }                 
-
-    bind $Parent.f1.e17 <Button> {
-        if { $mysql_tpch_obcompat eq "true" } {
-            # .mytpch.f1.e6 configure -state normal
-            set mysql_ssl "false"
-            .mytpch.f1.e2b configure -state normal                       
-            set mysql_port $default_mysql_port
-            .mytpch.f1.e18 configure -state disabled   
-            .mytpch.f1.e19 configure -state disabled
-        } else {
-            # .mytpch.f1.e6 configure -state disabled
-            .mytpch.f1.e2b configure -state disabled
-            set mysql_ssl "false"
-            .mytpch.f1.e2ba configure -state disabled
-            .mytpch.f1.e2bb configure -state disabled
-            .mytpch.f1.e2c configure -state disabled
-            .mytpch.f1.e2d configure -state disabled
-            .mytpch.f1.e2e configure -state disabled
-            .mytpch.f1.e2f configure -state disabled
-            .mytpch.f1.e2g configure -state disabled
-            set mysql_port $oceanbase_port
-            .mytpch.f1.e18 configure -state normal            
-            .mytpch.f1.e19 configure -state normal
-        }
-    } 
-
     #This is the Cancel button variables stay as before
     set Name $Parent.b2
     ttk::button $Name -command {

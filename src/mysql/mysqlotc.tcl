@@ -1,5 +1,4 @@
 proc tcount_mysql {bm interval masterthread} {
-    puts "tcount_mysql"
     global tc_threadID mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
@@ -23,9 +22,11 @@ proc tcount_mysql {bm interval masterthread} {
                 append connectstring " -socket $socket"
             } else {
                 set use_socket "false"
-                puts connectstring
                 append connectstring " -host $host -port $port"
+		#if is_oceanbase is false and chk_socket is false we don't want to change the username 
+            if { $is_oceanbase == "true" } {
                 set user "$user@$ob_tenant_name"
+	        }
             }
 
             foreach key [ dict keys $ssl_options ] {
@@ -108,21 +109,15 @@ proc tcount_mysql {bm interval masterthread} {
                         regexp {\{\{Com_commit\ ([0-9]+)\}\ \{Com_rollback\ ([0-9]+)\}\}} $handler_stat all com_comm com_roll
                         set outc [ expr $com_comm + $com_roll ]
                     } else {
-                        puts "sel success 1"
                         if {$mysql_tpch_obcompat eq "true"} {
-                            puts "sel success 2 oceanbase handler_stat=$handler_stat"
                             regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all queries show_stat 
-                            puts "sel success 3 queries=$queries, show_stat=1"
                             set outc [ expr $queries - 1]
                         } else {
                             regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            puts "sel success 2 handler_stat=$handler_stat"
                             regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            puts "sel success 3 queries=$queries, show_stat=$show_stat"
                             set outc [ expr $queries - $show_stat ]
                         }    
       
-                        puts "sel success 4"
                     }
                 }
                 set new $outc
@@ -184,5 +179,5 @@ proc tcount_mysql {bm interval masterthread} {
     if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $interval $old tce $bm $mysql_tpch_obcompat $ob_tenant_name }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $interval $old tce $bm $mysql_tpch_obcompat $mysql_ob_tenant_name }}]
 } 
