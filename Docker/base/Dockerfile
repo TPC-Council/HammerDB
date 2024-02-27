@@ -8,7 +8,7 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y wget unzip gnupg apt-utils libaio1 iputils-ping vim netcat libxft-dev libcairo2-dev xauth python3 && \
     rm -rf  /var/lib/apt/lists/*
 
-# Install configure HammerDB-v4.9
+# Install configure HammerDB-v4.10
 ARG HAMMERDB_VERSION=4.9
 RUN wget https://github.com/TPC-Council/HammerDB/releases/download/v$HAMMERDB_VERSION/HammerDB-$HAMMERDB_VERSION-Linux.tar.gz -O - | \
     tar -xvzf - -C /home/ && \
