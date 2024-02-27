@@ -12,6 +12,7 @@
         <mysql_ssl_cert>client-cert.pem</mysql_ssl_cert>
         <mysql_ssl_key>client-key.pem</mysql_ssl_key>
         <mysql_ssl_cipher>server</mysql_ssl_cipher>
+        <mysql_oceanbase_port>2881</mysql_oceanbase_port>
     </connection>
     <tpcc>
         <schema>
@@ -46,10 +47,13 @@
         <schema>
             <mysql_scale_fact>1</mysql_scale_fact>
             <mysql_tpch_user>root</mysql_tpch_user>
+            <mysql_ob_tenant_name>tpch</mysql_ob_tenant_name>
             <mysql_tpch_pass>mysql</mysql_tpch_pass>
             <mysql_tpch_dbase>tpch</mysql_tpch_dbase>
             <mysql_num_tpch_threads>1</mysql_num_tpch_threads>
-            <mysql_tpch_storage_engine>innodb</mysql_tpch_storage_engine>
+            <mysql_tpch_obcompat>false</mysql_tpch_obcompat>
+            <mysql_ob_partition_num>1</mysql_ob_partition_num>
+            <mysql_tpch_storage_engine>innodb</mysql_tpch_storage_engine>                        
         </schema>
         <driver>
             <mysql_total_querysets>1</mysql_total_querysets>

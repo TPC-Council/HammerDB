@@ -14,16 +14,21 @@ proc tcount_mysql {bm interval masterthread} {
             }
         }
     
-        proc ConnectToMySQL { MASTER host port socket ssl_options user password } {
+        proc ConnectToMySQL { MASTER host port socket ssl_options user password is_oceanbase ob_tenant_name} {
             global mysqlstatus
             #ssl_options is variable length so build a connectstring
-            if { [ chk_socket $host $socket ] eq "TRUE" } {
+            if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
                 set use_socket "true"
                 append connectstring " -socket $socket"
             } else {
                 set use_socket "false"
                 append connectstring " -host $host -port $port"
+		#if is_oceanbase is false and chk_socket is false we don't want to change the username 
+            if { $is_oceanbase == "true" } {
+                set user "$user@$ob_tenant_name"
+	        }
             }
+
             foreach key [ dict keys $ssl_options ] {
                 append connectstring " $key [ dict get $ssl_options $key ] "
             }
@@ -45,7 +50,7 @@ proc tcount_mysql {bm interval masterthread} {
             }
         }
 
-        proc read_more { MASTER library mysql_host mysql_port mysql_socket mysql_ssl_options mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm } {
+        proc read_more { MASTER library mysql_host mysql_port mysql_socket mysql_ssl_options mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm mysql_tpch_obcompat ob_tenant_name} {
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 } 
@@ -58,7 +63,11 @@ proc tcount_mysql {bm interval masterthread} {
                 set tmp_mysql_pass $mysql_pass
                 set tval 60
             } else {
-                set sqc "show global status where Variable_name = 'Queries' or Variable_name = 'Com_show_status'"
+                if {$mysql_tpch_obcompat eq "true"} {
+                    set sqc "select 'Queries' as Variable_name, count(*) as Value FROM oceanbase.GV\$OB_SQL_AUDIT where TENANT_NAME='$ob_tenant_name'"
+                } else {
+                    set sqc "show global status where Variable_name = 'Queries' or Variable_name = 'Com_show_status'"
+                }                
                 set tmp_mysql_user $mysql_tpch_user
                 set tmp_mysql_pass $mysql_tpch_pass
                 set tval 3600
@@ -84,15 +93,13 @@ proc tcount_mysql {bm interval masterthread} {
             } else {
                 namespace import tcountcommon::*
             }
-
-            set mysql_handler [ ConnectToMySQL $MASTER $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass ]
-
+            set mysql_handler [ ConnectToMySQL $MASTER $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass $mysql_tpch_obcompat $ob_tenant_name]
             #Enter loop until stop button pressed
             while { $timeout eq 0 } {
                 set timeout [ tsv::get application timeout ]
                 if { $timeout != 0 } { break }
 
-                if {[catch {set handler_stat [ list [ mysql::sel $mysql_handler $sqc -list ] ]} message]} {
+                if {[catch {set handler_stat [ list [ mysql::sel $mysql_handler $sqc -list ] ]} message]} {                    
                     tsv::set application tc_errmsg "sql failed $message"
                     eval [subst {thread::send $MASTER show_tc_errmsg}]
                     catch { mysqlclose $mysql_handler }
@@ -102,9 +109,15 @@ proc tcount_mysql {bm interval masterthread} {
                         regexp {\{\{Com_commit\ ([0-9]+)\}\ \{Com_rollback\ ([0-9]+)\}\}} $handler_stat all com_comm com_roll
                         set outc [ expr $com_comm + $com_roll ]
                     } else {
-                        regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                        regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                        set outc [ expr $queries - $show_stat ]
+                        if {$mysql_tpch_obcompat eq "true"} {
+                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all queries show_stat 
+                            set outc [ expr $queries - 1]
+                        } else {
+                            regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
+                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
+                            set outc [ expr $queries - $show_stat ]
+                        }    
+      
                     }
                 }
                 set new $outc
@@ -166,5 +179,5 @@ proc tcount_mysql {bm interval masterthread} {
     if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
     set old 0
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $interval $old tce $bm }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_user [ quotemeta $mysql_pass ] $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $interval $old tce $bm $mysql_tpch_obcompat $mysql_ob_tenant_name }}]
 } 

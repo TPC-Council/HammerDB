@@ -34,10 +34,28 @@ set library $library
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
-proc GatherStatistics { mysql_handler } {
+proc GatherStatistics { mysql_handler is_oceanbase partition_num} {
     puts "GATHERING SCHEMA STATISTICS"
-    set sql(1) "analyze table ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM"
-    mysqlexec $mysql_handler $sql(1)
+    if { $is_oceanbase == "true" } {
+        set sql(1) "set _force_parallel_query_dop = $partition_num;"
+        set sql(2) "set GLOBAL ob_query_timeout = 20000000000;"
+        set sql(3) "analyze table LINEITEM partition(LINEITEM) compute statistics for all columns size auto;"
+        set sql(4) "analyze table orders partition(orders) compute statistics for all columns size auto;"
+        set sql(5) "analyze table partsupp partition(partsupp) compute statistics for all columns size auto;"
+        set sql(6) "analyze table part partition(part) compute statistics for all columns size auto;"
+        set sql(7) "analyze table customer partition(customer) compute statistics for all columns size auto;"
+        set sql(8) "analyze table supplier partition(supplier) compute statistics for all columns size auto;"
+        set sql(9) "analyze table nation compute statistics for all columns size auto;"
+        set sql(10) "analyze table region compute statistics for all columns size auto;"
+
+        for { set i 1 } { $i <= 8 } { incr i } {
+            puts "$sql($i).."
+            mysqlexec $mysql_handler $sql($i)
+        }        
+    } else {
+        set sql(1) "analyze table ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM"
+        mysqlexec $mysql_handler $sql(1)
+    }
     return
 }
 
@@ -49,21 +67,74 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password } {
+proc PrepareOceanbase { host port socket ssl_options user password ob_tenant_name} {
+    puts "Prepare Oceanbase"
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    set use_socket "false"
+    append connectstring " -host $host -port $port"
+
+    foreach key [ dict keys $ssl_options ] {
+        append connectstring " $key [ dict get $ssl_options $key ] "
+    }    
+
+    append connectstring " -user $user@sys -password $password"
+    set login_command "mysqlconnect [ dict get $connectstring ]"
+
+    puts "login_command: $login_command"
+    #eval the login command
+    if [catch {set ob_handler [eval $login_command]}] {
+        if $use_socket {
+            puts "the local socket connection to $socket could not be established"
+        } else {
+            puts "the tcp connection to $host:$port could not be established"
+        }
+        set connected "false"
+    } else {
+        set connected "true"
+    }
+    if {$connected} {
+        mysql::autocommit $ob_handler 0
+        catch {set ssl_status [ mysql::sel $ob_handler "show session status like 'ssl_cipher'" -list ]}
+        if { [ info exists ssl_status ] } {
+        puts [ join $ssl_status ]
+        }
+        set sql(1) "alter system set enable_sql_extension=True tenant=$ob_tenant_name;"
+        set sql(2) "alter system set enable_perf_event=True;"
+        for { set i 1 } { $i <= 2 } { incr i } {
+            puts "$sql($i)"
+            mysqlexec $ob_handler $sql($i)
+        }
+        puts "Oceanbase system parameters is ready"        
+        return $ob_handler
+    } else {
+        error $mysqlstatus(message)
+        return
+    }    
+}
+
+proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob_tenant_name} {
+    global mysqlstatus
+    #ssl_options is variable length so build a connectstring
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE")} {
         set use_socket "true"
         append connectstring " -socket $socket"
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
+
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
-    }
+    }    
+
     append connectstring " -user $user -password $password"
     set login_command "mysqlconnect [ dict get $connectstring ]"
+
     #eval the login command
     if [catch {set mysql_handler [eval $login_command]}] {
         if $use_socket {
@@ -213,7 +284,122 @@ ENGINE = $mysql_tpch_storage_engine"
     return
 }
 
+proc CreateOBTables { mysql_handler partitions_num } {
+    puts "CREATING OceanBase TPCH TABLES"
+    set sql(1) "CREATE TABLE IF NOT EXISTS `ORDERS` (
+`O_ORDERDATE` DATE NULL,
+`O_ORDERKEY` INT NOT NULL,
+`O_CUSTKEY` INT NOT NULL,
+`O_ORDERPRIORITY` CHAR(15) BINARY NULL,
+`O_SHIPPRIORITY` INT NULL,
+`O_CLERK` CHAR(15) BINARY NULL,
+`O_ORDERSTATUS` CHAR(1) BINARY NULL,
+`O_TOTALPRICE` DECIMAL(10,2) NULL,
+`O_COMMENT` VARCHAR(79) BINARY NULL,
+PRIMARY KEY (`O_ORDERKEY`))
+partition by key(O_ORDERKEY) partitions $partitions_num;
+create index I_O_ORDERDATE on orders(O_ORDERDATE) local;"
+
+    set sql(2) "CREATE TABLE IF NOT EXISTS `CUSTOMER` (
+C_CUSTKEY INT NOT NULL,
+C_MKTSEGMENT CHAR(10) BINARY NULL,
+C_NATIONKEY INT NULL,
+C_NAME VARCHAR(25) BINARY NULL,
+C_ADDRESS VARCHAR(40) BINARY NULL,
+C_PHONE CHAR(15) BINARY NULL,
+C_ACCTBAL DECIMAL(10,2) NULL,
+C_COMMENT VARCHAR(118) BINARY NULL,
+PRIMARY KEY (`C_CUSTKEY`))
+partition by key(C_CUSTKEY) partitions $partitions_num;"
+
+    set sql(3) "CREATE TABLE IF NOT EXISTS `PART` (
+P_PARTKEY INT NOT NULL,
+P_TYPE VARCHAR(25) BINARY NULL,
+P_SIZE INT NULL,
+P_BRAND CHAR(10) BINARY NULL,
+P_NAME VARCHAR(55) BINARY NULL,
+P_CONTAINER CHAR(10) BINARY NULL,
+P_MFGR CHAR(25) BINARY NULL,
+P_RETAILPRICE DECIMAL(10,2) NULL,
+P_COMMENT VARCHAR(23) BINARY NULL,
+PRIMARY KEY (`P_PARTKEY`))
+partition by key(P_PARTKEY) partitions $partitions_num;"
+
+    set sql(4) "CREATE TABLE IF NOT EXISTS `SUPPLIER` (
+S_SUPPKEY INT NOT NULL,
+S_NATIONKEY INT NULL,
+S_COMMENT VARCHAR(102) BINARY NULL,
+S_NAME CHAR(25) BINARY NULL,
+S_ADDRESS VARCHAR(40) BINARY NULL,
+S_PHONE CHAR(15) BINARY NULL,
+S_ACCTBAL DECIMAL(10,2) NULL,
+PRIMARY KEY (`S_SUPPKEY`))
+partition by key(S_SUPPKEY) partitions $partitions_num;"
+
+    set sql(5) "CREATE TABLE IF NOT EXISTS `PARTSUPP` ( 
+PS_PARTKEY INT NOT NULL, 
+PS_SUPPKEY INT NOT NULL, 
+PS_SUPPLYCOST INT NOT NULL, 
+PS_AVAILQTY INT NULL, 
+PS_COMMENT VARCHAR(199) BINARY NULL, 
+PRIMARY KEY (`PS_PARTKEY`,`PS_SUPPKEY`),
+INDEX PARTSUPP_PART_FKIDX (`PS_PARTKEY`),
+INDEX PARTSUPP_SUPPLIER_FKIDX (`PS_SUPPKEY`),
+FOREIGN KEY (PS_PARTKEY) REFERENCES PART(`P_PARTKEY`),
+FOREIGN KEY (PS_SUPPKEY) REFERENCES SUPPLIER(`S_SUPPKEY`))
+partition by key(PS_PARTKEY) partitions $partitions_num;"
+
+    set sql(6) "CREATE TABLE IF NOT EXISTS `NATION` (
+N_NATIONKEY INT NOT NULL,
+N_NAME CHAR(25) BINARY NULL,
+N_REGIONKEY INT NULL,
+N_COMMENT VARCHAR(152) BINARY NULL,
+PRIMARY KEY (`N_NATIONKEY`));"
+
+    set sql(7) "CREATE TABLE IF NOT EXISTS `REGION` (
+R_REGIONKEY INT NOT NULL,
+R_NAME CHAR(25) BINARY NULL,
+R_COMMENT VARCHAR(152) BINARY NULL,
+PRIMARY KEY (`R_REGIONKEY`));"
+
+    set sql(8) "CREATE TABLE IF NOT EXISTS `LINEITEM` (
+L_SHIPDATE DATE NULL,
+L_ORDERKEY BIGINT NOT NULL,
+L_DISCOUNT DECIMAL(10,2) NOT NULL,
+L_EXTENDEDPRICE DECIMAL(10,2) NOT NULL,
+L_SUPPKEY INT NOT NULL,
+L_QUANTITY INT NOT NULL,
+L_RETURNFLAG CHAR(1) BINARY NULL,
+L_PARTKEY INT NOT NULL,
+L_LINESTATUS CHAR(1) BINARY NULL,
+L_TAX DECIMAL(10,2) NOT NULL,
+L_COMMITDATE DATE NULL,
+L_RECEIPTDATE DATE NULL,
+L_SHIPMODE CHAR(10) BINARY NULL,
+L_LINENUMBER INT NOT NULL,
+L_SHIPINSTRUCT CHAR(25) BINARY NULL,
+L_COMMENT VARCHAR(44) BINARY NULL,
+PRIMARY KEY (`L_ORDERKEY`, `L_LINENUMBER`))
+partition by key (L_ORDERKEY) partitions $partitions_num;
+create index I_L_ORDERKEY on LINEITEM(L_ORDERKEY) local;
+create index I_L_SHIPDATE on LINEITEM(L_SHIPDATE) local;"
+
+    for { set i 1 } { $i <= 8 } { incr i } {
+        set regex_pattern {^CREATE TABLE IF NOT EXISTS `([^`]*)`}
+
+        if {[regexp $regex_pattern $sql($i) match submatch]} {
+            puts "CREATE TABLE $submatch"
+        } else {
+            puts "can not find table for $sql($i)"
+        }        
+        mysqlexec $mysql_handler $sql($i)
+        puts "TABLE $submatch is created"
+    }
+    return
+}
+
 proc UpdateHeatwaveSchema { mysql_handler } {
+    puts "MySQL UpdateHeatwaveSchema"
     # https://github.com/oracle/heatwave-tpch/blob/0e4ad91b3f17b5a8fd9f099c94b223d861c09846/HeatWave/secondary_load.sql
     # With updated varchar values to be compatible with HammerDB schema
     set sql(1) "
@@ -442,7 +628,7 @@ proc mk_part { mysql_handler start_rows end_rows scale_factor } {
     return
 }
 
-proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
+proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor oceanbase_db} {
     set refresh 100
     set delta 1
     set L_PKEY_MAX   [ expr {200000 * $scale_factor} ]
@@ -510,7 +696,22 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
                 incr ocnt
                 set lstatus "F"
             } else { set lstatus "O" }
-            append lineit_val_list (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')
+
+            if { $oceanbase_db eq "true" } {
+                set scanned [clock scan $lsdate -format "%Y-%b-%d"]  
+                set lsdate [clock format $scanned -format "%Y-%m-%d"]
+
+                set scanned [clock scan $lrdate -format "%Y-%b-%d"]  
+                set lrdate [clock format $scanned -format "%Y-%m-%d"]
+
+                set scanned [clock scan $lcdate -format "%Y-%b-%d"]  
+                set lcdate [clock format $scanned -format "%Y-%m-%d"]          
+
+                append lineit_val_list ('$lsdate','$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', '$lcdate', '$lrdate', '$lsmode', '$llcnt', '$linstruct', '$lcomment')
+            } else {
+                append lineit_val_list (str_to_date('$lsdate','%Y-%M-%d'),'$lokey', '$ldiscount', '$leprice', '$lsuppkey', '$lquantity', '$lrflag', '$lpartkey', '$lstatus', '$ltax', str_to_date('$lcdate','%Y-%M-%d'), str_to_date('$lrdate','%Y-%M-%d'), '$lsmode', '$llcnt', '$linstruct', '$lcomment')
+            }
+
             if { $l < [ expr $lcnt - 1 ] } {
                 append lineit_val_list ,
             }
@@ -518,7 +719,15 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
 	set totalprice [ expr double($totalprice) / 100 ]
         if { $ocnt > 0} { set orderstatus "P" }
         if { $ocnt == $lcnt } { set orderstatus "F" }
-        append order_val_list (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')
+
+        if { $oceanbase_db eq "true" } {
+            set scanned [clock scan $date -format "%Y-%b-%d"]  
+            set date [clock format $scanned -format "%Y-%m-%d"]     
+            append order_val_list ('$date', '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')            
+        } else {
+            append order_val_list (str_to_date('$date','%Y-%M-%d'), '$okey', '$custkey', '$opriority', '$spriority', '$clerk', '$orderstatus', '$totalprice', '$comment')
+        }
+
         if { ![ expr {$i % 1000} ]  || $i eq $end_rows } {
             mysql::exec $mysql_handler "INSERT INTO LINEITEM (`L_SHIPDATE`, `L_ORDERKEY`, `L_DISCOUNT`, `L_EXTENDEDPRICE`, `L_SUPPKEY`, `L_QUANTITY`, `L_RETURNFLAG`, `L_PARTKEY`, `L_LINESTATUS`, `L_TAX`, `L_COMMITDATE`, `L_RECEIPTDATE`, `L_SHIPMODE`, `L_LINENUMBER`, `L_SHIPINSTRUCT`, `L_COMMENT`) VALUES $lineit_val_list"
             mysql::exec $mysql_handler "INSERT INTO ORDERS (`O_ORDERDATE`, `O_ORDERKEY`, `O_CUSTKEY`, `O_ORDERPRIORITY`, `O_SHIPPRIORITY`, `O_CLERK`, `O_ORDERSTATUS`, `O_TOTALPRICE`, `O_COMMENT`) VALUES $order_val_list"
@@ -538,7 +747,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu oceanbase_db ob_partition_num ob_tenant_name} {
     global mysqlstatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -590,16 +799,25 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
-        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+        if { $oceanbase_db == "true" } {
+            PrepareOceanbase $host $port $socket $ssl_options $user $password $ob_tenant_name
+        }
+        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $oceanbase_db $ob_tenant_name]
+    
         CreateDatabase $mysql_handler $db
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
         # If storage_engine is set to heatwave, first, create the db schema using InnoDB and migrate it after data generation.
-        if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
-            CreateTables $mysql_handler "InnoDB"
+        if {$oceanbase_db == "true" } {
+            CreateOBTables $mysql_handler $ob_partition_num
         } else {
-            CreateTables $mysql_handler $mysql_tpch_storage_engine
+            if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
+                CreateTables $mysql_handler "InnoDB"
+            } else {
+                CreateTables $mysql_handler $mysql_tpch_storage_engine
+            }
         }
+
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -632,8 +850,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
             mk_nation $mysql_handler
-            puts "Loading NATION COMPLETE"
-    }}
+            puts "Loading NATION COMPLETE"}}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
@@ -650,7 +867,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
                 }
                 after 5000
             }
-            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $oceanbase_db $ob_tenant_name]
             mysqluse $mysql_handler $db
             mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
@@ -674,7 +891,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         puts "Loading PART and PARTSUPP..."
         mk_part $mysql_handler [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact
         puts "Loading ORDERS and LINEITEM..."
-        mk_order $mysql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact
+        mk_order $mysql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $oceanbase_db
         puts "Loading TPCH TABLES COMPLETE"
         puts "End:[ clock format [ clock seconds ] ]"
         if { $threaded eq "MULTI-THREADED" } {
@@ -688,13 +905,13 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         puts "Migrating data to Heatwave COMPLETE"
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        GatherStatistics $mysql_handler
+        GatherStatistics $mysql_handler $oceanbase_db $ob_partition_num
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         return
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_scale_fact $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_storage_engine $mysql_num_tpch_threads $mysql_tpch_obcompat $mysql_ob_partition_num $mysql_ob_tenant_name"
     } else { return }
 }
 
@@ -732,6 +949,8 @@ set refresh_on \"$mysql_refresh_on\" ;#First User does refresh function
 set update_sets $mysql_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $mysql_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$mysql_refresh_verbose\" ;#report refresh function activity
+set tpch_obcompat \"$mysql_tpch_obcompat\" ;# Oceanbase compatible
+set ob_tenant_name \"$mysql_ob_tenant_name\" ;# Oceanbase tenant name
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -760,21 +979,26 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password db } {
+proc ConnectToMySQL { host port socket ssl_options user password db is_oceanbase ob_tenant_name} {
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
         set use_socket "true"
         append connectstring " -socket $socket"
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
     }
     append connectstring " -user $user -password $password"
     set login_command "mysqlconnect [ dict get $connectstring ]"
+    puts "login_command $login_command"
     #eval the login command
     if [catch {set mysql_handler [eval $login_command]}] {
         if $use_socket {
@@ -927,8 +1151,8 @@ proc del_order_ref { mysql_handler upd_num scale_factor trickle_refresh REFRESH_
     mysql::commit $mysql_handler
 }
 
-proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET } {
-        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+proc do_refresh { host port socket ssl_options user password db scale_factor update_sets trickle_refresh REFRESH_VERBOSE RF_SET oceanbase_db ob_tenant_name} {
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $oceanbase_db $ob_tenant_name]
     set upd_num 1
     for { set set_counter 1 } {$set_counter <= $update_sets } {incr set_counter} {
         if {  [ tsv::get application abort ]  } { break }
@@ -1211,10 +1435,10 @@ proc sub_query { query_no scale_factor myposition engine } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
+proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition mysql_tpch_obcompat ob_tenant_name} {
     global mysqlstatus
-    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
-
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $mysql_tpch_obcompat $ob_tenant_name]
+    
     puts "Verifying the scale factor of the existing schema..."
     set countsql "SELECT count(*) FROM SUPPLIER"
     set count [ standsql $mysql_handler $countsql $RAISEERROR ]
@@ -1332,21 +1556,21 @@ if { $refresh_on } {
         set trickle_refresh 0
         set update_sets 1
         set REFRESH_VERBOSE "false"
-        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0
-        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1 $tpch_obcompat $ob_tenant_name
+        do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets 0 $tpch_obcompat $ob_tenant_name
+        do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2 $tpch_obcompat $ob_tenant_name
     } else {
         switch $myposition {
             1 {
-                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
+                do_refresh $host $port $socket $ssl_options $user $password $db $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH $tpch_obcompat $ob_tenant_name
             }
             default {
-                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ]
+                do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets [ expr $myposition - 1 ] $tpch_obcompat $ob_tenant_name
             }
         }
     }
 } else {
-    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition
+    do_tpch $host $port $socket $ssl_options $user $password $db $scale_factor $RAISEERROR $VERBOSE $total_querysets $myposition $tpch_obcompat $ob_tenant_name
 }}
 }
 
@@ -1378,6 +1602,8 @@ set ssl_options {$mysql_ssl_options} ;# MySQL SSL/TLS options
 set user \"$mysql_tpch_user\" ;# MySQL user
 set password \"[ quotemeta $mysql_tpch_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_tpch_dbase\" ;# Database containing the TPC Schema
+set tpch_obcompat \"$mysql_tpch_obcompat\" ;# Oceanbase compatible
+set ob_tenant_name \"$mysql_ob_tenant_name\" ;# Oceanbase tenant name
 #EDITABLE OPTIONS##################################################
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
@@ -1407,15 +1633,19 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password db } {
+proc ConnectToMySQL { host port socket ssl_options user password db is_oceanbase ob_tenant_name} {
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
         set use_socket "true"
         append connectstring " -socket $socket"
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
+	#if is_oceanbase is false and chk_socket is false we don't want to change the username
+            if { $is_oceanbase == "true" } {
+                set user "$user@$ob_tenant_name"
+                }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1475,9 +1705,9 @@ proc get_query { query_no } {
 }
 #########################
 #CLOUD ANALYTIC TPCH QUERY SETS PROCEDURE
-proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE } {
+proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE is_oceanbase ob_tenant_name} {
     global mysqlstatus
-    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $is_oceanbase $ob_tenant_name]
     mysqlexec $mysql_handler "set session group_concat_max_len = 18446744073709551615"
     unset -nocomplain qlist
     set start [ clock seconds ]
@@ -1504,7 +1734,7 @@ proc do_cloud { host port socket ssl_options user password db RAISEERROR VERBOSE
 }
 #########################
 #RUN CLOUD ANALYTIC TPC-H
-do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE}
+do_cloud $host $port $socket $ssl_options $user $password $db $RAISEERROR $VERBOSE $tpch_obcompat $ob_tenant_name}
 }
 
 proc delete_mysqltpch {} {
@@ -1547,15 +1777,19 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password } {
+proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob_tenant_name} {
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
         set use_socket "true"
         append connectstring " -socket $socket"
     } else {
         set use_socket "false"
         append connectstring " -host $host -port $port"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
     }
     foreach key [ dict keys $ssl_options ] {
         append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1586,10 +1820,10 @@ proc ConnectToMySQL { host port socket ssl_options user password } {
     }
 }
 
-proc drop_schema { host port socket ssl_options user password dbase } {
+proc drop_schema { host port socket ssl_options user password dbase is_oceanbase ob_tenant_name} {
     global mysqlstatus
 
-    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $is_oceanbase $ob_tenant_name]
     if {[ catch {mysqlexec $mysql_handler "drop database $dbase"} message ] } {
         puts "$message"
     } else {
@@ -1601,7 +1835,7 @@ proc drop_schema { host port socket ssl_options user password dbase } {
 }
 
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_tpch_obcompat $mysql_ob_tenant_name"
     } else { return }
 }
 
@@ -1653,15 +1887,19 @@ proc chk_socket { host socket } {
     }
 }
 
-proc ConnectToMySQL { host port socket ssl_options user password } {
+proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob_tenant_name } {
     global mysqlstatus
     #ssl_options is variable length so build a connectstring
-    if { [ chk_socket $host $socket ] eq "TRUE" } {
+    if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
 	set use_socket "true"
 	append connectstring " -socket $socket"
 	 } else {
 	set use_socket "false"
 	append connectstring " -host $host -port $port"
+        #if is_oceanbase is false and chk_socket is false we don't want to change the username
+        if { $is_oceanbase == "true" } {
+            set user "$user@$ob_tenant_name"
+            }
 	}
 	foreach key [ dict keys $ssl_options ] {
 	append connectstring " $key [ dict get $ssl_options $key ] "
@@ -1692,11 +1930,11 @@ proc ConnectToMySQL { host port socket ssl_options user password } {
     }
 }
 
-proc check_tpch { host port socket ssl_options user password dbase scale_factor } {
+proc check_tpch { host port socket ssl_options user password dbase scale_factor is_oceanbase ob_tenant_name } {
     global mysqlstatus
     puts "Checking $dbase TPROC-H schema"
     set tables [ dict create  SUPPLIER [ expr {$scale_factor * 10000} ] CUSTOMER [ expr {$scale_factor * 150000} ] LINEITEM [ expr {$scale_factor * 6000000 * 0.99} ] NATION 25 ORDERS [ expr {$scale_factor * 1500000} ] PART [ expr {$scale_factor * 200000} ] PARTSUPP [ expr {$scale_factor * 800000} ] REGION 5 ]
-    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $is_oceanbase $ob_tenant_name ]
    #Check 1 Database Exists
     puts "Check database"
         set db_exists [ mysql::sel $mysql_handler "select schema_name from information_schema.schemata where schema_name = '$dbase'" -flatlist  ]
@@ -1752,6 +1990,6 @@ proc check_tpch { host port socket ssl_options user password dbase scale_factor 
     return
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_scale_fact"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $mysql_host $mysql_port $mysql_socket {$mysql_ssl_options} $mysql_tpch_user [ quotemeta $mysql_tpch_pass ] $mysql_tpch_dbase $mysql_scale_fact $mysql_tpch_obcompat $mysql_ob_tenant_name"
     } else { return }
 }
