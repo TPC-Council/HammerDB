@@ -9,7 +9,7 @@ RUN apt-get update && \
     rm -rf  /var/lib/apt/lists/*
 
 # Install configure HammerDB-v4.10
-ARG HAMMERDB_VERSION=4.9
+ARG HAMMERDB_VERSION=4.10
 RUN wget https://github.com/TPC-Council/HammerDB/releases/download/v$HAMMERDB_VERSION/HammerDB-$HAMMERDB_VERSION-Linux.tar.gz -O - | \
     tar -xvzf - -C /home/ && \
     ln -s /home/HammerDB-$HAMMERDB_VERSION /home/hammerdb
