@@ -17,9 +17,9 @@ proc countpgopts { bm } {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.countopt.f1.e1 get} pg_port {.countopt.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.countopt.f1.e3 get} pg_superuserpass {.countopt.f1.e4 get} pg_defaultdbase {.countopt.f1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.countopt.c1.e3 get} pg_superuserpass {.countopt.c1.e4 get} pg_defaultdbase {.countopt.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.countopt.f1.e1 get} pg_port {.countopt.f1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.countopt.f1.e3 get} pg_tpch_superuserpass {.countopt.f1.e4 get} pg_tpch_defaultdbase {.countopt.f1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.countopt.c1.e3 get} pg_tpch_superuserpass {.countopt.c1.e4 get} pg_tpch_defaultdbase {.countopt.c1.e5 get}} ]
     }
     if { [ info exists afval ] } {
         after cancel $afval
@@ -44,29 +44,28 @@ proc countpgopts { bm } {
     wm withdraw .countopt
     wm title .countopt {PostgreSQL TX Counter Options}
     set Parent .countopt
-    set Name $Parent.f1
-    ttk::frame $Name 
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Transaction Counter Options" -image [ create_image pencil icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image pencil icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "Transaction Counter Options"
-    grid $Prompt -column 1 -row 0 -sticky w
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "PostgreSQL Host :"
     ttk::entry $Name -width 30 -textvariable pg_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "PostgreSQL Port :"   
     ttk::entry $Name  -width 30 -textvariable pg_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "PostgreSQL Superuser :"
     if { $bm eq "TPC-C" } {
         ttk::entry $Name  -width 30 -textvariable pg_superuser
@@ -75,8 +74,8 @@ proc countpgopts { bm } {
     }
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
     if { $bm eq "TPC-C" } {
         ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
@@ -85,8 +84,8 @@ proc countpgopts { bm } {
     }
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "PostgreSQL Default Database :"
     if { $bm eq "TPC-C" } {
         ttk::entry $Name -width 30 -textvariable pg_defaultdbase
@@ -103,9 +102,9 @@ proc countpgopts { bm } {
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky ew
 
-    set Prompt $Parent.f1.p6a
+    set Prompt $Parent.c1.p6a
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
-    set Name $Parent.f1.e6a
+    set Name $Parent.c1.e6a
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky w
@@ -138,7 +137,7 @@ proc countpgopts { bm } {
     if {$tclog == 0} {
         $Name configure -state disabled
     }
-    bind .countopt.f1.e1 <Delete> {
+    bind .countopt.c1.e1 <Delete> {
         if [%W selection present] {
             %W delete sel.first sel.last
         } else {
@@ -207,7 +206,7 @@ proc configpgtpcc {option} {
     setlocaltpccvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.tpc.f1.e1 get} pg_port {.tpc.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.f1.e3 get} pg_superuserpass {.tpc.f1.e4 get} pg_defaultdbase {.tpc.f1.e5 get} pg_user {.tpc.f1.e6 get} pg_pass {.tpc.f1.e7 get} pg_dbase {.tpc.f1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
+    set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
     set whlist [ get_warehouse_list_for_spinbox ]
     if { $pg_oracompat eq "true" } {
         if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -229,68 +228,64 @@ proc configpgtpcc {option} {
         "drive" {  wm title .tpc {PostgreSQL TPROC-C Driver Options} }
     }
     set Parent .tpc
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+    set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "PostgreSQL Host :"
     ttk::entry $Name -width 30 -textvariable pg_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "PostgreSQL Port :"   
     ttk::entry $Name  -width 30 -textvariable pg_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "PostgreSQL Superuser :"
     ttk::entry $Name  -width 30 -textvariable pg_superuser
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
     ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "PostgreSQL Default Database :"
     ttk::entry $Name -width 30 -textvariable pg_defaultdbase
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5 -sticky ew
-    set Name $Parent.f1.e6
-    set Prompt $Parent.f1.p6
+    set Name $Parent.c1.e6
+    set Prompt $Parent.c1.p6
     ttk::label $Prompt -text "TPROC-C PostgreSQL User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable pg_user
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky ew
-    set Name $Parent.f1.e7
-    set Prompt $Parent.f1.p7
+    set Name $Parent.c1.e7
+    set Prompt $Parent.c1.p7
     ttk::label $Prompt -text "TPROC-C PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left 
     ttk::entry $Name -show * -width 30 -textvariable pg_pass
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky ew
-    set Name $Parent.f1.e8
-    set Prompt $Parent.f1.p8
+    set Name $Parent.c1.e8
+    set Prompt $Parent.c1.p8
     ttk::label $Prompt -text "TPROC-C PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable pg_dbase
     grid $Prompt -column 0 -row 8 -sticky e
@@ -303,13 +298,13 @@ proc configpgtpcc {option} {
         grid $Prompt -column 0 -row 9 -sticky e
         grid $Name -column 1 -row 9 -sticky ew
     }
-    set Prompt $Parent.f1.p9
+    set Prompt $Parent.c1.p9
     ttk::label $Prompt -text "EnterpriseDB Oracle Compatible :"
-    set Name $Parent.f1.e9
+    set Name $Parent.c1.e9
     ttk::checkbutton $Name -text "" -variable pg_oracompat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 10 -sticky e
     grid $Name -column 1 -row 10 -sticky w
-    bind .tpc.f1.e9 <Button> { 
+    bind .tpc.c1.e9 <Button> { 
         if { $pg_cituscompat == "true" } {
             # do nothing, button is disabled
         } elseif { $pg_oracompat != "true" } {
@@ -318,22 +313,22 @@ proc configpgtpcc {option} {
             if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "edb" }
             if { $pg_storedprocs eq "true" } { set pg_storedprocs "false" }
             .tpc.f1.e9a configure -state disabled
-            .tpc.f1.e9c configure -state disabled
+            .tpc.c1.e9c configure -state disabled
         } else {
             if { $pg_port eq "5444" } { set pg_port "5432" }
             if { $pg_superuser eq "enterprisedb" } { set pg_superuser "postgres" }
             if { $pg_defaultdbase eq "edb" } { set pg_defaultdbase "postgres" }
             .tpc.f1.e9a configure -state normal
-            .tpc.f1.e9c configure -state normal
+            .tpc.c1.e9c configure -state normal
         }
     }
-    set Prompt $Parent.f1.p9c
+    set Prompt $Parent.c1.p9c
     ttk::label $Prompt -text "Citus Compatible :"
-    set Name $Parent.f1.e9c
+    set Name $Parent.c1.e9c
     ttk::checkbutton $Name -text "" -variable pg_cituscompat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 11 -sticky e
     grid $Name -column 1 -row 11 -sticky w
-    bind .tpc.f1.e9c <Button> {
+    bind .tpc.c1.e9c <Button> {
         if { $pg_oracompat == "true" } {
             # do nothing, button is disabled
         } elseif { $pg_cituscompat != "true" } {
@@ -341,31 +336,22 @@ proc configpgtpcc {option} {
             if { $pg_defaultdbase eq "postgres" } { set pg_defaultdbase "citus" }
             set pg_storedprocs "true"
             set pg_partition "false"
-            .tpc.f1.e9 configure -state disabled
+            .tpc.c1.e9 configure -state disabled
             .tpc.f1.e9a configure -state disabled
 	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state disabled }
         } else {
             if { $pg_superuser eq "citus" } { set pg_superuser "postgres" }
             if { $pg_defaultdbase eq "citus" } { set pg_defaultdbase "postgres" }
-            .tpc.f1.e9 configure -state normal
+            .tpc.c1.e9 configure -state normal
             .tpc.f1.e9a configure -state normal
             if { $pg_count_ware > 200 } {
 	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state normal }
             }
         }
     }
-    set Prompt $Parent.f1.p9a
-    ttk::label $Prompt -text "PostgreSQL Stored Procedures :"
-    set Name $Parent.f1.e9a
-    ttk::checkbutton $Name -text "" -variable pg_storedprocs -onvalue "true" -offvalue "false"
-    if {$pg_oracompat == "true" } {
-        $Name configure -state disabled
-    }
-    grid $Prompt -column 0 -row 12 -sticky e
-    grid $Name -column 1 -row 12 -sticky w
-    set Prompt $Parent.f1.p9b
+    set Prompt $Parent.c1.p9b
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
-    set Name $Parent.f1.e9b
+    set Name $Parent.c1.e9b
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky w
@@ -409,6 +395,15 @@ proc configpgtpcc {option} {
         if {$pg_count_ware < 200 } {
             $Name configure -state disabled
         }
+        set Prompt $Parent.f1.p9a
+        ttk::label $Prompt -text "PostgreSQL Stored Procedures :"
+        set Name $Parent.f1.e9a
+        ttk::checkbutton $Name -text "" -variable pg_storedprocs -onvalue "true" -offvalue "false"
+        if {$pg_oracompat == "true" } {
+        $Name configure -state disabled
+        }
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
@@ -507,12 +502,21 @@ proc configpgtpcc {option} {
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
+        set Prompt $Parent.f1.p9a
+        ttk::label $Prompt -text "PostgreSQL Stored Procedures :"
+        set Name $Parent.f1.e9a
+        ttk::checkbutton $Name -text "" -variable pg_storedprocs -onvalue "true" -offvalue "false"
+        if {$pg_oracompat == "true" } {
+        $Name configure -state disabled
+        }
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky w
         set Name $Parent.f1.e21
         set Prompt $Parent.f1.p21
         ttk::label $Prompt -text "Minutes of Rampup Time :"
         ttk::entry $Name -width 30 -textvariable pg_rampup
-        grid $Prompt -column 0 -row 25 -sticky e
-        grid $Name -column 1 -row 25 -sticky ew
+        grid $Prompt -column 0 -row 26 -sticky e
+        grid $Name -column 1 -row 26 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -520,8 +524,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p22
         ttk::label $Prompt -text "Minutes for Test Duration :"
         ttk::entry $Name -width 30 -textvariable pg_duration
-        grid $Prompt -column 0 -row 26 -sticky e
-        grid $Name -column 1 -row 26 -sticky ew
+        grid $Prompt -column 0 -row 27 -sticky e
+        grid $Name -column 1 -row 27 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -529,8 +533,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p23
         ttk::label $Prompt -text "Use All Warehouses :"
         ttk::checkbutton $Name -text "" -variable pg_allwarehouse -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 27 -sticky e
-        grid $Name -column 1 -row 27 -sticky ew
+        grid $Prompt -column 0 -row 28 -sticky e
+        grid $Name -column 1 -row 28 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -538,8 +542,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p24
         ttk::label $Prompt -text "Time Profile :"
         ttk::checkbutton $Name -text "" -variable pg_timeprofile -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 28 -sticky e
-        grid $Name -column 1 -row 28 -sticky ew
+        grid $Prompt -column 0 -row 29 -sticky e
+        grid $Name -column 1 -row 29 -sticky ew
         if {$pg_driver == "test" } {
             $Name configure -state disabled
         }
@@ -547,8 +551,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p25
         ttk::label $Prompt -text "Asynchronous Scaling :"
         ttk::checkbutton $Name -text "" -variable pg_async_scale -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 29 -sticky e
-        grid $Name -column 1 -row 29 -sticky ew
+        grid $Prompt -column 0 -row 30 -sticky e
+        grid $Name -column 1 -row 30 -sticky ew
         if {$pg_driver == "test" } {
             set pg_async_scale "false"
             $Name configure -state disabled
@@ -572,8 +576,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p26
         ttk::label $Prompt -text "Asynch Clients per Virtual User :"
         ttk::entry $Name -width 30 -textvariable pg_async_client
-        grid $Prompt -column 0 -row 30 -sticky e
-        grid $Name -column 1 -row 30 -sticky ew
+        grid $Prompt -column 0 -row 31 -sticky e
+        grid $Name -column 1 -row 31 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -581,8 +585,8 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p27
         ttk::label $Prompt -text "Asynch Client Login Delay :"
         ttk::entry $Name -width 30 -textvariable pg_async_delay
-        grid $Prompt -column 0 -row 31 -sticky e
-        grid $Name -column 1 -row 31 -sticky ew
+        grid $Prompt -column 0 -row 32 -sticky e
+        grid $Name -column 1 -row 32 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             $Name configure -state disabled
         }
@@ -590,18 +594,18 @@ proc configpgtpcc {option} {
         set Prompt $Parent.f1.p28
         ttk::label $Prompt -text "Asynchronous Verbose :"
         ttk::checkbutton $Name -text "" -variable pg_async_verbose -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 32 -sticky e
-        grid $Name -column 1 -row 32 -sticky ew
+        grid $Prompt -column 0 -row 33 -sticky e
+        grid $Name -column 1 -row 33 -sticky ew
         if {$pg_driver == "test" || $pg_async_scale == "false" } {
             set pg_async_verbose "false"
             $Name configure -state disabled
         }
-        set Name $Parent.f1.e29
-        set Prompt $Parent.f1.p29
+        set Name $Parent.c1.e29
+        set Prompt $Parent.c1.p29
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable pg_connect_pool -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 33 -sticky e
-        grid $Name -column 1 -row 33 -sticky ew
+        grid $Prompt -column 0 -row 34 -sticky e
+        grid $Name -column 1 -row 34 -sticky ew
     }
     #This is the Cancel button variables stay as before
     set Name $Parent.b2
@@ -647,7 +651,7 @@ proc configpgtpch {option} {
     setlocaltpchvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.pgtpch.f1.e1 get} pg_port {.pgtpch.f1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.pgtpch.f1.e3 get} pg_tpch_superuserpass {.pgtpch.f1.e4 get} pg_tpch_defaultdbase {.pgtpch.f1.e5 get} pg_tpch_user {.pgtpch.f1.e6 get} pg_tpch_pass {.pgtpch.f1.e7 get} pg_tpch_dbase {.pgtpch.f1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
+    set pgfields [ dict create connection {pg_host {.pgtpch.c1.e1 get} pg_port {.pgtpch.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.pgtpch.c1.e3 get} pg_tpch_superuserpass {.pgtpch.c1.e4 get} pg_tpch_defaultdbase {.pgtpch.c1.e5 get} pg_tpch_user {.pgtpch.c1.e6 get} pg_tpch_pass {.pgtpch.c1.e7 get} pg_tpch_dbase {.pgtpch.c1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
     catch "destroy .pgtpch"
     ttk::toplevel .pgtpch
     wm transient .pgtpch .ed_mainFrame
@@ -658,77 +662,73 @@ proc configpgtpch {option} {
         "drive" {  wm title .pgtpch {PostgreSQL TPROC-H Driver Options} }
     }
     set Parent .pgtpch
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "PostgreSQL Host :"
     ttk::entry $Name -width 30 -textvariable pg_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "PostgreSQL Port :"
     ttk::entry $Name  -width 30 -textvariable pg_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
     if { $option eq "all" || $option eq "build" } {
-        set Name $Parent.f1.e3
-        set Prompt $Parent.f1.p3
+        set Name $Parent.c1.e3
+        set Prompt $Parent.c1.p3
         ttk::label $Prompt -text "PostgreSQL Superuser :"
         ttk::entry $Name  -width 30 -textvariable pg_tpch_superuser
         grid $Prompt -column 0 -row 3 -sticky e
         grid $Name -column 1 -row 3 -sticky ew
-        set Name $Parent.f1.e4
-        set Prompt $Parent.f1.p4
+        set Name $Parent.c1.e4
+        set Prompt $Parent.c1.p4
         ttk::label $Prompt -text "PostgreSQL Superuser Password :"
         ttk::entry $Name -show * -width 30 -textvariable pg_tpch_superuserpass
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky ew
-        set Name $Parent.f1.e5
-        set Prompt $Parent.f1.p5
+        set Name $Parent.c1.e5
+        set Prompt $Parent.c1.p5
         ttk::label $Prompt -text "PostgreSQL Default Database :"
         ttk::entry $Name -width 30 -textvariable pg_tpch_defaultdbase
         grid $Prompt -column 0 -row 5 -sticky e
         grid $Name -column 1 -row 5 -sticky ew
     }
-    set Name $Parent.f1.e6
-    set Prompt $Parent.f1.p6
+    set Name $Parent.c1.e6
+    set Prompt $Parent.c1.p6
     ttk::label $Prompt -text "TPROC-H PostgreSQL User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable pg_tpch_user
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky ew
-    set Name $Parent.f1.e7
-    set Prompt $Parent.f1.p7
+    set Name $Parent.c1.e7
+    set Prompt $Parent.c1.p7
     ttk::label $Prompt -text "TPROC-H PostgreSQL User Password :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -show * -width 30 -textvariable pg_tpch_pass
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky ew
-    set Name $Parent.f1.e8
-    set Prompt $Parent.f1.p8
+    set Name $Parent.c1.e8
+    set Prompt $Parent.c1.p8
     ttk::label $Prompt -text "TPROC-H PostgreSQL Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable pg_tpch_dbase
     grid $Prompt -column 0 -row 8 -sticky e
     grid $Name -column 1 -row 8 -sticky ew
-    set Prompt $Parent.f1.p8b
+    set Prompt $Parent.c1.p8b
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
-    set Name $Parent.f1.e8b
+    set Name $Parent.c1.e8b
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 10 -sticky e
     grid $Name -column 1 -row 10 -sticky w
@@ -739,11 +739,11 @@ proc configpgtpch {option} {
         ttk::entry $Name -width 30 -textvariable pg_tpch_tspace
         grid $Prompt -column 0 -row 9 -sticky e
         grid $Name -column 1 -row 9 -sticky ew
-        set Prompt $Parent.f1.p9
+        set Prompt $Parent.c1.p9
         ttk::label $Prompt -text "Greenplum Database Compatible :"
-        set Name $Parent.f1.e9
+        set Name $Parent.c1.e9
         ttk::checkbutton $Name -text "" -variable pg_tpch_gpcompat -onvalue "true" -offvalue "false"
-        bind $Parent.f1.e9 <Button> {
+        bind $Parent.c1.e9 <Button> {
             if {$pg_tpch_gpcompat eq "true"} { 
                 .pgtpch.f1.e10 configure -state disabled 
                 set pg_tpch_gpcompress "false"
@@ -897,7 +897,7 @@ proc configpgtpch {option} {
         grid $Prompt -column 0 -row 24 -sticky e
         grid $Name -column 1 -row 24 -sticky w
         set Prompt $Parent.f1.p22
-        ttk::label $Prompt -text "Redshift Compatible :"
+        ttk::label $Prompt -text "Redshift Compatible Queries :"
         set Name $Parent.f1.e22
         ttk::checkbutton $Name -text "" -variable pg_rs_compat -onvalue "true" -offvalue "false"
         if {$pg_cloud_query == "false" } {
@@ -952,9 +952,9 @@ proc metpgopts {} {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.metric.f1.e1 get} pg_port {.metric.f1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.metric.f1.e3 get} pg_superuserpass {.metric.f1.e4 get} pg_defaultdbase {.metric.f1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.metric.c1.e3 get} pg_superuserpass {.metric.c1.e4 get} pg_defaultdbase {.metric.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.metric.f1.e1 get} pg_port {.metric.f1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.metric.f1.e3 get} pg_tpch_superuserpass {.metric.f1.e4 get} pg_tpch_defaultdbase {.metric.f1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.metric.c1.e3 get} pg_tpch_superuserpass {.metric.c1.e4 get} pg_tpch_defaultdbase {.metric.c1.e5 get}} ]
     }
     if { $bm eq "TPC-C" } {
         if { $pg_oracompat eq "true" } {
@@ -977,29 +977,28 @@ proc metpgopts {} {
     wm withdraw .metric
     wm title .metric {PostgreSQL Metrics Options}
     set Parent .metric
-    set Name $Parent.f1
-    ttk::frame $Name
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "PostgreSQL Metrics Options" -image [ create_image dashboard icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image dashboard icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "PostgreSQL and OS Agent"
-    grid $Prompt -column 1 -row 0 -sticky w
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "PostgreSQL Host :"
     ttk::entry $Name -width 30 -textvariable pg_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "PostgreSQL Port :"   
     ttk::entry $Name  -width 30 -textvariable pg_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "PostgreSQL Superuser :"
     if { $bm eq "TPC-C" } {
         ttk::entry $Name  -width 30 -textvariable pg_superuser
@@ -1008,8 +1007,8 @@ proc metpgopts {} {
     }
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "PostgreSQL Superuser Password :"   
     if { $bm eq "TPC-C" } {
         ttk::entry $Name -show * -width 30 -textvariable pg_superuserpass
@@ -1018,8 +1017,8 @@ proc metpgopts {} {
     }
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "PostgreSQL Default Database :"
     if { $bm eq "TPC-C" } {
         ttk::entry $Name -width 30 -textvariable pg_defaultdbase
@@ -1028,9 +1027,9 @@ proc metpgopts {} {
     }
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5 -sticky ew
-    set Prompt $Parent.f1.p6
+    set Prompt $Parent.c1.p6
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
-    set Name $Parent.f1.e6
+    set Name $Parent.c1.e6
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky w

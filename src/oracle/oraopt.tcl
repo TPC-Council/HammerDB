@@ -26,10 +26,10 @@ proc countoraopts { bm } {
     variable oraoptsfields
     if { $bm eq "TPC-C" } { 
         set bm_for_count "tpcc_tt_compat" 
-        set oraoptsfields [ dict create connection {system_user {.countopt.f1.e2 get} system_password {.countopt.f1.e3 get} instance {.countopt.f1.e1 get} rac $rac} tpcc {tpcc_tt_compat $tpcc_tt_compat} ]
+        set oraoptsfields [ dict create connection {system_user {.countopt.c1.e2 get} system_password {.countopt.c1.e3 get} instance {.countopt.c1.e1 get} rac $rac} tpcc {tpcc_tt_compat $tpcc_tt_compat} ]
     } else { 
         set bm_for_count "tpch_tt_compat" 
-        set oraoptsfields [ dict create connection {system_user {.countopt.f1.e2 get} system_password {.countopt.f1.e3 get} instance {.countopt.f1.e1 get} rac $rac} tpch {tpch_tt_compat $tpch_tt_compat} ]
+        set oraoptsfields [ dict create connection {system_user {.countopt.c1.e2 get} system_password {.countopt.c1.e3 get} instance {.countopt.c1.e1 get} rac $rac} tpch {tpch_tt_compat $tpch_tt_compat} ]
     }
 
     if { [ info exists afval ] } {
@@ -41,34 +41,29 @@ proc countoraopts { bm } {
     wm transient .countopt .ed_mainFrame
     wm withdraw .countopt
     wm title .countopt {Oracle TX Counter Options}
-
     set Parent .countopt
-
-    set Name $Parent.f1
-    ttk::frame $Name 
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Transaction Counter Options" -image [ create_image pencil icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image pencil icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "Transaction Counter Options"
-    grid $Prompt -column 1 -row 0 -sticky w
-
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "Oracle Service Name :"
     ttk::entry $Name -width 30 -textvariable instance
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "System User :"   
     ttk::entry $Name  -width 30 -textvariable system_user
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "System User Password :"   
     ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
@@ -80,19 +75,19 @@ proc countoraopts { bm } {
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4
 
-    set Name $Parent.f1.e5
+    set Name $Parent.c1.e5
     ttk::checkbutton $Name -text "TimesTen Database Compatible" -variable $bm_for_count -onvalue "true" -offvalue "false"
     grid $Name -column 1 -row 5 -sticky w
-    bind .countopt.f1.e5 <Any-ButtonRelease> {
+    bind .countopt.c1.e5 <Any-ButtonRelease> {
         if { $bm eq "TPC-C" && $tpcc_tt_compat eq "false" || $bm eq "TPC-H" && $tpch_tt_compat eq "false" } {
             set rac 0
-            .countopt.f1.e6 configure -state disabled
+            .countopt.c1.e6 configure -state disabled
         } else {
-            .countopt.f1.e6 configure -state normal
+            .countopt.c1.e6 configure -state normal
         }
     }
 
-    set Name $Parent.f1.e6
+    set Name $Parent.c1.e6
     ttk::checkbutton $Name -text "RAC Global Transactions" -variable rac -onvalue 1 -offvalue 0
     grid $Name -column 1 -row 6 -sticky w
     if { $bm eq "TPC-C" && $tpcc_tt_compat eq "true" || $bm eq "TPC-H" && $tpch_tt_compat eq "true" } {
@@ -128,7 +123,7 @@ proc countoraopts { bm } {
         $Name configure -state disabled
     }
 
-    bind .countopt.f1.e1 <Delete> {
+    bind .countopt.c1.e1 <Delete> {
         if [%W selection present] {
             %W delete sel.first sel.last
         } else {
@@ -181,7 +176,7 @@ proc configoratpcc {option} {
     setlocaltpccvars $configoracle
     #set matching fields in dialog to temporary dict
     variable orafields
-    set orafields [ dict create connection {system_user {.tpc.f1.e2 get} system_password {.tpc.f1.e3 get} instance {.tpc.f1.e1 get}} tpcc {tpcc_user {.tpc.f1.e4 get} tpcc_pass {.tpc.f1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} async_client {.tpc.f1.e26 get} async_delay {.tpc.f1.e27 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse ora_timeprofile $ora_timeprofile async_scale $async_scale async_verbose $async_verbose connect_pool $connect_pool}]
+    set orafields [ dict create connection {system_user {.tpc.c1.e2 get} system_password {.tpc.c1.e3 get} instance {.tpc.c1.e1 get}} tpcc {tpcc_user {.tpc.c1.e4 get} tpcc_pass {.tpc.c1.e5 get} tpcc_def_tab {.tpc.f1.e6 get} tpcc_ol_tab {.tpc.f1.e6a get} tpcc_def_temp {.tpc.f1.e7 get} total_iterations {.tpc.f1.e17 get} rampup {.tpc.f1.e21 get} duration {.tpc.f1.e22 get} async_client {.tpc.f1.e26 get} async_delay {.tpc.f1.e27 get} tpcc_tt_compat $tpcc_tt_compat hash_clusters $hash_clusters partition $partition count_ware $count_ware num_vu $num_vu ora_driver $ora_driver raiseerror $raiseerror keyandthink $keyandthink checkpoint $checkpoint allwarehouse $allwarehouse ora_timeprofile $ora_timeprofile async_scale $async_scale async_verbose $async_verbose connect_pool $connect_pool}]
     set whlist [ get_warehouse_list_for_spinbox ]
     catch "destroy .tpc"
     ttk::toplevel .tpc
@@ -193,50 +188,46 @@ proc configoratpcc {option} {
         "drive" {  wm title .tpc {Oracle TPROC-C Driver Options} }
     }
     set Parent .tpc
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5  
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+    set Prompt $Parent.h2
+    ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "Oracle Service Name :"
     ttk::entry $Name -width 30 -textvariable instance
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "System User :"   
     ttk::entry $Name  -width 30 -textvariable system_user
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "System User Password :"   
     ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "TPROC-C User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable tpcc_user
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "TPROC-C User Password :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -show * -width 30 -textvariable tpcc_pass
     grid $Prompt -column 0 -row 5 -sticky e
@@ -261,9 +252,9 @@ proc configoratpcc {option} {
         grid $Prompt -column 0 -row 8 -sticky e
         grid $Name -column 1 -row 8 -sticky ew
     }
-    set Prompt $Parent.f1.p8
+    set Prompt $Parent.c1.p8
     ttk::label $Prompt -text "TimesTen Database Compatible :"
-    set Name $Parent.f1.e8
+    set Name $Parent.c1.e8
     ttk::checkbutton $Name -text "" -variable tpcc_tt_compat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 9 -sticky e
     grid $Name -column 1 -row 9 -sticky w
@@ -281,7 +272,7 @@ proc configoratpcc {option} {
             catch {.tpc.f1.$field configure -state disabled}
         }
     }
-    bind .tpc.f1.e8 <ButtonPress-1> {
+    bind .tpc.c1.e8 <ButtonPress-1> {
         if { $tpcc_tt_compat eq "true" } {
             foreach field {e2 e3 e6 e7} {
                 catch {.tpc.f1.$field configure -state normal}
@@ -555,8 +546,8 @@ proc configoratpcc {option} {
             set async_verbose "false"
             $Name configure -state disabled
         }
-        set Name $Parent.f1.e29
-        set Prompt $Parent.f1.p29
+        set Name $Parent.c1.e29
+        set Prompt $Parent.c1.p29
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable connect_pool -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 31 -sticky e
@@ -607,7 +598,7 @@ proc configoratpch {option} {
     #set variables to values in dict
     setlocaltpchvars $configoracle
     variable orafields
-    set orafields [ dict create connection {instance {.tpch.f1.e1 get} system_user {.tpch.f1.e1a get} system_password {.tpch.f1.e2 get}} tpch {tpch_user {.tpch.f1.e3 get} tpch_pass {.tpch.f1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
+    set orafields [ dict create connection {instance {.tpch.c1.e1 get} system_user {.tpch.c1.e1a get} system_password {.tpch.c1.e2 get}} tpch {tpch_user {.tpch.c1.e3 get} tpch_pass {.tpch.c1.e4 get} tpch_def_tab {.tpch.f1.e5 get} tpch_def_temp {.tpch.f1.e6 get} total_querysets {.tpch.f1.e10 get} degree_of_parallel {.tpch.f1.e13 get} update_sets {.tpch.f1.e15 get} trickle_refresh {.tpch.f1.e16 get} tpch_tt_compat $tpch_tt_compat scale_fact $scale_fact num_tpch_threads $num_tpch_threads raise_query_error $raise_query_error verbose $verbose refresh_on $refresh_on refresh_verbose $refresh_verbose cloud_query $cloud_query}]
     catch "destroy .tpch"
     ttk::toplevel .tpch
     wm transient .tpch .ed_mainFrame
@@ -618,50 +609,46 @@ proc configoratpch {option} {
         "drive" {  wm title .tpch {Oracle TPROC-H Driver Options} }
     }
     set Parent .tpch
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "Oracle Service Name :"
     ttk::entry $Name -width 30 -textvariable instance
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -columnspan 4 -sticky ew
-    set Name $Parent.f1.e1a
-    set Prompt $Parent.f1.p1a
+    set Name $Parent.c1.e1a
+    set Prompt $Parent.c1.p1a
     ttk::label $Prompt -text "System User :"   
     ttk::entry $Name  -width 30 -textvariable system_user
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "System User Password :"
     ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -columnspan 4 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "TPROC-H User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable tpch_user
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -columnspan 4 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "TPROC-H User Password :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -show * -width 30 -textvariable tpch_pass
     grid $Prompt -column 0 -row 5 -sticky e
@@ -680,9 +667,9 @@ proc configoratpch {option} {
         grid $Prompt -column 0 -row 7 -sticky e
         grid $Name -column 1 -row 7 -columnspan 4 -sticky ew
     }
-    set Prompt $Parent.f1.p7
+    set Prompt $Parent.c1.p7
     ttk::label $Prompt -text "TimesTen Database Compatible :"
-    set Name $Parent.f1.e7
+    set Name $Parent.c1.e7
     ttk::checkbutton $Name -text "" -variable tpch_tt_compat -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 8 -sticky e
     grid $Name -column 1 -row 8 -sticky w
@@ -695,7 +682,7 @@ proc configoratpch {option} {
             catch {.tpch.f1.$field configure -state disabled}
         }
     }
-    bind .tpch.f1.e7 <ButtonPress-1> {
+    bind .tpch.c1.e7 <ButtonPress-1> {
         if { $tpch_tt_compat eq "true" } {
             foreach field {e2 e5 e6 e13} {
                 catch {.tpch.f1.$field configure -state normal}
@@ -881,7 +868,7 @@ proc metoraopts {} {
     #use same parameters as transaction counter
     setlocaltcountvars $configoracle 1
     variable oraoptsfields
-    set oraoptsfields [ dict create connection {system_user {.metric.f1.e4 get} system_password {.metric.f1.e5 get} instance {.metric.f1.e3 get}} ]
+    set oraoptsfields [ dict create connection {system_user {.metric.c1.e4 get} system_password {.metric.c1.e5 get} instance {.metric.c1.e3 get}} ]
     if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
     if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
     set old_agent $agent_hostname
@@ -892,17 +879,14 @@ proc metoraopts {} {
     wm withdraw .metric
     wm title .metric {Oracle Metrics Options}
     set Parent .metric
-    set Name $Parent.f1
-    ttk::frame $Name
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Oracle Metrics Options" -image [ create_image dashboard icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image dashboard icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "Oracle and OS Agent"
-    grid $Prompt -column 1 -row 0 -sticky w
-
     set Name $Parent.f1.e1
     set Prompt $Parent.f1.p1
     ttk::label $Prompt -text "Agent ID :"
@@ -915,20 +899,20 @@ proc metoraopts {} {
     ttk::entry $Name -width 30 -textvariable agent_hostname
     grid $Prompt -column 0 -row 8 -sticky e
     grid $Name -column 1 -row 8
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "Oracle Service Name :"
     ttk::entry $Name -width 30 -textvariable instance
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "System User :"
     ttk::entry $Name  -width 30 -textvariable system_user
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "System User Password :"
     ttk::entry $Name -show * -width 30 -textvariable system_password
     grid $Prompt -column 0 -row 6 -sticky e
