@@ -90,18 +90,18 @@ proc countmariaopts { bm } {
     if { $bm eq "TPC-C" } {
    if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.c1.e1 get} maria_port {.countopt.c1.e2 get} maria_socket {.countopt.c1.e2a get} maria_ssl_ca {.countopt.c1.e2d get} maria_ssl_cert {.countopt.c1.e2e get} maria_ssl_key {.countopt.c1.e2f get} maria_ssl_cipher {.countopt.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpcc {maria_user {.countopt.c1.e3 get} maria_pass {.countopt.c1.e4 get}} ]
         } else {
         set platform "win"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpcc {maria_user {.countopt.f1.e3 get} maria_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.c1.e1 get} maria_port {.countopt.c1.e2 get} maria_socket {.countopt.c1.e2a get} maria_ssl_ca {.countopt.c1.e2d get} maria_ssl_cert {.countopt.c1.e2e get} maria_ssl_key {.countopt.c1.e2f get} maria_ssl_cipher {.countopt.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpcc {maria_user {.countopt.c1.e3 get} maria_pass {.countopt.c1.e4 get}} ]
         }
     } else {
    if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.c1.e1 get} maria_port {.countopt.c1.e2 get} maria_socket {.countopt.c1.e2a get} maria_ssl_ca {.countopt.c1.e2d get} maria_ssl_cert {.countopt.c1.e2e get} maria_ssl_key {.countopt.c1.e2f get} maria_ssl_cipher {.countopt.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpch {maria_tpch_user {.countopt.c1.e3 get} maria_tpch_pass {.countopt.c1.e4 get}} ]
         } else {
         set platform "win"
-        set mariaoptsfields [ dict create connection {maria_host {.countopt.f1.e1 get} maria_port {.countopt.f1.e2 get} maria_socket {.countopt.f1.e2a get} maria_ssl_ca {.countopt.f1.e2d get} maria_ssl_cert {.countopt.f1.e2e get} maria_ssl_key {.countopt.f1.e2f get} maria_ssl_cipher {.countopt.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpch {maria_tpch_user {.countopt.f1.e3 get} maria_tpch_pass {.countopt.f1.e4 get}} ]
+        set mariaoptsfields [ dict create connection {maria_host {.countopt.c1.e1 get} maria_port {.countopt.c1.e2 get} maria_socket {.countopt.c1.e2a get} maria_ssl_ca {.countopt.c1.e2d get} maria_ssl_cert {.countopt.c1.e2e get} maria_ssl_key {.countopt.c1.e2f get} maria_ssl_cipher {.countopt.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpch {maria_tpch_user {.countopt.c1.e3 get} maria_tpch_pass {.countopt.c1.e4 get}} ]
         }
     }
     if { [ info exists afval ] } {
@@ -115,29 +115,28 @@ proc countmariaopts { bm } {
     wm withdraw .countopt
     wm title .countopt {MariaDB TX Counter Options}
     set Parent .countopt
-    set Name $Parent.f1
-    ttk::frame $Name 
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Transaction Counter Options" -image [ create_image pencil icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image pencil icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "Transaction Counter Options"
-    grid $Prompt -column 1 -row 0 -sticky w
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "MariaDB Host :"
     ttk::entry $Name -width 30 -textvariable maria_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "MariaDB Port :"   
     ttk::entry $Name  -width 30 -textvariable maria_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e2a
-    set Prompt $Parent.f1.p2a
+    set Name $Parent.c1.e2a
+    set Prompt $Parent.c1.p2a
     ttk::label $Prompt -text "MariaDB Socket :"   
     ttk::entry $Name  -width 30 -textvariable maria_socket
     grid $Prompt -column 0 -row 3 -sticky e
@@ -145,63 +144,67 @@ proc countmariaopts { bm } {
 
     if {[string match windows $::tcl_platform(platform)]} {
         set maria_socket "null"
-        .countopt.f1.e2a configure -state disabled
+        .countopt.c1.e2a configure -state disabled
     }
 
-    set Name $Parent.f1.e2b
-        set Prompt $Parent.f1.p2b
+    set Name $Parent.c1.e2b
+        set Prompt $Parent.c1.p2b
         ttk::label $Prompt -text "Enable SSL :"
         ttk::checkbutton $Name -text "" -variable maria_ssl -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky w
 
-         bind .countopt.f1.e2b <Any-ButtonRelease> {
+         bind .countopt.c1.e2b <Any-ButtonRelease> {
             if { $maria_ssl eq "true" } {
-                .countopt.f1.e2ba configure -state disabled
-                .countopt.f1.e2bb configure -state disabled
-                .countopt.f1.e2c configure -state disabled
-                .countopt.f1.e2d configure -state disabled
-                .countopt.f1.e2e configure -state disabled
-                .countopt.f1.e2f configure -state disabled
-                .countopt.f1.e2g configure -state disabled
+                .countopt.c1.e2ba configure -state disabled
+                .countopt.c1.e2bb configure -state disabled
+                .countopt.c1.e2c configure -state disabled
+                .countopt.c1.e2d configure -state disabled
+                .countopt.c1.e2e configure -state disabled
+                .countopt.c1.e2f configure -state disabled
+                .countopt.c1.e2g configure -state disabled
             } else {
-                .countopt.f1.e2ba configure -state normal
-                .countopt.f1.e2bb configure -state normal
-                .countopt.f1.e2c configure -state normal
-                .countopt.f1.e2d configure -state normal
+                .countopt.c1.e2ba configure -state normal
+                .countopt.c1.e2bb configure -state normal
+                .countopt.c1.e2c configure -state normal
+                .countopt.c1.e2d configure -state normal
                 if { $maria_ssl_two_way eq "true" } {
-                .countopt.f1.e2e configure -state normal
-                .countopt.f1.e2f configure -state normal
+                .countopt.c1.e2e configure -state normal
+                .countopt.c1.e2f configure -state normal
                         }
-                .countopt.f1.e2g configure -state normal
+                .countopt.c1.e2g configure -state normal
                 }
             }
 
-	    set Name $Parent.f1.e2ba
+	    set Name $Parent.c1.e2ba
         ttk::radiobutton $Name -value "false" -text "SSL One-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 5 -sticky w
         if { $maria_ssl eq "false" } {
-                .countopt.f1.e2ba configure -state disabled
+                .countopt.c1.e2ba configure -state disabled
         }
-        bind .countopt.f1.e2ba <ButtonPress-1> {
-                .countopt.f1.e2e configure -state disabled
-                .countopt.f1.e2f configure -state disabled
+        bind .countopt.c1.e2ba <ButtonPress-1> {
+        if { $maria_ssl eq "true" } {
+                .countopt.c1.e2e configure -state disabled
+                .countopt.c1.e2f configure -state disabled
+	   }
         }
 
-        set Name $Parent.f1.e2bb
+        set Name $Parent.c1.e2bb
         ttk::radiobutton $Name -value "true" -text "SSL Two-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 6 -sticky w
         if { $maria_ssl eq "false" } {
-                .countopt.f1.e2bb configure -state disabled
+                .countopt.c1.e2bb configure -state disabled
         }
 
-        bind .countopt.f1.e2bb <ButtonPress-1> {
-                .countopt.f1.e2e configure -state normal
-                .countopt.f1.e2f configure -state normal
+        bind .countopt.c1.e2bb <ButtonPress-1> {
+        if { $maria_ssl eq "true" } {
+                .countopt.c1.e2e configure -state normal
+                .countopt.c1.e2f configure -state normal
+	   }
         }
 
-	set Name $Parent.f1.e2c
-    set Prompt $Parent.f1.p2c
+	set Name $Parent.c1.e2c
+    set Prompt $Parent.c1.p2c
     ttk::label $Prompt -text "SSL CApath :"
      if { $platform eq "lin" } {
         ttk::entry $Name -width 30 -textvariable maria_ssl_linux_capath
@@ -214,8 +217,8 @@ proc countmariaopts { bm } {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2d
-    set Prompt $Parent.f1.p2d
+    set Name $Parent.c1.e2d
+    set Prompt $Parent.c1.p2d
     ttk::label $Prompt -text "SSL CA :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_ca
     grid $Prompt -column 0 -row 8 -sticky e
@@ -224,8 +227,8 @@ proc countmariaopts { bm } {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2e
-    set Prompt $Parent.f1.p2e
+    set Name $Parent.c1.e2e
+    set Prompt $Parent.c1.p2e
     ttk::label $Prompt -text "SSL Cert :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cert
     grid $Prompt -column 0 -row 9 -sticky e
@@ -234,8 +237,8 @@ proc countmariaopts { bm } {
             $Name configure -state disabled
         }
 
-	  set Name $Parent.f1.e2f
-    set Prompt $Parent.f1.p2f
+	  set Name $Parent.c1.e2f
+    set Prompt $Parent.c1.p2f
     ttk::label $Prompt -text "SSL Key :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_key
     grid $Prompt -column 0 -row 10 -sticky e
@@ -244,8 +247,8 @@ proc countmariaopts { bm } {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2g
-    set Prompt $Parent.f1.p2g
+    set Name $Parent.c1.e2g
+    set Prompt $Parent.c1.p2g
     ttk::label $Prompt -text "SSL Cipher :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cipher
     grid $Prompt -column 0 -row 11 -sticky e
@@ -254,8 +257,8 @@ proc countmariaopts { bm } {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "MariaDB User :"
 
     if { $bm eq "TPC-C" } {
@@ -266,8 +269,8 @@ proc countmariaopts { bm } {
 
     grid $Prompt -column 0 -row 12 -sticky e
     grid $Name -column 1 -row 12 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "MariaDB User Password :"   
 
     if { $bm eq "TPC-C" } {
@@ -314,7 +317,7 @@ proc countmariaopts { bm } {
         $Name configure -state disabled
     }
 
-    bind .countopt.f1.e1 <Delete> {
+    bind .countopt.c1.e1 <Delete> {
         if [%W selection present] {
             %W delete sel.first sel.last
         } else {
@@ -384,13 +387,13 @@ proc configmariatpcc {option} {
 
     #set variables to values in dict
     setlocaltpccvars $configmariadb
-    set tpccfields [ dict create tpcc {maria_user {.tpc.f1.e3 get} maria_pass {.tpc.f1.e4 get} maria_dbase {.tpc.f1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_no_stored_procs $maria_no_stored_procs maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk maria_purge $maria_purge} ]
+    set tpccfields [ dict create tpcc {maria_user {.tpc.c1.e3 get} maria_pass {.tpc.c1.e4 get} maria_dbase {.tpc.c1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_no_stored_procs $maria_no_stored_procs maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk maria_purge $maria_purge} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-    set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
+    set mariaconn [ dict create connection {maria_host {.tpc.c1.e1 get} maria_port {.tpc.c1.e2 get} maria_socket {.tpc.c1.e2a get} maria_ssl_ca {.tpc.c1.e2d get} maria_ssl_cert {.tpc.c1.e2e get} maria_ssl_key {.tpc.c1.e2f get} maria_ssl_cipher {.tpc.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
         } else {
         set platform "win"
-    set mariaconn [ dict create connection {maria_host {.tpc.f1.e1 get} maria_port {.tpc.f1.e2 get} maria_socket {.tpc.f1.e2a get} maria_ssl_ca {.tpc.f1.e2d get} maria_ssl_cert {.tpc.f1.e2e get} maria_ssl_key {.tpc.f1.e2f get} maria_ssl_cipher {.tpc.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
+    set mariaconn [ dict create connection {maria_host {.tpc.c1.e1 get} maria_port {.tpc.c1.e2 get} maria_socket {.tpc.c1.e2a get} maria_ssl_ca {.tpc.c1.e2d get} maria_ssl_cert {.tpc.c1.e2e get} maria_ssl_key {.tpc.c1.e2f get} maria_ssl_cipher {.tpc.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
         }
     variable mariafields
     set mariafields [ dict merge $mariaconn $tpccfields ]
@@ -408,40 +411,34 @@ proc configmariatpcc {option} {
     }
 
     set Parent .tpc
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
-
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "MariaDB Host :"
     ttk::entry $Name -width 30 -textvariable maria_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "MariaDB Port :"   
     ttk::entry $Name  -width 30 -textvariable maria_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e2a
-    set Prompt $Parent.f1.p2a
+    set Name $Parent.c1.e2a
+    set Prompt $Parent.c1.p2a
     ttk::label $Prompt -text "MariaDB Socket :"
     ttk::entry $Name  -width 30 -textvariable maria_socket
     grid $Prompt -column 0 -row 3 -sticky e
@@ -449,63 +446,67 @@ proc configmariatpcc {option} {
 
     if {[string match windows $::tcl_platform(platform)]} {
 	set maria_socket "null"
-        .tpc.f1.e2a configure -state disabled
+        .tpc.c1.e2a configure -state disabled
     }
 
- 	set Name $Parent.f1.e2b
-        set Prompt $Parent.f1.p2b
+ 	set Name $Parent.c1.e2b
+        set Prompt $Parent.c1.p2b
         ttk::label $Prompt -text "Enable SSL :"
         ttk::checkbutton $Name -text "" -variable maria_ssl -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky w
 
-	 bind .tpc.f1.e2b <Any-ButtonRelease> {
+	 bind .tpc.c1.e2b <Any-ButtonRelease> {
             if { $maria_ssl eq "true" } {
-                .tpc.f1.e2ba configure -state disabled
-                .tpc.f1.e2bb configure -state disabled
-                .tpc.f1.e2c configure -state disabled
-                .tpc.f1.e2d configure -state disabled
-                .tpc.f1.e2e configure -state disabled
-                .tpc.f1.e2f configure -state disabled
-                .tpc.f1.e2g configure -state disabled
+                .tpc.c1.e2ba configure -state disabled
+                .tpc.c1.e2bb configure -state disabled
+                .tpc.c1.e2c configure -state disabled
+                .tpc.c1.e2d configure -state disabled
+                .tpc.c1.e2e configure -state disabled
+                .tpc.c1.e2f configure -state disabled
+                .tpc.c1.e2g configure -state disabled
             } else {
-                .tpc.f1.e2ba configure -state normal
-                .tpc.f1.e2bb configure -state normal
-                .tpc.f1.e2c configure -state normal
-                .tpc.f1.e2d configure -state normal
+                .tpc.c1.e2ba configure -state normal
+                .tpc.c1.e2bb configure -state normal
+                .tpc.c1.e2c configure -state normal
+                .tpc.c1.e2d configure -state normal
 		if { $maria_ssl_two_way eq "true" } {
-                .tpc.f1.e2e configure -state normal
-                .tpc.f1.e2f configure -state normal
+                .tpc.c1.e2e configure -state normal
+                .tpc.c1.e2f configure -state normal
 			}
-                .tpc.f1.e2g configure -state normal
+                .tpc.c1.e2g configure -state normal
                 }
             }
 
-	set Name $Parent.f1.e2ba
+	set Name $Parent.c1.e2ba
         ttk::radiobutton $Name -value "false" -text "SSL One-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 5 -sticky w
 	if { $maria_ssl eq "false" } {
-                .tpc.f1.e2ba configure -state disabled
+                .tpc.c1.e2ba configure -state disabled
 	}
-        bind .tpc.f1.e2ba <ButtonPress-1> {
-                .tpc.f1.e2e configure -state disabled
-                .tpc.f1.e2f configure -state disabled
+        bind .tpc.c1.e2ba <ButtonPress-1> {
+	if { $maria_ssl eq "true" } {
+                .tpc.c1.e2e configure -state disabled
+                .tpc.c1.e2f configure -state disabled
+	   }
         }
 
-        set Name $Parent.f1.e2bb
+        set Name $Parent.c1.e2bb
         ttk::radiobutton $Name -value "true" -text "SSL Two-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 6 -sticky w
 	if { $maria_ssl eq "false" } {
-                .tpc.f1.e2bb configure -state disabled
+                .tpc.c1.e2bb configure -state disabled
 	}
 
-        bind .tpc.f1.e2bb <ButtonPress-1> {
-                .tpc.f1.e2e configure -state normal
-                .tpc.f1.e2f configure -state normal
+        bind .tpc.c1.e2bb <ButtonPress-1> {
+	if { $maria_ssl eq "true" } {
+                .tpc.c1.e2e configure -state normal
+                .tpc.c1.e2f configure -state normal
+	   }
         }
 
-    set Name $Parent.f1.e2c
-    set Prompt $Parent.f1.p2c
+    set Name $Parent.c1.e2c
+    set Prompt $Parent.c1.p2c
     ttk::label $Prompt -text "SSL CApath :"
      if { $platform eq "lin" } {
         ttk::entry $Name -width 30 -textvariable maria_ssl_linux_capath
@@ -518,8 +519,8 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2d
-    set Prompt $Parent.f1.p2d
+    set Name $Parent.c1.e2d
+    set Prompt $Parent.c1.p2d
     ttk::label $Prompt -text "SSL CA :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_ca
     grid $Prompt -column 0 -row 8 -sticky e
@@ -528,8 +529,8 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2e
-    set Prompt $Parent.f1.p2e
+    set Name $Parent.c1.e2e
+    set Prompt $Parent.c1.p2e
     ttk::label $Prompt -text "SSL Cert :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cert
     grid $Prompt -column 0 -row 9 -sticky e
@@ -538,8 +539,8 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2f
-    set Prompt $Parent.f1.p2f
+    set Name $Parent.c1.e2f
+    set Prompt $Parent.c1.p2f
     ttk::label $Prompt -text "SSL Key :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_key
     grid $Prompt -column 0 -row 10 -sticky e
@@ -548,8 +549,8 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2g
-    set Prompt $Parent.f1.p2g
+    set Name $Parent.c1.e2g
+    set Prompt $Parent.c1.p2g
     ttk::label $Prompt -text "SSL Cipher :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cipher
     grid $Prompt -column 0 -row 11 -sticky e
@@ -558,20 +559,20 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "MariaDB User :"
     ttk::entry $Name  -width 30 -textvariable maria_user
     grid $Prompt -column 0 -row 12 -sticky e
     grid $Name -column 1 -row 12 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "MariaDB User Password :"   
     ttk::entry $Name -show * -width 30 -textvariable maria_pass
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "TPROC-C MariaDB Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable maria_dbase
     grid $Prompt -column 0 -row 14 -sticky e
@@ -860,8 +861,8 @@ proc configmariatpcc {option} {
             $Name configure -state disabled
         }
 
-        set Name $Parent.f1.e25
-        set Prompt $Parent.f1.p25
+        set Name $Parent.c1.e25
+        set Prompt $Parent.c1.p25
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable maria_connect_pool -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 38 -sticky e
@@ -872,7 +873,7 @@ proc configmariatpcc {option} {
         set maria_no_stored_procs "false"
         }
 
-         bind .tpc.f1.e25 <Any-ButtonRelease> {
+         bind .tpc.c1.e25 <Any-ButtonRelease> {
             if { $maria_connect_pool eq "false" } {
                 set maria_prepared "true"
                 set maria_no_stored_procs "false"
@@ -935,14 +936,14 @@ proc configmariatpch {option} {
 
     #set variables to values in dict
     setlocaltpchvars $configmariadb
-    set tpchfields [ dict create tpch {maria_tpch_user {.mytpch.f1.e3 get} maria_tpch_pass {.mytpch.f1.e4 get} maria_tpch_dbase {.mytpch.f1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query} ]
+    set tpchfields [ dict create tpch {maria_tpch_user {.mytpch.c1.e3 get} maria_tpch_pass {.mytpch.c1.e4 get} maria_tpch_dbase {.mytpch.c1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query} ]
     #set matching fields in dialog to temporary dict
        if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath {$maria_ssl_linux_capath}} ]
+    set mariaconn [ dict create connection {maria_host {.mytpch.c1.e1 get} maria_port {.mytpch.c1.e2 get} maria_socket {.mytpch.c1.e2a get} maria_ssl_ca {.mytpch.c1.e2d get} maria_ssl_cert {.mytpch.c1.e2e get} maria_ssl_key {.mytpch.c1.e2f get} maria_ssl_cipher {.mytpch.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath {$maria_ssl_linux_capath}} ]
         } else {
         set platform "win"
-    set mariaconn [ dict create connection {maria_host {.mytpch.f1.e1 get} maria_port {.mytpch.f1.e2 get} maria_socket {.mytpch.f1.e2a get} maria_ssl_ca {.mytpch.f1.e2d get} maria_ssl_cert {.mytpch.f1.e2e get} maria_ssl_key {.mytpch.f1.e2f get} maria_ssl_cipher {.mytpch.f1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
+    set mariaconn [ dict create connection {maria_host {.mytpch.c1.e1 get} maria_port {.mytpch.c1.e2 get} maria_socket {.mytpch.c1.e2a get} maria_ssl_ca {.mytpch.c1.e2d get} maria_ssl_cert {.mytpch.c1.e2e get} maria_ssl_key {.mytpch.c1.e2f get} maria_ssl_cipher {.mytpch.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} ]
         }
     variable mariafields
     set mariafields [ dict merge $mariaconn $tpchfields ]
@@ -958,40 +959,34 @@ proc configmariatpch {option} {
     }
 
     set Parent .mytpch
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
-
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "MariaDB Host :"
     ttk::entry $Name -width 30 -textvariable maria_host
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "MariaDB Port :"   
     ttk::entry $Name  -width 30 -textvariable maria_port
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e2a
-    set Prompt $Parent.f1.p2a
+    set Name $Parent.c1.e2a
+    set Prompt $Parent.c1.p2a
     ttk::label $Prompt -text "MariaDB Socket :"
     ttk::entry $Name  -width 30 -textvariable maria_socket
     grid $Prompt -column 0 -row 3 -sticky e
@@ -999,63 +994,67 @@ proc configmariatpch {option} {
 
     if {[string match windows $::tcl_platform(platform)]} {
         set maria_socket "null"
-        .mytpch.f1.e2a configure -state disabled
+        .mytpch.c1.e2a configure -state disabled
     }
 
-     set Name $Parent.f1.e2b
-        set Prompt $Parent.f1.p2b
+     set Name $Parent.c1.e2b
+        set Prompt $Parent.c1.p2b
         ttk::label $Prompt -text "Enable SSL :"
         ttk::checkbutton $Name -text "" -variable maria_ssl -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky w
 
-         bind .mytpch.f1.e2b <Any-ButtonRelease> {
+         bind .mytpch.c1.e2b <Any-ButtonRelease> {
             if { $maria_ssl eq "true" } {
-                .mytpch.f1.e2ba configure -state disabled
-                .mytpch.f1.e2bb configure -state disabled
-                .mytpch.f1.e2c configure -state disabled
-                .mytpch.f1.e2d configure -state disabled
-                .mytpch.f1.e2e configure -state disabled
-                .mytpch.f1.e2f configure -state disabled
-                .mytpch.f1.e2g configure -state disabled
+                .mytpch.c1.e2ba configure -state disabled
+                .mytpch.c1.e2bb configure -state disabled
+                .mytpch.c1.e2c configure -state disabled
+                .mytpch.c1.e2d configure -state disabled
+                .mytpch.c1.e2e configure -state disabled
+                .mytpch.c1.e2f configure -state disabled
+                .mytpch.c1.e2g configure -state disabled
             } else {
-                .mytpch.f1.e2ba configure -state normal
-                .mytpch.f1.e2bb configure -state normal
-                .mytpch.f1.e2c configure -state normal
-                .mytpch.f1.e2d configure -state normal
+                .mytpch.c1.e2ba configure -state normal
+                .mytpch.c1.e2bb configure -state normal
+                .mytpch.c1.e2c configure -state normal
+                .mytpch.c1.e2d configure -state normal
                 if { $maria_ssl_two_way eq "true" } {
-                .mytpch.f1.e2e configure -state normal
-                .mytpch.f1.e2f configure -state normal
+                .mytpch.c1.e2e configure -state normal
+                .mytpch.c1.e2f configure -state normal
                         }
-                .mytpch.f1.e2g configure -state normal
+                .mytpch.c1.e2g configure -state normal
                 }
             }
 
-  set Name $Parent.f1.e2ba
+  set Name $Parent.c1.e2ba
         ttk::radiobutton $Name -value "false" -text "SSL One-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 5 -sticky w
         if { $maria_ssl eq "false" } {
-                .mytpch.f1.e2ba configure -state disabled
+                .mytpch.c1.e2ba configure -state disabled
         }
-        bind .mytpch.f1.e2ba <ButtonPress-1> {
-                .mytpch.f1.e2e configure -state disabled
-                .mytpch.f1.e2f configure -state disabled
+        bind .mytpch.c1.e2ba <ButtonPress-1> {
+	if { $maria_ssl eq "true" } {
+                .mytpch.c1.e2e configure -state disabled
+                .mytpch.c1.e2f configure -state disabled
+	}
         }
 
-        set Name $Parent.f1.e2bb
+        set Name $Parent.c1.e2bb
         ttk::radiobutton $Name -value "true" -text "SSL Two-Way" -variable maria_ssl_two_way
         grid $Name -column 1 -row 6 -sticky w
         if { $maria_ssl eq "false" } {
-                .mytpch.f1.e2bb configure -state disabled
+                .mytpch.c1.e2bb configure -state disabled
         }
 
-        bind .mytpch.f1.e2bb <ButtonPress-1> {
-                .mytpch.f1.e2e configure -state normal
-                .mytpch.f1.e2f configure -state normal
+        bind .mytpch.c1.e2bb <ButtonPress-1> {
+	if { $maria_ssl eq "true" } {
+                .mytpch.c1.e2e configure -state normal
+                .mytpch.c1.e2f configure -state normal
+	}
         }
 
-	set Name $Parent.f1.e2c
-    set Prompt $Parent.f1.p2c
+	set Name $Parent.c1.e2c
+    set Prompt $Parent.c1.p2c
     ttk::label $Prompt -text "SSL CApath :"
      if { $platform eq "lin" } {
         ttk::entry $Name -width 30 -textvariable maria_ssl_linux_capath
@@ -1068,8 +1067,8 @@ proc configmariatpch {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2d
-    set Prompt $Parent.f1.p2d
+    set Name $Parent.c1.e2d
+    set Prompt $Parent.c1.p2d
     ttk::label $Prompt -text "SSL CA :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_ca
     grid $Prompt -column 0 -row 8 -sticky e
@@ -1078,8 +1077,8 @@ proc configmariatpch {option} {
             $Name configure -state disabled
         }
 
- set Name $Parent.f1.e2e
-    set Prompt $Parent.f1.p2e
+ set Name $Parent.c1.e2e
+    set Prompt $Parent.c1.p2e
     ttk::label $Prompt -text "SSL Cert :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cert
     grid $Prompt -column 0 -row 9 -sticky e
@@ -1088,8 +1087,8 @@ proc configmariatpch {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2f
-    set Prompt $Parent.f1.p2f
+    set Name $Parent.c1.e2f
+    set Prompt $Parent.c1.p2f
     ttk::label $Prompt -text "SSL Key :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_key
     grid $Prompt -column 0 -row 10 -sticky e
@@ -1098,8 +1097,8 @@ proc configmariatpch {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e2g
-    set Prompt $Parent.f1.p2g
+    set Name $Parent.c1.e2g
+    set Prompt $Parent.c1.p2g
     ttk::label $Prompt -text "SSL Cipher :"
     ttk::entry $Name  -width 30 -textvariable maria_ssl_cipher
     grid $Prompt -column 0 -row 11 -sticky e
@@ -1108,20 +1107,20 @@ proc configmariatpch {option} {
             $Name configure -state disabled
         }
 
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "MariaDB User :"
     ttk::entry $Name  -width 30 -textvariable maria_tpch_user
     grid $Prompt -column 0 -row 12 -sticky e
     grid $Name -column 1 -row 12 -sticky ew
-    set Name $Parent.f1.e4
-    set Prompt $Parent.f1.p4
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
     ttk::label $Prompt -text "MariaDB User Password :"   
     ttk::entry $Name -show * -width 30 -textvariable maria_tpch_pass
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
-    set Name $Parent.f1.e5
-    set Prompt $Parent.f1.p5
+    set Name $Parent.c1.e5
+    set Prompt $Parent.c1.p5
     ttk::label $Prompt -text "TPROC-H MariaDB Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable maria_tpch_dbase
     grid $Prompt -column 0 -row 14 -sticky e

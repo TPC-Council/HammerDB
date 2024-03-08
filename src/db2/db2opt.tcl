@@ -13,9 +13,9 @@ proc countdb2opts { bm } {
     setlocaltcountvars $configdb2 1
     variable db2optsfields
     if { $bm eq "TPC-C" } {
-        set db2optsfields [ dict create connection {db2_def_user {.countopt.f1.e1 get} db2_def_pass {.countopt.f1.e2 get} db2_def_dbase {.countopt.f1.e3 get}} tpcc {db2_user {.countopt.f1.e1 get} db2_pass {.countopt.f1.e2 get} db2_dbase {.countopt.f1.e3 get}} ]
+        set db2optsfields [ dict create connection {db2_def_user {.countopt.c1.e1 get} db2_def_pass {.countopt.c1.e2 get} db2_def_dbase {.countopt.c1.e3 get}} tpcc {db2_user {.countopt.c1.e1 get} db2_pass {.countopt.c1.e2 get} db2_dbase {.countopt.c1.e3 get}} ]
     } else {
-        set db2optsfields [ dict create connection {db2_def_user {.countopt.f1.e1 get} db2_def_pass {.countopt.f1.e2 get} db2_def_dbase {.countopt.f1.e3 get}} tpch {db2_tpch_user {.countopt.f1.e1 get} db2_tpch_pass {.countopt.f1.e2 get} db2_tpch_dbase {.countopt.f1.e3 get}} ]
+        set db2optsfields [ dict create connection {db2_def_user {.countopt.c1.e1 get} db2_def_pass {.countopt.c1.e2 get} db2_def_dbase {.countopt.c1.e3 get}} tpch {db2_tpch_user {.countopt.c1.e1 get} db2_tpch_pass {.countopt.c1.e2 get} db2_tpch_dbase {.countopt.c1.e3 get}} ]
     }
 
     if { [ info exists afval ] } {
@@ -39,29 +39,28 @@ proc countdb2opts { bm } {
     wm withdraw .countopt
     wm title .countopt {Db2 TX Counter Options}
     set Parent .countopt
-    set Name $Parent.f1
-    ttk::frame $Name 
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "Transaction Counter Options" -image [ create_image pencil icons ]
+    pack $Prompt -anchor center -side top 
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
     pack $Name -anchor nw -fill x -side top -padx 5
-    set Prompt $Parent.f1.h1
-    ttk::label $Prompt -image [ create_image pencil icons ]
-    grid $Prompt -column 0 -row 0 -sticky e
-    set Prompt $Parent.f1.h2
-    ttk::label $Prompt -text "Transaction Counter Options"
-    grid $Prompt -column 1 -row 0 -sticky w
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "TPROC-C Db2 User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable $tmp_db2_user
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
     ttk::entry $Name -show * -width 30 -textvariable $tmp_db2_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "TPROC-C Db2 Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable $tmp_db2_dbase
     grid $Prompt -column 0 -row 3 -sticky e
@@ -102,7 +101,7 @@ proc countdb2opts { bm } {
         $Name configure -state disabled
     }
 
-    bind .countopt.f1.e1 <Delete> {
+    bind .countopt.c1.e1 <Delete> {
         if [%W selection present] {
             %W delete sel.first sel.last
         } else {
@@ -170,7 +169,7 @@ proc configdb2tpcc {option} {
     setlocaltpccvars $configdb2
     #set matching fields in dialog to temporary dict
     variable db2fields
-    set db2fields [ dict create connection {db2_def_user {.tpc.f1.e1 get} db2_def_pass {.tpc.f1.e2 get} db2_def_dbase {.tpc.f1.e3 get}} tpcc {db2_user {.tpc.f1.e1 get} db2_pass {.tpc.f1.e2 get} db2_dbase {.tpc.f1.e3 get} db2_def_tab {.tpc.f1.e4 get} db2_tab_list {.tpc.f1.e5 get} db2_total_iterations {.tpc.f1.e14 get} db2_rampup {.tpc.f1.e17 get} db2_duration {.tpc.f1.e18 get} db2_monreport {.tpc.f1.e19 get} db2_async_client {.tpc.f1.e23 get} db2_async_delay {.tpc.f1.e24 get} db2_count_ware $db2_count_ware db2_num_vu $db2_num_vu db2_partition $db2_partition db2_driver $db2_driver db2_raiseerror $db2_raiseerror db2_keyandthink $db2_keyandthink db2_allwarehouse $db2_allwarehouse db2_timeprofile $db2_timeprofile db2_async_scale $db2_async_scale db2_async_verbose $db2_async_verbose db2_connect_pool $db2_connect_pool} ]
+    set db2fields [ dict create connection {db2_def_user {.tpc.c1.e1 get} db2_def_pass {.tpc.c1.e2 get} db2_def_dbase {.tpc.c1.e3 get}} tpcc {db2_user {.tpc.c1.e1 get} db2_pass {.tpc.c1.e2 get} db2_dbase {.tpc.c1.e3 get} db2_def_tab {.tpc.f1.e4 get} db2_tab_list {.tpc.f1.e5 get} db2_total_iterations {.tpc.f1.e14 get} db2_rampup {.tpc.f1.e17 get} db2_duration {.tpc.f1.e18 get} db2_monreport {.tpc.f1.e19 get} db2_async_client {.tpc.f1.e23 get} db2_async_delay {.tpc.f1.e24 get} db2_count_ware $db2_count_ware db2_num_vu $db2_num_vu db2_partition $db2_partition db2_driver $db2_driver db2_raiseerror $db2_raiseerror db2_keyandthink $db2_keyandthink db2_allwarehouse $db2_allwarehouse db2_timeprofile $db2_timeprofile db2_async_scale $db2_async_scale db2_async_verbose $db2_async_verbose db2_connect_pool $db2_connect_pool} ]
     set whlist [ get_warehouse_list_for_spinbox ]
     catch "destroy .tpc"
     ttk::toplevel .tpc
@@ -182,38 +181,34 @@ proc configdb2tpcc {option} {
         "drive" {  wm title .tpc {Db2 TPROC-C Driver Options} }
     }
     set Parent .tpc
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "TPROC-C Db2 User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable db2_user
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "TPROC-C Db2 User Password :" -image [ create_image hdbicon icons ] -compound left 
     ttk::entry $Name -show * -width 30 -textvariable db2_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "TPROC-C Db2 Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable db2_dbase
     grid $Prompt -column 0 -row 3 -sticky e
@@ -227,7 +222,7 @@ proc configdb2tpcc {option} {
         grid $Name -column 1 -row 4 -sticky ew
         set Name $Parent.f1.e5
         set Prompt $Parent.f1.p5
-        ttk::label $Prompt -text "TPROC-C Db2 Tablespace List (Space Separated Values) :" -image [ create_image hdbicon icons ] -compound left
+        ttk::label $Prompt -text "TPROC-C Db2 Tablespace List :" -image [ create_image hdbicon icons ] -compound left
         ttk::entry $Name -width 30 -textvariable db2_tab_list
         if { $db2_partition eq "false" } {
             .tpc.f1.e5 configure -state disabled
@@ -473,8 +468,8 @@ proc configdb2tpcc {option} {
             set db2_async_verbose "false"
             $Name configure -state disabled
         }
-        set Name $Parent.f1.e26
-        set Prompt $Parent.f1.p26
+        set Name $Parent.c1.e26
+        set Prompt $Parent.c1.p26
         ttk::label $Prompt -text "XML Connect Pool :"
         ttk::checkbutton $Name -text "" -variable db2_connect_pool -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 26 -sticky e
@@ -525,7 +520,7 @@ proc configdb2tpch {option} {
     setlocaltpchvars $configdb2
     #set matching fields in dialog to temporary dict
     variable db2fields
-    set db2fields [ dict create connection {db2_def_user {.db2tpch.f1.e1 get} db2_def_pass {.db2tpch.f1.e2 get} db2_def_dbase {.db2tpch.f1.e3 get}} tpch {db2_tpch_user {.db2tpch.f1.e1 get} db2_tpch_pass {.db2tpch.f1.e2 get} db2_tpch_dbase {.db2tpch.f1.e3 get} db2_tpch_def_tab {.db2tpch.f1.e4 get} db2_total_querysets {.db2tpch.f1.e9 get} db2_degree_of_parallel {.db2tpch.f1.e12 get} db2_update_sets {.db2tpch.f1.e14 get} db2_trickle_refresh {.db2tpch.f1.e15 get} db2_scale_fact $db2_scale_fact db2_num_tpch_threads $db2_num_tpch_threads db2_tpch_organizeby $db2_tpch_organizeby db2_raise_query_error $db2_raise_query_error db2_verbose $db2_verbose db2_refresh_on $db2_refresh_on db2_refresh_verbose $db2_refresh_verbose} ]
+    set db2fields [ dict create connection {db2_def_user {.db2tpch.c1.e1 get} db2_def_pass {.db2tpch.c1.e2 get} db2_def_dbase {.db2tpch.c1.e3 get}} tpch {db2_tpch_user {.db2tpch.c1.e1 get} db2_tpch_pass {.db2tpch.c1.e2 get} db2_tpch_dbase {.db2tpch.c1.e3 get} db2_tpch_def_tab {.db2tpch.f1.e4 get} db2_total_querysets {.db2tpch.f1.e9 get} db2_degree_of_parallel {.db2tpch.f1.e12 get} db2_update_sets {.db2tpch.f1.e14 get} db2_trickle_refresh {.db2tpch.f1.e15 get} db2_scale_fact $db2_scale_fact db2_num_tpch_threads $db2_num_tpch_threads db2_tpch_organizeby $db2_tpch_organizeby db2_raise_query_error $db2_raise_query_error db2_verbose $db2_verbose db2_refresh_on $db2_refresh_on db2_refresh_verbose $db2_refresh_verbose} ]
     catch "destroy .db2tpch"
     ttk::toplevel .db2tpch
     wm transient .db2tpch .ed_mainFrame
@@ -536,38 +531,34 @@ proc configdb2tpch {option} {
         "drive" {  wm title .db2tpch {Db2 TPROC-H Driver Options} }
     }
     set Parent .db2tpch
-    set Name $Parent.f1
-    ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
     if { $option eq "all" || $option eq "build" } {
-        set Prompt $Parent.f1.h1
-        ttk::label $Prompt -image [ create_image boxes icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h2
-        ttk::label $Prompt -text "Build Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h1
+	ttk::label $Prompt -compound left -text "Build Options" -image [ create_image boxes icons ]
+    	pack $Prompt -anchor center -side top 
     } else {
-        set Prompt $Parent.f1.h3
-        ttk::label $Prompt -image [ create_image driveroptlo icons ]
-        grid $Prompt -column 0 -row 0 -sticky e
-        set Prompt $Parent.f1.h4
-        ttk::label $Prompt -text "Driver Options"
-        grid $Prompt -column 1 -row 0 -sticky w
+        set Prompt $Parent.h2
+	ttk::label $Prompt -compound left -text "Driver Options" -image [ create_image driveroptlo icons ]
+    	pack $Prompt -anchor center -side top 
     }
-    set Name $Parent.f1.e1
-    set Prompt $Parent.f1.p1
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
     ttk::label $Prompt -text "TPROC-H Db2 User :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -width 30 -textvariable db2_tpch_user
     grid $Prompt -column 0 -row 1 -sticky e
     grid $Name -column 1 -row 1 -sticky ew
-    set Name $Parent.f1.e2
-    set Prompt $Parent.f1.p2
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
     ttk::label $Prompt -text "TPROC-H Db2 User Password :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name -show * -width 30 -textvariable db2_tpch_pass
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
-    set Name $Parent.f1.e3
-    set Prompt $Parent.f1.p3
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "TPROC-H Db2 Database :" -image [ create_image hdbicon icons ] -compound left
     ttk::entry $Name  -width 30 -textvariable db2_tpch_dbase
     grid $Prompt -column 0 -row 3 -sticky e
