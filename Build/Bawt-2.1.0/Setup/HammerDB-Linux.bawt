@@ -10,7 +10,7 @@ Setup Tk                Tk-[GetTkVersion].7z           Tk.bawt
 Setup expect            expect-5.45.4.7z               expect.bawt	
 Setup libressl          libressl-2.6.4.7z              libressl.bawt	
 Setup tcltls            tcltls-1.7.22.7z               tcltls.bawt	
-Setup tksvg             tksvg-0.5.7z                   tksvg.bawt
+Setup tksvg             tksvg-0.14.7z                  tksvg.bawt
 Setup tkblt             tkblt-3.2.23.7z                tkblt.bawt
 Setup tclpy             tclpy-0.4.7z                   tclpy.bawt
 Setup tkpath		tkpath-0.3.3.7z		       tkpath.bawt
@@ -21,7 +21,7 @@ Setup mysqltcl          mysqltcl-3.052.7z              mysqltcl.bawt
 Setup db2tcl            db2tcl-2.0.1.7z                db2tcl.bawt	
 Setup pgtcl             pgtcl-2.1.1.7z                 pgtcl.bawt	
 # Pure Tcl/Tk packages.
-Setup awthemes          awthemes-9.3.1.7z              awthemes.bawt
+Setup awthemes          awthemes-10.4.0.7z              awthemes.bawt
 Setup clearlooks        clearlooks-1.0.7z              clearlooks.bawt
 Setup redis             redis-0.1.7z                   redis.bawt
 Setup ticklecharts	ticklecharts-3.1.7z	       ticklecharts.bawt

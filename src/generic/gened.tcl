@@ -220,9 +220,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Name $Parent.panedwin
     if { $ttk::currentTheme eq "clearlooks" } {
     panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] } else {
-        if { $ttk::currentTheme in {arc breeze awlight} } {
-        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] } else {
-            panedwindow $Name -orient horizontal -showhandle true
+        if { $ttk::currentTheme in {awarc awbreeze awlight} } {
+        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat } else {
+            panedwindow $Name -orient horizontal -showhandle false
         }
     }
     pack $Name -expand yes -fill both
@@ -230,9 +230,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Name $Parent.panedwin.subpanedwin
     if { $ttk::currentTheme eq "clearlooks" } {
     panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]} else {
-        if { $ttk::currentTheme in {arc breeze awlight} } {
-        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]} else {
-            panedwindow $Name -orient vertical -showhandle true
+        if { $ttk::currentTheme in {awarc awbreeze awawlight} } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat } else {
+            panedwindow $Name -orient vertical -showhandle false
         }
     }
     pack $Name -expand yes -fill both
