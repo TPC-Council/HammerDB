@@ -870,13 +870,19 @@ set xref [ expr {(75 / 1.333333) * $win_scale_fact * 0.90} ]
 
 #canvas for black on white numbers
 .ed_mainFrame.tc configure -background white
-pack [ tkp::canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -side top -anchor ne -padx [ list 0 [ expr {$scale_width * 0.05} ] ] -ipadx [ expr {$scale_width * 0.10} ]
-    #Emu graph canvas
-    pack [ tkp::canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left
+pack [ tkp::canvas .ed_mainFrame.tc.c -width $scale_width -height $tcc_height -background white -highlightthickness 0 ] -side top -anchor ne -padx [ list 0 [ expr {$scale_width * 0.05} ] ] -ipadx [ expr {$scale_width * 0.05} ]
+#Adjust width and height in case frame has already been expanded
+set orig_width_percent [ expr {(floor([ expr {( [ winfo width .ed_mainFrame.tc ] - $scale_width) / $scale_width * 100}]) / 100)+1}]
+set orig_height_percent [ expr {(floor([ expr {( [ winfo height .ed_mainFrame.tc ] - $tcg_height) / $tcg_height * 100}]) / 100)+1}]
+set scale_width [ expr {$scale_width * $orig_width_percent * 0.80 } ]
+set tcg_height [ expr {$tcg_height * $orig_height_percent} ]
+set emug_height [ expr {$emug_height * $orig_height_percent} ]
+    #Emu graph canas
+   pack [ tkp::canvas .ed_mainFrame.tc.g -width $scale_width -height $tcg_height -background white -highlightthickness 0 ] -fill both -expand 1 -side left  -padx [ list 0 [ expr {$scale_width * 0.05} ] ] -ipadx [ expr {$scale_width * 0.05} ]
     unset -nocomplain tc_scale
     foreach param {scale_width tcc_height tcg_height emug_height axistextoffset ticklen xref} { dict set tc_scale $param [ set $param ] }
-    dict set tc_scale width $scale_width
-    dict set tc_scale height $tcg_height
+    dict set tc_scale width [ winfo width .ed_mainFrame.tc.g ]
+    dict set tc_scale height [ winfo height .ed_mainFrame.tc.g ]
     dict set tc_scale last_resize_width [ dict get $tc_scale width ]
     dict set tc_scale last_resize_height [ dict get $tc_scale height ] 
     dict set tc_scale emu_width $scale_width

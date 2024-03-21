@@ -319,11 +319,8 @@ proc ed_start_gui { dbdict icons iconalt } {
                 wm title $tabindex $title
                 wm geometry $tabindex ${tabix}x${tabiy}+30+30
                 wm minsize $tabindex $tabix $tabiy
-                if { $tabname eq "tc" } {
-                    wm maxsize $tabindex $tabix $tabiy
-                } else {
-                    wm resizable $tabindex true true
-                }
+		#Allow dragged out transaction counter to be resized
+                wm resizable $tabindex true true
                 wm protocol $tabindex WM_DELETE_WINDOW \
         [namespace code [list Attach $notebook $tabindex $index]]
                 event generate $tabindex <<DetachedTab>>
