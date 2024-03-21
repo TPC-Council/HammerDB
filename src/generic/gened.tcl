@@ -1799,21 +1799,21 @@ proc vuser_options {} {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "User Delay(ms) :"
-    ttk::entry $Name -width 30 -textvariable delayms
+    ttk::spinbox $Name -width 30 -from 0 -to 100000 -increment 100 -textvariable delayms
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
 
     set Name $Parent.f1.e3
     set Prompt $Parent.f1.p3
     ttk::label $Prompt -text "Repeat Delay(ms) :"
-    ttk::entry $Name -width 30 -textvariable conpause
+    ttk::spinbox $Name -width 30 -from 0 -to 100000 -increment 100 -textvariable conpause
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
 
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "Iterations :"
-    ttk::entry $Name -width 30 -textvariable ntimes
+    ttk::spinbox $Name -width 30 -from 1 -to 100000 -increment 1 -textvariable ntimes
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
 
