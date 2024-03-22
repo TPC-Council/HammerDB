@@ -74,7 +74,7 @@ proc initscaletheme {theme pixelsperpoint} {
     upvar #0 iconaltsvg iconaltsvg
     package require tksvg
     package require colorutils
-    package require awthemes 9.2
+    package require awthemes
     ::themeutils::setHighlightColor $theme "#FF7900"
     ::themeutils::setThemeColors $theme graphics.color #FF7900 focus.color #FF7900
     #Set scrollbar colors for awlight and breeze to the same as arc theme
@@ -447,14 +447,14 @@ if {[dict exists $tmpgendict theme scaling ]} {
     set scaling [dict get $tmpgendict theme scaling ]
     if { $scaling eq "auto" } {
         #Using a scaling theme default is awlight on Linux and breeze on Windows
-        #alternative themes are "arc breeze awlight"
+        #alternative themes are "awarc awbreeze awlight"
         set theme [dict get $tmpgendict theme scaletheme ]
-        if { $theme ni {arc breeze awlight} } { 
+        if { $theme ni {awarc awbreeze awlight} } { 
             #Options for Windows and Linux in case default is changed in future awtheme
             if {$tcl_platform(platform) == "windows"} {
-                set theme "breeze"
+                set theme "awbreeze"
             } else {
-                set theme "awlight"
+                set theme "awbreeze"
             }
         }
         set pixelsperpoint [dict get $tmpgendict theme pixelsperpoint ]

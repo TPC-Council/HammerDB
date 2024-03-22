@@ -220,9 +220,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Name $Parent.panedwin
     if { $ttk::currentTheme eq "clearlooks" } {
     panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] } else {
-        if { $ttk::currentTheme in {arc breeze awlight} } {
-        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] } else {
-            panedwindow $Name -orient horizontal -showhandle true
+        if { $ttk::currentTheme in {awarc awbreeze awlight} } {
+        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat } else {
+            panedwindow $Name -orient horizontal -showhandle false
         }
     }
     pack $Name -expand yes -fill both
@@ -230,9 +230,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     set Name $Parent.panedwin.subpanedwin
     if { $ttk::currentTheme eq "clearlooks" } {
     panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]} else {
-        if { $ttk::currentTheme in {arc breeze awlight} } {
-        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]} else {
-            panedwindow $Name -orient vertical -showhandle true
+        if { $ttk::currentTheme in {awarc awbreeze awawlight} } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat } else {
+            panedwindow $Name -orient vertical -showhandle false
         }
     }
     pack $Name -expand yes -fill both
@@ -319,11 +319,8 @@ proc ed_start_gui { dbdict icons iconalt } {
                 wm title $tabindex $title
                 wm geometry $tabindex ${tabix}x${tabiy}+30+30
                 wm minsize $tabindex $tabix $tabiy
-                if { $tabname eq "tc" } {
-                    wm maxsize $tabindex $tabix $tabiy
-                } else {
-                    wm resizable $tabindex true true
-                }
+		#Allow dragged out transaction counter to be resized
+                wm resizable $tabindex true true
                 wm protocol $tabindex WM_DELETE_WINDOW \
         [namespace code [list Attach $notebook $tabindex $index]]
                 event generate $tabindex <<DetachedTab>>
@@ -1802,21 +1799,21 @@ proc vuser_options {} {
     set Name $Parent.f1.e2
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "User Delay(ms) :"
-    ttk::entry $Name -width 30 -textvariable delayms
+    ttk::spinbox $Name -width 30 -from 0 -to 100000 -increment 100 -textvariable delayms
     grid $Prompt -column 0 -row 2 -sticky e
     grid $Name -column 1 -row 2 -sticky ew
 
     set Name $Parent.f1.e3
     set Prompt $Parent.f1.p3
     ttk::label $Prompt -text "Repeat Delay(ms) :"
-    ttk::entry $Name -width 30 -textvariable conpause
+    ttk::spinbox $Name -width 30 -from 0 -to 100000 -increment 100 -textvariable conpause
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky ew
 
     set Name $Parent.f1.e4
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "Iterations :"
-    ttk::entry $Name -width 30 -textvariable ntimes
+    ttk::spinbox $Name -width 30 -from 1 -to 100000 -increment 1 -textvariable ntimes
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky ew
 
