@@ -2356,13 +2356,13 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
         }
         foreach lda [ dict values $connlist ] {  pg_disconnect $lda }
         pg_disconnect $mlda
-    }
+}
     #Find single connection start and end points
     set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "proc fn_prep_statement" end ]
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "pg_disconnect \$lda" end ]
     #puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
     #Delete text from start and end points
-    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)+1l
+    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)
     #Replace with connect pool version
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
     if { $testtype eq "timed" } {
