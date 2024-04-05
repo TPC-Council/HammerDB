@@ -2693,6 +2693,15 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
+proc CheckDBVersion { odbc } {
+	   if {[catch {set rows [ odbc allrows "SELECT SERVERPROPERTY('productversion')" ]} message ]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+	        set dbversion "DBVersion:[ lindex {*}$rows 1 ]"
+	   }
+	   return "$dbversion"
+	}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2704,6 +2713,7 @@ switch $myposition {
                 if {!$azure} { odbc evaldirect "use $database" }
             }
             set ramptime 0
+	    puts [ CheckDBVersion odbc ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -3121,6 +3131,15 @@ proc connect_string { server port odbc_driver authentication uid pwd tcp azure d
     return $connection
 }
 
+proc CheckDBVersion { odbc } {
+	   if {[catch {set rows [ odbc allrows "SELECT SERVERPROPERTY('productversion')" ]} message ]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+	        set dbversion "DBVersion:[ lindex {*}$rows 1 ]"
+	   }
+	   return "$dbversion"
+	}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -3132,6 +3151,7 @@ switch $myposition {
                 if {!$azure} { odbc evaldirect "use $database" }
             }
             set ramptime 0
+	    puts [ CheckDBVersion odbc ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {

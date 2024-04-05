@@ -2489,6 +2489,21 @@ proc SetNLS { lda } {
     oraclose $curn_nls
 }
 
+proc CheckDBVersion { curn } {
+set dbversion ""
+    if {[catch {orasql $curn {select version from v$instance}}]} {
+	    set dbversion "DBVersion:NULL"
+    } else {
+        orafetch  $curn -datavariable output
+        while { [ oramsg  $curn ] == 0 } {
+            lappend dbversion $output
+            orafetch $curn -datavariable output
+        }
+        set dbversion "DBVersion:$dbversion"
+    	}
+        return "$dbversion"
+    }
+
 if { [ chk_thread ] eq "FALSE" } {
     error "AWR Snapshot Script must be run in Thread Enabled Interpreter"
 }
@@ -2514,6 +2529,7 @@ switch $myposition {
                 oraparse $curn1 $sql1
             }
             set ramptime 0
+	    puts [ CheckDBVersion $curn1 ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -2899,6 +2915,21 @@ proc SetNLS { lda } {
     oraclose $curn_nls
 }
 
+proc CheckDBVersion { curn } {
+set dbversion ""
+    if {[catch {orasql $curn {select version from v$instance}}]} {
+	    set dbversion "DBVersion:NULL"
+    } else {
+        orafetch  $curn -datavariable output
+        while { [ oramsg  $curn ] == 0 } {
+            lappend dbversion $output
+            orafetch $curn -datavariable output
+        }
+        set dbversion "DBVersion:$dbversion"
+    	}
+        return "$dbversion"
+    }
+
 if { [ chk_thread ] eq "FALSE" } {
     error "AWR Snapshot Script must be run in Thread Enabled Interpreter"
 }
@@ -2924,6 +2955,7 @@ switch $myposition {
                 oraparse $curn1 $sql1
             }
             set ramptime 0
+	    puts [ CheckDBVersion $curn1 ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {

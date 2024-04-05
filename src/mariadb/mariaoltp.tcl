@@ -2225,6 +2225,15 @@ proc purge { maria_handler verbose } {
         }
 }
 
+proc CheckDBVersion { maria_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]}]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+		set dbversion "DBVersion:$dbversion"
+	   }	
+	   return "$dbversion"
+	}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2232,6 +2241,7 @@ switch $myposition {
 	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
         maria::autocommit $maria_handler 1
             set ramptime 0
+	    puts [ CheckDBVersion $maria_handler ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -2797,6 +2807,15 @@ proc purge { maria_handler verbose } {
         }
 }
 
+proc CheckDBVersion { maria_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]}]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+		set dbversion "DBVersion:$dbversion"
+	   }	
+	   return "$dbversion"
+	}
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2804,6 +2823,7 @@ switch $myposition {
 	set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
         maria::autocommit $maria_handler 1
             set ramptime 0
+	    puts [ CheckDBVersion $maria_handler ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {

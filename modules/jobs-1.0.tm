@@ -1240,7 +1240,18 @@ namespace eval jobs {
                             return
                           } else {
                             if { [ dict keys $paramdict ] eq "jobid db" } {
-                              set joboutput [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                            #A Timed run will include a query for a version string, add the version if we find it
+		            set temp_output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1} ]]
+		            if { [ string match "*DBVersion*" $temp_output ] } {
+        		    set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $temp_output match header version ]
+			    if { $matcheddbversion } {
+                            set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]] $version"
+			    } else {
+                            set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]"
+			    }
+			    } else {
+                            set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]"
+				}
                             } else {
                               if { [ dict keys $paramdict ] eq "jobid bm" } {
                                 set joboutput [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
@@ -1856,7 +1867,18 @@ namespace eval jobs {
                       return
                     } else {
                       if { [ dict keys $paramdict ] eq "jobid db" } {
-                        set joboutput [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                      #A Timed run will include a query for a version string, add the version if we find it
+		      set temp_output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1} ]]
+		      if { [ string match "*DBVersion*" $temp_output ] } {
+        		set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $temp_output match header version ]
+			if { $matcheddbversion } {
+                        set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]] $version"
+			} else {
+                        set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]"
+			}
+			} else {
+                        set joboutput "[ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]"
+			}
                         #huddle JSON is list return at end
                       } else {
                         if { [ dict keys $paramdict ] eq "jobid bm" } {
