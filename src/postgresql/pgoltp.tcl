@@ -2852,6 +2852,18 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
     }
     return $lda
 }
+
+proc CheckDBVersion { lda1 } {
+           if {[catch {pg_select $lda1 "select current_setting('server_version')" version_arr {
+                set dbversion $version_arr(current_setting)
+            }}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2867,6 +2879,7 @@ switch $myposition {
                 error "error, the database connection to $host could not be established"
             } 
             set ramptime 0
+	    puts [ CheckDBVersion $lda1 ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -3279,6 +3292,18 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
     }
     return $lda
 }
+
+proc CheckDBVersion { lda1 } {
+           if {[catch {pg_select $lda1 "select current_setting('server_version')" version_arr {
+                set dbversion $version_arr(current_setting)
+            }}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -3294,6 +3319,7 @@ switch $myposition {
                 error "error, the database connection to $host could not be established"
             } 
             set ramptime 0
+	    puts [ CheckDBVersion $lda1 ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {

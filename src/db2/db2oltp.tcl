@@ -1596,12 +1596,26 @@ proc ConnectToDb2 { dbname user password } {
         puts "Connection established"
         return $db_handle
 }}
+
+proc CheckDBVersion { db_handle } {
+           if {[catch {set stmnt_handledbv [ db2_select_direct $db_handle "SELECT service_level from SYSIBMADM.ENV_INST_INFO" ]}]} {
+           set dbversion "DBVersion:NULL"
+           } else {
+            set dbversion [ db2_fetchrow $stmnt_handledbv ]
+            db2_finish $stmnt_handledbv
+	    regsub -all {DB2\ v} $dbversion "" dbversion
+            set dbversion "DBVersion:[join $dbversion]"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 {
         if { $mode eq "Local" || $mode eq "Primary" } {
             set db_handle [ ConnectToDb2 $dbname $user $password ]
             set ramptime 0
+	    puts [ CheckDBVersion $db_handle ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -1963,12 +1977,26 @@ proc ConnectToDb2 { dbname user password } {
         puts "Connection established"
         return $db_handle
 }}
+
+proc CheckDBVersion { db_handle } {
+           if {[catch {set stmnt_handledbv [ db2_select_direct $db_handle "SELECT service_level from SYSIBMADM.ENV_INST_INFO" ]}]} {
+           set dbversion "DBVersion:NULL"
+           } else {
+            set dbversion [ db2_fetchrow $stmnt_handledbv ]
+            db2_finish $stmnt_handledbv
+	    regsub -all {DB2\ v} $dbversion "" dbversion
+            set dbversion "DBVersion:[join $dbversion]"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 {
         if { $mode eq "Local" || $mode eq "Primary" } {
             set db_handle [ ConnectToDb2 $dbname $user $password ]
             set ramptime 0
+	    puts [ CheckDBVersion $db_handle ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {

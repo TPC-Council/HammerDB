@@ -2054,6 +2054,15 @@ proc ConnectToMySQL { host port socket ssl_options user password db } {
     }
 }
 
+proc CheckDBVersion { mysql_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ mysql::sel $mysql_handler "select version()" -list ] ] - ] 0 ]}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
@@ -2061,6 +2070,7 @@ switch $myposition {
 	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
             mysql::autocommit $mysql_handler 1
             set ramptime 0
+	    puts [ CheckDBVersion $mysql_handler ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -2475,13 +2485,23 @@ proc ConnectToMySQLAsynch { host port socket ssl_options user password db client
     }
 }
 
+proc CheckDBVersion { mysql_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ mysql::sel $mysql_handler "select version()" -list ] ] - ] 0 ]}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 switch $myposition {
     1 { 
         if { $mode eq "Local" || $mode eq "Primary" } {
-	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
+	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]
             mysql::autocommit $mysql_handler 1
             set ramptime 0
+	    puts [ CheckDBVersion $mysql_handler ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
