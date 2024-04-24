@@ -423,6 +423,8 @@ proc vuset { args } {
             puts "Error: Virtual Users exist, destroy with vudestroy before changing settings"
             return
         }
+        set db "generic"
+        set dct "virtual_user_options"
         switch  $option {
             vu {
                 set virtual_users $val
@@ -441,6 +443,7 @@ proc vuset { args } {
                         return
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "virtual_users" $virtual_users
                 remote_command [ concat vuset vu $val ]
             }
             delay {
@@ -455,6 +458,7 @@ proc vuset { args } {
                         set conpause 500
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
                 remote_command [ concat vuset delay $val ]
             }
             repeat {
@@ -469,6 +473,7 @@ proc vuset { args } {
                         set delayms 500
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
                 remote_command [ concat vuset repeat $val ]
             }
             iterations {
@@ -483,6 +488,7 @@ proc vuset { args } {
                         set ntimes 1
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "iterations" $ntimes
                 remote_command [ concat vuset iterations $val ]
             }
             showoutput {
@@ -497,6 +503,7 @@ proc vuset { args } {
                         set suppo 1
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "show_output" $suppo
                 remote_command [ concat vuset showoutput $val ]
             }
             logtotemp {
@@ -511,6 +518,7 @@ proc vuset { args } {
                         set optlog 0
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "log_to_temp" $optlog
                 remote_command [ concat vuset logtotemp $val ]
             }
             unique {
@@ -525,6 +533,7 @@ proc vuset { args } {
                         set unique_log_name 0
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "unique_log_name" $unique_log_name
                 remote_command [ concat vuset unique $val ]
             }
             nobuff {
@@ -539,6 +548,7 @@ proc vuset { args } {
                         set no_log_buffer 0
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "no_log_buffer" $no_log_buffer
                 remote_command [ concat vuset nobuff $val ]
             }
             timestamps {
@@ -553,6 +563,7 @@ proc vuset { args } {
                         set log_timestamps 0
                     }
                 }
+                SQLiteUpdateKeyValue $db $dct "log_timestamps" $log_timestamps
                 remote_command [ concat vuset timestamps $val ]
             }
             default {

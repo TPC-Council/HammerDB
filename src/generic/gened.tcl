@@ -1954,6 +1954,20 @@ proc vuser_options {} {
         if { $ntimes < 1 } { tk_messageBox -message "The number of iterations must be 1 or greater"
             set ntimes 1
         }
+
+        #Save new values to SQLite
+        set db "generic"
+        set dct "virtual_user_options"
+        SQLiteUpdateKeyValue $db $dct "virtual_users" $virtual_users
+        SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
+        SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
+        SQLiteUpdateKeyValue $db $dct "iterations" $ntimes
+        SQLiteUpdateKeyValue $db $dct "show_output" $suppo
+        SQLiteUpdateKeyValue $db $dct "log_to_temp" $optlog
+        SQLiteUpdateKeyValue $db $dct "unique_log_name" $unique_log_name
+        SQLiteUpdateKeyValue $db $dct "no_log_buffer" $no_log_buffer
+        SQLiteUpdateKeyValue $db $dct "log_timestamps" $log_timestamps
+
         remote_command [ concat vuser_slave_ops $maxvuser $virtual_users $delayms $conpause $ntimes $suppo $optlog ]
         destroy .vuserop
     } \
