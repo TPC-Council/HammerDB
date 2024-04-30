@@ -1755,6 +1755,7 @@ proc ed_kill_apps {args} {
 proc vuser_options {} {
     global _ED maxvuser virtual_users delayms conpause ntimes suppo optlog lvuser unique_log_name no_log_buffer log_timestamps threadscreated
     upvar #0 icons icons
+    upvar #0 genericdict genericdict
     if { [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
     if { [ info exists maxvuser ] } { ; } else { set maxvuser $virtual_users }
     if { [ info exists delayms ] } { ; } else { set delayms 500 }
@@ -1954,20 +1955,9 @@ proc vuser_options {} {
         if { $ntimes < 1 } { tk_messageBox -message "The number of iterations must be 1 or greater"
             set ntimes 1
         }
-
         #Save new values to SQLite
-        set db "generic"
-        set dct "virtual_user_options"
-        SQLiteUpdateKeyValue $db $dct "virtual_users" $virtual_users
-        SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
-        SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
-        SQLiteUpdateKeyValue $db $dct "iterations" $ntimes
-        SQLiteUpdateKeyValue $db $dct "show_output" $suppo
-        SQLiteUpdateKeyValue $db $dct "log_to_temp" $optlog
-        SQLiteUpdateKeyValue $db $dct "unique_log_name" $unique_log_name
-        SQLiteUpdateKeyValue $db $dct "no_log_buffer" $no_log_buffer
-        SQLiteUpdateKeyValue $db $dct "log_timestamps" $log_timestamps
-
+	set genericdict [ dict replace $genericdict virtual_user_options [ subst { virtual_users $virtual_users user_delay $conpause repeat_delay $delayms iterations $ntimes show_output $suppo log_to_temp $optlog unique_log_name $unique_log_name no_log_buffer $no_log_buffer log_timestamps $log_timestamps }] ]
+        Dict2SQLite "generic" $genericdict
         remote_command [ concat vuser_slave_ops $maxvuser $virtual_users $delayms $conpause $ntimes $suppo $optlog ]
         destroy .vuserop
     } \

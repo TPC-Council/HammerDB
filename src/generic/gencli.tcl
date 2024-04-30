@@ -408,6 +408,7 @@ proc numberOfCPUs {} {
 
 proc vuset { args } {
     global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
+    upvar #0 genericdict genericdict
     if {[ llength $args ] != 2} {
         puts {Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps] value}
     } else {
@@ -443,6 +444,7 @@ proc vuset { args } {
                         return
                     }
                 }
+		dict set genericdict $dct "virtual_users" $virtual_users
                 SQLiteUpdateKeyValue $db $dct "virtual_users" $virtual_users
                 remote_command [ concat vuset vu $val ]
             }
@@ -458,6 +460,7 @@ proc vuset { args } {
                         set conpause 500
                     }
                 }
+		dict set genericdict $dct "user_delay" $conpause
                 SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
                 remote_command [ concat vuset delay $val ]
             }
@@ -473,6 +476,7 @@ proc vuset { args } {
                         set delayms 500
                     }
                 }
+		dict set genericdict $dct "repeat_delay" $delayms
                 SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
                 remote_command [ concat vuset repeat $val ]
             }
@@ -488,6 +492,7 @@ proc vuset { args } {
                         set ntimes 1
                     }
                 }
+		dict set genericdict $dct "iterations" $ntimes
                 SQLiteUpdateKeyValue $db $dct "iterations" $ntimes
                 remote_command [ concat vuset iterations $val ]
             }
@@ -503,6 +508,7 @@ proc vuset { args } {
                         set suppo 1
                     }
                 }
+		dict set genericdict $dct "show_output" $suppo
                 SQLiteUpdateKeyValue $db $dct "show_output" $suppo
                 remote_command [ concat vuset showoutput $val ]
             }
@@ -518,6 +524,7 @@ proc vuset { args } {
                         set optlog 0
                     }
                 }
+		dict set genericdict $dct "log_to_temp" $optlog
                 SQLiteUpdateKeyValue $db $dct "log_to_temp" $optlog
                 remote_command [ concat vuset logtotemp $val ]
             }
@@ -533,6 +540,7 @@ proc vuset { args } {
                         set unique_log_name 0
                     }
                 }
+		dict set genericdict $dct "unique_log_name" $unique_log_name
                 SQLiteUpdateKeyValue $db $dct "unique_log_name" $unique_log_name
                 remote_command [ concat vuset unique $val ]
             }
@@ -548,6 +556,7 @@ proc vuset { args } {
                         set no_log_buffer 0
                     }
                 }
+		dict set genericdict $dct "no_log_buffer" $no_log_buffer
                 SQLiteUpdateKeyValue $db $dct "no_log_buffer" $no_log_buffer
                 remote_command [ concat vuset nobuff $val ]
             }
@@ -563,6 +572,7 @@ proc vuset { args } {
                         set log_timestamps 0
                     }
                 }
+		dict set genericdict $dct "log_timestamps" $log_timestamps
                 SQLiteUpdateKeyValue $db $dct "log_timestamps" $log_timestamps
                 remote_command [ concat vuset timestamps $val ]
             }
