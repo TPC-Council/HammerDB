@@ -45,7 +45,7 @@ namespace ensemble configure string -map [dict replace\
         [namespace ensemble configure string -map]\
         insert ::tcl::string::insert]
 proc {} { args } { ; }
-proc canvas { args } { ; } 
+proc canvas { args } { ; }
 proc pack { args } { ; }
 proc .ed_mainFrame { args } { ; }
 proc .ed_mainFrame.notebook { args } { ; }
@@ -78,7 +78,7 @@ proc bgerror {{message ""}} {
     }
 }
 
-proc configtable {} { 
+proc configtable {} {
     global vustatus threadscreated virtual_users maxvuser table ntimes thvnum totrun AVUC
     set AVUC "idle"
     if { ![info exists vustatus] } { set vustatus {} }
@@ -111,8 +111,8 @@ proc find_current_dict {} {
             set posswkl  [ split  [ dict get $dbdict $key workloads ]]
             set ind [lsearch $posswkl $bm]
             if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
-                if { [ llength $wkltoremove ] > 1 } { 
-                    putscli "Error printing dict format more than 2 workloads" 
+                if { [ llength $wkltoremove ] > 1 } {
+                    putscli "Error printing dict format more than 2 workloads"
                     return
                 } else {
                     set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
@@ -124,26 +124,26 @@ proc find_current_dict {} {
     }
 }
 
-proc runninguser { threadid } { 
+proc runninguser { threadid } {
     global table threadscreated thvnum inrun AVUC vustatus jobid
     set AVUC "run"
     set message [ join " Vuser\  [ expr $thvnum($threadid) + 1]:RUNNING" ]
-    catch { putscli $message } 
+    catch { putscli $message }
     hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     dict set vustatus [ expr $thvnum($threadid) + 1 ] "RUNNING"
 }
 
-proc printresult { result threadid } { 
+proc printresult { result threadid } {
     global vustatus table threadscreated thvnum succ fail totrun totcount inrun AVUC jobid
     incr totcount
     if { $result == 0 } {
         set message [ join " Vuser\  [expr $thvnum($threadid) + 1]:FINISHED SUCCESS" ]
-        catch {putscli $message } 
+        catch {putscli $message }
         hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH SUCCESS"
     } else {
         set message [ join " Vuser\ [expr $thvnum($threadid) + 1]:FINISHED FAILED" ]
-        catch {putscli $message } 
+        catch {putscli $message }
         hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
         dict set vustatus [ expr $thvnum($threadid) + 1 ] "FINISH FAILED"
     }
@@ -157,10 +157,10 @@ proc printresult { result threadid } {
     }
 }
 
-proc tk_messageBox { args } { 
+proc tk_messageBox { args } {
     global jobid
     set messind [ lsearch $args -message ]
-    if { $messind eq -1 } { 
+    if { $messind eq -1 } {
         set message "tk_messageBox with unknown message"
     } else {
         set message [ lindex $args [expr $messind + 1] ]
@@ -168,7 +168,7 @@ proc tk_messageBox { args } {
     hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     putscli $message
     set typeind [ lsearch $args yesno ]
-    if { $typeind eq -1 } { set yesno "false" 
+    if { $typeind eq -1 } { set yesno "false"
     } else {
         set yesno "true"
     }
@@ -179,9 +179,9 @@ proc tk_messageBox { args } {
         #Delete 2 lines above for interactive response
         gets stdin reply
         set yntoup [ string toupper $reply ]
-        if { [ string match NO $yntoup ] } { 
+        if { [ string match NO $yntoup ] } {
             putscli "replied no"
-        return "no" } else { 
+        return "no" } else {
             putscli "replied yes"
         return "yes" }
     }
@@ -219,7 +219,7 @@ proc myerrorproc { id info } {
 rename Log _Log
 proc Log {id msg lastline} {
     global tids threadsbytid jobid
-    catch {putscli [ join " Vuser\ [expr $threadsbytid($id) + 1]:$lastline" ]} 
+    catch {putscli [ join " Vuser\ [expr $threadsbytid($id) + 1]:$lastline" ]}
     set vuser [expr $threadsbytid($id) + 1]
     set lastline [ string trimright $lastline ]
     hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, $vuser, $lastline)}
@@ -246,9 +246,9 @@ proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
     } else {
         switch $action {
             fastinsert {
-                if {[string is integer -strict [ lindex $args 1 ]]} { 
+                if {[string is integer -strict [ lindex $args 1 ]]} {
                     #Insert at the index given
-                    set insertind [ lindex $args 1 ] 
+                    set insertind [ lindex $args 1 ]
                     set offset 0
                     set substring [ lindex $args 2 ]
                     set _ED(package) [ string insert $_ED(package) $insertind $substring ]
@@ -323,7 +323,7 @@ proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
                 }
             }
             search {
-                set srchdirection [ lindex $args 1 ] 
+                set srchdirection [ lindex $args 1 ]
                 if { $srchdirection eq "-backwards" } {
                     set stringtofind [lindex $args 2]
                     set ind [ string last $stringtofind $_ED(package) ]
@@ -336,7 +336,7 @@ proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
                     puts "Error: failed to match arguments for text search in script : [ lindex $args 0 ] [ lindex $args 1 ]"
                     return
                 }
-            }	
+            }
         }
     }
 }
@@ -408,6 +408,7 @@ proc numberOfCPUs {} {
 
 proc vuset { args } {
     global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
+    upvar #0 genericdict genericdict
     if {[ llength $args ] != 2} {
         puts {Usage: vuset [vu|delay|repeat|iterations|showoutput|logtotemp|unique|nobuff|timestamps] value}
     } else {
@@ -423,12 +424,14 @@ proc vuset { args } {
             puts "Error: Virtual Users exist, destroy with vudestroy before changing settings"
             return
         }
+        set db "generic"
+        set dct "virtual_user_options"
         switch  $option {
-            vu {	
+            vu {
                 set virtual_users $val
-		if { $virtual_users eq "vcpu" } { 
-		    set virtual_users [ numberOfCPUs ]
-			}
+                if { $virtual_users eq "vcpu" } {
+                    set virtual_users [ numberOfCPUs ]
+                }
                 if { ![string is integer -strict $virtual_users] } {
                     tk_messageBox -message "The number of virtual users must be an integer"
                     puts -nonewline "setting to value: "
@@ -441,6 +444,8 @@ proc vuset { args } {
                         return
                     }
                 }
+		dict set genericdict $dct "virtual_users" $virtual_users
+                SQLiteUpdateKeyValue $db $dct "virtual_users" $virtual_users
                 remote_command [ concat vuset vu $val ]
             }
             delay {
@@ -455,6 +460,8 @@ proc vuset { args } {
                         set conpause 500
                     }
                 }
+		dict set genericdict $dct "user_delay" $conpause
+                SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
                 remote_command [ concat vuset delay $val ]
             }
             repeat {
@@ -469,6 +476,8 @@ proc vuset { args } {
                         set delayms 500
                     }
                 }
+		dict set genericdict $dct "repeat_delay" $delayms
+                SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
                 remote_command [ concat vuset repeat $val ]
             }
             iterations {
@@ -483,9 +492,11 @@ proc vuset { args } {
                         set ntimes 1
                     }
                 }
+		dict set genericdict $dct "iterations" $ntimes
+                SQLiteUpdateKeyValue $db $dct "iterations" $ntimes
                 remote_command [ concat vuset iterations $val ]
             }
-            showoutput { 
+            showoutput {
                 set suppo $val
                 if { ![string is integer -strict $suppo] } {
                     tk_messageBox -message "Show Output must be 0 or 1"
@@ -497,9 +508,11 @@ proc vuset { args } {
                         set suppo 1
                     }
                 }
+		dict set genericdict $dct "show_output" $suppo
+                SQLiteUpdateKeyValue $db $dct "show_output" $suppo
                 remote_command [ concat vuset showoutput $val ]
             }
-            logtotemp { 
+            logtotemp {
                 set optlog $val
                 if { ![string is integer -strict $optlog] } {
                     tk_messageBox -message "Log Output must be 0 or 1"
@@ -511,9 +524,11 @@ proc vuset { args } {
                         set optlog 0
                     }
                 }
+		dict set genericdict $dct "log_to_temp" $optlog
+                SQLiteUpdateKeyValue $db $dct "log_to_temp" $optlog
                 remote_command [ concat vuset logtotemp $val ]
             }
-            unique { 
+            unique {
                 set unique_log_name $val
                 if { ![string is integer -strict $unique_log_name] } {
                     tk_messageBox -message "Unique Log Name must be 0 or 1"
@@ -525,9 +540,11 @@ proc vuset { args } {
                         set unique_log_name 0
                     }
                 }
+		dict set genericdict $dct "unique_log_name" $unique_log_name
+                SQLiteUpdateKeyValue $db $dct "unique_log_name" $unique_log_name
                 remote_command [ concat vuset unique $val ]
             }
-            nobuff { 
+            nobuff {
                 set no_log_buffer $val
                 if { ![string is integer -strict $no_log_buffer] } {
                     tk_messageBox -message "No Log Buffer must be 0 or 1"
@@ -539,9 +556,11 @@ proc vuset { args } {
                         set no_log_buffer 0
                     }
                 }
+		dict set genericdict $dct "no_log_buffer" $no_log_buffer
+                SQLiteUpdateKeyValue $db $dct "no_log_buffer" $no_log_buffer
                 remote_command [ concat vuset nobuff $val ]
             }
-            timestamps { 
+            timestamps {
                 set log_timestamps $val
                 if { ![string is integer -strict $log_timestamps] } {
                     tk_messageBox -message "Log timestamps must be 0 or 1"
@@ -553,6 +572,8 @@ proc vuset { args } {
                         set log_timestamps 0
                     }
                 }
+		dict set genericdict $dct "log_timestamps" $log_timestamps
+                SQLiteUpdateKeyValue $db $dct "log_timestamps" $log_timestamps
                 remote_command [ concat vuset timestamps $val ]
             }
             default {
@@ -562,27 +583,27 @@ proc vuset { args } {
 }}}
 
 proc findakey { key2find dictname } {
-        upvar #0 $dictname $dictname
-        foreach key [dict keys [ set $dictname]] {
-                dict for {k v} [dict get [ set $dictname ] $key] {
-                if { $k eq $key2find } {
+    upvar #0 $dictname $dictname
+    foreach key [dict keys [ set $dictname]] {
+        dict for {k v} [dict get [ set $dictname ] $key] {
+            if { $k eq $key2find } {
                 return $key
-                }
-                }
+            }
         }
-return {}
+    }
+    return {}
 }
 
 proc diset { args } {
     global rdbms opmode
     if {[ llength $args ] != 3} {
         putscli "Error: Invalid number of arguments\nUsage: diset dict key value"
-        putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms" 
+        putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
     } else {
         set dct [ lindex $args 0 ]
         set key2 [ lindex $args 1 ]
         set val [ lindex $args 2 ]
-	if { [ string match *pass* [ lindex $args 1 ]] } {
+        if { [ string match *pass* [ lindex $args 1 ]] } {
         set val [ quotemeta [ lindex $args 2 ]]
                 } else {
         set val [ lindex $args 2 ]
@@ -602,28 +623,28 @@ proc diset { args } {
                             if { [ string match *driver $key2 ] && ![ string match *odbc_driver $key2 ] } {
                                 putscli "Clearing Script, reload script to activate new setting"
                                 clearscript
-                                if { $val != "test" && $val != "timed"  } {	
+                                if { $val != "test" && $val != "timed"  } {
                                     putscli "Error: Driver script must be either \"test\" or \"timed\""
                                     return
-                                }	
+                                }
                             }
                             if { [catch {dict set $dictname $dct $key2 [ concat $val ] } message]} {
                                 putscli "Failed to set Dictionary value: $message"
                             } else {
                                 putscli "Changed $dct:$key2 from $previous to [ concat $val ] for $rdbms"
-                              	#Save new value to SQLite
-                              	SQLiteUpdateKeyValue $key $dct $key2 $val
+                                #Save new value to SQLite
+                                SQLiteUpdateKeyValue $key $dct $key2 $val
                                 remote_command [ concat diset $dct $key2 [ list \{$val\} ]]
                         }}
-                    		} else {
-		       		set key2find [ findakey $key2 $dictname ]
-                       		if { [ string length $key2find ] > 0 } {
-                        	putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" is in the \"$key2find\" dictionary"
-                        	} else {
-                        	putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" cannot be found in any $rdbms dictionary"
-                        	}
-                        	putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
-                    	}
+                    } else {
+                        set key2find [ findakey $key2 $dictname ]
+                        if { [ string length $key2find ] > 0 } {
+                            putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" is in the \"$key2find\" dictionary"
+                        } else {
+                            putscli "Dictionary \"$dct\" for $rdbms exists but key \"$key2\" doesn't, key \"$key2\" cannot be found in any $rdbms dictionary"
+                        }
+                        putscli "Type \"print dict\" for valid dictionaries and keys for $rdbms"
+                    }
                 } else {
                     putscli {Usage: diset dict key value}
                     putscli "Dictionary \"$dct\" for $rdbms does not exist"
@@ -635,36 +656,35 @@ proc giset { args } {
     global rdbms opmode
     if {[ llength $args ] != 3} {
         putscli "Error: Invalid number of arguments\nUsage: giset dict key value"
-        putscli "Type \"print generic\" for valid dictionaries and keys" 
+        putscli "Type \"print generic\" for valid dictionaries and keys"
     } else {
         set dct [ lindex $args 0 ]
         set key2 [ lindex $args 1 ]
         set val [ lindex $args 2 ]
 
-                upvar #0 genericdict genericdict
-                if {[dict exists $genericdict $dct ]} {
-                    if {[dict exists $genericdict $dct $key2 ]} {
-                        set previous [ dict get $genericdict $dct $key2 ]
-                        if { $previous eq [ concat $val ] } {
-                            putscli "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
-                        } else {
-                            if { [catch {dict set genericdict $dct $key2 [ concat $val ] } message]} {
-                                putscli "Failed to set Dictionary value: $message"
-                            } else {
-                                putscli "Changed $dct:$key2 from $previous to [ concat $val ] for generic"
-                              	#Save new value to SQLite
-                                SQLiteUpdateKeyValue "generic" $dct $key2 $val
-                                remote_command [ concat giset $dct $key2 [ list \{$val\} ]]
-                        }}
-                    		} else {
-                        	putscli "Dictionary \"$dct\" exists but key \"$key2\" doesn't"
-                        	putscli "Type \"print generic\" for valid dictionaries and keys"
-                    	}
+        upvar #0 genericdict genericdict
+        if {[dict exists $genericdict $dct ]} {
+            if {[dict exists $genericdict $dct $key2 ]} {
+                set previous [ dict get $genericdict $dct $key2 ]
+                if { $previous eq [ concat $val ] } {
+                    putscli "Value $val for $dct:$key2 is the same as existing value $previous, no change made"
                 } else {
-                    putscli {Usage: giset dict key value}
-                    putscli "Type \"print generic\" for valid dictionaries and keys"
-                }
-}}
+                    if { [catch {dict set genericdict $dct $key2 [ concat $val ] } message]} {
+                        putscli "Failed to set Dictionary value: $message"
+                    } else {
+                        putscli "Changed $dct:$key2 from $previous to [ concat $val ] for generic"
+                        #Save new value to SQLite
+                        SQLiteUpdateKeyValue "generic" $dct $key2 $val
+                        remote_command [ concat giset $dct $key2 [ list \{$val\} ]]
+                }}
+            } else {
+                putscli "Dictionary \"$dct\" exists but key \"$key2\" doesn't"
+                putscli "Type \"print generic\" for valid dictionaries and keys"
+            }
+        } else {
+            putscli {Usage: giset dict key value}
+            putscli "Type \"print generic\" for valid dictionaries and keys"
+}}}
 
 proc librarycheck {} {
     upvar #0 dbdict dbdict
@@ -677,15 +697,15 @@ proc librarycheck {} {
     }
     foreach db $dbl library $libl {
         puts "Checking database library for $db"
-        if { [ llength $library ] > 1 } { 
+        if { [ llength $library ] > 1 } {
             set version [ lindex $library 1 ]
             set library [ lindex $library 0 ]
             set cmd "package require $library $version"
         } else {
             set cmd "package require $library"
         }
-        if [catch {eval $cmd} message] { 
-            puts "Error: failed to load $library - $message" 
+        if [catch {eval $cmd} message] {
+            puts "Error: failed to load $library - $message"
             if {[string match windows $::tcl_platform(platform)]} {
                 puts "Ensure that $db client libraries are installed and the location in the PATH environment variable"
             } else {
@@ -728,7 +748,7 @@ proc dbset { args } {
                     putscli "Database set to $rdbms"
                     SQLiteUpdateKeyValue "generic" "benchmark" "rdbms" $rdbms
                 }
-            }	
+            }
             bm {
                 set toup [ string toupper $val ]
                 if { [ string match ???-? $toup ] || [ string match ?????-? $toup ] } { set dashformat "true" } else { set dashformat "false" }
@@ -804,7 +824,7 @@ proc print { args } {
                         upvar #0 config$key config$key
                         set posswkl  [ split  [ dict get $dbdict $key workloads ]]
                         set ind [lsearch $posswkl $bm]
-                        if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ] 
+                        if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
                             if { [ llength $wkltoremove ] > 1 } { puts "Error printing dict format more than 2 workloads" } else {
                                 set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
                                 set tmpdictforpt [ dict remove [ subst \$config$key ] $bmdct ]
@@ -814,11 +834,11 @@ proc print { args } {
                         pdict 2 $tmpdictforpt
                 }}
             }
-	    generic {
-                        puts "Generic Dictionary Settings"
+            generic {
+                puts "Generic Dictionary Settings"
                 upvar #0 genericdict genericdict
-                        pdict 2 $genericdict
-	    }
+                pdict 2 $genericdict
+            }
             vuconf {
                 foreach i { "Virtual Users" "User Delay(ms)" "Repeat Delay(ms)" "Iterations" "Show Output" "Log Output" "Unique Log Name" "No Log Buffer" "Log Timestamps" } j { virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps } {
                     puts "$i = [ set $j ]"
@@ -912,12 +932,12 @@ proc vudestroy {} {
                     unset -nocomplain AVUC
                     unset -nocomplain vustatus
                 } 
-                if { $x eq 20 } { 
-                    set checkstop 1 
+                if { $x eq 20 } {
+                    set checkstop 1
                     putscli "Virtual Users remain running in background or shutting down, retry"
                 }
             }
-        }	
+        }
     } else {
         if { $opmode eq "Replica" } {
             #In Primary Replica Mode ed_kill_vusers may have already been called from Primary so thread::names is 1
@@ -934,7 +954,7 @@ proc vustatus {} {
     global vustatus
     if { ![info exists vustatus] } {
         puts "No Virtual Users found"
-    } else { 
+    } else {
         if { [ catch {[ set vuoput [ pdict 1 $vustatus ] ]}] } {
             puts "Error in finding VU status"
         } else {
@@ -948,8 +968,8 @@ proc vucomplete {} {
     if { ![info exists AVUC] } {
         return false
     } else {
-        if { $AVUC eq "complete" } { 
-            return true 
+        if { $AVUC eq "complete" } {
+            return true
         } else {
             return false
         }
@@ -958,7 +978,7 @@ proc vucomplete {} {
 proc loadscript {} {
     global bm _ED opmode
     if { $bm eq "TPC-H" } { loadtpch } else { loadtpcc }
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         putscli "Script loaded, Type \"print script\" to view"
     } else {
         putscli "Error:script failed to load"
@@ -980,7 +1000,7 @@ proc loadscript {} {
 proc clearscript {} {
     global bm _ED opmode
     set _ED(package) ""
-    if { [ string length $_ED(package) ] eq 0 } { 
+    if { [ string length $_ED(package) ] eq 0 } {
         putscli "Script cleared"
     } else {
         putscli "Error:script failed to clear"
@@ -1034,55 +1054,55 @@ return
 }
 
 proc savescript { savefile } {
-	global _ED
-	 if { [ string length $_ED(package) ] eq 0 } {
-		putscli "Error: No script loaded to save, use loadscript to load"
-		return
-	 }
-	if { [ file extension $savefile ] != ".tcl" } {
-		#extension is not tcl
-	if { [ file extension $savefile ] eq "" } {
-		#There is no extension add one
-		set savefile [ concat $savefile.tcl ]
-	} else {
-		#There is an extension but its not tcl, change it
-		set savefile "[ file rootname $savefile ].tcl"
-	}
-	}
-		#filename has .tcl extension
-	if { [ file dirname $savefile ] eq "." } {
-		#only filename given save to temp
-		set save_directory [ findtempdir ] 
-		set savefile [ file join $save_directory $savefile ]
-	} else {
-		#directory given, check its writable
-		set directory [ file dirname $savefile ]
-		if { [ file writable $directory ] } {
-		#directory is writable, save file
-		} else {
-		#directory given is not writable, show error
-		putscli "Error: directory $directory not writable to write $savefile for savescript"
-		return
-		}
-	}
-		#filename now in a writable format
-                if { [ catch {set fd [open $savefile w]} message ] } {
-		putscli "Error: Failed to open $savefile for writing"
-		return
-		} else {
-                if { [ catch {puts $fd $_ED(package)} message ] } {
-		putscli "Error: Failed to write to $savefile"
-		} else {
-		putscli "Success ... wrote script to $savefile"
-		catch {close $fd} 
-		return
-		}
-	}
+    global _ED
+    if { [ string length $_ED(package) ] eq 0 } {
+        putscli "Error: No script loaded to save, use loadscript to load"
+        return
+    }
+    if { [ file extension $savefile ] != ".tcl" } {
+        #extension is not tcl
+        if { [ file extension $savefile ] eq "" } {
+            #There is no extension add one
+            set savefile [ concat $savefile.tcl ]
+        } else {
+            #There is an extension but its not tcl, change it
+            set savefile "[ file rootname $savefile ].tcl"
+        }
+    }
+    #filename has .tcl extension
+    if { [ file dirname $savefile ] eq "." } {
+        #only filename given save to temp
+        set save_directory [ findtempdir ]
+        set savefile [ file join $save_directory $savefile ]
+    } else {
+        #directory given, check its writable
+        set directory [ file dirname $savefile ]
+        if { [ file writable $directory ] } {
+            #directory is writable, save file
+        } else {
+            #directory given is not writable, show error
+            putscli "Error: directory $directory not writable to write $savefile for savescript"
+            return
+        }
+    }
+    #filename now in a writable format
+    if { [ catch {set fd [open $savefile w]} message ] } {
+        putscli "Error: Failed to open $savefile for writing"
+        return
+    } else {
+        if { [ catch {puts $fd $_ED(package)} message ] } {
+            putscli "Error: Failed to write to $savefile"
+        } else {
+            putscli "Success ... wrote script to $savefile"
+        catch {close $fd}
+            return
+        }
+    }
 }
 
 proc distributescript {} {
     global opmode masterlist
-    if { $opmode != "Primary" } { 
+    if { $opmode != "Primary" } {
         puts "Error: Cannot distribute script if not in Primary mode"
     } else {
         if { [ llength $masterlist ] eq 0 } {
@@ -1110,7 +1130,7 @@ proc build_schema {} {
             break
         }
     }
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         #yes was pressed
         run_virtual
     } else {
@@ -1207,7 +1227,7 @@ proc buildschema {} {
      if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Schema Build jobid=$jobid"
     } else {
-	unset -nocomplain jobid
+        unset -nocomplain jobid
         return "Schema Build (No jobid)"
     }
 }
@@ -1222,7 +1242,7 @@ proc keepalive {} {
     upvar #0 genericdict genericdict
     if {[dict exists $genericdict commandline keepalive_margin]} {
       set ka_margin [ dict get $genericdict commandline keepalive_margin]
-      if {![string is entier $ka_margin]} { 
+      if {![string is entier $ka_margin]} {
         set ka_margin 10 
       }
     } else {
@@ -1270,7 +1290,7 @@ proc check_schema {} {
             break
         }
     }
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         #yes was pressed
         run_virtual
     } else {
@@ -1308,11 +1328,11 @@ proc checkschema {} {
     }
     #Add automated waittocomplete to deleteschema
     _waittocomplete
-	if { [ info exists jobid ] && ![ job_disable_check ] } {
+    if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Schema Check jobid=$jobid"
     } else {
-	unset -nocomplain jobid
-	return "Schema Check (No jobid)"
+        unset -nocomplain jobid
+        return "Schema Check (No jobid)"
     }
 }
 
@@ -1333,7 +1353,7 @@ proc delete_schema {} {
             break
         }
     }
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         #yes was pressed
         run_virtual
     } else {
@@ -1371,20 +1391,20 @@ proc deleteschema {} {
     }
     #Add automated waittocomplete to deleteschema
     _waittocomplete
-	if { [ info exists jobid ] && ![ job_disable_check ] } {
+    if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Schema Delete jobid=$jobid"
     } else {
-	unset -nocomplain jobid
-	return "Schema Delete (No jobid)"
+        unset -nocomplain jobid
+        return "Schema Delete (No jobid)"
     }
 }
 
 proc vurun {} {
-global threadscreated
-if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
+    global threadscreated
+    if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
         putscli "Error: Cannot call vurun with Virtual Users already active"
-	return
-	}
+        return
+    }
     global _ED opmode jobid
 
     set jobid [guid]
@@ -1392,13 +1412,13 @@ if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tc
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
-    
+
     #If calling vurun and virtual users not created, create them now
     if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
         vucreate
     }
     #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         remote_command [ concat vurun ]
         if { [ catch {run_virtual} message ] } {
             putscli "Error: $message"
@@ -1414,7 +1434,7 @@ if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tc
      if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Benchmark Run jobid=$jobid"
     } else {
-	unset -nocomplain jobid
+        unset -nocomplain jobid
         return "Benchmark Run (No jobid)"
     }
 }
@@ -1439,7 +1459,7 @@ proc datagenrun {} {
     if { [ catch {run_datagen} message ] } {
         puts "Error: $message"
     }
-    if { [ string length $_ED(package) ] > 0 } { 
+    if { [ string length $_ED(package) ] > 0 } {
         #yes was pressed
         run_virtual
     } else {
@@ -1470,13 +1490,13 @@ proc dgset { args } {
             vu {
                 set gen_num_vu $val
                 if { $bm eq "TPC-C" } {
-                    if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 100000 } { 
-                        tk_messageBox -message "The number of warehouses must be a positive integer less than or equal to 100000" 
+                    if { ![string is integer -strict $gen_count_ware] || $gen_count_ware < 1 || $gen_count_ware > 100000 } {
+                        tk_messageBox -message "The number of warehouses must be a positive integer less than or equal to 100000"
                         #puts -nonewline "setting to value: "
                         set gen_num_vu 1
                         set virtual_users 1
                         return
-                    } 
+                    }
                     if { $gen_num_vu > $gen_count_ware } {
                         puts "Error:Build virtual users must be less than or equal to number of warehouses"
                         puts "You have $gen_num_vu virtual users building $gen_count_ware warehouses"
@@ -1614,7 +1634,7 @@ proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} ar
     if {  [ info exists id ] } { ; } else { set id 0 }
     if {  [ info exists masterlist ] } { ; } else { set masterlist "" }
     set oldmode $opmode
-    set modestring [ string tolower $assignmode ] 
+    set modestring [ string tolower $assignmode ]
     switch $modestring {
         "current" {
             puts "Mode currently set to $opmode"
@@ -1635,8 +1655,8 @@ proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} ar
             puts "Error:Mode to switch to must be one of Local, Primary or Replica"
             return
         }
-    }	
-    if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else { 
+    }
+    if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else {
     if {[ tk_messageBox -icon question -title "Confirm Mode" -message "Switch from $oldmode\nto $opmode mode?" -type yesno ] == yes} { set opmode [ switch_mode $opmode $hostname $id $masterlist ] }  else { set opmode $oldmode } }
     return
 }
@@ -1658,15 +1678,15 @@ proc _waittocomplete {} {
     upvar timevar timevar
         upvar wcomplete wcomplete
         set wcomplete [vucomplete]
-        if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else { 
-	set timevar 1
+        if {!$wcomplete} { catch {after 5000 wait_to_complete_loop} } else {
+            set timevar 1
         }
     }
     set wcomplete "false"
     wait_to_complete_loop
-    if {![ info exists timevar ] || $timevar != 1 } { 
-    	vwait timevar
-    	}
+    if {![ info exists timevar ] || $timevar != 1 } {
+        vwait timevar
+    }
     return
 }
 
@@ -1698,9 +1718,9 @@ proc _runtimer { seconds } {
     set elapsed 0
     set timevar 0
     runtimer_loop $seconds
-    if {![ info exists timevar ] || $timevar != 1 } { 
-    	vwait timevar
-    	}
+    if {![ info exists timevar ] || $timevar != 1 } {
+        vwait timevar
+    }
     return
 }
 
@@ -1711,7 +1731,7 @@ proc tcstart {} {
         set idx [ lsearch $tclist $tc_threadID ]
         if { $idx != -1 } {
             tk_messageBox -icon warning -message "Transaction Counter thread already running with threadid:$tc_threadID"
-            return 
+            return
         } else {
             tk_messageBox -icon warning -message "Transaction Counter thread already running"
             return
@@ -1729,7 +1749,7 @@ proc tcstatus {} {
         set idx [ lsearch $tclist $tc_threadID ]
         if { $idx != -1 } {
             tk_messageBox -icon warning -message "Transaction Counter thread running with threadid:$tc_threadID"
-            return 
+            return
         } else {
             tk_messageBox -icon warning -message "Transaction Counter thread running"
             return
@@ -1746,10 +1766,10 @@ proc tcstop {} {
         set idx [ lsearch $tclist $tc_threadID ]
         if { $idx != -1 } {
             tk_messageBox -icon warning -message "Transaction Counter thread running with threadid:$tc_threadID"
-            ed_kill_transcount 
+            ed_kill_transcount
         } else {
             tk_messageBox -icon warning -message "Transaction Counter thread running"
-            ed_kill_transcount 
+            ed_kill_transcount
         }
     } else {
         putscli "Transaction Counter is not running"
@@ -1774,9 +1794,9 @@ proc tcset {args} {
             if { $idx != -1 } {
                 tk_messageBox -icon warning -message "Stop Transaction Counter before setting configuration"
                 return
-        }} 
+        }}
         switch  $option {
-            refreshrate { 
+            refreshrate {
                 set refreshrate $val
                 if { ![string is integer -strict $refreshrate] } {
                     tk_messageBox -message "Refresh rate must be an integer more than 0 secs and less than 60 secs"
@@ -1784,7 +1804,7 @@ proc tcset {args} {
                     set refreshrate 10
                 } else {
                     if { ($refreshrate >= 60) || ($refreshrate <= 0)  } { tk_messageBox -message "Refresh rate must be more than 0 secs and less than 60 secs"
-                        set refreshrate 10 
+                        set refreshrate 10
                     }
                 }
                 if { [catch {dict set genericdict transaction_counter tc_refresh_rate $refreshrate}] } {
@@ -1793,7 +1813,7 @@ proc tcset {args} {
                     putscli "Transaction Counter refresh rate set to $refreshrate"
                 }
             }
-            logtotemp { 
+            logtotemp {
                 set logtotemp $val
                 if { ![string is integer -strict $logtotemp ] } {
                     tk_messageBox -message "Log Output must be 0 or 1"
@@ -1811,7 +1831,7 @@ proc tcset {args} {
                     putscli "Transaction Counter log to temp set to $logtotemp"
                 }
             }
-            unique { 
+            unique {
                 set unique_log_name $val
                 if { ![string is integer -strict $unique_log_name] } {
                     tk_messageBox -message "Unique Log Name must be 0 or 1"
@@ -1829,7 +1849,7 @@ proc tcset {args} {
                     putscli "Transaction Counter unique log name set to $unique_log_name"
                 }
             }
-            timestamps { 
+            timestamps {
                 set log_timestamps $val
                 if { ![string is integer -strict $log_timestamps] } {
                     tk_messageBox -message "Log timestamps must be 0 or 1"
@@ -1875,58 +1895,58 @@ proc strip_html { htmlText } {
 }
 
 proc wsport { args } {
-	global ws_port
-    	if { ![info exists ws_port ] } {
-    	set ws_port [ get_ws_port ]
-	} else {
+    global ws_port
+    if { ![info exists ws_port ] } {
+        set ws_port [ get_ws_port ]
+    } else {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
-	switch [ llength $args ] {
-	0 {
-        putscli "Web Service Port set to $ws_port"
-	}
-	1 {
-	set tmp_port $args
-        if { ![string is integer -strict $tmp_port ] } {
-        putscli "Error: Web Service port should be an integer"
-        } else {
-	set ws_port $tmp_port
-        putscli "Setting Web Service port to $ws_port"
-   	dict set genericdict "webservice" "ws_port" $ws_port
-        Dict2SQLite "generic" $genericdict
-	}
-	}
-	default {
-        putscli "Error :wsport accepts none or one integer argument"
-	} 
-	}
+    }
+    switch [ llength $args ] {
+        0 {
+            putscli "Web Service Port set to $ws_port"
+        }
+        1 {
+            set tmp_port $args
+            if { ![string is integer -strict $tmp_port ] } {
+                putscli "Error: Web Service port should be an integer"
+            } else {
+                set ws_port $tmp_port
+                putscli "Setting Web Service port to $ws_port"
+                dict set genericdict "webservice" "ws_port" $ws_port
+                Dict2SQLite "generic" $genericdict
+            }
+        }
+        default {
+            putscli "Error :wsport accepts none or one integer argument"
+        }
+    }
 }
 
 proc wsstart {} {
     global ws_port
     if { ![info exists ws_port ] } {
-    	set ws_port [ get_ws_port ]
-	} else {
+        set ws_port [ get_ws_port ]
+    } else {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
-	exec [ auto_execok ./hammerdbws ] &
-	after 100
+    }
+    exec [ auto_execok ./hammerdbws ] &
+    after 100
 }
 
 proc wsstop {} {
     global ws_port
     if { ![info exists ws_port ] } {
-    	set ws_port [ get_ws_port ]
-	} else {
+        set ws_port [ get_ws_port ]
+    } else {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
+    }
     if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
-	putscli "Web Service not running: $message"
+        putscli "Web Service not running: $message"
     } else {
-	putscli "Stopping HammerDB Web Service on port $ws_port"
+        putscli "Stopping HammerDB Web Service on port $ws_port"
     }
     if { [ info exists tok ] } { http::cleanup $tok }
 }
@@ -1934,20 +1954,20 @@ proc wsstop {} {
 proc wsstatus {} {
     global ws_port
     if { ![info exists ws_port ] } {
-    	set ws_port [ get_ws_port ]
-	} else {
+        set ws_port [ get_ws_port ]
+    } else {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
+    }
     if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
-	putscli "Web Service not running: $message"
+        putscli "Web Service not running: $message"
     } else {
-	set wsenv [ strip_html [ http::data $tok ]]
-	if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
-	putscli "Web Service running: $wsenv"
-	} else {
-	putscli "Web Service output error: $wsenv"
-	}
+        set wsenv [ strip_html [ http::data $tok ]]
+        if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
+            putscli "Web Service running: $wsenv"
+        } else {
+            putscli "Web Service output error: $wsenv"
+        }
     }
     if { [ info exists tok ] } { http::cleanup $tok }
 }

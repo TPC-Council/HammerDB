@@ -154,28 +154,28 @@ proc ed_start_gui { dbdict icons iconalt } {
 
 
     set Name $Parent.statusbar.l17
-    ttk::label $Name -text "0.0" 
-    pack $Name -anchor nw -side right -expand 0  -fill x 
+    ttk::label $Name -text "0.0"
+    pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.statusbar.l16
-    ttk::label $Name -text "   Row.Col: " 
-    pack $Name -anchor nw -side right -expand 0  -fill x    
+    ttk::label $Name -text "   Row.Col: "
+    pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.statusbar.l15
     ttk::label $Name -text "  Mode: $opmode"
-    pack $Name -anchor nw -side right -expand 0  -fill x 
+    pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.statusbar.l14
     ttk::label $Name -text "  File: $_ED(packagekeyname)"
-    pack $Name -anchor nw -side right -expand 0  -fill x 
+    pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.buttons
-    ttk::frame $Name 
+    ttk::frame $Name
     pack $Name -anchor nw -side top -expand 0 -fill x -ipadx 0 -ipady 0  \
-         -padx 0 -pady 0 
+         -padx 0 -pady 0
 
     set Name $Parent.editbuttons
-    ttk::frame $Name 
+    ttk::frame $Name
 
     construct_button $Parent.editbuttons.console edit ctext console.gif "convert_to_oratcl" "Convert Trace to Oratcl" 
     construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Primary Distribution" 
@@ -207,9 +207,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.results bar results results.ppm "run_job_browser" "Browse Jobs Data" 
     upvar #0 genericdict genericdict
     if {[dict exists $genericdict commandline jobs_disable ]} {
-    if { [ dict get $genericdict commandline jobs_disable ] eq 1 } {
-    .ed_mainFrame.buttons.results configure -state disabled
-    	} 
+        if { [ dict get $genericdict commandline jobs_disable ] eq 1 } {
+            .ed_mainFrame.buttons.results configure -state disabled
+        }
     }
     #bindtags to call to prevent highlighting of buttons when status changed
     bind BreakTag <Enter> {break}
@@ -306,7 +306,7 @@ proc ed_start_gui { dbdict icons iconalt } {
         }
     }
     # Turn a tab into a toplevel (must be a tk::frame)
-    proc Detach {notebook index} { 
+    proc Detach {notebook index} {
         global tabix tabiy
         set tabindex [lindex [$notebook tabs] $index]
         set tabname [ lindex [ split [ $notebook select ] "." ] end ]
@@ -319,7 +319,7 @@ proc ed_start_gui { dbdict icons iconalt } {
                 wm title $tabindex $title
                 wm geometry $tabindex ${tabix}x${tabiy}+30+30
                 wm minsize $tabindex $tabix $tabiy
-		#Allow dragged out transaction counter to be resized
+                #Allow dragged out transaction counter to be resized
                 wm resizable $tabindex true true
                 wm protocol $tabindex WM_DELETE_WINDOW \
         [namespace code [list Attach $notebook $tabindex $index]]
@@ -343,7 +343,7 @@ proc ed_start_gui { dbdict icons iconalt } {
             set dfx 4x
         }
         set windock [ dict get $icons windock-$dfx ]
-        image create photo ::img::dock -data $windock 
+        image create photo ::img::dock -data $windock
         set winundock [ dict get $icons winundock-$dfx ]
         image create photo ::img::undock -data $winundock
         set tabcount [ llength [ $notebook tabs ] ]
@@ -379,7 +379,7 @@ proc ed_start_gui { dbdict icons iconalt } {
                      {active !disabled} ::img::undock] -compound right
     $Name add [ tk::frame $Parent.ap ] -text "Autopilot" -state disabled
     ttk::notebook::enableTraversal $Name
-    set pminunit [ expr {$mainy / 10} ] 
+    set pminunit [ expr {$mainy / 10} ]
     $Parent.panedwin.subpanedwin add $Name -minsize [ expr $pminunit * 4.60 ] -stretch always
     $Parent.panedwin add $Parent.panedwin.subpanedwin -minsize [ expr $pminunit * 4.60 ]
 
@@ -391,15 +391,15 @@ proc ed_start_gui { dbdict icons iconalt } {
     tkcon show
 
     set Name $Parent.buttons.statl15
-    ttk::label $Name -text " " 
-    pack $Name -anchor nw -side left -expand 0  -fill x 
+    ttk::label $Name -text " "
+    pack $Name -anchor nw -side left -expand 0  -fill x
 
     set Name $Parent.buttons.statl15a
-    ttk::label $Name -text "  " 
+    ttk::label $Name -text "  "
     pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.buttons.statusframe
-    frame $Name  -background [ dict get $icons defaultBackground ] -borderwidth 0 -relief flat 
+    frame $Name  -background [ dict get $icons defaultBackground ] -borderwidth 0 -relief flat
     pack $Name -anchor nw -side right -expand 0  -fill x
 
     set Name $Parent.buttons.statusframe.currentstatus
@@ -420,8 +420,8 @@ proc populate_tree {rdbms bm icons iconalt} {
     set Name .ed_mainFrame.treeframe.treeview
     global selected lastselected treeidicons
     set lastselected [ .ed_mainFrame.treeframe.treeview selection ]
-    bind .ed_mainFrame.treeframe.treeview <<TreeviewSelect>> { 
-        set selected [ .ed_mainFrame.treeframe.treeview selection ] 
+    bind .ed_mainFrame.treeframe.treeview <<TreeviewSelect>> {
+        set selected [ .ed_mainFrame.treeframe.treeview selection ]
         if { [ dict exists $treeidicons $lastselected ] } {
             set unhighlighticon [ dict get $treeidicons $lastselected ]
             .ed_mainFrame.treeframe.treeview item $lastselected -image [ create_image $unhighlighticon icons ]
@@ -548,12 +548,12 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name item $rdbms.$bm.datagen -tags {dghlp}
     tooltip::tooltip $Name -item $rdbms.$bm.datagen "Configure and Run Data Generation for Upload"
     $Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.options -text "Options" -image [ create_image option icons ]
-    dict set treeidicons $rdbms.$bm.datagen.options option 
+    dict set treeidicons $rdbms.$bm.datagen.options option
     $Name item $rdbms.$bm.datagen.options -tags dgopt
     tooltip::tooltip $Name -item $rdbms.$bm.datagen.options "Data Generation Options"
     $Name tag bind dgopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { dgopts } }
     $Name insert $rdbms.$bm.datagen end -id $rdbms.$bm.datagen.start -text "Generate" -image [ create_image datagen icons ]
-    dict set treeidicons $rdbms.$bm.datagen.start datagen 
+    dict set treeidicons $rdbms.$bm.datagen.start datagen
     $Name item $rdbms.$bm.datagen.start -tags dgstart
     tooltip::tooltip $Name -item $rdbms.$bm.datagen.start "Start Data Generation"
     $Name tag bind dgstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.datagen invoke } }
@@ -562,12 +562,12 @@ proc populate_tree {rdbms bm icons iconalt} {
     $Name item $rdbms.$bm.jobs -tags {jobhlp}
     tooltip::tooltip $Name -item $rdbms.$bm.jobs "Configure and Browse Job Output and Results"
     $Name insert $rdbms.$bm.jobs end -id $rdbms.$bm.jobs.options -text "Options" -image [ create_image option icons ]
-    dict set treeidicons $rdbms.$bm.jobs.options option 
+    dict set treeidicons $rdbms.$bm.jobs.options option
     $Name item $rdbms.$bm.jobs.options -tags jobopt
     tooltip::tooltip $Name -item $rdbms.$bm.jobs.options "Job Options"
     $Name tag bind jobopt <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { job_options } }
     $Name insert $rdbms.$bm.jobs end -id $rdbms.$bm.jobs.start -text "Browse" -image [ create_image results icons ]
-    dict set treeidicons $rdbms.$bm.jobs.start results 
+    dict set treeidicons $rdbms.$bm.jobs.start results
     $Name item $rdbms.$bm.jobs.start -tags jobstart
     tooltip::tooltip $Name -item $rdbms.$bm.jobs.start "Start Job Browser"
     $Name tag bind jobstart <Double-ButtonPress-1> { if { ![ string match [ .ed_mainFrame.treeframe.treeview state ] "disabled focus hover" ] } { .ed_mainFrame.buttons.results invoke } }
@@ -587,7 +587,7 @@ proc ed_stop_gui {} {
 
 proc construct_menu {Name label cmd_list} {
     upvar #0 icons icons
-    global _ED 
+    global _ED
 
     ttk::menubutton $Name -text $label  -underline 0 -width [ string length $label ]
     incr _ED(menuCount);
@@ -622,20 +622,20 @@ proc add_items_to_menu {menubutton cmdList} {
             }
             "radio" {
                 set doit "$menubutton add radio -label {[lindex $cmd 1]} \
-	     -variable [lindex $cmd 2] -value on"
+                    -variable [lindex $cmd 2] -value on"
                 eval $doit
             }
             "command"  {
                 set doit "$menubutton add [lindex $cmd 0] -background [ dict get $icons defaultBackground ] -label {[lindex $cmd 1]} \
-	     [lindex $cmd 2]"
+                    [lindex $cmd 2]"
                 eval $doit
             }
             "cascade"  {
                 incr _ED(menuCount);
                 set newmenu $menubutton.m$_ED(menuCount)
                 set doit "$menubutton add cascade -label {[lindex $cmd 1]} \
-	   -menu $newmenu"
-                eval $doit 
+                    -menu $newmenu"
+                eval $doit
                 menu $newmenu
                 $newmenu configure -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
                 add_items_to_menu $newmenu [lindex $cmd 2]
@@ -649,7 +649,7 @@ proc disable_tree { } {
     #In v4.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
     #This version entirely deletes all tree nodes and rebuilds the tree just to remove the trailing column header
     #This is not the best way to select a new database from a treeview but works around the trailing header
-    global rdbms bm treebuild pop_treel 
+    global rdbms bm treebuild pop_treel
     upvar #0 icons icons
     upvar #0 iconalt iconalt
     set Name .ed_mainFrame.treeframe.treeview
@@ -749,7 +749,7 @@ proc disable_bm_menu {} {
         .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state disabled
     }
     #Oracle has the option to convert trace files
-    if {$rdbms == "Oracle"} { 
+    if {$rdbms == "Oracle"} {
         .ed_mainFrame.editbuttons.console configure -state normal 
     } else {
         .ed_mainFrame.editbuttons.console configure -state disabled
@@ -803,8 +803,8 @@ proc construct_button_svg {Name button_type iconname file cmd helpmsg} {
     #edit buttons are packed along the left hand side visible when the menu button is pressed
     #all buttons are bound to show an alternative icon when entered and original when left
     global tcl_version ctext win_scale_fact
-    upvar #0 iconssvg iconssvg 
-    upvar #0 iconaltsvg iconaltsvg 
+    upvar #0 iconssvg iconssvg
+    upvar #0 iconaltsvg iconaltsvg
     set buttonscale [ expr {round(16 / 1.333333 * $win_scale_fact)} ]
     set im [image create photo -data [ dict get $iconssvg $iconname ] -format "svg -scaletoheight $buttonscale"]
     button $Name -image $im -command "$cmd" -highlightthickness 0 -borderwidth 0 -width [ expr {round($buttonscale * 2)} ] -background [ dict get $iconssvg defaultBackground ] -activebackground [ dict get $iconssvg defaultBackground ]
@@ -862,7 +862,7 @@ proc ed_file_load {} {
 }
 
 proc ed_file_save {} {
-    global _ED 
+    global _ED
     ed_wait_if_blocked
     set _ED(blockflag) 1
     set _ED(package) "[.ed_mainFrame.mainwin.textFrame.left.text get 1.0 end]"
@@ -894,7 +894,7 @@ proc ed_file_save {} {
 }
 
 proc ed_loadsave {loadflag} {
-    global ed_loadsave _ED 
+    global ed_loadsave _ED
     if {![info exists ed_loadsave(pwd)]} {
         set ed_loadsave(pwd) [pwd]
         set ed_loadsave(filter) "*.tcl"
@@ -914,13 +914,13 @@ proc ed_loadsave {loadflag} {
     }
 
     wm geometry .ed_loadsave +[expr  \
-	([winfo screenwidth .]/2) - 173]+[expr ([winfo screenheight .]/2) - 148]
+        ([winfo screenwidth .]/2) - 173]+[expr ([winfo screenheight .]/2) - 148]
 
     set Parent .ed_loadsave
 
     set Name $Parent.dir
-    ttk::frame $Name 
-    pack $Name -anchor nw -side top 
+    ttk::frame $Name
+    pack $Name -anchor nw -side top
 
     set Name $Parent.dir.e3
     ttk::entry $Name -width 35 -textvariable ed_loadsave(pwd)
@@ -993,7 +993,7 @@ proc ed_loadsave {loadflag} {
     bind $Name <Any-Motion> {ed_loadsaveselbegin %W %y}
     bind $Name <Any-Double-ButtonPress> {ed_loadsaveselbegin %W %y}
     bind $Name <Any-Double-ButtonRelease> {set _ED(packagekeyname) \
-			$seld_file; ed_loadsaveselend %W %y}
+                $seld_file; ed_loadsaveselend %W %y}
     bind $Name <Any-Triple-ButtonPress> {break}
     bind $Name <Any-Triple-ButtonRelease> {break}
     bind $Name <Return> {ed_loadsaveselend %W %y}
@@ -1025,7 +1025,7 @@ proc ed_loadsave {loadflag} {
     set Name $Parent.buttons.ok
     ttk::button $Name  -text OK \
          -command {set _ED(packagekeyname) [.ed_loadsave.file.e11 get]; if \
-		{[ed_loadsavevalentry]} {set ed_loadsave(done) 1}}
+         {[ed_loadsavevalentry]} {set ed_loadsave(done) 1}}
     pack $Name -side right -anchor nw -padx 3 -pady 3
 
     ed_loadsavegetentries
@@ -1056,7 +1056,7 @@ proc ed_loadsaveselend {win ypos} {
     if {-1 == [string last "/" $fil]} {
         set ed_loadsave(file) $fil
         set ed_loadsave(path) \
-	[ concat $ed_loadsave(pwd)\/$ed_loadsave(file) ]
+             [ concat $ed_loadsave(pwd)\/$ed_loadsave(file) ]
         set ed_loadsave(done) 1
         cd [file dirname $ed_loadsave(path) ]
         return ""
@@ -1085,11 +1085,11 @@ proc ed_loadsavegetentries {} {
 
     if {$ed_loadsave(filter) == ""} {set ed_loadsave(filter) "*"}
     set files [lsort $sort_mode "[glob -nocomplain $ed_loadsave(pwd)/.*]  \
-		[glob -nocomplain $ed_loadsave(pwd)/*]"]
+         [glob -nocomplain $ed_loadsave(pwd)/*]"]
     .ed_loadsave.list.lb1 delete 0 end
     if {$e} {
         .ed_loadsave configure -cursor {}
-        update 
+        update
         return
     }
     set d "./ ../"
@@ -1237,9 +1237,9 @@ proc ed_edit_searchf {} {
     grid $Name -column 1 -row 1
     global Procs
     set Procs($Name) { {bind .ed_edit_searchf.f1.e2 <BackSpace>} \
-			{bind .ed_edit_searchf.f1.e2 <Delete>} \
-			{bind .ed_edit_searchf.f1.e2 <Return>} \
-			{bind .ed_ediy_searchf.f1.e2 <Enter>}}
+                       {bind .ed_edit_searchf.f1.e2 <Delete>} \
+                       {bind .ed_edit_searchf.f1.e2 <Return>} \
+                       {bind .ed_ediy_searchf.f1.e2 <Enter>}}
     bind .ed_edit_searchf.f1.e2 <BackSpace> {tkEntryBackspace %W}
     bind .ed_edit_searchf.f1.e2 <Delete> {
         if [%W selection present] {
@@ -1265,8 +1265,8 @@ proc ed_edit_searchf {} {
             set _ED(rplc_term) [.ed_edit_searchf.f1.e2 get]
             .ed_mainFrame.mainwin.textFrame.left.text insert $_ED(editcursor) $_ED(rplc_term)
             .ed_mainFrame.mainwin.textFrame.left.text  delete sel.first sel.last
-            raise .ed_edit_searchf	
-        } 
+            raise .ed_edit_searchf
+        }
     } -text {Replace}
     pack $Name -anchor nw -side right -padx 3 -pady 3
 
@@ -1277,8 +1277,8 @@ proc ed_edit_searchf {} {
         if {$_ED(srch_new) != $_ED(srch_old)} {set _ED(editcursor) 1.0}
         ed_edit_search .ed_mainFrame.mainwin.textFrame.left.text $_ED(srch_new)
         set _ED(srch_old) [.ed_edit_searchf.f1.e1 get]
-        focus .ed_mainFrame.mainwin.textFrame.left.text 
-        raise .ed_edit_searchf  
+        focus .ed_mainFrame.mainwin.textFrame.left.text
+        raise .ed_edit_searchf
     }  -text {Search}
     pack $Name -anchor nw -side right -padx 3 -pady 3
 
@@ -1289,9 +1289,9 @@ proc ed_edit_searchf {} {
     raise .ed_edit_searchf
     update
     wm minsize .ed_edit_searchf [winfo width .ed_edit_searchf] \
-		[winfo height .ed_edit_searchf]
+        [winfo height .ed_edit_searchf]
     wm maxsize .ed_edit_searchf [winfo width .ed_edit_searchf] \
-		[winfo height .ed_edit_searchf]
+        [winfo height .ed_edit_searchf]
 
 }
 
@@ -1319,7 +1319,7 @@ proc ed_edit_search {textwin srch_string} {
 proc ed_edit_clear {} {
     global _ED lprefix
     if {[ lindex [ split [ join [ stacktrace ] ] ] end ] eq "ed_edit_clear" } {
-        set lprefix "load"	
+        set lprefix "load"
     }
     ed_wait_if_blocked
     set _ED(blockflag) 1
@@ -1388,7 +1388,7 @@ proc setctexthighlight {w} {
     set colour(brackets) gray50
     set colour(comments) black
     set colour(strings) red
-    #Extract list of commands provided by each database for highlighting	 
+    #Extract list of commands provided by each database for highlighting
     dict for {database attributes} $dbdict {
         dict with attributes {
             lappend commandl $commands
@@ -1401,13 +1401,13 @@ proc setctexthighlight {w} {
     ctext::addHighlightClass $w cmds $colour(cmds) [join $commandl ]
     ctext::addHighlightClass $w functions $colour(functions) [ list abs acos asin atan atan2 bool ceil cos cosh double entier exp floor fmod hypot int isqrt log log10 max min pow rand round sin sinh sqrt srand tan tanh wide ]
     ctext::addHighlightClassForSpecialChars $w brackets $colour(brackets) {\{\}\[\]}
-    ctext::addHighlightClassForRegexp $w comments $colour(comments) {\#[^\n\r]*} 
-    ctext::addHighlightClassForRegexp $w strings $colour(strings) {"(\\"|[^"])*"} 
+    ctext::addHighlightClassForRegexp $w comments $colour(comments) {\#[^\n\r]*}
+    ctext::addHighlightClassForRegexp $w strings $colour(strings) {"(\\"|[^"])*"}
 }
 
 proc ed_edit {} {
     upvar #0 icons icons
-    global _ED 
+    global _ED
     global Menu_string
     global highlight
     global defaultBackground
@@ -1429,7 +1429,7 @@ proc ed_edit {} {
 
     set Name $Parent.textFrame.right.vertScrollbar
     ttk::scrollbar $Name -command "$Parent.textFrame.left.text xview" \
-         -orient horizontal 
+         -orient horizontal
     pack $Name -anchor center -expand 1 -fill x -ipadx 0 -ipady 0 -padx "0 16" \
          -pady 0 -side left
 
@@ -1439,21 +1439,21 @@ proc ed_edit {} {
          -padx 0 -pady 0 -side top
 
     set Name $Parent.textFrame.left.horizScrollbar
-    ttk::scrollbar $Name -command "$Parent.textFrame.left.text yview" 
+    ttk::scrollbar $Name -command "$Parent.textFrame.left.text yview"
     pack $Name -anchor center -expand 0 -fill y -ipadx 0 -ipady 0 \
          -padx 0 -pady 0 -side right
 
     set Name $Parent.textFrame.left.text
-    if { $ttk::currentTheme eq "black" } { 
-        set bwidth 0 
+    if { $ttk::currentTheme eq "black" } {
+        set bwidth 0
         set hbgrd LightGray
-    } else { 
-        set bwidth 2 
+    } else {
+        set bwidth 2
         set hbgrd [ dict get $icons defaultBackground ]
-    } 
+    }
     if { $highlight eq "true" } {
         ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
-	-highlight 1 \
+         -highlight 1 \
          -highlightbackground LightGray -insertbackground black \
          -selectbackground $hbgrd -selectforeground black \
          -wrap none \
@@ -1461,13 +1461,13 @@ proc ed_edit {} {
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
          -yscrollcommand "$Parent.textFrame.left.horizScrollbar set" \
          -linemap 1 \
-	 -linemapbg $defaultBackground \
-	 -linemap_markable 0
+         -linemapbg $defaultBackground \
+         -linemap_markable 0
         setctexthighlight $Name
         easyCtextCommenting $Name
     } else {
         ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
-	-highlight 0 \
+         -highlight 0 \
          -highlightbackground LightGray -insertbackground black \
          -selectbackground $hbgrd -selectforeground black \
          -wrap none \
@@ -1475,7 +1475,7 @@ proc ed_edit {} {
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
          -yscrollcommand "$Parent.textFrame.left.horizScrollbar set" \
          -linemap 0 \
-	 -linemap_markable 0
+         -linemap_markable 0
     }
     $Name fastinsert end { }
     pack $Name -anchor center -expand 1 -fill both -ipadx 0 -ipady 0 \
@@ -1502,7 +1502,7 @@ proc ed_edit {} {
     #
     #$Name config -image $im -command "ed_kill_apps"
     #bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-#		 "Stop running code"}   
+#		 "Stop running code"}
 #}
 
 proc create_image { iconname iconset } {
@@ -1546,7 +1546,7 @@ proc ed_stop_transcount {} {
     #bindtags command sets a break to prevent highlighting of button
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.pencil ]
     tooltip::tooltip .ed_mainFrame.buttons.pencil "Stop Transaction Counter"
-    bind .ed_mainFrame.buttons.pencil <Enter> {}   
+    bind .ed_mainFrame.buttons.pencil <Enter> {}
 }
 
 proc ed_transcount_button {} {
@@ -1554,7 +1554,7 @@ proc ed_transcount_button {} {
     set Name .ed_mainFrame.buttons.pencil
     #button is pressed so show highlight
     set im [ create_image pencil iconalt ]
-    $Name config -image $im -command "transcount" 
+    $Name config -image $im -command "transcount"
     #return bind order as before so highlights shown
     bindtags $Name [ list .ed_mainFrame.buttons.pencil Button .ed_mainFrame all ]
     tooltip::tooltip .ed_mainFrame.buttons.pencil "Start Transaction Counter"
@@ -1614,14 +1614,14 @@ proc ed_stop_vuser {} {
     #bindtags command sets a break to prevent highlighting of button
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.lvuser ]
     tooltip::tooltip .ed_mainFrame.buttons.lvuser "Destroy Virtual Users"
-    bind .ed_mainFrame.buttons.lvuser <Enter> {}   
+    bind .ed_mainFrame.buttons.lvuser <Enter> {}
     set Name .ed_mainFrame.buttons.runworld
     set im [ create_image rungreen icons ]
     $Name config -image $im -command "remote_command vurun; vurun" 
     #bindtags command sets a break to prevent highlighting of button
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.runworld ]
     tooltip::tooltip .ed_mainFrame.buttons.runworld "Run Virtual Users"
-    bind .ed_mainFrame.buttons.runworld <Enter> {}   
+    bind .ed_mainFrame.buttons.runworld <Enter> {}
 }
 
 proc ed_lvuser_button {} {
@@ -1658,11 +1658,11 @@ proc ed_stop_autopilot {} {
     global _ED tcl_version
     set Name .ed_mainFrame.buttons.autopilot
     set im [ create_image stop icons ]
-    $Name config -image $im -command "ed_kill_autopilot" 
+    $Name config -image $im -command "ed_kill_autopilot"
     #bindtags command sets a break to prevent highlighting of button
     bindtags $Name [ list Button .ed_mainFrame all BreakTag2 .ed_mainFrame.buttons.autopilot ]
     tooltip::tooltip .ed_mainFrame.buttons.autopilot "Stop Autopilot"
-    bind .ed_mainFrame.buttons.autopilot <Enter> {}   
+    bind .ed_mainFrame.buttons.autopilot <Enter> {}
 }
 
 proc vurun {} {
@@ -1673,7 +1673,7 @@ proc vurun {} {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
-    
+
     #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
     if { [ string length $_ED(package) ] > 0 } {
         if { [ catch {run_virtual} message ] } {
@@ -1717,9 +1717,9 @@ proc ed_run_package {} {
     if {"$_ED(package)" == ""} {
         ed_status_message -alert "No code currently in run buffer."
         update
-        set maxvuser $tmp_maxvuser 
-        set suppo $tmp_suppo 
-        set ntimes $tmp_ntimes 
+        set maxvuser $tmp_maxvuser
+        set suppo $tmp_suppo
+        set ntimes $tmp_ntimes
         .ed_mainFrame.editbuttons.test configure -state normal
         return
     }
@@ -1736,7 +1736,7 @@ proc ed_run_package {} {
 }
 
 proc ed_kill_apps {args} {
-    global _ED ed_mainf 
+    global _ED ed_mainf
     if {$_ED(runslave) == ""} {return}
     .ed_mainFrame configure -cursor watch
     ed_status_message -show "... closing down active GUI applications ..."
@@ -1755,19 +1755,20 @@ proc ed_kill_apps {args} {
 proc vuser_options {} {
     global _ED maxvuser virtual_users delayms conpause ntimes suppo optlog lvuser unique_log_name no_log_buffer log_timestamps threadscreated
     upvar #0 icons icons
-    if {  [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
-    if {  [ info exists maxvuser ] } { ; } else { set maxvuser $virtual_users }
-    if {  [ info exists delayms ] } { ; } else { set delayms 500 }
-    if {  [ info exists conpause ] } { ; } else { set conpause 500 }
-    if {  [ info exists ntimes ] } { ; } else { set ntimes 1 }
-    if {  [ info exists suppo ] } { ; } else { set suppo 0 }
-    if {  [ info exists optlog ] } { ; } else { set optlog 0 }
-    if {  [ info exists unique_log_name ] } { ; } else { set unique_log_name 0 }
-    if {  [ info exists no_log_buffer ] } { ; } else { set no_log_buffer 0 }
-    if {  [ info exists log_timestamps ] } { ; } else { set log_timestamps 0 }
+    upvar #0 genericdict genericdict
+    if { [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
+    if { [ info exists maxvuser ] } { ; } else { set maxvuser $virtual_users }
+    if { [ info exists delayms ] } { ; } else { set delayms 500 }
+    if { [ info exists conpause ] } { ; } else { set conpause 500 }
+    if { [ info exists ntimes ] } { ; } else { set ntimes 1 }
+    if { [ info exists suppo ] } { ; } else { set suppo 0 }
+    if { [ info exists optlog ] } { ; } else { set optlog 0 }
+    if { [ info exists unique_log_name ] } { ; } else { set unique_log_name 0 }
+    if { [ info exists no_log_buffer ] } { ; } else { set no_log_buffer 0 }
+    if { [ info exists log_timestamps ] } { ; } else { set log_timestamps 0 }
     #If window already exists then destroy
     catch "destroy .vuserop"
-    if { [ info exists threadscreated ] } { 
+    if { [ info exists threadscreated ] } {
         tk_messageBox -icon error -message "Virtual Users already created, destroy Virtual Users before changing Virtual User options"
         return
     }
@@ -1779,7 +1780,7 @@ proc vuser_options {} {
     set Parent .vuserop
 
     set Name $Parent.f1
-    ttk::frame $Name 
+    ttk::frame $Name
     pack $Name -anchor nw -fill x -side top -padx 5
 
     set Prompt $Parent.f1.h1
@@ -1821,10 +1822,10 @@ proc vuser_options {} {
     ttk::checkbutton $Name -text "Show Output" -variable suppo -onvalue 1 -offvalue 0
     grid $Name -column 1 -row 5 -sticky w
 
-    bind .vuserop.f1.e5 <Button> { 
+    bind .vuserop.f1.e5 <Button> {
         set opst [ .vuserop.f1.e5 cget -state ]
-        if {$suppo == 0} { 
-            .vuserop.f1.e6 configure -state active 
+        if {$suppo == 0} {
+            .vuserop.f1.e6 configure -state active
         } else {
             set optlog 0
             set unique_log_name 0
@@ -1843,10 +1844,10 @@ proc vuser_options {} {
     if {$suppo == 0} {
         $Name configure -state disabled
     }
-    bind .vuserop.f1.e6 <Button> { 
+    bind .vuserop.f1.e6 <Button> {
         set opst [ .vuserop.f1.e6 cget -state ]
-        if {$opst != "disabled" && $optlog == 0} { 
-            .vuserop.f1.e7 configure -state active 
+        if {$opst != "disabled" && $optlog == 0} {
+            .vuserop.f1.e7 configure -state active
             .vuserop.f1.e8 configure -state active
             .vuserop.f1.e9 configure -state active
         } else {
@@ -1897,13 +1898,13 @@ proc vuser_options {} {
          -command {
         # global rdbms bm
         set virtual_users [.vuserop.f1.e1 get]
-        if { ![string is integer -strict $virtual_users] } { 
-            tk_messageBox -message "The number of virtual users must be an integer" 
+        if { ![string is integer -strict $virtual_users] } {
+            tk_messageBox -message "The number of virtual users must be an integer"
             set virtual_users 1
-        } else { 
-            if { $virtual_users < 1 } { tk_messageBox -message "The number of virtual users must be 1 or greater" 
+        } else {
+            if { $virtual_users < 1 } { tk_messageBox -message "The number of virtual users must be 1 or greater"
                 set virtual_users 1
-            } 
+            }
 
             #Find if workload test or timed
             #upvar #0 dbdict dbdict
@@ -1929,31 +1930,34 @@ proc vuser_options {} {
             } else {
                 set maxvuser $virtual_users
             }
-        }	
+        }
         set delayms [.vuserop.f1.e2 get]
-        if { ![string is integer -strict $delayms] } { 
-            tk_messageBox -message "Delay between users logons must be an integer" 
+        if { ![string is integer -strict $delayms] } {
+            tk_messageBox -message "Delay between users logons must be an integer"
             set delayms 0
         }
-        if { $delayms < 0 } { tk_messageBox -message "Delay between users logons must be at least 0 milliseconds" 
+        if { $delayms < 0 } { tk_messageBox -message "Delay between users logons must be at least 0 milliseconds"
             set delayms 0
         }
         set conpause [.vuserop.f1.e3 get]
-        if { ![string is integer -strict $conpause] } { 
-            tk_messageBox -message "Delay between iterations must be an integer" 
+        if { ![string is integer -strict $conpause] } {
+            tk_messageBox -message "Delay between iterations must be an integer"
             set conpause 0
         }
-        if { $conpause < 0 } { tk_messageBox -message "Delay between iterations must be at least 0 milliseconds" 
+        if { $conpause < 0 } { tk_messageBox -message "Delay between iterations must be at least 0 milliseconds"
             set conpause 0
         }
-        set ntimes   [.vuserop.f1.e4 get]
-        if { ![string is integer -strict $ntimes] } { 
-            tk_messageBox -message "The number of iterations must be an integer" 
+        set ntimes [.vuserop.f1.e4 get]
+        if { ![string is integer -strict $ntimes] } {
+            tk_messageBox -message "The number of iterations must be an integer"
             set ntimes 1
         }
-        if { $ntimes < 1 } { tk_messageBox -message "The number of iterations must be 1 or greater" 
+        if { $ntimes < 1 } { tk_messageBox -message "The number of iterations must be 1 or greater"
             set ntimes 1
         }
+        #Save new values to SQLite
+	set genericdict [ dict replace $genericdict virtual_user_options [ subst { virtual_users $virtual_users user_delay $conpause repeat_delay $delayms iterations $ntimes show_output $suppo log_to_temp $optlog unique_log_name $unique_log_name no_log_buffer $no_log_buffer log_timestamps $log_timestamps }] ]
+        Dict2SQLite "generic" $genericdict
         remote_command [ concat vuser_slave_ops $maxvuser $virtual_users $delayms $conpause $ntimes $suppo $optlog ]
         destroy .vuserop
     } \
@@ -1970,7 +1974,7 @@ proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
 Copyright (C) 2003-2024
-Steve Shaw\n" 
+Steve Shaw\n"
 }
 
 proc license { } {
@@ -1984,7 +1988,7 @@ either version 3 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details."
 }
 
@@ -2013,7 +2017,7 @@ proc ed_status_message {option {message ""}} {
             }
             -help {
                 set _ED(status) "$message"
-            }      
+            }
             -perm {
                 set _ED(status) "$_ED(permstatus)"
             }
@@ -2021,7 +2025,7 @@ proc ed_status_message {option {message ""}} {
                 set _ED(status) "$message"
                 catch "$_ED(status_widget) configure -foreground \#D00000"
                 update
-                after 2000 
+                after 2000
                 catch "$_ED(status_widget) configure -foreground black"
                 if {$_ED(permstatus) != ""} {
                     set _ED(status) "$_ED(permstatus)"
@@ -2110,7 +2114,7 @@ proc choose_font { { choose_init "Arial 10"} } {
     catch {.choose_font.view insert 0.0 "[get_cur_font]"}
 
     grab $w
-    focus -force $w    
+    focus -force $w
     wm deiconify $w
     tkwait window $w
     grab release $w
@@ -2141,9 +2145,9 @@ proc window.font { {init_font "Arial 10"} } {
     combobox $w.cb_size  "lsort \[list 8 9 10 11 12 14 16 18 20 22 24 26 28 36 48 72\]" font_view_update dxf(choose_font_cb_size) 3
     bind $w.cb_size.e <Return> "font_view_update"
     ttk::checkbutton $w.c_bold -text "B" -onvalue bold -offvalue "" \
-    	-command "font_view_update" -variable dxf(choose_font_c_bold)   
+    	-command "font_view_update" -variable dxf(choose_font_c_bold)
     ttk::checkbutton $w.c_italic -text "I" -onvalue italic -offvalue "" \
-    	-command "font_view_update" -variable dxf(choose_font_c_italic)     
+    	-command "font_view_update" -variable dxf(choose_font_c_italic)
     ttk::checkbutton $w.c_underline -text "U" -onvalue underline -offvalue "" \
     	-command "font_view_update" -variable dxf(choose_font_c_underline)
 
@@ -2151,8 +2155,8 @@ proc window.font { {init_font "Arial 10"} } {
     text $w.view  -font "[get_cur_font]" -width 20 -height 1 -highlightthickness 0 -bd 0
 
     ttk::frame $w.f
-    ttk::button $w.f.cancel -text "Cancel" -command "set dxf(tmp) \"\"; destroy $w"	
-    ttk::button $w.f.ok -text "Ok" -command "set dxf(tmp) \"\[get_cur_font\]\"; destroy $w"	
+    ttk::button $w.f.cancel -text "Cancel" -command "set dxf(tmp) \"\"; destroy $w"
+    ttk::button $w.f.ok -text "Ok" -command "set dxf(tmp) \"\[get_cur_font\]\"; destroy $w"
     ttk::label $w.f.lab -text " "
 
     grid $w.l1 -row 0 -pady 10 -columnspan 5 -sticky we
@@ -2174,12 +2178,12 @@ proc font_view_update { {font {}} } {
     set cur_font [get_cur_font]
     .choose_font.view delete 0.0 end
     .choose_font.view insert 0.0 "$cur_font"
-    .choose_font.view configure -font "$cur_font" 
+    .choose_font.view configure -font "$cur_font"
 }
 
 proc get_actual_font { font } {
     global dxf
-    set dxf(choose_font_cb_name) "" 
+    set dxf(choose_font_cb_name) ""
     set dxf(choose_font_cb_size) ""
     set dxf(choose_font_c_bold) ""
     set dxf(choose_font_c_italic) ""
@@ -2191,7 +2195,7 @@ proc get_actual_font { font } {
         if {$i == 1 } { set dxf(choose_font_cb_name) $opt_val }
         if {$i == 3 } { set dxf(choose_font_cb_size) $opt_val }
         if { $i == 5 } {
-            if { $opt_val == "normal" } { 
+            if { $opt_val == "normal" } {
                 set opt_val ""
             } else {
                 set dxf(choose_font_c_bold) $opt_val
@@ -2199,17 +2203,17 @@ proc get_actual_font { font } {
         }
 
         if { $i == 7 } {
-            if { $opt_val == "roman" }  { 
+            if { $opt_val == "roman" }  {
                 set opt_val ""
             } else {
                 set dxf(choose_font_c_italic) $opt_val
             }
         }
         if { $i == 9 } {
-            if { $opt_val == "0" }  { 
-                set opt_val "" 
-            } else { 
-                set opt_val "underline" 
+            if { $opt_val == "0" }  {
+                set opt_val ""
+            } else {
+                set opt_val "underline"
                 set dxf(choose_font_c_underline) $opt_val
             }
         }
@@ -2227,9 +2231,9 @@ proc get_actual_font { font } {
 
 proc get_cur_font { } {
     global dxf
-    set cur_font "" 
+    set cur_font ""
     foreach el [list $dxf(choose_font_cb_name) $dxf(choose_font_cb_size) \
-  	$dxf(choose_font_c_bold) $dxf(choose_font_c_italic) $dxf(choose_font_c_underline)] {
+        $dxf(choose_font_c_bold) $dxf(choose_font_c_italic) $dxf(choose_font_c_underline)] {
         if { $el != "" } {
             set trim_el [string trim $el]
             if { [llength [split $trim_el " "]] <= 1 } {
@@ -2247,7 +2251,7 @@ proc get_cur_font { } {
 proc incr_font { object incr_val } {
     set font [lindex [$object configure -font] 4]
     set size [lindex $font 1]
-    if { $size != "" && [regexp {^[0-9]+$} $size]  && [regexp {^[+-]?[0-9]+$} $incr_val]} { 
+    if { $size != "" && [regexp {^[0-9]+$} $size]  && [regexp {^[+-]?[0-9]+$} $incr_val]} {
         set font [lreplace $font 1 1 [incr size $incr_val]]
     }
     return $font
@@ -2316,17 +2320,17 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
         }
 
         bind ${window}_f.lb <Motion> "
-	    set tkPriv(y) %y
-	    tkListboxMotion %W \[%W index @%x,%y]
+            set tkPriv(y) %y
+            tkListboxMotion %W \[%W index @%x,%y]
             combobox_export ${window}_f.lb ${window}.e
-	"
+        "
 
         bind ${window}_f.lb <Leave> "
-	    set tkPriv(x) %x
-	    set tkPriv(y) %y
-	    combobox_autoscan ${window}.e %W
+            set tkPriv(x) %x
+            set tkPriv(y) %y
+            combobox_autoscan ${window}.e %W
             combobox_export ${window}_f.lb ${window}.e
-	"
+        "
         bind ${window}_f.lb <Enter> {
             tkCancelRepeat
         }
@@ -2347,8 +2351,8 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             }
         }
         bind $tagname <ButtonRelease> "
-	    ${window}.b config -relief raised
-	"
+            ${window}.b config -relief raised
+        "
         bind $tagname <space> {
             combobox_release %W
         }
@@ -2359,15 +2363,15 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             combobox_release %W
         }
         bind $tagname <Up> "
-	    tkListboxUpDown %W -1
-	    combobox_export ${window}_f.lb ${window}.e
+            tkListboxUpDown %W -1
+            combobox_export ${window}_f.lb ${window}.e
             break
-	"
+        "
         bind $tagname <Down> "
-	    tkListboxUpDown %W 1
-	    combobox_export ${window}_f.lb ${window}.e
+            tkListboxUpDown %W 1
+            combobox_export ${window}_f.lb ${window}.e
             break
-	"
+        "
         bind $tagname <KeyPress> {
             combobox_release %W
         }
@@ -2406,8 +2410,8 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
         }
 
         proc _${window}_ {args} "
-	    eval \"combobox_command $window \$args\"
-	"
+            eval \"combobox_command $window \$args\"
+        "
 
         bind ${window}.e <Return> "break"
 
@@ -2482,15 +2486,15 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
 
         bind ${window}.e <Down> "combobox_drop ${window} [list $listproc]"
         bind ${window} <Escape> "
-	    focus ${window}.e
-	    wm withdraw ${window}_f
+            focus ${window}.e
+            wm withdraw ${window}_f
             break
-	"
+        "
         bind ${window}_f.lb <Escape> "
-	    focus ${window}.e
-	    wm withdraw ${window}_f
+            focus ${window}.e
+            wm withdraw ${window}_f
             break
-	"
+        "
         bind ${window} <Destroy> "
             if \{\[winfo exists ${window}_f\]\} \{
                 destroy ${window}_f
@@ -2520,7 +2524,7 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             }
         }
         bind ${window}_f.lb <Configure> \
-	    "combobox_config ${window}_f.lb ${window}_f.sb"
+            "combobox_config ${window}_f.lb ${window}_f.sb"
     }
 }
 
@@ -2569,17 +2573,17 @@ proc autopilot_options {} {
     set Prompt $Parent.f1.b1a
     ttk::label $Prompt -text "Autopilot Disabled :"
     set Name $Parent.f1.b1
-    ttk::radiobutton $Name -text "" -variable apmode -value "disabled" 
+    ttk::radiobutton $Name -text "" -variable apmode -value "disabled"
     grid $Prompt -column 0 -row 2 -sticky e
-    grid $Name -column 1 -row 2 -sticky w                                    
+    grid $Name -column 1 -row 2 -sticky w
     bind $Parent.f1.b1 <Button> {
         set suppo 0
         set optlog 0
         set unique_log_name 0
         set no_log_buffer 0
         set log_timestamps 0
-        .apopt.f1.e1 configure -state disabled 
-        .apopt.f1.e2 configure -state disabled 
+        .apopt.f1.e1 configure -state disabled
+        .apopt.f1.e2 configure -state disabled
         .apopt.f1.e3 configure -state disabled
         .apopt.f1.e4 configure -state disabled
         .apopt.f1.e5 configure -state disabled
@@ -2589,12 +2593,12 @@ proc autopilot_options {} {
     set Prompt $Parent.f1.b2a
     ttk::label $Prompt -text "Autopilot Enabled :"
     set Name $Parent.f1.b2
-    ttk::radiobutton $Name -text "" -variable apmode -value "enabled" 
+    ttk::radiobutton $Name -text "" -variable apmode -value "enabled"
     grid $Prompt -column 0 -row 3 -sticky e
     grid $Name -column 1 -row 3 -sticky w
     bind $Parent.f1.b2 <Button> {
         set suppo 1
-        .apopt.f1.e1 configure -state enabled 
+        .apopt.f1.e1 configure -state enabled
         .apopt.f1.e2 configure -state enabled
         .apopt.f1.e3 configure -state enabled
         .apopt.f1.e4 configure -state enabled
@@ -2626,10 +2630,10 @@ proc autopilot_options {} {
     }
     grid $Name -column 1 -row 8 -sticky w
 
-    bind $Name <Button> { 
+    bind $Name <Button> {
         set opst [ .apopt.f1.e3 cget -state ]
-        if {$suppo == 0 && $apmode == "enabled" } { 
-            .apopt.f1.e4 configure -state active 
+        if {$suppo == 0 && $apmode == "enabled" } {
+            .apopt.f1.e4 configure -state active
         } else {
             set optlog 0
             set unique_log_name 0
@@ -2652,11 +2656,11 @@ proc autopilot_options {} {
         $Name configure -state disabled
     }
 
-    bind .apopt.f1.e4 <Button> { 
+    bind .apopt.f1.e4 <Button> {
         set opst [ .apopt.f1.e4 cget -state ]
-        if {$optlog == 0 && $opst != "disabled"} { 
-            .apopt.f1.e5 configure -state active 
-            .apopt.f1.e6 configure -state active 
+        if {$optlog == 0 && $opst != "disabled"} {
+            .apopt.f1.e5 configure -state active
+            .apopt.f1.e6 configure -state active
             .apopt.f1.e7 configure -state active
         } else {
             set unique_log_name 0
@@ -2698,21 +2702,21 @@ proc autopilot_options {} {
     set Name $Parent.b4
     ttk::button $Name -command {
         set apduration [.apopt.f1.e1 get]
-        if { ![string is integer -strict $apduration] } { 
-            tk_messageBox -message "The minutes for test duration must be an integer" 
+        if { ![string is integer -strict $apduration] } {
+            tk_messageBox -message "The minutes for test duration must be an integer"
             set apduration 10
         } elseif { $apduration > 600 } {
-            tk_messageBox -message "The minutes for test duration must be less than 600" 
+            tk_messageBox -message "The minutes for test duration must be less than 600"
             set apduration 10
         }
         set apsequence [.apopt.f1.e2 get]
         if { [ llength $apsequence ] > 60 || [ llength $apsequence ] eq 0 } {
-            tk_messageBox -message "The virtual user sequence must contain between 1 and 60 integer values" 
+            tk_messageBox -message "The virtual user sequence must contain between 1 and 60 integer values"
             set apsequence [ lreplace $apsequence 60 end ]
         }
-        foreach i "$apsequence" { 
-            if { ![string is integer -strict $i] } { 
-                tk_messageBox -message "The virtual user sequence must contain one or more integers only" 
+        foreach i "$apsequence" {
+            if { ![string is integer -strict $i] } {
+                tk_messageBox -message "The virtual user sequence must contain one or more integers only"
                 set apsequence "1 2 4 8 12 16 20 24 28"
                 break
             }
@@ -2724,7 +2728,7 @@ proc autopilot_options {} {
         }
         remote_command [ concat auto_ops $suppo $optlog ]
         catch "destroy .apopt"
-    } -text {OK}     
+    } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .apopt +50+50
     wm deiconify .apopt
@@ -2736,11 +2740,11 @@ proc job_options {} {
     upvar #0 icons icons
     upvar #0 genericdict genericdict
     global jobs_disable ws_port
-    	set jobs_disable 1 
+    set jobs_disable 1
     if {[dict exists $genericdict commandline jobs_disable ]} {
     if { [ dict get $genericdict commandline jobs_disable ] eq 0 } {
-	set jobs_disable 0
-    	}}
+        set jobs_disable 0
+    }}
     if {[dict exists $genericdict webservice ws_port ]} {
         set ws_port [ dict get $genericdict webservice ws_port ]
         if { ![string is integer -strict $ws_port ] } {
@@ -2768,17 +2772,17 @@ proc job_options {} {
     ttk::label $Prompt -text "Jobs Disabled :"
     set Name $Parent.f1.b1
     ttk::radiobutton $Name -text "" -variable jobs_disable -value 1
-    grid $Prompt -column 0 -row 2 -sticky e                                    
-    grid $Name -column 1 -row 2 -sticky w                                    
+    grid $Prompt -column 0 -row 2 -sticky e
+    grid $Name -column 1 -row 2 -sticky w
     bind $Parent.f1.b1 <Button> {
             after 50 {tk_messageBox -message "Jobs will be disabled on HammerDB restart"}
     }
     set Prompt $Parent.f1.p2a
     ttk::label $Prompt -text "Jobs Enabled :"
     set Name $Parent.f1.b2
-    ttk::radiobutton $Name -text "" -variable jobs_disable -value 0 
-    grid $Prompt -column 0 -row 4 -sticky e                                    
-    grid $Name -column 1 -row 4 -sticky w                                          
+    ttk::radiobutton $Name -text "" -variable jobs_disable -value 0
+    grid $Prompt -column 0 -row 4 -sticky e
+    grid $Name -column 1 -row 4 -sticky w
     bind $Parent.f1.b2 <Button> {
             after 50 {tk_messageBox -message "Jobs will be enabled on HammerDB restart"}
     }
@@ -2828,11 +2832,11 @@ proc job_options {} {
         } else {
             .ed_mainFrame.buttons.results configure -state disabled
         }
-	dict set genericdict "commandline" "jobs_disable" $jobs_disable
-	dict set genericdict "webservice" "ws_port" $ws_port
+        dict set genericdict "commandline" "jobs_disable" $jobs_disable
+        dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
         catch "destroy .jobopt"
-    } -text {OK}     
+    } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .jobopt +50+50
     wm deiconify .jobopt
@@ -2867,7 +2871,7 @@ proc metgenopts {} {
     set Parent .metric
     set Name $Parent.f1
     ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5                              
+    pack $Name -anchor nw -fill x -side top -padx 5
     set Prompt $Parent.f1.h1
     ttk::label $Prompt -image [ create_image dashboard icons ]
     grid $Prompt -column 0 -row 0 -sticky e
@@ -2899,8 +2903,8 @@ proc metgenopts {} {
         if { ![string is integer -strict $agent_id] } { 
             tk_messageBox -message "Agent id must be an integer" 
             set agent_id 0
-        } 
-    } -text {OK}     
+        }
+    } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .metric +50+50
     wm deiconify .metric
@@ -2921,7 +2925,7 @@ proc dgopts {} {
     set i 1
     foreach j {10 100 1000 10000 110000} k {1 10 100 1000 10000} {
         while {$i < $j} {
-            lappend whlist $i 
+            lappend whlist $i
             incr i $k
     }}
     catch "destroy .dgopt"
@@ -2966,28 +2970,28 @@ proc dgopts {} {
         foreach item {10 30} {
             set Name $Parent.f1.f2.r$rcnt
             ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 3
-            grid $Name -column $rcnt -row 0 
+            grid $Name -column $rcnt -row 0
             incr rcnt
         }
         set rcnt 4
         foreach item {100 300 1000} {
             set Name $Parent.f1.f2.r$rcnt
             ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 5
-            grid $Name -column $rcnt -row 0 
+            grid $Name -column $rcnt -row 0
             incr rcnt
         }
         set rcnt 2
         foreach item {3000 10000} {
             set Name $Parent.f1.f2.ra$rcnt
             ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 6
-            grid $Name -column $rcnt -row 1 
+            grid $Name -column $rcnt -row 1
             incr rcnt
         }
         set rcnt 4
         foreach item {30000 100000} {
             set Name $Parent.f1.f2.ra$rcnt
             ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 7
-            grid $Name -column $rcnt -row 1 
+            grid $Name -column $rcnt -row 1
             incr rcnt
         }
     }
@@ -3007,7 +3011,7 @@ proc dgopts {} {
                 set gen_num_vu $gen_count_ware
             }
         } else {
-            if {($gen_num_vu > 32 && $gen_scale_fact eq 1)||($gen_num_vu > 64 && $gen_scale_fact eq 10)} { 
+            if {($gen_num_vu > 32 && $gen_scale_fact eq 1)||($gen_num_vu > 64 && $gen_scale_fact eq 10)} {
                 switch $gen_scale_fact {
                     1 { set gen_num_vu 32 }
                     10 { set gen_num_vu 64 }
@@ -3031,16 +3035,16 @@ proc dgopts {} {
                 set gen_num_vu $gen_count_ware
             }
         }
-        if { ![string is integer -strict $gen_num_vu] || $gen_num_vu < 1 || $gen_num_vu > 1024 } { 
-            tk_messageBox -message "The number of virtual users must be a positive integer less than 1024" 
+        if { ![string is integer -strict $gen_num_vu] || $gen_num_vu < 1 || $gen_num_vu > 1024 } {
+            tk_messageBox -message "The number of virtual users must be a positive integer less than 1024"
             set gen_num_vu 1
         }
         set gen_directory [.dgopt.f1.e3 get]
         catch "destroy .dgopt"
         if {![file writable $gen_directory]} {
-            tk_messageBox -title "Directory Warning" -icon warning -message "Files cannot be written to chosen directory you must create $gen_directory before generating data" 
+            tk_messageBox -title "Directory Warning" -icon warning -message "Files cannot be written to chosen directory you must create $gen_directory before generating data"
         }
-    } -text {OK}     
+    } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .dgopt +50+50
     wm deiconify .dgopt
@@ -3063,7 +3067,7 @@ proc select_mode {} {
     set Parent .mode
     set Name $Parent.f1
     ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5                                                                           
+    pack $Name -anchor nw -fill x -side top -padx 5
     set Prompt $Parent.f1.h1
     ttk::label $Prompt -image [ create_image mode icons ]
     grid $Prompt -column 0 -row 0 -sticky e
@@ -3072,25 +3076,25 @@ proc select_mode {} {
     grid $Prompt -column 1 -row 0 -sticky w
 
     set Name $Parent.f1.b1
-    ttk::radiobutton $Name -text "Local Mode" -variable opmode -value "Local" 
-    grid $Name -column 0 -row 1 -sticky w                                    
+    ttk::radiobutton $Name -text "Local Mode" -variable opmode -value "Local"
+    grid $Name -column 0 -row 1 -sticky w
     bind $Parent.f1.b1 <Button> {
-        .mode.f1.e1 configure -state disabled 
-        .mode.f1.e2 configure -state disabled 
+        .mode.f1.e1 configure -state disabled
+        .mode.f1.e2 configure -state disabled
     }
     set Name $Parent.f1.b2
-    ttk::radiobutton $Name -text "Primary Mode" -variable opmode -value "Primary" 
-    grid $Name -column 0 -row 2 -sticky w                                          
+    ttk::radiobutton $Name -text "Primary Mode" -variable opmode -value "Primary"
+    grid $Name -column 0 -row 2 -sticky w
     bind $Parent.f1.b2 <Button> {
-        .mode.f1.e1 configure -state disabled 
-        .mode.f1.e2 configure -state disabled 
+        .mode.f1.e1 configure -state disabled
+        .mode.f1.e2 configure -state disabled
     }
     set Name $Parent.f1.b3
     ttk::radiobutton $Name -text "Replica Mode" -variable opmode -value "Replica"
     grid $Name -column 0 -row 3 -sticky w
     bind $Parent.f1.b3 <Button> {
-        .mode.f1.e1 configure -state normal 
-        .mode.f1.e2 configure -state normal 
+        .mode.f1.e1 configure -state normal
+        .mode.f1.e2 configure -state normal
     }
     set Name $Parent.f1.e1
     set Prompt $Parent.f1.p1
@@ -3119,7 +3123,7 @@ proc select_mode {} {
         set hostname [.mode.f1.e2 get]
         catch "destroy .mode"
         if { $oldmode eq $opmode } { tk_messageBox -title "Confirm Mode" -message "Already in $opmode mode" } else { if {[ tk_messageBox -icon question -title "Confirm Mode" -message "Switch from $oldmode\nto $opmode mode?" -type yesno ] == yes} { set opmode [ switch_mode $opmode $hostname $id $masterlist ] }  else { set opmode $oldmode } } 
-    } -text {OK}     
+    } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .mode +50+50
     wm deiconify .mode
@@ -3149,7 +3153,7 @@ proc select_rdbms { preselect } {
         }
     }
     if { $validrdbms eq false } { set rdbms "Oracle" }
-    set rdbms $preselect 
+    set rdbms $preselect
     catch "destroy .rdbms"
     ttk::toplevel .rdbms
     wm transient .rdbms .ed_mainFrame
@@ -3158,7 +3162,7 @@ proc select_rdbms { preselect } {
     set Parent .rdbms
     set Name $Parent.f1
     ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5                                                                            
+    pack $Name -anchor nw -fill x -side top -padx 5
     set Prompt $Parent.f1.h1
     ttk::label $Prompt -image [ create_image benchmark icons ]
     grid $Prompt -column 1 -row 0 -sticky e
@@ -3171,7 +3175,7 @@ proc select_rdbms { preselect } {
         set Name $Parent.f1.b$rowind
         dict with attributes {
             append bmbuild [ subst {set Name $Name} ] "\n"
-            if { [ lsearch $fullwkl $name ] eq -1 } {  
+            if { [ lsearch $fullwkl $name ] eq -1 } {
                 append bmbuild [ subst {ttk::radiobutton $Name -text "$description" -variable rdbms -value "$name" -command { if { \$oldrdbms != \$rdbms } {set rdbms "$name"}\n.rdbms.f1.bm2 configure -state disabled\n set bm "TPC-C" } } ] "\n"
             } else {
                 append bmbuild [ subst {ttk::radiobutton $Name -text "$description" -variable rdbms -value "$name" -command { if { \$oldrdbms != \$rdbms } {set rdbms "$name"}\n.rdbms.f1.bm2 configure -state enabled } } ] "\n"
@@ -3180,25 +3184,25 @@ proc select_rdbms { preselect } {
     }}
     eval $bmbuild
     set Name $Parent.f1.bm1
-    ttk::radiobutton $Name -text "TPROC-C" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" } 
+    ttk::radiobutton $Name -text "TPROC-C" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-C" -command { if { $oldbm != $bm } { set bm "TPC-C" }
     }
-    grid $Name -column 2 -row 1 -sticky w                                                                               
+    grid $Name -column 2 -row 1 -sticky w
     set Name $Parent.f1.bm2
-    ttk::radiobutton $Name -text "TPROC-H" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" } 
+    ttk::radiobutton $Name -text "TPROC-H" -image [ create_image hdbicon icons ] -compound left -variable bm -value "TPC-H" -command { if { $oldbm != $bm } { set bm "TPC-H" }
     }
     grid $Name -column 2 -row 2 -sticky w
     if { [ lsearch $fullwkl $rdbms ] eq -1 } { $Name configure -state disabled ; set bm "TPC-C" }
     set Name $Parent.f1.ok
-    ttk::button $Name -command { 
+    ttk::button $Name -command {
         catch "destroy .rdbms"
-        if { $oldbm eq $bm && $oldrdbms eq $rdbms } { 
-            tk_messageBox -title "Confirm Benchmark" -message "No Change Made : [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
+        if { $oldbm eq $bm && $oldrdbms eq $rdbms } {
+            tk_messageBox -title "Confirm Benchmark" -message "No Change Made : [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms"
         } else {
-            .ed_mainFrame.buttons.pencil configure -state normal 
+            .ed_mainFrame.buttons.pencil configure -state normal
             set oldbm $bm
             set oldrdbms $rdbms
             disable_bm_menu
-            tk_messageBox -title "Confirm Benchmark" -message "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms" 
+            tk_messageBox -title "Confirm Benchmark" -message "[ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms"
             remote_command [ concat vuser_bench_ops $rdbms $bm ]
             remote_command disable_bm_menu
 
@@ -3241,7 +3245,7 @@ proc find_current_dict {} {
             set ind [lsearch $posswkl $bm]
             if { $ind != -1 } { set wkltoremove [lreplace $posswkl $ind $ind ]
                 if { [ llength $wkltoremove ] > 1 } { 
-                    puts "Error printing dict format more than 2 workloads" 
+                    puts "Error printing dict format more than 2 workloads"
                     return
                 } else {
                     set bmdct [ string tolower [ join [ split $wkltoremove - ] "" ]]
@@ -3350,7 +3354,7 @@ set jobid [guid]
     if { [ info exists jobid ] && ![ job_disable_check ] } {
         puts "Check Schema jobid=$jobid"
     } else {
-	unset -nocomplain jobid
+        unset -nocomplain jobid
     }
 }
 
@@ -3398,7 +3402,7 @@ set jobid [guid]
     if { [ info exists jobid ] && ![ job_disable_check ] } {
         puts "Schema Delete jobid=$jobid"
     } else {
-	unset -nocomplain jobid
+        unset -nocomplain jobid
     }
 }
 
@@ -3411,10 +3415,10 @@ proc run_datagen {} {
         #clear script editor so cannot be re-run with incorrect v user count
         return 1
     }
-    if { $bm == "TPC-C" } { 
-        gendata_tpcc 
-    } else { 
-        gendata_tpch 
+    if { $bm == "TPC-C" } {
+        gendata_tpcc
+    } else {
+        gendata_tpch
     }
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     applyctexthighlight .ed_mainFrame.mainwin.textFrame.left.text
@@ -3434,7 +3438,7 @@ proc configtpcc { option } {
     upvar #0 dbdict dbdict
     global rdbms
     foreach { key } [ dict keys $dbdict ] {
-        if { [ dict get $dbdict $key name ] eq $rdbms } { 
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
             set prefix [ dict get $dbdict $key prefix ]
             set command [ concat [subst {config$prefix}]tpcc $option ]
             eval $command
@@ -3447,7 +3451,7 @@ proc configtpch { option } {
     upvar #0 dbdict dbdict
     global rdbms
     foreach { key } [ dict keys $dbdict ] {
-        if { [ dict get $dbdict $key name ] eq $rdbms } { 
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
             set prefix [ dict get $dbdict $key prefix ]
             set command [ concat [subst {config$prefix}]tpch $option ]
             eval $command
@@ -3460,7 +3464,7 @@ proc countopts {} {
     upvar #0 dbdict dbdict
     global rdbms bm
     foreach { key } [ dict keys $dbdict ] {
-        if { [ dict get $dbdict $key name ] eq $rdbms } { 
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
             set prefix [ dict get $dbdict $key prefix ]
             set command [ concat [subst {count$prefix}]opts $bm ]
             eval $command
@@ -3475,13 +3479,13 @@ proc loadtpcc {} {
     set _ED(packagekeyname) "TPROC-C"
     ed_status_message -show "TPROC-C Driver Script"
     foreach { key } [ dict keys $dbdict ] {
-        if { [ dict get $dbdict $key name ] eq $rdbms } { 
+        if { [ dict get $dbdict $key name ] eq $rdbms } {
             set dictname config$key
             upvar #0 $dictname $dictname
             set prefix [ dict get $dbdict $key prefix ]
             set drivername [ concat [subst {$prefix}]_driver ]
             set drivertype [ dict get [ set $dictname ] tpcc $drivername ]
-            if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" } 
+            if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" }
             set command [ concat [subst {$lprefix$prefix}]tpcc ]
             eval $command
             set allw [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *allwarehouse ]
@@ -3588,27 +3592,27 @@ proc strip_html { htmlText } {
 proc wsstart {} {
     global ws_port
     if { ![info exists ws_port ] } {
-	set ws_port [ get_ws_port ]
-	} else {
-	dict set genericdict "webservice" "ws_port" $ws_port
-	Dict2SQLite "generic" $genericdict
-	}
-        if {[string match windows $::tcl_platform(platform)]} {
+        set ws_port [ get_ws_port ]
+    } else {
+        dict set genericdict "webservice" "ws_port" $ws_port
+        Dict2SQLite "generic" $genericdict
+    }
+    if {[string match windows $::tcl_platform(platform)]} {
         exec [ auto_execok ./hammerdbws.bat ] gui &
-        } else {
-	exec [ auto_execok ./hammerdbws ] gui &
-        }
-        after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
+    } else {
+        exec [ auto_execok ./hammerdbws ] gui &
+    }
+    after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
 }
 
 proc wsstop {} {
     global ws_port
     if { ![info exists ws_port ] } {
         set ws_port [ get_ws_port ]
-        } else {
-	dict set genericdict "webservice" "ws_port" $ws_port
+    } else {
+        dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
+    }
     if [ catch {set tok [http::geturl http://localhost:$ws_port/quit]} message ] {
         after 100 "tk_messageBox -message \"Web Service not running: $message\""
     } else {
@@ -3621,20 +3625,20 @@ proc wsstatus {} {
     global ws_port
     if { ![info exists ws_port ] } {
         set ws_port [ get_ws_port ]
-        } else {
-	dict set genericdict "webservice" "ws_port" $ws_port
+    } else {
+        dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-	}
+    }
     if [ catch {set tok [http::geturl http://localhost:$ws_port/env]} message ] {
         after 100 "tk_messageBox -message \"Web Service not running: $message\""
     } else {
-	set wsenv [ strip_html [ http::data $tok ]]
-	if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
-        after 100 "tk_messageBox -message \"Web Service running: $wsenv\""
-    } else {
-        after 100 "tk_messageBox -message \"Web Service output error: $wsenv\""
-    }
-    if { [ info exists tok ] } { http::cleanup $tok }
+        set wsenv [ strip_html [ http::data $tok ]]
+        if {[ lindex [ split $wsenv "\n" ] 0 ] eq "Service Environment"} {
+            after 100 "tk_messageBox -message \"Web Service running: $wsenv\""
+        } else {
+            after 100 "tk_messageBox -message \"Web Service output error: $wsenv\""
+        }
+        if { [ info exists tok ] } { http::cleanup $tok }
     }
 }
 
@@ -3642,20 +3646,20 @@ proc run_job_browser {} {
     global ws_port
     if { ![info exists ws_port ] } {
         set ws_port [ get_ws_port ]
-        } else {
+    } else {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
-        }
+    }
     set url "http://localhost:$ws_port/"
-     global tcl_platform
-  if {$tcl_platform(platform)=="windows"} {
-    exec cmd /c start $url &
-  } elseif {$tcl_platform(os)=="Darwin"} {
-    exec open $url &
-  } elseif {[catch {exec xdg-open $url >/dev/null 2>/dev/null &} message ]} {
-    #puts "message is $message"
-    #exec firefox $url &
-  }
+    global tcl_platform
+    if {$tcl_platform(platform)=="windows"} {
+        exec cmd /c start $url &
+    } elseif {$tcl_platform(os)=="Darwin"} {
+        exec open $url &
+    } elseif {[catch {exec xdg-open $url >/dev/null 2>/dev/null &} message ]} {
+        #puts "message is $message"
+        #exec firefox $url &
+    }
 }
 
 #A temporary dict is used to hold modified data before 
