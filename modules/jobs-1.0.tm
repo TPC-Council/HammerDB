@@ -130,7 +130,7 @@ namespace eval jobs {
               puts "Initialized new Jobs on-disk database $sqlite_db"
             }
           } else {
-            set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] KB" 
+            set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] bytes" 
             puts "Initialized Jobs on-disk database $sqlite_db using existing tables ($size)"
             if [catch {set chartname [ hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBCHART'}]} message ] {
             puts "Error querying  JOBCHART table in SQLite on-disk database : $message"
@@ -383,7 +383,7 @@ namespace eval jobs {
   proc common-footer {} {
     set B [wapp-param BASE_URL]
     set dbfile [ getdatabasefile ]
-    set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] KB" 
+    set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] bytes" 
     wapp-subst {<h3 class="title">Env:</h3><br>}
     wapp-subst {SQLite DB: %html($dbfile) %html($size)<br>}
     wapp-subst { <a href='%html($B)/jobs'>Job Index</a><br> }
