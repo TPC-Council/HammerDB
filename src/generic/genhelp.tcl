@@ -8,7 +8,7 @@ proc help { args } {
     }
     set helpbanner "HammerDB $hdb_version CLI Help Index\n
 Type \"help command\" for more details on specific commands below\n"
-        set helpcmds [ list buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript giset jobs librarycheck loadscript print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
+        set helpcmds [ list buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset diset distributescript giset jobs librarycheck loadscript metset metstart metstatus metstop print quit steprun switchmode tcset tcstart tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop ]
     if {[ llength $args ] != 1} {
         puts $helpbanner
         foreach helpcmd $helpcmds { puts "\t$helpcmd" } 
@@ -36,22 +36,25 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli {jobs disable - Usage: jobs disable [ 0 | 1 ]}
                     putscli "0: Enable storage of job output, restart required."
                     putscli "1: Disable storage of job output, restart required.\n"
-                    putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]}
+                    putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]}
                     putscli "bm: list benchmark for jobid."
                     putscli "db: list database for jobid."
                     putscli "delete: delete jobid."
                     putscli "dict: list dict for jobid."
+                    putscli "metrics: show system metrics for jobid."
                     putscli "result: list result for jobid."
                     putscli "status: list status for jobid."
+                    putscli "system: show system data for jobid."
                     putscli "tcount: list count for jobid."
                     putscli "timestamp: list starting timestamp for jobid."
                     putscli "timing: list xtprof summary timings for jobid."
                     putscli "vuid: list VU output for VU with vuid for jobid.\n"
                     putscli {jobs jobid timing - Usage: jobs jobid timing vuid}
                     putscli "timing vuid: list xtprof timings for vuid for jobid.\n"
-		    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount]}
+		    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount | metrics ]}
                     putscli "result: generate html chart for TPROC-C/TPROC-H result."
                     putscli "timing: generate html chart for TPROC-C/TPROC-H timings."
+                    putscli "metrics: generate html chart for TPROC-C/TPROC-H metrics."
                     putscli "tcount: generate html chart for TPROC-C transaction count.\n"
                 }
                 print {
@@ -173,6 +176,22 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                 datagenrun {
                     putscli "datagenrun - Usage: datagenrun"
                     putscli "Run Data Generation. Equivalent to the Generate option in the graphical interface."
+                }
+                metset {
+                    putscli "metset - Usage: metset \[agent_hostname|agent_id\]"
+                    putscli "Configure the CPU Metrics options. Equivalent to the Metrics Options window in the graphical interface." 
+                }
+                metstart {
+                    putscli "metstart - Usage: metstart"
+                    putscli "Starts the CPU Metrics and agent if configured to the localhost."
+                }
+                metstatus {
+                    putscli "metstatus - Usage: metstatus"
+                    putscli "Checks the status of the CPU Metrics."
+                }
+                metstop {
+                    putscli "metstop - Usage: metstop"
+                    putscli "Stops the CPU Metrics."
                 }
                 tcset {
                     if $wsmode {

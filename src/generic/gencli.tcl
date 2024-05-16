@@ -1811,6 +1811,7 @@ proc tcset {args} {
                     putscli "Failed to set Transaction Counter refresh rate"
                 } else {
                     putscli "Transaction Counter refresh rate set to $refreshrate"
+		    SQLiteUpdateKeyValue "generic"  transaction_counter tc_refresh_rate $refreshrate
                 }
             }
             logtotemp {
@@ -1829,6 +1830,7 @@ proc tcset {args} {
                     putscli "Failed to set Transaction Counter log to temp"
                 } else {
                     putscli "Transaction Counter log to temp set to $logtotemp"
+		    SQLiteUpdateKeyValue "generic"  transaction_counter tc_log_to_temp $logtotemp
                 }
             }
             unique {
@@ -1847,6 +1849,7 @@ proc tcset {args} {
                     putscli "Failed to set Transaction Counter unique log name"
                 } else {
                     putscli "Transaction Counter unique log name set to $unique_log_name"
+		    SQLiteUpdateKeyValue "generic"  transaction_counter tc_unique_log_name $unique_log_name
                 }
             }
             timestamps {
@@ -1865,6 +1868,7 @@ proc tcset {args} {
                     putscli "Failed to set Transaction Counter log timestamps"
                 } else {
                     putscli "Transaction Counter timestamps set to $log_timestamps"
+		    SQLiteUpdateKeyValue "generic"  transaction_counter tc_log_timestamps $log_timestamps
                 }
             }
             default {
