@@ -1782,7 +1782,7 @@ namespace eval jobs {
             #set irqseries [ lreplace $irqseries 0 0 ]
             set xaxisvals [ lreplace $xaxisvals 0 0 ]
           }
-          while { [ lindex $usrseries end ] eq 0 } {
+          while { [ lindex $usrseries end ] eq 0.0 } {
             set usrseries [ lreplace $usrseries end end ]
             set sysseries [ lreplace $sysseries end end ]
 	    #to include interrupt requests uncomment below
