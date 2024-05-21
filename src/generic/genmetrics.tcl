@@ -11,6 +11,9 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
                 puts "Agent Connection lost but Failed to close network port : $b" 
             } else {
                 ed_kill_cpu_metrics
+		ed_metrics_button
+		#Set button to unhighlighted if closed automatically
+                .ed_mainFrame.buttons.dashboard config -image [ create_image dashboard icons ]
                 puts "Metrics Connection closed"
             }
         }
@@ -37,7 +40,7 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
 }
 
 proc DoDisplay {maxcpu cpu_model caller} {
-    global S CLR cputobars cputotxt cpucoords metframe win_scale_fact
+    global S CLR cputobars cputotxt cpucoords metframe win_scale_fact jobid agent_hostname
     set CLR(bg) black
     set CLR(usr) green
     set CLR(sys) red
@@ -84,6 +87,16 @@ proc DoDisplay {maxcpu cpu_model caller} {
     tkp::canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height $S(hdscl) -bg $CLR(bg)
     $metframe.f.header create text [ expr {$width/2 - $S(hdralign)} ] $S(txtalign) -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {basic} -tags "cpumodel"
     pack $metframe.f.header
+    #Store CPU model in Job
+    	if { [ info exists cpu_model ] && ![ string match "AGENT CONNECTION FAILED" $cpu_model ] } {
+    	if { [ info exists jobid] && $jobid != "" && $jobid != 0 } {
+	hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount) VALUES($jobid,$agent_hostname,$cpu_model,$maxcpu) ON CONFLICT(jobid) DO UPDATE SET jobid=excluded.jobid,hostname=excluded.hostname,cpumodel=excluded.cpumodel,cpucount=excluded.cpucount}
+
+    	} else {
+	#Started CPU metrics before a job is running, insert a placeholder making sure only one placeholder is current
+	hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount) VALUES('@@@',$agent_hostname,$cpu_model,$maxcpu) ON CONFLICT(jobid) DO UPDATE SET hostname=excluded.hostname,cpumodel=excluded.cpumodel,cpucount=excluded.cpucount}
+	}
+    }
     #Height for all objects is the height of the bar and text multiplied by all cpus add header
     set canvforbars $cnvpth.c 
     tkp::canvas $canvforbars -highlightthickness 0 -bd 0 -width $width -height $height -bg $CLR(bg) -scrollregion "0 0 $width $scrollheight" -yscrollcommand "$metframe.sv.scrollY set" -yscrollincrement 10
@@ -125,7 +138,18 @@ proc DoDisplay {maxcpu cpu_model caller} {
     }
 }
 
+proc addstats { usr sys irq idle } {
+	global usrlist syslist irqlist idlelist
+foreach x { usrlist syslist irqlist idlelist } y { usr sys irq idle } {
+	lappend $x [ set $y ]
+	}
+}
+
 proc StatsOneLine {line} {
+global jobid usrlist syslist irqlist idlelist agent_hostname
+proc gmean L {
+    expr pow([join $L *],1./[llength $L])
+}
     #Called by agent remotely
     #Different formats some include AMPM some don't
     if { [ llength $line ] eq 12 } {
@@ -138,6 +162,42 @@ proc StatsOneLine {line} {
             set cpu 0
         }
     }
+    #For the all CPU line add a list and insert the average over 10 seconds into the JOBMETRIC table
+    if {[string match "all" $cpu]} {
+            addstats $usr $sys $irq $idle
+	}
+	if { [ info exists usrlist ] && [ llength $usrlist ] eq 5 } {
+	foreach x { usrlist syslist irqlist idlelist } y { usrgmean sysgmean irqgmean idlegmean } {
+	set $y [format "%3.2f" [ gmean [ set $x ]]]
+	}
+    	if { [ interp exists metrics_interp ] } {
+	 if { [ info exists jobid] && $jobid != "" && $jobid != 0 } {
+        hdbjobs eval {INSERT INTO JOBMETRIC(jobid,usr,sys,irq,idle) VALUES($jobid,$usrgmean,$sysgmean,$irqgmean,$idlegmean)}
+	#Metrics started before job was running, if placeholder in jobsystem update with correct jobid
+        set jobhost [ hdbjobs eval {select hostname from JOBSYSTEM where JOBID=$jobid} ]
+	if {$jobhost eq ""} {
+        set placehold [ hdbjobs eval {select hostname from JOBSYSTEM where JOBID="@@@"} ]
+	if {$placehold eq ""} {
+	#The jobid is not present in the jobsystem table and there is no placeholder
+	#Likely metrics are continual running for multiple jobs so find system data from previous job
+	hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where hostname=$agent_hostname LIMIT 1} {
+	hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount) VALUES($jobid,$agent_hostname,$cpumodel,$cpucount)}}
+	} else {
+	hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where JOBID="@@@"} {
+	hdbjobs eval {update JOBSYSTEM set jobid = $jobid where JOBID="@@@"}
+		}
+		}
+    	} else {
+	#The jobid and system data is present in the jobsystem table so do nothing
+		;
+        }
+	}
+	}
+	foreach x { usrlist syslist irqlist idlelist } {
+	set $x [list]
+	}
+        }
+
     if {[string is integer -strict $cpu]} {
         catch { AdjustBarHeight $cpu $usr $sys [ expr $usr + $sys ] }
     } else {
@@ -166,7 +226,10 @@ proc AdjustBarHeight {cpu usr sys percent} {
 }
 
 proc metrics {} {
-    global rdbms
+    global rdbms cpu_only
+    #Intentional setting of cpu_only to false below for Oracle and PostgreSQL with database metrics.
+    #cpu_only is a placeholder if feature to be added in future.
+    if {  [ info exists cpu_only ] } { set cpu_only "false" } else { set cpu_only "false" }
     if { [catch {
             namespace import comm::*
             namespace import blt::*
@@ -177,11 +240,19 @@ proc metrics {} {
     if { $rdbms eq "Oracle" } {
         namespace forget pgmet::*
         namespace import oramet::*
-        orametrics
+        if { $cpu_only } { 
+		genmetrics 
+	} else { 
+		orametrics 
+	}
     } elseif { $rdbms eq "PostgreSQL" } {
         namespace forget oramet::*
         namespace import pgmet::*
-        pgmetrics
+        if { $cpu_only } { 
+		genmetrics 
+	} else { 
+		pgmetrics 
+	}
     } else {
         genmetrics
     }
@@ -206,6 +277,7 @@ proc genmetrics {} {
 }
 
 proc cpumetrics { previous } {
+#When cpu metrics is embedded in database metrics display
     global agent_hostname agent_id metframe 
     set metframe .ed_mainFrame.me.m.f.a.topdetails.output
     if { [ interp exists metrics_interp ] } {
@@ -243,11 +315,14 @@ proc cpumetrics { previous } {
 }
 
 proc ed_kill_metrics {args} {
-    global _ED rdbms 
+    global _ED rdbms cpu_only
+    if {  [ info exists cpu_only ] } { ; } else { set cpu_only "false" }
+    if { $cpu_only eq "false" } {
     if { $rdbms == "Oracle" } {
         post_kill_dbmon_cleanup 
     } elseif { $rdbms == "PostgreSQL" } {
         pg_post_kill_dbmon_cleanup 
+    }
     }
     ed_status_message -show "... Stopping Metrics ..."
     ed_metrics_button
@@ -286,4 +361,91 @@ proc ed_kill_cpu_metrics {args} {
         ed_status_message -finish "Metrics Stopped"
         update
     }
+}
+
+proc agstart { agent_id start_display } {
+#Will only be called to start the agent the localhost
+#metrics command is used to start the display to connect to local or remote agent
+global tcl_platform
+set UserDefaultDir [ file dirname [ info script ] ]
+::tcl::tm::path add "../$UserDefaultDir/modules"
+package require comm
+namespace import comm::*
+package require socktest
+namespace import socktest::*
+set result [ sockmesg [ socktest localhost $agent_id 1000 ]]
+if { $result eq "OK" } {
+tk_messageBox -message "Metrics Agent already running on id: $agent_id"
+return
+} else {
+  if {$tcl_platform(platform)=="windows"} {
+    if {[catch {exec cmd /c "cd /d agent && agent.bat $agent_id" &} message ]} {
+	puts "Error starting metrics agent: $message"
+    	}
+  } else {
+	if {[catch {exec sh -c "cd agent && ./agent $agent_id 2>/dev/null" &} message ]} {
+	puts $message
+	}
+  }}
+  if { $start_display } {
+  after 500 {metrics}
+  tk_messageBox -message "Starting Metrics Agent and Display on [ info hostname ]"
+  catch "destroy .metric"
+  } else {
+  tk_messageBox -message "Starting Metrics Agent on [ info hostname ]"
+  }
+}
+
+proc agstatus { agent_hostname agent_id } {
+global tcl_platform
+set UserDefaultDir [ file dirname [ info script ] ]
+::tcl::tm::path add "../$UserDefaultDir/modules"
+package require comm
+namespace import comm::*
+package require socktest
+namespace import socktest::*
+set result [ sockmesg [ socktest localhost $agent_id 1000 ]]
+if { $result eq "OK" } {
+tk_messageBox -message "Metrics Agent running on id: $agent_hostname:$agent_id"
+} else {
+tk_messageBox -message "No Metrics Agent detected on id: $agent_hostname:$agent_id"
+}
+return
+}
+
+proc agstop { agent_hostname agent_id } {
+global tcl_platform
+set UserDefaultDir [ file dirname [ info script ] ]
+::tcl::tm::path add "../$UserDefaultDir/modules"
+package require comm
+namespace import comm::*
+package require socktest
+namespace import socktest::*
+set result [ sockmesg [ socktest $agent_hostname $agent_id 1000 ]]
+if { $result eq "OK" } {
+	  if { [ interp exists metrics_interp ] } {
+	#A display is already connected so stopping display will close or reinitialize agent
+	ed_kill_metrics
+  tk_messageBox -message "Stopping Metrics Agent and Display on $agent_hostname:$agent_id"
+  catch "destroy .metric"
+  	} else {
+	#A display is not already connected so #set up port to send stop message to agent
+    if { [catch {::comm new STOPMetrics -listen 1 -local 0 -silent "TRUE" -port {}} b] } {
+    tk_messageBox -message "Stopping Metrics Agent and Display on $agent_hostname:$agent_id failed to create port"
+    } else {
+        set displayid [ STOPMetrics self ]
+        set displayhost [ info hostname ]
+        #puts "Metric close port open @ $displayid on $displayhost"
+	if { [catch {::comm send -async "$agent_id $agent_hostname" "catch {Agent STOP \"$displayid $displayhost\"} "} b] } {
+     tk_messageBox -message "Stopping Metrics Agent and Display on $agent_hostname:$agent_id failed to send message $b"
+            } else {
+     tk_messageBox -message "Stopping Metrics Agent on $agent_hostname:$agent_id"
+	    }
+	}
+        catch { STOPMetrics destroy }
+	}
+} else {
+tk_messageBox -message "No Metrics Agent detected on id: $agent_hostname:$agent_id"
+}
+return
 }

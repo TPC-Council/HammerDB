@@ -90,7 +90,7 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
     }
   }
 
-  append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl }
+  append loadlist { genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genxml.tcl genmodes.tcl genmetricscli.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl }
   for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
     set loadtext $f

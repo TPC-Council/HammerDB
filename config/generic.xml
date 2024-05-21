@@ -51,7 +51,7 @@
     <metrics>
     	<metric_options>
     	    <agent_hostname>localhost</agent_hostname>
-    	    <agent_id>0</agent_id>
+    	    <agent_id>10000</agent_id>
     	</metric_options>
     </metrics>
     <datageneration>

@@ -32,6 +32,23 @@ exit
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 #load files
+#Accept argument of port for agent to run on. No argument generates random port number
+ if {$argc == 0} {
+	set port {}
+	set restart true
+ 	} else {
+    if {$argc != 1} {
+	puts {Usage: agent port}
+	#exit
+	} else {
+	set restart false
+        set port [lindex $argv 0]
+	if { ![string is entier $port] } {
+	puts {Usage: agent port}
+	#exit
+	     } else { ; }
+          } 
+	}
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "../$UserDefaultDir/modules"
 package require comm
@@ -116,7 +133,7 @@ global cpu_model
     }
 }
 
-proc ConfigureNetworkAgent { } {
+proc ConfigureNetworkAgent { port restart } {
 global agentlist S connectestablished
 set chanlist [ lindex [ ::comm channels ] end ]
 if { $chanlist eq "::Slave" } {
@@ -125,7 +142,7 @@ if { [catch { $chanlist destroy } b] } {
 puts "Error $b"
 	}
 }
-if { [catch {::comm new Agent -listen 1 -local 0 -silent "TRUE" -port {}} b] } {
+if { [catch {::comm new Agent -listen 1 -local 0 -silent "TRUE" -port $port} b] } {
 puts "Creation Failed : $b" } else {
 puts "HammerDB Metric Agent active @ id [ Agent self ] hostname [ info hostname ] (Ctrl-C to Exit)"
 Agent hook incoming {
@@ -136,12 +153,16 @@ set connectestablished 1
 	}
 }
 Agent hook lost {
-global agentlist S connectestablished
+global agentlist S connectestablished restart
 set todel [ lsearch $agentlist $id ]
 if { $todel != -1 } {
 puts "Connection to display $id lost: $reason"
 unset -nocomplain connectestablished
+if {$restart} {
 puts "Reinitializing HammerDB Metric Agent"
+	} else {
+puts "Closing HammerDB Metric Agent"
+}
 set agentlist [ lreplace $agentlist $todel $todel ]
 set ::DONE 2
 	}
@@ -149,6 +170,12 @@ set ::DONE 2
 Agent hook eval {
 global agentlist S
 if {[regexp {\"([0-9]+)\W([[:alnum:],[:punct:]]+)\"} $buffer all id host]} {
+if { [ string match "*STOP*" $buffer ] } {
+#Received Message to Stop Metrics before a Display connection
+puts "Closing HammerDB Metric Agent"
+::Agent destroy
+exit
+}	
 lappend agentlist "$id $host"
 puts "New display accepted @ $id $host"
 #Start Gathering and Sending Metrics
@@ -211,7 +238,7 @@ puts "connection established"
 if $iswin {
     set fin [open "| mpstat.bat" r]
     } else {
-    set fin [open "|mpstat -P [join $::S(cpus,list) ,] 2" r]
+    set fin [open "|mpstat -P ALL 2" r]
 	}
     fconfigure $fin -blocking false
     fileevent $fin readable [list isReadable $fin] 
@@ -241,12 +268,16 @@ HowManyProcessorsLinux
   }
 
 puts "Initializing HammerDB Metric Agent $version"
-ConfigureNetworkAgent 
+ConfigureNetworkAgent $port $restart
 vwait ::DONE
 while 1 {	
 #Lost connection, reinitialize agent
 ::Agent destroy
 unset -nocomplain ::DONE
-ConfigureNetworkAgent 
+if {$restart} {
+ConfigureNetworkAgent $port $restart
 vwait ::DONE
+	} else {
+exit
+}
 	}

@@ -2857,10 +2857,12 @@ proc metricsopts {} {
 }
 
 proc metgenopts {} {
-    global agent_hostname agent_id
+    global agent_hostname agent_id start_display
     upvar #0 icons icons
+    upvar #0 genericdict genericdict
     if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
     if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
+    if {  [ info exists start_display ] } { ; } else { set start_display "true" }
     set old_agent $agent_hostname
     set old_id $agent_id
     catch "destroy .metric"
@@ -2871,7 +2873,7 @@ proc metgenopts {} {
     set Parent .metric
     set Name $Parent.f1
     ttk::frame $Name
-    pack $Name -anchor nw -fill x -side top -padx 5
+    pack $Name -anchor nw -fill x -side top -padx 5                              
     set Prompt $Parent.f1.h1
     ttk::label $Prompt -image [ create_image dashboard icons ]
     grid $Prompt -column 0 -row 0 -sticky e
@@ -2892,6 +2894,47 @@ proc metgenopts {} {
     ttk::entry $Name -width 30 -textvariable agent_hostname
     grid $Prompt -column 0 -row 5 -sticky e
     grid $Name -column 1 -row 5
+    set Name $Parent.f1.e3
+    set Prompt $Parent.f1.p3
+    ttk::label $Prompt -text "Agent Start :"
+    ttk::button $Name -command {
+        if { $agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ] } { 
+	    agstart $agent_id $start_display
+    } else {
+            tk_messageBox -message "Agent hostname must be local to start, start manually on remote hosts"
+    }
+    } -text Start
+    grid $Prompt -column 0 -row 6 -sticky e
+    grid $Name -column 1 -row 6 -sticky w
+        if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
+        $Name configure -state disabled
+    }
+    set Name $Parent.f1.e4
+    set Prompt $Parent.f1.p4
+    ttk::label $Prompt -text "Agent Stop :"
+    ttk::button $Name -command {
+    agstop $agent_hostname $agent_id
+    } -text Stop
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7 -sticky w
+    set Name $Parent.f1.e5
+    set Prompt $Parent.f1.p5
+    ttk::label $Prompt -text "Agent Status :"
+    ttk::button $Name -command {
+    agstatus $agent_hostname $agent_id
+    } -text Status
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8 -sticky w
+    set Name $Parent.f1.e6
+    set Prompt $Parent.f1.p6
+    ttk::label $Prompt -text "Start Display with Local Agent :"
+    ttk::checkbutton $Name -text "" -variable start_display -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 10 -sticky e
+    grid $Name -column 1 -row 10 -sticky w
+        if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
+	set start_display false
+        $Name configure -state disabled
+    }
     set Name $Parent.b4
     ttk::button $Name -command { destroy .metric } -text Cancel
     pack $Name -anchor w -side right -padx 3 -pady 3
@@ -2903,8 +2946,12 @@ proc metgenopts {} {
         if { ![string is integer -strict $agent_id] } { 
             tk_messageBox -message "Agent id must be an integer" 
             set agent_id 0
-        }
-    } -text {OK}
+        } else {
+	    dict set genericdict metrics agent_id $agent_id
+	    dict set genericdict metrics agent_hostname $agent_hostname
+            Dict2SQLite "generic" $genericdict
+	}
+    } -text {OK}     
     pack $Name -anchor w -side right -padx 3 -pady 3
     wm geometry .metric +50+50
     wm deiconify .metric
@@ -3657,8 +3704,7 @@ proc run_job_browser {} {
     } elseif {$tcl_platform(os)=="Darwin"} {
         exec open $url &
     } elseif {[catch {exec xdg-open $url >/dev/null 2>/dev/null &} message ]} {
-        #puts "message is $message"
-        #exec firefox $url &
+	    ;
     }
 }
 

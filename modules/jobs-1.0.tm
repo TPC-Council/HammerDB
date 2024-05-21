@@ -75,15 +75,23 @@ namespace eval jobs {
         catch {hdbjobs eval {DROP TABLE JOBMAIN}}
         catch {hdbjobs eval {DROP TABLE JOBTIMING}}
         catch {hdbjobs eval {DROP TABLE JOBTCOUNT}}
+        catch {hdbjobs eval {DROP TABLE JOBMETRIC}}
+        catch {hdbjobs eval {DROP TABLE JOBSYSTEM}}
         catch {hdbjobs eval {DROP TABLE JOBOUTPUT}}
         catch {hdbjobs eval {DROP TABLE JOBCHART}}
-        if [catch {hdbjobs eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+        if [catch {hdbjobs eval {CREATE TABLE JOBMAIN(jobid TEXT primary key, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
           puts "Error creating JOBMAIN table in SQLite in-memory database : $message"
           return
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBTIMING table in SQLite in-memory database : $message"
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
+          return
+        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+          puts "Error creating JOBMETRIC table in SQLite in-memory database : $message"
+          return
+        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+          puts "Error creating JOBSYSTEM table in SQLite in-memory database : $message"
           return
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBOUTPUT table in SQLite in-memory database : $message"
@@ -96,6 +104,8 @@ namespace eval jobs {
           catch {hdbjobs eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+          catch {hdbjobs eval {CREATE INDEX JOBMETRIC_IDX ON JOBMETRIC(jobid)}}
+          catch {hdbjobs eval {CREATE INDEX JOBSYSTEM_IDX ON JOBSYSTEM(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
           catch {hdbjobs eval {CREATE INDEX JOBCHART_IDX ON JOBCHART(jobid)}}
           puts "Initialized new Jobs in-memory database"
@@ -106,7 +116,7 @@ namespace eval jobs {
           return
         } else {
           if { $tblname eq "" } {
-            if [catch {hdbjobs eval {CREATE TABLE JOBMAIN(jobid TEXT, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
+            if [catch {hdbjobs eval {CREATE TABLE JOBMAIN(jobid TEXT primary key, db TEXT, bm TEXT, jobdict TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')))}} message ] {
               puts "Error creating JOBMAIN table in SQLite on-disk database : $message"
               return
             } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTIMING(jobid TEXT, vu INTEGER, procname TEXT, calls INTEGER, min_ms REAL, avg_ms REAL, max_ms REAL, total_ms REAL, p99_ms REAL, p95_ms REAL, p50_ms REAL, sd REAL, ratio_pct REAL, summary INTEGER, elapsed_ms REAL, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
@@ -114,6 +124,12 @@ namespace eval jobs {
               return
             } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
               puts "Error creating JOBTCOUNT table in SQLite on-disk database : $message"
+              return
+            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+             puts "Error creating JOBMETRIC table in SQLite on-disk database : $message"
+             return
+            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+              puts "Error creating JOBSYSTEM table in SQLite on-disk database : $message"
               return
             } elseif [catch {hdbjobs eval {CREATE TABLE JOBOUTPUT(jobid TEXT, vu INTEGER, output TEXT)}} message ] {
               puts "Error creating JOBOUTPUT table in SQLite on-disk database : $message"
@@ -125,6 +141,8 @@ namespace eval jobs {
               catch {hdbjobs eval {CREATE INDEX JOBMAIN_IDX ON JOBMAIN(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBTIMING_IDX ON JOBTIMING(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBTCOUNT_IDX ON JOBTCOUNT(jobid)}}
+              catch {hdbjobs eval {CREATE INDEX JOBMETRIC_IDX ON JOBMETRIC(jobid)}}
+              catch {hdbjobs eval {CREATE INDEX JOBSYSTEM_IDX ON JOBSYSTEM(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBOUTPUT_IDX ON JOBOUTPUT(jobid)}}
               catch {hdbjobs eval {CREATE INDEX JOBCHART_IDX ON JOBCHART(jobid)}}
               puts "Initialized new Jobs on-disk database $sqlite_db"
@@ -259,8 +277,8 @@ namespace eval jobs {
           puts $res
         } elseif { [ string equal $cmd "getchart" ] } {
           set charttype $param3
-          if { ![string equal $charttype "result" ] && ![string equal $charttype "timing" ] && ![string equal $charttype "tcount" ]  } {
-            puts "Error: Jobs Three Parameter Usage: jobs jobid getchart \[ result | timing | tcount \]"
+          if { ![string equal $charttype "result" ] && ![string equal $charttype "timing" ] && ![string equal $charttype "tcount" ]  && ![string equal $charttype "metrics" ]  } {
+            puts "Error: Jobs Three Parameter Usage: jobs jobid getchart \[ result | timing | tcount | metrics\]"
           } else {
             set ctype "chart=$charttype"
             set res [getjob "jobid=$jobid&$cmd&$ctype" ]
@@ -1041,7 +1059,7 @@ namespace eval jobs {
       }
       #2 or more parameters
     } else {
-      if { [ dict keys $paramdict ] eq "jobid index" || [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid resultdata" || [ dict keys $paramdict ] eq "jobid DELETE" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid timingdata" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" || [ dict keys $paramdict ] eq "jobid tcountdata" } {
+      if { [ dict keys $paramdict ] eq "jobid index" || [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid resultdata" || [ dict keys $paramdict ] eq "jobid DELETE" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid timingdata" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" || [ dict keys $paramdict ] eq "jobid tcountdata" || [ dict keys $paramdict ] eq "jobid metrics"  || [ dict keys $paramdict ] eq "jobid metricsdata" ||  [ dict keys $paramdict ] eq "jobid system" } {
         set jobid [ dict get $paramdict jobid ]
         if { [ dict keys $paramdict ] eq "jobid vu" } {
           set vuid [ dict get $paramdict vu ]
@@ -1062,7 +1080,7 @@ namespace eval jobs {
           set url "[wapp-param BASE_URL]/jobs?jobid=$jobid"
           set text "output"
           wapp-subst {<li><a href='%html($url)'>%html($text)</a>\n}
-          foreach option "bm db dict result status tcount timestamp timing delete" {
+          foreach option "bm db system dict result status tcount metrics timestamp timing delete" {
             set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&$option"
             switch $option {
               bm {
@@ -1070,6 +1088,9 @@ namespace eval jobs {
               }
               db {
                 wapp-subst {<li><a href='%html($url)'>%html(database)</a>\n}
+              }
+              system {
+                wapp-subst {<li><a href='%html($url)'>%html(system)</a>\n}
               }
               dict {
                 wapp-subst {<li><a href='%html($url)'>%html(dict configuration)</a>\n}
@@ -1088,6 +1109,14 @@ namespace eval jobs {
                   ;#No result exclude link
                 } else {
                   wapp-subst {<li><a href='%html($url)'>%html(transaction count)</a>\n}
+                }
+              }
+              metrics {
+                set jobmetrics [ getjobmetrics $jobid ]
+                if { [ llength $jobmetrics ] eq 2 && [ string match [ lindex $jobmetrics 1 ] "Jobid has no metrics data" ] } {
+                  ;#No result exclude link
+                } else {
+                  wapp-subst {<li><a href='%html($url)'>%html(metrics)</a>\n}
                 }
               }
               timing {
@@ -1151,6 +1180,8 @@ namespace eval jobs {
               set joboutput [ hdbjobs eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
               set joboutput [ hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
               set joboutput [ hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
+              set joboutput [ hdbjobs eval {DELETE FROM JOBMETRIC WHERE JOBID=$jobid} ]
+              set joboutput [ hdbjobs eval {DELETE FROM JOBSYSTEM WHERE JOBID=$jobid} ]
               set joboutput [ hdbjobs eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
               set joboutput [ hdbjobs eval {DELETE FROM JOBCHART WHERE JOBID=$jobid} ]
               dict set jsondict success message "Deleted Jobid $jobid"
@@ -1216,6 +1247,21 @@ namespace eval jobs {
                       wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
                       common-footer
                       return
+                  } else {
+                    if { [ dict keys $paramdict ] eq "jobid metrics" } {
+                      wapp-content-security-policy off
+                      wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+                      foreach l [ split [ getchart $jobid $vuid "metrics" ] \n] {
+                        if { [ string match [ string trim $l ] <body> ] } {
+                          set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
+                        }
+                        wapp-subst {%unsafe($l)\n}
+                      }
+                      set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&metricsdata"
+                      set text "Metrics Data"
+                      wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+                      common-footer
+                      return
                     } else {
                       if { [ dict keys $paramdict ] eq "jobid resultdata" } {
                         set joboutput [ getjobresult $jobid $vuid ]
@@ -1238,6 +1284,11 @@ namespace eval jobs {
                             set jsondict [ getjobtcount $jobid ]
                             wapp-2-json 2 $jsondict
                             return
+                        } else {
+                          if { [ dict keys $paramdict ] eq "jobid metricsdata" } {
+                            set jsondict [ getjobmetrics $jobid ]
+                            wapp-2-json 2 $jsondict
+                            return
                           } else {
                             if { [ dict keys $paramdict ] eq "jobid db" } {
                             #A Timed run will include a query for a version string, add the version if we find it
@@ -1255,17 +1306,23 @@ namespace eval jobs {
                             } else {
                               if { [ dict keys $paramdict ] eq "jobid bm" } {
                                 set joboutput [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]
+                            } else {
+                              if { [ dict keys $paramdict ] eq "jobid system" } {
+				set joboutput [ list "No system data available" ]
+                                hdbjobs eval {SELECT hostname,cpucount,cpumodel FROM JOBSYSTEM WHERE JOBID=$jobid} {
+				set joboutput [ list $hostname $cpucount $cpumodel ]
+				}
                               } else {
                                 set joboutput [ list $jobid "Cannot find Jobid output" ]
                               }
-            }}}}}}}}}
+            }}}}}}}}}}}}
             set huddleobj [ huddle compile {list} $joboutput ]
             wapp-mimetype application/json
             wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
           }
         }
       } else {
-        dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&status or jobs?jobid=TEXT&db or jobs?jobid=TEXT&bm or jobs?jobid=TEXT&timestamp or jobs?jobid=TEXT&dict or jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&result or jobs?jobid=TEXT&timing or jobs?jobid=TEXT&delete" 
+        dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&status or jobs?jobid=TEXT&db or jobs?jobid=TEXT&bm or jobs?jobid=TEXT&system or jobs?jobid=TEXT&timestamp or jobs?jobid=TEXT&dict or jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&result or jobs?jobid=TEXT&timing or jobs?jobid=TEXT&delete" 
         wapp-2-json 2 $jsondict
         return
       }
@@ -1341,6 +1398,31 @@ namespace eval jobs {
       set jobtcount [ list $jobid "Jobid has no transaction counter data" ]
     }
     return $jobtcount
+  }
+
+  proc getjobmetrics { jobid } {
+    set jobmetric [ dict create ]
+    hdbjobs eval {select JOBMETRIC.timestamp, usr, sys, irq, idle from JOBMETRIC WHERE JOBMETRIC.JOBID=$jobid order by JOBMETRIC.timestamp asc} {
+    set metrics "usr% $usr sys% $sys irq% $irq idle% $idle" 
+	if { [dict keys $jobmetric $timestamp] eq {} } {
+    	dict append jobmetric $timestamp $metrics
+		}
+	}
+    if { $jobmetric eq "" } {
+      set jobmetric [ list $jobid "Jobid has no metric data" ]
+    }
+    return $jobmetric
+  }
+
+  proc getjobsystem { jobid } {
+    set jobsystem [ dict create ]
+	hdbjobs eval {select hostname,cpumodel,cpucount FROM JOBSYSTEM WHERE JOBID=$jobid} {
+        dict append jobsystem $cpumodel $cpucount
+	}
+    if { $jobsystem eq "" } {
+      set jobsystem [ list $jobid "Jobid has no system data" ]
+    }
+    return $jobsystem
   }
 
   proc gettopjobs {} {
@@ -1474,7 +1556,7 @@ namespace eval jobs {
             }
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
-            $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Result $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
+            $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Result $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name GEOMEAN -data [list "$geomeantime "] -itemStyle [ subst {color $color1 opacity 0.90} ]
@@ -1510,7 +1592,7 @@ namespace eval jobs {
             if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
-            $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Result $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
+            $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Result $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list [ subst {"$dbdescription $vus"}]] -axisLabel [list show "True"]
             $bar Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name NOPM -data [list "$nopm "] -itemStyle [ subst {color $color1 opacity 0.90} ]
@@ -1571,7 +1653,7 @@ namespace eval jobs {
             #Create chart showing timing for each Query 
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
-            $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Power Query Times $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
+            $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Power Query Times $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name "VU 1 Query Set" -data [list $barseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
@@ -1594,7 +1676,7 @@ namespace eval jobs {
             #Create chart showing timing for each stored proc
             set bar [ticklecharts::chart new]
             set ::ticklecharts::htmlstdout "True" ; 
-            $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Response Times $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "30%"}
+            $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Response Times $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "30%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Milliseconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name P50_MS -data [list "$P50_MS "]    
@@ -1646,7 +1728,7 @@ namespace eval jobs {
           }
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
-          $line SetOptions -title [ subst {text "$dbdescription $workload Count $jobid @ $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
+          $line SetOptions -title [ subst {text "$dbdescription $workload Count $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
           $line AddLineSeries -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
@@ -1658,11 +1740,78 @@ namespace eval jobs {
           if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'tcount',$html)}
           }
+         return $html
+        }
+      }
+      "metrics" {
+        set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+        set chartdata [ getjobmetrics $jobid ]
+        if { [ llength $chartdata ] eq 2 && [ string match [ lindex $chartdata 1 ] "Jobid has no metrics data" ] } {
+          putscli "Chart for jobid $jobid not available, Jobid has no metrics data"
+          return
+        } else {
+          set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBCHART WHERE JOBID=$jobid AND CHART="metrics"} ]
+          if { $query eq 0 } {
+            #No result chart exists create one and insert into JOBCHART table
+          } else {
+            #Return existing results chart from JOBCHART table
+            set html [ join [ hdbjobs eval {SELECT html FROM JOBCHART WHERE JOBID=$jobid AND CHART="metrics"} ]]
+            return $html
+          }
+          hdbjobs eval {SELECT cpucount,cpumodel from JOBSYSTEM WHERE JOBID=$jobid} {
+	  set dbdescription "$cpucount $cpumodel"
+		}
+	if {[ dict size $chartdata ] <= 1} {
+          putscli "Chart for jobid $jobid not available, Jobid has insufficient metrics data"
+	  return
+	}
+	  set axisname "CPU %"
+          set xaxisvals [ dict keys $chartdata ]
+          dict for {tstamp cpuvalues} $chartdata {
+          dict with cpuvalues {
+            lappend usrseries ${usr%}
+            lappend sysseries ${sys%}
+	    #to include interrupt requests uncomment below
+            #lappend irqseries ${irq%}
+          }}
+          #Delete the first and trailing values if usr utilisation is 0, so we start from the first measurement and only chart when running
+          if { [ lindex $usrseries 0 ] eq 0.0 } {
+            set usrseries [ lreplace $usrseries 0 0 ]
+            set sysseries [ lreplace $sysseries 0 0 ]
+	    #to include interrupt requests uncomment below
+            #set irqseries [ lreplace $irqseries 0 0 ]
+            set xaxisvals [ lreplace $xaxisvals 0 0 ]
+          }
+          while { [ lindex $usrseries end ] eq 0.0 } {
+            set usrseries [ lreplace $usrseries end end ]
+            set sysseries [ lreplace $sysseries end end ]
+	    #to include interrupt requests uncomment below
+            #set irqseries [ lreplace $irqseries end end ]
+            set xaxisvals [ lreplace $xaxisvals end end ]
+          }
+	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
+          set line [ticklecharts::chart new]
+          set ::ticklecharts::htmlstdout "True" ; 
+          $line SetOptions -title [ subst {text "$dbdescription $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
+          $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
+          $line AddLineSeries -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
+          $line AddLineSeries -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
+	  #to include interrupt requests uncomment below
+          #$line AddLineSeries -name "irq%" -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
+          set html [ $line RenderX -title "$jobid " ]
+          #If we query the metrics chart while the job is running it will not be generated again
+          #meaning the output will be truncated
+          #only save the chart once the job is complete
+          set jobstatus [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0} ]
+          if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
+            hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'metrics',$html)}
+          }
           return $html
         }
       }
       default {
-        set html "Error: chart type should be result, timing or tcount"
+        set html "Error: chart type should be metrics, result, tcount or timing"
         return
       }
     }
@@ -1774,7 +1923,7 @@ namespace eval jobs {
         return
       }
     } else {
-      if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" } {
+      if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount"  || [ dict keys $paramdict ] eq "jobid metrics"  ||  [ dict keys $paramdict ] eq "jobid system" } {
         set jobid [ dict get $paramdict jobid ]
         if { [ dict keys $paramdict ] eq "jobid vu" } {
           set vuid [ dict get $paramdict vu ]
@@ -1815,6 +1964,8 @@ namespace eval jobs {
             set joboutput [ hdbjobs eval {DELETE FROM JOBMAIN WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid} ]
+            set joboutput [ hdbjobs eval {DELETE FROM JOBMETRIC WHERE JOBID=$jobid} ]
+            set joboutput [ hdbjobs eval {DELETE FROM JOBSYSTEM WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBOUTPUT WHERE JOBID=$jobid} ]
             set joboutput [ hdbjobs eval {DELETE FROM JOBCHART WHERE JOBID=$jobid} ]
             puts "Deleted Jobid $jobid"
@@ -1865,6 +2016,28 @@ namespace eval jobs {
                         puts $jsondict
                       }
                       return
+                  } else {
+                    if { [ dict keys $paramdict ] eq "jobid metrics" } {
+                      set jsondict [ getjobmetrics $jobid ]
+                      #huddle JSON is dict*dict return here
+                      set huddleobj [ huddle compile {dict * dict} $jsondict ]
+                      if { $outputformat eq "JSON" } {
+                        puts [ huddle jsondump $huddleobj ]
+                      } else {
+                        puts $jsondict
+                      }
+                      return
+                  } else {
+                    if { [ dict keys $paramdict ] eq "jobid system" } {
+                      set jsondict [ getjobsystem $jobid ]
+                      #huddle JSON is dict*dict return here
+                      set huddleobj [ huddle compile {list} $jsondict ]
+                      if { $outputformat eq "JSON" } {
+                        puts [ huddle jsondump $huddleobj ]
+                      } else {
+                        puts $jsondict
+                      }
+                      return
                     } else {
                       if { [ dict keys $paramdict ] eq "jobid db" } {
                       #A Timed run will include a query for a version string, add the version if we find it
@@ -1887,6 +2060,8 @@ namespace eval jobs {
                         } else {
                           set joboutput [ list $jobid "Cannot find Jobid output" ]
                           #huddle JSON is list return at end
+                            }
+                          }
                         }
                       }
                     }
@@ -1904,7 +2079,7 @@ namespace eval jobs {
           }
         }
       } else {
-        puts "Jobs Two Parameter Usage: jobs jobid status or jobs jobid db or jobs jobid bm or jobs jobid timestamp or jobs jobid dict or jobs jobid vuid or jobs jobid result or jobs jobid timing or jobs jobid delete"
+        puts "Jobs Two Parameter Usage: jobs jobid status or jobs jobid db or jobs jobid bm or jobid system or jobs jobid timestamp or jobs jobid dict or jobs jobid vuid or jobs jobid result or jobs jobid timing or jobs jobid delete or jobs jobid metrics or jobs jobid system"
         return
       }
     }

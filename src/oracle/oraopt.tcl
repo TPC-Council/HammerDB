@@ -862,7 +862,7 @@ proc configoratpch {option} {
 }
 #Configure Embedded Metrics Options
 proc metoraopts {} {
-    global agent_hostname agent_id
+    global agent_hostname agent_id start_display cpu_only
     upvar #0 icons icons
     upvar #0 configoracle configoracle
     #use same parameters as transaction counter
@@ -871,6 +871,8 @@ proc metoraopts {} {
     set oraoptsfields [ dict create connection {system_user {.metric.c1.e4 get} system_password {.metric.c1.e5 get} instance {.metric.c1.e3 get}} ]
     if {  [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
     if {  [ info exists agent_id ] } { ; } else { set agent_id 0 }
+    if {  [ info exists cpu_only ] } { ; } else { set cpu_only "false" }
+    if {  [ info exists start_display ] } { ; } else { set start_display "true" }
     set old_agent $agent_hostname
     set old_id $agent_id
     catch "destroy .metric"
@@ -899,6 +901,54 @@ proc metoraopts {} {
     ttk::entry $Name -width 30 -textvariable agent_hostname
     grid $Prompt -column 0 -row 8 -sticky e
     grid $Name -column 1 -row 8
+set Name $Parent.f1.e3
+    set Prompt $Parent.f1.p3
+    ttk::label $Prompt -text "Agent Start :"
+    ttk::button $Name -command {
+        if { $agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ] } { 
+	    agstart $agent_id $start_display
+    } else {
+            tk_messageBox -message "Agent hostname must be local to start, start manually on remote hosts"
+    }
+    } -text Start
+    grid $Prompt -column 0 -row 9 -sticky e
+    grid $Name -column 1 -row 9 -sticky w
+        if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
+        $Name configure -state disabled
+    }
+    set Name $Parent.f1.e4
+    set Prompt $Parent.f1.p4
+    ttk::label $Prompt -text "Agent Stop :"
+    ttk::button $Name -command {
+    agstop $agent_hostname $agent_id
+    } -text Stop
+    grid $Prompt -column 0 -row 10 -sticky e
+    grid $Name -column 1 -row 10 -sticky w
+    set Name $Parent.f1.e5
+    set Prompt $Parent.f1.p5
+    ttk::label $Prompt -text "Agent Status :"
+    ttk::button $Name -command {
+    agstatus $agent_hostname $agent_id
+    } -text Status
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky w
+    set Name $Parent.f1.e6
+    set Prompt $Parent.f1.p6
+    ttk::label $Prompt -text "Start Display with Local Agent :"
+    ttk::checkbutton $Name -text "" -variable start_display -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 13 -sticky e
+    grid $Name -column 1 -row 13 -sticky w
+        if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
+	set start_display false
+        $Name configure -state disabled
+    }
+    #Placeholder if feature desired in GUI for only CPU metrics
+    #set Name $Parent.f1.e7
+    #set Prompt $Parent.f1.p7
+    #ttk::label $Prompt -text "CPU Metrics Only :"
+    #ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
+    #grid $Prompt -column 0 -row 12 -sticky e
+    #grid $Name -column 1 -row 12 -sticky w
     set Name $Parent.c1.e3
     set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "Oracle Service Name :"
