@@ -159,14 +159,27 @@ proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob
     }
 }
 
-proc CreateDatabase { mysql_handler db } {
-    puts "CREATING DATABASE $db"
-    set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
-    set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
-    for { set i 1 } { $i <= 2 } { incr i } {
-        mysqlexec $mysql_handler $sql($i)
+proc CreateDatabase { maria_handler db } {
+    puts "CHECKING IF DATABASE $db EXISTS"
+    set db_exists [ maria::sel $maria_handler "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'" -flatlist ]
+    if { $db_exists } {
+        set table_count [ maria::sel $maria_handler "SELECT COUNT(DISTINCT TABLE_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db'" -flatlist ]
+        if { $table_count == 0 } {
+            puts "Empty database $db exists"
+            puts "Using existing empty Database $db for Schema build"
+        } else {
+            puts "Database $db exists but is not empty, specify a new or empty database name"
+            return false
+        }
+    } else {
+        puts "CREATING DATABASE $db"
+        set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
+        set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
+        for { set i 1 } { $i <= 2 } { incr i } {
+            mariaexec $maria_handler $sql($i)
+        }
     }
-    return
+    return true
 }
 
 proc CreateTables { mysql_handler mysql_tpch_storage_engine } {
@@ -803,12 +816,15 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             PrepareOceanbase $host $port $socket $ssl_options $user $password $ob_tenant_name
         }
         set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $oceanbase_db $ob_tenant_name]
-    
-        CreateDatabase $mysql_handler $db
+        set db_created [ CreateDatabase $mysql_handler $db ]
+        if { !$db_created } {
+            tsv::set application abort 1
+            error "Database not created"
+        }
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
         # If storage_engine is set to heatwave, first, create the db schema using InnoDB and migrate it after data generation.
-        if {$oceanbase_db == "true" } {
+        if { $oceanbase_db == "true" } {
             CreateOBTables $mysql_handler $ob_partition_num
         } else {
             if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
@@ -817,7 +833,6 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
                 CreateTables $mysql_handler $mysql_tpch_storage_engine
             }
         }
-
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -844,22 +859,25 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
                 set prevactive $lvcnt
                 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
                 after 10000
-            }} else {
+            }
+        } else {
             puts "Loading REGION..."
             mk_region $mysql_handler
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
             mk_nation $mysql_handler
-            puts "Loading NATION COMPLETE"}}
+            puts "Loading NATION COMPLETE"
+        }
+    }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
             set mtcnt 0
             while 1 {
+                if { [ tsv::get application abort ] } { return }
                 if { [ tsv::exists application load ] } {
                     incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
+                    if { [ tsv::get application load ] eq "READY" } { break }
                     if { $mtcnt eq 48 } {
                         puts "Monitor failed to notify ready state"
                         return

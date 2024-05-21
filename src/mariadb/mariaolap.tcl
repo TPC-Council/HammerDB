@@ -96,13 +96,26 @@ proc ConnectToMaria { host port socket ssl_options user password } {
 }
 
 proc CreateDatabase { maria_handler db } {
-    puts "CREATING DATABASE $db"
-    set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
-    set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
-    for { set i 1 } { $i <= 2 } { incr i } {
-        mariaexec $maria_handler $sql($i)
+    puts "CHECKING IF DATABASE $db EXISTS"
+    set db_exists [ maria::sel $maria_handler "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'" -flatlist ]
+    if { $db_exists } {
+        set table_count [ maria::sel $maria_handler "SELECT COUNT(DISTINCT TABLE_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db'" -flatlist ]
+        if { $table_count == 0 } {
+            puts "Empty database $db exists"
+            puts "Using existing empty Database $db for Schema build"
+        } else {
+            puts "Database $db exists but is not empty, specify a new or empty database name"
+            return false
+        }
+    } else {
+        puts "CREATING DATABASE $db"
+        set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
+        set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
+        for { set i 1 } { $i <= 2 } { incr i } {
+            mariaexec $maria_handler $sql($i)
+        }
     }
-    return
+    return true
 }
 
 proc GenerateTableQueries { maria_tpch_storage_engine } {
@@ -620,13 +633,17 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
         set threaded "SINGLE-THREADED"
         set num_vu 1
     }
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+    if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
-	    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
-            CreateDatabase $maria_handler $db
-            mariause $maria_handler $db
-            maria::autocommit $maria_handler 0
-            CreateTables $maria_handler $maria_tpch_storage_engine
+        set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+        set db_created [ CreateDatabase $maria_handler $db ]
+        if { !$db_created } {
+            tsv::set application abort 1
+            error "Database not created"
+        }
+        mariause $maria_handler $db
+        maria::autocommit $maria_handler 0
+        CreateTables $maria_handler $maria_tpch_storage_engine
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -663,16 +680,15 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
             puts "Loading NATION COMPLETE"
         }
     }
-
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
             set mtcnt 0
             while 1 {
+                if { [ tsv::get application abort ] } { return }
                 if { [ tsv::exists application load ] } {
                     incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
+                    if { [ tsv::get application load ] eq "READY" } { break }
                     if { $mtcnt eq 48 } {
                         puts "Monitor failed to notify ready state"
                         return
@@ -680,9 +696,9 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
                 }
                 after 5000
             }
-	    set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
-	    mariause $maria_handler $db
-                mariaexec $maria_handler "SET FOREIGN_KEY_CHECKS = 0"
+            set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+            mariause $maria_handler $db
+            mariaexec $maria_handler "SET FOREIGN_KEY_CHECKS = 0"
             if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
             if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
             set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
@@ -692,8 +708,8 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
             tsv::lreplace common thrdlst $myposition $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]" 
+            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
             set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
         }
         puts "Start:[ clock format [ clock seconds ] ]"
