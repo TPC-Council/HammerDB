@@ -491,14 +491,27 @@ proc GatherStatistics { mysql_handler } {
     return
 }
 
-proc CreateDatabase { mysql_handler db } {
-    puts "CREATING DATABASE $db"
-    set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
-    set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
-    for { set i 1 } { $i <= 2 } { incr i } {
-        mysqlexec $mysql_handler $sql($i)
+proc CreateDatabase { maria_handler db } {
+    puts "CHECKING IF DATABASE $db EXISTS"
+    set db_exists [ maria::sel $maria_handler "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'" -flatlist ]
+    if { $db_exists } {
+        set table_count [ maria::sel $maria_handler "SELECT COUNT(DISTINCT TABLE_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db'" -flatlist ]
+        if { $table_count == 0 } {
+            puts "Empty database $db exists"
+            puts "Using existing empty Database $db for Schema build"
+        } else {
+            puts "Database $db exists but is not empty, specify a new or empty database name"
+            return false
+        }
+    } else {
+        puts "CREATING DATABASE $db"
+        set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
+        set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
+        for { set i 1 } { $i <= 2 } { incr i } {
+            mariaexec $maria_handler $sql($i)
+        }
     }
-    return
+    return true
 }
 
 proc CreateTables { mysql_handler mysql_storage_engine num_part history_pk } {
@@ -1002,8 +1015,12 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $db ] SCHEMA"
-	    set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
-        CreateDatabase $mysql_handler $db
+        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+        set db_created [ CreateDatabase $mysql_handler $db ]
+        if { !$db_created } {
+            tsv::set application abort 1
+            error "Database not created"
+        }
         mysqluse $mysql_handler $db
         mysql::autocommit $mysql_handler 0
         if { $partition eq "true" } {
@@ -1046,9 +1063,10 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
             puts "Waiting for Monitor Thread..."
             set mtcnt 0
             while 1 {
+                if { [ tsv::get application abort ] } { return }
                 if { [ tsv::exists application load ] } {
                     incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
+                    if { [ tsv::get application load ] eq "READY" } { break }
                     if { $mtcnt eq 48 } {
                         puts "Monitor failed to notify ready state"
                         return
@@ -1056,7 +1074,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
                 }
                 after 5000
             }
-	        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
             mysqluse $mysql_handler $db
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
@@ -1070,7 +1088,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
         LoadCust $mysql_handler $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
         LoadOrd $mysql_handler $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
         puts "End:[ clock format [ clock seconds ] ]"
-        mysql::commit $mysql_handler 
+        mysql::commit $mysql_handler
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
         }
