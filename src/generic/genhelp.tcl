@@ -36,6 +36,9 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli {jobs disable - Usage: jobs disable [ 0 | 1 ]}
                     putscli "0: Enable storage of job output, restart required."
                     putscli "1: Disable storage of job output, restart required.\n"
+                    putscli {jobs profileid - Usage: jobs profileid [ id ]}
+                    putscli "profileid: returns current performance profile id."
+                    putscli "profileid id: sets current performance profile id.\n"
                     putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]}
                     putscli "bm: list benchmark for jobid."
                     putscli "db: list database for jobid."

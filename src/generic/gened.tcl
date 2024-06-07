@@ -1669,7 +1669,7 @@ proc vurun {} {
     global _ED opmode jobid
 
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid run] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
@@ -2546,7 +2546,9 @@ proc remspace {sqltext} {
 
 proc autopilot_options {} {
     upvar #0 icons icons
-    global opmode apmode apduration apsequence autopilot suppo optlog unique_log_name no_log_buffer log_timestamps
+    upvar #0 genericdict genericdict
+    global opmode apmode apduration apsequence autopilot suppo optlog unique_log_name no_log_buffer log_timestamps jobs_disable jobs_profile_id
+    set jobs_disable 1
     if {  [ info exists apmode ] } { ; } else { set apmode "disabled" }
     if {  [ info exists apduration ] } { ; } else { set apduration 10 }
     if {  [ info exists apsequence ] } { ; } else { set apsequence "1 2 4 8 12 16 20 24" }
@@ -2555,6 +2557,16 @@ proc autopilot_options {} {
     if {  [ info exists unique_log_name ] } { ; } else { set unique_log_name 0 }
     if {  [ info exists no_log_buffer ] } { ; } else { set no_log_buffer 0 }
     if {  [ info exists log_timestamps ] } { ; } else { set log_timestamps 0 }
+    if {[dict exists $genericdict commandline jobs_profile_id]} {
+        set jobs_profile_id [ dict get $genericdict commandline jobs_profile_id ]
+        if { ![string is integer -strict $jobs_profile_id ] } {
+            set jobs_profile_id 0
+         }}
+    if {[dict exists $genericdict commandline jobs_disable ]} {
+    if { [ dict get $genericdict commandline jobs_disable ] eq 0 } {
+        set jobs_disable 0
+    }}
+
     catch "destroy .apopt"
     ttk::toplevel .apopt
     wm transient .apopt .ed_mainFrame
@@ -2589,6 +2601,7 @@ proc autopilot_options {} {
         .apopt.f1.e5 configure -state disabled
         .apopt.f1.e6 configure -state disabled
         .apopt.f1.e7 configure -state disabled
+        .apopt.f1.e1b configure -state disabled
     }
     set Prompt $Parent.f1.b2a
     ttk::label $Prompt -text "Autopilot Enabled :"
@@ -2602,13 +2615,25 @@ proc autopilot_options {} {
         .apopt.f1.e2 configure -state enabled
         .apopt.f1.e3 configure -state enabled
         .apopt.f1.e4 configure -state enabled
+    if {$jobs_disable eq "0"} {
+        .apopt.f1.e1b configure -state enabled
+		}
+    }
+    set Name $Parent.f1.e1b
+    set Prompt $Parent.f1.p1b
+    ttk::label $Prompt -text "Performance Profile ID :"
+    ttk::entry $Name -width 30 -textvariable jobs_profile_id
+    grid $Prompt -column 0 -row 5 -sticky e
+    grid $Name -column 1 -row 5
+    if {$jobs_disable != "0" || $apmode != "enabled" } {
+        $Name configure -state disabled
     }
     set Name $Parent.f1.e1
     set Prompt $Parent.f1.p1
     ttk::label $Prompt -text "Minutes per Test in Virtual User Sequence :"
     ttk::entry $Name -width 30 -textvariable apduration
-    grid $Prompt -column 0 -row 5 -sticky e
-    grid $Name -column 1 -row 5
+    grid $Prompt -column 0 -row 6 -sticky e
+    grid $Name -column 1 -row 6
     if {$apmode != "enabled" } {
         $Name configure -state disabled
     }
@@ -2727,6 +2752,8 @@ proc autopilot_options {} {
             .ed_mainFrame.buttons.autopilot configure -state disabled
         }
         remote_command [ concat auto_ops $suppo $optlog ]
+        dict set genericdict "commandline" "jobs_profile_id" $jobs_profile_id
+        Dict2SQLite "generic" $genericdict
         catch "destroy .apopt"
     } -text {OK}
     pack $Name -anchor w -side right -padx 3 -pady 3
@@ -2739,8 +2766,13 @@ proc autopilot_options {} {
 proc job_options {} {
     upvar #0 icons icons
     upvar #0 genericdict genericdict
-    global jobs_disable ws_port
+    global jobs_disable ws_port jobs_profile_id
     set jobs_disable 1
+    if {[dict exists $genericdict commandline jobs_profile_id]} {
+        set jobs_profile_id [ dict get $genericdict commandline jobs_profile_id ]
+        if { ![string is integer -strict $jobs_profile_id ] } {
+            set jobs_profile_id 0
+         }}
     if {[dict exists $genericdict commandline jobs_disable ]} {
     if { [ dict get $genericdict commandline jobs_disable ] eq 0 } {
         set jobs_disable 0
@@ -2786,12 +2818,21 @@ proc job_options {} {
     bind $Parent.f1.b2 <Button> {
             after 50 {tk_messageBox -message "Jobs will be enabled on HammerDB restart"}
     }
+    set Name $Parent.f1.e1b
+    set Prompt $Parent.f1.p1b
+    ttk::label $Prompt -text "Performance Profile ID :"
+    ttk::spinbox $Name -width 30 -from 0 -to 10000 -textvariable jobs_profile_id
+    grid $Prompt -column 0 -row 5 -sticky e
+    grid $Name -column 1 -row 5
+    if {$jobs_disable != "0" } {
+        $Name configure -state disabled
+    }
     set Name $Parent.f1.e1
     set Prompt $Parent.f1.p1
     ttk::label $Prompt -text "Web Service Port :"
-    ttk::entry $Name -width 30 -textvariable ws_port
-    grid $Prompt -column 0 -row 5 -sticky e
-    grid $Name -column 1 -row 5
+    ttk::spinbox $Name -width 30 -from 1 -to 10000 -textvariable ws_port
+    grid $Prompt -column 0 -row 6 -sticky e
+    grid $Name -column 1 -row 6
     if {$jobs_disable != "0" } {
         $Name configure -state disabled
     }
@@ -2799,8 +2840,8 @@ proc job_options {} {
     set Prompt $Parent.f1.p2
     ttk::label $Prompt -text "Web Service Start :"
     ttk::button $Name -command {wsstart} -text Start
-    grid $Prompt -column 0 -row 6 -sticky e
-    grid $Name -column 1 -row 6 -sticky w
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7 -sticky w
     if {$jobs_disable != "0" } {
         $Name configure -state disabled
     }
@@ -2808,8 +2849,8 @@ proc job_options {} {
     set Prompt $Parent.f1.p3
     ttk::label $Prompt -text "Web Service Stop :"
     ttk::button $Name -command {wsstop} -text Stop
-    grid $Prompt -column 0 -row 7 -sticky e
-    grid $Name -column 1 -row 7 -sticky w
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8 -sticky w
     if {$jobs_disable != "0" } {
         $Name configure -state disabled
     }
@@ -2817,8 +2858,8 @@ proc job_options {} {
     set Prompt $Parent.f1.p4
     ttk::label $Prompt -text "Web Service Status :"
     ttk::button $Name -command {wsstatus} -text Status
-    grid $Prompt -column 0 -row 8 -sticky e
-    grid $Name -column 1 -row 8 -sticky w
+    grid $Prompt -column 0 -row 9 -sticky e
+    grid $Name -column 1 -row 9 -sticky w
     if {$jobs_disable != "0" } {
         $Name configure -state disabled
     }
@@ -2833,6 +2874,8 @@ proc job_options {} {
             .ed_mainFrame.buttons.results configure -state disabled
         }
         dict set genericdict "commandline" "jobs_disable" $jobs_disable
+	if { $jobs_disable eq 1 } { set jobs_profile_id 0 }
+        dict set genericdict "commandline" "jobs_profile_id" $jobs_profile_id
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
         catch "destroy .jobopt"
@@ -2845,7 +2888,7 @@ proc job_options {} {
 }
 
 proc metricsopts {} {
-    #Introduced new option for Database metrics initially Oracle only
+    #Introduced new option for Database metrics, currently Oracle and PostgreSQL
     global rdbms
     if { $rdbms eq "Oracle" } {
         metoraopts
@@ -3318,7 +3361,7 @@ proc build_schema {} {
     }
 
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid build] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
@@ -3369,7 +3412,7 @@ proc check_schema {} {
         return 1
     }
 set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid check] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
@@ -3417,7 +3460,7 @@ proc delete_schema {} {
         return 1
     }
 set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid delete] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }

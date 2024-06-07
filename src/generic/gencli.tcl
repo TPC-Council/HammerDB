@@ -1146,7 +1146,7 @@ proc buildschema {} {
         return
     }
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid build] eq 1 } {
         puts "Error: Jobid $jobid already exists or error in creating jobid in JOBMAIN table"
         return
     }
@@ -1307,7 +1307,7 @@ proc checkschema {} {
     }
     upvar #0 dbdict dbdict
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid check] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
@@ -1370,7 +1370,7 @@ proc deleteschema {} {
     }
     upvar #0 dbdict dbdict
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid delete] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
@@ -1408,7 +1408,7 @@ proc vurun {} {
     global _ED opmode jobid
 
     set jobid [guid]
-    if { [jobmain $jobid] eq 1 } {
+    if { [jobmain $jobid run] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
         #return
     }
