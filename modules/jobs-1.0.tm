@@ -1012,12 +1012,12 @@ namespace eval jobs {
 	continue
 	} else {
 	set profdict [ huddle get_stripped $profiles ]
-        set maxNOPM -1
+        set maxnopm -1
         dict for {job profiledata} $profdict {
         set jobcount [ dict size $profdict ]
         dict for {k v} $profiledata {
         if { $k eq "nopm" } {
-        if {$v > $maxNOPM} {
+        if {$v > $maxnopm} {
 	set maxjob $job
         set maxurl "[wapp-param BASE_URL]/jobs?jobid=$maxjob&index"
         set maxnopm $v
