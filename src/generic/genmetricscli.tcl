@@ -264,14 +264,23 @@ proc gmean L {
          set jobid [ regsub {Benchmark.*=} $jobid ""]
 	 }
         hdbjobs eval {INSERT INTO JOBMETRIC(jobid,usr,sys,irq,idle) VALUES($jobid,$usrgmean,$sysgmean,$irqgmean,$idlegmean)}
-	#Metrics started before job was running, if placeholder in jobsystem update with correct jobid
+        #Metrics started before job was running, if placeholder in jobsystem update with correct jobid
         set jobhost [ hdbjobs eval {select hostname from JOBSYSTEM where JOBID=$jobid} ]
-	if {$jobhost eq ""} { 
-	hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where JOBID="@@@"} {
-	hdbjobs eval {update JOBSYSTEM set jobid = $jobid where JOBID="@@@"}
-		}
+        if {$jobhost eq ""} {
+        set placehold [ hdbjobs eval {select hostname from JOBSYSTEM where JOBID="@@@"} ]
+        if {$placehold eq ""} {
+        #The jobid is not present in the jobsystem table and there is no placeholder
+        #Likely metrics are continual running for multiple jobs so find system data from previous job
+        hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where hostname=$agent_hostname LIMIT 1} {
+        hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount) VALUES($jobid,$agent_hostname,$cpumodel,$cpucount)}}
+        } else {
+        hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where JOBID="@@@"} {
+        hdbjobs eval {update JOBSYSTEM set jobid = $jobid where JOBID="@@@"}
+                }
+                }
     	} else {
 	#The jobid is present in the jobsystem table
+			;
         }
 	}
 	}

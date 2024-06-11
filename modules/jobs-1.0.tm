@@ -1001,7 +1001,7 @@ namespace eval jobs {
       wapp-subst {<h3 class="title">Performance Profiles:</h3>}
       wapp-subst {<div><ol style='column-width: 20ex;'>\n}
       wapp-subst {<br><table>\n}
-      wapp-subst {<th>Profileid</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th>\n}
+      wapp-subst {<th>Profile ID</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th>\n}
         set profileids [ join [ hdbjobs eval {select distinct(profile_id) from jobmain where profile_id > 0 order by profile_id asc} ]]
       foreach profileid $profileids {
         incr profcount
@@ -1025,7 +1025,7 @@ namespace eval jobs {
         set maxtpm [ dict get $profiledata tpm ]
         set maxavu [ dict get $profiledata activevu ]
 	}}}}
-        wapp-subst {<tr><td><a href='%html($url)'>%html(Profile ID-$profileid)</a></td><td>%html($jobcount)</td><td>%html($maxdb)</td><td><a href='%html($maxurl)'>%html($maxjob)</a></td><td>%html($maxnopm)</td><td>%html($maxtpm)</td><td>%html($maxavu)</td></td></tr>\n}
+        wapp-subst {<tr><td><a href='%html($url)'>%html(Profile $profileid)</a></td><td>%html($jobcount)</td><td>%html($maxdb)</td><td><a href='%html($maxurl)'>%html($maxjob)</a></td><td>%html($maxnopm)</td><td>%html($maxtpm)</td><td>%html($maxavu)</td></td></tr>\n}
 	}
 	}
       wapp-subst {</table>\n}
@@ -1148,7 +1148,7 @@ namespace eval jobs {
           set url "[wapp-param BASE_URL]/jobs?jobid=$jobid"
           set text "output"
           wapp-subst {<li><a href='%html($url)'>%html($text)</a>\n}
-          foreach option "bm db system dict result status tcount metrics timestamp timing delete" {
+          foreach option "bm db dict result status tcount system metrics timestamp timing delete" {
             set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&$option"
             switch $option {
               bm {
@@ -1927,7 +1927,7 @@ namespace eval jobs {
           #only save the chart once the last job is complete
           set jobstatus [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0} ]
           if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
-            hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'tcount',$html)}
+            hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'profile',$html)}
           }
          return $html
       }
