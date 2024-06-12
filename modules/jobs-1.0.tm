@@ -283,8 +283,8 @@ namespace eval jobs {
           puts $res
         } elseif { [ string equal $cmd "getchart" ] } {
           set charttype $param3
-          if { ![string equal $charttype "result" ] && ![string equal $charttype "timing" ] && ![string equal $charttype "tcount" ]  && ![string equal $charttype "metrics" ]  } {
-            puts "Error: Jobs Three Parameter Usage: jobs jobid getchart \[ result | timing | tcount | metrics\]"
+          if { ![string equal $charttype "result" ] && ![string equal $charttype "timing" ] && ![string equal $charttype "tcount" ]  && ![string equal $charttype "metrics" ] && ![string equal $charttype "profile" ] } {
+            puts "Error: Jobs Three Parameter Usage: jobs jobid getchart \[ result | timing | tcount | metrics | profile \]"
           } else {
             set ctype "chart=$charttype"
             set res [getjob "jobid=$jobid&$cmd&$ctype" ]
@@ -295,7 +295,7 @@ namespace eval jobs {
         } 
       }
       default {
-        puts "Error: Usage: \[ jobs | jobs format | jobs jobid | jobs jobid command | jobs jobid command option | jobs profileid | jobs profileid id\] - type \"help jobs\""
+        puts "Error: Usage: \[ jobs | jobs format | jobs jobid | jobs jobid command | jobs jobid command option | jobs profileid | jobs profileid id | jobs profile id \] - type \"help jobs\""
       }
     }
   }
@@ -1889,6 +1889,7 @@ namespace eval jobs {
 	set lineseries2 [ list ]
 	set xaxisvals [ list ]
 	set profiles [ get_job_profile $profileid ]
+	if {$profiles eq {}} {return}
 	set profdict [ huddle get_stripped $profiles ]
         dict for {job profiledata} $profdict {
         dict for {k v} $profiledata {

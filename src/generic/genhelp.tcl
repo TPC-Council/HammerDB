@@ -39,6 +39,8 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli {jobs profileid - Usage: jobs profileid [ id ]}
                     putscli "profileid: returns current performance profile id."
                     putscli "profileid id: sets current performance profile id.\n"
+                    putscli {jobs profile - Usage: jobs profile [ id ]}
+                    putscli "profile id: returns the results for the performance profile id.\n"
                     putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]}
                     putscli "bm: list benchmark for jobid."
                     putscli "db: list database for jobid."
@@ -54,10 +56,11 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "vuid: list VU output for VU with vuid for jobid.\n"
                     putscli {jobs jobid timing - Usage: jobs jobid timing vuid}
                     putscli "timing vuid: list xtprof timings for vuid for jobid.\n"
-		    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount | metrics ]}
+		    putscli {jobs jobid getchart - Usage: jobs jobid getchart [result | timing | tcount | metrics | profile ]}
                     putscli "result: generate html chart for TPROC-C/TPROC-H result."
                     putscli "timing: generate html chart for TPROC-C/TPROC-H timings."
                     putscli "metrics: generate html chart for TPROC-C/TPROC-H metrics."
+                    putscli "profile: generate html chart for TPROC-C performance profile using profileid for jobid argument."
                     putscli "tcount: generate html chart for TPROC-C transaction count.\n"
                 }
                 print {
