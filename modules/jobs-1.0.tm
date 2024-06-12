@@ -1865,7 +1865,7 @@ namespace eval jobs {
 	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
-          $line SetOptions -title [ subst {text "$dbdescription $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
+          $line SetOptions -title [ subst {text "$dbdescription $jobid"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
           $line AddLineSeries -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
