@@ -66,6 +66,7 @@
         <keepalive_margin>60</keepalive_margin>
         <jobsoutput>JSON</jobsoutput>
         <jobs_disable>0</jobs_disable>
+	<jobs_profile_id>0</jobs_profile_id>
     </commandline>
     <webservice>
 	   <ws_port>8080</ws_port> 
