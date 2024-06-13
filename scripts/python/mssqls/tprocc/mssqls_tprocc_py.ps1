@@ -2,6 +2,10 @@ Write-Output "BUILD HAMMERDB SCHEMA"
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 .\hammerdbcli py auto ./scripts/python/mssqls/tprocc/mssqls_tprocc_buildschema.py
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+Write-Output "CHECK HAMMERDB SCHEMA"
+Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+.\hammerdbcli py auto ./scripts/python/mssqls/tprocc/mssqls_tprocc_checkschema.py
+Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 Write-Output "RUN HAMMERDB TEST"
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 .\hammerdbcli py auto ./scripts/python/mssqls/tprocc/mssqls_tprocc_run.py
