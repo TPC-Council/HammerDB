@@ -1127,3 +1127,22 @@ Add optional purge and write back for MariaDB TPROC-C database #642 (#640)
 Docker cloudtk docker gui #641 (#631)
 Fix call ash_fetch,error on Windows client running PostgreSQL metrics #638 (#637)
 Alter MSSQLS TPCH Schema to use Decimal not Money #634
+
+---------------------------------------------------------------------
+
+Version 4.11 June 2024
+
+Pull Requests & Issues
+
+Add checkschema to example CLI scripts (#683)
+Adds Performance Profile for TPROC-C Jobs #707 (#661)
+Add Schema Existence Check for MySQL/MariaDB #706
+Add CPU metrics to CLI, Jobs and automate start #705 (#704)
+Fix incorrect value for SQLite database #701 (#700)
+Persist VU settings across restarts #696 (#698)
+Add Database version to TPROC-C timed test #690 (#684)
+Fix RETURNING d_next_o_id in NEWORD bug #688 (#686)
+Fix missing close-brace in PostgreSQL XML Connect Pool option #682(#681)
+Update SVG and themes packages, Unify themes on Windows and Linux #680 (#679)
+Change GUI properties dailogs to tabbed #678 (#676)
+Add Support for oceanbase tpch enhancement #670 (#563) (#673)
