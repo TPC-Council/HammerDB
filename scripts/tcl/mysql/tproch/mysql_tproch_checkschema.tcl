@@ -13,5 +13,5 @@ diset tpch mysql_tpch_user root
 diset tpch mysql_tpch_pass mysql
 diset tpch mysql_tpch_dbase tpch
 puts " BUILD SCHEMA STARTED"
-buildschema
+checkschema
 puts "BUILD SCHEMA COMPLETED"
