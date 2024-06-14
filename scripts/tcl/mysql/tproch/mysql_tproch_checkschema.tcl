@@ -12,6 +12,6 @@ diset connection mysql_socket /tmp/mysql.sock
 diset tpch mysql_tpch_user root
 diset tpch mysql_tpch_pass mysql
 diset tpch mysql_tpch_dbase tpch
-puts " BUILD SCHEMA STARTED"
+puts "CHECK SCHEMA STARTED"
 checkschema
-puts "BUILD SCHEMA COMPLETED"
+puts "CHECK SCHEMA COMPLETED"
