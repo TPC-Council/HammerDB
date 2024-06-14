@@ -159,11 +159,11 @@ proc ConnectToMySQL { host port socket ssl_options user password is_oceanbase ob
     }
 }
 
-proc CreateDatabase { maria_handler db } {
+proc CreateDatabase { mysql_handler db } {
     puts "CHECKING IF DATABASE $db EXISTS"
-    set db_exists [ maria::sel $maria_handler "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'" -flatlist ]
+    set db_exists [ mysql::sel $mysql_handler "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'" -flatlist ]
     if { $db_exists } {
-        set table_count [ maria::sel $maria_handler "SELECT COUNT(DISTINCT TABLE_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db'" -flatlist ]
+        set table_count [ mysql::sel $mysql_handler "SELECT COUNT(DISTINCT TABLE_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db'" -flatlist ]
         if { $table_count == 0 } {
             puts "Empty database $db exists"
             puts "Using existing empty Database $db for Schema build"
@@ -176,7 +176,7 @@ proc CreateDatabase { maria_handler db } {
         set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
         set sql(2) "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET latin1 COLLATE latin1_swedish_ci"
         for { set i 1 } { $i <= 2 } { incr i } {
-            mariaexec $maria_handler $sql($i)
+            mysqlexec $mysql_handler $sql($i)
         }
     }
     return true
