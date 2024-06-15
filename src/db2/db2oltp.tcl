@@ -2462,6 +2462,7 @@ proc check_tpcc { dbase user password count_ware } {
 	    #Check 2 Tables Exist
             puts "Check tables and indices"
 	    foreach table [dict keys $tables] {
+
             set tabexists [ db2_select_direct $db_handle "select status from syscat.tables where tabname = '[ string toupper $table]'" ]
             set tabstatus [ db2_fetchrow $tabexists ]
 	    if { $tabstatus != "N" } {
@@ -2475,11 +2476,32 @@ proc check_tpcc { dbase user password count_ware } {
             }
             }
 	    #Check 4 Tables are indexed
+	    set could_be_view {customer stock orders order_line}
+	    if {$table in $could_be_view} {
+	    set view_handle1 [ db2_select_direct $db_handle "select viewcheck from syscat.views where viewname = '[ string toupper $table]'" ]
+            set viewcheck [ db2_fetchrow $view_handle1 ]
+	    if { $viewcheck eq "C" } {
+            for { set p 1 } { $p <= 10 } { incr p } {
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from syscat.indexes where tabname = '[ string toupper $table\_$p]'" ]
+            set is_indexed [ db2_fetchrow $stmnt_handle1 ]
+	    if { $is_indexed eq 0 } {
+            error "TPROC-C Schema check failed $dbase schema on table $table\_$p no indices"
+            }
+            }
+            } else {
+            set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from syscat.indexes where tabname = '[ string toupper $table]'" ]
+            set is_indexed [ db2_fetchrow $stmnt_handle1 ]
+	    if { $is_indexed eq 0 } {
+            error "TPROC-C Schema check failed $dbase schema on table $table no indices"
+            }
+            }
+            } else {
             set stmnt_handle1 [ db2_select_direct $db_handle "select count(*) from syscat.indexes where tabname = '[ string toupper $table]'" ] 
             set is_indexed [ db2_fetchrow $stmnt_handle1 ]
 	    if { $is_indexed eq 0 } {
             if { $table != "history" } {
             error "TPROC-C Schema check failed $dbase schema on table $table no indices"
+            }
             }
             }
 	    #Check 5 Tables are populated
