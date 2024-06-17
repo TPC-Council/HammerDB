@@ -2,6 +2,10 @@ Write-Output "BUILD HAMMERDB SCHEMA"
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 .\hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_buildschema.tcl 
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+Write-Output "CHECK HAMMERDB SCHEMA"
+Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+.\hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_checkschema.tcl
+Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 Write-Output "RUN HAMMERDB TEST"
 Write-Output "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 .\hammerdbcli auto ./scripts/tcl/postgres/tprocc/pg_tprocc_run.tcl 

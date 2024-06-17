@@ -1720,7 +1720,7 @@ proc ConnectToMaria { host port socket ssl_options user password } {
 proc check_tpch { host port socket ssl_options user password dbase scale_factor } {
     global mariastatus
     puts "Checking $dbase TPROC-H schema"
-    set tables [ dict create supplier [ expr {$scale_factor * 10000} ] customer [ expr {$scale_factor * 150000} ] lineitem [ expr {$scale_factor * 6000000 * 0.99} ] nation 25 orders [ expr {$scale_factor * 1500000} ] part [ expr {$scale_factor * 200000} ] partsupp [ expr {$scale_factor * 800000} ] region 5 ]
+    set tables [ dict create SUPPLIER [ expr {$scale_factor * 10000} ] CUSTOMER [ expr {$scale_factor * 150000} ] LINEITEM [ expr {$scale_factor * 6000000 * 0.99} ] NATION 25 ORDERS [ expr {$scale_factor * 1500000} ] PART [ expr {$scale_factor * 200000} ] PARTSUPP [ expr {$scale_factor * 800000} ] REGION 5 ]
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
    #Check 1 Database Exists
     puts "Check database"
@@ -1763,7 +1763,7 @@ proc check_tpch { host port socket ssl_options user password dbase scale_factor 
 	}
         #Consistency check
 	puts "Check consistency"
-    	set checkconsistency [  maria::sel $maria_handler "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(truncate(truncate(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM orders, lineitem WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" -flatlist ]
+    	set checkconsistency [  maria::sel $maria_handler "SELECT * FROM (SELECT o_orderkey, o_totalprice - SUM(truncate(truncate(l_extendedprice * (1 - l_discount),2) * (1 + l_tax),2)) part_res FROM ORDERS, LINEITEM WHERE o_orderkey=l_orderkey GROUP BY o_orderkey, o_totalprice) temp WHERE not part_res=0" -flatlist ]
 	if {[ llength $checkconsistency ] > 0} {
 	error "TPROC-H Schema check failed $dbase schema consistency check failed"
 	} 
