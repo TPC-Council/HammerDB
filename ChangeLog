@@ -1134,7 +1134,7 @@ Version 4.11 June 2024
 
 Pull Requests & Issues
 
-Add checkschema to example CLI scripts (#683)
+Added example scripts for checkschema for all databases #709 (#683)
 Adds Performance Profile for TPROC-C Jobs #707 (#661)
 Add Schema Existence Check for MySQL/MariaDB #706
 Add CPU metrics to CLI, Jobs and automate start #705 (#704)
