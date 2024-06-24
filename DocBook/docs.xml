@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.10.</para>
+      <para>The following are the release notes for HammerDB v4.11.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -72,8 +72,11 @@
       <section>
         <title>Storing, Retrieval and Visualization of Results</title>
 
-        <para>From v4.8 the HammerDB Web Service has been enhanced to provide
-        a read only interface to the jobs output from both the GUI and CLI
+        <para>From v4.11 the option to build a Performance Profile by grouping
+        multiple TPROC-C jobs under a profile id has been added to the storage
+        and retrieval of results as well as storing CPU metrics as prt of a
+        job. From v4.8 the HammerDB Web Service has been enhanced to provide a
+        read only interface to the jobs output from both the GUI and CLI
         stored in a SQLite database using a web browser. This enables the
         viewing of workload configuration as well as automatically generated
         charts from the job output. These charts use Apache e-charts and
@@ -87,55 +90,33 @@
       <section>
         <title>Schema and Consistency Checks</title>
 
-        <para>From v4.10 HammerDB has added schema and data consistency checks
-        for all databases. These checks can be run after a schema build and
-        after running the workload to verify that the schema and data has
-        remained consistent.</para>
+        <para>From v4.11 the schema checks have been added to the example
+        scripts for all databases. From v4.10 HammerDB has added schema and
+        data consistency checks for all databases. These checks can be run
+        after a schema build and after running the workload to verify that the
+        schema and data has remained consistent.</para>
       </section>
 
       <section>
-        <title>Docker CloudTK GUI</title>
+        <title>Persist VU Settings</title>
 
-        <para>HammerDB has added an additional Docker image to enable running
-        the GUI through a web browser.</para>
+        <para>From v4.11 the option has been added to persist VU settings
+        across HammerDB restarts.</para>
       </section>
 
       <section>
-        <title>Quotemeta to escape special characters in passwords</title>
+        <title>GUI SVG and Theme updates</title>
 
-        <para>From v4.10 HammerDB has added an optional quotemeta function to
-        escape special characters in passwords. By default this functionality
-        is enabled and can be controlled with the quote_passwords setting in
-        the configuration.</para>
-
-        <programlisting> &lt;code_highlight&gt;
-	&lt;highlight&gt;true&lt;/highlight&gt;
-<emphasis role="bold">	&lt;quote_passwords&gt;true&lt;/quote_passwords&gt;</emphasis>
-   &lt;/code_highlight&gt;</programlisting>
+        <para>From v4.11 the SVG and theme packages used by HammerDB have been
+        updated, the themes unified between Windows and Linux and the
+        properties dialogs moved to a tabbed configuration.</para>
       </section>
 
       <section>
-        <title>Microsoft SQL Server 2022 Entra Authentication</title>
+        <title>Oceanbase for MySQL TPROC-H</title>
 
-        <para>From v4.10 HammerDB has been enhanced to permit Microsoft Entra
-        authentication where configured for SQL Server 2022 with the ODBC
-        driver version 18.</para>
-      </section>
-
-      <section>
-        <title>MariaDB TPROC-C purge and write back option</title>
-
-        <para>From v4.10 HammerDB has added an option to the TPROC-C workload
-        for MariaDB to enable accelerated purge and writeback between runs.
-        This option is compatible with MariaDB versions 10.7.0 upwards.</para>
-      </section>
-
-      <section>
-        <title>Giset command to dynamically set generic dictionary
-        settings</title>
-
-        <para>From v4.10 HammerDB has added a giset command that can be used
-        to modify generic dictionary settings such as timeouts.</para>
+        <para>From v4.11 Oceanbase has been added as a option to the MySQL
+        TPROC-H workload.</para>
       </section>
 
       <section>
@@ -252,46 +233,43 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.10 New Features</title>
+      <title>HammerDB v4.11 New Features</title>
 
-      <para>HammerDB v4.10 New Features are all referenced to <link
+      <para>HammerDB v4.11 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Pull Requests</link>, where more details for each new feature and
       related pull requests can be found here:</para>
 
-      <para>[TPC-Council#668] Increase default CLI timeouts</para>
+      <para>[TPC-Council#709] Added example scripts for checkschema for all
+      databases</para>
 
-      <para>[TPC-Council#665] Add support for Microsoft Entra authentication
-      for SQL Server</para>
+      <para>[TPC-Council#707] Adds Performance Profile for TPROC-C Jobs</para>
 
-      <para>[TPC-Council#664] Add schema and consistency checks for all
-      databases for TPROC-C and TPROC-H</para>
+      <para>[TPC-Council#706] Add Schema Existence Check for
+      MySQL/MariaDB</para>
 
-      <para>[TPC-Council#658] Add quotemeta function to escape special
-      characters in passwords</para>
+      <para>[TPC-Council#705] Add CPU metrics to CLI, Jobs and automate
+      start</para>
 
-      <para>[TPC-Council#653] Add bcp -u option for SQL Server to trust the
-      server certificate</para>
+      <para>[TPC-Council#701] Fix incorrect value for SQLite database</para>
 
-      <para>[TPC-Council#652] MSSQL TPCH Create Advanced Statistics</para>
+      <para>[TPC-Council#696] Persist VU settings across restarts</para>
 
-      <para>[TPC-Council#647] MSSQLS TPCH Add Flag to Partition Orders and
-      Lineitems</para>
+      <para>[TPC-Council#690] Add Database version to TPROC-C timed
+      test</para>
 
-      <para>[TPC-Council#646] Add giset command to set generic dictionary
-      settings</para>
+      <para>[TPC-Council#688] Fix RETURNING d_next_o_id in NEWORD bug</para>
 
-      <para>[TPC-Council#644] Add check to vurun for pre-existing
-      threads</para>
+      <para>[TPC-Council#682] Fix missing close-brace in PostgreSQL XML
+      Connect Pool option</para>
 
-      <para>[TPC-Council#642] Add optional purge and write back for MariaDB
-      TPROC-C database[TPC-Council#641] Docker cloudtk docker gui</para>
+      <para>[TPC-Council#680] Update SVG and themes packages, Unify themes on
+      Windows and Linux</para>
 
-      <para>[TPC-Council#638] Fix call ash_fetch,error on Windows client
-      running PostgreSQL metrics</para>
+      <para>[TPC-Council#678] Change GUI properties dailogs to tabbed</para>
 
-      <para>[TPC-Council#634] Alter MSSQLS TPCH Schema to use Decimal not
-      Money</para>
+      <para>[TPC-Council#670] Add Support for oceanbase tpch
+      enhancement</para>
     </section>
 
     <section>
@@ -419,12 +397,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.10-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.11-Win-x86-64-Setup.exe</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.10-Linux.tar.gz 
-sha1sum HammerDB-4.10-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.11-Linux.tar.gz 
+sha1sum HammerDB-4.11-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -646,7 +624,7 @@ sha1sum HammerDB-4.10-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.10.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.11.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
         HammerDB-4.10.</para>
@@ -676,7 +654,7 @@ sha1sum HammerDB-4.10-Linux.tar.gz</programlisting>
       <title>HammerDB Docker Container Build &amp; Run</title>
 
       <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. Version 4.10 includes both a pre-built Docker
+      distribute and deploy. Version 4.11 includes both a pre-built Docker
       Image and a Dockerfile that can be used to create a HammerDB Docker
       containers. This container is based on an Ubuntu 20.04 base image and
       provides a ready to use environment to run HammerDB. HammerDB has a
@@ -703,10 +681,10 @@ docker pull tpcorg/hammerdb:mssqls
 </programlisting>
 
         <para>The official HammerDB Docker images are hosted by the
-        TPC-Council and recognised by the Docker Sponsored OSS program.</para>
+        TPC-Council.</para>
 
         <figure>
-          <title>Docker Sponsored OSS</title>
+          <title>HammerDB Docker Hub</title>
 
           <mediaobject>
             <imageobject>
@@ -736,14 +714,14 @@ Running with default file descriptor limit
 httpd started on port 8081
 secure httpd started on SSL port 8082</programlisting>
 
-        <para>Otherwise you can only expose the ports as needed. </para>
+        <para>Otherwise you can only expose the ports as needed.</para>
 
         <programlisting>docker run -p 8081:8081 -p 8082:8082 -p 8080:8080 --name hammerdb-cloudtk hammerdb:cloudtk</programlisting>
 
         <para>You can connect to port 8081 for an unencrypted connection.
         Alternatively you can use an encrypted connection on port 8082. By
         default sample self-signed certificates are installed and these should
-        be replaced by your own. </para>
+        be replaced by your own.</para>
 
         <figure>
           <title>CloudTK Launcher</title>
@@ -826,7 +804,7 @@ secure httpd started on SSL port 8082</programlisting>
         <para>To create an image: Go to the folder containing the Dockerfile
         and run the docker build command.</para>
 
-        <programlisting>docker build -t hammerdb-v4.10 . </programlisting>
+        <programlisting>docker build -t hammerdb-v4.11 . </programlisting>
 
         <figure>
           <title>docker build</title>
@@ -857,7 +835,7 @@ secure httpd started on SSL port 8082</programlisting>
         build is successful but the client libraries for IBM are not
         installed.</para>
 
-        <programlisting>	docker run -it --name hammerdb hammerdb-v4.10 bash</programlisting>
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.11 bash</programlisting>
 
         <figure>
           <title>docker run</title>
@@ -899,7 +877,7 @@ secure httpd started on SSL port 8082</programlisting>
         communicate with remote databases. The following is an example of
         adding host network to the container.</para>
 
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.10 bash</programlisting>
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.11 bash</programlisting>
       </section>
     </section>
 
@@ -931,7 +909,7 @@ secure httpd started on SSL port 8082</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.10
+      <programlisting>HammerDB CLI v4.11
 Copyright (C) 2003-2024 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -1078,9 +1056,9 @@ Success ... loaded library mysqltcl for MySQL</programlisting>
 
       <para>The following table shows the libraries that are required for each
       database version. All libraries are 64-bit. Note that some databases are
-      considerably more flexible in library versions and therefore the
-      following section is important to ensure that you install the correct
-      library for your needs.</para>
+      considerably more flexible than others in library versions and therefore
+      the following section is important to ensure that you install the
+      correct library for your needs.</para>
 
       <table>
         <title>3rd party libraries</title>
@@ -1234,7 +1212,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.9 (4.X and version 3.3) has been built and
+        <para>HammerDB version 4.11 (4.X and version 3.3) has been built and
         tested against a MySQL 8.0 client installation, hammerDB version
         3.0-3.2 has been built against MySQL 5.7. On Linux this means that
         HammerDB will require a MySQL client library called
@@ -1248,8 +1226,8 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.9 has been built and tested against MariaDB
-        10.6 client installation. On Linux this means that HammerDB will
+        <para>HammerDB version 4.11 has been built and tested against MariaDB
+        10.8 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
         previously in this section. On Windows the client library is called
@@ -1346,7 +1324,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         version of HammerDB is detected from the one that created the existing
         database files, reporting the following message at startup.</para>
 
-        <programlisting>The existing SQLite DBs are from version v4.9. SQLite DBs will be reset to v4.10.</programlisting>
+        <programlisting>The existing SQLite DBs are from version v4.10. SQLite DBs will be reset to v4.11.</programlisting>
 
         <para>For this reason before running another version any existing
         configuration that is wished to be saved should be exported using
@@ -1396,11 +1374,11 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
 &lt;/theme&gt;</programlisting>
 
       <para>The scaletheme value will accept settings of "auto", "awlight",
-      "arc" or "breeze". If set to the default of "auto", "awlight" will be
-      used on Linux.</para>
+      "arc" or "breeze". If set to the default of "auto", from v4.11 "breeze"
+      will be used on both Linux and Windows.</para>
 
       <figure>
-        <title>Linux Theme Awlight</title>
+        <title>Linux Breeze Theme</title>
 
         <mediaobject>
           <imageobject>
@@ -1408,8 +1386,6 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
           </imageobject>
         </mediaobject>
       </figure>
-
-      <para>and "breeze" on Windows.</para>
 
       <figure>
         <title>Windows Theme Breeze</title>
@@ -1784,11 +1760,11 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
     and running and be familiar with basic functionality of connecting to your
     database. After starting HammerDB, firstly you will need to select which
     benchmark and database you wish to use by choosing Benchmark from under
-    the Options menu or double on your chosen database in the tree-view. The
-    initial settings are determined by the values in your xml configuration
-    file. Select your chosen database and TPROC-C and press OK. This Quick
-    Start guide uses Microsoft SQL Server, however the process is the same for
-    all other supported databases.</para>
+    the Options menu or double click on your chosen database in the tree-view.
+    The initial settings are determined by the values in your xml
+    configuration file. Select your chosen database and TPROC-C and press OK.
+    This Quick Start guide uses Microsoft SQL Server, however the process is
+    the same for all other supported databases.</para>
 
     <section>
       <title>Building the Schema</title>
@@ -1812,7 +1788,7 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
       Click OK.</para>
 
       <figure>
-        <title>Build Options</title>
+        <title>Build Options Connections</title>
 
         <mediaobject>
           <imageobject>
@@ -1821,7 +1797,17 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
         </mediaobject>
       </figure>
 
-      <para>.</para>
+      <para/>
+
+      <figure>
+        <title>Build Options Settings</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-2a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
 
       <para>Double-click on Build in the tree view and you will receive a
       prompt on the settings chosen to build the schema. Click Yes.</para>
@@ -1861,24 +1847,63 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
           </imageobject>
         </mediaobject>
       </figure>
+    </section>
 
-      <para>Within the tree-view Select Driver Script Options. Leave the
-      settings at Test Driver Script and click OK</para>
+    <section>
+      <title>Checking the Schema</title>
+
+      <para>Under the tree menu select the Check Icon and click on OK on the
+      prompt. HammerDB will then run a number of checks to ensure that the
+      Schema has been build successfully and the data is consistent.</para>
+
+      <figure>
+        <title>Schema Check</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-2aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
     </section>
 
     <section>
       <title>Run a Test Workload</title>
 
+      <para>Note that HammerDB stores all output of a workload called Jobs
+      within a SQLite database for later retrieval. As a test workload prints
+      a considerable amount of output for performance you can disable the
+      storage of the Jobs under the Jobs tree view option, clicking Jobs
+      Disabled and restarting HammerDB. If you leave Jobs enabled it is
+      expected that the performance of the test workload is slower as all of
+      the output is stored in SQLite.</para>
+
+      <figure>
+        <title>Disable Jobs</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-8a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>After restrarting, within the tree-view Select Driver Script
+      Options and Settings. Leave the settings at Test Driver Script and click
+      OK</para>
+
       <para><figure>
-          <title>Driver Options</title>
+          <title>Driver Connection Options</title>
 
           <mediaobject>
             <imageobject>
               <imagedata fileref="docs/images/ch2-6.PNG"/>
             </imageobject>
           </mediaobject>
-        </figure>Observe that the Driver Script is Loaded. Clicking on Load
-      will reload the script.</para>
+        </figure></para>
+
+      <para>Observe that the Driver Script is Loaded. Clicking on Load will
+      reload the script.</para>
 
       <figure>
         <title>Driver Script Loaded</title>
@@ -1901,11 +1926,11 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
             <imagedata fileref="docs/images/ch2-8.PNG"/>
           </imageobject>
         </mediaobject>
-      </figure>
 
-      <para>Click on Create and the Virtual Users will be created and waiting
-      to run in an idle status. (Clicking run first will run both Create and
-      Run Immediately).</para>
+        <para>Click on Create and the Virtual Users will be created and
+        waiting to run in an idle status. (Clicking run first will run both
+        Create and Run Immediately).</para>
+      </figure>
 
       <para><figure>
           <title>Virtual Users Created</title>
@@ -1935,12 +1960,23 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
     <section>
       <title>Run a Timed Workload</title>
 
-      <para>the Test script is to check connectivity and diagnose performance
+      <para>The Test script is to check connectivity and diagnose performance
       and configuration errors. It is the Timed Workload that should be used
-      to conduct performance tests. Under Driver Options select Timed Driver
-      Script and click OK, the Timed Driver Script is now loaded.</para>
+      to conduct performance tests and is suitable for Jobs storage, so under
+      the Jobs tree view re-enable Jobs.</para>
 
-      <para/>
+      <figure>
+        <title>Enable Jobs</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch2-10a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Under Driver Options select Timed Driver Script and click OK, the
+      Timed Driver Script is now loaded.</para>
 
       <figure>
         <title>Driver Options</title>
@@ -2032,6 +2068,51 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
           </imageobject>
         </mediaobject>
       </figure>
+    </section>
+
+    <section>
+      <title>Browsing Results</title>
+
+      <para>When Jobs are enabled, HammerDB stores a repository of Job related
+      information and charts. To view this data, start the Web Service under
+      Job Options and then select Browse under the tree view.</para>
+
+      <para><figure>
+          <title>Job Options</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch2-16aa.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The Home Page shows an index of Jobs.</para>
+
+      <para><figure>
+          <title>Browse Jobs</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch2-16aaa.PNG"/>
+            </imageobject>
+          </mediaobject>
+
+          <para>Each Job shows details such as the output of the Job and
+          charts such as the test result. When workload options such as the
+          transaction counter, metrics or response times are selected
+          additional data will be added to the Job data.</para>
+        </figure></para>
+
+      <para><figure>
+          <title>Job Result</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch2-16aaaa.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
     </section>
 
     <section>
@@ -2158,21 +2239,15 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
       directly as a result of changes you have made to the configuration (or
       management overhead of your system such as database checkpoints or
       user/administrator error). Testing has proven that HammerDB tests re-run
-      multiple times unattended (see the autopilot feature) on the same
-      reliable configuration produce performance profiles that will overlay
-      each other almost identically. The Figure below illustrates an example
-      of this consistency and shows the actual results of 2 sequences of tests
-      run unattended one after another against one of the supported databases
-      with the autopilot feature from 1 to 144 virtual users to test
-      modifications to a WAL (Write Ahead Log File). In other words HammerDB
-      will give you the same results each time, if your results vary you need
-      to focus entirely on your database, OS and hardware
-      configuration.</para>
-
-      <para/>
+      multiple times unattended (see the autopilot feature or CLI scripts) on
+      the same reliable configuration produce performance profiles that will
+      overlay each other almost identically. From HammerDB v4.11, HammerDB
+      includes the functionality to generate performance profiles enabling you
+      to group jobs and observe performance at different levels of system
+      utilisation.</para>
 
       <figure>
-        <title>WAL Test</title>
+        <title>Performance Profile</title>
 
         <mediaobject>
           <imageobject>
@@ -2705,7 +2780,7 @@ OK (30 msec)
         Driver 18 for SQL Server” for both Windows and Linux. From v4.10
         HammerDB will also permit authentication with Microsoft Entra where
         available with your configuration and a minimum version of SQL Server
-        2022. </para>
+        2022.</para>
 
         <figure>
           <title>ODBC Drivers</title>
@@ -3072,7 +3147,7 @@ host  all  all  192.168.1.67/32 md5
         <title>Oracle Schema Build Options</title>
 
         <para><figure>
-            <title>Oracle Build Options</title>
+            <title>Oracle Build Options Connections</title>
 
             <mediaobject>
               <imageobject>
@@ -3080,6 +3155,18 @@ host  all  all  192.168.1.67/32 md5
               </imageobject>
             </mediaobject>
           </figure></para>
+
+        <para/>
+
+        <figure>
+          <title>Oracle Build Options Settings</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch4-4a.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
 
         <table>
           <title>Oracle Options</title>
@@ -3335,7 +3422,7 @@ GO
           <title>Build Options</title>
 
           <para><figure>
-              <title>SQL Server Build Options</title>
+              <title>SQL Server Build Connection Options</title>
 
               <mediaobject>
                 <imageobject>
@@ -3343,6 +3430,18 @@ GO
                 </imageobject>
               </mediaobject>
             </figure></para>
+
+          <para/>
+
+          <figure>
+            <title>SQL Server Build Settings Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../DocBook/docs/images/ch4-5a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
 
           <para><table>
               <title>SQL Server Build Options</title>
@@ -3554,15 +3653,25 @@ GO
         <para>Note that as previously described the host and port are defined
         externally in the db2dsdriver.cfg file.</para>
 
-        <figure>
-          <title>Db2 Build Options</title>
+        <para><figure>
+            <title>Db2 Build Connection Options</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="docs/images/ch4-6.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch4-6.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><figure>
+            <title>Db2 Build Settings Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../DocBook/docs/images/ch4-6a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
 
         <para><table>
             <title>Db2 Build Options</title>
@@ -3670,15 +3779,25 @@ GO
       <section>
         <title>MySQL Schema Build Options</title>
 
-        <figure>
-          <title>MySQL Build Options</title>
+        <para><figure>
+            <title>MySQL Build Connection Options</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="docs/images/ch4-7.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch4-7.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><figure>
+            <title>MySQL Build Settings Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../DocBook/docs/images/ch4-7aa.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
 
         <para><table>
             <title>MySQL Build Options</title>
@@ -3857,15 +3976,25 @@ GO
       <section>
         <title>MariaDB Schema Build Options</title>
 
-        <figure>
-          <title>MariaDB Build Options</title>
+        <para><figure>
+            <title>MariaDB Build Connection Options</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="docs/images/ch4-7a.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch4-7a.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><figure>
+            <title>MariaDB Build Settings Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../DocBook/docs/images/ch4-7aaa.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
 
         <para><table>
             <title>MariaDB Build Options</title>
@@ -4048,17 +4177,25 @@ GO
       <section>
         <title>PostgreSQL Schema Build Options</title>
 
+        <para><figure>
+            <title>PostgreSQL Build Connection Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch4-8.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <figure>
-          <title>PostgreSQL Build Options</title>
+          <title>PostgreSQL Build Settings Options</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch4-8.PNG"/>
+              <imagedata fileref="../DocBook/docs/images/ch4-8a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
-
-        <para/>
 
         <para><table>
             <title>PostgreSQL Build Options</title>
@@ -4294,10 +4431,10 @@ GO
       completed successfully and also after running the workload to ensure
       that the data in your database remained consistent. This can also be
       useful for example when testing clustered, distributed or replicated
-      database environments. </para>
+      database environments.</para>
 
       <para>To check the schema choose the Check option from the treeview or
-      the top level menu. </para>
+      the top level menu.</para>
 
       <figure>
         <title>Check TPROC-C Schema</title>
@@ -4311,7 +4448,7 @@ GO
 
       <para>If the check completes without error it will report a message that
       the check has been successful meaning that the schema is valid and the
-      data is consistent. </para>
+      data is consistent.</para>
 
       <figure>
         <title>TPROC-C Schema Check Complete</title>
@@ -4353,7 +4490,7 @@ GO
         </listitem>
 
         <listitem>
-          <para> Consistency Checks.</para>
+          <para>Consistency Checks.</para>
 
           <orderedlist>
             <listitem>
@@ -6802,6 +6939,14 @@ edb=#
             </row>
 
             <row>
+              <entry>Performance Profile ID</entry>
+
+              <entry>Set to a positive integer to group the Jobs for a
+              sequence together to be viewed as a performance profile in the
+              Job viewer.</entry>
+            </row>
+
+            <row>
               <entry>Minutes per Test in Virtual User Sequence</entry>
 
               <entry>The minutes for test duration defines the time interval
@@ -6886,7 +7031,8 @@ edb=#
       </figure>
 
       <para>When the sequence is complete you will see the message Autopilot
-      Sequence ended. You can now gather all of your test results.</para>
+      Sequence ended. You can now view all of your test results in the Job
+      Viewer.</para>
 
       <para><figure>
           <title>Autopilot Complete</title>
@@ -6896,7 +7042,33 @@ edb=#
               <imagedata fileref="docs/images/ch5-6.PNG"/>
             </imageobject>
           </mediaobject>
-        </figure></para>
+        </figure>If you set a performance profile ID you will see your Jobs in
+      the Job viewer and a Performance Profile summary identifying the top
+      performing job, with the NOPM, TPM and Maximum Active Virtual Users
+      (AVU).</para>
+
+      <figure>
+        <title>Autopilot Performance Profile</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch5-6aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Clicking on the profile id shows a graph of the NOPM and TPM for
+      all of the jobs in the autopilot sequence.</para>
+
+      <figure>
+        <title>Performance Profile</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch5-6aaa.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
     </section>
 
     <section>
@@ -7226,10 +7398,12 @@ done
     <section>
       <title>Logging Transaction Counter Output</title>
 
-      <para>HammerDB also provides the option to log the output of the
-      transaction counter to a separate logfile. This enables the recording of
-      transactions throughout the test that can be used to verify the
-      transaction rate across time. To enable transaction counter logging
+      <para>When you run the transaction counter during a Benchmark Run with
+      Jobs enabled, HammerDB will automatically record the transaction count
+      as part of the Job. HammerDB also provides the option to log the output
+      of the transaction counter to a separate logfile. This enables the
+      recording of transactions throughout the test that can be used to verify
+      the transaction rate across time. To enable transaction counter logging
       select Log Output to Temp. There are also options to use a unique log
       name and to generate timestamps. With the following options
       selected.</para>
@@ -7312,12 +7486,15 @@ done
 
     <para>By default HammerDB metrics displays the CPU utilisation per core
     across the target system. HammerDB has also introduced a database metrics
-    display initially for the Oracle Database. HammerDB Metrics uses an agent
-    and display configuration meaning that the agent must be installed on the
-    SUT. This can be accomplished by installing HammerDB on the SUT as well as
-    the server. On Linux the sysstat package must be pre-installed where the
-    agent is running. An agent on Linux can can communicate with the HammerDB
-    display running on Windows and vice versa.</para>
+    display for the Oracle and PostgreSQL Databases based on their Active
+    Session History feature. HammerDB Metrics uses an agent and display
+    configuration meaning that the agent must be installed on the SUT. This
+    can be accomplished by installing HammerDB on the SUT as well as the
+    server. When HammerDB is run on the SUT HammerDB v4.11 introduces
+    functionality to start the agent and display at the same time. On Linux
+    the sysstat package must be pre-installed where the agent is running. An
+    agent on Linux can can communicate with the HammerDB display running on
+    Windows and vice versa.</para>
 
     <programlisting>$ mpstat -V
 sysstat version 11.5.7
@@ -7326,10 +7503,11 @@ sysstat version 11.5.7
     <para>On Windows a version of mpstat is included with HammerDB.</para>
 
     <section>
-      <title>Start the Agent</title>
+      <title>Start the Agent Manually</title>
 
-      <para>To start the agent on Linux run the agent program locally in the
-      agent directory.</para>
+      <para>Where the agent is installed separately from the SUT. To start the
+      agent on Linux run the agent program locally in the agent
+      directory.</para>
 
       <programlisting>$./agent 
 Initializing HammerDB Metric Agent 4.1
@@ -7379,7 +7557,7 @@ HammerDB Metric Agent active @ id 20376 hostname CRANE (Ctrl-C to Exit)</program
     </section>
 
     <section>
-      <title>Configure Metrics</title>
+      <title>Configure Metrics Manually</title>
 
       <para>In HammerDB select Metrics Options</para>
 
@@ -7393,8 +7571,8 @@ HammerDB Metric Agent active @ id 20376 hostname CRANE (Ctrl-C to Exit)</program
         </mediaobject>
       </figure>
 
-      <para>Enter the id and canonical hostname of the agent and press
-      OK.</para>
+      <para>Enter the id and canonical hostname of the agent, Unclick Start
+      Display with Local Agent and press OK.</para>
 
       <figure>
         <title>Agent Options</title>
@@ -7445,6 +7623,38 @@ HammerDB Metric Agent active @ id 20376 hostname CRANE (Ctrl-C to Exit)</program
     </section>
 
     <section>
+      <title>Configure Metrics Automatically</title>
+
+      <para>When the SUT and host running HammerDB are the same, the Metrics
+      display can be started automatically from the Metrics Agent Options.
+      Under the Options ensure Start Display with Local Agent is selected and
+      click Agent Start.</para>
+
+      <figure>
+        <title>Metrics Agent Options</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch7-9a.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>HammerDB will automatically start the agent and connect to
+      it.</para>
+
+      <figure>
+        <title>Metrics Display</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch7-9aa.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </section>
+
+    <section>
       <title>Monitor Metrics</title>
 
       <para>The display will now report the CPU utilisation per core on the
@@ -7489,6 +7699,37 @@ HammerDB Metric Agent active @ id 20376 hostname CRANE (Ctrl-C to Exit)</program
       <para>If the agent or display is closed the corresponding connection
       will also close and wait for a new connection. The Metrics Display can
       be closed by pressing the corresponding stop button.</para>
+    </section>
+
+    <section>
+      <title>Viewing Job Metrics Data</title>
+
+      <para>From HammerDB v4.11 Metrics Data has been added to the Jobs
+      Viewer. If Metrics are running during a Job a metrics link will be
+      shown.</para>
+
+      <figure>
+        <title>Metrics Data in Job Menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch7-10a.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Clicking on the metrics link will show a summary of all CPU
+      utilisation during the Job.</para>
+
+      <figure>
+        <title>Jobs Metrics Data</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch7-10aa.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
     </section>
 
     <section>
@@ -8003,7 +8244,7 @@ hammerdb&gt;</programlisting>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB v4.10 CLI Help Index
+      <programlisting>HammerDB v4.11 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
@@ -8023,6 +8264,10 @@ Type "help command" for more details on specific commands below
         jobs
         librarycheck
         loadscript
+        metset
+        metstart
+        metstatus
+        metstop
         print
         quit
         steprun
@@ -8206,11 +8451,37 @@ hammerdb&gt;
               <row>
                 <entry>jobs (alias job)</entry>
 
-                <entry>Usage: jobs : jobs [jobid|joblist|result|timestamp] :
-                jobs format [ text | JSON ] : jobs disable [ 0 | 1 ] : jobs
-                jobid
-                [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]
-                : jobs jobid timing vuid</entry>
+                <entry>hammerdb&gt;help jobs jobs - Usage: jobs list all jobs.
+                jobs - Usage: jobs [jobid|joblist|result|timestamp] jobid:
+                list VU output for jobid. joblist: returns text list of jobs
+                wthout newlines. result: list result for all jobs. timestamp:
+                list starting timestamp for all jobs. jobs format - Usage:
+                jobs format [ text | JSON ] text: Format job output as text.
+                JSON: Format job output as JSON. jobs disable - Usage: jobs
+                disable [ 0 | 1 ] 0: Enable storage of job output, restart
+                required. 1: Disable storage of job output, restart required.
+                jobs profileid - Usage: jobs profileid [ id ] profileid:
+                returns current performance profile id. profileid id: sets
+                current performance profile id. jobs profile - Usage: jobs
+                profile [ id ] profile id: returns the results for the
+                performance profile id. jobs jobid - Usage: jobs jobid
+                [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]
+                bm: list benchmark for jobid. db: list database for jobid.
+                delete: delete jobid. dict: list dict for jobid. metrics: show
+                system metrics for jobid. result: list result for jobid.
+                status: list status for jobid. system: show system data for
+                jobid. tcount: list count for jobid. timestamp: list starting
+                timestamp for jobid. timing: list xtprof summary timings for
+                jobid. vuid: list VU output for VU with vuid for jobid. jobs
+                jobid timing - Usage: jobs jobid timing vuid timing vuid: list
+                xtprof timings for vuid for jobid. jobs jobid getchart -
+                Usage: jobs jobid getchart [result | timing | tcount | metrics
+                | profile ] result: generate html chart for TPROC-C/TPROC-H
+                result. timing: generate html chart for TPROC-C/TPROC-H
+                timings. metrics: generate html chart for TPROC-C/TPROC-H
+                metrics. profile: generate html chart for TPROC-C performance
+                profile using profileid for jobid argument. tcount: generate
+                html chart for TPROC-C transaction count. hammerdb&gt;</entry>
 
                 <entry>The jobs command can be used to enable or disable jobs
                 functionality. If enabled it records the output,
@@ -8238,6 +8509,40 @@ hammerdb&gt;
                 script" to see the script that is loaded. Equivalent to
                 loading a Driver Script in the Script Editor window in the
                 graphical interface.</entry>
+              </row>
+
+              <row>
+                <entry>metset</entry>
+
+                <entry>Usage: metset [agent_hostname|agent_id]</entry>
+
+                <entry>Configure the CPU Metrics options. Equivalent to the
+                Metrics Options window in the graphical interface.</entry>
+              </row>
+
+              <row>
+                <entry>metstart</entry>
+
+                <entry>Usage: metstatus</entry>
+
+                <entry>Checks the status of the CPU Metrics.</entry>
+              </row>
+
+              <row>
+                <entry>metstatus</entry>
+
+                <entry>Usage: metstart</entry>
+
+                <entry>Starts the CPU Metrics and agent if configured to the
+                localhost.</entry>
+              </row>
+
+              <row>
+                <entry>metstop</entry>
+
+                <entry>Usage: metstop</entry>
+
+                <entry>Stops the CPU Metrics.</entry>
               </row>
 
               <row>
@@ -8449,26 +8754,34 @@ hammerdb&gt;
         string or integer arguments.</para>
 
         <programlisting>C:\Program Files\HammerDB-4.6&gt;hammerdbcli py
-HammerDB CLI v4.6
-Copyright (C) 2003-2022 Steve Shaw
+HammerDB CLI v4.11
+Copyright (C) 2003-2024 Steve Shaw
 Type "help()" for a list of commands
 hammerdb&gt;&gt;&gt;help()
-HammerDB v4.6 CLI Help Index
+HammerDB v4.11 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
         buildschema
+        checkschema
         deleteschema
         clearscript
+        savescript
         customscript
+        custommonitor
         datagenrun
         dbset
         dgset
         diset
         distributescript
+        giset
         jobs
         librarycheck
         loadscript
+        metset
+        metstart
+        metstatus
+        metstop
         print
         quit
         steprun
@@ -8483,6 +8796,10 @@ Type "help command" for more details on specific commands below
         vurun
         vuset
         vustatus
+        wsport
+        wsstart
+        wsstatus
+        wsstop
 
 hammerdb&gt;&gt;&gt;vuset('vu',10)
 hammerdb&gt;&gt;&gt;
@@ -9860,8 +10177,21 @@ hammerdb&gt;</programlisting>
             </row>
 
             <row>
+              <entry>jobs profileid [ id ]</entry>
+
+              <entry>Returns or sets the performance profile id</entry>
+            </row>
+
+            <row>
+              <entry>jobs profile [ id ]</entry>
+
+              <entry>Returns the results for the performance profile
+              id</entry>
+            </row>
+
+            <row>
               <entry>jobs jobid
-              [bm|db|delete|dict|result|status|tcount|timestamp|timing|vuid]</entry>
+              [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]</entry>
 
               <entry>Query an individual job, showing the full output,
               benchmark, database, delete the individual job, show the result,
@@ -9876,10 +10206,11 @@ hammerdb&gt;</programlisting>
             </row>
 
             <row>
-              <entry>jobs jobid getchart [result | timing | tcount]</entry>
+              <entry>jobs jobid getchart [result | timing | tcount | metrics |
+              profile ]</entry>
 
-              <entry>Generate html chart for TPROC-C/TPROC-H results, timing
-              and transaction counts</entry>
+              <entry>Generate html chart for TPROC-C/TPROC-H results, timing,
+              transaction counts and performance profile</entry>
             </row>
           </tbody>
         </tgroup>
@@ -10388,6 +10719,55 @@ hammerdb&gt;job 637CF9B73C8D03E243636303 timestamp
 637CF9B73C8D03E243636303 {2022-11-22 16:32:55}
 </programlisting>
 
+      <para>If you run the metstart command before a CLI job then HammerDB
+      will also record the CPU metrics for the Job. </para>
+
+      <programlisting>Connecting to Agent to Display CPU Metrics
+Metric receive port open @ 11732 on yellowhammer
+Connecting to HammerDB Agent @ localhost:10000
+Testing Agent Connectivity...OK
+Metrics Connected
+Started CPU Metrics for Intel(R) Core(TM) i5-1035G7 CPU @ 1.20GHz:(8 CPUs)
+233352 MSSQLServer tpm
+CPU all usr%-23.85 sys%-3.03 irq%-0.00 idle%-71.33
+369714 MSSQLServer tpm
+CPU all usr%-24.85 sys%-2.36 irq%-0.00 idle%-72.65
+383484 MSSQLServer tpm
+CPU all usr%-24.67 sys%-2.31 irq%-0.00 idle%-72.81
+337770 MSSQLServer tpm
+CPU all usr%-0.00 sys%-1.97 irq%-0.00 idle%-81.31
+211182 MSSQLServer tpm
+CPU all usr%-24.03 sys%-2.21 irq%-0.00 idle%-73.24
+Vuser 1:Rampup 1 minutes complete ...
+Vuser 1:Rampup complete, Taking start Transaction Count.
+Vuser 1:Timing test period of 2 in minutes
+293148 MSSQLServer tpm
+CPU all usr%-22.90 sys%-2.65 irq%-0.00 idle%-72.83
+259614 MSSQLServer tpm
+CPU all usr%-45.36 sys%-8.97 irq%-0.58 idle%-41.59
+241854 MSSQLServer tpm
+CPU all usr%-18.19 sys%-2.73 irq%-0.29 idle%-77.61
+280578 MSSQLServer tpm
+CPU all usr%-23.01 sys%-3.04 irq%-0.00 idle%-73.33
+221520 MSSQLServer tpm
+CPU all usr%-20.61 sys%-2.75 irq%-0.31 idle%-75.22
+221610 MSSQLServer tpm
+CPU all usr%-24.43 sys%-3.30 irq%-0.00 idle%-71.92
+Vuser 1:1 ...,
+189894 MSSQLServer tpm
+CPU all usr%-4.46 sys%-1.28 irq%-0.00 idle%-86.20
+193962 MSSQLServer tpm
+CPU all usr%-20.12 sys%-3.19 irq%-0.44 idle%-76.33
+200604 MSSQLServer tpm
+CPU all usr%-18.80 sys%-2.49 irq%-0.00 idle%-76.88
+240342 MSSQLServer tpm
+CPU all usr%-16.95 sys%-1.83 irq%-0.11 idle%-80.77
+235584 MSSQLServer tpm
+CPU all usr%-18.14 sys%-2.56 irq%-0.00 idle%-78.80
+240912 MSSQLServer tpm
+CPU all usr%-19.13 sys%-2.49 irq%-0.00 idle%-77.52
+223194 MSSQLServer tpm</programlisting>
+
       <para>The jobs functionality extends HammerDB functionality as an
       essential repository for your test configuration and results.</para>
     </section>
@@ -10610,6 +10990,33 @@ hammerws&gt;jobs
         <mediaobject>
           <imageobject>
             <imagedata fileref="../DocBook/docs/images/ch10ws-1e.PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>If a performance Profile ID has been set to a positive integer in
+      both the GUI and the CLI then a related sequence of jobs can be run and
+      generate a performance profile.</para>
+
+      <figure>
+        <title>Performance Profile</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1ee.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Clicking on the performance profile shows the NOPM and TPM of all
+      the Jobs in the Performance Profile.</para>
+
+      <figure>
+        <title>Performance Profile</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../DocBook/docs/images/ch10ws-1eee.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11450,12 +11857,24 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
       <section>
         <title>Oracle Schema Build Options</title>
 
+        <para/>
+
+        <para><figure>
+            <title>Oracle TPROC-H Build Connection Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-4.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <figure>
-          <title>Oracle TPROC-H Build Options</title>
+          <title>Oracle TPROCH Build Settings Options</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch13-4.PNG"/>
+              <imagedata fileref="../DocBook/docs/images/ch13-4a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -11576,15 +11995,27 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
       <section>
         <title>SQL Server Schema Build Options</title>
 
+        <para><figure>
+            <title>SQL Server TPROCH Build Connection Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-5.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <figure>
-          <title>SQL Server Build Options</title>
+          <title>SQL Server TPROCH Settings Options</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch13-5.PNG"/>
+              <imagedata fileref="../DocBook/docs/images/ch13-5a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
+
+        <para/>
 
         <para><table>
             <title>SQL Server Build Options</title>
@@ -11793,15 +12224,29 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
       <section>
         <title>Db2 Schema Build Options</title>
 
+        <para/>
+
+        <para><figure>
+            <title>Db2 TRPOCH Build Connection Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-6.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <figure>
-          <title>Db2 Build Options</title>
+          <title>Db2 TPROCH Build Settings Options</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch13-6.PNG"/>
+              <imagedata fileref="../DocBook/docs/images/ch13-6a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
+
+        <para/>
 
         <para><table>
             <title>Db2 Build Options</title>
@@ -11895,7 +12340,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
         <title>MySQL Schema Build Options</title>
 
         <para><figure>
-            <title>MySQL Build Options</title>
+            <title>MySQL TPROCH Build Connection Options</title>
 
             <mediaobject>
               <imageobject>
@@ -11903,6 +12348,18 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
               </imageobject>
             </mediaobject>
           </figure></para>
+
+        <figure>
+          <title>MySQL TPROCH Build Settings Options</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch13-8aa.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para/>
 
         <para><table>
             <title>MySQL Build Options</title>
@@ -11961,6 +12418,25 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
                 </row>
 
                 <row>
+                  <entry>Oceanbase Compatible</entry>
+
+                  <entry>Option for Oceanbase MySQL compatible
+                  database</entry>
+                </row>
+
+                <row>
+                  <entry>Oceanbase Tenant Name</entry>
+
+                  <entry>Oceanbase tenant name for connection string</entry>
+                </row>
+
+                <row>
+                  <entry>Oceanbase Partitions</entry>
+
+                  <entry>Number of Oceanbase Partitions</entry>
+                </row>
+
+                <row>
                   <entry>Data Warehouse Storage Engine</entry>
 
                   <entry>Use the "show engine" command to display available
@@ -12000,7 +12476,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
         <title>MariaDB Schema Build Options</title>
 
         <para><figure>
-            <title>MariaDB Build Options</title>
+            <title>MariaDB TPROCH Build Connection Options</title>
 
             <mediaobject>
               <imageobject>
@@ -12008,6 +12484,16 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
               </imageobject>
             </mediaobject>
           </figure></para>
+
+        <figure>
+          <title>MariaDB TPROCH Settings Connection Options</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../DocBook/docs/images/ch13-8aaa.PNG"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
 
         <para><table>
             <title>MySQL Build Options</title>
@@ -12104,12 +12590,22 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
       <section>
         <title>PostgreSQL Schema Build Options</title>
 
+        <para><figure>
+            <title>PostgreSQL TPROCH Build Connection Options</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="docs/images/ch13-7.PNG"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <figure>
-          <title>PostgreSQL Build Options</title>
+          <title>PostgreSQL TPROCH Build Settings Options</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="docs/images/ch13-7.PNG"/>
+              <imagedata fileref="../DocBook/docs/images/ch13-7a.PNG"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -12875,7 +13371,7 @@ SET
       <para>From v4.10 a schema and data check has been added that can be run
       after a schema build and also after running a workload with a refresh
       function to ensure that the data remains consistent. To run the check
-      select the Check option from the treeview or the main menu. </para>
+      select the Check option from the treeview or the main menu.</para>
 
       <figure>
         <title>Check TPROC-H Schema</title>
@@ -12888,7 +13384,7 @@ SET
       </figure>
 
       <para>When completed a message will be shown if the check was
-      successful. </para>
+      successful.</para>
 
       <figure>
         <title>TPROC-H Schema Check Completed</title>
@@ -12966,7 +13462,7 @@ SET
       Options.</para>
 
       <figure>
-        <title>TPROC-H Driver Options</title>
+        <title>TPROC-H Driver Settings Options</title>
 
         <mediaobject>
           <imageobject>
