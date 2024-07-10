@@ -2362,7 +2362,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "pg_disconnect \$lda" end ]
     #puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
     #Delete text from start and end points
-    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)
+    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) "$syncdrvi(1b) lineend + 1 char"
     #Replace with connect pool version
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
     if { $testtype eq "timed" } {
@@ -2447,7 +2447,13 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             #End of run loop is previous line
             set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
             #Delete run loop
+	    if { [ string is entier $syncdrvi(3b) ] } {
+	    #CLI
+            .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)
+	    	} else {
+	    #GUI
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+	    	}
             #Replace with asynchronous connect pool version
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
@@ -2471,7 +2477,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
             set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
-            set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach lda [ dict values $connlist ] {  pg_disconnect $lda }} end ]
+            set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach lda \[ dict values \$connlist \] {  pg_disconnect \$lda }" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
         } else {
             #Add client side counters for timed non-async only
