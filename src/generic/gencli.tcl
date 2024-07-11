@@ -293,33 +293,38 @@ proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
                 }
             }
             fastdelete {
-#Request to delete characters
-#puts "Request to delete :args 0 [ lindex $args 0 ]:args 1 [ lindex $args 1 ]:args 2 [ lindex $args 2 ]"
+                #Request to delete characters
+                #puts "Request to delete :args 0 [ lindex $args 0 ]:args 1 [ lindex $args 1 ]:args 2 [ lindex $args 2 ]"
                 if { [ string match *\+1l [ lindex $args 2 ] ] } {
-#Requested to delete multiple lines
+                #Requested to delete multiple lines
                     set start [ lindex $args 1 ]
-#Remove +1l from 2nd arg
+                #Remove +1l from 2nd arg
                     set end [ string range [ lindex $args 2 ] 0 end-3 ]
-#puts "delete from $start to $end this will be the string deleted \"[ string range $_ED(package) $start $end ]\""
+                #puts "delete from $start to $end this will be the string deleted \"[ string range $_ED(package) $start $end ]\""
                     set stringtofind "\n"
-#find next new line"
+                #find next new line"
                     set endnnl [ string first $stringtofind $_ED(package) $end ]
-                    #if not able to find new line set last index as end of script
+                #if not able to find new line set last index as end of script
                     if { $endnnl eq -1 } { set endnnl [ string length $_ED(package) ] }
-                    #puts "delete from $start to $endnnl this will be the string deleted \"[ string range $_ED(package) $start $endnnl ]\""
+                #puts "delete from $start to $endnnl this will be the string deleted \"[ string range $_ED(package) $start $endnnl ]\""
                     set _ED(package) [ string replace $_ED(package) $start $endnnl ]
                 } elseif { [ string match "*lineend + 1 char" [ lindex $args 2 ] ] } {
-                    #Requested to delete from an index to the end of the line including newline character
-                    #puts "Request to delete from [ lindex $args 1 ] to [ lindex $args 1 ] lineend incl newline"
-                    set searchtonnl [ lindex [ split [ lindex $args 1 ] ] ]
+                #Requested to delete from an index to the end of the line including newline character
+		    set start [regexp -inline -- {[0-9]+} [ lindex $args 1] ]
+		    set end [regexp -inline -- {[0-9]+} [ lindex $args 2] ]
+                #puts "Request to delete from $start to $end lineend incl newline"
+                    set searchtonnl $end
+		#puts "search to next new line is $searchtonnl"
                     set stringtofind "\n"
                     #Searching for next newline so do not need + 1 char
                     set nnl [ string first $stringtofind $_ED(package) $searchtonnl ]
-                    #puts "delete from $searchtonnl to $nnl this will be the string deleted \"[ string range $_ED(package) $searchtonnl $nnl ]\""
-                    set _ED(package) [ string replace $_ED(package) $searchtonnl $nnl ]
+                #puts "delete from $start to $nnl this will be the string deleted \"[ string range $_ED(package) $start $nnl ]\""
+                    set _ED(package) [ string replace $_ED(package) $start $nnl ]
                 } else {
-                    puts "Error: failed to match arguments for text delete in script : [ lindex $args 0 ] [ lindex $args 1 ]"
-                    return
+		#delete all text from start to end without finding newlines
+		    set start [regexp -inline -- {[0-9]+} [ lindex $args 1] ]
+		    set end [regexp -inline -- {[0-9]+} [ lindex $args 2] ]
+                    set _ED(package) [ string replace $_ED(package) $start $end ]
                 }
             }
             search {
@@ -327,10 +332,12 @@ proc .ed_mainFrame.mainwin.textFrame.left.text { args } {
                 if { $srchdirection eq "-backwards" } {
                     set stringtofind [lindex $args 2]
                     set ind [ string last $stringtofind $_ED(package) ]
+		    if { $ind eq -1 } { puts "Warning: searched backwards for string \"$stringtofind\" and was not found" }
                     return $ind
                 } elseif { $srchdirection eq "-forwards" } {
                     set stringtofind [lindex $args 2]
                     set ind [ string first $stringtofind $_ED(package) ]
+		    if { $ind eq -1 } { puts "Warning: searched forwards for string \"$stringtofind\" and was not found" }
                     return $ind
                 } else {
                     puts "Error: failed to match arguments for text search in script : [ lindex $args 0 ] [ lindex $args 1 ]"
