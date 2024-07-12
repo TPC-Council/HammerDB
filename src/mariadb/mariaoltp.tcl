@@ -1338,7 +1338,13 @@ mariaclose $mmaria_handler
             #End of run loop is previous line
             set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
             #Delete run loop
+	      if { [ string is entier $syncdrvi(3b) ] } {
+            #CLI
+            .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)
+                } else {
+            #GUI
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+                }
             #Replace with asynchronous connect pool version
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
