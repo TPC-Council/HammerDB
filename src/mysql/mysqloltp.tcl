@@ -1316,7 +1316,13 @@ mysqlclose $mmysql_handler
             #End of run loop is previous line
             set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
             #Delete run loop
+	     if { [ string is entier $syncdrvi(3b) ] } {
+            #CLI
+            .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)
+                } else {
+            #GUI
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
+                }
             #Replace with asynchronous connect pool version
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
@@ -1324,7 +1330,7 @@ mysqlclose $mmysql_handler
             set syncdrvi(7b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {set mmysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db ]} end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(7a) $syncdrvi(7b)+1l
             #Replace individual lines for Asynch
-            foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
+            foreach line {{set mysql_handler [ ConnectToMySQLAsynch $host $port $socket $ssl_options $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQL $1 $2 $3 $4 $5 $6 $7 ] ]} {#puts "sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} asynchline {{set mmysql_handler [ ConnectToMySQLAsynch $host $port $socket $user $password $db $clientname $async_verbose ]} {dict set connlist $id [ set mysql_handler$id [ ConnectToMySQLAsynch $1 $2 $3 $4 $5 $6 $clientname $async_verbose ] ]} {#puts "$clientname:sproc_cur:$st connections:[ set $cslist ] cursors:[set $cursor_list] number of cursors:[set $len] execs:[set $cnt]"}} {
                 set index [.ed_mainFrame.mainwin.textFrame.left.text search -backwards $line end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index "$index lineend + 1 char"
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index "$asynchline \n"
