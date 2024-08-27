@@ -269,7 +269,7 @@ set xtjob_storage 0
 if { [ string is entier $xtgather_timeout ] } { 
 set xtto [expr {$xtgather_timeout * 60}]
 } else {
-set xttto 600
+set xtto 600
 #Set xtgather_timout in case decided to print this value in future
 set xtgather_timeout 10
 }
