@@ -404,15 +404,41 @@ namespace eval jobs {
     }
   }
 
-  proc common-footer {} {
+  proc summary-header {jobid} {
+    wapp-trim {
+      <html>
+      <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+      <link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">
+      <title>hdb_%html($jobid)</title>
+      </head>
+      <body>
+      <p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>
+    }
+  }
+
+  proc main-footer {} {
     set B [wapp-param BASE_URL]
     set dbfile [ getdatabasefile ]
-    set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]] bytes" 
-    wapp-subst {<h3 class="title">Env:</h3><br>}
-    wapp-subst {<br>SQLite DB: %html($dbfile) %html($size)<br>}
-    wapp-subst { <br><a href='%html($B)/jobs'>Job Index</a><br> }
+    set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]]" 
+    wapp-subst {<h3 class="title">Env</h3><br>}
+      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
+      wapp-subst {<table>\n}
+      wapp-subst {<th>SQLite</th><th>Size (bytes)</th><th>Web Service</th>\n}
+      wapp-subst {<tr><td>%html($dbfile)</td><td>%html($size)</td></td><td><a href='%html($B)/env'>Configuration</a></td></tr>\n}
+      wapp-subst {</table>\n}
     wapp-trim {
-      <a href='%html($B)/env'>Service Environment</a>
+      <br>
+      </body>
+      </html>
+    }
+  }
+
+ proc common-footer {} {
+    set B [wapp-param BASE_URL]
+    wapp-subst { <a href='%html($B)/jobs'>Job Index</a><br> }
+    wapp-trim {
       <br>
       </body>
       </html>
@@ -930,23 +956,28 @@ namespace eval jobs {
   }
 
   proc wapp-page-jobs {} {
-    global bm
+    global bm hdb_version
     set query [ wapp-param QUERY_STRING ]
     set params [ split $query & ]
     set paramlen [ llength $params ]
+    set tprocccombined {}
+    set tprochcombined {}
     if { $paramlen eq 0 } {
       set topjobs [ gettopjobs ]
       common-header
-      wapp-subst {<h3 class="title">Job Index:</h3>}
+      wapp-subst {<h3 class="title">TPROC-C</h3>}
       wapp-trim {
-        <div class='hammerdb' data-title='Jobs'>
+        <div class='hammerdb' data-title='TPROC-C'>
       }
       set jcount 0
       wapp-subst {<div><ol style='column-width: 20ex;'>\n}
       wapp-subst {<br><table>\n}
-      wapp-subst {<th>Jobid</th><th>Database</th><th>Benchmark</th><th>Date</th><th>Workload</th><th>Status</th>\n}
+      wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>NOPM</th><th>Status</th>\n}
+      #one loop builds data for both TPROC-C and TPROC-H tables
       foreach job [ getjob joblist ] {
         incr jcount
+	set nopm "--"
+	set geo "--"
         set url "[wapp-param BASE_URL]/jobs?jobid=$job&index"
         set db [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$job} ]]
         set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$job} ]]]
@@ -960,6 +991,23 @@ namespace eval jobs {
           set jobtype "Schema Check"
         } else {
           set jobtype "Benchmark Run"
+          set jobresult [ getjobresult $job 1 ]
+          if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
+		;
+		} else {
+          if { $bm eq "TPROC-C" } {
+           lassign [ getnopmtpm $jobresult ] jobid tstamp activevu nopm tpm dbdescription
+	    
+		} else {
+           set ctind 0
+           foreach ct {jobid tstamp geomean queryset} { 
+           set $ct [ lindex $jobresult $ctind ] 
+           incr ctind
+           }
+           set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $geomean]
+           set geo [ format "%.2f" [ lindex $numbers 1]]
+		}
+            }
         }
         set statusimg ""
         if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $output ] } {
@@ -990,15 +1038,18 @@ namespace eval jobs {
 	}
 	}
 	}
-        wapp-subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($bm)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%unsafe($statusimg)</td></tr>\n}
-      }
+	if {$bm eq "TPROC-C"} { append tprocccombined [ subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($nopm)</td><td>%unsafe($statusimg)</td></tr>\n} ]
+           } else { append tprochcombined [ subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($geo)</td><td>%unsafe($statusimg)</td></tr>\n} ]
+	   }
+	}
+      wapp-subst $tprocccombined
       wapp-subst {</table>\n}
-      if { $jcount eq 0 } {
-        wapp-subst {%html(No jobs found)\ in database file %html([ getdatabasefile ])}
+      if { $tprocccombined eq {} } {
+        wapp-subst {%html(No TPROC-C jobs found)\ in database file %html([ getdatabasefile ])}
       }
       wapp-subst {</ol></div>\n}
       set profcount 0
-      wapp-subst {<h3 class="title">Performance Profiles:</h3>}
+      wapp-subst {<h3 class="title">TPROC-C Performance Profiles</h3>}
       wapp-subst {<div><ol style='column-width: 20ex;'>\n}
       wapp-subst {<br><table>\n}
       wapp-subst {<th>Profile ID</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th>\n}
@@ -1033,8 +1084,21 @@ namespace eval jobs {
         wapp-subst {%html(No performance profiles found)\ in database file %html([ getdatabasefile ])}
       }
       wapp-subst {</ol></div>\n}
-#profiles are here
-      common-footer
+      wapp-subst {<h3 class="title">TPROC-H</h3>}
+      wapp-trim {
+        <div class='hammerdb' data-title='TPROC-H'>
+      }
+      set jcount 0
+      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
+      wapp-subst {<br><table>\n}
+      wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>Geomean</th><th>Status</th>\n}
+      wapp-subst $tprochcombined
+      wapp-subst {</table>\n}
+      if { $tprochcombined eq {} } {
+        wapp-subst {%html(No TPROC-H jobs found)\ in database file %html([ getdatabasefile ])}
+      }
+      wapp-subst {</ol></div>\n}
+      main-footer
       return
     } else {
       if { $paramlen >= 1 && $paramlen <= 3 } {
@@ -1107,7 +1171,7 @@ namespace eval jobs {
 	}
 	set url "[wapp-param BASE_URL]/jobs?profileid=$profileid&profiledata"
         set text "Profile Data"
-        wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+        wapp-subst {<a href='%html($url)'>%html($text)</a><br>\n}
         common-footer
         return
       } else {
@@ -1117,7 +1181,7 @@ namespace eval jobs {
       }
       #2 or more parameters
     } else {
-      if { [ dict keys $paramdict ] eq "jobid index" || [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid resultdata" || [ dict keys $paramdict ] eq "jobid DELETE" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid timingdata" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" || [ dict keys $paramdict ] eq "jobid tcountdata" || [ dict keys $paramdict ] eq "jobid metrics"  || [ dict keys $paramdict ] eq "jobid metricsdata" ||  [ dict keys $paramdict ] eq "jobid system" ||  [ dict keys $paramdict ] eq "profileid profiledata"  } {
+      if { [ dict keys $paramdict ] eq "jobid index" || [ dict keys $paramdict ] eq "jobid summary" || [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" || [ dict keys $paramdict ] eq "jobid result" || [ dict keys $paramdict ] eq "jobid resultdata" || [ dict keys $paramdict ] eq "jobid DELETE" || [ dict keys $paramdict ] eq "jobid delete" || [ dict keys $paramdict ] eq "jobid timestamp" || [ dict keys $paramdict ] eq "jobid dict" || [ dict keys $paramdict ] eq "jobid timing" || [ dict keys $paramdict ] eq "jobid timingdata" || [ dict keys $paramdict ] eq "jobid db" ||  [ dict keys $paramdict ] eq "jobid bm" || [ dict keys $paramdict ] eq "jobid tcount" || [ dict keys $paramdict ] eq "jobid tcountdata" || [ dict keys $paramdict ] eq "jobid metrics"  || [ dict keys $paramdict ] eq "jobid metricsdata" ||  [ dict keys $paramdict ] eq "jobid system" ||  [ dict keys $paramdict ] eq "profileid profiledata"  } {
 	if { [ lindex [ dict keys $paramdict ] 0 ] eq "profileid" } {
         set profileid [ dict get $paramdict profileid ]
         if { [ dict keys $paramdict ] eq "profileid profiledata" } {
@@ -1138,6 +1202,139 @@ namespace eval jobs {
             set vuid 0
           }
         }
+	#Summary page with all available charts
+        if { [ dict keys $paramdict ] eq "jobid summary" } {
+          summary-header $jobid
+        set jobresult [ getjobresult $jobid 1 ]
+        set db [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+        set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid} ]]]
+          if { $bm eq "TPROC-C" } {
+	#TPROC-C Summary
+          if { !([ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ]) } {
+           lassign [ getnopmtpm $jobresult ] jobid tstamp activevu nopm tpm dbdescription
+           set avu [regexp -all -inline -- {[0-9]*\.?[0-9]+} $activevu]
+		} else {
+             ;#No result exclude summary
+	   return
+		}
+      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3><br>}
+      wapp-trim {
+            <div class='hammerdb' data-title='Jobs Summary'>
+          }
+	#Summary Table
+      wapp-subst {<table style="font-size: 150%;">\n}
+      wapp-subst {<th>HDB Version</th><th>Database</th><th>Benchmark</th><th>NOPM</th><th>TPM</th><th>Active VU</th>\n}
+      wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($bm)</td><td>%html($nopm)</td><td>%html($tpm)</td><td>%html($avu)</td></tr>\n}
+      wapp-subst {</table>\n}
+	#Results chart - check for existence of result already done
+              wapp-content-security-policy off
+              foreach l [ split [ getchart $jobid 1 "result" ] \n] {
+                if { [ string match "*TPROC-C Result*" $l  ] } {
+                set l {"text": "Result",}
+                # continue 
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+	#Tcount chart - check for existence first
+                set jobtcount [ getjobtcount $jobid ]
+                if { [ llength $jobtcount ] eq 2 && [ string match [ lindex $jobtcount 1 ] "Jobid has no transaction counter data" ] } {
+                  ;#No tcount data exclude link
+                } else {
+              foreach l [ split [ getchart $jobid 1 "tcount" ] \n] {
+                if { [ string match "*TPROC-C Transaction*" $l  ] } {
+                set l {"text": "Transaction Count",}
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+                }
+	#Timing chart - check for existence first
+                  set jobtiming [ getjobtiming $jobid ]
+                  if { [ llength $jobtiming ] eq 2 && [ string match [ lindex $jobtiming 1 ] "Jobid has no timing data" ] } {
+                    ;#No timing data exclude link
+                  } else {
+              foreach l [ split [ getchart $jobid 1 "timing" ] \n] {
+                if { [ string match "*TPROC-C Response*" $l  ] } {
+                set l {"text": "Response Times",}
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+                  }
+	#Metrics chart - check for existence first
+                set jobmetrics [ getjobmetrics $jobid ]
+                if { [ llength $jobmetrics ] eq 2 && [ string match [ lindex $jobmetrics 1 ] "Jobid has no metric data" ] } {
+                  ;#No metrics data exclude link
+                } else {
+              foreach l [ split [ getchart $jobid 1 "metrics" ] \n] {
+                if { [ string match "*text*:*$jobid*" $l  ] } {
+		#strip jobid from chart title only show CPU
+		regsub $jobid $l "" l
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+                }
+		} else {
+	#TPROC-H Summary
+          if { !([ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ]) } {
+           set ctind 0
+           foreach ct {jobid tstamp geomean queryset} { 
+           set $ct [ lindex $jobresult $ctind ] 
+           incr ctind
+           }
+           set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $geomean]
+           set geo [ format "%.2f" [ lindex $numbers 1]]
+	   regsub -all "Completed " $queryset "" queryset
+	   regsub -all "query set" $queryset "qset" queryset
+	   regsub -all "seconds" $queryset "secs" queryset
+                } else {
+             ;#No result exclude summary
+           return
+                }
+      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3><br>}
+      wapp-trim {
+            <div class='hammerdb' data-title='Jobs Summary'>
+          }
+        #Summary Table
+      wapp-subst {<table style="font-size: 150%;">\n}
+      wapp-subst {<th>HDB Version</th><th>Database</th><th>Benchmark</th><th>Geomean</th><th>Query Time</th>\n}
+      wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($bm)</td><td>%html($geo)</td><td>%html($queryset)</td></tr>\n }
+      wapp-subst {</table>\n}
+	#Results chart - check for existence of result already done
+              wapp-content-security-policy off
+              foreach l [ split [ getchart $jobid 1 "result" ] \n] {
+                if { [ string match "*TPROC-H Result*" $l  ] } {
+                set l {"text": "Result",}
+                # continue 
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+	#Timing chart - check for existence first - note TPROC-H timing comes from the output
+        if { ![ string match "Geometric*" [ lindex $jobresult 2 ] ] } {
+                    ;#No timing data exclude link
+                  } else {
+              foreach l [ split [ getchart $jobid 1 "timing" ] \n] {
+                if { [ string match "*TPROC-H Power*" $l  ] } {
+                set l {"text": "Power Query Times",}
+                }
+                wapp-subst {%unsafe($l)\n}
+              }
+                  }
+	#Metrics chart - check for existence first
+                set jobmetrics [ getjobmetrics $jobid ]
+                if { [ llength $jobmetrics ] eq 2 && [ string match [ lindex $jobmetrics 1 ] "Jobid has no metric data" ] } {
+                  ;#No metrics data exclude link
+                } else {
+              foreach l [ split [ getchart $jobid 1 "metrics" ] \n] {
+                if { [ string match "*text*:*$jobid*" $l  ] } {
+		#strip jobid from chart title only show CPU
+		regsub $jobid $l "" l
+                }
+                wapp-subst {%unsafe($l)\n}
+                }
+                }
+		}
+	common-footer
+	return
+	} else {
         if { [ dict keys $paramdict ] eq "jobid index" } {
           common-header
           wapp-subst {<h3 class="title">Job:%html($jobid)</h3><br>}
@@ -1145,6 +1342,14 @@ namespace eval jobs {
             <div class='hammerdb' data-title='Jobs Index'>
           }
           wapp-subst {<div><ol style='column-width: 20ex;'>\n}
+          set jobresult [ getjobresult $jobid 1 ]
+          if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
+             ;#No result exclude summary
+	     } else {
+          set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&summary"
+          set text "summary"
+          wapp-subst {<li><a href='%html($url)'>%html($text)</a>\n}
+          }
           set url "[wapp-param BASE_URL]/jobs?jobid=$jobid"
           set text "output"
           wapp-subst {<li><a href='%html($url)'>%html($text)</a>\n}
@@ -1218,6 +1423,7 @@ namespace eval jobs {
           common-footer
           return
         }
+        }
         set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
         if { $query eq 0 } {
           dict set jsondict error message "Jobid $jobid for virtual user $vuid does not exist"
@@ -1277,7 +1483,7 @@ namespace eval jobs {
               }
               set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&resultdata"
               set text "Result Data"
-              wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+              wapp-subst {<a href='%html($url)'>%html($text)</a><br>\n}
               common-footer
               return
             } else {
@@ -1292,7 +1498,7 @@ namespace eval jobs {
                 }
                 set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&timingdata"
                 set text "Timing Data"
-                wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+                wapp-subst {<a href='%html($url)'>%html($text)</a><br>\n}
                 common-footer
                 return
               } else {
@@ -1317,7 +1523,7 @@ namespace eval jobs {
                       }
                       set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&tcountdata"
                       set text "Transaction Count Data"
-                      wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+                      wapp-subst {<a href='%html($url)'>%html($text)</a><br>\n}
                       common-footer
                       return
                   } else {
@@ -1332,7 +1538,7 @@ namespace eval jobs {
                       }
                       set url "[wapp-param BASE_URL]/jobs?jobid=$jobid&metricsdata"
                       set text "Metrics Data"
-                      wapp-subst {<a href='%html($url)'>%html($text)</a><br><br>\n}
+                      wapp-subst {<a href='%html($url)'>%html($text)</a><br>\n}
                       common-footer
                       return
                     } else {
@@ -1395,7 +1601,7 @@ namespace eval jobs {
           }
         }
       } else {
-        dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&status or jobs?jobid=TEXT&db or jobs?jobid=TEXT&bm or jobs?jobid=TEXT&system or jobs?jobid=TEXT&timestamp or jobs?jobid=TEXT&dict or jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&result or jobs?jobid=TEXT&timing or jobs?jobid=TEXT&delete jobs?profileid=INTEGER&profiledata" 
+        dict set jsondict error message "Jobs Two Parameter Usage: jobs?jobid=TEXT&index jobs?jobid=TEXT&summary jobs?jobid=TEXT&status or jobs?jobid=TEXT&db or jobs?jobid=TEXT&bm or jobs?jobid=TEXT&system or jobs?jobid=TEXT&timestamp or jobs?jobid=TEXT&dict or jobs?jobid=TEXT&vu=INTEGER or jobs?jobid=TEXT&result or jobs?jobid=TEXT&timing or jobs?jobid=TEXT&delete jobs?profileid=INTEGER&profiledata" 
         wapp-2-json 2 $jsondict
         return
       }
@@ -1498,6 +1704,30 @@ namespace eval jobs {
     return $jobsystem
   }
 
+  proc getnopmtpm { jobresult } {
+  #Returns NOPM, TPM and database description from result string
+	set ctind 0
+        foreach ct {jobid tstamp activevu result} {
+          set $ct [ lindex $jobresult $ctind ]
+          incr ctind
+        }
+        set splitresult [ split $result ]
+        set firstdigit [ lindex $splitresult 5 ]
+        set firstmet [ lindex $splitresult 6 ]
+        set seconddigit [ lindex $splitresult 8 ]
+        set dbdescription [ lindex $splitresult 9 ]
+        set secondmet [ lindex $splitresult end ]
+        #NOPM and TPM may be reversed if using old format
+        if { $firstmet eq "NOPM" } {
+          set nopm $firstdigit
+          set tpm $seconddigit
+        } else {
+          set nopm $seconddigit
+          set tpm $firstdigit
+        }
+	return [ list $jobid $tstamp $activevu $nopm $tpm $dbdescription ]
+ }
+
   proc gettopjobs {} {
     #Get the top TPROC-C and TPROC-H jobs. Maintain a list of results that are not top so search is quicker
     #If a job is deleted the discarded job list is reset in case the top job was deleted
@@ -1534,25 +1764,7 @@ namespace eval jobs {
           dict set topscores geo $geo
         }
       } elseif { [ string match "TEST RESULT*" [ lindex $jobresult 3 ] ] } {
-        set ctind 0
-        foreach ct {jobid tstamp activevu result} {
-          set $ct [ lindex $jobresult $ctind ]
-          incr ctind
-        }
-        set splitresult [ split $result ]
-        set firstdigit [ lindex $splitresult 5 ]
-        set firstmet [ lindex $splitresult 6 ]
-        set seconddigit [ lindex $splitresult 8 ]
-        set dbdescription [ lindex $splitresult 9 ]
-        set secondmet [ lindex $splitresult end ]
-        #NOPM and TPM may be reversed if using old format
-        if { $firstmet eq "NOPM" } {
-          set nopm $firstdigit
-          set tpm $seconddigit
-        } else {
-          set nopm $seconddigit
-          set tpm $firstdigit
-        }
+        lassign [ getnopmtpm $jobresult ] jobid tstamp activevu nopm tpm dbdescription
         if { $nopm > [ dict get $topscores nopm ] } {
           set previous [ dict get $topjobs tprocc ]
           if { $previous != 0 } { 
@@ -1640,26 +1852,8 @@ namespace eval jobs {
           } else {
             #TPROC-C
             #Create chart and insert into JOBCHART for future retrieval
-            set ctind 0
-            foreach ct {jobid tstamp activevu result} { 
-              set $ct [ lindex $chartdata  $ctind ] 
-              incr ctind
-            }
-            set splitresult [ split $result ]
             set vus [ lindex $chartdata 2 ]
-            set firstdigit [ lindex $splitresult 5 ]
-            set firstmet [ lindex $splitresult 6 ]
-            set seconddigit [ lindex $splitresult 8 ] 
-            set dbdescription [ lindex $splitresult 9 ] 
-            set secondmet [ lindex $splitresult end ]
-            #NOPM and TPM may be reversed if using old format
-            if { $firstmet eq "NOPM" } { 
-              set nopm $firstdigit
-              set tpm $seconddigit
-            } else { 
-              set nopm $seconddigit
-              set tpm $firstdigit
-            }
+            lassign [ getnopmtpm $chartdata ] jobid tstamp activevu nopm tpm dbdescription
             if { $dbdescription eq "SQL" } { set dbdescription "MSSQLServer" }
             foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
             if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
@@ -2042,23 +2236,7 @@ namespace eval jobs {
         continue
       } elseif { [ string match "TEST RESULT*" [ lindex $jobresult 3 ] ] } {
 #TPROC-C RESULT 
-        set ctind 0
-        foreach ct {jobid tstamp activevu result} {
-          set $ct [ lindex $jobresult $ctind ]
-          incr ctind
-        }
-        set splitresult [ split $result ]
-        set firstdigit [ lindex $splitresult 5 ]
-        set firstmet [ lindex $splitresult 6 ]
-        set seconddigit [ lindex $splitresult 8 ]
-        #NOPM and TPM may be reversed if using old format
-        if { $firstmet eq "NOPM" } {
-          set nopm $firstdigit
-          set tpm $seconddigit
-        } else {
-          set nopm $seconddigit
-          set tpm $firstdigit
- }
+        lassign [ getnopmtpm $jobresult ] jobid tstamp activevu nopm tpm dbdescription
         set avu [regexp -all -inline -- {[0-9]*\.?[0-9]+} $activevu]
 	set tproccresult [list $jobres [ subst {db $db bm $bm tstamp {$timestamp} activevu $avu nopm $nopm tpm $tpm} ]]
 	set huddleobj [ huddle combine $huddleobj [ huddle compile {dict * dict} $tproccresult ]]
@@ -2364,23 +2542,7 @@ proc get_job_profile { args } {
         continue
       } elseif { [ string match "TEST RESULT*" [ lindex $jobresult 3 ] ] } {
 #TPROC-C RESULT 
-        set ctind 0
-        foreach ct {jobid tstamp activevu result} {
-          set $ct [ lindex $jobresult $ctind ]
-          incr ctind
-        }
-        set splitresult [ split $result ]
-        set firstdigit [ lindex $splitresult 5 ]
-        set firstmet [ lindex $splitresult 6 ]
-        set seconddigit [ lindex $splitresult 8 ]
-        #NOPM and TPM may be reversed if using old format
-        if { $firstmet eq "NOPM" } {
-          set nopm $firstdigit
-          set tpm $seconddigit
-        } else {
-          set nopm $seconddigit
-          set tpm $firstdigit
- }
+        lassign [ getnopmtpm $jobresult ] jobid tstamp activevu nopm tpm dbdescription
         set avu [regexp -all -inline -- {[0-9]*\.?[0-9]+} $activevu]
 	set tproccresult [list $jobres [ subst {db $db bm $bm tstamp {$timestamp} activevu $avu nopm $nopm tpm $tpm} ]]
 	set huddleobj [ huddle combine $huddleobj [ huddle compile {dict * dict} $tproccresult ]]
