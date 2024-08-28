@@ -1153,7 +1153,7 @@ Version 4.12 September 2024
 
 Pull Requests & Issues
 
-Add results to web service homepage enhancement #736 (#735)
+Add results to web service homepage #736 (#735)
 Job timing summary to report median values #733 (#732)
 Bug Fix, wrong timeout value assignment in xtprof module #730
 Fixes GUI inline edit errors for MySQL and CLI for MySQL, MariaDB, Oracle, Db2 #725
