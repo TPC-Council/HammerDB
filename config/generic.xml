@@ -75,6 +75,6 @@
            <profiler>xtprof</profiler>
            <xt_unique_log_name>0</xt_unique_log_name>
            <xt_gather_timeout>60</xt_gather_timeout>
-           <xt_job_storage>1</xt_job_storage>
+           <xt_job_storage>0</xt_job_storage>
     </timeprofile>
 </hammerdb>

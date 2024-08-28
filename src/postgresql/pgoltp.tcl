@@ -3294,6 +3294,8 @@ if {$myposition == 1} {
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
+
+        #END OF OLTP workload
         pg_disconnect $lda
     } else {
         proc gettimestamp { } {
@@ -3381,6 +3383,8 @@ if {$myposition == 1} {
             semantic_search $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
             if { $KEYANDTHINK } { thinktime 5 }
         }
+
+        #END OF VECTOR workload
         pg_disconnect $lda
     }
 }

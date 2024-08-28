@@ -312,7 +312,7 @@ puts "[ llength [ dict keys $monitortimings ]] out of [ expr $totalvirtualusers 
 }
 #At 2nd level all unique keys should typically be neword payment delivery slev ostat semantic_search
 set lev2uniquekeys [ lsort -unique [concat {*}[lmap k1 [dict keys $monitortimings] {dict keys [dict get $monitortimings $k1]}]]]
-if { ![ string equal "delivery neword ostat payment slev semantic_search" $lev2uniquekeys ]} { 
+if { ![ string equal "delivery neword ostat payment semantic_search slev" $lev2uniquekeys ]} { 
 puts "WARNING:Timing data returned values for functions different than expected delivery neword ostat payment slev semantic_search: $lev2uniquekeys"
 }
 set tmpdir [ findtempdir ]
@@ -372,7 +372,7 @@ if { $xtjob_storage eq 1 } {
 #DEBUG insert into JOBTIMINGS TABLE
 #puts [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min,avg,max,total,p99,p95,p50,sd,ratio,summary,elapsed) VALUES($jobid,$vutr,[format "%s" [ string toupper $sproc]],[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed])} ]
 #Insert XTprof timing data into JobTiming table for each Virtual User
-hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct,summary,elapsed_ms) VALUES('$jobid',$vutr,'[format "%s" [ string toupper $sproc]]',[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed])} ]
+hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p50_ms,sd,ratio_pct,summary,elapsed_ms) VALUES('$jobid',$vutr,'[format "%s" [ string toupper $sproc]]',[format "%d" [dict get $monitortimings $vutr $sproc calls]],[format "%.3f" [dict get $monitortimings $vutr $sproc min]],[format "%.3f" [dict get $monitortimings $vutr $sproc avgms]],[format "%.3f" [dict get $monitortimings $vutr $sproc max]],[format "%.3f" [dict get $monitortimings $vutr $sproc totalms]],[format "%.3f" [dict get $monitortimings $vutr $sproc p99]],[format "%.3f" [dict get $monitortimings $vutr $sproc p95]],[format "%.3f" [dict get $monitortimings $vutr $sproc p50]],[format "%.3f" [dict get $monitortimings $vutr $sproc sd]],[format "%.3f" [dict get $monitortimings $vutr $sproc ratio] 37],0,[dict get $monitortimings $vutr [lindex $sprocorder 0] elapsed])} ]
 #Add the timings to a list of timings for the same stored proc for all virtual users
 #At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
 #To record all individual data points for a virtual user write the output of this command to a file
@@ -382,7 +382,7 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
 		}
 	} 
             puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
-            puts $fd [format ">>>>> VIRTUAL USER %s : ELAPSED TIME : %.0fms" $vutr [dict get $monitortimings $vutr [lindex $sprocorder 1] elapsed]]
+            puts $fd [format ">>>>> VIRTUAL USER %s : ELAPSED TIME : %.0fms" $vutr [dict get $monitortimings $vutr [lindex $sprocorder 0] elapsed]]
 	foreach sproc $sprocorder {
             puts $fd [format ">>>>> PROC: %s" [ string toupper $sproc]]
             puts -nonewline $fd [format "CALLS: %d\t" [dict get $monitortimings $vutr $sproc calls]] 
