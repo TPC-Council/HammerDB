@@ -453,9 +453,25 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             WHEN serialization_failure OR deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
+        set sql(7) { CREATE OR REPLACE PROCEDURE SEMANTIC_SEARCH (
+            emb		        IN VECTOR,
+            k			    IN INTEGER,
+            neighbors       OUT BIGINT[])
+            IS
+            BEGIN
+            SELECT id INTO neighbors
+            FROM public.pg_vector_collection
+            ORDER BY embedding <=> emb
+            LIMIT k;
+            COMMIT;
+            EXCEPTION
+            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            THEN ROLLBACK;
+            END;
+        }
         if { $citus_compatible eq "true" } {
-            set sql(7) { SELECT create_distributed_function('dbms_random(int,int)') }
-            set sql(8) { SELECT create_distributed_function(oid, '$1', colocate_with:='warehouse') FROM pg_catalog.pg_proc WHERE proname IN ('neword', 'delivery', 'payment', 'ostat', 'slev') }
+            set sql(8) { SELECT create_distributed_function('dbms_random(int,int)') }
+            set sql(9) { SELECT create_distributed_function(oid, '$1', colocate_with:='warehouse') FROM pg_catalog.pg_proc WHERE proname IN ('neword', 'delivery', 'payment', 'ostat', 'slev') }
         }
         for { set i 1 } { $i <= [array size sql] } { incr i } {
             set result [ pg_exec $lda $sql($i) ]
@@ -1005,6 +1021,24 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 END;
                 $$
             LANGUAGE 'plpgsql';}
+            set sql(7) { CREATE OR REPLACE PROCEDURE SEMANTIC_SEARCH (
+                in emb		        VECTOR,
+                in k			    int,
+                out neighbors   BIGINT[] ) language plpgsql
+                as $$
+                BEGIN
+                SELECT ARRAY(
+                SELECT id
+                FROM public.pg_vector_collection
+                ORDER BY embedding <=> emb
+                LIMIT k
+                ) INTO neighbors;
+                EXCEPTION
+                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                THEN ROLLBACK;
+                END;
+                $$
+            }
         } else {
             set sql(1) { CREATE OR REPLACE FUNCTION DBMS_RANDOM (INTEGER, INTEGER) RETURNS INTEGER AS $$
                 DECLARE
@@ -1552,10 +1586,26 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 END;
                 ' LANGUAGE 'plpgsql';
             }
+            set sql(7) { CREATE OR REPLACE FUNCTION SEMANTIC_SEARCH (VECTOR, INTEGER) RETURNS TABLE(id bigint) AS '
+                DECLARE
+                emb         ALIAS FOR $1;
+                k           ALIAS FOR $2;
+                BEGIN
+                RETURN QUERY
+                SELECT pg_vector_collection.id
+                FROM public.pg_vector_collection
+                ORDER BY embedding <=> emb
+                LIMIT k;
+                EXCEPTION
+                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                THEN ROLLBACK;
+                END;
+                ' LANGUAGE 'plpgsql';
+            }
         }
         if { $citus_compatible eq "true" } {
-            set sql(7) { SELECT create_distributed_function('dbms_random(int,int)') }
-            set sql(8) { SELECT create_distributed_function(oid, '$1', colocate_with:='warehouse') FROM pg_catalog.pg_proc WHERE proname IN ('neword', 'delivery', 'payment', 'ostat', 'slev') }
+            set sql(8) { SELECT create_distributed_function('dbms_random(int,int)') }
+            set sql(9) { SELECT create_distributed_function(oid, '$1', colocate_with:='warehouse') FROM pg_catalog.pg_proc WHERE proname IN ('neword', 'delivery', 'payment', 'ostat', 'slev') }
         }
         for { set i 1 } { $i <= [array size sql] } { incr i } {
             set result [ pg_exec $lda $sql($i) ]
@@ -3177,13 +3227,58 @@ switch $myposition {
             }
         }
 
+        proc semantic_search { lda k RAISEERROR ora_compatible pg_storedprocs } {
+            global vector_test_dataset 
+            upvar #1 vector_query_count vector_query_count
+            upvar #1 vector_data_idx vector_data_idx
+            set emb [ lindex $vector_test_dataset $vector_data_idx ]
+
+            set first_comma_index [string first "," $emb]
+            set id [string range $emb 0 [expr {$first_comma_index - 1}]]
+            set emb [string range $emb [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
+            # Remove the quotes from id and emb
+            set id [string trim $id {"}]
+            set emb [string trim $emb {"}]
+            puts $vector_data_idx
+            if {[llength $emb] > 0} {
+                if { $ora_compatible eq "true" } {
+                    set result [pg_exec $lda "exec semantic_search('\[$emb\]',5)" ]
+                } else {
+                    if { $pg_storedprocs eq "true" } {
+                        set result [pg_exec $lda "call semantic_search('\[$emb\]', 5, array\[0,0\])"]
+                    } else {
+                        set result [ pg_exec_prepared $lda semantic_search {} {} "\[$emb\]" 5 ]
+                    }
+                }
+                if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+                    if { $RAISEERROR } {
+                        error "[pg_result $result -error]"
+                    } else {
+                        error "[pg_result $result -error]"
+                        puts "Vector Level Procedure Error set RAISEERROR for Details"
+                    }
+                    pg_result $result -clear
+                } else {
+                    pg_result $result -clear
+                    set vector_data_idx [expr $vector_data_idx + 1]
+                    set vector_query_count [expr $vector_query_count + 1]
+                    if { [llength $vector_test_dataset] -1 <= $vector_data_idx } {
+                        set vector_data_idx 1
+                    }
+                }
+                puts "Total vector QPS: {$vector_query_count}"
+                puts "Vector data index: {$vector_data_idx}"
+            }
+        }
+
         proc fn_prep_statement { lda } {
             set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
             set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
             set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
             set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
             set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
-            foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
+            set prep_semantic_search "prepare semantic_search (VECTOR, INTEGER) AS select * from semantic_search(\$1, \$2)"
+            foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev $prep_semantic_search ] {
                 set result [ pg_exec $lda $prep_statement ]
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                     error "[pg_result $result -error]"
@@ -3216,8 +3311,7 @@ switch $myposition {
         }
         set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
         set vector_query_count 0
-        set vector_data_index 1
-        global vector_test_dataset 
+        set vector_data_idx 1
 
         puts "Processing $total_iterations transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
@@ -3246,36 +3340,7 @@ switch $myposition {
                 if { $KEYANDTHINK } { thinktime 5 }
             } elseif {$choice <= 26} {
                 if { $KEYANDTHINK } { keytime 2 }
-                set emb [ lindex $vector_test_dataset $vector_data_index ]
-                set first_comma_index [string first "," $emb]
-                set id [string range $emb 0 [expr {$first_comma_index - 1}]]
-                set emb [string range $emb [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
-                
-                # Remove the quotes from id and emb
-                set id [string trim $id {"}]
-                set emb [string trim $emb {"}]
-                if {[llength $emb] > 0} {
-                    set result [ pg_exec $lda "SELECT id FROM public.pg_vector_collection ORDER BY embedding <-> '\[$emb\]' LIMIT 5"]
-                    if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
-                        if { $RAISEERROR } {
-                            error "[pg_result $result -error]"
-                        } else {
-                            error "[pg_result $result -error]"
-                            puts "Vector Level Procedure Error set RAISEERROR for Details"
-                        }
-                        puts "SELECT id FROM public.pg_vector_collection ORDER BY embedding <-> '\[$emb\]\' LIMIT 5"
-                        pg_result $result -clear
-                    } else {
-                        pg_result $result -clear
-                        set vector_data_index [expr $vector_data_index + 1]
-                        set vector_query_count [expr $vector_query_count + 1]
-                        if { [llength $vector_test_dataset] - 1 <= $vector_data_index } {
-                            set vector_data_index 1
-                        }
-                    }
-                    puts "Total vector QPS: {$vector_query_count}"
-                    puts "Vector data index: {$vector_data_index}"
-                }
+                semantic_search $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
