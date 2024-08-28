@@ -1146,3 +1146,17 @@ Fix missing close-brace in PostgreSQL XML Connect Pool option #682(#681)
 Update SVG and themes packages, Unify themes on Windows and Linux #680 (#679)
 Change GUI properties dailogs to tabbed #678 (#676)
 Add Support for oceanbase tpch enhancement #670 (#563) (#673)
+
+---------------------------------------------------------------------
+
+Version 4.12 September 2024
+
+Pull Requests & Issues
+
+Add results to web service homepage enhancement #736 (#735)
+Job timing summary to report median values #733 (#732)
+Bug Fix, wrong timeout value assignment in xtprof module #730
+Fixes GUI inline edit errors for MySQL and CLI for MySQL, MariaDB, Oracle, Db2 #725
+Fix issues with PostgreSQL inline edit #723 (#720)
+Fix SQL Server database setting in GUI #722 (#721)
+Consolidate output for use all warehouses option #717 (#715)
