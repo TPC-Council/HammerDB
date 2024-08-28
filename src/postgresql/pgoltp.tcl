@@ -1613,20 +1613,21 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
     if { [pg_result $result -numTuples] == 0} {
         set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
     } else {
-        set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
-        if { $existing_db eq "Failed" } {
-            error "error, the database connection to $host could not be established"
-        } else {
-            set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
-            if { [pg_result $result -numTuples] == 0 } {
-                puts "Using existing empty Database $db for Schema build"
-                set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
-            } else {
-                puts "Database with tables $db exists"
-                error "Database $db exists but is not empty, specify a new or empty database name"
-            }
-        }
-        pg_disconnect $existing_db
+        # Comment this section, because vector db schema will be generated before running mixed workload.
+        # set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
+        # if { $existing_db eq "Failed" } {
+        #     error "error, the database connection to $host could not be established"
+        # } else {
+        #     set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
+        #     if { [pg_result $result -numTuples] == 0 } {
+        #         puts "Using existing empty Database $db for Schema build"
+        #         set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
+        #     } else {
+        #         puts "Database with tables $db exists"
+        #         error "Database $db exists but is not empty, specify a new or empty database name"
+        #     }
+        # }
+        # pg_disconnect $existing_db
     }
     if { $tspace != "pg_default" } {
         incr stmnt_count
@@ -2102,10 +2103,10 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
         } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
-            set result [ pg_exec $lda "commit" ]
-            pg_result $result -clear
-            pg_disconnect $lda
+            # CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
+            # set result [ pg_exec $lda "commit" ]
+            # pg_result $result -clear
+            # pg_disconnect $lda
             set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
@@ -3213,12 +3214,16 @@ switch $myposition {
         pg_select $lda "select max(d_id) from district" d_id_input_arr {
             set d_id_input $d_id_input_arr(max)
         }
-        set stock_level_d_id  [ RandomNumber 1 $d_id_input ]  
+        set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
+        set vector_query_count 0
+        set vector_data_index 1
+        global vector_test_dataset 
+
         puts "Processing $total_iterations transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
         for {set it 0} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
-            set choice [ RandomNumber 1 23 ]
+            set choice [ RandomNumber 1 26 ]
             if {$choice <= 10} {
                 if { $KEYANDTHINK } { keytime 18 }
                 neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
@@ -3238,6 +3243,39 @@ switch $myposition {
             } elseif {$choice <= 23} {
                 if { $KEYANDTHINK } { keytime 2 }
                 ostat $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
+                if { $KEYANDTHINK } { thinktime 5 }
+            } elseif {$choice <= 26} {
+                if { $KEYANDTHINK } { keytime 2 }
+                set emb [ lindex $vector_test_dataset $vector_data_index ]
+                set first_comma_index [string first "," $emb]
+                set id [string range $emb 0 [expr {$first_comma_index - 1}]]
+                set emb [string range $emb [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
+                
+                # Remove the quotes from id and emb
+                set id [string trim $id {"}]
+                set emb [string trim $emb {"}]
+                if {[llength $emb] > 0} {
+                    set result [ pg_exec $lda "SELECT id FROM public.pg_vector_collection ORDER BY embedding <-> '\[$emb\]' LIMIT 5"]
+                    if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+                        if { $RAISEERROR } {
+                            error "[pg_result $result -error]"
+                        } else {
+                            error "[pg_result $result -error]"
+                            puts "Vector Level Procedure Error set RAISEERROR for Details"
+                        }
+                        puts "SELECT id FROM public.pg_vector_collection ORDER BY embedding <-> '\[$emb\]\' LIMIT 5"
+                        pg_result $result -clear
+                    } else {
+                        pg_result $result -clear
+                        set vector_data_index [expr $vector_data_index + 1]
+                        set vector_query_count [expr $vector_query_count + 1]
+                        if { [llength $vector_test_dataset] - 1 <= $vector_data_index } {
+                            set vector_data_index 1
+                        }
+                    }
+                    puts "Total vector QPS: {$vector_query_count}"
+                    puts "Vector data index: {$vector_data_index}"
+                }
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }

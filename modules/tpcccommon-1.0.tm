@@ -340,3 +340,16 @@ if { $res_format eq "TPM" } {
     return "TEST RESULT : System achieved $nopm NOPM from $tpm $db TPM"
   }
 }
+
+proc load_vector_data { path } {
+  #TODO: Make it singleton
+  set filename  "$path\output.csv"
+  set file [open $filename r]
+  set file_content [read $file]
+  close $file
+  set lines [split $file_content "\n"]
+  return $lines
+}
+
+global vector_test_dataset
+set vector_test_dataset [ load_vector_data "/home/emumba/emumbaorg/HammerDB-4.11/" ]
