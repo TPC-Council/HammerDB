@@ -310,10 +310,10 @@ dict set endms $f [ tsv::keylget allclicktimings $f endms ]
 if { [ llength [ dict keys $monitortimings ]] != [ expr $totalvirtualusers - 1 ] } {
 puts "[ llength [ dict keys $monitortimings ]] out of [ expr $totalvirtualusers - 1 ] Virtual Users reported"
 }
-#At 2nd level all unique keys should typically be neword payment delivery slev ostat
+#At 2nd level all unique keys should typically be neword payment delivery slev ostat semantic_search
 set lev2uniquekeys [ lsort -unique [concat {*}[lmap k1 [dict keys $monitortimings] {dict keys [dict get $monitortimings $k1]}]]]
-if { ![ string equal "delivery neword ostat payment slev" $lev2uniquekeys ]} { 
-puts "WARNING:Timing data returned values for functions different than expected delivery neword ostat payment slev: $lev2uniquekeys"
+if { ![ string equal "delivery neword ostat payment slev semantic_search" $lev2uniquekeys ]} { 
+puts "WARNING:Timing data returned values for functions different than expected delivery neword ostat payment slev semantic_search: $lev2uniquekeys"
 }
 set tmpdir [ findtempdir ]
 if { $tmpdir != "notmpdir" } {
@@ -535,7 +535,7 @@ proc xttimeprofdump {myposition} {
     rename proc _proc
     
     _proc proc {name arglist body} {
-				    if { $name in {neword payment delivery slev ostat} } {
+				    if { $name in {neword payment delivery slev ostat semantic_search} } {
                                     #===================================        
                                     # Allow multiple namespace use [JMN]
                                     if { ![string match ::* $name] } {

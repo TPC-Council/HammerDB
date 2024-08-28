@@ -2922,8 +2922,8 @@ proc CheckDBVersion { lda1 } {
         }
 
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
-switch $myposition {
-    1 { 
+set workload1vu [expr 0.8 * [expr $totalvirtualusers - 1]]
+if {$myposition == 1} {
         if { $mode eq "Local" || $mode eq "Primary" } {
             if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
                 set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_database ]
@@ -3050,8 +3050,7 @@ switch $myposition {
         } else {
             puts "Operating in Replica Mode, No Snapshots taken..."
         }
-    }
-    default {
+    } elseif {$myposition <= $workload1vu} {
         #TIMESTAMP
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
@@ -3227,58 +3226,13 @@ switch $myposition {
             }
         }
 
-        proc semantic_search { lda k RAISEERROR ora_compatible pg_storedprocs } {
-            global vector_test_dataset 
-            upvar #1 vector_query_count vector_query_count
-            upvar #1 vector_data_idx vector_data_idx
-            set emb [ lindex $vector_test_dataset $vector_data_idx ]
-
-            set first_comma_index [string first "," $emb]
-            set id [string range $emb 0 [expr {$first_comma_index - 1}]]
-            set emb [string range $emb [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
-            # Remove the quotes from id and emb
-            set id [string trim $id {"}]
-            set emb [string trim $emb {"}]
-            puts $vector_data_idx
-            if {[llength $emb] > 0} {
-                if { $ora_compatible eq "true" } {
-                    set result [pg_exec $lda "exec semantic_search('\[$emb\]',5)" ]
-                } else {
-                    if { $pg_storedprocs eq "true" } {
-                        set result [pg_exec $lda "call semantic_search('\[$emb\]', 5, array\[0,0\])"]
-                    } else {
-                        set result [ pg_exec_prepared $lda semantic_search {} {} "\[$emb\]" 5 ]
-                    }
-                }
-                if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
-                    if { $RAISEERROR } {
-                        error "[pg_result $result -error]"
-                    } else {
-                        error "[pg_result $result -error]"
-                        puts "Vector Level Procedure Error set RAISEERROR for Details"
-                    }
-                    pg_result $result -clear
-                } else {
-                    pg_result $result -clear
-                    set vector_data_idx [expr $vector_data_idx + 1]
-                    set vector_query_count [expr $vector_query_count + 1]
-                    if { [llength $vector_test_dataset] -1 <= $vector_data_idx } {
-                        set vector_data_idx 1
-                    }
-                }
-                puts "Total vector QPS: {$vector_query_count}"
-                puts "Vector data index: {$vector_data_idx}"
-            }
-        }
-
         proc fn_prep_statement { lda } {
             set prep_neword "prepare neword (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) as select neword(\$1,\$2,\$3,\$4,\$5,0)"
             set prep_payment "prepare payment (INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, NUMERIC, VARCHAR) AS select payment(\$1,\$2,\$3,\$4,\$5,\$6,\$7,'\$8','0',0)"
             set prep_ostat "prepare ostat (INTEGER, INTEGER, INTEGER, INTEGER, VARCHAR) AS select * from ostat(\$1,\$2,\$3,\$4,'\$5') as (ol_i_id INTEGER,  ol_supply_w_id INTEGER, ol_quantity SMALLINT, ol_amount NUMERIC, ol_delivery_d TIMESTAMP WITH TIME ZONE,  out_os_c_id INTEGER, out_os_c_last CHARACTER VARYING, os_c_first CHARACTER VARYING, os_c_middle CHARACTER VARYING, os_c_balance NUMERIC, os_o_id INTEGER, os_entdate TIMESTAMP, os_o_carrier_id INTEGER)"
             set prep_delivery "prepare delivery (INTEGER, INTEGER) AS select delivery(\$1,\$2)"
             set prep_slev "prepare slev (INTEGER, INTEGER, INTEGER) AS select slev(\$1,\$2,\$3)"
-            set prep_semantic_search "prepare semantic_search (VECTOR, INTEGER) AS select * from semantic_search(\$1, \$2)"
-            foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev $prep_semantic_search ] {
+            foreach prep_statement [ list $prep_neword $prep_payment $prep_ostat $prep_delivery $prep_slev ] {
                 set result [ pg_exec $lda $prep_statement ]
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                     error "[pg_result $result -error]"
@@ -3317,7 +3271,7 @@ switch $myposition {
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
         for {set it 0} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
-            set choice [ RandomNumber 1 26 ]
+            set choice [ RandomNumber 1 23 ]
             if {$choice <= 10} {
                 if { $KEYANDTHINK } { keytime 18 }
                 neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
@@ -3338,15 +3292,98 @@ switch $myposition {
                 if { $KEYANDTHINK } { keytime 2 }
                 ostat $lda $w_id $RAISEERROR $ora_compatible $pg_storedprocs
                 if { $KEYANDTHINK } { thinktime 5 }
-            } elseif {$choice <= 26} {
-                if { $KEYANDTHINK } { keytime 2 }
-                semantic_search $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
-                if { $KEYANDTHINK } { thinktime 5 }
             }
         }
         pg_disconnect $lda
+    } else {
+        proc gettimestamp { } {
+            set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
+            return $tstamp
+        }
+
+        proc semantic_search { lda k RAISEERROR ora_compatible pg_storedprocs } {
+            global vector_test_dataset 
+            upvar #1 vector_query_count vector_query_count
+            upvar #1 vector_data_idx vector_data_idx
+            set emb [ lindex $vector_test_dataset $vector_data_idx ]
+            
+            set first_comma_index [string first "," $emb]
+            set id [string range $emb 0 [expr {$first_comma_index - 1}]]
+            set emb [string range $emb [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
+            # Remove the quotes from id and emb
+            set id [string trim $id {"}]
+            set emb [string trim $emb {"}]
+
+            if {[llength $emb] > 0} {
+                if { $ora_compatible eq "true" } {
+                    set result [pg_exec $lda "exec semantic_search('\[$emb\]',5)" ]
+                } else {
+                    if { $pg_storedprocs eq "true" } {
+                        set result [pg_exec $lda "call semantic_search('\[$emb\]', 5, array\[0,0\])"]
+                    } else {
+                        set result [ pg_exec_prepared $lda semantic_search {} {} "\[$emb\]" 5 ]
+                    }
+                }
+                if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+                    if { $RAISEERROR } {
+                        error "[pg_result $result -error]"
+                    } else {
+                        error "[pg_result $result -error]"
+                        puts "Vector Level Procedure Error set RAISEERROR for Details"
+                    }
+                    pg_result $result -clear
+                } else {
+                    pg_result $result -clear
+                    set vector_data_idx [expr $vector_data_idx + 1]
+                    set vector_query_count [expr $vector_query_count + 1]
+                    if { [llength $vector_test_dataset] -1 <= $vector_data_idx } {
+                        set vector_data_idx 1
+                    }
+                }
+                puts "Total vector QPS: {$vector_query_count}"
+                puts "Vector data index: {$vector_data_idx}"
+            }
+        }
+
+        proc fn_prep_statement { lda } {
+            set prep_semantic_search "prepare semantic_search (VECTOR, INTEGER) AS select * from semantic_search(\$1, \$2)"
+            foreach prep_statement [ list $prep_semantic_search ] {
+                set result [ pg_exec $lda $prep_statement ]
+                if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
+                    error "[pg_result $result -error]"
+                } else {
+                    pg_result $result -clear
+                }
+            }
+        }
+        #RUN TPC-C
+        set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+        if { $lda eq "Failed" } {
+            error "error, the database connection to $host could not be established"
+        } else {
+            if { $ora_compatible eq "true" } {
+                set result [ pg_exec $lda "exec dbms_output.disable" ]
+                pg_result $result -clear
+            } elseif { $pg_storedprocs eq "true" } {
+                ;
+            } else {
+                fn_prep_statement $lda
+            }
+        }
+        set vector_query_count 0
+        set vector_data_idx 1
+
+        puts "Processing $total_iterations vector transactions with output suppressed..."
+        set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+        for {set it 0} {$it < $total_iterations} {incr it} {
+            if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+            if { $KEYANDTHINK } { keytime 2 }
+            semantic_search $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
+            if { $KEYANDTHINK } { thinktime 5 }
+        }
+        pg_disconnect $lda
     }
-}}
+}
         if { $pg_connect_pool } {
             insert_pgconnectpool_drivescript timed sync
         }
