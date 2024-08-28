@@ -273,6 +273,10 @@ set xtto 600
 #Set xtgather_timout in case decided to print this value in future
 set xtgather_timeout 10
 }
+
+#Don't store output in SQLite
+set xtjob_storage 0
+
 #Wait for xtto seconds for all virtual users to have set their timing data in the thread shared keyed list
 for {set clnt 1} { $clnt <= $xtto } {incr clnt} {
 set alldone true
@@ -352,6 +356,11 @@ unset -nocomplain jobid
 set jobid [ hdb eval {select jobid from JOBMAIN order by datetime(timestamp) DESC LIMIT 1} ]
 	}
 }
+
+global durmin
+set dursec [expr $durmin*60]
+set vector_qps 0
+
 set vustoreport [ dict keys $monitortimings ]
 for { set vutri 0 } { $vutri < [llength $vustoreport] } { incr vutri } {
 	set vutr [ lindex $vustoreport $vutri ]
@@ -395,6 +404,10 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
             puts -nonewline $fd [format "P50: %.3fms\t" [dict get $monitortimings $vutr $sproc p50]]
             puts -nonewline $fd [format "SD: %.3f\t" [dict get $monitortimings $vutr $sproc sd]]
             puts $fd [format "RATIO: %.3f%c" [dict get $monitortimings $vutr $sproc ratio] 37]
+            if { $sproc eq "semantic_search" } {
+                set vector_qps [expr [dict get $monitortimings $vutr $sproc calls] / $dursec]
+                puts -nonewline $fd [format "QPS: %.2f\n" $vector_qps] 
+            }
 #Add the timings to a list of timings for the same stored proc for all virtual users
 #At this point [dict get $monitortimings $vutr $sproc clickslist] will return all unsorted data points for vuser $vutr for stored proc $sproc
 #To record all individual data points for a virtual user write the output of this command to a file
