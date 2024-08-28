@@ -341,15 +341,29 @@ if { $res_format eq "TPM" } {
   }
 }
 
-proc load_vector_data { path } {
+proc load_vector_data { path is_ground_truth } {
   #TODO: Make it singleton
-  set filename  "$path\output.csv"
-  set file [open $filename r]
+  set file [open $path r]
   set file_content [read $file]
   close $file
   set lines [split $file_content "\n"]
-  return $lines
+  set data {}
+  for {set i 0} {$i < [llength $lines]} {incr i} {
+    set first_comma_index [string first "," [lindex $lines $i]]
+    set id [string range [lindex $lines $i] 0 [expr {$first_comma_index - 1}]]
+    set line [string range [lindex $lines $i] [expr {$first_comma_index + 2}] end] ;# +2 to skip comma and space
+    # Remove the quotes from id and emb
+    set id [string trim $id {"}]
+    set line [string trim $line {"}]
+    if { $is_ground_truth } {
+      set line [string map {"," " "} $line]
+    }
+    lappend data "$id\|$line"
+    
+  }
+  return $data
 }
 
-global vector_test_dataset
-set vector_test_dataset [ load_vector_data "/home/emumba/emumbaorg/HammerDB-4.11/" ]
+global vector_test_dataset vector_ground_truth
+set vector_test_dataset [ load_vector_data "/home/emumba/emumba/hammerdb-dev/HammerDB-4.11/output.csv" "false" ]
+set vector_ground_truth [ load_vector_data "/home/emumba/emumba/hammerdb-dev/HammerDB-4.11/output_gt.csv" "true" ]
