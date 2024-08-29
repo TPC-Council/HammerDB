@@ -1570,6 +1570,7 @@ proc dgset { args } {
 
 proc loadtpcc {} {
     upvar #0 dbdict dbdict
+    upvar #0 genericdict genericdict
     global _ED rdbms lprefix
     set _ED(packagekeyname) "TPROC-C"
     ed_status_message -show "TPROC-C Driver Script"
@@ -1580,7 +1581,37 @@ proc loadtpcc {} {
             set prefix [ dict get $dbdict $key prefix ]
             set drivername [ concat [subst {$prefix}]_driver ]
             set drivertype [ dict get [ set $dictname ] tpcc $drivername ]
-            if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" }
+	    if { $drivertype eq "test" } { set lprefix "load" } else { set lprefix "loadtimed" }
+            if {[dict exists $genericdict commandline jobs_disable]} {
+            if { [dict get $genericdict commandline jobs_disable] eq 0 } {
+            #Jobs are enabled, disable SQLite for test workloads, enable for timed
+            catch {hdbjobs version} hdbver
+            if { $drivertype eq "test" } {
+                #disable SQLite output for test workloads
+                 if { ![ string match "" $hdbver ] && [ package vcompare $hdbver 1.0.0 ]  eq 1 } {
+                #SQLite enabled, timed to test workload SQLite output disable, move SQLite to placeholder
+                rename hdbjobs _hdbjobs
+                proc hdbjobs { args } { return "" }
+                } else {
+                ;
+                #test workload SQLite output already disabled
+                }
+                } else {
+                #enable SQLite output for timed workloads
+                 if { [ string match "" $hdbver ] } {
+                #test workload to timed SQLite output enable, move placeholder back to SQLite
+                rename hdbjobs ""
+                rename _hdbjobs hdbjobs
+                } else {
+                ;
+                #timed workload SQLite output already enabled
+                 }
+               }
+             } else {
+               ;
+               #Jobs are already disabled, no action required for test or timed
+               }
+            }
             set command [ concat [subst {$lprefix$prefix}]tpcc ]
             eval $command
             set allw [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *allwarehouse ]
