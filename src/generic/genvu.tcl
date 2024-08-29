@@ -211,6 +211,7 @@ proc load_virtual {}  {
     }
     ed_stop_vuser 
     tsv::set application abort 0
+    tsv::set application ramp_done 0
     if {  [ info exists virtual_users ] } { ; } else { set virtual_users 1 }
     if {  [ info exists maxvuser ] } { ; } else { set maxvuser $virtual_users }
     if {  [ info exists lprefix ] } { ; } else { set lprefix "load" }

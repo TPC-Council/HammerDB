@@ -2924,6 +2924,7 @@ proc CheckDBVersion { lda1 } {
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
 set workload1vu [expr 0.8 * [expr $totalvirtualusers - 1]]
 if {$myposition == 1} {
+        ######MONITOR THREAD######
         if { $mode eq "Local" || $mode eq "Primary" } {
             if { ($DRITA_SNAPSHOTS eq "true") || ($VACUUM eq "true") } {
                 set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_database ]
@@ -3029,6 +3030,7 @@ if {$myposition == 1} {
             global durmin
             set durmin $duration
             set duration [ expr $duration*60000 ]
+            tsv::set application ramp_done 1
             while {$testtime != $duration} {
                 if { [ tsv::get application abort ] } { break } else { after 6000 }
                 set testtime [ expr $testtime+6000 ]
@@ -3104,6 +3106,9 @@ if {$myposition == 1} {
         }
     } elseif {$myposition <= $workload1vu} {
         #TIMESTAMP
+        ######START OLTP WORKLOAD######
+        #TODO remove this hardcoded import and use gentpcc to insert this file
+        if [catch {package require xtprof} ] { error "Failed to load extended time profile functions" } else { namespace import xtprof::* }
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
             return $tstamp
@@ -3355,24 +3360,29 @@ if {$myposition == 1} {
             return $tstamp
         }
 
-        proc semantic_search { lda k RAISEERROR ora_compatible pg_storedprocs } {
+        proc semantic_search_base { lda k RAISEERROR ora_compatible pg_storedprocs } {
             global vector_test_dataset 
+            #TODO consider passing the index 
             upvar #1 vector_query_count vector_query_count
             upvar #1 vector_data_idx vector_data_idx
             set emb [ lindex $vector_test_dataset $vector_data_idx ]
            
+            #TODO do this processing on data load
             set row [split $emb "|"]
             set id [lindex $row 0]
             set emb [lindex $row 1]
 
             if {[llength $emb] > 0} {
                 if { $ora_compatible eq "true" } {
-                    set result [pg_exec $lda "exec semantic_search('\[$emb\]',5)" ]
+                    #TODO change hardcoded value from 10 to K
+                    set result [pg_exec $lda "exec semantic_search('\[$emb\]',10)" ]
                 } else {
                     if { $pg_storedprocs eq "true" } {
-                        set result [pg_exec $lda "call semantic_search('\[$emb\]', 5, array\[0,0\])"]
+                        #TODO change hardcoded value from 10 to K
+                        set result [pg_exec $lda "call semantic_search('\[$emb\]', 10, array\[0,0\])"]
                     } else {
-                        set result [ pg_exec_prepared $lda semantic_search {} {} "\[$emb\]" 5 ]
+                        #TODO change hardcoded value from 10 to K
+                        set result [ pg_exec_prepared $lda knn {} {} "\[$emb\]" 10 ]
                     }
                 }
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -3387,17 +3397,20 @@ if {$myposition == 1} {
                     pg_result $result -clear
                     set vector_data_idx [expr $vector_data_idx + 1]
                     set vector_query_count [expr $vector_query_count + 1]
+                    # TODO test if -1 works without expression and list is 0 indexed
                     if { [llength $vector_test_dataset] -1 <= $vector_data_idx } {
-                        set vector_data_idx 1
+                        set vector_data_idx 0
                     }
                 }
+                #TODO remove before final push. This is good for verification
                 puts "Total vector QPS: {$vector_query_count}"
                 puts "Vector data index: {$vector_data_idx}"
             }
         }
 
         proc fn_prep_statement { lda } {
-            set prep_semantic_search "prepare semantic_search (VECTOR, INTEGER) AS select * from semantic_search(\$1, \$2)"
+            set prep_semantic_search "PREPARE knn(VECTOR, INT) AS SELECT id FROM public.pg_vector_collection ORDER BY embedding <=> \$1 LIMIT \$2;"
+            # TODO remove forloop
             foreach prep_statement [ list $prep_semantic_search ] {
                 set result [ pg_exec $lda $prep_statement ]
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
@@ -3421,17 +3434,92 @@ if {$myposition == 1} {
                 fn_prep_statement $lda
             }
         }
+
+        # TODO set session parameters
+        
+        # TODO set search parameters
+        set result [pg_exec $lda "SET hnsw.ef_search=100"]
+        #TODO can add error handling here.
+        pg_result $result -clear
+
+        set result  [pg_exec $lda "SHOW max_parallel_workers"]
+        set max_parallel_workers [pg_result $result -list]
+        pg_result $result -clear
+        puts "Max parallel workers: $max_parallel_workers"
+
+        set result  [pg_exec $lda "SHOW maintenance_work_mem"]
+        set maintenance_work_mem [pg_result $result -list]
+        pg_result $result -clear
+        puts "Maintenance work mem: $maintenance_work_mem"
+        
+        set result  [pg_exec $lda "SHOW hnsw.ef_search"]
+        set hnsw_efsearch [pg_result $result -list]
+        pg_result $result -clear
+        puts "HNSW ef_search: $hnsw_efsearch"
+
+
         set vector_query_count 0
+        #TODO this can be change to 0?
         set vector_data_idx 1
+
+        #TODO good for debugging, can be removed 
+        set counter 0
 
         puts "Processing $total_iterations vector transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+        
+        set start [clock seconds]
+        puts "Start time: $start"
+
+        # First forloop is stop either:
+        # 1) If total_iterations reached
+        # 2) If the shared variable `abort` is set to true, which likely means the time completed
+        # 3) If the first ramp up is complete. Note rampup is checked in each iteration, not optimum, hence we have a separate loop for the actual run.
+        
         for {set it 0} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+            if { [ tsv::get application ramp_done ] } {
+                puts "Ramp up time is complete, moving on..."
+                break
+            }
             if { $KEYANDTHINK } { keytime 2 }
+            semantic_search_base $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
+            if { $KEYANDTHINK } { thinktime 5 }
+            incr counter
+        }
+        set end [clock seconds]
+        puts "End time (rampup): $end"
+        puts "End Counter $counter"
+        puts "Duration [expr {$end - $start}]"
+
+        # TODO this can be moved to the top
+        if [catch {package require xtprof} ] { error "Failed to load extended time profile functions" } else { namespace import xtprof::* }
+        proc semantic_search { lda k RAISEERROR ora_compatible pg_storedprocs } {
+            semantic_search_base $lda $k $RAISEERROR $ora_compatible $pg_storedprocs
+        }
+        puts "Processing $total_iterations vector transactions with output suppressed..."
+        set start [clock seconds]
+        set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+        set counter 0
+
+        # Second forloop is stopped either:
+        # 1) If total_iterations reached
+        # 2) If the shared variable `abort` is set to true, which likely means the time completed
+
+        puts "STARTING ACTUAL RUN"
+        #TODO Can add conditional wait to sync all threads
+        puts "Start time: $start"
+        for {set it $counter} {$it < $total_iterations} {incr it} {
+            if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
+            if { $KEYANDTHINK } { keytime 3 }
             semantic_search $lda 5 $RAISEERROR $ora_compatible $pg_storedprocs
             if { $KEYANDTHINK } { thinktime 5 }
+            incr counter
         }
+        set end [clock seconds]
+        puts "End time (final): $end"
+        puts "End Counter $counter"
+        puts "Duration [expr {$end - $start}]"
 
         #END OF VECTOR workload
         pg_disconnect $lda
