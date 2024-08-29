@@ -360,6 +360,7 @@ set jobid [ hdb eval {select jobid from JOBMAIN order by datetime(timestamp) DES
 global durmin
 set dursec [expr $durmin*60]
 set vector_qps 0
+set total_vqueries 0
 set recall [tsv::get vector recall]
 
 set vustoreport [ dict keys $monitortimings ]
@@ -407,6 +408,7 @@ hdb eval [ subst {INSERT INTO JOBTIMING(jobid,vu,procname,calls,min_ms,avg_ms,ma
             puts $fd [format "RATIO: %.3f%c" [dict get $monitortimings $vutr $sproc ratio] 37]
             if { $sproc eq "semantic_search" } {
                 set vector_qps [expr [dict get $monitortimings $vutr $sproc calls] / $dursec]
+                set total_vqueries [expr {$total_vqueries + [dict get $monitortimings $vutr $sproc calls]}]
                 puts -nonewline $fd [format "QPS: %.2f\n" $vector_qps] 
             }
 #Add the timings to a list of timings for the same stored proc for all virtual users
@@ -478,6 +480,9 @@ foreach sproc $sprocorder {
             puts $fd [format "RATIO: %.3f%c" [dict get $sumtimings $sproc ratio] 37]
 	}
         puts $fd [format "VECTOR RECALL: %.2f\n" $recall]
+        set mediands [expr {$medianendms/1000}]
+        set total_vqps [expr $total_vqueries / double($mediands)]
+        puts $fd [format "TOTAL VECTOR QPS: %.2f\n" $total_vqps]
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 close $fd
 }
