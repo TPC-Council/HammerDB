@@ -1153,6 +1153,7 @@ Version 4.12 September 2024
 
 Pull Requests & Issues
 
+Only enable job output for TPROC-C timed workloads #743 (#741)
 Add results to web service homepage #736 (#735)
 Job timing summary to report median values #733 (#732)
 Bug Fix, wrong timeout value assignment in xtprof module #730
