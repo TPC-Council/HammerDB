@@ -22,7 +22,7 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v4.11.</para>
+      <para>The following are the release notes for HammerDB v4.12.</para>
 
       <section>
         <title>Nomenclature Change</title>
@@ -72,12 +72,16 @@
       <section>
         <title>Storing, Retrieval and Visualization of Results</title>
 
-        <para>From v4.11 the option to build a Performance Profile by grouping
-        multiple TPROC-C jobs under a profile id has been added to the storage
-        and retrieval of results as well as storing CPU metrics as prt of a
-        job. From v4.8 the HammerDB Web Service has been enhanced to provide a
-        read only interface to the jobs output from both the GUI and CLI
-        stored in a SQLite database using a web browser. This enables the
+        <para>From v4.12 the HammerDB Web Service has been improved with the
+        home page showing separate tables for TPROC-C and TPROC-H workloads
+        with the results where applicable shown in the tables. A summary page
+        has been added for Benchmark Run jobs with all available charts on the
+        same page. From v4.11 the option to build a Performance Profile by
+        grouping multiple TPROC-C jobs under a profile id has been added to
+        the storage and retrieval of results as well as storing CPU metrics as
+        part of a job. From v4.8 the HammerDB Web Service has been enhanced to
+        provide a read only interface to the jobs output from both the GUI and
+        CLI stored in a SQLite database using a web browser. This enables the
         viewing of workload configuration as well as automatically generated
         charts from the job output. These charts use Apache e-charts and
         therefore to access the charts it is necessary for the viewing browser
@@ -88,35 +92,28 @@
       </section>
 
       <section>
-        <title>Schema and Consistency Checks</title>
+        <title>Only enable job output for TPROC-C timed workloads</title>
 
-        <para>From v4.11 the schema checks have been added to the example
-        scripts for all databases. From v4.10 HammerDB has added schema and
-        data consistency checks for all databases. These checks can be run
-        after a schema build and after running the workload to verify that the
-        schema and data has remained consistent.</para>
+        <para>From v4.12 when a test TPROC-C workload is selected instead of a
+        timed workload the output to SQLite is automatically disabled and no
+        job related data is stored.</para>
       </section>
 
       <section>
-        <title>Persist VU Settings</title>
+        <title>Job timing summary modified to show median values</title>
 
-        <para>From v4.11 the option has been added to persist VU settings
-        across HammerDB restarts.</para>
+        <para>From v4.12 when timing a job with the xtprof time profiler the
+        timing data has been changed to show the median value of all timings
+        as opposed to the timings from the last Virtual User. The output is
+        consistent with the text based timing summary. </para>
       </section>
 
       <section>
-        <title>GUI SVG and Theme updates</title>
+        <title>Consolidated Use All Warehouses summary</title>
 
-        <para>From v4.11 the SVG and theme packages used by HammerDB have been
-        updated, the themes unified between Windows and Linux and the
-        properties dialogs moved to a tabbed configuration.</para>
-      </section>
-
-      <section>
-        <title>Oceanbase for MySQL TPROC-H</title>
-
-        <para>From v4.11 Oceanbase has been added as a option to the MySQL
-        TPROC-H workload.</para>
+        <para>From v4.12 when the Use All Warehouses option is selected the
+        report on the selected warehouses for each Virtual User is reported in
+        a summarised form. </para>
       </section>
 
       <section>
@@ -233,43 +230,33 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     </section>
 
     <section>
-      <title>HammerDB v4.11 New Features</title>
+      <title>HammerDB v4.12 New Features</title>
 
-      <para>HammerDB v4.11 New Features are all referenced to <link
+      <para>HammerDB v4.12 New Features are all referenced to <link
       xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
       Pull Requests</link>, where more details for each new feature and
       related pull requests can be found here:</para>
 
-      <para>[TPC-Council#709] Added example scripts for checkschema for all
-      databases</para>
+      <para>[TPC-Council#743] Only enable job output for TPROC-C timed
+      workloads</para>
 
-      <para>[TPC-Council#707] Adds Performance Profile for TPROC-C Jobs</para>
+      <para>[TPC-Council#736] Add results to web service homepage</para>
 
-      <para>[TPC-Council#706] Add Schema Existence Check for
-      MySQL/MariaDB</para>
+      <para>[TPC-Council#733] Job timing summary to report median
+      values</para>
 
-      <para>[TPC-Council#705] Add CPU metrics to CLI, Jobs and automate
-      start</para>
+      <para>[TPC-Council#730] Bug Fix, wrong timeout value assignment in
+      xtprof module</para>
 
-      <para>[TPC-Council#701] Fix incorrect value for SQLite database</para>
+      <para>[TPC-Council#725] Fixes GUI inline edit errors for MySQL and CLI
+      for MySQL, MariaDB, Oracle, Db2</para>
 
-      <para>[TPC-Council#696] Persist VU settings across restarts</para>
+      <para>[TPC-Council#723] Fix issues with PostgreSQL inline edit</para>
 
-      <para>[TPC-Council#690] Add Database version to TPROC-C timed
-      test</para>
+      <para>[TPC-Council#722] Fix SQL Server database setting in GUI</para>
 
-      <para>[TPC-Council#688] Fix RETURNING d_next_o_id in NEWORD bug</para>
-
-      <para>[TPC-Council#682] Fix missing close-brace in PostgreSQL XML
-      Connect Pool option</para>
-
-      <para>[TPC-Council#680] Update SVG and themes packages, Unify themes on
-      Windows and Linux</para>
-
-      <para>[TPC-Council#678] Change GUI properties dailogs to tabbed</para>
-
-      <para>[TPC-Council#670] Add Support for oceanbase tpch
-      enhancement</para>
+      <para>[TPC-Council#717] Consolidate output for use all warehouses option
+      </para>
     </section>
 
     <section>
@@ -370,7 +357,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
               <entry>PostgreSQL (EnterpriseDB) (Amazon Redshift)
               (Greenplum)</entry>
 
-              <entry>10.2 / 10.3 / 11 / 12 / 13 / 14 / 15</entry>
+              <entry>10.2 / 10.3 / 11 / 12 / 13 / 14 / 15 / 16</entry>
             </row>
           </tbody>
         </tgroup>
@@ -397,12 +384,12 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-4.11-Win-x86-64-Setup.exe</programlisting>
+      <programlisting>fciv -both HammerDB-4.12-Win.zip</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-4.11-Linux.tar.gz 
-sha1sum HammerDB-4.11-Linux.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-4.12-Linux.tar.gz 
+sha1sum HammerDB-4.12-Linux.tar.gz</programlisting>
     </section>
 
     <section>
@@ -624,7 +611,7 @@ sha1sum HammerDB-4.11-Linux.tar.gz</programlisting>
 
         <para>To install from the tar.gz run the command</para>
 
-        <programlisting>tar -zxvf HammerDB-4.11.tar.gz </programlisting>
+        <programlisting>tar -zxvf HammerDB-4.12.tar.gz </programlisting>
 
         <para>This will extract HammerDB into a directory named
         HammerDB-4.10.</para>
@@ -654,7 +641,7 @@ sha1sum HammerDB-4.11-Linux.tar.gz</programlisting>
       <title>HammerDB Docker Container Build &amp; Run</title>
 
       <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. Version 4.11 includes both a pre-built Docker
+      distribute and deploy. Version 4.12 includes both a pre-built Docker
       Image and a Dockerfile that can be used to create a HammerDB Docker
       containers. This container is based on an Ubuntu 20.04 base image and
       provides a ready to use environment to run HammerDB. HammerDB has a
@@ -804,7 +791,7 @@ secure httpd started on SSL port 8082</programlisting>
         <para>To create an image: Go to the folder containing the Dockerfile
         and run the docker build command.</para>
 
-        <programlisting>docker build -t hammerdb-v4.11 . </programlisting>
+        <programlisting>docker build -t hammerdb-v4.12 . </programlisting>
 
         <figure>
           <title>docker build</title>
@@ -835,7 +822,7 @@ secure httpd started on SSL port 8082</programlisting>
         build is successful but the client libraries for IBM are not
         installed.</para>
 
-        <programlisting>	docker run -it --name hammerdb hammerdb-v4.11 bash</programlisting>
+        <programlisting>	docker run -it --name hammerdb hammerdb-v4.12 bash</programlisting>
 
         <figure>
           <title>docker run</title>
@@ -877,7 +864,7 @@ secure httpd started on SSL port 8082</programlisting>
         communicate with remote databases. The following is an example of
         adding host network to the container.</para>
 
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.11 bash</programlisting>
+        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v4.12 bash</programlisting>
       </section>
     </section>
 
@@ -888,7 +875,7 @@ secure httpd started on SSL port 8082</programlisting>
       have a third-party client library installed that HammerDB can use to
       connect and interact with the database. Note that if you use the
       official HammerDB Docker images this step has already been done for you
-      and all of the third-party client libraries have been preiinstalled.
+      and all of the third-party client libraries have been pre-installed.
       This client library will also typically be installed with database
       server software. HammerDB does not statically link the 3rd party
       libraries to minimise executable size and provide flexibility in the
@@ -909,7 +896,7 @@ secure httpd started on SSL port 8082</programlisting>
 
       <para>and type librarycheck.</para>
 
-      <programlisting>HammerDB CLI v4.11
+      <programlisting>HammerDB CLI v4.12
 Copyright (C) 2003-2024 Steve Shaw
 Type "help" for a list of commands
 The xml is well-formed, applying configuration
@@ -1212,7 +1199,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MySQL</title>
 
-        <para>HammerDB version 4.11 (4.X and version 3.3) has been built and
+        <para>HammerDB version 4.12 (4.X and version 3.3) has been built and
         tested against a MySQL 8.0 client installation, hammerDB version
         3.0-3.2 has been built against MySQL 5.7. On Linux this means that
         HammerDB will require a MySQL client library called
@@ -1226,7 +1213,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
       <section>
         <title>MariaDB</title>
 
-        <para>HammerDB version 4.11 has been built and tested against MariaDB
+        <para>HammerDB version 4.12 has been built and tested against MariaDB
         10.8 client installation. On Linux this means that HammerDB will
         require a MariaDB client library called libmariadb.so.3. This client
         library needs to be referenced in the LD_LIBRARY_PATH as shown
@@ -1311,8 +1298,8 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
           </imageobject>
         </mediaobject>
 
-        <para>Also note that the configuration is interchangeable between GUI,
-        CLI and WS and therefore the settings made for one interface will be
+        <para>Also note that the configuration is interchangeable between GUI
+        and CLI and therefore the settings made for one interface will be
         persisted for use for another interface on the same system. Therefore,
         for example settings made with the GUI can be stored and then run with
         the CLI. If it is wished to reset the settings for a particular
@@ -1324,7 +1311,7 @@ Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-17.0.so.1.1 UsageCount=1}}</p
         version of HammerDB is detected from the one that created the existing
         database files, reporting the following message at startup.</para>
 
-        <programlisting>The existing SQLite DBs are from version v4.10. SQLite DBs will be reset to v4.11.</programlisting>
+        <programlisting>The existing SQLite DBs are from version v4.11. SQLite DBs will be reset to v4.12.</programlisting>
 
         <para>For this reason before running another version any existing
         configuration that is wished to be saved should be exported using
@@ -1870,27 +1857,11 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
     <section>
       <title>Run a Test Workload</title>
 
-      <para>Note that HammerDB stores all output of a workload called Jobs
-      within a SQLite database for later retrieval. As a test workload prints
-      a considerable amount of output for performance you can disable the
-      storage of the Jobs under the Jobs tree view option, clicking Jobs
-      Disabled and restarting HammerDB. If you leave Jobs enabled it is
-      expected that the performance of the test workload is slower as all of
-      the output is stored in SQLite.</para>
-
-      <figure>
-        <title>Disable Jobs</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../DocBook/docs/images/ch2-8a.PNG"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>After restrarting, within the tree-view Select Driver Script
-      Options and Settings. Leave the settings at Test Driver Script and click
-      OK</para>
+      <para>A test workload is a simple test that shows the output of the
+      workload and can be used to validate database connectivity without
+      running a full timed test. To configure a test workload, within the
+      tree-view Select Driver Script Options and the Settings tab. Select Test
+      Driver Script and click OK.</para>
 
       <para><figure>
           <title>Driver Connection Options</title>
@@ -1960,23 +1931,11 @@ Success ... loaded library mariatcl for MariaDB</programlisting>
     <section>
       <title>Run a Timed Workload</title>
 
-      <para>The Test script is to check connectivity and diagnose performance
-      and configuration errors. It is the Timed Workload that should be used
-      to conduct performance tests and is suitable for Jobs storage, so under
-      the Jobs tree view re-enable Jobs.</para>
-
-      <figure>
-        <title>Enable Jobs</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../DocBook/docs/images/ch2-10a.PNG"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>Under Driver Options select Timed Driver Script and click OK, the
-      Timed Driver Script is now loaded.</para>
+      <para>Whereas it is the Test script is to check connectivity and
+      diagnose performance and configuration errors. It is the Timed Workload
+      that should be used to conduct performance tests. Under Driver Options
+      select Timed Driver Script and click OK, the Timed Driver Script is now
+      loaded.</para>
 
       <figure>
         <title>Driver Options</title>
@@ -5357,38 +5316,12 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
         I/O capabilities for database.</para>
 
         <programlisting>Vuser 1:Beginning rampup time of 2 minutes
-Vuser 2:VU 2 : Assigning WID=1 based on VU count 3, Warehouses = 30 (1 out of 10)
-Vuser 2:VU 2 : Assigning WID=4 based on VU count 3, Warehouses = 30 (2 out of 10)
-Vuser 2:VU 2 : Assigning WID=7 based on VU count 3, Warehouses = 30 (3 out of 10)
-Vuser 2:VU 2 : Assigning WID=10 based on VU count 3, Warehouses = 30 (4 out of 10)
-Vuser 2:VU 2 : Assigning WID=13 based on VU count 3, Warehouses = 30 (5 out of 10)
-Vuser 2:VU 2 : Assigning WID=16 based on VU count 3, Warehouses = 30 (6 out of 10)
-Vuser 2:VU 2 : Assigning WID=19 based on VU count 3, Warehouses = 30 (7 out of 10)
-Vuser 2:VU 2 : Assigning WID=22 based on VU count 3, Warehouses = 30 (8 out of 10)
-Vuser 2:VU 2 : Assigning WID=25 based on VU count 3, Warehouses = 30 (9 out of 10)
-Vuser 2:VU 2 : Assigning WID=28 based on VU count 3, Warehouses = 30 (10 out of 10)
-Vuser 2:Processing 1000000 transactions with output suppressed...
-Vuser 3:VU 3 : Assigning WID=2 based on VU count 3, Warehouses = 30 (1 out of 10)
-Vuser 3:VU 3 : Assigning WID=5 based on VU count 3, Warehouses = 30 (2 out of 10)
-Vuser 3:VU 3 : Assigning WID=8 based on VU count 3, Warehouses = 30 (3 out of 10)
-Vuser 3:VU 3 : Assigning WID=11 based on VU count 3, Warehouses = 30 (4 out of 10)
-Vuser 3:VU 3 : Assigning WID=14 based on VU count 3, Warehouses = 30 (5 out of 10)
-Vuser 3:VU 3 : Assigning WID=17 based on VU count 3, Warehouses = 30 (6 out of 10)
-Vuser 3:VU 3 : Assigning WID=20 based on VU count 3, Warehouses = 30 (7 out of 10)
-Vuser 3:VU 3 : Assigning WID=23 based on VU count 3, Warehouses = 30 (8 out of 10)
-Vuser 3:VU 3 : Assigning WID=26 based on VU count 3, Warehouses = 30 (9 out of 10)
-Vuser 3:VU 3 : Assigning WID=29 based on VU count 3, Warehouses = 30 (10 out of 10)
-Vuser 3:Processing 1000000 transactions with output suppressed...
-Vuser 4:VU 4 : Assigning WID=3 based on VU count 3, Warehouses = 30 (1 out of 10)
-Vuser 4:VU 4 : Assigning WID=6 based on VU count 3, Warehouses = 30 (2 out of 10)
-Vuser 4:VU 4 : Assigning WID=9 based on VU count 3, Warehouses = 30 (3 out of 10)
-Vuser 4:VU 4 : Assigning WID=12 based on VU count 3, Warehouses = 30 (4 out of 10)
-Vuser 4:VU 4 : Assigning WID=15 based on VU count 3, Warehouses = 30 (5 out of 10)
-Vuser 4:VU 4 : Assigning WID=18 based on VU count 3, Warehouses = 30 (6 out of 10)
-Vuser 4:VU 4 : Assigning WID=21 based on VU count 3, Warehouses = 30 (7 out of 10)
-Vuser 4:VU 4 : Assigning WID=24 based on VU count 3, Warehouses = 30 (8 out of 10)
-Vuser 4:VU 4 : Assigning WID=27 based on VU count 3, Warehouses = 30 (9 out of 10)
-Vuser 4:VU 4 : Assigning WID=30 based on VU count 3, Warehouses = 30 (10 out of 10)</programlisting>
+Vuser 2:Assigned 10 WIDs = 1 4 7 10 13 16 19 22 25 28 based on VU count 3, Warehouses = 10 out of 30
+Vuser 2:Processing 10000000 transactions with output suppressed...
+Vuser 3:Assigned 10 WIDs = 2 5 8 11 14 17 20 23 26 29 based on VU count 3, Warehouses = 10 out of 30
+Vuser 3:Processing 10000000 transactions with output suppressed...
+Vuser 4:Assigned 10 WIDs = 3 6 9 12 15 18 21 24 27 30 based on VU count 3, Warehouses = 10 out of 30
+Vuser 4:Processing 10000000 transactions with output suppressed...</programlisting>
       </section>
 
       <section>
@@ -5663,7 +5596,8 @@ P99: 2.067ms P95: 1.488ms P50: 0.772ms SD: 79101.309 RATIO: 4.187%
 
         <para>When Jobs are enabled by default the time profile data will be
         stored alongside the Jobid and can be viewed with the web service.
-        Charts are automatically generated to show the response times.</para>
+        Charts are automatically generated to show the response times based on
+        the summary of the median values of all virtual users.</para>
 
         <figure>
           <title>graphical response times</title>
@@ -8753,12 +8687,12 @@ hammerdb&gt;
         default Tcl mode except accessed as Python functions with either
         string or integer arguments.</para>
 
-        <programlisting>C:\Program Files\HammerDB-4.6&gt;hammerdbcli py
-HammerDB CLI v4.11
+        <programlisting>C:\Program Files\HammerDB-4.12&gt;hammerdbcli py
+HammerDB CLI v4.12
 Copyright (C) 2003-2024 Steve Shaw
 Type "help()" for a list of commands
 hammerdb&gt;&gt;&gt;help()
-HammerDB v4.11 CLI Help Index
+HammerDB v4.12 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
@@ -10720,7 +10654,7 @@ hammerdb&gt;job 637CF9B73C8D03E243636303 timestamp
 </programlisting>
 
       <para>If you run the metstart command before a CLI job then HammerDB
-      will also record the CPU metrics for the Job. </para>
+      will also record the CPU metrics for the Job.</para>
 
       <programlisting>Connecting to Agent to Display CPU Metrics
 Metric receive port open @ 11732 on yellowhammer
