@@ -1291,20 +1291,24 @@ proc gettimestamp { } {
 # network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
 proc bcpComm {odbc tableName filePath uid pwd server} {
     upvar 3 location location
-    if { $location eq "local" } {
+    upvar 3 authentication authentication
+    if { $location eq "local" && [ string toupper $authentication ] != "SQL" } {
     if [catch {$odbc evaldirect [ subst {bulk insert $tableName from "$filePath" with (DATAFILETYPE = 'char', FIELDTERMINATOR = ',',ROWS_PER_BATCH=500000)}]} message ] {
            error "Bulk Insert error : $message"
     }
     } else {
-    upvar 3 authentication authentication
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t ","
     } else {
     upvar #0 tcl_platform tcl_platform
-	    if {$tcl_platform(platform) == "windows"} {
+   if {$tcl_platform(platform) == "windows"} {
 #bcp on Windows uses ODBC driver 17 that does not support the -u option and may need updating when bcp driver changes
+   if {[ string toupper $authentication ] eq "ENTRA" } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -G -S $server -c  -t ","
+        } else {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
-	} else { 
+	}
+	} else {
 #bcp on Linux can use ODBC driver 18 and trust the server certificate with -u option
     upvar 3 trust_cert trust_cert
     upvar 3 odbc_driver odbc_driver
