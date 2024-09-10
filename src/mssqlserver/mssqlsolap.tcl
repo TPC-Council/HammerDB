@@ -125,6 +125,14 @@ exec sp_updatestats
     return
 }
 
+proc location { odbc } {
+set location "remote"
+if ![catch {set rows [ $odbc allrows "select case when cast(serverproperty('machinename') as varchar(100)) = cast(host_name() as varchar(100)) then 'local' else 'remote' end"  ]}] {
+set location [ lindex {*}$rows 1 ]
+	}
+return $location
+}
+
 proc CreateDatabase { odbc db azure } {
     set table_count 0
     puts "CHECKING IF DATABASE $db EXISTS"
@@ -455,11 +463,37 @@ proc CreateDateScheme { odbc } {
         $odbc evaldirect $sql($i)
     }
 }
-
-proc bcpComm { odbc tableName filepath } {
-if [catch {$odbc evaldirect [ subst {bulk insert $tableName from "$filepath" with (DATAFILETYPE = 'char', FIELDTERMINATOR = '|',ROWS_PER_BATCH=500000)}]} message ] {
-            error "Bulk Insert error : $message"
+# bcp command to copy from file to specified tables
+# -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
+# network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
+proc bcpComm {odbc tableName filePath uid pwd server} {
+    upvar 3 location location
+    if { $location eq "local" } {
+    if [catch {$odbc evaldirect [ subst {bulk insert $tableName from "$filePath" with (DATAFILETYPE = 'char', FIELDTERMINATOR = '|',ROWS_PER_BATCH=500000)}]} message ] {
+           error "Bulk Insert error : $message"
+    }
+    } else {
+    upvar 3 authentication authentication
+    if {[ string toupper $authentication ] eq "WINDOWS" } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t "\\|"
+    } else {
+    upvar #0 tcl_platform tcl_platform
+            if {$tcl_platform(platform) == "windows"} {
+#bcp on Windows uses ODBC driver 17 that does not support the -u option and may need updating when bcp driver changes
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t "\\|"
+        } else {
+#bcp on Linux can use ODBC driver 18 and trust the server certificate with -u option
+    upvar 3 trust_cert trust_cert
+    upvar 3 odbc_driver odbc_driver
+    regexp {ODBC\ Driver\ ([0-9]+)\ for\ SQL\ Server} $odbc_driver all odbc_version
+    if { $trust_cert && $odbc_version >= 18 } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -u -c  -t "\\|"
+                } else {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t "\\|"
+           }
         }
+     }
+  } 
 }
 
 proc load_region { odbc use_bcp } {
@@ -482,7 +516,10 @@ proc mk_region { odbc } {
 # region table loading procedure that implements the exec bcp command
 proc mk_region_bcp { odbc } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
 
     # create file for region table
@@ -511,7 +548,7 @@ proc mk_region_bcp { odbc } {
 
     # bcp command to copy to region table
     set tableName $db.dbo.region
-    bcpComm $odbc $tableName $RegionFilePath
+    bcpComm $odbc $tableName $RegionFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $RegionFilePath
@@ -531,7 +568,10 @@ proc load_nation { odbc use_bcp } {
 # nation table loading procedure that implements the exec bcp command
 proc mk_nation_bcp { odbc } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
 
     # create file for regio table
@@ -567,7 +607,7 @@ proc mk_nation_bcp { odbc } {
 
     # bcp command to copy to nation table
     set tableName $db.dbo.nation
-    bcpComm $odbc $tableName $NationFilePath
+    bcpComm $odbc $tableName $NationFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $NationFilePath
@@ -612,7 +652,10 @@ proc load_supp { odbc start_rows end_rows use_bcp } {
 # nation table loading procedure that implements the exec bcp command
 proc mk_supp_bcp { odbc start_rows end_rows } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
     # create file for supply table
     set tmp_env $::env(TMP)
@@ -661,7 +704,7 @@ proc mk_supp_bcp { odbc start_rows end_rows } {
 
     # bcp command to copy to supplier table
     set tableName $db.dbo.supplier
-    bcpComm $odbc $tableName $SupplierFilePath
+    bcpComm $odbc $tableName $SupplierFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $SupplierFilePath
@@ -731,7 +774,10 @@ proc load_customer { odbc start_rows end_rows use_bcp } {
 # customer table loading procedure that implements the exec bcp command
 proc mk_customer_bcp { odbc start_rows end_rows } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
     # create file for customer table
     set tmp_env $::env(TMP)
@@ -766,7 +812,7 @@ proc mk_customer_bcp { odbc start_rows end_rows } {
 
     # bcp command to copy to customer table
     set tableName $db.dbo.customer
-    bcpComm $odbc $tableName $CustomerFilePath
+    bcpComm $odbc $tableName $CustomerFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $CustomerFilePath
@@ -822,7 +868,10 @@ proc load_part { odbc start_rows end_rows scale_fact use_bcp } {
 # customer table loading procedure that implements the exec bcp command
 proc mk_part_bcp { odbc start_rows end_rows scale_factor } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
     # create file for part and part supply tables
     set tmp_env $::env(TMP)
@@ -884,11 +933,11 @@ proc mk_part_bcp { odbc start_rows end_rows scale_factor } {
 
     # bcp command to copy to region table
     set tableName $db.dbo.part
-    bcpComm $odbc $tableName $PartFilePath
+    bcpComm $odbc $tableName $PartFilePath $userid $pass $serv
 
     # bcp command to copy to region table
     set tableName $db.dbo.partsupp
-    bcpComm $odbc $tableName $PartSupplyFilePath
+    bcpComm $odbc $tableName $PartSupplyFilePath $userid $pass $serv
 
     # delete files when PartFilePath is complete
     file delete $PartFilePath
@@ -966,7 +1015,10 @@ proc load_order { odbc w_id start_rows end_rows upd_num scale_fact use_bcp } {
 
 proc mk_order_bcp { odbc w_id start_rows end_rows upd_num scale_factor } {
 
-    # pass in value for database name for bcp
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
     upvar 2 db db
     # create file for order and line item tables
     set tmp_env $::env(TMP)
@@ -1077,11 +1129,11 @@ proc mk_order_bcp { odbc w_id start_rows end_rows upd_num scale_factor } {
 
     # bcp command to copy to orders table
     set tableName $db.dbo.orders
-    bcpComm $odbc $tableName $OrderPath
+    bcpComm $odbc $tableName $OrderPath $userid $pass $serv
 
     # bcp command to copy to lineitem table
     set tableName $db.dbo.lineitem
-    bcpComm $odbc $tableName $LineItemFilePath
+    bcpComm $odbc $tableName $LineItemFilePath $userid $pass $serv
 
     # delete files when loading is complete
     file delete $OrderPath
@@ -1275,6 +1327,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             if {$partition_orders_and_lineitems} { CreateDateScheme odbc }
             CreateTables odbc $colstore $use_bcp $partition_orders_and_lineitems
         }
+        set location [ location odbc ]
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -1344,6 +1397,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
             set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
         }
+        set location [ location odbc ]
         puts "Start:[ clock format [ clock seconds ] ]"
 
         puts "Loading SUPPLIER..."
