@@ -125,6 +125,14 @@ exec sp_updatestats
     return
 }
 
+proc location { odbc } {
+set location "remote"
+if ![catch {set rows [ $odbc allrows "select case when cast(serverproperty('machinename') as varchar(100)) = cast(host_name() as varchar(100)) then 'local' else 'remote' end"  ]}] {
+set location [ lindex {*}$rows 1 ]
+	}
+return $location
+}
+
 proc CreateDatabase { odbc db azure } {
     set table_count 0
     puts "CHECKING IF DATABASE $db EXISTS"
@@ -458,15 +466,25 @@ proc CreateDateScheme { odbc } {
 # bcp command to copy from file to specified tables
 # -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
 # network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
-proc bcpComm { tableName filePath uid pwd server} {
+proc bcpComm {odbc tableName filePath uid pwd server} {
+    upvar 3 location location
     upvar 3 authentication authentication
+    if { $location eq "local" && [ string toupper $authentication ] != "SQL" } {
+    if [catch {$odbc evaldirect [ subst {bulk insert $tableName from "$filePath" with (DATAFILETYPE = 'char', FIELDTERMINATOR = '|',ROWS_PER_BATCH=500000)}]} message ] {
+           error "Bulk Insert error : $message"
+    }
+    } else {
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t "\\|"
     } else {
     upvar #0 tcl_platform tcl_platform
-            if {$tcl_platform(platform) == "windows"} {
+    if {$tcl_platform(platform) == "windows"} {
 #bcp on Windows uses ODBC driver 17 that does not support the -u option and may need updating when bcp driver changes
+if {[ string toupper $authentication ] eq "ENTRA" } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -G -S $server -c  -t "\\|"
+        } else {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t "\\|"
+	}
         } else {
 #bcp on Linux can use ODBC driver 18 and trust the server certificate with -u option
     upvar 3 trust_cert trust_cert
@@ -478,7 +496,8 @@ proc bcpComm { tableName filePath uid pwd server} {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t "\\|"
            }
         }
-    }
+     }
+  } 
 }
 
 proc load_region { odbc use_bcp } {
@@ -533,7 +552,7 @@ proc mk_region_bcp { odbc } {
 
     # bcp command to copy to region table
     set tableName $db.dbo.region
-    bcpComm $tableName $RegionFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $RegionFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $RegionFilePath
@@ -592,7 +611,7 @@ proc mk_nation_bcp { odbc } {
 
     # bcp command to copy to nation table
     set tableName $db.dbo.nation
-    bcpComm $tableName $NationFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $NationFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $NationFilePath
@@ -689,7 +708,7 @@ proc mk_supp_bcp { odbc start_rows end_rows } {
 
     # bcp command to copy to supplier table
     set tableName $db.dbo.supplier
-    bcpComm $tableName $SupplierFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $SupplierFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $SupplierFilePath
@@ -797,7 +816,7 @@ proc mk_customer_bcp { odbc start_rows end_rows } {
 
     # bcp command to copy to customer table
     set tableName $db.dbo.customer
-    bcpComm $tableName $CustomerFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $CustomerFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $CustomerFilePath
@@ -918,11 +937,11 @@ proc mk_part_bcp { odbc start_rows end_rows scale_factor } {
 
     # bcp command to copy to region table
     set tableName $db.dbo.part
-    bcpComm $tableName $PartFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $PartFilePath $userid $pass $serv
 
     # bcp command to copy to region table
     set tableName $db.dbo.partsupp
-    bcpComm $tableName $PartSupplyFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $PartSupplyFilePath $userid $pass $serv
 
     # delete files when PartFilePath is complete
     file delete $PartFilePath
@@ -1114,11 +1133,11 @@ proc mk_order_bcp { odbc w_id start_rows end_rows upd_num scale_factor } {
 
     # bcp command to copy to orders table
     set tableName $db.dbo.orders
-    bcpComm $tableName $OrderPath $userid $pass $serv
+    bcpComm $odbc $tableName $OrderPath $userid $pass $serv
 
     # bcp command to copy to lineitem table
     set tableName $db.dbo.lineitem
-    bcpComm $tableName $LineItemFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $LineItemFilePath $userid $pass $serv
 
     # delete files when loading is complete
     file delete $OrderPath
@@ -1312,6 +1331,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             if {$partition_orders_and_lineitems} { CreateDateScheme odbc }
             CreateTables odbc $colstore $use_bcp $partition_orders_and_lineitems
         }
+        set location [ location odbc ]
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -1381,6 +1401,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
             set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
         }
+        set location [ location odbc ]
         puts "Start:[ clock format [ clock seconds ] ]"
 
         puts "Loading SUPPLIER..."

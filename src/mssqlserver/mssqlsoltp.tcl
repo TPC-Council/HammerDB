@@ -1147,6 +1147,14 @@ exec sp_updatestats
     return
 }
 
+proc location { odbc } {
+set location "remote"
+if ![catch {set rows [ $odbc allrows "select case when cast(serverproperty('machinename') as varchar(100)) = cast(host_name() as varchar(100)) then 'local' else 'remote' end"  ]}] {
+set location [ lindex {*}$rows 1 ]
+	}
+return $location
+}
+
 proc CreateDatabase { odbc db imdb azure } {
     set table_count 0
     puts "CHECKING IF DATABASE $db EXISTS"
@@ -1281,16 +1289,26 @@ proc gettimestamp { } {
 # bcp command to copy from file to specified tables
 # -b flag specifies batch size of 500000, -a flag specifies network packet size of 16000
 # network packet size depends on server configuration, default of 4096 is used if 16000 is not allowed
-proc bcpComm { tableName filePath uid pwd server} {
+proc bcpComm {odbc tableName filePath uid pwd server} {
+    upvar 3 location location
     upvar 3 authentication authentication
+    if { $location eq "local" && [ string toupper $authentication ] != "SQL" } {
+    if [catch {$odbc evaldirect [ subst {bulk insert $tableName from "$filePath" with (DATAFILETYPE = 'char', FIELDTERMINATOR = ',',ROWS_PER_BATCH=500000)}]} message ] {
+           error "Bulk Insert error : $message"
+    }
+    } else {
     if {[ string toupper $authentication ] eq "WINDOWS" } {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -T -S $server -c  -t ","
     } else {
     upvar #0 tcl_platform tcl_platform
-	    if {$tcl_platform(platform) == "windows"} {
+   if {$tcl_platform(platform) == "windows"} {
 #bcp on Windows uses ODBC driver 17 that does not support the -u option and may need updating when bcp driver changes
+   if {[ string toupper $authentication ] eq "ENTRA" } {
+        exec bcp $tableName IN $filePath -b 500000 -a 16000 -G -S $server -c  -t ","
+        } else {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
-	} else { 
+	}
+	} else {
 #bcp on Linux can use ODBC driver 18 and trust the server certificate with -u option
     upvar 3 trust_cert trust_cert
     upvar 3 odbc_driver odbc_driver
@@ -1299,9 +1317,10 @@ proc bcpComm { tableName filePath uid pwd server} {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -u -c  -t ","
 		} else {
         exec bcp $tableName IN $filePath -b 500000 -a 16000 -U $uid -P $pwd -S $server -c  -t ","
-	   }
-	}
-    }
+           }
+         }
+      }
+   }
 }
 
 proc Customer { odbc d_id w_id CUST_PER_DIST } {
@@ -1428,11 +1447,11 @@ proc Customer_use_bcp { odbc w_id CUST_PER_DIST DIST_PER_WARE} {
     }
     # bcp command to copy to history table
     set tableName $db.dbo.history
-    bcpComm $tableName $HistoryFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $HistoryFilePath $userid $pass $serv
 
     # bcp command to copy to customer table
     set tableName $db.dbo.customer
-    bcpComm $tableName $CustomerFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $CustomerFilePath $userid $pass $serv
 
     # delete files when copy is complete
     file delete $HistoryFilePath
@@ -1614,7 +1633,7 @@ proc Orders_use_bcp { odbc w_id MAXITEMS ORD_PER_DIST DIST_PER_WARE} {
 
     # bcp command to copy to orders table
     set tableName $db.dbo.orders
-    bcpComm $tableName $ordersFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $ordersFilePath $userid $pass $serv
     # delete file when copy is complete
     file delete $ordersFilePath
 
@@ -1622,14 +1641,14 @@ proc Orders_use_bcp { odbc w_id MAXITEMS ORD_PER_DIST DIST_PER_WARE} {
     # only bcp copy to new order table when o_id is greater than 2100
     if {$o_id > 2100} {
         set tableName $db.dbo.new_order
-        bcpComm $tableName $newOrderFilePath $userid $pass $serv
+        bcpComm $odbc $tableName $newOrderFilePath $userid $pass $serv
         # delete file when copy is complete
         file delete $newOrderFilePath
     }
 
     # bcp command to copy to order line table
     set tableName $db.dbo.order_line
-    bcpComm $tableName $orderLineFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $orderLineFilePath $userid $pass $serv
     # delete file when copy is complete
     file delete $orderLineFilePath
 
@@ -1783,7 +1802,7 @@ proc Stock_use_bcp { odbc w_id MAXITEMS } {
 
     # bcp command to copy from file to stock table
     set tableName $db.dbo.stock
-    bcpComm $tableName $StockFilePath $userid $pass $serv
+    bcpComm $odbc $tableName $StockFilePath $userid $pass $serv
 
     # delete file when copy is complete
     file delete $StockFilePath
@@ -1972,6 +1991,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
             set mystart 1
             set myend $count_ware
         }
+	set location [ location odbc ]
         puts "Start:[ clock format [ clock seconds ] ]"
         LoadWare odbc $mystart $myend $MAXITEMS $DIST_PER_WARE $use_bcp
         LoadCust odbc $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $use_bcp
