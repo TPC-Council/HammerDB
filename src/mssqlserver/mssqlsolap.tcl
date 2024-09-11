@@ -326,7 +326,7 @@ proc CreateIndexes { odbc maxdop colstore bcp partition_orders_and_lineitems} {
         } else {
             set num_commands 32
             set sql(31) "alter table dbo.orders add constraint orders_pk primary key (o_orderdate,o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
-            set sql(32) "create clustered index o_orderkey_ind on orders(o_orderkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+            set sql(32) "create index o_orderkey_ind on orders(o_orderkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
 	}
     }
    for { set i 1} {$i <= $num_commands} {incr i} {
