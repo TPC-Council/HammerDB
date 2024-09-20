@@ -1396,6 +1396,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
             tsv::lreplace common thrdlst $myposition $myposition active
         } else {
+            set myposition 1
             set sf_chunk "1 $sup_rows"
             set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
             set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
