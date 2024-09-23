@@ -331,9 +331,15 @@ proc load_virtual {}  {
         upvar #0 icons icons
         if { [ info exists icons ] } {
             #running in GUI get values from icons
+            if { [ string match "*dark*" $ttk::currentTheme ] } {
+            set textColor white
+            set fillColor black
+            set outlineColor [ dict get $icons defaultBackground ]
+            } else {   
             set textColor black
             set fillColor white
-            set outlineColor [ dict get $icons defaultBackground ] 
+            set outlineColor [ dict get $icons defaultBackground ]
+          }
         } else {
             #running in CLI set placeholder values to avoid variable does not exist
             set textColor black
@@ -376,16 +382,19 @@ proc load_virtual {}  {
         set scryarea [ expr {$yval + $rect_sz_fact}]
         set hdb_buff [ expr {$rect_sz_fact/10} ]
         set txt_buff [ expr {$rect_sz_fact/5} ]
-        set cnv [ canvas $trdwin.cv -background white -highlightthickness 0 -scrollregion \
+        if { [ string match "*dark*" $ttk::currentTheme ] } {
+	set vucnvbackground black
+	set vucnv2background black
+        } else {
+	set vucnvbackground white
+	set vucnv2background #dcdad5
+	}
+        set cnv [ canvas $trdwin.cv -background $vucnvbackground -highlightthickness 0 -scrollregion \
         "$rect_sz_fact $rect_sz_fact $scrxarea $scryarea" -yscrollcommand \
         "$trdwin.cv.cv2.scrollY set" -xscrollcommand "$trdwin.cv.scrollX set" \
         -xscrollincrement 50 -yscrollincrement 25 ]
         pack $cnv -fill both -expand 1
-        if { $ttk::currentTheme eq "black" } {
-            set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -highlightthickness 0 -background #424242 ]
-        } else {
-            set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -highlightthickness 0 -background #dcdad5 ]
-        }
+        set cnv2 [ canvas $trdwin.cv.cv2 -width 11 -highlightthickness 0 -background $vucnv2background ]
         pack $cnv2 -expand 0 -fill y -ipadx 0 -ipady 0 -padx 0 -pady 0 -side right
         set scr1 [ ttk::scrollbar $trdwin.cv.cv2.scrollY -orient vertical -command "$cnv yview" ]
         set scr2 [ ttk::scrollbar $trdwin.cv.scrollX -orient horizontal -command "$cnv xview" ]
@@ -400,7 +409,7 @@ proc load_virtual {}  {
                 if { $countuser < $usercount } {
                     set vuid $threadscreated($countuser)
                     if { $virtual_users eq [ expr $maxvuser - 1 ]  && $countuser eq 0} { set MON "-MONITOR" } else { set MON "" }
-                    if { $ttk::currentTheme in {clearlooks awarc awbreeze awlight}} {
+                    if { $ttk::currentTheme in {clearlooks awarc awbreeze awlight awbreezedark}} {
                         $cnv create text [expr $x+$rect_sz_fact] [expr $y+$hdb_buff] \
         -text "Virtual User [expr $countuser + 1]$MON" -font \
          [ list basic [ expr [ font actual basic -size ] - 1 ] ] -fill $textColor

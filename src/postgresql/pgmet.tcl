@@ -4,7 +4,7 @@ namespace eval pgmet {
     variable firstconnect "true"
 
     proc create_metrics_screen { } {
-        global public metframe win_scale_fact
+        global public metframe win_scale_fact defaultBackground
         upvar #0 env e
         set metframe .ed_mainFrame.me
         if { [ info exists hostname ] } { ; } else { set hostname "localhost" }
@@ -18,7 +18,7 @@ namespace eval pgmet {
         set public(p_x) [ expr {round((600/1.333333)*$win_scale_fact)} ]
         set public(p_y) [ expr {round((654/1.333333)*$win_scale_fact)} ]
         if { ![winfo exists .ed_mainFrame.me.m] } {
-            frame $main -background $public(bg) -borderwidth 0 
+            frame $main -background $defaultBackground -borderwidth 0 
             frame $main.f -background $public(bg) -borderwidth 0 ;# frame, use frame to put tiled windows
             pack $main                            -expand true -fill both 
             pack [ ttk::sizegrip $main.grip ]     -side bottom -anchor se
@@ -304,8 +304,8 @@ namespace eval pgmet {
 
                 mon_execute ashtime
                 $public(ash,sqltbl) cellselection clear 0,0 end,end
-                $public(ash,sqltbl) configure -selectbackground #FF7900
-                $public(ash,sqltbl) configure -selectforeground black 
+                $public(ash,sqltbl) configure -selectbackground $public(bg)
+                $public(ash,sqltbl) configure -selectforeground #FF7900
                 $public(ash,sqltbl) configure -activestyle none 
         #} err ] } { ; }
     }
@@ -380,7 +380,8 @@ namespace eval pgmet {
         }
 
         tablelist::tablelist $tbl \
-         -background white \
+         -background $public(bg) \
+         -foreground $public(fg) \
          -columns " $collist " \
          -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -406,8 +407,9 @@ namespace eval pgmet {
                 #puts "call ses_tbl, CPU:$CPU, BCPU:$BCPU, LWLock:$LWLock"
 
                 $public(ash,sestbl) cellselection clear 0,0 end,end
-                $public(ash,sestbl) configure -selectbackground  white
-                $public(ash,sestbl) configure -selectforeground  black 
+                $public(ash,sestbl) configure -selectbackground $public(bg) 
+                $public(ash,sestbl) configure -selectforeground #FF7900
+		$public(ash,sestbl) configure -activestyle none
                 $public(ash,output) delete 0.0 end
                 #$public(ash,output) insert  insert "   working ... "
                 pack forget $public(ash,details_buttons).sql
@@ -424,8 +426,8 @@ namespace eval pgmet {
                 clipboard append $id
             } else {
                 $public(ash,sestbl) cellselection clear 0,0 end,end
-                $public(ash,sestbl) configure -selectbackground  white
-                $public(ash,sestbl) configure -selectforeground  black
+                $public(ash,sestbl) configure -selectbackground $public(bg)
+                $public(ash,sestbl) configure -selectforeground $public(fg)
             }
         }
 
@@ -467,7 +469,8 @@ namespace eval pgmet {
         }
 
         tablelist::tablelist $tbl \
-    -background white \
+    -background $public(bg) \
+    -foreground $public(fg) \
     -columns " $collist " \
     -labelrelief flat \
     -font $public(medfont) -setgrid no \
@@ -490,22 +493,22 @@ namespace eval pgmet {
                 set public(ash,realsqlid) $id
                 ash_sqltxt $id
                 if { "$public(ash,overtimeid)" == "$id" } {
-                    $public(ash,sqltbl) configure -selectbackground #FF7900 
-                    $public(ash,sqltbl) configure -selectforeground black 
+                    $public(ash,sqltbl) configure -selectbackground $public(bg)
+                    $public(ash,sqltbl) configure -selectforeground #FF7900 
                     update idletasks
                     sqlovertime $id
                     set public(ash,overtimeid) -1
                 } else { 
-                    $public(ash,sqltbl) configure -selectbackground #FF7900
-                    $public(ash,sqltbl) configure -selectforeground black 
+                    $public(ash,sqltbl) configure -selectbackground $public(bg)
+                    $public(ash,sqltbl) configure -selectforeground #FF7900
                     update idletasks
                     set public(ash,overtimeid) $id 
                     sqlovertime clear
                 }
             } else {
                 $public(ash,sqltbl) cellselection clear 0,0 end,end
-                $public(ash,sqltbl) configure -selectbackground white
-                $public(ash,sqltbl) configure -selectforeground black 
+                $public(ash,sqltbl) configure -selectbackground $public(bg)
+                $public(ash,sqltbl) configure -selectforeground #FF7900
                 sqlovertime clear
             }
         }
@@ -548,7 +551,8 @@ namespace eval pgmet {
             set collist "$collist 0 $col left "
         }
         tablelist::tablelist $tbl \
-    -background white \
+    -background $public(bg) \
+    -foreground $public(fg) \
     -columns " $collist " \
     -labelrelief flat \
     -font $public(medfont) -setgrid no \
@@ -585,7 +589,8 @@ namespace eval pgmet {
             set collist  "$collist  0 $col left "
         }
         tablelist::tablelist $tbl \
-    -background white \
+    -background $public(bg) \
+    -foreground $public(fg) \
     -columns " $collist " \
     -labelrelief flat \
     -font $public(medfont) -setgrid no \
@@ -620,7 +625,8 @@ namespace eval pgmet {
             set collist  "$collist  0 $col left "
         }
         tablelist::tablelist $tbl \
-    -background white \
+    -background $public(bg) \
+    -foreground $public(fg) \
     -columns " $collist " \
     -labelrelief flat \
     -font $public(medfont) -setgrid no \
@@ -631,8 +637,9 @@ namespace eval pgmet {
             if { [ $public(ash,evttbl) containing $tablelist::y] > -1 } {
                 set id [ $public(ash,evttbl) cellcget [ $public(ash,evttbl) containing [subst $tablelist::y]],id -text]
                 $public(ash,evttbl) cellselection clear 0,0 end,end
-                $public(ash,evttbl) configure -selectbackground  white
-                $public(ash,evttbl) configure -selectforeground  black 
+                $public(ash,evttbl) configure -selectbackground  $public(bg)
+                $public(ash,evttbl) configure -selectforeground  #FF7900
+                $public(ash,evttbl) configure -activestyle none 
                 $public(ash,output) delete 0.0 end
                 #$public(ash,output) insert insert "   working ... "
                 $public(ash,output) insert insert "   session id $id "
@@ -642,8 +649,8 @@ namespace eval pgmet {
                 clipboard append $id
             } else {
                 $public(ash,evttbl) cellselection clear 0,0 end,end
-                $public(ash,evttbl) configure -selectbackground  white
-                $public(ash,evttbl) configure -selectforeground  black
+                $public(ash,evttbl) configure -selectbackground $public(bg)
+                $public(ash,evttbl) configure -selectforeground $public(fg)
             }
         }
         if {[$tbl cget -selectborderwidth] == 0} { $tbl configure -spacing 1 }
@@ -667,7 +674,7 @@ namespace eval pgmet {
         global public
         set cur_proc  createSesFrame
         if { [ catch { 
-                frame $w -width 142 -height 14 -background white -borderwidth 0 -relief flat
+                frame $w -width 142 -height 14 -background $public(bg) -borderwidth 0 -relief flat
                 bindtags $w [lreplace [bindtags $w] 1 1 TablelistBody]
                 set delta $public(ashtbl,delta)
                 set total  [$tbl cellcget $row,activity -text]
@@ -683,7 +690,7 @@ namespace eval pgmet {
                 }
                 set total [$tbl cellcget $row,activity -text]
                 set act [ format "%3.0f" [ expr ceil(100 *  $total  / ($delta)) ] ]
-                label $w.t$row -text $act -font $public(medfont)
+                label $w.t$row -text $act -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
                 set pc [ expr (($total + 0.0)/($delta )) * (100.0/142) ]
@@ -694,25 +701,27 @@ namespace eval pgmet {
     proc createSqlFrame {tbl row col w } { 
         global public
         set cur_proc  createSqlFrame
-        if { [ catch { 
-                frame $w -width 142 -height 14 -background white -borderwidth 0 -relief flat
+        if { [ catch {
+                frame $w -width 142 -height 14 -background $public(bg) -borderwidth 0 -relief flat
                 bindtags $w [lreplace [bindtags $w] 1 1 TablelistBody]
                 set total  [$tbl cellcget $row,activity -text]
+		set originialtotal $total
                 set colcnt [ $tbl columncount ] 
-                for { set i 5 } { $i <  $colcnt  } { incr  i } {
+                for { set i 4 } { $i <  $colcnt  } { incr  i } {
                     set sz [$tbl cellcget $row,$i -text]
                     set name [ lindex [ $tbl columnconfigure $i -name ] end ]
                     set szpct [ expr {$total * 100 / $public(sqltbl,maxActivity) }]
                     frame $w.w$i -width $szpct -background $public(ashgroup,$name) -borderwidth 0 -relief flat
                     place $w.w$i -relheight 1.0
-                    set total [ expr $total - $sz ]
+		    #catch setting total in case sz invalid and prevents total showing over bar
+                    catch {set total [ expr $total - $sz ]}
                 }
                 set total [$tbl cellcget $row,activity -text]
                 set aas [ format "%0.0f" [ expr 100 * ($total+0.0) / $public(sqltbl,maxActivity) ] ]
-                label $w.t$row -text $aas -font $public(medfont) 
+                label $w.t$row -text $aas -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
-                set pc [ expr (($total + 0.0)/$public(sqltbl,maxActivity) * (100.0/142) )   ]
+                set pc [ expr (($total+0.0)/$public(sqltbl,maxActivity) * (100.0/142) )   ]
                 place $w.t$row -relheight 1.0 -relx $pc
         } err ] } { ; }
     }
@@ -721,7 +730,7 @@ namespace eval pgmet {
         global public
         set cur_proc  createevtFrame
         if { [ catch { 
-                frame $w -width 142 -height 14 -background white -borderwidth 0 -relief flat
+                frame $w -width 142 -height 14 -background $public(bg) -borderwidth 0 -relief flat
                 bindtags $w [lreplace [bindtags $w] 1 1 TablelistBody]
                 set activity [$tbl cellcget $row,activity -text]
                 set total $public(ashevt,total) 
@@ -732,7 +741,7 @@ namespace eval pgmet {
                 place $w.w$i -relheight 1.0
                 set i 1
                 set width [ format "%3.1f" $width ] 
-                label $w.w$i -text $width -font $public(medfont)
+                label $w.w$i -text $width -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
                 set pc [ expr (($activity + 0.0)/$total * (100.0/142) )   ]
@@ -1626,7 +1635,7 @@ namespace eval pgmet {
       -barmode overlap  \
       -bg $public(bgt)  \
       -borderwidth  0   \
-      -plotbackground white
+      -plotbackground $public(bg)
                 Blt_ActiveLegend $graph
                 #Crosshairs errors with position error
                 #Blt_Crosshairs $graph
@@ -1644,14 +1653,16 @@ namespace eval pgmet {
                 #
                 $graph axis   configure x -minorticks 0  \
                               -stepsize $public(ash,ticksize)  \
-                              -tickfont  $public(smallfont) -titlefont $public(smallfont) \
+                              -tickfont  $public(smallfont) \
+		              -titlefont $public(smallfont) \
+		              -titlecolor $public(fg) \
                               -background $public(bgt) \
                               -command cur_time      \
                               -bd 0      \
                               -color $public(fg)
                 #
                 $graph axis   configure y -title "Active Sessions (AAS)" -min 0.0 -max {} \
-                              -tickfont  $public(smallfont) -titlefont $public(smallfont) \
+                              -tickfont  $public(smallfont) -titlefont $public(smallfont) -titlecolor $public(fg) \
                               -background $public(bgt) \
                               -color $public(fg)
 
@@ -1659,7 +1670,7 @@ namespace eval pgmet {
 
                 set marker1 [$public(ash,graph) marker create polygon\
            -coords {-Inf Inf Inf Inf Inf -Inf -Inf -Inf} -fill {} \
-           -fill #E0E0E0 \
+           -fill $public(graphselect) \
            -under 1  \
            -hide 1
                 ]
@@ -1745,9 +1756,9 @@ namespace eval pgmet {
         set cur_proc   outputsetup
         if { [ catch {
                 set   output    $public(ash,output_frame).txt
-                frame $output   -bd 0  -relief flat -bg $public(bgt)
+                frame $output   -bd 0  -relief flat -bg $public(bg)
                 frame $output.f
-                text $output.w  -background white \
+                text $output.w  -background $public(bg) \
     		    -yscrollcommand "$output.scrolly set" \
                     -xscrollcommand "$output.scrollx set" \
                     -width $public(cols) -height 26    \
@@ -3162,8 +3173,15 @@ namespace eval pgmet {
                     set public(pale_brown)        #EFD0B2
                     set public(pale_ochre)        #FECA58
                     set public(pale_brown)        #F0A06A
+                    if { [ string match "*dark*" $ttk::currentTheme ] } {
+                    set public(fg)        white
+                    set public(bg)        black
+                    set public(graphselect) $defaultBackground
+                    } else {
                     set public(fg)        black
-                    set public(bg)        $defaultBackground
+                    set public(bg)        white
+                    set public(graphselect) #E0E0E0
+                    }
                     set public(bgt)       $defaultBackground
                     set public(fga)       yellow
                     set public(fgsm)      $public(pale_warmgrey)
