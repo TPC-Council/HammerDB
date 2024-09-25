@@ -989,7 +989,14 @@ proc ed_loadsave {loadflag} {
     pack $Name -side top -anchor nw -expand yes -fill both
 
     set Name $Parent.list.lb1
-    listbox $Name -background white -yscrollcommand "$Parent.list.sb2 set" -selectmode browse
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    set lbbackground black
+    set lbforeground white
+    } else {
+    set lbbackground white
+    set lbforeground black
+    }
+    listbox $Name -background $lbbackground -foreground $lbforeground -yscrollcommand "$Parent.list.sb2 set" -selectmode browse
     pack $Name -anchor center -expand 1 -fill both -ipadx 0 -ipady 0 \
          -padx 2 -pady 2 -side left
     bind $Name <Any-ButtonPress> {ed_loadsaveselbegin %W %y}
