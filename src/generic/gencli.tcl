@@ -1471,7 +1471,7 @@ proc datagenrun {} {
 	    if { [ catch {run_virtual} message ] } {
             putscli "Error: $message"
             } else {
-            keepalive
+            _waittocomplete
             }
     } else {
         #no was pressed
