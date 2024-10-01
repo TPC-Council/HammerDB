@@ -286,7 +286,7 @@ proc CreateIndexes { odbc maxdop colstore bcp partition_orders_and_lineitems} {
         }
 
    } else {
-
+            set num_commands 30
         set sql(1) "alter table dbo.nation add constraint nation_pk primary key (n_nationkey)"
         set sql(2) "alter table dbo.region add constraint region_pk primary key (r_regionkey)"
         set sql(3) "alter table dbo.customer add constraint customer_pk primary key (c_custkey) with (maxdop=$maxdop)"
@@ -315,20 +315,20 @@ proc CreateIndexes { odbc maxdop colstore bcp partition_orders_and_lineitems} {
         set sql(26) "alter table dbo.partsupp check constraint partsupp_part_fk"
         set sql(27) "alter table dbo.supplier check constraint supplier_nation_fk"
         set sql(28) "alter table dbo.orders check constraint order_customer_fk" 
-   
-        set num_commands 28
+        set sql(29) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
+        set sql(30) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
         if { [expr {$partition_orders_and_lineitems != true } ] } {
             set num_commands 34
-            set sql(29) "create clustered index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
-            set sql(30) "alter table dbo.orders add constraint orders_pk primary key (o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
-            set sql(31) "alter table dbo.lineitem with nocheck add  constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
-            set sql(32) "alter table dbo.lineitem with nocheck add  constraint lineitem_partsupp_fk foreign key(l_partkey,l_suppkey) references partsupp(ps_partkey, ps_suppkey)"
-            set sql(33) "alter table dbo.lineitem check constraint lineitem_order_fk"
-            set sql(34) "alter table dbo.lineitem check constraint lineitem_partsupp_fk"
-        }
-
+            set sql(31) "create clustered index o_orderdate_ind on orders(o_orderdate) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+            set sql(32) "alter table dbo.orders add constraint orders_pk primary key (o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
+            set sql(33) "alter table dbo.lineitem with nocheck add  constraint lineitem_order_fk foreign key(l_orderkey) references dbo.orders (o_orderkey)"
+            set sql(34) "alter table dbo.lineitem check constraint lineitem_order_fk"
+        } else {
+            set num_commands 32
+            set sql(31) "alter table dbo.orders add constraint orders_pk primary key (o_orderdate,o_orderkey) with (fillfactor = 95, maxdop=$maxdop)"
+            set sql(32) "create index o_orderkey_ind on orders(o_orderkey) with (fillfactor=95, sort_in_tempdb=on, maxdop=$maxdop)"
+	}
     }
-
    for { set i 1} {$i <= $num_commands} {incr i} {
         $odbc evaldirect $sql($i)
     }
