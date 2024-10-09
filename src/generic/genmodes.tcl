@@ -29,24 +29,31 @@ proc start_autopilot {} {
         set Name .ed_mainFrame.$btn
         $Name configure -state disabled
     }
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    set apbackground black
+    set apforeground white 
+    } else {
+    set apbackground black
+    set apforeground #626262 
+    }
     set Name .ed_mainFrame.treeframe.treeview  
     $Name state disabled
     ed_stop_autopilot
     set aptime 00d:00h:00m:00s
     .ed_mainFrame.notebook tab .ed_mainFrame.ap  -state normal
     .ed_mainFrame.notebook select .ed_mainFrame.ap
-    pack [ canvas .ed_mainFrame.ap.canv -highlightthickness 0 -background white ] -fill both -expand 1
+    pack [ canvas .ed_mainFrame.ap.canv -highlightthickness 0 -background $apbackground ] -fill both -expand 1
     set Name .ed_mainFrame.ap.canv
-    frame $Name.b -background white
-    label  $Name.b.time -textvar aptime -width 15 -bg white -fg #626262 -font {TkDefaultFont 11 bold}
+    frame $Name.b -background $apbackground
+    label  $Name.b.time -textvar aptime -width 15 -bg $apbackground -fg $apforeground -font {TkDefaultFont 11 bold}
     pack $Name.b.time -side right -fill y -padx 10
     set lenp [ llength $apsequence ]
     ttk::progressbar $Name.b.p -orient horizontal -mode determinate -maximum $lenp
     pack $Name.b.p -side left -fill x -expand 1 -padx 10
     pack $Name.b -side top -fill both -expand 1 -pady 5 -padx 5 -anchor e
-    frame $Name.a -background white
+    frame $Name.a -background $apbackground
     ttk::scrollbar $Name.a.y -command "$Name.a.t yview"
-    text $Name.a.t -yscrollc "$Name.a.y set" -wrap word -padx 2 -pady 3 -highlightthickness 0 -borderwidth 0 -takefocus 0 -background white -font {TkDefaultFont 10}
+    text $Name.a.t -yscrollc "$Name.a.y set" -wrap word -padx 2 -pady 3 -highlightthickness 0 -borderwidth 0 -takefocus 0 -background $apbackground -font {TkDefaultFont 10}
     pack $Name.a.y -side right -fill y
     pack $Name.a.t -side top -fill both -expand 1 -pady 5 -padx 15 -anchor e
     pack $Name.a -side top -fill both -expand 1

@@ -1,30 +1,40 @@
-proc tilestyle { defaultBackground icons } {
+proc tilestyle { defaultBackground icons theme } {
+	if { ![ string match "*dark*" $theme ] } {
+	set fieldbackground white
+	set foreground black
+	set selectedbackground [ list selected [ dict get $icons defaultBackground ] ]
+	} else {
+	set fieldbackground $defaultBackground
+	set foreground white
+	set selectedbackground [ list selected black ]
+	}
     #Set Tile styles common to both fixed and scaling
     ttk::style configure TFrame -background $defaultBackground
     ttk::style configure Heading -font TkDefaultFont
-    ttk::style configure Treeview -background white
-    ttk::style configure Treeview -fieldbackground white
-    ttk::style map Treeview -background [ list selected [ dict get $icons defaultBackground ] ]
+    ttk::style configure Treeview -background $fieldbackground
+    ttk::style configure Treeview -fieldbackground $fieldbackground
+    ttk::style configure Treeview -borderwidth 0
+    ttk::style map Treeview -background $selectedbackground
     ttk::style map Treeview -foreground [ list selected "#FF7900"]
     ttk::style configure TProgressbar -troughcolor [ dict get $icons defaultBackground ]
     ttk::style configure TProgressbar -lightcolor "#FF7900"
     ttk::style configure TProgressbar -darkcolor "#FF7900"
     ttk::style configure TProgressbar -bordercolor "#FF7900"
     ttk::style configure TSpinbox -selectbackground [ dict get $icons defaultBackground ]
-    ttk::style configure TSpinbox -fieldbackground white
+    ttk::style configure TSpinbox -fieldbackground $fieldbackground
     ttk::style configure TSpinbox -background [ dict get $icons defaultBackground ]
-    ttk::style configure TSpinbox -foreground black
+    ttk::style configure TSpinbox -foreground $foreground
     ttk::style configure TSpinbox -selectforeground "#FF7900"
     ttk::style configure TEntry -selectbackground [ dict get $icons defaultBackground ]
-    ttk::style configure TEntry -fieldbackground white
+    ttk::style configure TEntry -fieldbackground $fieldbackground
     ttk::style configure TEntry -background [ dict get $icons defaultBackground ]
-    ttk::style configure TEntry -foreground black
+    ttk::style configure TEntry -foreground $foreground
     ttk::style configure TEntry -selectforeground "#FF7900"
     ttk::style configure TEntry -borderwidth 0
     ttk::style configure TPanedwindow -background $defaultBackground
     ttk::style configure TButton -relief flat
     ttk::style map TButton -background [ list active "#FF7900" ]
-}
+    }
 
 proc framesizes { win_scale_fact } {
     global tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy
@@ -56,14 +66,13 @@ proc initfixedtheme { theme } {
     }
     ttk::setTheme $theme
     configmessagebox $theme
-    set iconset iconicgray
     set icons [ create_icon_images $iconset ]
     set iconhighlight iconicorange 
     set iconalt [ create_icon_images $iconhighlight ]
     dict set icons defaultBackground $defaultBackground
     dict set icons defaultForeground $defaultForeground
     #set Tile Styles
-    tilestyle $defaultBackground $icons
+    tilestyle $defaultBackground $icons $theme
 }
 
 proc initscaletheme {theme pixelsperpoint} {
@@ -78,10 +87,17 @@ proc initscaletheme {theme pixelsperpoint} {
     ::themeutils::setHighlightColor $theme "#FF7900"
     ::themeutils::setThemeColors $theme graphics.color #FF7900 focus.color #FF7900
     #Set scrollbar colors for awlight and breeze to the same as arc theme
+	if { ![ string match "*dark*" $theme ] } {
     ::themeutils::setThemeColors $theme scrollbar.active #d3d4d8
     ::themeutils::setThemeColors $theme scrollbar.color #b8babf
     ::themeutils::setThemeColors $theme scrollbar.pressed #FF7900
     ::themeutils::setThemeColors $theme scrollbar.trough #eff0f1
+    	} else {
+    ::themeutils::setThemeColors $theme scrollbar.active #d3d4d8
+    ::themeutils::setThemeColors $theme scrollbar.color [ ttk::style lookup TFrame -background ]
+    ::themeutils::setThemeColors $theme scrollbar.pressed #FF7900
+    ::themeutils::setThemeColors $theme scrollbar.trough black
+	}
     ::themeutils::setThemeColors $theme \
         style.progressbar rounded-line \
         style.scale circle-rev \
@@ -124,18 +140,27 @@ proc initscaletheme {theme pixelsperpoint} {
     set iconhighlight iconicorange
     set iconalt [ create_icon_images $iconhighlight ]
     #svg icons
+	if { ![ string match "*dark*" $theme ] } {
     set iconsetsvg iconicgraysvg
+	} else {
+    set iconsetsvg iconicwhitesvg
+	}
+    #set iconsetsvg iconicgraysvg
     set iconssvg [ create_icon_images $iconsetsvg ]
     set iconhighlightsvg iconicorangesvg
     set iconaltsvg [ create_icon_images $iconhighlightsvg ]
     set defaultBackground [ ttk::style lookup TFrame -background ]
-    set defaultForeground black
+	if { ![ string match "*dark*" $theme ] } {
+    	set defaultForeground black
+	} else {
+    	set defaultForeground white
+	}
     dict set icons defaultBackground $defaultBackground
     dict set icons defaultForeground $defaultForeground
     dict set iconssvg defaultBackground $defaultBackground
     dict set iconssvg defaultForeground $defaultForeground
     #Set Tile styles
-    tilestyle $defaultBackground $icons
+    tilestyle $defaultBackground $icons $theme
     if { [ winfo pixels . 1i ] eq 96 } {
         font configure basic -size 10
         set treewidth 161
@@ -449,7 +474,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
         #Using a scaling theme default is awlight on Linux and breeze on Windows
         #alternative themes are "awarc awbreeze awlight"
         set theme [dict get $tmpgendict theme scaletheme ]
-        if { $theme ni {awarc awbreeze awlight} } { 
+        if { $theme ni {awarc awbreeze awbreezedark awlight} } {
             #Options for Windows and Linux in case default is changed in future awtheme
             if {$tcl_platform(platform) == "windows"} {
                 set theme "awbreeze"

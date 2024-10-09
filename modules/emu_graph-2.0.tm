@@ -644,10 +644,15 @@ if { ![ info exists ribenable ] } { set ribenable false }
 	    set labelcolors 0
 	}
 
+        if { [ string match "*dark*" $ttk::currentTheme ] } {
+        set graphcolor black
+        } else {
+        set graphcolor white
+        }
 	if { $emu_graph($graph,$tag,lines) } {
 	set colour1 $emu_graph($graph,$tag,colour)
 	#Fix colour 2 to always grade to white
-	set colour2 white
+	set colour2 $graphcolor
         if { [catch {winfo rgb . $colour1} rgb1] } {
             error "invalid color: $colour1"
         }
@@ -656,14 +661,13 @@ if { ![ info exists ribenable ] } { set ribenable false }
         }
 	    ## create the line as a single line item
 	    ## add start and end points
-
 	set ribcoords $coords
 	set coords [concat $x_min_c $y_min_c $coords $x_max_c $y_min_c ]
         set coordscopy2 [ lreplace $coords end-1 end ]
         set coordscopy2 [ lreplace $coordscopy2 0 1 ]
-	set transition [ subst {$canvas gradient create linear -method pad -lineartransition {0 1 0 0} -stops {{0 white} {0.4 $colour1}}}]
+	set transition [ subst {$canvas gradient create linear -method pad -lineartransition {0 1 0 0} -stops {{0 $graphcolor} {0.4 $colour1}}}]
 	set gradcolour1 [ eval $transition ]
-	eval "$canvas create polyline $coords -stroke white -strokewidth 0 -strokelinejoin round -fill $gradcolour1 -fillopacity 0.25 -tag {$tag}"
+	eval "$canvas create polyline $coords -stroke $graphcolor -strokewidth 0 -strokelinejoin round -fill $gradcolour1 -fillopacity 0.25 -tag {$tag}"
 	#$canvas lower $tag
 	$canvas raise $tag
 	if { $ribenable } {
@@ -789,11 +793,19 @@ set padstroke [ pad_stroke ]
     set graphfont      $emu_graph($graph,font)
 
     set canvas         $emu_graph($graph,canvas)
+
+        if { [ string match "*dark*" $ttk::currentTheme ] } {
+        set strokecolor "#626262" 
+        set fillcolor "#c8c8c8"
+        } else {
+        set strokecolor "#c8c8c8"
+        set fillcolor "#626262"
+        }
 	
     # clear up any existing axes
     $canvas delete -withtag axis
     $canvas delete prect
-    $canvas create prect $x_min_c [ expr {$y_min_c + $padstroke} ] $x_max_c [ expr $y_max_c - 30 ] -stroke "#c8c8c8" -tag prect
+    $canvas create prect $x_min_c [ expr {$y_min_c + $padstroke} ] $x_max_c [ expr $y_max_c - 30 ] -stroke $strokecolor -tag prect
                                           
     # y-pos of tick end points and of axis tick labels
     #set ticky [expr {$y_min_c-$ticklen}]
@@ -810,13 +822,13 @@ set padstroke [ pad_stroke ]
 	if {$t >= $x_min} {
 	    #puts "t=$t, next t [expr {$t+$delta_x}]"
 	    set x [x2canvas $graph $t]
-	    $canvas create pline $x  [ expr {$y_min_c + $padstroke} ] $x $ticky -stroke "#c8c8c8" -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
+	    $canvas create pline $x  [ expr {$y_min_c + $padstroke} ] $x $ticky -stroke $strokecolor -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
 if { ($t eq 1) || ($t eq 4) || ($t eq 7) || ($t eq 10) || ($t eq 13) || ($t eq 16) || ($t eq 19) } {
 		set n [ expr {$t * 2 - 1} ]
 		set tind [ lindex [ split $timelist ] $n ]
 		regsub -all {\}} $tind tind
 	    $canvas create text [x2canvas $graph $t] $texty \
-		-fill "#626262" -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
+		-fill $fillcolor -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
 		-anchor w
 		}
 	}
@@ -835,11 +847,11 @@ set padstroke [ pad_stroke ]
 	## this is because of a problem with rounding down in nicenum
 	if {$f >= $y_min} {
 	    set y [y2canvas $graph $f]
-	    $canvas create pline  [x2canvas $graph $x_min] [ expr {$y + $padstroke} ] [x2canvas $graph $x_max] [ expr {$y + $padstroke} ] -stroke "#c8c8c8" -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
+	    $canvas create pline  [x2canvas $graph $x_min] [ expr {$y + $padstroke} ] [x2canvas $graph $x_max] [ expr {$y + $padstroke} ] -stroke $strokecolor -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
 	    # and add the label
 		set dispf [ expr {int($f)} ]
 	    $canvas create text $textx $y -text $dispf -anchor e \
-		-fill "#626262" -tag [list graph$graph axis] -font "$graphfont 7"
+		-fill $fillcolor -tag [list graph$graph axis] -font "$graphfont 7"
         }
     }
 $canvas raise prect

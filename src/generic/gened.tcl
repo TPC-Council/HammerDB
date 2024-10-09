@@ -219,22 +219,26 @@ proc ed_start_gui { dbdict icons iconalt } {
 
     set Name $Parent.panedwin
     if { $ttk::currentTheme eq "clearlooks" } {
-    panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] } else {
-        if { $ttk::currentTheme in {awarc awbreeze awlight} } {
-        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat } else {
-            panedwindow $Name -orient horizontal -showhandle false
+        panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] 
+        } elseif { $ttk::currentTheme in {awarc awbreeze awlight} } {
+        panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat 
+        } elseif { $ttk::currentTheme eq "awbreezedark" } {
+        panedwindow $Name -orient horizontal -background  [ dict get $icons defaultBackground ] -relief flat
+        } else {
+        panedwindow $Name -orient horizontal -showhandle false
         }
-    }
     pack $Name -expand yes -fill both
 
     set Name $Parent.panedwin.subpanedwin
     if { $ttk::currentTheme eq "clearlooks" } {
-    panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]} else {
-        if { $ttk::currentTheme in {awarc awbreeze awawlight} } {
-        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat } else {
-            panedwindow $Name -orient vertical -showhandle false
+        panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]
+        } elseif { $ttk::currentTheme in {awarc awbreeze awawlight} } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat 
+        } elseif { $ttk::currentTheme eq "awbreezedark" } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat 
+        } else {
+        panedwindow $Name -orient vertical -showhandle false
         }
-    }
     pack $Name -expand yes -fill both
 
     set Name $Parent.treeframe
@@ -245,7 +249,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     pack $Parent.treeframe.vbar -anchor center -expand 0 -fill y -ipadx 0 -ipady 0 \
          -padx 0 -pady 0 -side right
     set Name $Parent.treeframe.treeview
-    ttk::treeview $Name -yscrollcommand "$Parent.treeframe.vbar set" -selectmode browse -show [ list tree headings ] 
+    ttk::treeview $Name -yscrollcommand "$Parent.treeframe.vbar set" -selectmode browse -show [ list tree headings ]
     $Name column #0 -stretch 1 -minwidth 1 -width $treewidth
     $Name heading #0 -text "Benchmark"
     $Name configure -padding {0 0 0 0}
@@ -985,7 +989,14 @@ proc ed_loadsave {loadflag} {
     pack $Name -side top -anchor nw -expand yes -fill both
 
     set Name $Parent.list.lb1
-    listbox $Name -background white -yscrollcommand "$Parent.list.sb2 set" -selectmode browse
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    set lbbackground black
+    set lbforeground white
+    } else {
+    set lbbackground white
+    set lbforeground black
+    }
+    listbox $Name -background $lbbackground -foreground $lbforeground -yscrollcommand "$Parent.list.sb2 set" -selectmode browse
     pack $Name -anchor center -expand 1 -fill both -ipadx 0 -ipady 0 \
          -padx 2 -pady 2 -side left
     bind $Name <Any-ButtonPress> {ed_loadsaveselbegin %W %y}
@@ -1382,12 +1393,23 @@ proc applyctexthighlight {w} {
 
 proc setctexthighlight {w} {
     upvar #0 dbdict dbdict
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    set colour(vars) green
+    set colour(cmds) yellow
+    set colour(functions) magenta
+    #set colour(brackets) lightblue
+    #set colour(comments) purple
+    set colour(brackets) #00a2ed
+    set colour(comments) gray50
+    set colour(strings) red
+    } else {
     set colour(vars) green
     set colour(cmds) blue
     set colour(functions) magenta
     set colour(brackets) gray50
     set colour(comments) black
     set colour(strings) red
+    }
     #Extract list of commands provided by each database for highlighting
     dict for {database attributes} $dbdict {
         dict with attributes {
@@ -1444,18 +1466,32 @@ proc ed_edit {} {
          -padx 0 -pady 0 -side right
 
     set Name $Parent.textFrame.left.text
-    if { $ttk::currentTheme eq "black" } {
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
         set bwidth 0
         set hbgrd LightGray
+	set ctexthighlightbackground LightGray
+	set ctextbackground black
+	set ctextforeground white
+	set ctexthighlightbackground LightGray
+	set ctextinsertbackground white
+	set ctextselectforeground white
     } else {
         set bwidth 2
         set hbgrd [ dict get $icons defaultBackground ]
+        set bwidth 0
+        set hbgrd LightGray
+	set ctexthighlightbackground LightGray
+	set ctextbackground white
+	set ctextforeground black
+	set ctexthighlightbackground LightGray
+	set ctextinsertbackground black
+	set ctextselectforeground black
     }
     if { $highlight eq "true" } {
-        ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
+        ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground \
          -highlight 1 \
-         -highlightbackground LightGray -insertbackground black \
-         -selectbackground $hbgrd -selectforeground black \
+         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \
@@ -1466,10 +1502,10 @@ proc ed_edit {} {
         setctexthighlight $Name
         easyCtextCommenting $Name
     } else {
-        ctext $Name -relief flat -background white -borderwidth $bwidth -foreground black \
+        ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground  \
          -highlight 0 \
-         -highlightbackground LightGray -insertbackground black \
-         -selectbackground $hbgrd -selectforeground black \
+         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
          -xscrollcommand "$Parent.textFrame.right.vertScrollbar set" \

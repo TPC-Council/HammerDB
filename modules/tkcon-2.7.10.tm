@@ -128,6 +128,7 @@ proc ::tkcon::Init {args} {
     ##
 
     # bg == {} will get bg color from the main toplevel (in InitUI)
+     if { ![ string match "*dark*" $ttk::currentTheme ] } {
     foreach {key default} {
 	bg		White
 	blink		\#FFFF00
@@ -141,6 +142,22 @@ proc ::tkcon::Init {args} {
 	stderr		\#FF0000
     } {
 	if {![info exists COLOR($key)]} { set COLOR($key) $default }
+    }
+    } else {
+    foreach {key default} {
+	bg		black
+	blink		\#FFFF00
+	cursor		white
+	disabled	\#4D4D4D
+	proc		\#008800
+	var		\#FFC0D0
+	prompt		\#8F4433
+	stdin		white
+	stdout		\#00a2ed
+	stderr		\#FF0000
+    } {
+	if {![info exists COLOR($key)]} { set COLOR($key) $default }
+    }
     }
 
     # expandorder could also include 'Methodname' for XOTcl/NSF methods

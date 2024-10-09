@@ -42,7 +42,7 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
 proc DoDisplay {maxcpu cpu_model caller} {
     global S CLR cputobars cputotxt cpucoords metframe win_scale_fact jobid agent_hostname
     set CLR(bg) black
-    set CLR(usr) green
+    set CLR(usr) lightgreen
     set CLR(sys) red
     set S(bar,width) [ expr {round((20/1.333333)*$win_scale_fact)} ]
     set S(bar,height) [ expr {round((87/1.333333)*$win_scale_fact)} ]
@@ -76,7 +76,7 @@ proc DoDisplay {maxcpu cpu_model caller} {
     set height [ expr {($S(bar,height)+$S(col,padding))*$maxrows} ]
     set scrollheight [ expr {$height*2} ]
     frame $metframe.f -bd $S(border) -relief flat -bg $CLR(bg)
-    if { $ttk::currentTheme eq "black" } {
+    if { [ string match "*dark*" $ttk::currentTheme ] } {
         set cnv1 [ tkp::canvas $metframe.sv -width 11 -highlightthickness 0 -background #424242 ]
     } else {
         set cnv1 [ tkp::canvas $metframe.sv -width 11 -highlightthickness 0 -background #dcdad5 ]

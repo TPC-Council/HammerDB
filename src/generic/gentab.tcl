@@ -81,13 +81,18 @@ proc tablist w {
     grid rowconfigure    $tf 0 -weight 1
     grid columnconfigure $tf 0 -weight 1
     pack $tf -side top -expand yes -fill both
-    if { $ttk::currentTheme in {clearlooks arc breeze awlight}} {
+    if { ![ string match "*dark*" $ttk::currentTheme ] } {
+        $tbl configure -background white
+        $tbl configure -foreground black
         $tbl configure -labelforeground black
         $tbl configure -selectbackground #FF7900
-        $tbl configure -stripebackground [ dict get $icons defaultBackground ]
     } else {
-        $tbl configure -stripebackground [ dict get $icons defaultBackground ]
+        $tbl configure -background black
+        $tbl configure -foreground white
+        $tbl configure -labelforeground white
+        $tbl configure -selectbackground #FF7900
     }
+    $tbl configure -stripebackground [ dict get $icons defaultBackground ]
     $tbl configure -spacing 2
     $tbl columnconfigure 0 -align center
     $tbl columnconfigure 1 -align center
