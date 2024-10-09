@@ -1468,7 +1468,11 @@ proc datagenrun {} {
     }
     if { [ string length $_ED(package) ] > 0 } {
         #yes was pressed
-        run_virtual
+	    if { [ catch {run_virtual} message ] } {
+            putscli "Error: $message"
+            } else {
+            _waittocomplete
+            }
     } else {
         #no was pressed
         puts "Data Generation cancelled"
