@@ -5,9 +5,9 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 ## \
 export PATH="./bin:$PATH"
 ## \
-export PYTHONPATH="./lib/tclpy0.4:$PYTHONPATH"
+export PYTHONPATH="./lib/tclpy0.4.1:$PYTHONPATH"
 ## \
-exec ./bin/tclsh8.6 "$0" ${1+"$@"}
+exec ./bin/tclsh9.0 "$0" ${1+"$@"}
 ########################################################################
 # HammerDB
 # Copyright (C) 2003-2024 Steve Shaw
@@ -27,7 +27,7 @@ exec ./bin/tclsh8.6 "$0" ${1+"$@"}
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.12"
+set hdb_version "v5.0"
 puts "HammerDB CLI $hdb_version"
 puts "Copyright (C) 2003-2024 Steve Shaw"
 if { $argc eq 0 } {
@@ -47,21 +47,21 @@ if { $argv0 == "" || $argv0 == "tcl" || $argv0 == "auto" } {
 
 namespace eval autostart {
   set autostartap "false"
-  if { $argv0 == "tcl" || $argv0 == "py" || $argv0 == "python" } {
-    set argv [ lreplace $argv 0 0 ]
-    set argc [ expr {$argc - 1} ]
+  if { $::argv0 == "tcl" || $::argv0 == "py" || $::argv0 == "python" } {
+    set ::argv [ lreplace $::argv 0 0 ]
+    set ::argc [ expr {$::argc - 1} ]
   }
-  if { $argc eq 0 } { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+  if { $::argc eq 0 } { ; } else {
+    if {$::argc != 2 || [lindex $::argv 0] != "auto" } {
       puts {Usage: hammerdbcli [ tcl|python [ auto [ script_to_autoload.[ tcl|py ] ] ] ]}
       exit
     } else {
       set autostartap "true"
-      set autoloadscript [lindex $argv 1]
-      if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq $extension } {
+      set autoloadscript [lindex $::argv 1]
+      if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq $::extension } {
         ;# autostart selected and tcl or py file exists
       } else {
-        if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] != $extension } {
+        if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] != $::extension } {
           puts "Error: incorrect file extension for $lang" 
           if { $lang eq "tcl" } {
             puts {Usage: hammerdbcli [ tcl [ auto [ script_to_autoload.[ tcl ] ] ]}
@@ -131,6 +131,12 @@ if { $lang == "tcl" } {
   eval $cli_common_init
   #Initialise CLI in Python
 } elseif { $lang eq "python" } {
+#Close channels before exit
+   proc close_chan {} {
+   foreach expchan [file channels] {
+   if {!($expchan in {stdin stdout stderr})} {
+   catch {close $expchan}
+   }}}
   proc pythonVersion {{pythonExecutable "python3"}} {
     if {[string match windows $::tcl_platform(platform)]} { set pythonExecutable "python" }
     if {![catch {exec $pythonExecutable --version}] || [lindex $::errorCode 0] eq "NONE"} {
@@ -171,7 +177,7 @@ if { $lang == "tcl" } {
 import sys
 tcl_dll_location = os.getcwd() + r'\\bin'
 os.add_dll_directory(tcl_dll_location)
-sys.path.append(r'.\\lib\\tclpy0.4')
+sys.path.append(r'.\\lib\\tclpy0.4.1')
 import tclpy
 tclpy.eval('global hdb_version')
 tclpy.eval('set hdb_version $hdb_version')
@@ -277,6 +283,7 @@ sys.ps1 = '>>>'"
     set timeout 10
     log_user 0
     spawn -noecho python3
+    set hdbid $spawn_id
     expect ">>>"
     send "import sys\x0D"
     expect ">>>"
@@ -303,7 +310,8 @@ sys.ps1 = '>>>'"
       #run python script
       trap {
         send "\x03"
-        send_user "^C\n"
+        #send_user "^C\n"
+	close_chan
         exit
       } SIGINT
       expect "hammerdb>>>"
@@ -313,18 +321,14 @@ sys.ps1 = '>>>'"
     } else {
       expect "hammerdb>>>"
       log_user 1
+      after 2000
       #-----------------------------#
       #run interactive python shell
       #-----------------------------#
-      interact {
-        \x03 {
-          #send Ctrl-C to Python
-          send "\x03"
-          send_user "^C"
-          return
-        }
+      interact
       }
-    }
-    exit
+    }	
+      close_chan
+      exit
   }
 }

@@ -6,7 +6,7 @@
 
 # @mdgen EXCLUDE: jsonc.tcl
 
-package require Tcl 8.4
+package require Tcl 9.0
 namespace eval ::json {}
 
 # ### ### ### ######### ######### #########
@@ -46,11 +46,6 @@ proc ::json::LoadAccelerator {key} {
 #
 #   $Id: json.tcl,v 1.7 2011/11/10 21:05:58 andreas_kupries Exp $
 #
-
-if {![package vsatisfies [package provide Tcl] 8.5]} {
-    package require dict
-}
-
 # Parse JSON text into a dict
 # @param jsonText JSON text
 # @return dict (or list) containing the object represented by $jsonText

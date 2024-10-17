@@ -1705,7 +1705,13 @@ proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} ar
 
 proc quit {} {
     puts "Shutting down HammerDB CLI"
+    if [expr {[llength [info procs TclReadLine::doExit]] > 0}] {
+    #in Tcl TclReadLine is loaded call exit
+    TclReadLine::doExit
+    } else {
+    #in Python TclReadLine is not loaded call exit direct
     exit
+    }
 }
 
 proc waittocomplete { args } {

@@ -1070,7 +1070,7 @@ proc ctext::linemapUpdate {win args} {
 # scrolls by the specified amount of pixels
 
 if {![catch {
-    package require Tk 8.6
+    package require Tk 9.0
 }]} {
     proc ctext::linemapUpdateOffset {win lineList} {
 	# reset view for line numbering widget

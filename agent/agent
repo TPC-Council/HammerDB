@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH=.././lib:.././lib64:$LD_LIBRARY_PATH
 # \
 export PATH=.././bin:$PATH
 # \
-exec .././bin/tclsh8.6 $0 ${1+"$@"}
+exec .././bin/tclsh9.0 $0 ${1+"$@"}
 # \
 exit
 ########################################################################
@@ -57,7 +57,7 @@ namespace import comm::*
 interp recursionlimit {} 3000
 global agentlist S iswin
 set iswin "false"
-set version 4.12
+set version 5.0
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 

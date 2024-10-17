@@ -16,7 +16,7 @@
 #
 #   (2)  Indentifiers intended for internal use only begin with "wappInt"
 #
-package require Tcl 8.6
+package require Tcl 9.0
 
 # Add text to the end of the HTTP reply.  No interpretation or transformation
 # of the text is performs.  The argument should be enclosed within {...}

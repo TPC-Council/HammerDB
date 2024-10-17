@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 # \
 export PATH="./bin:$PATH"
 # \
-exec wish8.6 -file $0 ${1+"$@"}
+exec wish9.0 -file $0 ${1+"$@"}
 # \
 exit
 ########################################################################
@@ -27,20 +27,20 @@ exit
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.12"
+set hdb_version "v5.0"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "$UserDefaultDir/modules"
 
 namespace eval autostart {
     set autostartap "false"
-    if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+    if {$::argc == 0} { ; } else {
+    if {$::argc != 2 || [lindex $::argv 0] != "auto" } {
 puts {Usage: hammerdb [ auto [ script_to_autoload.tcl  ] ]}
 exit
 	} else {
         set autostartap "true"
-        set autoloadscript [lindex $argv 1]
+        set autoloadscript [lindex $::argv 1]
 if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
 ;# autostart selected and tcl file exists
 	     } else {
