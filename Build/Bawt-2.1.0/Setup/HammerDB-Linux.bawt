@@ -1,4 +1,4 @@
-# Builds Tcl, Tk, Starkit and Tcl/Tk packages, which do not depend on 3rd party libraries.
+#Builds Tcl, Tk, Starkit and Tcl/Tk packages, which do not depend on 3rd party libraries.
 # On Windows all libraries can be compiled with MSys/MinGW.
 # Setup LibName         ZipFile                        BuildFile           BuildOptions
 # Tcl/Tk, stubs and manual.
@@ -17,7 +17,7 @@ Setup pgtcl              pgtcl-2.1.1.1.7z               pgtcl.bawt
 # Pure Tcl/Tk packages.
 Setup awthemes           awthemes-10.4.0.7z             awthemes.bawt
 Setup clearlooks         clearlooks-1.0.7z              clearlooks.bawt
-Setup ticklecharts	 ticklecharts-3.2.4.7z	        ticklecharts.bawt
+Setup ticklecharts	 ticklecharts-3.1.7z	        ticklecharts.bawt
 #
 #Setup tkblt             tkblt-3.2.23.7z                tkblt.bawt
 #Setup tkpath		 tkpath-0.3.3.7z		tkpath.bawt
