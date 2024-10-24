@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 ## \
 export PATH="./bin:$PATH"
 ## \
-exec ./bin/tclsh8.6 "$0" ${1+"$@"}
+exec ./bin/tclsh9.0 "$0" ${1+"$@"}
 ########################################################################
 # HammerDB
 # Copyright (C) 2003-2024 Steve Shaw
@@ -30,7 +30,7 @@ set argv0 "wait"
 set argv0 [ string tolower [lindex $argv 0 ]] 
 }
 global hdb_version
-set hdb_version "v4.12"
+set hdb_version "v5.0"
 	if { $argv0 != "gui" } {
 puts "HammerDB Web Service $hdb_version"
 puts "Copyright (C) 2003-2024 Steve Shaw"
