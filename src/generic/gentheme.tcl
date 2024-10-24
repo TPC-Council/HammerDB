@@ -9,13 +9,17 @@ proc tilestyle { defaultBackground icons theme } {
 	set selectedbackground [ list selected black ]
 	}
     #Set Tile styles common to both fixed and scaling
+    #With Tcl/Tk 9 TkDefaultFont shows as 1 size larger than Tcl/Tk 8, reduce it
+    font configure TkDefaultFont -size [ expr [font actual TkDefaultFont -size] - 1 ]
     ttk::style configure TFrame -background $defaultBackground
     ttk::style configure Heading -font TkDefaultFont
     ttk::style configure Treeview -background $fieldbackground
     ttk::style configure Treeview -fieldbackground $fieldbackground
-    ttk::style configure Treeview -borderwidth 0
     ttk::style map Treeview -background $selectedbackground
     ttk::style map Treeview -foreground [ list selected "#FF7900"]
+    ttk::style layout Treeview { Treeview.field -border 0 }
+    ttk::style layout Treeview { Treeview.treearea -border 0 }
+    ttk::style layout Treeview { Treeview.padding -border 0 }
     ttk::style configure TProgressbar -troughcolor [ dict get $icons defaultBackground ]
     ttk::style configure TProgressbar -lightcolor "#FF7900"
     ttk::style configure TProgressbar -darkcolor "#FF7900"
@@ -81,7 +85,6 @@ proc initscaletheme {theme pixelsperpoint} {
     upvar #0 iconalt iconalt
     upvar #0 iconssvg iconssvg
     upvar #0 iconaltsvg iconaltsvg
-    package require tksvg
     package require colorutils
     package require awthemes
     ::themeutils::setHighlightColor $theme "#FF7900"
@@ -163,8 +166,11 @@ proc initscaletheme {theme pixelsperpoint} {
     tilestyle $defaultBackground $icons $theme
     if { [ winfo pixels . 1i ] eq 96 } {
         font configure basic -size 10
+	#For Tcl/Tk 9.0 default linespace is too small, add additional space
+        ttk::style configure Treeview -rowheight [expr {[font metrics basic -linespace] + 4}]
         set treewidth 161
     } else {
+	    puts [ font configure TkDefaultFont -size ]
         font configure basic -size [ font configure TkDefaultFont -size ]
         ttk::style configure Treeview -rowheight [expr {[font metrics basic -linespace] + 8}]
         set treewidth [ expr {round(1.677 * [ winfo pixels . 1i ])}]

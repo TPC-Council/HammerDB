@@ -128,7 +128,7 @@ proc ::tkcon::Init {args} {
     ##
 
     # bg == {} will get bg color from the main toplevel (in InitUI)
-     if { ![ string match "*dark*" $ttk::currentTheme ] } {
+     if { ![ string match "*dark*" $::ttk::currentTheme ] } {
     foreach {key default} {
 	bg		White
 	blink		\#FFFF00

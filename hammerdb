@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 # \
 export PATH="./bin:$PATH"
 # \
-exec wish9.0 -file $0 ${1+"$@"}
+exec wish9.0 "$0" ${1+"$@"}
 # \
 exit
 ########################################################################
@@ -62,18 +62,10 @@ namespace eval LoadingProgressMeter {
     tk appname "HammerDB Splash Screen"
 
       set logo_file logo.tcl
-if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
+if [catch {source [ file join $::UserDefaultDir images $logo_file ]}] {
                 puts stderr "While loading image file\
                         \"$logo_file\"...\n$errorInfo"
         }
-    #Display LOGO in SVG format to scale HD displays, fallback is PNG
-    if {[catch {package require tksvg}]} {
-    # SVG not supported use original PNG logo
-    set logoset [ create_logo_images ]
-    set logo [ dict get $logoset logo ]
-    set logim [ image create photo -height 120 -width 694 -data $logo ]
-    } else {
-    # SVG supported use SVG logo to scale
     set logoset [ create_logo_images ]
     set logosetsvg [ create_logo_images_svg ]
     set logosvg [ dict get $logosetsvg logosvg ]
@@ -83,7 +75,6 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
 	set scaleheight [ expr {round((240/1.333333)*[tk scaling])} ]
     set logim [ image create photo -data $logosvg -format "svg -scaletoheight $scaleheight" ]
 	}
-    }
     # Window Icon is not supported in SVG always use PNG
     set iconwht [ dict get $logoset iconwht ]
     set iconw [ image create photo -height 120 -width 97 -data $iconwht ]
@@ -92,7 +83,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
     set gbg white;
     set mid   {TkDefaultFont 20 {bold}} 
     set load  {TkDefaultFont 14}
-    if {$tcl_platform(platform) == "windows"} {
+    if {$::tcl_platform(platform) == "windows"} {
     if {{Segoe UI} in [ font families ] } {
     set mid   {{Segoe UI} 20 {bold}} 
     set load  {{Segoe UI} 14}
@@ -113,7 +104,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
 
     wm iconphoto . -default $iconw
     frame .progress -bg $gbg
-  label .title -text " $hdb_version "  -font $mid \
+  label .title -text " $::hdb_version "  -font $mid \
             -bg $gbg  -fg #f99317  -padx 0
     label .progress.loadmsg  -textvariable loadtext \
             -anchor s  -bg $gbg  -font $load
@@ -161,7 +152,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
             update idletasks
         }
     }
-    trace variable ::loadtext w [namespace code updateprogress]
+    trace add variable ::loadtext write [namespace code updateprogress]
     set ::loadtext ""
 
     namespace export check_progress_length
@@ -189,7 +180,8 @@ if [info exist env(Load_List)] {
     }
 }
 
-append modulelist { Thread msgcat tablelist_tile tooltip tkcon xml xscale ctext comm emu_graph socktest tkblt http huddle jobs tkpath }
+#append modulelist { Thread msgcat tablelist_tile tooltip tkcon xml xscale ctext comm emu_graph socktest tkblt http huddle jobs tko }
+append modulelist { Thread msgcat tablelist_tile tooltip tkcon xml xscale ctext comm emu_graph socktest http huddle jobs tko }
 
 set loadtext "Loading hammerdb modules"
 after 100

@@ -74,7 +74,7 @@ package provide tablelist::common $::tablelist::version
 #
 proc ::tablelist::useTile {bool} {
     variable usingTile $bool
-    trace add variable usingTile write unset [list ::tablelist::restoreUsingTile $bool]
+    trace add variable usingTile {write unset} [list ::tablelist::restoreUsingTile $bool]
 }
 
 #
@@ -90,7 +90,7 @@ proc ::tablelist::restoreUsingTile {origVal varName index op} {
 				Tablelist_tile in the same application"
 	}
 	u {
-	    trace add variable usingTile write unset \
+	    trace add variable usingTile {write unset} \
 		  [list ::tablelist::restoreUsingTile $origVal]
 	}
     }
@@ -130,8 +130,8 @@ namespace eval ::tablelist {
 # Copyright (c) 2000-2017  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
-package require Tcl 8
-package require Tk  8
+package require Tcl 9
+package require Tk  9
 
 #
 # Namespace initialization
@@ -6976,9 +6976,9 @@ proc tablelist::doRowConfig {row win opt val} {
 	    #
 	    if {$data(hasListVar)} {
 		upvar #0 $data(-listvariable) var
-		trace vdelete var wu $data(listVarTraceCmd)
+		trace vdelete var {write update} $data(listVarTraceCmd)
 		set var [lreplace $var $row $row $newItem]
-		trace add variable var wu $data(listVarTraceCmd)
+		trace add variable var {write update} $data(listVarTraceCmd)
 	    }
 
 	    #
@@ -7775,7 +7775,7 @@ proc tablelist::doCellConfig {row col win opt val} {
 		trace vdelete var wu $data(listVarTraceCmd)
 		set var [lreplace $var $row $row \
 			 [lrange $newItem 0 $data(lastCol)]]
-		trace add variable var wu $data(listVarTraceCmd)
+		trace add variable var {write update} $data(listVarTraceCmd)
 	    }
 
 	    #
@@ -8148,7 +8148,7 @@ proc tablelist::makeListVar {win varName} {
     #
     # Set a trace on the new list variable
     #
-    trace add variable var wu $data(listVarTraceCmd)
+    trace add variable var {write update} $data(listVarTraceCmd)
 }
 
 #------------------------------------------------------------------------------
@@ -14817,7 +14817,7 @@ proc tablelist::moveNode {win source targetParentKey targetChildIdx \
 	} else {
 	    set var [linsert $var $target1 $pureSourceItem]
 	}
-	trace add variable var wu $data(listVarTraceCmd)
+	trace add variable var {write update} $data(listVarTraceCmd)
     }
 
     #
@@ -15098,7 +15098,7 @@ proc tablelist::moveCol {win source target} {
     # Restore the trace set on the array element data(activeCol)
     # and enforce the execution of the activeTrace command
     #
-    trace add variable data(activeCol) w [list tablelist::activeTrace $win]
+    trace add variable data(activeCol) write [list tablelist::activeTrace $win]
     set data(activeCol) $data(activeCol)
 
     return ""
@@ -15877,11 +15877,7 @@ proc tablelist::compareNoCase {str1 str2} {
 # Returns the current tile theme.
 #------------------------------------------------------------------------------
 proc tablelist::getCurrentTheme {} {
-    if {[info exists ttk::currentTheme]} {
-	return $ttk::currentTheme
-    } else {
-	return $tile::currentTheme
-    }
+	return $::ttk::currentTheme
 }
 
 #------------------------------------------------------------------------------
@@ -18804,7 +18800,7 @@ proc tablelist::condUpdateListVar win {
 	foreach item $data(itemList) {
 	    lappend var [lrange $item 0 $data(lastCol)]
 	}
-	trace add variable var wu $data(listVarTraceCmd)
+	trace add variable var {write update} $data(listVarTraceCmd)
     }
 }
 
@@ -24519,7 +24515,7 @@ proc tablelist::tablelist args {
     # data(avtiveCol), and data(-selecttype)
     #
     foreach name {activeRow activeCol -selecttype} {
-	trace add variable data($name) w [list tablelist::activeTrace $win]
+	trace add variable data($name) write [list tablelist::activeTrace $win]
     }
 
     return $win
@@ -29004,7 +29000,7 @@ proc tablelist::deleteRows {win first last updateListVar} {
 	upvar #0 $data(-listvariable) var
 	trace vdelete var wu $data(listVarTraceCmd)
 	set var [lreplace $var $first $last]
-	trace add variable var wu $data(listVarTraceCmd)
+	trace add variable var {write update} $data(listVarTraceCmd)
     }
 
     #
@@ -29213,7 +29209,7 @@ proc tablelist::insertRows {win index argList updateListVar parentKey \
 	    } else {
 		set var [linsert $var $row $item]
 	    }
-	    trace add variable var wu $data(listVarTraceCmd)
+	    trace add variable var {write update} $data(listVarTraceCmd)
 	}
 
 	#
@@ -30441,7 +30437,7 @@ proc tablelist::listVarTrace {win varName index op} {
 	    foreach item $data(itemList) {
 		lappend ::$varName [lrange $item 0 $data(lastCol)]
 	    }
-	    trace add variable ::$varName write unset $data(listVarTraceCmd)
+	    trace add variable ::$varName {write unset} $data(listVarTraceCmd)
 	}
     }
 }
