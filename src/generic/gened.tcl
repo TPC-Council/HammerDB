@@ -585,17 +585,17 @@ proc construct_menu {Name label cmd_list} {
     upvar #0 icons icons
     global _ED
 
-    ttk::menubutton $Name -text $label  -underline 0 -width [ string length $label ] -direction below
+    menubutton $Name -text $label  -underline 0 -width [ string length $label ] -direction below -activebackground "#FF7900" 
     incr _ED(menuCount);
     set newmenu $Name.m$_ED(menuCount)
 
-    $Name configure -menu $newmenu
+    $Name configure -menu $newmenu -relief flat
 
     catch "destroy $newmenu"
     eval "menu $newmenu"
     eval [list add_items_to_menu $newmenu $cmd_list]
 
-    $newmenu configure -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
+    $newmenu configure -relief flat -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground "#FF7900"
 
     pack $Name -anchor nw -expand 0 -ipadx 4 -ipady 0 -padx 0 \
          -pady 0 -side left
@@ -633,7 +633,7 @@ proc add_items_to_menu {menubutton cmdList} {
                     -menu $newmenu"
                 eval $doit
                 menu $newmenu
-                $newmenu configure -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
+                $newmenu configure -relief flat -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground "#FF7900"
                 add_items_to_menu $newmenu [lindex $cmd 2]
             }
         }
