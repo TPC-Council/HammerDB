@@ -210,9 +210,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     foreach { tbicname } { succ fail vus run clo repeat task } { tbicon } { tick cross oneuser running clock repeat task } { set $tbicname [ create_image $tbicon icons ] }
 
     set Name $Parent.panedwin
-    if { $::ttk::currentTheme eq "clearlooks" } {
-        panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] 
-        } elseif { $::ttk::currentTheme in {awarc awbreeze awlight} } {
+        if { $::ttk::currentTheme eq "awbreeze" } {
         panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat 
         } elseif { $::ttk::currentTheme eq "awbreezedark" } {
         panedwindow $Name -orient horizontal -background  [ dict get $icons defaultBackground ] -relief flat
@@ -222,9 +220,7 @@ proc ed_start_gui { dbdict icons iconalt } {
     pack $Name -expand yes -fill both
 
     set Name $Parent.panedwin.subpanedwin
-    if { $::ttk::currentTheme eq "clearlooks" } {
-        panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]
-        } elseif { $::ttk::currentTheme in {awarc awbreeze awawlight} } {
+        if { $::ttk::currentTheme eq "awbreeze" } {
         panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]
         } elseif { $::ttk::currentTheme eq "awbreezedark" } {
         panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]
@@ -760,38 +756,7 @@ proc disable_bm_menu {} {
 
 proc construct_button {Name button_type iconname file cmd helpmsg} {
     upvar #0 iconssvg iconssvg 
-    if { [ info exists iconssvg ] } {
-        if {[dict exists $iconssvg $iconname\svg ]} {
-            construct_button_svg $Name $button_type $iconname\svg $file $cmd $helpmsg
-        } else {
-            construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
-        }
-    } else { 
-        construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
-    }
-}
-
-proc construct_button_png {Name button_type iconname file cmd helpmsg} {
-    #If called with button type of bar buttons are packed in the button bar along the top
-    #edit buttons are packed along the left hand side visible when the menu button is pressed
-    #all buttons are bound to show an alternative icon when entered and original when left
-    global tcl_version ctext
-    upvar #0 icons icons
-    upvar #0 iconalt iconalt
-    set im [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    button $Name -image $im -command "$cmd" -highlightthickness 0 -borderwidth 0 -width 32 -background [ dict get $icons defaultBackground ] -activebackground [ dict get $icons defaultBackground ]
-    tooltip::tooltip $Name $helpmsg
-    if { $button_type eq "bar" } {
-        pack $Name -anchor nw -side left -expand 0  -fill x -padx {4 4} -pady {4 4}
-    } else {
-        pack $Name -anchor sw -side bottom -expand 0  -fill y -pady {4 4} -padx {4 4}
-    }
-    bind $Name <Enter> [
-    list $Name config -image [image create photo -data [ dict get $iconalt $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
-    ]
-    bind $Name <Leave> [
-    list $Name config -image [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
-    ]
+    construct_button_svg $Name $button_type $iconname\svg $file $cmd $helpmsg
 }
 
 proc construct_button_svg {Name button_type iconname file cmd helpmsg} {
@@ -1482,7 +1447,7 @@ proc ed_edit {} {
     if { $highlight eq "true" } {
         ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground \
          -highlight 1 \
-         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -highlightthickness 1 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
          -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
@@ -1496,7 +1461,7 @@ proc ed_edit {} {
     } else {
         ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground  \
          -highlight 0 \
-         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -highlightthickness 1 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
          -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
