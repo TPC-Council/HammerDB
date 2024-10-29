@@ -809,7 +809,7 @@ proc showLCD {number} {
         LCD_Display "ERR:OVERFLOW" 0 0 0
     }
     write_to_transcount_log $number $rdbms $metric
-    if { $jobid != "" } {
+    if { [ info exists jobid ] && $jobid != "" } {
         hdbjobs eval {INSERT INTO JOBTCOUNT(jobid,counter,metric) VALUES($jobid,$number,$metric)}
     }
     return
