@@ -644,7 +644,7 @@ if { ![ info exists ribenable ] } { set ribenable false }
 	    set labelcolors 0
 	}
 
-        if { [ string match "*dark*" $ttk::currentTheme ] } {
+        if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set graphcolor black
         } else {
         set graphcolor white
@@ -794,7 +794,7 @@ set padstroke [ pad_stroke ]
 
     set canvas         $emu_graph($graph,canvas)
 
-        if { [ string match "*dark*" $ttk::currentTheme ] } {
+        if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set strokecolor "#626262" 
         set fillcolor "#c8c8c8"
         } else {
@@ -828,7 +828,7 @@ if { ($t eq 1) || ($t eq 4) || ($t eq 7) || ($t eq 10) || ($t eq 13) || ($t eq 1
 		set tind [ lindex [ split $timelist ] $n ]
 		regsub -all {\}} $tind tind
 	    $canvas create text [x2canvas $graph $t] $texty \
-		-fill $fillcolor -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
+		-fill $fillcolor -underline {} -text $tind -font "$graphfont 7" -tag [list graph$graph axis]\
 		-anchor w
 		}
 	}
@@ -850,7 +850,7 @@ set padstroke [ pad_stroke ]
 	    $canvas create pline  [x2canvas $graph $x_min] [ expr {$y + $padstroke} ] [x2canvas $graph $x_max] [ expr {$y + $padstroke} ] -stroke $strokecolor -strokedasharray "3 3 3 3" -strokewidth 1 -tag [list graph$graph axis]
 	    # and add the label
 		set dispf [ expr {int($f)} ]
-	    $canvas create text $textx $y -text $dispf -anchor e \
+	    $canvas create text $textx $y -underline {} -text $dispf -anchor e \
 		-fill $fillcolor -tag [list graph$graph axis] -font "$graphfont 7"
         }
     }

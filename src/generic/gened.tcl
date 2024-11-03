@@ -1426,10 +1426,9 @@ proc ed_edit {} {
     if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set bwidth 0
         set hbgrd LightGray
-	set ctexthighlightbackground LightGray
 	set ctextbackground black
 	set ctextforeground white
-	set ctexthighlightbackground LightGray
+	set ctexthighlightbackground black
 	set ctextinsertbackground white
 	set ctextselectforeground white
     } else {
@@ -1437,7 +1436,6 @@ proc ed_edit {} {
         set hbgrd [ dict get $icons defaultBackground ]
         set bwidth 0
         set hbgrd LightGray
-	set ctexthighlightbackground LightGray
 	set ctextbackground white
 	set ctextforeground black
 	set ctexthighlightbackground LightGray
