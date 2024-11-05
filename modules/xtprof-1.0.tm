@@ -465,6 +465,10 @@ foreach sproc $sprocorder {
 	}
         puts $fd "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 close $fd
+catch {tsv::unset allvutimings}
+catch {tsv::unset allclicktimings}
+unset -nocomplain sumtimings
+unset -nocomplain monitortimings
 }
     
 proc xttimeprofdump {myposition} {
