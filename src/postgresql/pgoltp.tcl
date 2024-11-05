@@ -1608,9 +1608,10 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         puts "Using existing User $user for Schema build"
         set sql($stmnt_count) "ALTER USER \"$user\" PASSWORD '$password'"
     }
-    incr stmnt_count;
+    
     set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
     if { [pg_result $result -numTuples] == 0} {
+	incr stmnt_count;
         set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
     } else {
         set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
@@ -1619,6 +1620,21 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         } else {
             set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
             if { [pg_result $result -numTuples] == 0 } {
+
+  	        puts "Using existing empty Database $db for Schema build"
+    	        set is_db_owner_query [ pg_exec $existing_db "WITH RECURSIVE cte AS (SELECT oid, 0 AS steps, true AS inherit_option FROM pg_roles WHERE  rolname = '$user' UNION ALL SELECT m.roleid, c.steps + 1, c.inherit_option AND c.inherit_option FROM   cte c JOIN pg_auth_members m ON m.member = c.oid ) SELECT count(*) > 0 AS is_owner FROM cte, pg_database db WHERE cte.oid=db.datdba and db.datname = '$db'"]
+
+                if { [pg_result $is_db_owner_query -status] != "PGRES_TUPLES_OK"} {
+                    puts "is_db_owner_query returned [pg_result $is_db_owner_query -status]"
+                    error "[pg_result $is_db_owner_query -error]"
+                } else {
+                    set is_db_owner [pg_result $is_db_owner_query -list]
+                    if { $is_db_owner == f } {
+                         incr stmnt_count;
+                         set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+                    }
+                }
+
                 puts "Using existing empty Database $db for Schema build"
                 set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
             } else {
