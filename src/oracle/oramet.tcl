@@ -3263,7 +3263,7 @@ Order by tcnt, ash.sql_id, ash.cnt
         set public(pale_brown)        #EFD0B2
         set public(pale_ochre)        #FECA58
         set public(pale_brown)        #F0A06A
-	if { [ string match "*dark*" $ttk::currentTheme ] } {
+	if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set public(fg)        white
         set public(bg)        black
 	set public(graphselect) $defaultBackground
