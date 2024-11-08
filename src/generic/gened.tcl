@@ -5,7 +5,7 @@ proc ttk::toplevel {w args} {
 }
 
 proc ed_start_gui { dbdict icons iconalt } {
-    global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode win_scale_fact treewidth tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy treebuild pop_treel
+    global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode win_scale_fact treewidth tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy treebuild pop_treel defaultBackground
     set opmode "Local"
     ttk::toplevel .ed_mainFrame
     wm withdraw .ed_mainFrame
@@ -361,15 +361,15 @@ proc ed_start_gui { dbdict icons iconalt } {
     ttk::notebook $Name
     bind TNotebook <ButtonPress-1> {+Press %W %x %y}
     bind TNotebook <ButtonRelease-1> {+Release %W %x %y %X %Y}
-    $Name add [ tk::frame $Parent.mainwin ] -text "Script Editor"
-    $Name add [ tk::frame $Parent.tw ] -text "Virtual User Output" -state disabled
-    $Name add [ tk::frame $Parent.tc ] -text "Transaction Counter" -state disabled -compound right -image [list ::img::dock \
+    $Name add [ tk::frame $Parent.mainwin -background $defaultBackground ] -text "Script Editor"
+    $Name add [ tk::frame $Parent.tw -background $defaultBackground ] -text "Virtual User Output" -state disabled
+    $Name add [ tk::frame $Parent.tc -background $defaultBackground ] -text "Transaction Counter" -state disabled -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
                      {active !disabled} ::img::undock]
-    $Name add [ tk::frame $Parent.me ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
+    $Name add [ tk::frame $Parent.me -background $defaultBackground ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
                      {active !disabled} ::img::undock] -compound right
-    $Name add [ tk::frame $Parent.ap ] -text "Autopilot" -state disabled
+    $Name add [ tk::frame $Parent.ap -background $defaultBackground ] -text "Autopilot" -state disabled
     ttk::notebook::enableTraversal $Name
     set pminunit [ expr {$mainy / 10} ]
     $Parent.panedwin.subpanedwin add $Name -minsize [ expr $pminunit * 4.60 ] -stretch always
