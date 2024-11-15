@@ -172,8 +172,6 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.editbuttons.console edit ctext console.gif "convert_to_oratcl" "Convert Trace to Oratcl" 
     construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Primary Distribution" 
     $Parent.editbuttons.distribute configure -state disabled
-    #placeholder button for persistent saving of Xml options to database
-    #construct_button $Parent.editbuttons.savexml edit savexml savexml.ppm "xmlopts" "Save Configuration"
     construct_button $Parent.editbuttons.test edit test test.ppm "ed_run_package" "Test Tcl code"
     construct_button $Parent.editbuttons.search edit search search.ppm "ed_edit_searchf" "Search in text"
     construct_button $Parent.editbuttons.paste edit paste paste.ppm "ed_edit_paste" "Paste selected text"
@@ -187,7 +185,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
     construct_button $Parent.buttons.thumbup bar thumbup thumbup.ppm "check_schema" "Check TPROC Schema" 
     construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
-    construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
+    construct_button $Parent.buttons.drive bar driveroptim drive.ppm {
+	    if {$bm eq "TPROC-C"||$bm eq "TPC-C"} {loadtpcc} else {loadtpch}
+    } "Load Driver Script"
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
     construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command vurun; vurun" "Run Virtual Users" 
     construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_autopilot" "Start Autopilot" 
@@ -638,7 +638,7 @@ proc add_items_to_menu {menubutton cmdList} {
 
 proc disable_tree { } {
     #Up to v3.3 we could detach and move tree nodes around
-    #In v4.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
+    #In v4.0 & 5.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
     #This version entirely deletes all tree nodes and rebuilds the tree just to remove the trailing column header
     #This is not the best way to select a new database from a treeview but works around the trailing header
     global rdbms bm treebuild pop_treel
@@ -1354,8 +1354,6 @@ proc setctexthighlight {w} {
     set colour(vars) green
     set colour(cmds) yellow
     set colour(functions) magenta
-    #set colour(brackets) lightblue
-    #set colour(comments) purple
     set colour(brackets) #00a2ed
     set colour(comments) gray50
     set colour(strings) red
@@ -1484,18 +1482,6 @@ proc ed_edit {} {
     update
 }
 
-#proc ed_stop_button {} {
-    #global _ED tcl_version
-    #upvar #0 icons icons
-    #set Name .ed_mainFrame.editbuttons.test
-    #
-    #set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    #
-    #$Name config -image $im -command "ed_kill_apps"
-    #bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-#		 "Stop running code"}
-#}
-
 proc create_image { iconname iconset } {
     global win_scale_fact
     foreach { imageset } { icons iconalt iconssvg iconaltsvg } { upvar #0 $imageset $imageset }
@@ -1584,18 +1570,6 @@ proc ed_metrics_button {} {
     list $Name config -image [ create_image dashboard icons ] -command "metrics"
     ]
 }
-
-#proc ed_test_button {} {
-    #global _ED tcl_version
-    #upvar #0 icons icons
-    #set Name .ed_mainFrame.editbuttons.test
-    #
-    #    set im [image create photo -data [ dict get $icons test ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    #
-    #$Name config -image $im -command "ed_run_package"
-    #bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-#		 "Test current code"}
-#}
 
 proc ed_stop_vuser {} {
     global _ED tcl_version
@@ -1887,7 +1861,6 @@ proc vuser_options {} {
     set Name $Parent.b1
     ttk::button $Name \
          -command {
-        # global rdbms bm
         set virtual_users [.vuserop.f1.e1 get]
         if { ![string is integer -strict $virtual_users] } {
             tk_messageBox -message "The number of virtual users must be an integer"
@@ -1898,12 +1871,10 @@ proc vuser_options {} {
             }
 
             #Find if workload test or timed
-            #upvar #0 dbdict dbdict
             foreach { key } [ dict keys $dbdict ] {
                 if { [ dict get $dbdict $key name ] eq $rdbms } {
                     set prefix [ dict get $dbdict $key prefix ]
                     set name [ string tolower [ dict get $dbdict $key name ] ]
-                    #upvar #0 config$name config$name
                     break
                 }
             }
@@ -1912,7 +1883,6 @@ proc vuser_options {} {
                 set timedwkl [ set $prefix\_driver ]
             } else {
                 #No timed workloads in TPC-H
-                #setlocaltpchvars [ subst \$config$name ] 
                 set timedwkl "false"
             }
             if { $timedwkl eq "timed" } {
@@ -2879,7 +2849,7 @@ proc job_options {} {
 }
 
 proc metricsopts {} {
-    #Introduced new option for Database metrics, currently Oracle and PostgreSQL
+    #Database metrics based on Active Session History, currently Oracle and PostgreSQL
     global rdbms
     if { $rdbms eq "Oracle" } {
         metoraopts
