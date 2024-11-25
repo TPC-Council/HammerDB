@@ -817,6 +817,18 @@ namespace eval BawtFile {
                 # File starts with tilde.
                 set fileName [format "./%s" $fileName]
             }
+	    # From Tcl9.0.0 zip file is included in Tcl & Tk library, don't strip or gives cannot find init.tcl error
+        if { [IsWindows] } {
+            if { [string match "tcl9*.dll" $fileName] || [string match "tcltk9*.dll" $fileName] } {
+	    # Don't strip
+	    continue
+            }
+	    } else {
+            if { [string match "libtcl9*.so" $fileName] || [string match "libtcl9tk9*.so" $fileName] } {
+	    # Don't strip
+	    continue
+	    }
+	}
             set fileAbs [file join $srcDir $fileName]
             if { [CheckMatchList [file tail $fileAbs] $pattern false] } {
                 set fileAbsMSys [MSysPath $fileAbs]
@@ -2793,7 +2805,11 @@ namespace eval BawtBuild {
     }
 
     proc GetTkLibName { libVersion { stub "" } } {
+	if {[package vcompare [ GetTclVersion ] "9.0.0" ] >= 0} {
+        return [_GetTclTkLibName "tcl9tk$stub" $libVersion]
+        } else {
         return [_GetTclTkLibName "tk$stub" $libVersion]
+	}
     }
 
     proc GetTclStubLib { libVersion { compilerType "gcc" } } {
@@ -2845,7 +2861,11 @@ namespace eval BawtBuild {
         }
         set threadSuffix ""
         if { [IsWindows] && [UseWinCompiler $libName "vs"] } {
+		if {[package vcompare [ GetTclVersion ] "9.0.0" ] >= 0} {
+            set threadSuffix ""
+		} else {
             set threadSuffix "t"
+	    	}
         }
         if { $libVersion eq "" } {
             set versionStr ""
