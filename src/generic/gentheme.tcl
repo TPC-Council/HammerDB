@@ -10,7 +10,7 @@ proc tilestyle { defaultBackground icons theme } {
 	}
     #Set Tile styles common to both fixed and scaling
     #With Tcl/Tk 9 TkDefaultFont shows as 1 size larger than Tcl/Tk 8 only on Linux, reduce it
-    if {!($tcl_platform(platform) == "windows")} {
+    if {!($::tcl_platform(platform) == "windows")} {
     font configure TkDefaultFont -size [ expr [font actual TkDefaultFont -size] - 1 ]
     	}
     ttk::style configure TFrame -background $defaultBackground
