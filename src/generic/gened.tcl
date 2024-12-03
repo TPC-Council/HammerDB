@@ -60,6 +60,7 @@ proc ed_start_gui { dbdict icons iconalt } {
         {{separator} {} {}}
         {{command}  {Choose Font} {-command {catch {.ed_mainFrame.mainwin.textFrame.left.text configure -font "[choose_font "Arial 10"]"}} -underline 0}}
         {{command}  {Turn Highlighting Off} {-command "highlight_off_with_message" -underline 0}}
+        {{command}  {Switch Theme} {-command "switch_theme_with_message" -underline 0}}
         {{separator} {} {}}
         {{command } {Test} {-command "ed_run_package" -underline 0}}
     }
@@ -100,6 +101,15 @@ proc ed_start_gui { dbdict icons iconalt } {
         .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -label "Turn Highlighting On"
         .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -command "highlight_on_with_message"
         tk_messageBox -title Highlight -message "Highlighting of keywords and program control will be disabled at next script editor load"
+    }
+    proc switch_theme_with_message {} {
+        global theme
+        upvar #0 genericdict genericdict
+	if { $theme eq "awbreeze" } { set tmptheme "light" ; set switchtheme "dark" }
+        if { $theme eq "awbreezedark" } { set tmptheme "dark" ; set switchtheme "light" }
+	set genericdict [ dict replace $genericdict theme [ subst { scaletheme $switchtheme }]]
+        Dict2SQLite "generic" $genericdict
+        tk_messageBox -title Highlight -message "Theme will be switched to $switchtheme at next HammerDB restart"
     }
 
     proc pop_up_menu {} {

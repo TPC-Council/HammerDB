@@ -1,4 +1,3 @@
-package require sqlite3
 global hdb_version
 
 #Get generic config data
