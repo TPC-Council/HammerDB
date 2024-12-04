@@ -165,7 +165,8 @@ proc tk_messageBox { args } {
     } else {
         set message [ lindex $args [expr $messind + 1] ]
     }
-    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+    #Uncomment to include message box messages in Jobs
+    #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     putscli $message
     set typeind [ lsearch $args yesno ]
     if { $typeind eq -1 } { set yesno "false"

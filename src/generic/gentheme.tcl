@@ -492,7 +492,8 @@ if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
         proc tk_messageBox {args} {
             global jobid
             variable ::ttk::dialog_module::window_name
-            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+	    #Uncomment to include message box messages in Jobs
+            #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
             if [ winfo exists $window_name ] {
                 raise $window_name
                 if [ llength $::ttk::dialog_module::args ] {
@@ -502,7 +503,7 @@ if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
                         set message "Warning: a dialog is already open, close it first"
                     }
                     puts $message
-                    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                    #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                 }
                 return
             } else {
