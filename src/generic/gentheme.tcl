@@ -446,19 +446,24 @@ proc configmessagebox { theme } {
     }
 }
 
+#Load SQLite before first use
+package require sqlite3
 #Get a temporary copy of the generic settings to configure the display
 set tmpgendict [ ::XML::To_Dict config/generic.xml ]
+if { [ dict exists $tmpgendict theme scaletheme ] } {
+        set theme [dict get $tmpgendict theme scaletheme ]
+	} else {
+        set theme "light"
+	}
 #Get sqlitedb_dir from generic.xml
 if { [ dict exists $tmpgendict sqlitedb sqlitedb_dir ] } {
         set sqlitedb_dir [ dict get $tmpgendict sqlitedb sqlitedb_dir ]
-        package require sqlite3
 	set tmpgenericdictdb [ SQLite2Dict "generic" ]
-#Get theme from SQLite generic dict
-        set theme [dict get $tmpgenericdictdb theme scaletheme ]
-        } else {
-#Use theme from  XML
-        set theme [dict get $tmpgendict theme scaletheme ]
+#Replace theme from XML with theme from SQLite generic dict
+if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
+        set theme [ dict get $tmpgenericdictdb theme scaletheme ]
         }
+}
 	if { $theme eq "light" } { set theme "awbreeze" }
 	if { $theme eq "dark" } { set theme "awbreezedark" }
         if { $theme ni {awbreeze awbreezedark} } {
