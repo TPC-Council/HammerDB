@@ -1634,7 +1634,8 @@ proc loadtpcc {} {
             if {[dict exists $genericdict timeprofile profiler]} {
                 set profiler [ dict get $genericdict timeprofile profiler]
             }
-            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "ettimeprofile" }
+	    #force timeprofiler to xtprof keep option to choose alternative as placeholder after deprecating etprof
+            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "xttimeprofile" }
             set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
             if { $timep != "" } {
                 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
