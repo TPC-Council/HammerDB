@@ -3,7 +3,7 @@ proc shared_tpcc_functions { tpccfunc db_async_scale } {
         allwarehouse {
             #set additional text for all warehouses
             set allwt(1) {set allwarehouses "true";# Use all warehouses to increase I/O
-            }
+}
             set allwt(2) {#2.4.1.1 does not apply when allwarehouses is true
                 if { $allwarehouses == "true" } {
                     set loadUserCount [expr $totalvirtualusers - 1]
@@ -28,16 +28,16 @@ proc shared_tpcc_functions { tpccfunc db_async_scale } {
                 }
             }
             set allwt(4) {global allwarehouses myposition totalvirtualusers
-            }
+}
             #search for insert points and insert functions
-            set allwi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ]
+            set allwi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#OPTIONS" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(1) $allwt(1)
             set allwi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#2.4.1.1" $allwi(1) ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(2) $allwt(2)
             set allwi(3) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "set choice" $allwi(2) ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(3) $allwt(3)
             if { $db_async_scale } {
-                set allwi(4) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#EDITABLE OPTIONS##################################################" end ]
+                set allwi(4) [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "#OPTIONS" end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(4)+1l $allwt(4)
                 set allwi(5) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "promise::async" end ]
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert $allwi(5)+1l $allwt(4)
@@ -52,7 +52,7 @@ proc shared_tpcc_functions { tpccfunc db_async_scale } {
             set timept(3) {if {$timeprofile eq "true" && $myposition eq 2} {::etprof::printLiveInfo}
             }
             #search for insert points and insert functions
-            set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#EDITABLE OPTIONS##################################################" end ]
+            set timepi(1) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "#OPTIONS" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(1) $timept(1)
             set timepi(2) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "default \{" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(2)+1l $timept(2)

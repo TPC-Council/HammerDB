@@ -735,7 +735,7 @@ proc loadpgtpch {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-H"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set total_querysets $pg_total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
@@ -752,7 +752,7 @@ set refresh_on \"$pg_refresh_on\" ;#First User does refresh function
 set update_sets $pg_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $pg_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$pg_refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1359,7 +1359,7 @@ proc loadpgcloud {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL Cloud"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
 set VERBOSE \"$pg_verbose\" ;# Show query text and output
@@ -1371,7 +1371,7 @@ set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

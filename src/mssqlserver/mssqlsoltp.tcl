@@ -2291,7 +2291,7 @@ proc loadmssqlstpcc { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "SQL Server TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
@@ -2309,7 +2309,7 @@ set database \"$mssqls_dbase\";# Database containing the TPC Schema
 set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
 set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 set msi_object_id \"$mssqls_msi_object_id\";# MSI Object ID for Entra authentication
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
@@ -2654,7 +2654,7 @@ proc loadtimedmssqlstpcc { } {
     if { !$mssqls_async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
@@ -2676,7 +2676,7 @@ set database \"$mssqls_dbase\";# Database containing the TPC Schema
 set encrypt \"$mssqls_encrypt_connection\";# Encrypt Connection
 set trust_cert \"$mssqls_trust_server_cert\";# Trust Server Certificate
 set msi_object_id \"$mssqls_msi_object_id\";# MSI Object ID for Entra authentication
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
@@ -3088,7 +3088,7 @@ odbc close
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
 set total_iterations $mssqls_total_iterations;# Number of transactions before logging off
@@ -3113,7 +3113,7 @@ set msi_object_id \"$mssqls_msi_object_id\";# MSI Object ID for Entra authentica
 set async_client $mssqls_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $mssqls_async_verbose;# Report activity of asynchronous clients
 set async_delay $mssqls_async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }

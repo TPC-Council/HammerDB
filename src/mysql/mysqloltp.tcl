@@ -1682,7 +1682,7 @@ proc loadmysqltpcc { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# MySQL Library
 global mysqlstatus
 set total_iterations $mysql_total_iterations ;# Number of transactions before logging off
@@ -1696,7 +1696,7 @@ set user \"$mysql_user\" ;# MySQL user
 set password \"[ quotemeta $mysql_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 set prepare \"$mysql_prepared\" ;# Use prepared statements
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2003,7 +2003,7 @@ proc loadtimedmysqltpcc { } {
     if { !$mysql_async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# MySQL Library
 global mysqlstatus
 set total_iterations $mysql_total_iterations ;# Number of transactions before logging off
@@ -2020,7 +2020,7 @@ set user \"$mysql_user\" ;# MySQL user
 set password \"[ quotemeta $mysql_pass ]\" ;# Password for the MySQL user
 set db \"$mysql_dbase\" ;# Database containing the TPC Schema
 set prepare \"$mysql_prepared\" ;# Use prepared statements
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2384,7 +2384,7 @@ if { $mysql_connect_pool } {
 } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# MySQL Library
 global mysqlstatus
 set total_iterations $mysql_total_iterations ;# Number of transactions before logging off
@@ -2404,7 +2404,7 @@ set prepare \"$mysql_prepared\" ;# Use prepared statements
 set async_client $mysql_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $mysql_async_verbose;# Report activity of asynchronous clients
 set async_delay $mysql_async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

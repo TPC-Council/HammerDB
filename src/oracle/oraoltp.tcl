@@ -2158,13 +2158,13 @@ proc loadoratpcc { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
 set KEYANDTHINK \"$keyandthink\" ;# Time for user thinking and keying (true or false)
 set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect string for tpc-c user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2441,7 +2441,7 @@ proc loadtimedoratpcc { } {
     if { !$async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
@@ -2453,7 +2453,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set timesten \"$tpcc_tt_compat\" ;# Database is TimesTen
 set systemconnect $system_user/[ quotemeta $system_password ]@$instance ;# Oracle connect string for system user
 set connect $tpcc_user/[ quotemeta $tpcc_pass]@$instance ;# Oracle connect string for tpc-c user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2863,7 +2863,7 @@ switch $myposition {
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
@@ -2878,7 +2878,7 @@ set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect stri
 set async_client $async_client;# Number of asynchronous clients per Vuser
 set async_verbose $async_verbose;# Report activity of asynchronous clients
 set async_delay $async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

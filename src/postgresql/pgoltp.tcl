@@ -2510,7 +2510,7 @@ proc loadpgtpcc { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$pg_raiseerror\" ;# Exit script on PostgreSQL (true or false)
@@ -2523,7 +2523,7 @@ set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2814,7 +2814,7 @@ proc loadtimedpgtpcc { } {
     if { !$pg_async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$pg_raiseerror\" ;# Exit script on PostgreSQL (true or false)
@@ -2835,7 +2835,7 @@ set default_database \"$pg_defaultdbase\" ;# Default Database for Superuser
 set user \"$pg_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -3250,7 +3250,7 @@ switch $myposition {
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$pg_raiseerror\" ;# Exit script on PostgreSQL (true or false)
@@ -3274,7 +3274,7 @@ set db \"$pg_dbase\" ;# Database containing the TPC Schema
 set async_client $pg_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $pg_async_verbose;# Report activity of asynchronous clients
 set async_delay $pg_async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

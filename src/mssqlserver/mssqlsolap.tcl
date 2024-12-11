@@ -1453,7 +1453,7 @@ proc loadmssqlstpch {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "SQL Server TPROC-H"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
 set total_querysets $mssqls_total_querysets ;# Number of query sets before logging off
@@ -1479,7 +1479,7 @@ set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh
 set REFRESH_VERBOSE \"$mssqls_refresh_verbose\" ;#report refresh function activity
 set partition_orders_and_lineitems \"$mssqls_tpch_partition_orders_and_lineitems\" ;#Order and Lineitem Tables are partitioned
 set advanced_stats \"$mssqls_tpch_advanced_stats\" ;#Create advanced statistics
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }

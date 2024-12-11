@@ -926,7 +926,7 @@ proc loadoratpch { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-H"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
@@ -939,7 +939,7 @@ set refresh_on \"$refresh_on\" ;#First User does refresh function
 set update_sets $update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1563,14 +1563,14 @@ proc loadoracloud {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle Cloud"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
 set VERBOSE \"$verbose\" ;# Show query text and output
 set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
 set connect $tpch_user/[ quotemeta $tpch_pass ]@$instance ;# Oracle connect string for tpc-h user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

@@ -400,7 +400,7 @@ proc loadredistpcc {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Redis TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Redis Library
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$redis_raiseerror\" ;# Exit script on Redis error (true or false)
@@ -408,7 +408,7 @@ set KEYANDTHINK \"$redis_keyandthink\" ;# Time for user thinking and keying (tru
 set host \"$redis_host\" ;# Address of the server hosting Redis 
 set port \"$redis_port\" ;# Port of the Redis Server, defaults to 6379
 set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -723,7 +723,7 @@ proc loadtimedredistpcc {} {
     if { !$redis_async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Redis Library
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$redis_raiseerror\" ;# Exit script on Redis error (true or false)
@@ -734,7 +734,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set host \"$redis_host\" ;# Address of the server hosting Redis 
 set port \"$redis_port\" ;# Port of the Redis Server, defaults to 6379
 set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1115,7 +1115,7 @@ switch $myposition {
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Redis Library
 set total_iterations $redis_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$redis_raiseerror\" ;# Exit script on Redis error (true or false)
@@ -1129,7 +1129,7 @@ set namespace \"$redis_namespace\" ;# Namespace containing the TPC Schema
 set async_client $redis_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $redis_async_verbose;# Report activity of asynchronous clients
 set async_delay $redis_async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

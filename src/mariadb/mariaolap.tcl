@@ -757,7 +757,7 @@ proc loadmariatpch { } {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-H"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Maria Library
 set total_querysets $maria_total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$maria_raise_query_error\" ;# Exit script on Maria query error (true or false)
@@ -774,7 +774,7 @@ set refresh_on \"$maria_refresh_on\" ;#First User does refresh function
 set update_sets $maria_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $maria_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$maria_refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1383,7 +1383,7 @@ proc loadmariacloud {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB Cloud"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Maria Library
 set RAISEERROR \"$maria_raise_query_error\" ;# Exit script on Maria query error (true or false)
 set VERBOSE \"$maria_verbose\" ;# Show query text and output
@@ -1394,7 +1394,7 @@ set ssl_options {$maria_ssl_options} ;# Maria SSL/TLS options
 set user \"$maria_tpch_user\" ;# Maria user
 set password \"[ quotemeta $maria_tpch_pass ]\" ;# Password for the Maria user
 set db \"$maria_tpch_dbase\" ;# Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 #LOAD LIBRARIES AND MODULES

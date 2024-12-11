@@ -651,7 +651,7 @@ proc loaddb2tpch {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Db2 TPROC-H"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Db2 Library
 set total_querysets $db2_total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$db2_raise_query_error\" ;# Exit script on Db2 query error (true or false)
@@ -665,7 +665,7 @@ set refresh_on \"$db2_refresh_on\" ;#First User does refresh function
 set update_sets $db2_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $db2_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$db2_refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }

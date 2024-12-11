@@ -1273,7 +1273,7 @@ proc loaddb2tpcc {} {
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Db2 TPROC-C"
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 Error (true or false)
@@ -1281,7 +1281,7 @@ set KEYANDTHINK \"$db2_keyandthink\" ;# Time for user thinking and keying (true 
 set user \"$db2_user\" ;# Db2 user
 set password \"[ quotemeta $db2_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1570,7 +1570,7 @@ proc loadtimeddb2tpcc {} {
     if { !$db2_async_scale } {
         #REGULAR TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 (true or false)
@@ -1582,7 +1582,7 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set user \"$db2_user\" ;# Db2 user
 set password \"[ quotemeta $db2_pass ]\" ;# Password for the Db2 user
 set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -1947,7 +1947,7 @@ switch $myposition {
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$db2_raiseerror\" ;# Exit script on Db2 (true or false)
@@ -1962,7 +1962,7 @@ set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 set async_client $db2_async_client;# Number of asynchronous clients per Vuser
 set async_verbose $db2_async_verbose;# Report activity of asynchronous clients
 set async_delay $db2_async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
