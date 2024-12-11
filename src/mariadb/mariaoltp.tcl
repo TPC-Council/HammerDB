@@ -33,7 +33,7 @@ proc build_mariatpcc {} {
             puts "Failed to created thread for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -1703,7 +1703,7 @@ proc loadmariatpcc { } {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Maria Library
 global mariastatus
@@ -2037,7 +2037,7 @@ proc loadtimedmariatpcc { } {
     set _ED(packagekeyname) "MariaDB TPROC-C Timed"
     if { !$maria_async_scale } {
         #REGULAR TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# MariaDB Library
 global mariastatus
@@ -2566,7 +2566,7 @@ insert_maria_no_stored_procs timed sync
 }
 } else {
         #ASYNCHRONOUS TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Maria Library
 global mariastatus
@@ -3210,7 +3210,7 @@ proc delete_mariatpcc {} {
             puts "Failed to create threads for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -3315,7 +3315,7 @@ proc check_mariatpcc {} {
             puts "Failed to create thread for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "

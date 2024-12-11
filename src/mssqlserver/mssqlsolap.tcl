@@ -32,7 +32,7 @@ proc build_mssqlstpch {} {
             puts "Failed to create threads for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version
@@ -1452,7 +1452,7 @@ proc loadmssqlstpch {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "SQL Server TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
@@ -2053,7 +2053,7 @@ proc delete_mssqlstpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version
@@ -2154,7 +2154,7 @@ proc check_mssqlstpch {} {
             puts "Failed to created thread for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version

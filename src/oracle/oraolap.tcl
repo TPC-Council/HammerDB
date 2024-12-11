@@ -26,7 +26,7 @@ proc build_oratpch {} {
             puts "Failed to create threads for schema creation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -925,7 +925,7 @@ proc loadoratpch { } {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
@@ -1562,7 +1562,7 @@ proc loadoracloud {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle Cloud"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
@@ -1697,7 +1697,7 @@ proc delete_oratpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -1743,7 +1743,7 @@ proc check_oratpch {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "

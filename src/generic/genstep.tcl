@@ -89,9 +89,9 @@ proc start_replicas {stepnumbers callbackfile} {
     for {set step 1} {$step <= $stepnumbers} {incr step} {
         putscli "Starting $step replica HammerDB instance"
         if {$tcl_platform(platform) == "windows"} {
-            exec ./bin/tclsh86t hammerdbcli auto $callbackfile &
+            exec ./bin/tclsh90 hammerdbcli auto $callbackfile &
         } else {
-            exec ./bin/tclsh8.6 hammerdbcli auto $callbackfile &
+            exec ./bin/tclsh90 hammerdbcli auto $callbackfile &
         }
     }
 }

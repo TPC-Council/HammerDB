@@ -33,7 +33,7 @@ proc gendata_tpcc {} {
             puts "Failed to create thread(s) for data generation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh9.0
 #LOAD MODULES
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
@@ -488,7 +488,7 @@ proc gendata_tpch {} {
             puts "Failed to create thread(s) for data generation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh9.0
 #LOAD MODULES
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }

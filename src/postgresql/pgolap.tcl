@@ -22,7 +22,7 @@ proc build_pgtpch {} {
             puts "Failed to create threads for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -734,7 +734,7 @@ proc loadpgtpch {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# PostgreSQL Library
 set total_querysets $pg_total_querysets ;# Number of query sets before logging off
@@ -1358,7 +1358,7 @@ proc loadpgcloud {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL Cloud"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# PostgreSQL Library
 set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
@@ -1531,7 +1531,7 @@ proc delete_pgtpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -1601,7 +1601,7 @@ proc check_pgtpch {} {
             puts "Failed to create threads for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "

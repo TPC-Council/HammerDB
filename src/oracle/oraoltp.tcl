@@ -25,7 +25,7 @@ proc build_oratpcc {} {
             puts "Failed to create thread(s) for schema creation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -2157,7 +2157,7 @@ proc loadoratpcc { } {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-C"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
@@ -2440,7 +2440,7 @@ proc loadtimedoratpcc { } {
     set _ED(packagekeyname) "Oracle Timed TPROC-C"
     if { !$async_scale } {
         #REGULAR TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
@@ -2862,7 +2862,7 @@ switch $myposition {
         } 
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
@@ -3345,7 +3345,7 @@ proc delete_oratpcc {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -3399,7 +3399,7 @@ proc check_oratpcc {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "

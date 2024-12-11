@@ -21,7 +21,7 @@ proc build_db2tpcc {} {
             puts "Failed to created thread for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -1272,7 +1272,7 @@ proc loaddb2tpcc {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Db2 TPROC-C"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
@@ -1569,7 +1569,7 @@ proc loadtimeddb2tpcc {} {
     set _ED(packagekeyname) "Db2 TPROC-C Timed"
     if { !$db2_async_scale } {
         #REGULAR TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
@@ -1946,7 +1946,7 @@ switch $myposition {
         }
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #EDITABLE OPTIONS##################################################
 set library $library ;# Db2 Library
 set total_iterations $db2_total_iterations ;# Number of transactions before logging off
@@ -2387,7 +2387,7 @@ proc delete_db2tpcc {} {
             puts "Failed to created thread for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
@@ -2434,7 +2434,7 @@ proc check_db2tpcc {} {
             puts "Failed to created thread for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "

@@ -30,7 +30,7 @@ proc convert_to_oratcl { } {
         if {[string match {*Instance name*} $line]} {
             regexp {(:)\ (.*)} $line a b c
             if { $donehead == 0 } {
-                append ora "#!/usr/local/bin/tclsh8.6\n"
+                append ora "#!/usr/local/bin/tclsh9.0\n"
                 append ora "package require Oratcl\n"
                 append ora "####UPDATE THE CONNECT STRING BELOW###\n"
                 append ora "#set connect user/password@$c\n"
