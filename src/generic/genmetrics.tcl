@@ -134,7 +134,7 @@ proc DoDisplay {maxcpu cpu_model caller} {
            $canvforbars create prect $x0 $ymask $x1 [ expr $ymask + $S(maskplus) ] -tag bar$cpu-mask -fill $CLR(bg)
         }
         #Set CPU utilisation % value and hide with same as background colour
-        $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ]  -tags "pcent$cpu"
+        $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 3 ] ]  -tags "pcent$cpu"
     }
 }
 
@@ -222,7 +222,7 @@ proc AdjustBarHeight {cpu usr sys percent} {
     #Create Sys rectangle starting from top of usr up to max of top of bar
     $canvforbars coords $systag $x0 [ expr {$newYusr - ($y1 - $newYsys)} ] $x1 $newYusr
     $canvforbars delete pcent$cpu
-    $canvforbars create text  [ expr $x0 + $S(txtalign) ] [ expr $y1 + $S(txtalign) ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ] -tags "pcent$cpu"
+    $canvforbars create text  [ expr $x0 + $S(txtalign) ] [ expr $y1 + $S(txtalign) ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font [ list basic [ expr [ font actual basic -size ] - 3 ] ] -tags "pcent$cpu"
 }
 
 proc metrics {} {
@@ -421,7 +421,7 @@ package require comm
 namespace import comm::*
 package require socktest
 namespace import socktest::*
-set result [ sockmesg [ socktest $agent_hostname $agent_id 1000 ]]
+set result [ sockmesg [ socktest $agent_hostname $agent_id 5000 ]]
 if { $result eq "OK" } {
 	  if { [ interp exists metrics_interp ] } {
 	#A display is already connected so stopping display will close or reinitialize agent

@@ -69,7 +69,7 @@ proc metstart {} {
                 package require socktest
                 namespace import socktest::*
 	        if { $agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ] } { 
-                set result [ sockmesg [ socktest localhost $agent_id 1000 ]]
+                set result [ sockmesg [ socktest localhost $agent_id 5000 ]]
                 if { $result eq "OK" } {
                 } else {
                 putscli "Starting Local Metrics Agent on [ info hostname ]"
