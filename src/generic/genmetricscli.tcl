@@ -63,7 +63,7 @@ proc metstart {} {
 		}
                 global tcl_platform
                 set UserDefaultDir [ file dirname [ info script ] ]
-                ::tcl::tm::path add "../$UserDefaultDir/modules"
+                ::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
                 package require comm
                 namespace import comm::*
                 package require socktest
@@ -97,7 +97,7 @@ proc metstart {} {
 proc metstatus {} {
 global tcl_platform agent_hostname agent_id
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
@@ -116,7 +116,7 @@ putscli "Metrics Agent running on $agent_hostname:$agent_id"
 proc metstop {} {
 global tcl_platform agent_hostname agent_id 
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest

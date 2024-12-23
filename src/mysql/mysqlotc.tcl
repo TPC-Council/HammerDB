@@ -79,7 +79,7 @@ proc tcount_mysql {bm interval masterthread} {
                 thread::release
                 return
             }
-            if [catch {::tcl::tm::path add modules} message] {
+            if [catch {::tcl::tm::path add [zipfs root]app/modules modules} message] {
                 tsv::set application tc_errmsg "failed to find modules $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
                 thread::release

@@ -33,7 +33,7 @@ proc build_mysqltpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 proc CreateStoredProcs { mysql_handler } {
     puts "CREATING TPCC STORED PROCEDURES"
@@ -1700,7 +1700,7 @@ set prepare \"$mysql_prepared\" ;# Use prepared statements
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 #TIMESTAMP
 proc gettimestamp { } {
@@ -2024,7 +2024,7 @@ set prepare \"$mysql_prepared\" ;# Use prepared statements
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 if { [ chk_thread ] eq "FALSE" } {
@@ -2408,7 +2408,7 @@ set async_delay $mysql_async_delay;# Delay in ms between logins of asynchronous 
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
 
@@ -2881,7 +2881,7 @@ proc delete_mysqltpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc chk_socket { host socket } {
@@ -2987,7 +2987,7 @@ set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc chk_socket { host socket } {

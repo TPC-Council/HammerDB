@@ -37,7 +37,7 @@ puts "Copyright (C) 2003-2024 Steve Shaw"
 puts "Type \"help\" for a list of commands"
 	}
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
 
 append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest http huddle jobs ticklecharts }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {

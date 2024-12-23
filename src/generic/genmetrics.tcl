@@ -368,7 +368,7 @@ proc agstart { agent_id start_display } {
 #metrics command is used to start the display to connect to local or remote agent
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
@@ -399,7 +399,7 @@ return
 proc agstatus { agent_hostname agent_id } {
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
@@ -416,7 +416,7 @@ return
 proc agstop { agent_hostname agent_id } {
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest

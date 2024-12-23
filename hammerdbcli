@@ -78,7 +78,7 @@ namespace eval autostart {
 }
 #Common CLI initialisation between Tcl and Python
 set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
-  ::tcl::tm::path add "$UserDefaultDir/modules"
+  ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
   append modulelist { Thread msgcat xml comm tclreadline task http reformat_tcl sqlite3 huddle jobs ticklecharts }
   for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
@@ -169,7 +169,7 @@ if { $lang == "tcl" } {
       catch {package forget tclpy}
     }
     set UserDefaultDir [ file dirname [ info script ] ]
-    ::tcl::tm::path add "$UserDefaultDir/modules"
+    ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
     package require tclreadline
     regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
     append cli_common_init $cli_py_append

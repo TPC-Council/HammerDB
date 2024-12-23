@@ -30,7 +30,7 @@ global hdb_version
 set hdb_version "v5.0"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
 
 namespace eval autostart {
     set autostartap "false"

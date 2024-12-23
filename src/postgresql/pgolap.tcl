@@ -27,7 +27,7 @@ proc build_pgtpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc GatherStatistics { lda } {
@@ -756,7 +756,7 @@ set REFRESH_VERBOSE \"$pg_refresh_verbose\" ;#report refresh function activity
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
@@ -1375,7 +1375,7 @@ set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
@@ -1537,7 +1537,7 @@ set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc ConnectToPostgres { host port sslmode user password dbname } {
@@ -1607,7 +1607,7 @@ set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpchcommon::* }
 
 proc ConnectToPostgres { host port sslmode user password dbname } {
