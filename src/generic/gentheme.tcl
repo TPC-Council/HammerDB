@@ -449,7 +449,16 @@ proc configmessagebox { theme } {
 #Load SQLite before first use
 package require sqlite3
 #Get a temporary copy of the generic settings to configure the display
-set tmpgendict [ ::XML::To_Dict config/generic.xml ]
+set dirname [ file dirname [ file normalize $argv0 ]]
+if { $dirname eq "[zipfs root]app" } {
+#Is a zip directory
+set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+}
+if { [ file exists $dirname/config/generic.xml ] } {
+set tmpgendict [ ::XML::To_Dict $dirname/config/generic.xml ]
+	} else {
+set tmpgendict {}
+	}
 if { [ dict exists $tmpgendict theme scaletheme ] } {
         set theme [dict get $tmpgendict theme scaletheme ]
 	} else {
@@ -474,7 +483,11 @@ if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
                 set theme "awbreeze"
             }
         }
+        if { [ dict exists $tmpgendict theme pixelsperpoint ] } {
         set pixelsperpoint [dict get $tmpgendict theme pixelsperpoint ]
+	} else {
+        set pixelsperpoint "auto"
+	}
         if { $pixelsperpoint eq "auto" } {
             ;# Use detected value of tk scaling
         } else {

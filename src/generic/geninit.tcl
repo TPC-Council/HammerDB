@@ -1,8 +1,16 @@
 global hdb_version
 
+set dirname [ file dirname [ file normalize $argv0 ]]
+if { $dirname eq "[zipfs root]app" } {
+#Is a zip directory
+set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+}
 #Get generic config data
-set genericdict [ ::XML::To_Dict config/generic.xml ]
-
+if { [ file exists $dirname/config/generic.xml ] } {
+set genericdict [ ::XML::To_Dict $dirname/config/generic.xml ]
+        } else {
+set genericdict {}
+        }
 #Get global variable sqlitedb_dir from generic.xml
 if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
     set sqlitedb_dir [ dict get $genericdict sqlitedb sqlitedb_dir ]
@@ -12,7 +20,9 @@ if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
 
 #Set hammerdb version to genericdict
 set hdb_version_dict [ dict create version $hdb_version ]
+if { [ dict size $genericdict ] != 0 } {
 dict append genericdict hdb_version $hdb_version_dict
+	}
 
 #Try to get generic config data from SQLite
 set genericdictdb [ SQLite2Dict "generic" ]
