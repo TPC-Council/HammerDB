@@ -1330,7 +1330,7 @@ namespace eval BawtBuild {
 
     variable sBuildOpts
     array set sBuildOpts {
-        TclVersion               "9.0.0"
+        TclVersion               "9.0.1"
         ImgVersion               "1.4.13"
         OsgVersion               "3.6.5"
         TclDir                   "HammerDB"
