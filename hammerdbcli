@@ -170,6 +170,7 @@ if { $lang == "tcl" } {
     }
     set UserDefaultDir [ file dirname [ info script ] ]
     ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
+    lappend auto_path "[zipfs root]app/lib"
     package require tclreadline
     regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
     append cli_common_init $cli_py_append

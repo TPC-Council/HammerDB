@@ -31,6 +31,7 @@ set hdb_version "v5.0"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
 
 namespace eval autostart {
     set autostartap "false"
