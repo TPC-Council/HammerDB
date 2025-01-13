@@ -1,6 +1,11 @@
 proc get_xml_data {} {
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
-    if {[catch {set xml_fd [open "config/generic.xml" r]}]} {
+    set dirname [ file dirname [ file normalize $argv0 ]]
+    if { $dirname eq "[zipfs root]app" } {
+    #Is a zip directory
+    set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+    }
+    if {[catch {set xml_fd [open "$dirname/config/generic.xml" r]}]} {
         puts "Could not open XML config file using default values"
         return
     } else {
