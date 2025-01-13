@@ -166,7 +166,7 @@ proc CheckSQLiteDB {dbname} {
     global sqlitedb_dir
 
     if {$sqlitedb_dir eq ""} {
-        puts "Parameter sqlitedb_dir in generic.xml is empty. Use temp directory."
+        #Parameter sqlitedb_dir in generic.xml is empty. Use temp directory
         set sqlitedb_dir "TMP"
     }
 
