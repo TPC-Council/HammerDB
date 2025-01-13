@@ -63,7 +63,7 @@ if { $genericdictdb eq "" } {
 set dbdict [ SQLite2Dict "database" ]
 if { $dbdict eq "" } {
     #Load database config from database.xml
-    set dbdict [ ::XML::To_Dict config/database.xml ]
+    set dbdict [ ::XML::To_Dict $dirname/config/database.xml ]
 
     #Change  TPROC-x terminology to working TPC-x
     set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
@@ -77,7 +77,7 @@ foreach { key } [ dict keys $dbdict ] {
     set dictname config$key
     set dbconfdict [ SQLite2Dict $key ]
     if { $dbconfdict eq "" } {
-        set dbconfdict [ ::XML::To_Dict config/$key.xml ]
+        set dbconfdict [ ::XML::To_Dict $dirname/config/$key.xml ]
         Dict2SQLite $key $dbconfdict
     }
     set $dictname $dbconfdict
