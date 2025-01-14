@@ -1,10 +1,13 @@
 package require sqlite3
 global hdb_version
-
-set dirname [ file dirname [ file normalize $argv0 ]]
-if { $dirname eq "[zipfs root]app" } {
-#Is a zip directory
-set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+#Running under Python argv0 does not exist
+if { [ info exists argv0 ] } {
+	set dirname [ file dirname [ file normalize $argv0 ]]
+        if { $dirname eq "[zipfs root]app" } {
+        set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+	} else {
+	set dirname .
+	}
 }
 #Get generic config data
 if { [ file exists $dirname/config/generic.xml ] } {
