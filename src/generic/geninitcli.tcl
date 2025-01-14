@@ -5,10 +5,10 @@ if { [ info exists argv0 ] } {
 	set dirname [ file dirname [ file normalize $argv0 ]]
         if { $dirname eq "[zipfs root]app" } {
         set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+	}
 	} else {
 	set dirname .
 	}
-}
 #Get generic config data
 if { [ file exists $dirname/config/generic.xml ] } {
 set genericdict [ ::XML::To_Dict $dirname/config/generic.xml ]
