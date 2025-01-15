@@ -6,9 +6,11 @@
 # Tcl/Tk, stubs and manual.
 Setup Tcl	        Tcl-[GetTclVersion].7z         Tcl_NMake.bawt
 Setup Tcl_gcc           Tcl-[GetTclVersion].7z         Tcl_Gcc.bawt
+Setup TclS              Tcl-[GetTclVersion].7z         TclS_NMake.bawt
 Setup TclStubs          Tcl-[GetTclVersion].7z         TclStubs.bawt
 Setup Tk		Tk-[GetTkVersion].7z           Tk_NMake.bawt
 Setup Tk_gcc            Tk-[GetTkVersion].7z           Tk_Gcc.bawt
+Setup TkS		Tk-[GetTkVersion].7z           TkS_NMake.bawt
 Setup TkStubs           Tk-[GetTkVersion].7z           TkStubs.bawt
 # Compiled Tcl packages.
 Setup twapi		twapi-5.0.7z                   twapi.bawt
