@@ -30,7 +30,6 @@ proc build_oratpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 proc CreateStoredProcs { lda timesten num_part } {
     puts "CREATING TPCC STORED PROCEDURES"
@@ -2168,7 +2167,6 @@ set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect stri
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 #LOGON
@@ -2457,7 +2455,6 @@ set connect $tpcc_user/[ quotemeta $tpcc_pass]@$instance ;# Oracle connect strin
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 #LOGON
@@ -2882,7 +2879,6 @@ set async_delay $async_delay;# Delay in ms between logins of asynchronous client
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
 
@@ -3350,7 +3346,6 @@ proc delete_oratpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } {
@@ -3404,7 +3399,6 @@ proc check_oratpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc standsql { curn sql } {

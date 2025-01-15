@@ -2091,6 +2091,9 @@ namespace eval oramet {
         if { ! [ info exists dbmon_threadID ] } {
             set public(parent) [ thread::names ]
             thread_init    
+	    #add zipfs paths to thread
+            catch {eval [ subst {thread::send $dbmon_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
+            catch {eval [ subst {thread::send $dbmon_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
         }
         set con $public(un)/$public(pw)$remote
         display_tile $public(output)

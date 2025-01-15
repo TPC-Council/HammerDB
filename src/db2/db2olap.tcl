@@ -27,7 +27,6 @@ proc build_db2tpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc GatherStatistics { db_handle } {
@@ -669,7 +668,6 @@ set REFRESH_VERBOSE \"$db2_refresh_verbose\" ;#report refresh function activity
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { db_handle sql RAISEERROR } {
@@ -1226,7 +1224,6 @@ proc delete_db2tpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc drop_schema { dbname } {
@@ -1272,7 +1269,6 @@ proc check_db2tpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpchcommon::* }
 
 proc ConnectToDb2 { dbname user password } {

@@ -38,7 +38,6 @@ set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 proc UpdateStatistics { odbc db azure advanced_stats } {
     puts "UPDATING SCHEMA STATISTICS"
@@ -1483,7 +1482,6 @@ set advanced_stats \"$mssqls_tpch_advanced_stats\" ;#Create advanced statistics
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
@@ -2059,7 +2057,6 @@ set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
@@ -2160,7 +2157,6 @@ set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {

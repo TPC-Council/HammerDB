@@ -42,12 +42,6 @@ proc tcount_pg {bm interval masterthread} {
                 thread::release
                 return
             }
-            if [catch {::tcl::tm::path add [zipfs root]app/modules modules} message] { 
-                tsv::set application tc_errmsg "failed to find modules $message"
-                eval [subst {thread::send $MASTER show_tc_errmsg}]
-                thread::release
-                return
-            }
             if [catch {package require tcountcommon} message ] { 
                 tsv::set application tc_errmsg "failed to load common transaction counter functions $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -133,6 +127,9 @@ proc tcount_pg {bm interval masterthread} {
     upvar #0 configpostgresql configpostgresql
     setlocaltcountvars $configpostgresql 1
     set old 0
+    #add zipfs paths to thread
+    catch {eval [ subst {thread::send $tc_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
+    catch {eval [ subst {thread::send $tc_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
     #Call Transaction Counter to start read_more loop
     eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $interval $old tce $bm }}] 
 } 

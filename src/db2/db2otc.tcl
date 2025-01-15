@@ -33,12 +33,6 @@ proc tcount_db2 {bm interval masterthread} {
                 thread::release
                 return
             }
-            if [catch {::tcl::tm::path add [zipfs root]app/modules modules} message] {
-                tsv::set application tc_errmsg "failed to find modules $message"
-                eval [subst {thread::send $MASTER show_tc_errmsg}]
-                thread::release
-                return
-            }
             if [catch {package require tcountcommon} message ] {
                 tsv::set application tc_errmsg "failed to load common transaction counter functions $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -129,6 +123,9 @@ proc tcount_db2 {bm interval masterthread} {
     upvar #0 configdb2 configdb2
     setlocaltcountvars $configdb2 1
     set old 0
+    #add zipfs paths to thread
+    catch {eval [ subst {thread::send $tc_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
+    catch {eval [ subst {thread::send $tc_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
     #Call Transaction Counter to start read_more loop
     eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $db2_user [ quotemeta $db2_pass ] $db2_dbase $db2_tpch_user [ quotemeta $db2_tpch_pass ] $db2_tpch_dbase $interval $old tce $bm }}]
 } 

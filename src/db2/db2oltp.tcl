@@ -26,7 +26,6 @@ proc build_db2tpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc CreateStoredProcs { db_handle } {
@@ -1285,7 +1284,6 @@ set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 #TIMESTAMP
@@ -1586,7 +1584,6 @@ set dbname \"$db2_dbase\" ;#Database containing the TPC Schema
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 if { [ chk_thread ] eq "FALSE" } {
@@ -1966,7 +1963,6 @@ set async_delay $db2_async_delay;# Delay in ms between logins of asynchronous cl
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
 
@@ -2392,7 +2388,6 @@ proc delete_db2tpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc drop_schema { dbname } {
@@ -2439,7 +2434,6 @@ proc check_db2tpcc {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc ConnectToDb2 { dbname user password } {

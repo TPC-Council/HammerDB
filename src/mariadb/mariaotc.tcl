@@ -74,12 +74,6 @@ proc tcount_maria {bm interval masterthread} {
                 thread::release
                 return
             }
-            if [catch {::tcl::tm::path add [zipfs root]app/modules modules} message] {
-                tsv::set application tc_errmsg "failed to find modules $message"
-                eval [subst {thread::send $MASTER show_tc_errmsg}]
-                thread::release
-                return
-            }
             if [catch {package require tcountcommon} message ] {
                 tsv::set application tc_errmsg "failed to load common transaction counter functions $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -168,6 +162,9 @@ proc tcount_maria {bm interval masterthread} {
     #Set it now if it doesn't exist
     if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
     set old 0
+    #add zipfs paths to thread
+    catch {eval [ subst {thread::send $tc_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
+    catch {eval [ subst {thread::send $tc_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
     #Call Transaction Counter to start read_more loop
     eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_user [ quotemeta $maria_pass ] $maria_tpch_user [ quotemeta $maria_tpch_pass ] $interval $old tce $bm }}]
 } 

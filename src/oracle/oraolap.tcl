@@ -31,7 +31,6 @@ proc build_oratpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 proc GatherStatistics { lda tpch_user timesten } {
     puts "GATHERING SCHEMA STATISTICS"
@@ -943,7 +942,6 @@ set REFRESH_VERBOSE \"$refresh_verbose\" ;#report refresh function activity
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 #STANDARD SQL	
 proc standsql { curn sql RAISEERROR } {
@@ -1574,7 +1572,6 @@ set connect $tpch_user/[ quotemeta $tpch_pass ]@$instance ;# Oracle connect stri
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 #STANDARD SQL	
 proc standsql { curn sql RAISEERROR } {
@@ -1702,7 +1699,6 @@ proc delete_oratpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc drop_tpch { system_user system_password instance tpch_user } {
@@ -1748,7 +1744,6 @@ proc check_oratpch {} {
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add [zipfs root]app/modules modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { curn sql } {
