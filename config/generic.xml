@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <hammerdb>
    <theme>
-        <scaletheme>light</scaletheme>
+        <scaletheme>dark</scaletheme>
         <pixelsperpoint>auto</pixelsperpoint>
    </theme>
    <sqlitedb>

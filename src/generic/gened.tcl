@@ -1361,18 +1361,18 @@ proc applyctexthighlight {w} {
 proc setctexthighlight {w} {
     upvar #0 dbdict dbdict
     if { [ string match "*dark*" $::ttk::currentTheme ] } {
-    set colour(vars) green
-    set colour(cmds) yellow
+    set colour(vars) #528723
+    set colour(cmds) #468CDE
     set colour(functions) magenta
-    set colour(brackets) #00a2ed
+    set colour(brackets) gray50
     set colour(comments) gray50
-    set colour(strings) red
+    set colour(strings) #E94F64
     } else {
     set colour(vars) green
     set colour(cmds) blue
     set colour(functions) magenta
     set colour(brackets) gray50
-    set colour(comments) black
+    set colour(comments) gray10
     set colour(strings) red
     }
     #Extract list of commands provided by each database for highlighting
@@ -1944,14 +1944,14 @@ proc vuser_options {} {
 proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2024
+Copyright (C) 2003-2025
 Steve Shaw\n"
 }
 
 proc license { } {
     tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
-Copyright (C) 2003-2024 Steve Shaw
+Copyright (C) 2003-2025 Steve Shaw
 
 This program is free software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation,
@@ -1968,6 +1968,11 @@ proc ed_status_message {option {message ""}} {
     if { [ info exists inrun ] } {
         ;
     } else {
+    if { [ string match "*dark*" $::ttk::currentTheme ] } {
+    set smforeground white
+    } else {
+    set smforeground black
+    }
         set _ED(status) "$_ED(packagekeyname)"
         set _ED(permstatus) "$_ED(packagekeyname)"
         .ed_mainFrame.statusbar.l15 configure -text "  Mode: $opmode"
@@ -1997,7 +2002,7 @@ proc ed_status_message {option {message ""}} {
                 catch "$_ED(status_widget) configure -foreground \#D00000"
                 update
                 after 2000
-                catch "$_ED(status_widget) configure -foreground black"
+                catch "$_ED(status_widget) configure -foreground $smforeground"
                 if {$_ED(permstatus) != ""} {
                     set _ED(status) "$_ED(permstatus)"
                 }
@@ -2011,7 +2016,7 @@ proc ed_status_message {option {message ""}} {
             }
             -finish {
                 set _ED(status) "$message"
-                catch "$_ED(status_widget) configure -foreground black"
+                catch "$_ED(status_widget) configure -foreground $smforeground"
             }
             default {ed_status_message -temp "$message"}
         }
