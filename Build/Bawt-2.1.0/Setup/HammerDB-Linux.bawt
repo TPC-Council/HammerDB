@@ -3,7 +3,9 @@
 # Setup LibName         ZipFile                        BuildFile           BuildOptions
 # Tcl/Tk, stubs and manual.
 Setup Tcl                Tcl-[GetTclVersion].7z         Tcl.bawt
+Setup TclS               Tcl-[GetTclVersion].7z         Tcl.bawt
 Setup Tk                 Tk-[GetTkVersion].7z           Tk.bawt
+Setup TkS                Tk-[GetTkVersion].7z           Tk.bawt
 # Compiled Tcl packages.
 Setup expect             expect-5.45.4.1.7z             expect.bawt	
 Setup tkpath             tkpath-0.3.3.1.7z              tkpath.bawt
