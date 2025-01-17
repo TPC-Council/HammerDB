@@ -86,12 +86,7 @@ if {![IsWindows]} {
     Log "Creating Distribution tar.gz in [GetOutputDistDir]"
 TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Linux.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number ]
 	} else {
-    Log "Creating Distribution Zipfile in [GetOutputDistDir]"
-cd [file nativename [GetOutputDistDir]]
-if {![catch {exec zip -L}] || [lindex $::errorCode 0] eq "NONE"} {
-exec -ignorestderr {*}zip -r HammerDB-$version_number-Win.zip  HammerDB-$version_number
-} else {
-        ErrorAppend "Finalize: Distribution created in  [GetOutputDistDir] but cannot find zip executable" "FATAL"
-	}
+    Log "Creating Distribution tar.gz in [GetOutputDistDir]"
+TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Win.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number ]
     }
 }
