@@ -79,6 +79,7 @@ namespace eval autostart {
 #Common CLI initialisation between Tcl and Python
 set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
   ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
+  lappend auto_path "[zipfs root]app/lib"
   append modulelist { Thread msgcat xml comm tclreadline task http reformat_tcl sqlite3 huddle jobs ticklecharts }
   for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
