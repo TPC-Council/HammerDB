@@ -176,4 +176,66 @@ file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEC  Hamm
     file delete [ file join [file nativename [GetOutputDistDir]] SFEC buildimage.tcl ]
     DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEC HammerDB-$version_number-Dev ]
     Log "Single File Executable CLI Created"
+    Log "Creating Single File Executable Web Service Directory"
+file mkdir [ file join [file nativename [GetOutputDistDir]] SFEW ]
+SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEW ]
+    Log "Extracting Development Build into Single File Executable Web Service Directory"
+TarGunzip [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEW ]
+file delete -force [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev-Win.tar.gz ]
+    Log "Remove files not needed for Single File Executable Web Service in [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ]"
+foreach deldir { agent bin include scripts } {
+DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev $deldir ]
+	}
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$version_number-Dev *.bat]]
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$version_number-Dev *.md]]
+foreach delfile { ChangeLog hammerdb hammerdbcli } {
+file delete [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$version_number-Dev $delfile]
+        }
+foreach delfile { gentheme.tcl gentab.tcl gencnv.tcl gentccmn.tcl gentc.tcl genmetrics.tcl gened.tcl geninit.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl genmetricscli.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genstep.tcl } {
+file delete [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$version_number-Dev src generic $delfile ]
+	}
+    Log "Rename hammerdb Web Service startup file [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ] to main.tcl"
+    FileRename [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev hammerdbws ] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev main.tcl ]
+    SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev lib libtcl* ]] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ]
+    file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev lib libtcl* ]] 
+    set tcllibname {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev libtcl* ]] 
+    Log "Extract $tcllibname into top level directory"
+    exec -ignorestderr {*}$zipProg x $tcllibname -y -bd -o[ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ]
+    file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev lib $tcllibname ]] 
+    set tklibname {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev lib libtk* ]] 
+    file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev lib $tklibname ]] 
+    set tclsname {*}[ glob [ file join [file nativename [GetOutputInstDir]] TclS bin tclsh9* ]] 
+    Log "Building Web Service Single File Executable with $tclsname and password $password"
+    set buildfile [open  [ file join [file nativename [GetOutputDistDir]] SFEW buildimage.tcl ] w ]    
+    puts $buildfile "zipfs mkimg [ file join [file nativename [GetOutputDistDir]] SFEW hammerdbws.exe ] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ] $password; exit"
+    close $buildfile
+    exec {*}$tclsname [ file join [file nativename [GetOutputDistDir]] SFEW buildimage.tcl ]
+    file delete [ file join [file nativename [GetOutputDistDir]] SFEW buildimage.tcl ]
+    DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ]
+    Log "Single File Executable Web Service Created"
+    Log "Creating Single File Executable Production Build"
+file mkdir [ file join [file nativename [GetOutputDistDir]] SFEP ]
+SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEP ]
+    Log "Extracting Development Build into Production Build Directory"
+TarGunzip [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEP ]
+file delete -force [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev-Win.tar.gz ]
+    Log "Remove files not needed for Single File Executable Web Service in [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]"
+foreach deldir { bin lib include images modules src } {
+DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev $deldir ]
+	}
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev *.bat]]
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev C*.md]]
+foreach delfile { ChangeLog hammerdb hammerdbcli hammerdbws } {
+file delete [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev $delfile]
+        }
+    SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEG hammerdb.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
+    SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEC hammerdbcli.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
+    SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEW hammerdbws.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
+    FileRename [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number ]
+    Log "Creating Production Distribution tar.gz in [GetOutputDistDir]"
+TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number.tar.gz ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number ]
+foreach SFEDIR { SFEC SFEP SFEG SFEC SFEW } {
+DirDelete  [ file join [file nativename [GetOutputDistDir]] $SFEDIR ]
+	}
+    Log "Production Build Created HammerDB-$version_number.tar.gz"
 }
