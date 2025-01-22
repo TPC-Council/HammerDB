@@ -242,6 +242,7 @@ namespace eval BawtZip {
     namespace export GetZipProg
     namespace export Unzip
     namespace export TarGzip
+    namespace export TarGunzip
     namespace export Bootstrap
 
     # Code for _Vfs* Zip procedures taken from http://wiki.tcl-lang.org/36689
@@ -376,6 +377,18 @@ namespace eval BawtZip {
         set cwd [pwd]
         cd $rootDir
         exec tar czf $tarFile [file tail $dir]
+        cd $cwd
+    }
+
+    proc TarGunzip { tarFile dir } {
+        Log "TarGunzip" 2
+        Log "Destination directory: $dir"     4 false
+        Log "Tar file        : $tarFile" 4 false
+        set DestDir $dir
+        set cwd [pwd]
+        cd $DestDir
+        Log "Extracting Tar [ file tail $tarFile ] into $DestDir"
+        exec tar xzf [ file tail $tarFile  ]
         cd $cwd
     }
 
@@ -1312,6 +1325,7 @@ namespace eval BawtBuild {
     namespace export TeaConfig
     namespace export NeedDll2Lib Dll2Lib
     namespace export DosRun
+    namespace export GetRandomPassword
 
     variable sBuildStages
     array set sBuildStages {
@@ -3756,6 +3770,22 @@ namespace eval BawtBuild {
         Log "Status: $status" 4 false
         WriteBuildLog $libName true $result
     }
+
+proc  GetRandomPassword {length} {
+        variable _set {shW4UMe832TpaSylIdfzxbrNki9A7Q5PmZ0XDuYVg1KEGwLcJtjRCF6OqovBHn};
+        variable _password {};
+        set _index [pid];
+
+        for {set _char 1} {$_char <= $length} {incr _char} {
+                incr _index [lindex [time {
+                        while {$_index >= [string length $_set]} {
+                                incr _index -[string length $_set];
+                        }
+                        for {set _count $_index} {$_count <= [string length $_set]+[string index [clock microseconds] end]} {incr _count} {}
+                        set _password $_password[string index $_set $_index]; }] 0]
+        }
+        return $_password;
+        }
 }
 
 namespace eval BawtMain {
