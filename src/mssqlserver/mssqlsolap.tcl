@@ -1291,7 +1291,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20

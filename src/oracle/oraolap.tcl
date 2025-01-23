@@ -761,7 +761,7 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20
