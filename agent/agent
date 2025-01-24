@@ -51,6 +51,7 @@ exit
 	}
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add "../$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
 #Enable report for more than 122 CPUs
@@ -235,8 +236,14 @@ puts "Failed $b"
 puts "connection established"
                 }
 }
-if $iswin {
-    set fin [open "| mpstat.bat" r]
+if {$iswin} {
+    if {[file exists "mpstat.bat"]} {
+        set fin [open "| mpstat.bat" r]
+    } elseif {[file exists "mpstat.exe"]} {
+        set fin [open "| mpstat.exe" r]
+    } else {
+        puts "Neither mpstat.bat nor mpstat.exe were found."
+    }
     } else {
     set fin [open "|mpstat -P ALL 2" r]
 	}

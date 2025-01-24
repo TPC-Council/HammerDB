@@ -33,6 +33,7 @@ tclsh90 %0 %*
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA  02111-1307, USA.
 ######################################################################   
+lappend auto_path "[zipfs root]app/lib"
 package require twapi
 set hostname [twapi::get_computer_name]
 set osversion [lindex [twapi::get_os_version] 0 ]

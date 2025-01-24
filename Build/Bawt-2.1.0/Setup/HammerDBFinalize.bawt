@@ -92,11 +92,11 @@ TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_numbe
 TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
     }
 #Build Single File Executables
-    set password [ GetRandomPassword 16 ]
 if {![IsWindows]} {
 #Linux
        } else {
 #Windows
+#SFE GUI
     Log "Creating Single File Executable GUI Directory"
 file mkdir [ file join [file nativename [GetOutputDistDir]] SFEG ]
 SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEG ]
@@ -130,7 +130,11 @@ file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEG  Hamm
     exec -ignorestderr {*}$zipProg x $tklibname -y -bd -o[ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ]
     file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev lib $tklibname ]] 
     set tksname {*}[ glob [ file join [file nativename [GetOutputInstDir]] TkS bin wish9* ]] 
+    set passwordfile [open  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Prod-Passwds.txt ] w ]
+    puts $passwordfile "Single File Executables protected with following passwords:"
+    set password [ GetRandomPassword 16 ]
     Log "Building GUI Single File Executable with $tksname and password $password"
+    puts $passwordfile "GUI Single File Executable password = $password"
     set buildfile [open  [ file join [file nativename [GetOutputDistDir]] SFEG buildimage.tcl ] w ]    
     puts $buildfile "zipfs mkimg [ file join [file nativename [GetOutputDistDir]] SFEG hammerdb.exe ] [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ] $password; exit"
     close $buildfile
@@ -138,6 +142,7 @@ file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEG  Hamm
     file delete [ file join [file nativename [GetOutputDistDir]] SFEG buildimage.tcl ]
     DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ]
     Log "Single File Executable GUI Created"
+#SFE CLI
     Log "Creating Single File Executable CLI Directory"
 file mkdir [ file join [file nativename [GetOutputDistDir]] SFEC ]
 SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEC ]
@@ -168,7 +173,9 @@ file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEC  Hamm
     set tklibname {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEC HammerDB-$version_number-Dev lib libtk* ]] 
     file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev lib $tklibname ]] 
     set tclsname {*}[ glob [ file join [file nativename [GetOutputInstDir]] TclS bin tclsh9* ]] 
+    set password [ GetRandomPassword 16 ]
     Log "Building CLI Single File Executable with $tclsname and password $password"
+    puts $passwordfile "CLI Single File Executable password = $password"
     set buildfile [open  [ file join [file nativename [GetOutputDistDir]] SFEC buildimage.tcl ] w ]    
     puts $buildfile "zipfs mkimg [ file join [file nativename [GetOutputDistDir]] SFEC hammerdbcli.exe ] [ file join [file nativename [GetOutputDistDir]] SFEC HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEC HammerDB-$version_number-Dev ] $password; exit"
     close $buildfile
@@ -176,6 +183,7 @@ file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEC  Hamm
     file delete [ file join [file nativename [GetOutputDistDir]] SFEC buildimage.tcl ]
     DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEC HammerDB-$version_number-Dev ]
     Log "Single File Executable CLI Created"
+#SFE Web Service
     Log "Creating Single File Executable Web Service Directory"
 file mkdir [ file join [file nativename [GetOutputDistDir]] SFEW ]
 SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEW ]
@@ -205,7 +213,9 @@ file delete [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$ver
     set tklibname {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev lib libtk* ]] 
     file delete {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev lib $tklibname ]] 
     set tclsname {*}[ glob [ file join [file nativename [GetOutputInstDir]] TclS bin tclsh9* ]] 
+    set password [ GetRandomPassword 16 ]
     Log "Building Web Service Single File Executable with $tclsname and password $password"
+    puts $passwordfile "Web Service Single File Executable password = $password"
     set buildfile [open  [ file join [file nativename [GetOutputDistDir]] SFEW buildimage.tcl ] w ]    
     puts $buildfile "zipfs mkimg [ file join [file nativename [GetOutputDistDir]] SFEW hammerdbws.exe ] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ] $password; exit"
     close $buildfile
@@ -213,6 +223,24 @@ file delete [ file join [file nativename [GetOutputDistDir]] SFEW  HammerDB-$ver
     file delete [ file join [file nativename [GetOutputDistDir]] SFEW buildimage.tcl ]
     DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEW HammerDB-$version_number-Dev ]
     Log "Single File Executable Web Service Created"
+#SFE Agent
+    Log "Creating Single File Agent Directory"
+file mkdir [ file join [file nativename [GetOutputDistDir]] SFEA ]
+SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEA ]
+    Log "Extracting Development Build into Single File Agent Directory"
+TarGunzip [ file join [file nativename [GetOutputDistDir]] SFEA HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEA ]
+file delete -force [ file join [file nativename [GetOutputDistDir]] SFEA HammerDB-$version_number-Dev-Win.tar.gz ]
+    Log "Remove files not needed for Single File Executable Agent in [ file join [file nativename [GetOutputDistDir]] SFEA HammerDB-$version_number-Dev ]"
+foreach deldir { bin include modules scripts src } {
+DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEA HammerDB-$version_number-Dev $deldir ]
+	}
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEA  HammerDB-$version_number-Dev *.bat]]
+file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEA  HammerDB-$version_number-Dev *.md]]
+foreach delfile { ChangeLog hammerdb hammerdbcli } {
+file delete [ file join [file nativename [GetOutputDistDir]] SFEA  HammerDB-$version_number-Dev $delfile]
+        }
+    Log "Rename Agent startup file [ file join [file nativename [GetOutputDistDir]] SFEA HammerDB-$version_number-Dev agent mpstat.bat ] to main.tcl"
+#Package Prod
     Log "Creating Single File Executable Production Build"
 file mkdir [ file join [file nativename [GetOutputDistDir]] SFEP ]
 SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEP ]
@@ -231,11 +259,12 @@ file delete [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$vers
     SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEG hammerdb.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
     SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEC hammerdbcli.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
     SingleFileCopy [ file join [file nativename [GetOutputDistDir]] SFEW hammerdbws.exe ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]
-    FileRename [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number ]
+    FileRename [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Prod ]
     Log "Creating Production Distribution tar.gz in [GetOutputDistDir]"
-TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number.tar.gz ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number ]
-foreach SFEDIR { SFEC SFEP SFEG SFEC SFEW } {
+TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Prod.tar.gz ] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Prod ]
+foreach SFEDIR { SFEC SFEP SFEG SFEC SFEW SFEA } {
 DirDelete  [ file join [file nativename [GetOutputDistDir]] $SFEDIR ]
 	}
+    close $passwordfile
     Log "Production Build Created HammerDB-$version_number.tar.gz"
 }
