@@ -3695,11 +3695,7 @@ proc wsstart {} {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
     }
-    if {[string match windows $::tcl_platform(platform)]} {
-        exec [ auto_execok ./hammerdbws.bat ] gui &
-    } else {
-        exec [ auto_execok ./hammerdbws ] gui &
-    }
+    exec [ auto_execok ./hammerdbws ] gui &
     after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
 }
 

@@ -369,6 +369,7 @@ proc agstart { agent_id start_display } {
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
 package require socktest
@@ -379,7 +380,12 @@ tk_messageBox -message "Metrics Agent already running on id: $agent_id"
 return
 } else {
   if {$tcl_platform(platform)=="windows"} {
-    if {[catch {exec cmd /c "cd /d agent && agent.bat $agent_id" &} message ]} {
+	   if {[file exists "agent/agent.bat"]} {
+	       set agentfile "agent.bat"
+	   } else {
+	       set agentfile "agent"
+           }
+    if {[catch {exec cmd /c "cd /d agent && $agentfile $agent_id" &} message ]} {
 	puts "Error starting metrics agent: $message"
     	}
   } else {
