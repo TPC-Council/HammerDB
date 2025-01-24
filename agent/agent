@@ -15,7 +15,7 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2024 Steve Shaw
+# Copyright (C) 2003-2025 Steve Shaw
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ exit
           } 
 	}
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add ::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
