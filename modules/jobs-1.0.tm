@@ -982,14 +982,14 @@ namespace eval jobs {
         set db [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$job} ]]
         set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$job} ]]]
         set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$job} ]]
-        set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=0} ]]
-        if { [ string match "*Ready to create*" $output ] } {
+        set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
+        if { [ string match -nocase "*creating*" $output ] } {
           set jobtype "Schema Build"
-        } elseif { [ string match "*Do you want to delete*" $output ] } {
+        } elseif { [ string match -nocase "*delete*" $output ] } {
           set jobtype "Schema Delete"
-        } elseif { [ string match "*Do you want to check*" $output ] } {
+        } elseif { [ string match -nocase "*checking*" $output ] } {
           set jobtype "Schema Check"
-        } else {
+        } elseif { [ string match -nocase "*rampup*" $output ] } {
           set jobtype "Benchmark Run"
           set jobresult [ getjobresult $job 1 ]
           if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
@@ -1008,7 +1008,9 @@ namespace eval jobs {
            set geo [ format "%.2f" [ lindex $numbers 1]]
 		}
             }
-        }
+        } else {
+          set jobtype "--"
+	}
         set statusimg ""
         if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $output ] } {
           if { [ string match "*FINISHED FAILED*" $output ] } {
