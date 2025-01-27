@@ -982,14 +982,15 @@ namespace eval jobs {
         set db [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$job} ]]
         set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$job} ]]]
         set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$job} ]]
-        set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
-        if { [ string match -nocase "*creating*" $output ] } {
+        set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=0} ]]
+        set output1 [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
+        if { [ string match -nocase "*creating*" $output1 ] } {
           set jobtype "Schema Build"
-        } elseif { [ string match -nocase "*delete*" $output ] } {
+        } elseif { [ string match -nocase "*delete*" $output1 ] } {
           set jobtype "Schema Delete"
-        } elseif { [ string match -nocase "*checking*" $output ] } {
+        } elseif { [ string match -nocase "*checking*" $output1 ] } {
           set jobtype "Schema Check"
-        } elseif { [ string match -nocase "*rampup*" $output ] } {
+        } elseif { [ string match -nocase "*rampup*" $output1 ] } {
           set jobtype "Benchmark Run"
           set jobresult [ getjobresult $job 1 ]
           if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
