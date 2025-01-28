@@ -11,6 +11,7 @@ Setup expect             expect-5.45.4.1.7z             expect.bawt
 Setup tkpath             tkpath-0.3.3.1.7z              tkpath.bawt
 Setup tkblt              tkblt-3.2.24.7z                tkblt.bawt
 Setup tclpy              tclpy-0.4.1.7z                 tclpy.bawt
+Setup tclpyS             tclpyS-0.4.1.7z                tclpyS.bawt
 # Compiled Tcl Database interface packages.
 Setup oratcl             oratcl-4.6.1.7z                oratcl.bawt	
 Setup mariatcl           mariatcl-0.1.1.7z            mariatcl.bawt	

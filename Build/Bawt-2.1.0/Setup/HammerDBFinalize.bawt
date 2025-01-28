@@ -85,9 +85,11 @@ MultiFileCopy [ file join [GetOutputDevDir] HammerDB lib ] [ file join [file nat
 }
 FileRename [ file join [file nativename [GetOutputDistDir]] HammerDB ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
 if {![IsWindows]} {
+#Linux
     Log "Creating Development Distribution tar.gz in [GetOutputDistDir]"
 TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Linux.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
 	} else {
+#Windows
     Log "Creating Development Distribution tar.gz in [GetOutputDistDir]"
 TarGzip [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev-Win.tar.gz ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
     }
@@ -114,7 +116,6 @@ file delete [ file join [file nativename [GetOutputDistDir]] SFEG  HammerDB-$ver
         }
 file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEG  HammerDB-$version_number-Dev src generic *cli.tcl]]
 file delete {*}[glob [ file join [file nativename [GetOutputDistDir]] SFEG  HammerDB-$version_number-Dev src generic *ws.tcl]]
-    }
     Log "Rename hammerdb startup file [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ] to main.tcl"
     FileRename [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev hammerdb ] [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev main.tcl ]
     SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev lib libtcl* ]] [ file join [file nativename [GetOutputDistDir]] SFEG HammerDB-$version_number-Dev ]
@@ -309,4 +310,5 @@ DirDelete  [ file join [file nativename [GetOutputDistDir]] $SFEDIR ]
 DirDelete  [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
     close $passwordfile
     Log "Production Build Created [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Prod.tar.gz ]"
+    }
 }
