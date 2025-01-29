@@ -83,7 +83,7 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
   append modulelist { Thread msgcat xml comm tclreadline task http reformat_tcl sqlite3 huddle jobs ticklecharts }
   for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {
     set m [lindex $modulelist $modcount]
-    set loadtext $m
+    set loadtext [ file rootname $m ]
     if [catch { package require $m }] {
       puts stderr "While loading module\
                         \"$m\"...\n$errorInfo"
@@ -91,11 +91,17 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
     }
   }
 
+ if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
+	 set loaddirname "[zipfs root]/app"
+    } else {
+	 set loaddirname $UserDefaultDir
+  }
+
   append loadlist { genvu.tcl genxml.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl genmetricscli.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl }
   for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
-    set loadtext $f
-    if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
+    set loadtext [ file rootname $f ]
+    if [catch {source [ file join $loaddirname src generic $f ]}] {
       puts stderr "While loading component file\
                         \"$f\"...\n$errorInfo"
       exit 1
@@ -105,10 +111,10 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
   for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccount } {
     set f [lindex $dbsrclist $dbsrccount]
     set loadtext $f
-    if [catch {source [ file join $UserDefaultDir src $f ]}] {
+    if [catch {source [ file join $loaddirname src $f ]}] {
       puts stderr "Error:loading database source files/$f"
     }
-}
+  }
 
 init_job_tables
 }
@@ -257,17 +263,25 @@ sys.ps1 = '>>>'"
     exit
   } else {
     #Linux
+    lappend auto_path "[zipfs root]app/lib"
+    if { ![ info exists ::env(PYTHONPATH) ] } {
+    set syspath "./python/tclpy0.4.1"
+    set ::env(LD_LIBRARY_PATH) "./python/tclpy0.4.1:$env(LD_LIBRARY_PATH)"
+    set zippedfs true
+	} else {
     set syspath [ string trim $env(PYTHONPATH) ":*" ]
+    set zippedfs false
     if { ![ file isdirectory $syspath ] } {
       puts "Error:Cannot find HammerDB Python libraries $env(PYTHONPATH) is not a directory"
       exit
+    }
     }
     if {[catch {package require Expect} ]} { 
       puts "Error:Failed to load Expect package to run Python" 
       exit
     } 
     #Check python library versions are compatible
-    if {[catch {package require tclpy} message]} { 
+    if {[catch {package require tclpys} message]} {
       regexp {libpython([0-9]+.[0-9]+).so} $message matched pyver 
       if { [ info exists pyver ] && $pyver != [pythonVersion] } {
         puts "Error: Python version $pyver required, version [pythonVersion] is installed" 
@@ -277,7 +291,7 @@ sys.ps1 = '>>>'"
         exit
       }
     } else {
-      catch {package forget tclpy}
+      catch {package forget tclpys}
     }
     #Remove tclreadline module from common initialisation in Python
     regsub -all -line {tclreadline} $cli_common_init {} cli_common_init
@@ -293,6 +307,14 @@ sys.ps1 = '>>>'"
     expect ">>>"
     send "import tclpy\x0D"
     expect ">>>"
+    if { $zippedfs } {
+    send "tclpy.eval('zipfs mount hammerdbcli [zipfs root ]/app')\x0D"
+    expect ">>>"
+    send "tclpy.eval(':tcl::tm::path add [zipfs root]app/modules')\x0D"
+    expect ">>>"
+    send "tclpy.eval('lappend auto_path [zipfs root]app/lib')\x0D"
+    expect ">>>"
+    }
     send "tclpy.eval('global hdb_version')\x0D"
     expect ">>>"
     send "tclpy.eval('set hdb_version $hdb_version')\x0D"
