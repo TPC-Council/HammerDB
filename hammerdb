@@ -215,7 +215,7 @@ set loadtext "Loading generic source"
 after 100
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
-		set loadtext $f
+		set loadtext [ file rootname $f ]
 	if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
                 puts stderr "While loading component file\
                         \"$f\"...\n$errorInfo"
@@ -227,7 +227,7 @@ set loadtext "Loading database source"
 after 100
 for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccount } {
     set f [lindex $dbsrclist $dbsrccount]
-		set loadtext $f
+		set loadtext [ file rootname $f ]
 	if [catch {source [ file join $UserDefaultDir src $f ]}] {
                 puts stderr "Error loading database source files/$f"
         }
