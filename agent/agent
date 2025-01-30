@@ -15,7 +15,8 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2025 Steve Shaw
+# Copyright (C) Steve Shaw
+# Hosted by the TPC-Council
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or

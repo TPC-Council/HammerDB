@@ -1944,14 +1944,15 @@ proc vuser_options {} {
 proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2025
-Steve Shaw\n"
+\251 Steve Shaw
+Hosted by the TPC-Council 2019-2025\n"
 }
 
 proc license { } {
     tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
-Copyright (C) 2003-2025 Steve Shaw
+\251 Steve Shaw
+Hosted by the TPC-Council 2019-2025
 
 This program is free software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation,
