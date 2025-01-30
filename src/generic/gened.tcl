@@ -1944,8 +1944,8 @@ proc vuser_options {} {
 proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
-\251 Steve Shaw
-Hosted by the TPC-Council 2019-2025\n"
+Copyright \251 Steve Shaw
+Hosted by tpc.org 2019-2025\n"
 }
 
 proc license { } {
