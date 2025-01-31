@@ -290,13 +290,22 @@ sys.ps1 = '>>>'"
   } else {
     #Linux
     lappend auto_path "[zipfs root]app/lib"
+    if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
+         set zippedfs true
+         lappend auto_path "[zipfs root]app/lib"
+    } else {
+	 set zippedfs false
+    }
     if { ![ info exists ::env(PYTHONPATH) ] } {
     set syspath "./pylib/tclpy0.4.1"
+    set ::env(PYTHONPATH) "./pylib/tclpy0.4.1:/usr/lib/x86_64-linux-gnu"
+    if { ![ info exists ::env(LD_LIBRARY_PATH) ] } {
+    set ::env(LD_LIBRARY_PATH) "./pylib/tclpy0.4.1"
+       } else {
     set ::env(LD_LIBRARY_PATH) "./pylib/tclpy0.4.1:$env(LD_LIBRARY_PATH)"
-    set zippedfs true
+    }
 	} else {
     set syspath [ string trim $env(PYTHONPATH) ":*" ]
-    set zippedfs false
     if { ![ file isdirectory $syspath ] } {
       puts "Error:Cannot find HammerDB Python libraries $env(PYTHONPATH) is not a directory"
       exit
