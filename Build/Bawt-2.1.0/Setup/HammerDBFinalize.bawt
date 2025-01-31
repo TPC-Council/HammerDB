@@ -267,7 +267,7 @@ file mkdir [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$versi
 MultiFileCopy {*}[ glob [ file join [GetOutputDistDir] SFEP HammerDB-$version_number-Dev lib tclpy0* ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ] "*"  true
 file delete [ file join [file nativename [GetOutputDistDir]] SFEP  HammerDB-$version_number-Dev pylib $pylibname pkgIndex.tcl ]
     SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev lib libtcl9\.*.so ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
-    Log "Remove files not needed for Single File Executable Web Service in [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]"
+    Log "Remove files not needed for Production Build in [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]"
 foreach deldir { bin lib include images modules src } {
 DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev $deldir ]
 	}
@@ -479,7 +479,16 @@ SingleFileCopy  [ file join [file nativename [GetOutputDistDir]] HammerDB-$versi
     Log "Extracting Development Build into Production Build Directory"
 TarGunzip [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev-Win.tar.gz ]  [ file join [file nativename [GetOutputDistDir]] SFEP ]
 file delete -force [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev-Win.tar.gz ]
-    Log "Remove files not needed for Single File Executable Web Service in [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]"
+    set pylibname [ file tail {*}[ glob [ file join [GetOutputDistDir] SFEP HammerDB-$version_number-Dev lib tclpy0* ]]]
+    Log "Create Python Directory for Single File Executable CLI [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]"
+file mkdir [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
+MultiFileCopy {*}[ glob [ file join [GetOutputDistDir] SFEP HammerDB-$version_number-Dev lib tclpy0* ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ] "*"  true
+file delete [ file join [file nativename [GetOutputDistDir]] SFEP  HammerDB-$version_number-Dev pylib $pylibname pkgIndex.tcl ]
+    SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev bin tcl90*.dll ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
+    SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev bin libtommath.dll ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
+    SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev bin zlib1.dll ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
+    SingleFileCopy {*}[ glob [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev bin vcruntime140.dll ]] [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev pylib $pylibname ]
+    Log "Remove files not needed for Production Build in [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev ]"
 foreach deldir { bin lib include images modules src } {
 DirDelete  [ file join [file nativename [GetOutputDistDir]] SFEP HammerDB-$version_number-Dev $deldir ]
 	}
