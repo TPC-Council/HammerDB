@@ -266,8 +266,8 @@ sys.ps1 = '>>>'"
     #Linux
     lappend auto_path "[zipfs root]app/lib"
     if { ![ info exists ::env(PYTHONPATH) ] } {
-    set syspath "./python/tclpy0.4.1"
-    set ::env(LD_LIBRARY_PATH) "./python/tclpy0.4.1:$env(LD_LIBRARY_PATH)"
+    set syspath "./pylib/tclpy0.4.1"
+    set ::env(LD_LIBRARY_PATH) "./pylib/tclpy0.4.1:$env(LD_LIBRARY_PATH)"
     set zippedfs true
 	} else {
     set syspath [ string trim $env(PYTHONPATH) ":*" ]
