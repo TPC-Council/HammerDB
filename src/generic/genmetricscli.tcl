@@ -74,7 +74,12 @@ proc metstart {} {
                 } else {
                 putscli "Starting Local Metrics Agent on [ info hostname ]"
                 if {$tcl_platform(platform)=="windows"} {
-                if {[catch {exec cmd /c "cd /d agent && agent.bat $agent_id" &} message ]} {
+                    if {[file exists "agent/agent.bat"]} {
+                        set agentfile "agent.bat"
+                        } else {
+                        set agentfile "agent"
+                    }
+                if {[catch {exec cmd /c "cd /d agent && $agentfile $agent_id" &} message ]} {
 	        putscli "Error starting metrics agent: $message"
     	        }
                 } else {
