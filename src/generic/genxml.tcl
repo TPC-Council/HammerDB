@@ -1,4 +1,5 @@
 proc get_xml_data {} {
+#proc get_xml_data not called when using SQLite
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
     set dirname [ file dirname [ file normalize $argv0 ]]
     if { $dirname eq "[zipfs root]app" } {
