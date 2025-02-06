@@ -367,8 +367,13 @@ proc agstart { agent_id start_display } {
 #Will only be called to start the agent the localhost
 #metrics command is used to start the display to connect to local or remote agent
 global tcl_platform
-set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
+set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+         puts "Error: Cannot find a Valid Executable Directory"
+         return
+     }
+set UserDefaultDir $dirname
+::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
 lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
@@ -380,16 +385,16 @@ tk_messageBox -message "Metrics Agent already running on id: $agent_id"
 return
 } else {
   if {$tcl_platform(platform)=="windows"} {
-	   if {[file exists "agent/agent.bat"]} {
+	   if {[file exists "$dirname/agent/agent.bat"]} {
 	       set agentfile "agent.bat"
 	   } else {
 	       set agentfile "agent"
            }
-    if {[catch {exec cmd /c "cd /d agent && $agentfile $agent_id" &} message ]} {
+    if {[catch {exec cmd /c "cd /d $dirname/agent && $agentfile $agent_id" &} message ]} {
 	puts "Error starting metrics agent: $message"
     	}
   } else {
-	if {[catch {exec sh -c "cd agent && ./agent $agent_id 2>/dev/null" &} message ]} {
+	if {[catch {exec sh -c "cd $dirname/agent && ./agent $agent_id 2>/dev/null" &} message ]} {
 	puts $message
 	}
   }}
