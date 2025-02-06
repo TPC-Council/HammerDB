@@ -1,6 +1,6 @@
 proc find_config_dir {} {
 #Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
-set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]
+ if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]} message ] { set ISConfigDir "" }
 #Running under Python argv0 does not exist and will error if referenced
 if { [ info exists argv0 ] } {
 set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
@@ -25,7 +25,7 @@ return "FNF"
 
 proc find_exec_dir {} {
 #Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
-set ISExecDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ]]
+if [ catch {set ISExecDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ]] message ] { set ISExecDir "" }
 #Running under Python argv0 does not exist and will error if referenced
 if { [ info exists argv0 ] } {
 set AGExecDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]]]

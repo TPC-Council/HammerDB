@@ -27,7 +27,7 @@ proc write_port_file {} {
 
   #Find a Valid steprun XML file
   proc find_step_dir {} {
-  set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]
+  if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]} message ] { set ISConfigDir "" }
   set PWConfigDir [ file join [ pwd ] config ]
   foreach CD { ISConfigDir PWConfigDir } {
           if { [ file isdirectory [ set $CD ]] } {

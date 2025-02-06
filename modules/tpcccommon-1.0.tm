@@ -176,7 +176,7 @@ namespace eval tpcccommon {
   }
   #Find a Valid XML Connect Pool Config Directory,don't look in zipped fs as user needs to edit
   proc find_cpool_dir {} {
-  set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config connectpool ]
+  if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config connectpool ]} message ] { set ISConfigDir "" }
   set PWConfigDir [ file join [ pwd ] config connectpool ]
   foreach CD { ISConfigDir PWConfigDir } {
           if { [ file isdirectory [ set $CD ]] } {
