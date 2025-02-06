@@ -1,3 +1,28 @@
+proc find_config_dir {} {
+#Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
+set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]
+#Running under Python argv0 does not exist and will error if referenced
+if { [ info exists argv0 ] } {
+set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
+        } else {
+set AGConfigDir .
+        }
+set PWConfigDir [ file join [ pwd ] config ]
+if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
+set ZIConfigDir [ file join [zipfs root]/app config ]
+   } else {
+set ZIConfigDir ""
+ }
+foreach CD { ISConfigDir AGConfigDir PWConfigDir ZIConfigDir } {
+        if { [ file isdirectory [ set $CD ]] } {
+        if { [ file exists [ file join [ set $CD ] generic.xml ]] && [ file exists [ file join [ set $CD ] database.xml ]] } {
+             return [ set $CD ]
+        }
+    }
+}
+return "FNF"
+}
+
 proc get_xml_data {} {
 #proc get_xml_data not called when using SQLite
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 

@@ -1,30 +1,5 @@
 global hdb_version
 
-proc find_config_dir {} {
-#Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
-set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]
-#Running under Python argv0 does not exist and will error if referenced
-if { [ info exists argv0 ] } {
-set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
-        } else {
-set AGConfigDir .
-        }
-set PWConfigDir [ file join [ pwd ] config ]
-if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
-set ZIConfigDir [ file join [zipfs root]/app config ]
-   } else {
-set ZIConfigDir ""
- }
-foreach CD { ISConfigDir AGConfigDir PWConfigDir ZIConfigDir } {
-        if { [ file isdirectory [ set $CD ]] } {
-        if { [ file exists [ file join [ set $CD ] generic.xml ]] && [ file exists [ file join [ set $CD ] database.xml ]] } {
-             return [ set $CD ]
-        }
-    }
-}
-return "FNF"
-}
-
 set dirname [ find_config_dir ]
 if { $dirname eq "FNF" } {
         puts "Error: Cannot find a Valid XML Config Directory"
