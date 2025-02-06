@@ -1985,7 +1985,12 @@ proc wsstart {} {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
     }
-    exec [ auto_execok ./hammerdbws ] &
+    set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+        puts "Error: Cannot find a Valid Executable Directory"
+        return
+        }
+    exec [ auto_execok $dirname/hammerdbws ] &
     after 100
 }
 
