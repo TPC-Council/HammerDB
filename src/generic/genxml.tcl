@@ -23,6 +23,31 @@ foreach CD { ISConfigDir AGConfigDir PWConfigDir ZIConfigDir } {
 return "FNF"
 }
 
+proc find_exec_dir {} {
+#Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
+set ISExecDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ]]
+#Running under Python argv0 does not exist and will error if referenced
+if { [ info exists argv0 ] } {
+set AGExecDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]]]
+        } else {
+set AGExecDir .
+        }
+set PWExecDir [ pwd ]
+if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" && $tcl_platform(platform) == "windows" } {
+	set ftail ".exe"
+   } else {
+	set ftail ""
+   }
+foreach CD { ISExecDir AGExecDir PWExecDir } {
+        if { [ file isdirectory [ set $CD ]] } {
+        if { [ file exists [ file join [ set $CD ] hammerdb$ftail ]] && [ file exists [ file join [ set $CD ] hammerdbcli$ftail ]] && [ file exists [ file join [ set $CD ] hammerdbws$ftail ]] } {
+             return [ set $CD ]
+        }
+    }
+}
+return "FNF"
+}
+
 proc get_xml_data {} {
 #proc get_xml_data not called when using SQLite
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
