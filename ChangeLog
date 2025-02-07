@@ -1161,3 +1161,25 @@ Fixes GUI inline edit errors for MySQL and CLI for MySQL, MariaDB, Oracle, Db2 #
 Fix issues with PostgreSQL inline edit #723 (#720)
 Fix SQL Server database setting in GUI #722 (#721)
 Consolidate output for use all warehouses option #717 (#715)
+
+---------------------------------------------------------------------
+
+Version 5.0 March 2025
+
+Pull Requests & Issues
+
+Free thread shared variables after xtprof run #766 (#765)
+ALTER DATABASE only if necessary enhancement #764
+Add keepalive to datagenrun bug #759(#758)
+Add awbreezedark theme option to GUI enhancement #754 (#751)
+MSSQL TPCH Load does not work for Single User #752
+Add indexes to orders table for SQL TPROC-H partitioned row store #750 (#749)
+Replace bcp executable with bulk insert for SQL Server builds #748 (#594)
+
+Updated Binaries and Packages to:
+
+Tcl9.0.1 TclS9.0.1 Tk9.0.1 TkS 9.0.1 awthemes 10.4.0 db2tcl 2.0.1.1
+expect 5.45.4.1 mariatcl 0.1.1 mysqltcl 3.052.1 oratcl 4.6.1 pgtcl 2.1.1.1
+tclpy 0.4.1 tclpyS 0.4.1 ticklecharts 3.1 tkblt 3.2.24 tkpath 0.3.3.1 twapi 5.0.7
+
+for Linux x86-64 and Windows x64
