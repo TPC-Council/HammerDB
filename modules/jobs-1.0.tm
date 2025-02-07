@@ -990,7 +990,7 @@ namespace eval jobs {
           set jobtype "Schema Delete"
         } elseif { [ string match -nocase "*checking*" $output1 ] } {
           set jobtype "Schema Check"
-        } elseif { [ string match -nocase "*rampup*" $output1 ] } {
+        } elseif { [ string match -nocase "*rampup*" $output1 ] || [ string match -nocase "*scale\ factor*" $output1 ]} {
           set jobtype "Benchmark Run"
           set jobresult [ getjobresult $job 1 ]
           if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
