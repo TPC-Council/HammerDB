@@ -40,6 +40,15 @@ puts "Type \"help\" for a list of commands"
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
 lappend auto_path "[zipfs root]app/lib"
+set hdb_path [ zipfs mount ]
+if { [ lindex $hdb_path 0 ] eq "[ zipfs root ]app" } {
+if [ catch {set cd_path [ file normalize [ file dirname [ lindex $hdb_path 1 ]]]} message ] {
+set cd_path [ pwd ]
+   }
+if { [ file isdirectory $cd_path ] } {
+catch {cd $cd_path}
+   }
+}
 
 append modulelist { Thread msgcat sqlite3 xml comm tclreadline task wapp rest http huddle jobs ticklecharts }
 for { set modcount 0 } { $modcount < [llength $modulelist] } { incr modcount } {

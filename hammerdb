@@ -34,6 +34,16 @@ set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
 lappend auto_path "[zipfs root]app/lib"
 
+set hdb_path [ zipfs mount ]
+if { [ lindex $hdb_path 0 ] eq "[ zipfs root ]app" } {
+if [ catch {set cd_path [ file normalize [ file dirname [ lindex $hdb_path 1 ]]]} message ] {
+set cd_path [ pwd ]
+   }
+if { [ file isdirectory $cd_path ] } {
+catch {cd $cd_path}
+   }
+}
+
 namespace eval autostart {
     set autostartap "false"
     if {$::argc == 0} { ; } else {
