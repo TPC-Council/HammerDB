@@ -454,8 +454,8 @@ if { $dirname eq "FNF" } {
         set theme "dark"
         set tmpgendict {}
 } else {
-if { [ file exists $dirname/config/generic.xml ] } {
-set tmpgendict [ ::XML::To_Dict $dirname/config/generic.xml ]
+if { [ file exists $dirname/generic.xml ] } {
+set tmpgendict [ ::XML::To_Dict $dirname/generic.xml ]
 	} else {
 set tmpgendict {}
 	}
@@ -479,9 +479,9 @@ if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
         if { $theme ni {awbreeze awbreezedark} } {
             #Options for Windows and Linux in case default is changed in future awtheme
             if {$tcl_platform(platform) == "windows"} {
-                set theme "awbreeze"
+                set theme "awbreezedark"
             } else {
-                set theme "awbreeze"
+                set theme "awbreezedark"
             }
         }
         if { [ dict exists $tmpgendict theme pixelsperpoint ] } {
