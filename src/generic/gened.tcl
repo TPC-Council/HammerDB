@@ -1363,14 +1363,14 @@ proc setctexthighlight {w} {
     if { [ string match "*dark*" $::ttk::currentTheme ] } {
     set colour(vars) #528723
     set colour(cmds) #468CDE
-    set colour(functions) magenta
+    set colour(functions) #edb926
     set colour(brackets) gray50
     set colour(comments) gray50
     set colour(strings) #E94F64
     } else {
     set colour(vars) green
     set colour(cmds) blue
-    set colour(functions) magenta
+    set colour(functions) #edb926
     set colour(brackets) gray50
     set colour(comments) gray10
     set colour(strings) red
