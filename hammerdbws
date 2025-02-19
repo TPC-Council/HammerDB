@@ -8,7 +8,7 @@ export PATH="./bin:$PATH"
 exec ./bin/tclsh9.0 "$0" ${1+"$@"}
 ########################################################################
 # HammerDB
-# Copyright (C) Steve Shaw
+# Copyright (C) HammerDB Ltd
 # Hosted by the TPC-Council
 # Author contact information at: http://www.hammerdb.com
 #
@@ -34,7 +34,7 @@ global hdb_version
 set hdb_version "v5.0"
 	if { $argv0 != "gui" } {
 puts "HammerDB Web Service $hdb_version"
-puts "Copyright \251 Steve Shaw hosted by tpc.org 2019-2025"
+puts "Copyright \251 HammerDB Ltd hosted by tpc.org 2019-2025"
 puts "Type \"help\" for a list of commands"
 	}
 set UserDefaultDir [ file dirname [ info script ] ]

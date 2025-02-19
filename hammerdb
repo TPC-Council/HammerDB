@@ -10,7 +10,7 @@ exec wish9.0 "$0" ${1+"$@"}
 exit
 ########################################################################
 # HammerDB
-# Copyright (C) Steve Shaw
+# Copyright (C) HammerDB Ltd
 # Hosted by the TPC-Council
 # Author contact information at: http://www.hammerdb.com
 #
