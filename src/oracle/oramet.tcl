@@ -2078,7 +2078,7 @@ namespace eval oramet {
 
 
     proc connect { } {
-        global public
+	global public dbmon_threadID
         global oramsg
         global  env
         set cur_proc connect 
