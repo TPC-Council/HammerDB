@@ -37,6 +37,29 @@
             <ino_m>16</ino_m>
         </index_creation_with_options>
     </hnsw>
+    <hnsw_bq>
+        <name>HNSW - BQ</name>
+        <desc>Hierarchical Navigable Small World (Binary Quantization)</desc>
+        <session_params>
+            <ss_hnsw.ef_search>100</ss_hnsw.ef_search>
+        </session_params>
+        <search_params>
+            <se_k>10</se_k>
+            <se_distance>cosine</se_distance>
+            <bq_rerank_distance>hamming</bq_rerank_distance>
+            <bq_quantized_fetch_limit>100</bq_quantized_fetch_limit>
+            <bq_dim>1536</bq_dim>
+            <bq_reranking>true</bq_reranking>
+        </search_params>
+        <index_params>
+            <in_max_parallel_workers>4</in_max_parallel_workers>
+            <in_maintenance_work_mem>8GB</in_maintenance_work_mem>
+        </index_params>
+        <index_creation_with_options>
+            <ino_ef_construction>200</ino_ef_construction>
+            <ino_m>16</ino_m>
+        </index_creation_with_options>
+    </hnsw_bq>
     <pgdiskann>
         <name>PGDiskAnn</name>
         <desc>DiskAnn</desc>
@@ -57,7 +80,8 @@
         </index_creation_with_options>
     </pgdiskann>
     <mixed_workload>
-        <mw_oltp_vector_vu_ratio>0.8</mw_oltp_vector_vu_ratio>
+        <mw_vector_vu>1</mw_vector_vu>
+        <mw_oltp_vu>1</mw_oltp_vu>
         <vector_table_name>public.pg_vector_collection</vector_table_name>
     </mixed_workload>
 </vectordb>

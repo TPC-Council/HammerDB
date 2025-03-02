@@ -1,0 +1,46 @@
+[
+    {
+        "description": "Postgresql Version",
+        "query": "SELECT version();"
+    },
+    {
+        "description": "Postgresql AutoVacuum Setting",
+        "query": "SHOW autovacuum;"
+    },
+    {
+        "description": "List of extensions installed on postgersql server",
+        "query": "SELECT extname AS name, extversion AS version FROM pg_extension ORDER BY extname;"
+    },
+    {
+        "description": "Hit Ratio, Reads, Writes from pg_stat_io",
+        "query": "SELECT (hits / (reads + hits)::float) AS hit_ratio, reads, writes FROM pg_stat_io WHERE backend_type = 'client backend' AND context = 'normal' AND object = 'relation';"
+    },
+    {
+        "description": "Buffer Usage from pg_buffercache",
+        "query": "WITH state AS (SELECT count(*) FILTER (WHERE relfilenode IS NOT NULL) AS used, count(*) FILTER (WHERE relfilenode IS NULL) AS empty, count(*) AS total FROM pg_buffercache) SELECT *, round(used * 1.0 / total * 100, 1) AS percent FROM state;"
+    },
+    {
+        "description": "Hit Ratio for Tables from pg_statio_user_tables",
+        "query": "SELECT SUM(heap_blks_read) as heap_read, SUM(heap_blks_hit) as heap_hit, SUM(heap_blks_hit) / (SUM(heap_blks_hit) + SUM(heap_blks_read)) as hit_ratio FROM pg_statio_user_tables;"
+    },
+    {
+        "description": "Hit Ratio for Indexes from pg_statio_user_indexes",
+        "query": "SELECT SUM(idx_blks_read) as idx_read, SUM(idx_blks_hit) as idx_hit, (SUM(idx_blks_hit) - SUM(idx_blks_read)) / SUM(idx_blks_hit) as ratio FROM pg_statio_user_indexes;"
+    },
+    {
+        "description": "Index Hit Ratio with Table and Index Names",
+        "query": "SELECT t.schemaname, t.relname as \"Table Name\", io_i.indexrelname as \"Index Name\", CASE WHEN (io_i.idx_blks_hit <> 0 OR io_i.idx_blks_read <> 0) THEN round(io_i.idx_blks_hit / (io_i.idx_blks_hit::numeric + io_i.idx_blks_read::numeric), 4) ELSE null END as \"Index Hit Ratio\" FROM pg_stat_user_tables t JOIN pg_statio_user_indexes io_i ON io_i.relid = t.relid ORDER BY \"Index Hit Ratio\" DESC;"
+    },
+    {
+        "description": "Buffer Cache Usage (Top 10 Relations)",
+        "query": "SELECT c.relname, count(*) AS buffers FROM pg_buffercache b INNER JOIN pg_class c ON b.relfilenode = pg_relation_filenode(c.oid) AND b.reldatabase IN (0, (SELECT oid FROM pg_database WHERE datname = current_database())) GROUP BY c.relname ORDER BY 2 DESC LIMIT 10;"
+    },
+    {
+        "description": "Top 10 Relations Residing in Memory",
+        "query": "SELECT c.relname, pg_size_pretty(count(*)*8192) AS buffer_size, pg_size_pretty(pg_relation_size(c.oid)) as relation_size, Round(100.0 * Count(*) / (SELECT setting FROM pg_settings WHERE name = 'shared_buffers') :: INTEGER, 2) AS buffers_percent, ROUND(count(*)*8192*100/ pg_relation_size(c.oid)::numeric, 2 ) AS relation_percent, CASE WHEN c.relkind = 'r' THEN 'table' WHEN c.relkind = 'i' THEN 'index' WHEN c.relkind = 'S' THEN 'sequence' WHEN c.relkind = 't' THEN 'TOAST table' WHEN c.relkind = 'v' THEN 'view' WHEN c.relkind = 'm' THEN 'materialized view' WHEN c.relkind = 'c' THEN 'composite type' WHEN c.relkind = 'f' THEN 'foreign table' WHEN c.relkind = 'p' THEN 'partitioned table' WHEN c.relkind = 'I' THEN 'partitioned index' ELSE 'Unexpected relkind' END as relation_type FROM pg_class c INNER JOIN pg_buffercache b ON b.relfilenode = c.relfilenode INNER JOIN pg_database d ON ( b.reldatabase = d.oid AND d.datname = Current_database() ) GROUP BY c.relname, c.oid ORDER BY pg_total_relation_size(c.oid) DESC LIMIT 10;"
+    },
+    {
+        "description": "How many time the index is used?",
+        "query": "SELECT relname, 100 * idx_scan / (seq_scan + idx_scan) percent_of_times_index_used, n_live_tup rows_in_table FROM pg_stat_user_tables WHERE     seq_scan + idx_scan > 0 ORDER BY n_live_tup DESC;"
+    }
+]

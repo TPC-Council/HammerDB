@@ -75,7 +75,7 @@ foreach { key } [ dict keys $dbdict ] {
     lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\olap.tcl" "$key/$prefix\otc.tcl"
 }
 
-#Load database config from SQLite vectordb.db
+#Load database config from SQLite vector.db
 set vectordbdict [ SQLite2Dict "vectordb" ]
 if { $vectordbdict eq "" } {
     #Load database config from database.xml

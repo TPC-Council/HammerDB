@@ -10,6 +10,7 @@ if {[dict exists $dbdict postgresql library ]} {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require tpccvcommon} ] { error "Failed to load tpccv common functions" } else { namespace import tpccvcommon::* }
 if [catch [source ./src/generic/gentpcc.tcl]] {
     puts "Error while loading gentpcc.tcl"
     # TODO - extract and assign db config from $configpostgresql
@@ -43,7 +44,9 @@ proc calc_recall {embeddings ground_truth k} {
     return $recall
 }
 
-global vector_test_dataset vector_ground_truth
+set vector_test_dataset [ load_vector_data "./dataset/vector/test/output.csv" "false" ]
+set vector_ground_truth [ load_vector_data "./dataset/vector/ground_truth/output_gt.csv" "false" ]
+
 set k 10
 set all_recalls {}
 

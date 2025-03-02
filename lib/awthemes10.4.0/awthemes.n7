@@ -1,0 +1,184 @@
+.\"
+.\" awthemes.n7
+.\"
+.\" Copyright 2020 Brad Lanam  Pleasant Hill CA USA
+.\"
+.\" brad.lanam.di_at_gmail.com
+.\"
+.TH awthemes n7 "2 Dec 2020"
+.SH Name
+awthemes n7 \- themes for ttk
+.SH Description
+The awthemes packages provides themes for use with Tcl/Tk.  The \fIawdark\fP
+and \fIawlight\fP themes are available when the \fItksvg\fP package
+is not present.
+.PP
+When the \fItksvg\fP package is present, the \fIawdark\fP, \fIawlight\fP,
+\fIawarc\fP, \fIawblack\fP, \fIawbreeze\fP, \fIawclearlooks\fP and
+\fIawwinxpblue\fP are available.  When used with \fItksvg\fP, the themes
+have the ability to scale the various widgets.
+.PP
+Basic usage:
+.RS
+package require awdark
+.br
+ttk::style theme use awdark
+.RE
+.PP
+Starting with version 10.0.0, the Tcl options database may be used to
+set the default theme.
+.RS
+echo "*TkTheme: awdark" | xrdb -merge -
+.br
+TCLLIBPATH=$(pwd) tclsh demottk.tcl \\
+.RS
+-optionnone -optiondflt awdark
+.RE
+.RE
+.SH API
+.TP
+::ttk::theme::${theme}::setMenuColors {\-optiondb|\fI.menuwidget\fP}
+Sets the menu colors for a widget and also changes any checkbutton and
+radiobutton types to use thematic images.
+.PP
+When \-optiondb is specified, the option database is initialized with the
+menu colors.  Starting with version 10.0.0, this is automatic.  Starting
+with version 10.1.2, this is no longer the case for the Windows operating
+system.  On Windows,
+.TP
+::ttk::theme::${theme}::setListboxColors \fI.listboxwidget\fP
+Sets the listbox widget colors.
+.TP
+::ttk::theme::${theme}::setTextColors \fI.textwidget\fP [{\fI\-entry\fP|\fI\-background\fP}]
+Sets the text widget colors.
+.RS
+.PP
+If the text widget is in a normal state, the background is set to the
+entry background.  If the text widget is in a disabled state, the background
+is set to the background color.
+.PP
+If \-entry is specified, the background is set to the same
+as an entry widget's background.
+.PP
+If \-background is specified, the background is set to the same as
+the normal background color.
+.RE
+.TP
+::ttk::theme::${theme}::scaledStyle \fIprefix\fP \fIdefaultfont\fP \fIlistingfont\fP
+Creates a set of scaled widgets with a new style name.
+.br
+\fIprefix\fP is the prefix prepended to the names of the new styles.
+.br
+\fIdefaultfont\fP \- the standard font name (default font size).
+.br
+\fIlistingfont\fP \- the font name to scale to.
+.TP
+::themeutils::setBackgroundColor \fItheme\fP \fIcolor\fP
+Changes the background color.
+.RS
+.PP
+This routine must be called before the theme is initiialized.
+.PP
+package require awthemes
+.br
+::themeutils::setBackgroundColor awdark #001122
+.br
+package require awdark
+.RE
+.TP
+::themeutils::setHighlightColor \fItheme\fP \fIcolor\fP
+Changes the graphics, focus and selection background colors.
+.PP
+.RS
+This routine must be called before the theme is initiialized.
+.PP
+package require awthemes
+.br
+::themeutils::setHighlightColor awdark #007000
+.br
+package require awdark
+.RE
+.TP
+::ttk::theme::${theme}::getScaleFactor [\fIscaled-style-prefix\fP]
+Gets the scaling factor.  For a scaled style, specify the prefix name.
+For use by the end user so that other images can be scaled appropriately.
+.PP
+.RS
+set theme [ttk::style theme use]
+.br
+set sf [::ttk::theme::${theme}::getScaleFactor]
+.PP
+::ttk::theme::${theme}::scaledStyle Smaller \\
+.RS
+TkDefaultFont mysmallfont
+.RE
+set sf [::ttk::theme::${theme}::getScaleFactor Smaller]
+.RE
+.TP
+::themeutils::setThemeColors \fItheme\fP \fIcolorname\fP \fIcolor\fP ...
+A low level routine that allows modification of any color or option.
+.PP
+.RS
+package require awthemes
+.br
+::themeutils::setThemeColors awdark \\
+.RS
+graphics.color #007000 \\
+.br
+focus.color #007000
+.RE
+package require awdark
+.PP
+package require awthemes
+.br
+::themeutils::setThemeColors awdark \\
+.RS
+scale.factor 1.5
+.RE
+package require awdark
+.RE
+.TP
+::ttk::theme::${theme}::getColor \fItheme\fP \fIcolorname\fP
+A low level procedure to get the color assigned to a theme colorname.
+.TP
+::ttk::theme::${theme}::setBackground \fIcolor\fP
+Used after the theme has been instantiated.  Attempts to change all of
+the colors associated with the background color.
+Using \fIsetBackgroundColor\fP and restarting the application is recommended.
+.PP
+.RS
+set theme [::ttk::style theme use]
+.br
+if { [info commands ::ttk::theme::${theme}::setBackground] ne {} } {
+.RS
+::ttk::theme::${theme}::setBackground $newcolor
+.RE
+}
+.RE
+.SH Scaling
+When the \fItksvg\fP package is present, the awthemes package uses the
+.br
+[tk scaling] setting to scale the graphics.
+.PP
+The scaling may also be adjusted by the user using the \fIscale.factor\fP
+option.  This scaling factor is applied in addition to [tk scaling].
+.PP
+.RS
+package require awthemes
+.br
+::themeutils::setThemeColors awdark \\
+.RS
+scale.factor 1.5
+.RE
+package require awdark
+.RE
+.SH Bugs
+Bugs should be reported to:
+.br
+https://sourceforge.net/p/tcl-awthemes/tickets/
+.SH Website
+https://sourceforge.net/p/tcl-awthemes/
+.SH Author
+This program is Copyright 2018-2020 by Brad Lanam.
+
+

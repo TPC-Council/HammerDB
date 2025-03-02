@@ -15,12 +15,12 @@ proc shared_tpcc_functions { tpccfunc db_async_scale } {
                         if {$addMore >= $whRequiredCount} {
                             set addMore -1
                         } else {
+                            puts "VU $myposition : Assigning WID=$wh based on VU count $loadUserCount, Warehouses = $w_id_input ([expr $addMore + 1] out of [ expr int($whRequiredCount)])"
                             lappend myWarehouses $wh
                             set addMore [expr $addMore + 1]
                         }
                     }
                     set myWhCount [llength $myWarehouses]
-		    puts "Assigned $myWhCount WIDs = $myWarehouses based on VU count $loadUserCount, Warehouses = [ expr int($whRequiredCount) ] out of $w_id_input"
                 }
             }
             set allwt(3) {if { $allwarehouses == "true" } {
@@ -79,7 +79,6 @@ proc shared_tpcc_functions { tpccfunc db_async_scale } {
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(5)+1l $timept(1)
             set timepi(6) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "######START VECTOR WORKLOAD######" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $timepi(6)+1l $timept(1)
-            
         }
     }
 }

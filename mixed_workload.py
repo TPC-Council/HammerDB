@@ -61,8 +61,11 @@ if result.returncode == 0:
     customscript("recall_calculation.tcl")
     vuset("vu", "1")
     vucreate()
+    tcstart()
+    tcstatus()
     jobid = tclpy.eval('vurun')
     vudestroy()
+    tcstop()
     print("TEST COMPLETE")
     # TODO: Fix - logs are not being written to file
     file_path = os.path.join(tmpdir , "pg_tprocc" )

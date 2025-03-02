@@ -6,6 +6,7 @@ import subprocess
 import psycopg2
 from psycopg2 import sql
 import os
+import shutil
 
 os.environ["LOG_LEVEL"] = "DEBUG"
 
@@ -106,11 +107,40 @@ def query_configurations(config):
         print(f"Failed to query configurations: {e}")
         return {}
 
+def get_stats(config):
+    with open('queries.json', 'r') as file:
+        queries = json.load(file)
+    try:
+        conn = psycopg2.connect(
+            dbname=config['db_name'],
+            user=config['username'],
+            password=config['password'],
+            host=config['host']
+        )
+        cur = conn.cursor()
+        for item in queries:
+            query = item['query']
+            description = item['description']
+            print(f"\nRunning query: {description}")
+            try:
+                cur.execute(query)
+                rows = cur.fetchall()
+                headers = [desc[0] for desc in cur.description]
+                print(f"{' | '.join(headers)}")
+                for row in rows:
+                    print(f"{' | '.join(map(str, row))}")
+            except Exception as e:
+                print(f"Failed to run query: {e}")
+        conn.close()
+    except Exception as e:
+        print(f"Setup failed: {e}")
+    finally:
+        conn.close()
 
-def configure_hammerdb(db_config: dict, hammerdb_config: dict):
+def configure_hammerdb(db_config: dict, hammerdb_config: dict, case: dict):
     dbset('db', hammerdb_config['db'])
     dbset('bm', hammerdb_config['bm'])
-    dbset( 'vindex', hammerdb_config['vindex'])
+    dbset( 'vindex', case['vindex'])
 
     diset('connection','pg_host', db_config['host'])
     diset('connection','pg_port', '5432')
@@ -132,7 +162,7 @@ def configure_hammerdb(db_config: dict, hammerdb_config: dict):
     diset('tpcc','pg_timeprofile', hammerdb_config['pg_timeprofile'])
     diset('tpcc','pg_vacuum', hammerdb_config['pg_vacuum'])
     giset("commandline", "keepalive_margin", hammerdb_config['keepalive_margin'])
-    dvset("mixed_workload", "vector_table_name", hammerdb_config["vector_table_name"])
+    dvset("mixed_workload", "vector_table_name", case["vector_table_name"])
 
 
 def configure_vectordb(l_value_is: str, index: str, case: dict):
@@ -142,8 +172,9 @@ def configure_vectordb(l_value_is: str, index: str, case: dict):
     dvset(index, "in_max_parallel_workers", case["max-parallel-workers"])
     dvset(index, "in_maintenance_work_mem", case["maintenance-work-mem"])
     dvset(index, "ino_max_neighbors", case["max-neighbors"])
-    dvset(index, "ino_l_value_ib", case["l_value_ib"])
-    dvset("mixed_workload", "mw_oltp_vector_vu_ratio", case["mw_oltp_vector_vu_ratio"])
+    dvset(index, "ino_l_value_ib", case["l-value-ib"])
+    dvset("mixed_workload", "mw_oltp_vu", case["mw_oltp_vu"])
+    dvset("mixed_workload", "mw_vector_vu", case["mw_vector_vu"])
 
 def drop_tpcc_schema(db_config: dict):
     conn = psycopg2.connect(
@@ -168,11 +199,11 @@ def run_tpccv(vu, output_dir: str):
     loadscript()
     vuset('vu', vu)
     vucreate()
-    tcstart()
-    tcstatus()
+    # tcstart()
+    # tcstatus()
     jobid = tclpy.eval('vurun')
     vudestroy()
-    tcstop()
+    # tcstop()
     print("TEST COMPLETE")
     file_path = os.path.join(output_dir, "tpccv_results.log")
     fd = open(file_path, "w")
@@ -180,15 +211,16 @@ def run_tpccv(vu, output_dir: str):
     fd.close()
 
 def calculate_recall(output_dir: str):
+    vudestroy()
     diset('tpcc','pg_driver','test')
     customscript("recall_calculation.tcl")
     vuset("vu", "1")
     vucreate()
-    tcstart()
+    # tcstart()
     tcstatus()
     jobid = tclpy.eval('vurun')
     vudestroy()
-    tcstop()
+    # tcstop()
     print("TEST COMPLETE")
     # TODO: Fix - logs are not being written to file
     file_path = os.path.join(output_dir, "tpccv_results.log")
@@ -196,7 +228,19 @@ def calculate_recall(output_dir: str):
     fd.write(jobid)
     fd.close()
 
-def run_benchmark(case: dict, db_config: dict, hammerdb_config: dict):
+def copy_log_and_config(output_directories: list):
+    for output_dir in output_directories:
+        try:
+            shutil.copy("out.log", output_dir)
+            print(f"Copied out.log to {output_dir}")
+            shutil.copy("config.json", output_dir)
+            print(f"Copied config.json to {output_dir}")
+        except Exception as e:
+            print(f"Failed to copy out.log to {output_dir}: {e}")
+
+def run_benchmark(
+    case: dict, db_config: dict, hammerdb_config: dict, build_schema: bool
+):
     base_command = [
         "vectordbbench", "pgdiskann",
         "--user-name", db_config['username'],
@@ -224,20 +268,19 @@ def run_benchmark(case: dict, db_config: dict, hammerdb_config: dict):
         "--case-type", case["case-type"],
         "--maintenance-work-mem", case["maintenance-work-mem"],
         "--max-parallel-workers", str(case["max-parallel-workers"]),
-        "--l-value-ib", str(case["l_value_ib"]),
+        "--l-value-ib", str(case["l-value-ib"]),
         "--max-neighbors", str(case["max-neighbors"]),
         "--k", str(case["k"]),
         "--concurrency-duration", str(case["concurrency-duration"])
     ])
-    
-    build_schema = hammerdb_config.get("build_schema", True)
-    run_count = case.get("run_count", 1)  # Default to 1 if not specified
 
+    output_directories = []
+    run_count = case.get("run_count", 1)  # Default to 1 if not specified
     for run in range(run_count):
         print(f"Starting run {run + 1} of {run_count} for case: {case['db-label']}")
-        for i, l_value_is in enumerate(case["l_value_is"]):
-            configure_hammerdb(db_config, hammerdb_config)
-            configure_vectordb(l_value_is, hammerdb_config["vindex"], case)
+        for i, l_value_is in enumerate(case["l-value-is"]):
+            configure_hammerdb(db_config, hammerdb_config, case)
+            configure_vectordb(l_value_is, case["vindex"], case)
             command = base_command + ["--l-value-is", str(l_value_is)]
 
             if i > 0 or run > 0:
@@ -252,10 +295,10 @@ def run_benchmark(case: dict, db_config: dict, hammerdb_config: dict):
             try:
                 random_number = random.randint(1, 100000)
                 print(f"Running command: {' '.join(command)}")
-                output_dir = f"results/pgdiskann/diskann/{case['db-label']}/{db_config['provider']}/{db_config['instance_type']}-{str(case['max-neighbors'])}-{str(case['l_value_ib'])}-{l_value_is}-{case['case-type']}-{run}-{random_number}"
+                output_dir = f"results/pgdiskann/diskann/{case['db-label']}/{db_config['provider']}/{db_config['instance_type']}-{str(case['max-neighbors'])}-{str(case['l-value-ib'])}-{l_value_is}-{case['case-type']}-{run}-{random_number}"
                 os.environ["RESULTS_LOCAL_DIR"] = output_dir
-
                 os.makedirs(output_dir, exist_ok=True)
+                output_directories.append(output_dir)
 
                 with open(f"{output_dir}/log.txt", 'w') as f:
                     with redirect_stdout(f):
@@ -287,33 +330,51 @@ def run_benchmark(case: dict, db_config: dict, hammerdb_config: dict):
                     f.flush()
 
                     print("*************STARTING HAMMERDB SEARCH*************")
-                    if (i == 0 or run == 0) and build_schema:
+                    if build_schema:
                         drop_tpcc_schema(db_config)
                         buildschema()
                         vudestroy()
                     
-                    for vu in case["num-concurrency"]:
+                    for idx, vu in enumerate(case["num-concurrency"]):
+                        if idx == 1:
+                            # TODO: Remove
+                            diset("tpcc", "pg_rampup", "10")
+                        else:
+                            diset("tpcc", "pg_rampup", hammerdb_config["pg_rampup"])
+
+                        get_stats(db_config)
+                        f.flush()
                         print(f"Running HammerDB TPC-CV with {vu} VUs")
                         run_tpccv(vu, output_dir)
+                        get_stats(db_config)
+                        f.flush()
                         time.sleep(30)
                     
                     print("*************CALCULATING RECALL*************")
-                    calculate_recall(output_dir)
+                    # calculate_recall(output_dir)
                     print("*************END*************")
             except subprocess.CalledProcessError as e:
                 print(f"Benchmark failed: {e}")
             print("Sleeping for 30 sec")
             time.sleep(60)
 
+    return output_directories
+
 def main():
     config = load_config("config.json")
+    build_schema = True
     start_time = time.time()
-    for case in config['cases']:
+    for i, case in enumerate(config['cases']):
+        if i > 0:
+            build_schema = False
+        # BYPASS schema builds
+        build_schema = True
         print(f"Running case: {case['db-label']}")
         setup_database(config)
-
-        run_benchmark(case, config['database'], config['hammerdb'])
+        output_directories = run_benchmark(case, config['database'], config['hammerdb'], build_schema)
+        copy_log_and_config(output_directories)
         teardown_database(config)
+        time.sleep(120)
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"COMPLETED ALL EXECUTIONS. total_duration={execution_time}")

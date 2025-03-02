@@ -1,0 +1,48 @@
+
+Theme licenses:
+  Theme       License             Copyright
+  arc         GPLv3               2015 Sergei Golovan
+                  http://chiselapp.com/user/sgolovan/repository/ttk-themes/home
+  black       Tcl                 2007-2008 Mats Bengtsson
+                                 https://wiki.tcl-lang.org/page/black+ttk+theme
+  breeze      GPLv3               2019 Maximilian Lika
+                                  https://github.com/MaxPerl/ttk-Breeze
+  breeze-dark GPLv3               2020 Bartek Jasicki
+                                  https://github.com/thindil/tkBreeze
+  clearlooks  Tcl                 Regents of the UC, Scriptics, etc.
+                                  Based on a GTK theme.
+                  http://chiselapp.com/user/sgolovan/repository/ttk-themes/home
+  winxpblue   Tcl                 2004 Pat Thoyts
+
+The awthemes package does not use any code or files from the above packages.
+The look and feel of an included theme may not match the original precisely.
+
+
+Copyright 2018-2021 Brad Lanam, Walnut Creek, CA, USA
+
+Note: This license also applies to any .svg files packaged with
+awthemes that are included in the i/awthemes/ directory.
+
+The program used to edit the .svg files may automatically add a
+license to the existing .svg files or new .svg files.  This license
+overrides any license specified within the i/awthemes/*/*/*.svg files.
+
+This software is provided 'as-is', without any express or implied
+   warranty.  In no event will the authors be held liable for any damages
+   arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+   including commercial applications, and to alter it and redistribute it
+   freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+
+3. This notice may not be removed or altered from any source
+   distribution.
+

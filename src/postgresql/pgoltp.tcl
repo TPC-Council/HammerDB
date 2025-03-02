@@ -2413,7 +2413,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "pg_disconnect \$lda" end ]
     #puts "indexes are $syncdrvi(1a) and $syncdrvi(1b)"
     #Delete text from start and end points
-    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) "$syncdrvi(1b) lineend + 1 char"
+    .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(1a) $syncdrvi(1b)
     #Replace with connect pool version
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(1a) $syncdrvt(1)
     if { $testtype eq "timed" } {
@@ -2498,13 +2498,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             #End of run loop is previous line
             set syncdrvi(3b) [ expr $syncdrvi(3b) - 1 ]
             #Delete run loop
-	    if { [ string is entier $syncdrvi(3b) ] } {
-	    #CLI
-            .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)
-	    	} else {
-	    #GUI
             .ed_mainFrame.mainwin.textFrame.left.text fastdelete $syncdrvi(3a) $syncdrvi(3b)+1l
-	    	}
             #Replace with asynchronous connect pool version
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(3a) $syncdrvt(3)
             #Remove extra async connection
@@ -2528,7 +2522,7 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(4a) $syncdrvt(4)
             set syncdrvi(5a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "tsv::set application abort 1" end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(5a)+1l $syncdrvt(5)
-            set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "foreach lda \[ dict values \$connlist \] {  pg_disconnect \$lda }" end ]
+            set syncdrvi(6a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards {foreach lda [ dict values $connlist ] {  pg_disconnect $lda }} end ]
             .ed_mainFrame.mainwin.textFrame.left.text fastinsert $syncdrvi(6a) $syncdrvt(6)
         } else {
             #Add client side counters for timed non-async only
@@ -2854,15 +2848,12 @@ proc loadtimedpgtpcc { } {
     global opmode _ED vindex
     upvar #0 vectordbdict vectordbdict
     upvar #0 dbdict dbdict
-    if {[dict exists $dbdict postgresql library ]} {
-        set library [ dict get $dbdict postgresql library ]
-    } else { set library "Pgtcl" }
-    upvar #0 configpostgresql configpostgresql
 
     if {[dict exists $vectordbdict $vindex]} {
         set index_params [dict create]
         set search_params [dict create]
         set session_params [dict create]
+        set bq_params [dict create]
         set index_creation_with_options [dict create]
 
         foreach {key value} [dict get $vectordbdict $vindex] {
@@ -2878,14 +2869,22 @@ proc loadtimedpgtpcc { } {
             } elseif {[string match "ino_*" $key]} {
                 set param_key [string range $key 4 end]
                 dict set index_creation_with_options $param_key $value
+            } elseif {[string match "bq_*" $key]} {
+                set param_key [string range $key 3 end]
+                dict set bq_params $param_key $value
             }
         }
     } else {
         error "Index configuration for $vindex not found in vectordbdict"
     }
-    set mw_vu_ratio [dict get $vectordbdict mixed_workload mw_oltp_vector_vu_ratio]
+    set mw_oltp_vu [dict get $vectordbdict mixed_workload mw_oltp_vu]
+    set mw_vector_vu [dict get $vectordbdict mixed_workload mw_vector_vu]
     set vector_table_name [dict get $vectordbdict mixed_workload vector_table_name]
 
+    if {[dict exists $dbdict postgresql library ]} {
+        set library [ dict get $dbdict postgresql library ]
+    } else { set library "Pgtcl" }
+    upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpccvars $configpostgresql
     ed_edit_clear
@@ -2901,7 +2900,9 @@ set search_params {$search_params} ;# Vector DB Dictionary
 set session_params {$session_params} ;# Vector DB Dictionary
 set index_params {$index_params} ;# Vector DB Dictionary
 set index_creation_with_options {$index_creation_with_options} ;# Vector DB Dictionary
-set mw_vu_ratio $mw_vu_ratio ;# Mixed Workload VUs Ratio
+set bq_params {$bq_params} ;# Vector DB Dictionary
+set mw_oltp_vu $mw_oltp_vu ;# Mixed Workload VUs Ratio
+set mw_vector_vu $mw_vector_vu ;# Mixed Workload VUs Ratio
 set vector_table_name $vector_table_name ;# Vector table name used in VDBBench
 set total_iterations $pg_total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$pg_raiseerror\" ;# Exit script on PostgreSQL (true or false)
@@ -2928,6 +2929,7 @@ set db \"$pg_dbase\" ;# Database containing the TPC Schema
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
+if [catch {package require tpccvcommon} ] { error "Failed to load tpccv common functions" } else { namespace import tpccvcommon::* }
 
 if { [ chk_thread ] eq "FALSE" } {
     error "PostgreSQL Timed Script must be run in Thread Enabled Interpreter"
@@ -2958,8 +2960,6 @@ proc CheckDBVersion { lda1 } {
         }
 
 set rema [ lassign [ findvuposition ] myposition totalvirtualusers ]
-set workload1vu [expr [expr ceil([expr $mw_vu_ratio * [expr $totalvirtualusers - 1]])] + 1]
-
 if {$myposition == 1} {
         ######MONITOR THREAD######
         if { $mode eq "Local" || $mode eq "Primary" } {
@@ -2973,9 +2973,14 @@ if {$myposition == 1} {
             if { $lda1 eq "Failed" } {
                 error "error, the database connection to $host could not be established"
             }
+            
+            # puts "Loading vector data from ./dataset/vector/test/output.csv"
+            tsv::set application vector_test_dataset [ load_vector_data "./dataset/vector/test/output.csv" "false" ]
+            puts "Vector data loaded successfully"
+            tsv::set application sync_before_rampup 1
 
             set ramptime 0
-	    puts [ CheckDBVersion $lda1 ]
+	        puts [ CheckDBVersion $lda1 ]
             puts "Beginning rampup time of $rampup minutes"
             set rampup [ expr $rampup*60000 ]
             while {$ramptime != $rampup} {
@@ -3018,6 +3023,10 @@ if {$myposition == 1} {
             set durmin $duration
             set duration [ expr $duration*60000 ]
             tsv::set application ramp_done 1
+            
+            after 3000
+            tsv::set application threads_synced 1
+
             while {$testtime != $duration} {
                 if { [ tsv::get application abort ] } { break } else { after 6000 }
                 set testtime [ expr $testtime+6000 ]
@@ -3092,12 +3101,16 @@ if {$myposition == 1} {
         } else {
             puts "Operating in Replica Mode, No Snapshots taken..."
         }
-    } elseif {$myposition <= $workload1vu} {
+    } elseif {$myposition <= [expr $mw_oltp_vu + 1]} {
         ######START OLTP WORKLOAD######
 
         #TIMESTAMP
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
+            return $tstamp
+        }
+        proc getisotimestamp { } {
+            set tstamp [ clock format [ clock seconds ] -format %Y-%m-%dT%H:%M:%S%z ]
             return $tstamp
         }
         #NEW ORDER
@@ -3308,9 +3321,12 @@ if {$myposition == 1} {
             set d_id_input $d_id_input_arr(max)
         }
         set stock_level_d_id  [ RandomNumber 1 $d_id_input ]
-
+        
         puts "Processing $total_iterations transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+        
+        while {![ tsv::get application sync_before_rampup ]} {}
+        puts "Starting Ramp up: [ getisotimestamp ]"
         for {set it 0} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
             if { [ tsv::get application ramp_done ] } {
@@ -3340,6 +3356,7 @@ if {$myposition == 1} {
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
+        puts "Rampup ended: [ getisotimestamp ]"
 
         proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
             neword_base $lda $no_w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
@@ -3361,14 +3378,16 @@ if {$myposition == 1} {
             slev_base $lda $w_id $stock_level_d_id $RAISEERROR $ora_compatible $pg_storedprocs
         }
 
-        puts "STARTING ACTUAL RUN"
         puts "Processing $total_iterations transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
+
+        while {![tsv::get application threads_synced]} {} ; #Sync threads
+        puts "Starting Actual Run: [ getisotimestamp ]"
         for {set it 0} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
             set choice [ RandomNumber 1 23 ]
             if {$choice <= 10} {
-                if { $KEYANDTHINK } { keytime 18 }
+                if { $KEYANDTHINK } {f keytime 18 }
                 neword $lda $w_id $w_id_input $RAISEERROR $ora_compatible $pg_storedprocs
                 if { $KEYANDTHINK } { thinktime 12 }
             } elseif {$choice <= 20} {
@@ -3389,21 +3408,30 @@ if {$myposition == 1} {
                 if { $KEYANDTHINK } { thinktime 5 }
             }
         }
+        puts "Ending Actual Run: [ getisotimestamp ]"
 
         ######END OLTP WORKLOAD######
         pg_disconnect $lda
     } else {
         ######START VECTOR WORKLOAD######
-
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
             return $tstamp
         }
+        proc getisotimestamp { } {
+            set tstamp [ clock format [ clock seconds ] -format %Y-%m-%dT%H:%M:%S%z ]
+            return $tstamp
+        }
 
-        proc semantic_search_base { lda emb k RAISEERROR ora_compatible pg_storedprocs } {
+        proc semantic_search_base { lda emb k dist_op RAISEERROR ora_compatible pg_storedprocs } {
+            upvar #1 vindex vindex
             if {[llength $emb] > 0} {
                 # We won't be using stored procedures for vector search
-                set result [ pg_exec_prepared $lda knn {} {} "\[$emb\]" $k ]
+                if { $vindex == "hnsw_bq"} {
+                    set result [ pg_exec_prepared $lda knn {} {} "\[$emb\]" "\[$emb\]" $k ]
+                } else {
+                    set result [ pg_exec_prepared $lda knn {} {} "\[$emb\]" $k ]
+                }
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                     if { $RAISEERROR } {
                         error "[pg_result $result -error]"
@@ -3417,7 +3445,10 @@ if {$myposition == 1} {
 
         proc fn_prep_statement { lda dist_op } {
             upvar #1 vector_table_name vector_table_name
-            set prep_semantic_search "PREPARE knn(VECTOR, INT) AS SELECT id FROM $vector_table_name ORDER BY embedding $dist_op \$1 LIMIT \$2;"
+            upvar #1 bq_params bq_params
+            upvar #1 vindex vindex
+            set prep_semantic_search [get_vector_query $vector_table_name $dist_op $vindex $bq_params]
+
             set result [ pg_exec $lda $prep_semantic_search ]
             if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                 error "[pg_result $result -error]"
@@ -3426,19 +3457,6 @@ if {$myposition == 1} {
             }
         }
 
-        proc get_distance_op { dist_op } {
-            set operator <=>
-            if { $dist_op eq "cosine" } {
-                set operator <=>
-            } elseif { $dist_op eq "euclidean" } {
-                set operator <->
-            } elseif { $dist_op eq "neg_inner_product" } {
-                set operator <#>
-            } elseif { $dist_op eq "taxicab" } {
-                set operator <+>
-            }
-            return $operator
-        }
 
         #RUN TPC-C
         set dist_op [ get_distance_op [dict get $search_params distance ] ]
@@ -3460,6 +3478,7 @@ if {$myposition == 1} {
             upvar #1 session_params session_params
             upvar #1 vindex vindex
             foreach {option val} $session_params {
+                puts "Setting session param option $option, val $val"
                 set result [pg_exec $lda "SET $option='$val'"]
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                     puts "Error setting HNSW $option parameter: [pg_result $result -error]"
@@ -3467,9 +3486,11 @@ if {$myposition == 1} {
                 pg_result $result -clear
             }
         }
+
         proc set_index_params { lda } {
             upvar #1 index_params index_params
             foreach {option val} $index_params {
+                puts "Setting index param option $option, val $val"
                 set result [pg_exec $lda "SET $option='$val'"]
                 if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
                     puts "Error setting HNSW $option parameter: [pg_result $result -error]"
@@ -3479,18 +3500,19 @@ if {$myposition == 1} {
         }
         set_session_params $lda
 
-        global vector_test_dataset
         set vector_query_count 0
-        set vector_data_idx 0
         set k [dict get $search_params k ]
         #TODO good for debugging, can be removed 
         set counter 0
-
         puts "Processing $total_iterations vector transactions with output suppressed..."
         set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
-        
-        set start [clock seconds]
-        puts "Start time: $start"
+
+        while {![ tsv::get application sync_before_rampup ]} {}
+        set vector_test_dataset [ tsv::get application vector_test_dataset ]
+        set vector_data_length [ llength  $vector_test_dataset ]
+        set vector_data_idx [RandomNumber 1 [llength  [ tsv::get application vector_test_dataset] ]]
+        puts "Vector data length: $vector_data_length"
+        puts "Starting Ramp up: [ getisotimestamp ]"
 
         # First forloop is stop either:
         # 1) If total_iterations reached
@@ -3505,67 +3527,63 @@ if {$myposition == 1} {
             }
             set row [ lindex $vector_test_dataset $vector_data_idx ] 
             set emb [lindex $row 1]
-            
+
             if { $KEYANDTHINK } { keytime 2 }
             semantic_search_base $lda $emb $k $dist_op $RAISEERROR $ora_compatible $pg_storedprocs
             if { $KEYANDTHINK } { thinktime 5 }
             incr counter
             incr vector_data_idx
             incr vector_query_count
-            if { [expr [llength $vector_test_dataset] - 1 ] <= $vector_data_idx } {
-                set vector_data_idx 0
+            if { [expr $vector_data_length - 1 ] <= $vector_data_idx } {
+            set vector_data_idx 0
             }
             #TODO remove before final push. This is good for verification
-            puts "Total vector QPS: {$vector_query_count}"
-            puts "Vector data index: {$vector_data_idx}"
+            # puts "Total vector QPS: {$vector_query_count}"
+            # puts "Vector data index: {$vector_data_idx}"
         }
-        set end [clock seconds]
-        puts "End time (rampup): $end"
         puts "End Counter $counter"
-        puts "Duration [expr {$end - $start}]"
+        puts "Rampup Ended: [ getisotimestamp ]"
 
+        # TODO this can be moved to the top
+        if [catch {package require xtprof} ] { error "Failed to load extended time profile functions" } else { namespace import xtprof::* }
         proc semantic_search { lda emb k dist_op RAISEERROR ora_compatible pg_storedprocs } {
             semantic_search_base $lda $emb $k $dist_op $RAISEERROR $ora_compatible $pg_storedprocs
         }
-        puts "Processing $total_iterations vector transactions with output suppressed..."
-        set start [clock seconds]
-        set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
-        set counter 0
+
 
         # Second forloop is stopped either:
         # 1) If total_iterations reached
         # 2) If the shared variable `abort` is set to true, which likely means the time completed
+        puts "Processing $total_iterations vector transactions with output suppressed..."
+        set counter 0
+        set abchk 1; set abchk_mx 1024; set hi_t [ expr {pow([ lindex [ time {if {  [ tsv::get application abort ]  } { break }} ] 0 ],2)}]
 
-        puts "STARTING ACTUAL RUN"
-        #TODO Can add conditional wait to sync all threads
-        puts "Start time: $start"
+        while {![tsv::get application threads_synced]} {} ; #Sync threads
+        puts "Starting Actual Run: [ getisotimestamp ]"
         for {set it $counter} {$it < $total_iterations} {incr it} {
             if { [expr {$it % $abchk}] eq 0 } { if { [ time {if {  [ tsv::get application abort ]  } { break }} ] > $hi_t }  {  set  abchk [ expr {min(($abchk * 2), $abchk_mx)}]; set hi_t [ expr {$hi_t * 2} ] } }
-            set row [ lindex $vector_test_dataset $vector_data_idx ] 
+            set row [ lindex  $vector_test_dataset $vector_data_idx ] 
             set emb [lindex $row 1]
-            
+
             if { $KEYANDTHINK } { keytime 2 }
             semantic_search $lda $emb $k $dist_op $RAISEERROR $ora_compatible $pg_storedprocs
             if { $KEYANDTHINK } { thinktime 5 }
-            
             incr counter
             incr vector_data_idx
             incr vector_query_count
-            if { [expr [llength $vector_test_dataset] - 1 ] <= $vector_data_idx } {
-                set vector_data_idx 0
+            if { [expr $vector_data_length - 1 ] <= $vector_data_idx } {
+            set vector_data_idx 0
             }
             #TODO remove before final push. This is good for verification
-            puts "Total vector QPS: {$vector_query_count}"
-            puts "Vector data index: {$vector_data_idx}"
+            # puts "Total vector QPS: {$vector_query_count}"
+            # puts "Vector data index: {$vector_data_idx}"
         }
-        set end [clock seconds]
-        puts "End time (final): $end"
         puts "End Counter $counter"
-        puts "Duration [expr {$end - $start}]"
+        puts "Ending Actual Run: [ getisotimestamp ]"
 
         ######END VECTOR WORKLOAD######
         pg_disconnect $lda
-    } 
+    }
 }
         if { $pg_connect_pool } {
             insert_pgconnectpool_drivescript timed sync

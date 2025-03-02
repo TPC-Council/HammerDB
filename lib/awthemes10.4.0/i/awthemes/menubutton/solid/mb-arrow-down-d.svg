@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="16"
+   height="16"
+   viewBox="0 0 16 16"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   sodipodi:docname="mb-arrow-down-d.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="15.75"
+     inkscape:cx="8"
+     inkscape:cy="8"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1031"
+     inkscape:window-height="578"
+     inkscape:window-x="186"
+     inkscape:window-y="83"
+     inkscape:window-maximized="0"
+     units="px"
+     inkscape:pagecheckerboard="true"
+     showborder="true" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(130.76376,-115.61079)">
+    <g
+       aria-label="⏷"
+       transform="scale(1.0911704,0.91644715)"
+       style="font-style:normal;font-weight:normal;font-size:12.74731731px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:_GC_;fill-opacity:0.4;stroke:none;stroke-width:0.31868294"
+       id="text817">
+      <path
+         d="m -108.16901,130.51575 q 0.24474,0 0.24474,0.19036 0,0.0272 -0.0272,0.0816 l -4.40547,8.29426 q -0.0816,0.16316 -0.16317,0.16316 -0.0816,0 -0.16316,-0.16316 l -4.40548,-8.26706 q 0,-0.0544 0,-0.10878 0,-0.19036 0.27195,-0.19036 z"
+         style="font-size:27.19427681px;fill:_GC_;fill-opacity:0.4;stroke-width:0.31868294"
+         id="path814" />
+    </g>
+  </g>
+</svg>

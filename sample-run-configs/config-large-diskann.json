@@ -2,7 +2,7 @@
   "database": {
     "host": "localhost",
     "username": "postgres",
-    "password": "postgres",
+    "password": "admin123",
     "db_name": "ann",
     "instance_type": "Standard_D8ds_v5",
     "provider": "azure-vm",
