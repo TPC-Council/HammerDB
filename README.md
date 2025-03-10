@@ -1,7 +1,7 @@
 # Mixed Workload Benchmark Runner [Emumba's Automation Flow]
 
 ## Overview
-This repository provides a 2 scripts (`pg_tproccv_diskann_run.py`) & (`pg_tproccv_hnsw_run.py`) to execute the benchmark tests for DiskAnn and HNSW, HNSW-BQ respectively . The script reads configuration details from `config.json` and runs multiple benchmark cases to evaluate the performance of various indexing parameters or OLTP/Vector virtual users ratio. This builds upon the CLI functionality provided to VectorDBBench & HammerDB to automate testing.
+This repository provides 2 scripts (`pg_tproccv_diskann_run.py`) & (`pg_tproccv_hnsw_run.py`) to execute the benchmark tests for DiskAnn and HNSW, HNSW-BQ respectively . The script reads configuration details from `config.json` and runs multiple benchmark cases to evaluate the performance of various indexing parameters or OLTP/Vector virtual users ratio. This builds upon the CLI functionality provided to VectorDBBench & HammerDB to automate testing.
 
 ## Features
 - Reads benchmark configuration from `config.json`
