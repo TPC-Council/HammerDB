@@ -9,6 +9,19 @@ This repository provides a 2 scripts (`pg_tproccv_diskann_run.py`) & (`pg_tprocc
 - Logs detailed benchmark execution progress
 - Generates metadata for each benchmark run
 
+### Test and Ground Truth Files.
+The `dataset/` folder contains ground truth and test files in CSV format, organized in their respective subfolders. These files were generated using the `Performance1536D500K` dataset provided by VectorDBBench. VectorDBBench provides these datasets in Parquet format. To use them in HammerDB, they need to be converted to CSV format. You can use the Python script `convert_parquet_to_csv.py` to perform this conversion.
+
+To convert a Parquet file to CSV, run the following command:
+```sh
+python convert_parquet_to_csv.py <parquet_file_path> <output_file_path>
+```
+
+
+### Sample Config Files
+You can find sample configuration files for each algorithm in the `sample-run-configs/` folder. These files are provided for reference and should be updated according to your specific requirements. To use any of the sample configuration files, copy the desired file to the main directory and rename it to `config.json`, replacing the existing file.
+
+
 ### Database Requirements
 - PostgreSQL with `pgvector` and/or `pg_diskann` extensions enabled
 
@@ -28,7 +41,6 @@ The `config.json` file defines the benchmarking setup. Here is a breakdown of th
 }
 ```
 - Defines the database connection details.
-
 
 
 ### Benchmark Configuration Options 
@@ -134,9 +146,14 @@ These params will vary based on the extension being used. Following two are comm
 
 ## Usage
 ### Running the Benchmark
-To execute the benchmark, run:
+To execute the HNSW or HNSW-BQ benchmark, run:
 ```sh
 nohup ./hammerdbcli py auto pg_tproccv_hnsw_run.py > out.log 2>&1 &
+```
+
+To execute the DISKANN benchmark, run:
+```sh
+nohup ./hammerdbcli py auto pg_tproccv_diskann_run.py > out.log 2>&1 &
 ```
 
 ## Benchmark Execution Flow
