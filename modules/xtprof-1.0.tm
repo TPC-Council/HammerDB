@@ -589,7 +589,7 @@ if { [ llength [ set $sproc-clickslist ]] > 2 } {
            dict set sumtimings $sproc elapsed $medianendms
            dict set sumtimings $sproc avgms [expr $cavg * $medianmsperclick]
            dict set sumtimings $sproc totalms [expr $ctotal * $medianmsperclick]
-           dict set sumtimings $sproc ratio [expr {(double($ctotal / $medianendclicks) * 100.0)/[llength $vustoreport]}]
+           dict set sumtimings $sproc ratio [expr {(double($ctotal / $medianendclicks) * 100.0)/[llength $vustoreport] / 2}]
            dict set sumtimings $sproc max [expr $max * $medianmsperclick]
            dict set sumtimings $sproc min [expr $min * $medianmsperclick]
            dict set sumtimings $sproc p99 [ expr [ percentile $sortedclicks 0.99 ] * $medianmsperclick]
