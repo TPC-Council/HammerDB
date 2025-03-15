@@ -1168,6 +1168,7 @@ Version 5.0 March 2025
 
 Pull Requests & Issues
 
+Merge v5.0 Branch #777
 Error in Virtual User 1:key "msperclick" not found #774
 Free thread shared variables after xtprof run #766 (#765)
 ALTER DATABASE only if necessary enhancement #764
