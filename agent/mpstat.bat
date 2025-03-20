@@ -2,10 +2,10 @@
  @echo off
 set path=..\.\bin;%PATH%
  if "%OS%" == "Windows_NT" goto WinNT
- tclsh86t "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9
+ tclsh90 "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9
  goto :eof
  :WinNT
-tclsh86t %0 %*
+tclsh90 %0 %*
  if NOT "%COMSPEC%" == "%SystemRoot%\system32\cmd.exe" goto :eof
  if %errorlevel% == 9009 echo You do not have Tclsh in your PATH.
  if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul
@@ -16,8 +16,8 @@ tclsh86t %0 %*
 #
 #Simulation of Linux mpstat program for Windows using Twapi
 #
-# Copyright (C) 2003-2023 Steve Shaw
-#
+# Copyright (C) Steve Shaw
+# Hosted by the TPC-Council
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation; either
@@ -32,9 +32,8 @@ tclsh86t %0 %*
 # License along with this program; if not, write to the
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA  02111-1307, USA.
-#
-# Author contact information: smshaw@users.sourceforge.net
 ######################################################################   
+lappend auto_path "[zipfs root]app/lib"
 package require twapi
 set hostname [twapi::get_computer_name]
 set osversion [lindex [twapi::get_os_version] 0 ]

@@ -308,6 +308,8 @@ proc load_virtual {}  {
 
         thread::wait }]
         set threadscreated($vuser) $threadID
+        catch {eval [ subst {thread::send $threadscreated($vuser) {lappend ::auto_path [zipfs root]app/lib}}]}
+        catch {eval [ subst {thread::send $threadscreated($vuser) {::tcl::tm::path add [zipfs root]app/modules modules}}]}
         if { $suppo == 1 } { eval [ subst {thread::send $threadscreated($vuser) { winsetup $masterthread $optlog }}] 
     } else { eval [ subst {thread::send $threadscreated($vuser) { winsetup {-1} $optlog }}] }  }
     foreach {vuser threadID} [array get threadscreated] {
@@ -409,7 +411,7 @@ proc load_virtual {}  {
                 if { $countuser < $usercount } {
                     set vuid $threadscreated($countuser)
                     if { $virtual_users eq [ expr $maxvuser - 1 ]  && $countuser eq 0} { set MON "-MONITOR" } else { set MON "" }
-                    if { $ttk::currentTheme in {clearlooks awarc awbreeze awlight awbreezedark}} {
+                    if { $ttk::currentTheme in {awbreeze awbreezedark}} {
                         $cnv create text [expr $x+$rect_sz_fact] [expr $y+$hdb_buff] \
         -text "Virtual User [expr $countuser + 1]$MON" -font \
          [ list basic [ expr [ font actual basic -size ] - 1 ] ] -fill $textColor

@@ -49,14 +49,4 @@
         <workloads>TPROC-C TPROC-H</workloads>
         <commands>maria::sel mariause mariaescape mariasel marianext mariaseek mariamap mariaexec mariaclose mariainfo mariaresult mariacol mariastate mariainsertid mariaquery mariaendquery mariabaseinfo mariaping mariachangeuser mariareceive</commands>
 </mariadb>
-<!--Redis deprecated, uncomment to enable as unsupported
-<redis>
-	<name>Redis</name>
-	<description>Redis</description>
-	<prefix>redis</prefix>
-	<library>redis</library>
-	<workloads>TPROC-C</workloads>
-	<commands>redis</commands>
-</redis>
--->
 </database>

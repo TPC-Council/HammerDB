@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2009 Aaron Faupell
 
-package require Tcl 8.5
+package require Tcl 9.0
 package require http 2.7
 package require json
 #package require tdom

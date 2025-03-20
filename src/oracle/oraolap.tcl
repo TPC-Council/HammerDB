@@ -26,12 +26,11 @@ proc build_oratpch {} {
             puts "Failed to create threads for schema creation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 proc GatherStatistics { lda tpch_user timesten } {
     puts "GATHERING SCHEMA STATISTICS"
@@ -762,7 +761,7 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20
@@ -925,8 +924,8 @@ proc loadoratpch { } {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
@@ -939,11 +938,10 @@ set refresh_on \"$refresh_on\" ;#First User does refresh function
 set update_sets $update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 #STANDARD SQL	
 proc standsql { curn sql RAISEERROR } {
@@ -1562,19 +1560,18 @@ proc loadoracloud {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle Cloud"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_querysets $total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$raise_query_error\" ;# Exit script on Oracle query error (true or false)
 set VERBOSE \"$verbose\" ;# Show query text and output
 set degree_of_parallel \"$degree_of_parallel\" ;# Degree of Parallelism
 set connect $tpch_user/[ quotemeta $tpch_pass ]@$instance ;# Oracle connect string for tpc-h user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 #STANDARD SQL	
 proc standsql { curn sql RAISEERROR } {
@@ -1697,12 +1694,11 @@ proc delete_oratpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc drop_tpch { system_user system_password instance tpch_user } {
@@ -1743,12 +1739,11 @@ proc check_oratpch {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { curn sql } {

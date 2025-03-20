@@ -134,7 +134,7 @@ proc DoDisplay {maxcpu cpu_model caller} {
            $canvforbars create prect $x0 $ymask $x1 [ expr $ymask + $S(maskplus) ] -tag bar$cpu-mask -fill $CLR(bg)
         }
         #Set CPU utilisation % value and hide with same as background colour
-        $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ]  -tags "pcent$cpu"
+        $canvforbars create text  [ expr $x0 + $S(txtalign) ]  [ expr $y1 + $S(txtalign) ] -text "0%" -fill $CLR(bg) -font [ list basic [ expr [ font actual basic -size ] - 3 ] ]  -tags "pcent$cpu"
     }
 }
 
@@ -222,7 +222,7 @@ proc AdjustBarHeight {cpu usr sys percent} {
     #Create Sys rectangle starting from top of usr up to max of top of bar
     $canvforbars coords $systag $x0 [ expr {$newYusr - ($y1 - $newYsys)} ] $x1 $newYusr
     $canvforbars delete pcent$cpu
-    $canvforbars create text  [ expr $x0 + $S(txtalign) ] [ expr $y1 + $S(txtalign) ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font [ list basic [ expr [ font actual basic -size ] - 2 ] ] -tags "pcent$cpu"
+    $canvforbars create text  [ expr $x0 + $S(txtalign) ] [ expr $y1 + $S(txtalign) ] -text "[ expr int($percent) ]%" -fill $CLR(usr) -font [ list basic [ expr [ font actual basic -size ] - 3 ] ] -tags "pcent$cpu"
 }
 
 proc metrics {} {
@@ -367,8 +367,14 @@ proc agstart { agent_id start_display } {
 #Will only be called to start the agent the localhost
 #metrics command is used to start the display to connect to local or remote agent
 global tcl_platform
-set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+         puts "Error: Cannot find a Valid Executable Directory"
+         return
+     }
+set UserDefaultDir $dirname
+::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
 package require socktest
@@ -379,11 +385,16 @@ tk_messageBox -message "Metrics Agent already running on id: $agent_id"
 return
 } else {
   if {$tcl_platform(platform)=="windows"} {
-    if {[catch {exec cmd /c "cd /d agent && agent.bat $agent_id" &} message ]} {
+	   if {[file exists "$dirname/agent/agent.bat"]} {
+	       set agentfile "agent.bat"
+	   } else {
+	       set agentfile "agent"
+           }
+    if {[catch {exec cmd /c "cd /d $dirname/agent && $agentfile $agent_id" &} message ]} {
 	puts "Error starting metrics agent: $message"
     	}
   } else {
-	if {[catch {exec sh -c "cd agent && ./agent $agent_id 2>/dev/null" &} message ]} {
+	if {[catch {exec sh -c "cd $dirname/agent && ./agent $agent_id 2>/dev/null" &} message ]} {
 	puts $message
 	}
   }}
@@ -399,7 +410,7 @@ return
 proc agstatus { agent_hostname agent_id } {
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
@@ -416,12 +427,12 @@ return
 proc agstop { agent_hostname agent_id } {
 global tcl_platform
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
 namespace import socktest::*
-set result [ sockmesg [ socktest $agent_hostname $agent_id 1000 ]]
+set result [ sockmesg [ socktest $agent_hostname $agent_id 5000 ]]
 if { $result eq "OK" } {
 	  if { [ interp exists metrics_interp ] } {
 	#A display is already connected so stopping display will close or reinitialize agent

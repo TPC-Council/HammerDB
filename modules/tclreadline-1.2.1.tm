@@ -1,4 +1,4 @@
-package provide TclReadLine 1.2
+package provide TclReadLine 1.2.1
 #TclReadLine2 modified to use Expect on Linux and Twapi on Windows
 
 namespace eval TclReadLine {
@@ -53,9 +53,6 @@ proc TclReadLine::setup_prompt_requirements {} {
     } else {
         package require Expect
         interp alias {} stty {} exp_stty
-        # Prevent sigint from killing our shell:
-        # Allow SIGINT to kill shell, uncomment to trap SIGINT
-        #exp_trap SIG_IGN SIGINT
         # Handle terminal resize events:
         exp_trap ::TclReadLine::getColumns SIGWINCH
     }
@@ -736,8 +733,8 @@ proc TclReadLine::setHistory {hlist} {
 # main()
 
 proc TclReadLine::rawInput {} {
-    fconfigure stdin -buffering none -blocking 0
-    fconfigure stdout -buffering none -translation auto
+    chan configure stdin -buffering none -blocking 0
+    chan configure stdout -buffering none -translation auto
     if {[string match windows $::tcl_platform(platform)]} {
         enableRaw
     } else {
@@ -746,8 +743,8 @@ proc TclReadLine::rawInput {} {
 }
 
 proc TclReadLine::lineInput {} {
-    fconfigure stdin -buffering line -blocking 1
-    fconfigure stdout -buffering line
+    chan configure stdin -buffering line -blocking 1
+    chan configure stdout -buffering line
     if {[string match windows $::tcl_platform(platform)]} {
         disableRaw
     } else {
@@ -756,6 +753,10 @@ proc TclReadLine::lineInput {} {
 }
 
 proc TclReadLine::doExit {{code 0}} {
+
+    # With Tcl 9 set stdin readable to {} to prevent Illegal instruction on exit
+    fileevent stdin readable {}
+
     variable HISTFILE
     variable HISTORY_SIZE 
 

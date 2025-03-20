@@ -242,6 +242,7 @@ namespace eval BawtZip {
     namespace export GetZipProg
     namespace export Unzip
     namespace export TarGzip
+    namespace export TarGunzip
     namespace export Bootstrap
 
     # Code for _Vfs* Zip procedures taken from http://wiki.tcl-lang.org/36689
@@ -376,6 +377,18 @@ namespace eval BawtZip {
         set cwd [pwd]
         cd $rootDir
         exec tar czf $tarFile [file tail $dir]
+        cd $cwd
+    }
+
+    proc TarGunzip { tarFile dir } {
+        Log "TarGunzip" 2
+        Log "Destination directory: $dir"     4 false
+        Log "Tar file        : $tarFile" 4 false
+        set DestDir $dir
+        set cwd [pwd]
+        cd $DestDir
+        Log "Extracting Tar [ file tail $tarFile ] into $DestDir"
+        exec tar xzf [ file tail $tarFile  ]
         cd $cwd
     }
 
@@ -817,6 +830,18 @@ namespace eval BawtFile {
                 # File starts with tilde.
                 set fileName [format "./%s" $fileName]
             }
+	    # From Tcl9.0.0 zip file is included in Tcl & Tk library, don't strip or gives cannot find init.tcl error
+        if { [IsWindows] } {
+            if { [string match "tcl9*.dll" $fileName] || [string match "tcltk9*.dll" $fileName] } {
+	    # Don't strip
+	    continue
+            }
+	    } else {
+            if { [string match "libtcl9*.so" $fileName] || [string match "libtcl9tk9*.so" $fileName] } {
+	    # Don't strip
+	    continue
+	    }
+	}
             set fileAbs [file join $srcDir $fileName]
             if { [CheckMatchList [file tail $fileAbs] $pattern false] } {
                 set fileAbsMSys [MSysPath $fileAbs]
@@ -1300,6 +1325,7 @@ namespace eval BawtBuild {
     namespace export TeaConfig
     namespace export NeedDll2Lib Dll2Lib
     namespace export DosRun
+    namespace export GetRandomPassword
 
     variable sBuildStages
     array set sBuildStages {
@@ -1318,7 +1344,7 @@ namespace eval BawtBuild {
 
     variable sBuildOpts
     array set sBuildOpts {
-        TclVersion               "8.6.12"
+        TclVersion               "9.0.1"
         ImgVersion               "1.4.13"
         OsgVersion               "3.6.5"
         TclDir                   "HammerDB"
@@ -2793,7 +2819,11 @@ namespace eval BawtBuild {
     }
 
     proc GetTkLibName { libVersion { stub "" } } {
+	if {[package vcompare [ GetTclVersion ] "9.0.0" ] >= 0} {
+        return [_GetTclTkLibName "tcl9tk$stub" $libVersion]
+        } else {
         return [_GetTclTkLibName "tk$stub" $libVersion]
+	}
     }
 
     proc GetTclStubLib { libVersion { compilerType "gcc" } } {
@@ -2845,7 +2875,11 @@ namespace eval BawtBuild {
         }
         set threadSuffix ""
         if { [IsWindows] && [UseWinCompiler $libName "vs"] } {
+		if {[package vcompare [ GetTclVersion ] "9.0.0" ] >= 0} {
+            set threadSuffix ""
+		} else {
             set threadSuffix "t"
+	    	}
         }
         if { $libVersion eq "" } {
             set versionStr ""
@@ -3736,6 +3770,22 @@ namespace eval BawtBuild {
         Log "Status: $status" 4 false
         WriteBuildLog $libName true $result
     }
+
+proc  GetRandomPassword {length} {
+        variable _set {shW4UMe832TpaSylIdfzxbrNki9A7Q5PmZ0XDuYVg1KEGwLcJtjRCF6OqovBHn};
+        variable _password {};
+        set _index [pid];
+
+        for {set _char 1} {$_char <= $length} {incr _char} {
+                incr _index [lindex [time {
+                        while {$_index >= [string length $_set]} {
+                                incr _index -[string length $_set];
+                        }
+                        for {set _count $_index} {$_count <= [string length $_set]+[string index [clock microseconds] end]} {incr _count} {}
+                        set _password $_password[string index $_set $_index]; }] 0]
+        }
+        return $_password;
+        }
 }
 
 namespace eval BawtMain {

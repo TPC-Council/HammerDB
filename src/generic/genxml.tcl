@@ -1,6 +1,63 @@
+proc find_config_dir {} {
+#Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
+ if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]} message ] { set ISConfigDir "" }
+#Running under Python argv0 does not exist and will error if referenced
+if { [ info exists argv0 ] } {
+set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
+        } else {
+set AGConfigDir .
+        }
+set PWConfigDir [ file join [ pwd ] config ]
+if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
+set ZIConfigDir [ file join [zipfs root]/app config ]
+   } else {
+set ZIConfigDir ""
+ }
+foreach CD { ISConfigDir AGConfigDir PWConfigDir ZIConfigDir } {
+        if { [ file isdirectory [ set $CD ]] } {
+        if { [ file exists [ file join [ set $CD ] generic.xml ]] && [ file exists [ file join [ set $CD ] database.xml ]] } {
+             return [ set $CD ]
+        }
+    }
+}
+return "FNF"
+}
+
+proc find_exec_dir {} {
+global tcl_platform
+#Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
+if [ catch {set ISExecDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ]]} message ] { set ISExecDir "" }
+#Running under Python argv0 does not exist and will error if referenced
+if { [ info exists argv0 ] } {
+set AGExecDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]]]
+        } else {
+set AGExecDir .
+        }
+set PWExecDir [ pwd ]
+if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" && $::tcl_platform(platform) == "windows" } {
+	set ftail ".exe"
+   } else {
+	set ftail ""
+   }
+foreach CD { ISExecDir AGExecDir PWExecDir } {
+        if { [ file isdirectory [ set $CD ]] } {
+        if { [ file exists [ file join [ set $CD ] hammerdb$ftail ]] && [ file exists [ file join [ set $CD ] hammerdbcli$ftail ]] && [ file exists [ file join [ set $CD ] hammerdbws$ftail ]] } {
+             return [ set $CD ]
+        }
+    }
+}
+return "FNF"
+}
+
 proc get_xml_data {} {
+#proc get_xml_data not called when using SQLite
     global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
-    if {[catch {set xml_fd [open "config/generic.xml" r]}]} {
+    set dirname [ file dirname [ file normalize $argv0 ]]
+    if { $dirname eq "[zipfs root]app" } {
+    #Is a zip directory
+    set dirname [ file dirname [ lindex [ split [ zipfs mount ]] end ]]
+    }
+    if {[catch {set xml_fd [open "$dirname/config/generic.xml" r]}]} {
         puts "Could not open XML config file using default values"
         return
     } else {
@@ -161,7 +218,7 @@ proc CheckSQLiteDB {dbname} {
     global sqlitedb_dir
 
     if {$sqlitedb_dir eq ""} {
-        puts "Parameter sqlitedb_dir in generic.xml is empty. Use temp directory."
+        #Parameter sqlitedb_dir in generic.xml is empty. Use temp directory
         set sqlitedb_dir "TMP"
     }
 

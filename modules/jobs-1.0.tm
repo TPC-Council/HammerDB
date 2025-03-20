@@ -983,13 +983,14 @@ namespace eval jobs {
         set bm [ string map {TPC TPROC} [ join [ hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$job} ]]]
         set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$job} ]]
         set output [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=0} ]]
-        if { [ string match "*Ready to create*" $output ] } {
+        set output1 [ join [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$job AND VU=1} ]]
+        if { [ string match -nocase "*creating*" $output1 ] } {
           set jobtype "Schema Build"
-        } elseif { [ string match "*Do you want to delete*" $output ] } {
+        } elseif { [ string match -nocase "*delete*" $output1 ] } {
           set jobtype "Schema Delete"
-        } elseif { [ string match "*Do you want to check*" $output ] } {
+        } elseif { [ string match -nocase "*checking*" $output1 ] } {
           set jobtype "Schema Check"
-        } else {
+        } elseif { [ string match -nocase "*rampup*" $output1 ] || [ string match -nocase "*scale\ factor*" $output1 ]} {
           set jobtype "Benchmark Run"
           set jobresult [ getjobresult $job 1 ]
           if { [ llength $jobresult ] eq 2 && [ string match [ lindex $jobresult 1 ] "Jobid has no test result" ] } {
@@ -1008,7 +1009,9 @@ namespace eval jobs {
            set geo [ format "%.2f" [ lindex $numbers 1]]
 		}
             }
-        }
+        } else {
+          set jobtype "--"
+	}
         set statusimg ""
         if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $output ] } {
           if { [ string match "*FINISHED FAILED*" $output ] } {
@@ -1797,8 +1800,7 @@ namespace eval jobs {
   proc getchart { jobid vuid chart } {
     set chartcolors [ list MariaDB { color1 "#42ADB6" color2 "#9fd7dc" } PostgreSQL { color1 "#062671" color2 "#457af5" } \
 	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#FFFF00" color2 "#ffff80" } \
-	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } \
-	Redis { color1 "#D00000" color2 "#ff6868" } ]
+	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } ]
     set color1 "#808080"
     set color2 "#bfbfbf"
     switch $chart {

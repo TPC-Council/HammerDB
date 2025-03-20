@@ -22,12 +22,11 @@ proc build_pgtpch {} {
             puts "Failed to create threads for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc GatherStatistics { lda } {
@@ -575,7 +574,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20
@@ -734,8 +733,8 @@ proc loadpgtpch {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set total_querysets $pg_total_querysets ;# Number of query sets before logging off
 set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
@@ -752,11 +751,10 @@ set refresh_on \"$pg_refresh_on\" ;#First User does refresh function
 set update_sets $pg_update_sets ;#Number of sets of refresh function to complete
 set trickle_refresh $pg_trickle_refresh ;#time delay (ms) to trickle refresh function
 set REFRESH_VERBOSE \"$pg_refresh_verbose\" ;#report refresh function activity
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
@@ -1358,8 +1356,8 @@ proc loadpgcloud {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL Cloud"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# PostgreSQL Library
 set RAISEERROR \"$pg_raise_query_error\" ;# Exit script on PostgreSQL query error (true or false)
 set VERBOSE \"$pg_verbose\" ;# Show query text and output
@@ -1371,11 +1369,10 @@ set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc standsql { lda sql RAISEERROR VERBOSE } {
@@ -1531,13 +1528,12 @@ proc delete_pgtpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc ConnectToPostgres { host port sslmode user password dbname } {
@@ -1601,13 +1597,12 @@ proc check_pgtpch {} {
             puts "Failed to create threads for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpchcommon::* }
 
 proc ConnectToPostgres { host port sslmode user password dbname } {

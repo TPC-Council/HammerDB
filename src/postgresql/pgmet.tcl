@@ -1626,11 +1626,13 @@ namespace eval pgmet {
         upvar #0 env e
         set cur_proc graphsetup
         if { [ catch {
-                #set graph          .ash_graph
                 set graph          .ed_mainFrame.me.m.f.a.gf.ash_graph
                 set public(ash,graph) $graph
 
-                barchart $public(ash,graph) \
+       barchart $public(ash,graph) \
+      -title "Active Session History"  \
+      -background $public(bg) -foreground $public(fg) \
+      -font $public(medfont)  \
       -relief flat      \
       -barmode overlap  \
       -bg $public(bgt)  \
@@ -1650,7 +1652,7 @@ namespace eval pgmet {
                               -position right \
                               -ipady 0 -ipadx 0 -padx 0 -pady 0 \
                               -relief flat -borderwidth 0
-                #
+
                 $graph axis   configure x -minorticks 0  \
                               -stepsize $public(ash,ticksize)  \
                               -tickfont  $public(smallfont) \
@@ -1660,8 +1662,8 @@ namespace eval pgmet {
                               -command cur_time      \
                               -bd 0      \
                               -color $public(fg)
-                #
-                $graph axis   configure y -title "Active Sessions (AAS)" -min 0.0 -max {} \
+                
+                $graph axis   configure y -title "AS" -titlefont $public(smallfont) -min 0.0 -max {} \
                               -tickfont  $public(smallfont) -titlefont $public(smallfont) -titlecolor $public(fg) \
                               -background $public(bgt) \
                               -color $public(fg)
@@ -1956,6 +1958,9 @@ namespace eval pgmet {
         if { ! [ info exists dbmon_threadID ] } {
             set public(parent) $masterthread
             pg_dbmon_thread_init 
+	    #add zipfs paths to thread
+            catch {eval [ subst {thread::send $dbmon_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
+            catch {eval [ subst {thread::send $dbmon_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
         } else {
             return 1
         }
@@ -3173,7 +3178,7 @@ namespace eval pgmet {
                     set public(pale_brown)        #EFD0B2
                     set public(pale_ochre)        #FECA58
                     set public(pale_brown)        #F0A06A
-                    if { [ string match "*dark*" $ttk::currentTheme ] } {
+                    if { [ string match "*dark*" $::ttk::currentTheme ] } {
                     set public(fg)        white
                     set public(bg)        black
                     set public(graphselect) $defaultBackground

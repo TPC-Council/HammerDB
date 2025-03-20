@@ -13,19 +13,117 @@ set TimeProfilerMode 0
 if [catch {package require xml} ] { error "Failed to load XML functions into Time Profile Package" } 
 if { [info exists TimeProfilerMode] } {
 puts "Initializing xtprof time profiler"
-if {[ tsv::exists allvutimings 2 ]} { 
+if {[ tsv::exists allvutimings 2 ]} {
 tsv::unset allvutimings
 	}
-if {[ tsv::exists allclicktimings 2 ]} { 
+if {[ tsv::exists allclicktimings 2 ]} {
 tsv::unset allclicktimings
 	}
+
+  proc is-dict {value} {
+    return [expr {[string is list $value] && ([llength $value]&1) == 0}]
+  }
+
+   proc find_config_dir {} {
+   #Find a Valid XML Config Directory using info script, argv, current directory and zipfilesystem
+    if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]} message ] { set ISConfigDir "" }
+   #Running under Python argv0 does not exist and will error if referenced
+   if { [ info exists argv0 ] } {
+   set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
+           } else {
+   set AGConfigDir .
+           }
+   set PWConfigDir [ file join [ pwd ] config ]
+   if { [ lindex [zipfs mount] 0 ] eq "//zipfs:/app" } {
+   set ZIConfigDir [ file join [zipfs root]/app config ]
+      } else {
+   set ZIConfigDir ""
+    }
+   foreach CD { ISConfigDir AGConfigDir PWConfigDir ZIConfigDir } {
+           if { [ file isdirectory [ set $CD ]] } {
+           if { [ file exists [ file join [ set $CD ] generic.xml ]] && [ file exists [ file join [ set $CD ] database.xml ]] } {
+                return [ set $CD ]
+           }
+       }
+   }
+   return "FNF"
+   }
+
+
+   proc CheckSQLiteDB {dbname} {
+       global sqlitedb_dir
+
+       if {$sqlitedb_dir eq ""} {
+           #Parameter sqlitedb_dir in generic.xml is empty. Use temp directory
+           set sqlitedb_dir "TMP"
+       }
+
+       if {$sqlitedb_dir ne "TMP"} {
+           if {(![file exists $sqlitedb_dir]) || 
+               (![file readable $sqlitedb_dir]) ||
+               (![file writable $sqlitedb_dir])} {
+               puts "Access $sqlitedb_dir exception. Use temp directory."
+               set tmpdir [ findtempdir ]
+           } else {
+               set tmpdir $sqlitedb_dir
+           }
+       } else {
+           set tmpdir [ findtempdir ]
+       }
+
+       if { $tmpdir != "notmpdir" } {
+           set sqlitedb [ file join $tmpdir "$dbname\.db" ]
+       } else {
+           puts "Error Database Directory set to TMP but couldn't find temp directory"
+           return
+       }
+
+       return $sqlitedb
+   }
+
+
+   proc SQLite2Dict {dbname} {
+       set sqlitedb [ CheckSQLiteDB $dbname ]
+   
+       if { $sqlitedb eq "" || ![file exists $sqlitedb] } {
+           #puts "No $sqlitedb found."
+           return
+       }
+    
+       if [catch {sqlite3 hdb $sqlitedb} message ] {
+           puts "Error initializing SQLite database : $message"
+           return
+       } else {
+           catch {hdb timeout 30000}
+           set sqlcmd "SELECT tbl_name FROM sqlite_master WHERE type=table"
+           catch {hdb eval $sqlcmd}
+           if [catch {set tbllist [ hdb eval {SELECT name FROM sqlite_master WHERE type='table'}]} message ] {
+               puts "Error querying table name in SQLite on-disk database : $message"
+               return
+           } else {
+               set maindict [ dict create ]
+               foreach tbl $tbllist {
+                   set subdict [ dict create ]
+                   set sqlcmd "SELECT key, val FROM $tbl"
+                   hdb eval $sqlcmd {
+                       dict append subdict $key $val
+                   }
+                   dict append maindict $tbl $subdict
+               }
+		catch {close hdb}
+               return $maindict
+           }
+       }
+   }
+
+
     proc xttimeprofiler {args} {
         global ProfilerArray
         
         # Intialize the elapsed time counters if needed...
         if { ![info exists ProfilerArray(ElapsedClicks)] } {
             set ProfilerArray(ElapsedClicks) [expr double([clock clicks])]
-            set ProfilerArray(Elapsedms) [expr double([clock clicks -milliseconds])]
+            set ProfilerArray(Elapsedms) [expr double([clock milliseconds])]
         }
         
         set fun [lindex [lindex $args 0] 0]
@@ -223,14 +321,19 @@ set TimeProfilerMode 0
 
 proc xttimeproflog { totalvirtualusers library } {
 puts -nonewline "Gathering timing data from Active Virtual Users..."
+set dirname [ find_config_dir ]
+if { $dirname eq "FNF" } {
+set dirname "."
+} else {
 #Try and add the database name to the report, match the library name from the config to find the database
 set dbtoreport ""
-if {[catch {set dbdict [ ::XML::To_Dict config/database.xml ]} message ]} { ; } else {
+if {[catch {set dbdict [ ::XML::To_Dict $dirname/database.xml ]} message ]} { ; } else {
 dict for {key value} $dbdict {
 dict for {key2 value2} $value {
 if { [ string match *$library* $value2 ] } {
 set dbtoreport [ dict get $value name ]
 break
+        }
       }
     }
   }
@@ -239,8 +342,40 @@ break
 set xtunique_log_name 0
 set xtgather_timeout 10
 set xtjob_storage 1
+global sqlitedb_dir
+set dirname [ find_config_dir ]
+if { $dirname eq "FNF" } {
+set dirname "."
+}
+if { [ file exists $dirname/generic.xml ] } {
+set genericdict [ ::XML::To_Dict $dirname/generic.xml ]
+        } else {
+set genericdict {}
+        }
+#Get global variable sqlitedb_dir from generic.xml file
+if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
+    set sqlitedb_dir [ dict get $genericdict sqlitedb sqlitedb_dir ]
+} else {
+    set sqlitedb_dir [ findtempdir ]
+}
+if [catch {package require sqlite3} message ] {
+error "Error loading SQLite in xtprof : $message"
+return
+        }
+if [catch {sqlite3 hdb generic} message ] {
+error "Error initializing SQLite database for XT Profiler : $message"
+return
+        } else {
+catch {hdb timeout 30000}
+}
+set sqlitegeneric [ SQLite2Dict "generic" ]
+if { [ is-dict $sqlitegeneric ] } {
+    set xtunique_log_name [ dict get $sqlitegeneric timeprofile xt_unique_log_name ]
+    set xtgather_timeout [ dict get $sqlitegeneric timeprofile xt_gather_timeout ]
+    set xtjob_storage [ dict get $sqlitegeneric timeprofile xt_job_storage ]
+} else {
 set 2key 0
-if {[catch {set gendict [ ::XML::To_Dict config/generic.xml ]} message ]} { ; } else {
+if {[catch {set gendict [ ::XML::To_Dict $dirname/generic.xml ]} message ]} { ; } else {
 dict for {key value} $gendict {
 dict for {key2 value2} $value {
 if { $key2 eq "xt_unique_log_name" } {
@@ -260,6 +395,7 @@ if { $2key eq 2 } { break }
         }
      }
   }
+}
 }
 #If running in the GUI do not try to store output in SQLite
 if { [ tsv::exists commandline sqldb ] eq 0 } {
@@ -303,10 +439,39 @@ for {set f 2} {$f <= $totalvirtualusers} {incr f} {
 #If Timing Data incomplete continue to next iteration in loop
 if {![ tsv::exists allvutimings $f ]} { continue }
 foreach func [ tsv::keylkeys allvutimings $f ] { dict set monitortimings $f $func [ join [ tsv::keylget allvutimings $f $func ]] }
+ if {[catch {![ string is double [ tsv::keylget allclicktimings $f msperclick ]]}]} {
 dict set clicktimings $f [ tsv::keylget allclicktimings $f msperclick ]
 dict set endclicks $f [ tsv::keylget allclicktimings $f endclicks ]
 dict set endms $f [ tsv::keylget allclicktimings $f endms ]
+	} else {
+#msperclick not found for virtual user
+#puts "WARNING:Cannot find clock clicking timings for Virtual User $f, trying to use alternative timing" 
+if { $f > 2 } {
+ if {[catch {![ string is double [ tsv::keylget allclicktimings [expr {$f-1}] msperclick ]]}]} {
+#found msperclick for virtual user below
+#puts "Using clock clicking timings for Virtual User [expr {$f-1}]" 
+dict set clicktimings $f [ tsv::keylget allclicktimings [expr {$f-1}]  msperclick ]
+dict set endclicks $f [ tsv::keylget allclicktimings [expr {$f-1}] endclicks ]
+dict set endms $f [ tsv::keylget allclicktimings [expr {$f-1}] endms ]
+	} else {
+#error can't find click timings for the vuser below either
+#puts "WARNING:Cannot find alternative clock clicking timings for Virtual User $f below, trying to continue" 
+continue
 	}
+     } else {
+ if {[catch {![ string is double [ tsv::keylget allclicktimings [expr {$f+1}] msperclick ]]}]} {
+#found msperclick for virtual user above
+#puts "Using clock clicking timings for Virtual User [expr {$f+1}]" 
+dict set clicktimings $f [ tsv::keylget allclicktimings [expr {$f+1}]  msperclick ]
+dict set endclicks $f [ tsv::keylget allclicktimings [expr {$f+1}] endclicks ]
+dict set endms $f [ tsv::keylget allclicktimings [expr {$f+1}] endms ]
+		} else {
+#puts "WARNING:Cannot find alternative clock clicking timings for Virtual User $f above, trying to continue" 
+continue
+	       }
+            }
+         }
+      }
 if { [ llength [ dict keys $monitortimings ]] != [ expr $totalvirtualusers - 1 ] } {
 puts "[ llength [ dict keys $monitortimings ]] out of [ expr $totalvirtualusers - 1 ] Virtual Users reported"
 }
@@ -413,7 +578,7 @@ foreach sproc $lev2uniquekeys {
 if { [ llength [ set $sproc-clickslist ]] > 2 } {
 	    set sd [ sigma {*}[ set $sproc-clickslist ]]
 	} else { set sd 0 }
-set sortedclicks [lsort -integer [ set $sproc-clickslist ]]
+           set sortedclicks [lsort -integer [ set $sproc-clickslist ]]
 	   set calls [ llength $sortedclicks ]
 	   set min [ lindex $sortedclicks 0 ]
            set max [ lindex $sortedclicks [ expr {$calls -1} ]]
@@ -424,7 +589,7 @@ set sortedclicks [lsort -integer [ set $sproc-clickslist ]]
            dict set sumtimings $sproc elapsed $medianendms
            dict set sumtimings $sproc avgms [expr $cavg * $medianmsperclick]
            dict set sumtimings $sproc totalms [expr $ctotal * $medianmsperclick]
-           dict set sumtimings $sproc ratio [expr {(double($ctotal / $medianendclicks) * 100.0)/[llength $vustoreport]}]
+           dict set sumtimings $sproc ratio [expr {(double($ctotal / $medianendclicks) * 100.0)/[llength $vustoreport] / 2}]
            dict set sumtimings $sproc max [expr $max * $medianmsperclick]
            dict set sumtimings $sproc min [expr $min * $medianmsperclick]
            dict set sumtimings $sproc p99 [ expr [ percentile $sortedclicks 0.99 ] * $medianmsperclick]
@@ -476,9 +641,12 @@ proc xttimeprofdump {myposition} {
         
         # Stop timing elapsed time and calculate conversion factor for clicks to ms...
         set EndClicks [expr {double([clock clicks]) - $ProfilerArray(ElapsedClicks)}]
-        set Endms [expr {double([clock clicks -milliseconds]) - $ProfilerArray(Elapsedms)}]
-        set msPerClick [expr $Endms / $EndClicks]
-        
+        set Endms [expr {double([clock milliseconds]) - $ProfilerArray(Elapsedms)}]
+        set msPerClick [ format %.16f [expr {$Endms / $EndClicks}]]
+	if { $msPerClick eq 0 } {
+        set msPerClick [ expr {$Endms / $EndClicks} ]
+	}
+
         # Visit each function and generate the statistics for it...
         for { set fi 0 ; set PerfList "" } { $fi < $ProfilerArray(funcount) } { incr fi } {
             set fun $ProfilerArray($fi)

@@ -32,13 +32,12 @@ proc build_mssqlstpch {} {
             puts "Failed to create threads for schema creation: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 proc UpdateStatistics { odbc db azure advanced_stats } {
     puts "UPDATING SCHEMA STATISTICS"
@@ -1292,7 +1291,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20
@@ -1452,8 +1451,8 @@ proc loadmssqlstpch {} {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "SQL Server TPROC-H"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# SQL Server Library
 set version $version ;# SQL Server Library Version
 set total_querysets $mssqls_total_querysets ;# Number of query sets before logging off
@@ -1479,11 +1478,10 @@ set trickle_refresh $mssqls_trickle_refresh ;#time delay (ms) to trickle refresh
 set REFRESH_VERBOSE \"$mssqls_refresh_verbose\" ;#report refresh function activity
 set partition_orders_and_lineitems \"$mssqls_tpch_partition_orders_and_lineitems\" ;#Order and Lineitem Tables are partitioned
 set advanced_stats \"$mssqls_tpch_advanced_stats\" ;#Create advanced statistics
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
@@ -2053,13 +2051,12 @@ proc delete_mssqlstpch {} {
             puts "Failed to create threads for schema deletion: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {
@@ -2154,13 +2151,12 @@ proc check_mssqlstpch {} {
             puts "Failed to created thread for schema check: $message"
             return
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 set version $version
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library $version} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc connect_string { server port odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id} {

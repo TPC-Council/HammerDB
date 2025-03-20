@@ -22,6 +22,8 @@ proc wapp-2-json {dfields dict2json} {
             dict set dict2json error message "output procedure wapp-2-json called with invalid number of fields"
         }
     }
+    #escape backslashes in output to prevent JSON parse errors
+    set dict2json [ regsub -all {\\} $dict2json {\\\\} ]
     if { $dfields == 2 } {
         set huddleobj [ huddle compile {dict * dict} $dict2json ]
     } else {

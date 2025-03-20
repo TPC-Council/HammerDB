@@ -174,17 +174,35 @@ namespace eval tpcccommon {
       async_time [ expr $as_thkt * 1000 ]
     }
   }
+  #Find a Valid XML Connect Pool Config Directory,don't look in zipped fs as user needs to edit
+  proc find_cpool_dir {} {
+  if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config connectpool ]} message ] { set ISConfigDir "" }
+  set PWConfigDir [ file join [ pwd ] config connectpool ]
+  foreach CD { ISConfigDir PWConfigDir } {
+          if { [ file isdirectory [ set $CD ]] } {
+          if { [ file exists [ file join [ set $CD ] db2cpool.xml ]] && [ file exists [ file join [ set $CD ] mariacpool.xml ]] && [ file exists [ file join [ set $CD ] mssqlscpool.xml ]] && [ file exists [ file join [ set $CD ] mysqlcpool.xml ]] && [ file exists [ file join [ set $CD ] oracpool.xml ]] && [ file exists [ file join [ set $CD ] pgcpool.xml ]]} {
+               return [ set $CD ]
+          }
+      }
+  }
+  return "FNF"
+  }
   #XML Connect Data
   proc get_connect_xml { prefix } {
     if [catch {package require xml} ] { error "Failed to load xml package in tpcccommon module" } 
-    set connect "config/connectpool/$prefix\cpool.xml"
+    set cpooldir [ find_cpool_dir ]
+    if { $cpooldir eq "FNF" } {
+      error "Connect Pool specified but cannot find XML connectpool directory or connect pool XML files"
+	} else {
+    set connect "$cpooldir/$prefix\cpool.xml"
     if { [ file exists $connect ] } { 
       set cpool [ ::XML::To_Dict_Ml $connect ] 
       return $cpool
-    } else { 
+    } else {
       error "Connect Pool specified but file $connect does not exist" 
-    }
-  }
+     }
+   }
+ }
 }
 #Choose a Cursor when using multiple connections
 proc pick_cursor { policy cursors cnt len } {

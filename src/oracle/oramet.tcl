@@ -22,9 +22,9 @@ namespace eval oramet {
         if { ![winfo exists .ed_mainFrame.me.m] } {
             frame $main -background  $defaultBackground -borderwidth 0 
             frame $main.f -background $public(bg) -borderwidth 0 ;# frame, use frame to put tiled windows
-            pack $main                           -expand true -fill both 
+            pack $main -expand true -fill both
             pack [ ttk::sizegrip $main.grip ] -side bottom -anchor se
-            pack $main.f                         -expand true -fill both  
+            pack $main.f -expand true -fill both  
         }
         update idletasks
     }
@@ -186,7 +186,7 @@ namespace eval oramet {
 
     proc ash_init { { display  0 } } {
         upvar #0 env e
-        global public defaultBackground
+        global public
         set cur_proc ash_init 
         if { [ catch {
                 set ash_frame     $public(main).f.a
@@ -299,7 +299,7 @@ namespace eval oramet {
                 $public(ash,sqltbl) configure -selectbackground $public(bg)
                 $public(ash,sqltbl) configure -selectforeground #FF7900
                 $public(ash,sqltbl) configure -activestyle none 
-        #} err ] } { ; }
+        } err ] } { ; }
     }
 
     # For zooming in and out, resets the minimum point on X axis
@@ -359,6 +359,7 @@ namespace eval oramet {
         }
         tablelist::tablelist $tbl \
          -background $public(bg) \
+	 -foreground $public(fg) \
          -columns " $collist " \
 	 -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -415,6 +416,7 @@ namespace eval oramet {
         grid rowconfigure    . 0 -weight 1
         grid columnconfigure . 0 -weight 1
     }
+
     proc sql_tbl { win ncols nrows cols } {
         global public
         set cur_proc  sql_tbl
@@ -426,6 +428,7 @@ namespace eval oramet {
         }
         tablelist::tablelist $tbl \
          -background $public(bg) \
+	 -foreground $public(fg) \
          -columns " $collist " \
 	 -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -507,6 +510,7 @@ namespace eval oramet {
         }
         tablelist::tablelist $tbl \
          -background $public(bg) \
+	 -foreground $public(fg) \
          -columns " $collist " \
 	 -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -544,6 +548,7 @@ namespace eval oramet {
         }
         tablelist::tablelist $tbl \
          -background $public(bg) \
+	 -foreground $public(fg) \
          -columns " $collist " \
 	 -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -579,6 +584,7 @@ namespace eval oramet {
         }
         tablelist::tablelist $tbl \
          -background $public(bg) \
+	 -foreground $public(fg) \
          -columns " $collist " \
 	 -labelrelief flat \
          -font $public(medfont) -setgrid no \
@@ -648,7 +654,7 @@ namespace eval oramet {
                 label $w.t$row -text $act -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
-                set pc [ expr (($total + 0.0)/($delta )) * (100.0/142)     ]
+                set pc [ expr (($total+0.0)/($delta )) * (100.0/142)     ]
                 place $w.t$row -relheight 1.0 -relx $pc
         } err ] } { ; }
     }
@@ -656,7 +662,7 @@ namespace eval oramet {
     proc createSqlFrame {tbl row col w } { 
         global public
         set cur_proc  createSqlFrame
-        if { [ catch { 
+        if { [ catch {
                 frame $w -width 142 -height 14 -background $public(bg) -borderwidth 0 -relief flat
                 bindtags $w [lreplace [bindtags $w] 1 1 TablelistBody]
                 set total  [$tbl cellcget $row,activity -text]
@@ -667,7 +673,8 @@ namespace eval oramet {
                     set szpct [ expr {$total * 100 / $public(sqltbl,maxActivity) }]
                     frame $w.w$i -width $szpct -background $public(ashgroup,$name) -borderwidth 0 -relief flat
                     place $w.w$i -relheight 1.0
-                    set total [ expr $total - $sz ]
+		    #PostgreSQL added a catch here, without catch fail to get bar in table
+                    catch {set total [ expr $total - $sz ]}
                 }
                 set total [$tbl cellcget $row,activity -text]
                 set aas [ format "%0.0f" [ expr 100 * ($total+0.0) / $public(sqltbl,maxActivity) ] ]
@@ -763,6 +770,8 @@ namespace eval oramet {
     }
 
     proc ash_fetch { args }  {
+	#Missing ora waits can cause ash_fetch to fail and a blank display
+	#Debug by printing row and $public(waits,\"$idx\") and match to ora waits
         global public
         set cur_proc ash_fetch  
         if { [ catch {
@@ -809,9 +818,9 @@ namespace eval oramet {
                     }
                     #
                     # Valid Group (if group is like IDLE skip )
-                    #
-                    if {  [ info exists public(waits,"$idx")  ]  } {
-                        set idx $public(waits,"$idx")  
+		    #
+                    if {  [ info exists public(waits,\"$idx\")  ]  } {
+                        set idx $public(waits,\"$idx\")  
                     } else {
                         set idx "Other"
                     } 
@@ -955,7 +964,6 @@ namespace eval oramet {
                     ash_details $beg $end
                 }
                 # patch up time just after load, so second pass with smaller bucket_secs
-                # doesn't back track
                 if { $public(ash,first) == -1 } {
                     set time [ expr ( ( $end_day - 2450000 ) * 24*3600 ) + $end_secs ]  
                     set  [set xvec](end)  $time 
@@ -986,7 +994,7 @@ namespace eval oramet {
                 set public(ash,beg) [ format "%06.0f%05.0f" $begday $begsec ]
                 set public(ash,end) [ format "%06.0f%05.0f" $endday $endsec ]
                 set public(ash,sesdelta)  [ expr [set public(ash,end) ] - [ set public(ash,beg) ] ]
-                mon_execute  ash_sqldetails
+                mon_execute ash_sqldetails
         } err] } { ; } 
     }
 
@@ -1042,7 +1050,7 @@ namespace eval oramet {
                 $public(ash,sqltbl) cellselection clear 0,0 end,end
                 $public(ash,sqltbl) cellselection set 0,0 
         } err] } { ; } 
-    } 
+    }
 
     proc ash_sqlsessions_fetch { args }  {
         global public
@@ -1360,6 +1368,7 @@ namespace eval oramet {
                 set i 0
                 foreach color {
                     { #F06EAA Pink }
+                    { #FDDA0D yellow }
                     { #9F9371 light_brown }
                     { #C02800 red }
                     { #717354 medium_brown }
@@ -1381,6 +1390,7 @@ namespace eval oramet {
                 #                                    
                 set public(ash,groups) { 
                     Other 
+		    Scheduler
                     Network 
                     Application 
                     Administrative 
@@ -1473,11 +1483,13 @@ namespace eval oramet {
         upvar #0 env e
         set cur_proc   graphsetup
         if { [ catch {
-                #set graph          .ash_graph
                 set graph          .ed_mainFrame.me.m.f.a.gf.ash_graph
                 set public(ash,graph) $graph
 
                 barchart $public(ash,graph)   \
+	-title "Active Session History"  \
+        -background $public(bg) -foreground $public(fg) \
+        -font $public(medfont)  \
         -relief flat                   \
         -barmode overlap               \
         -bg $public(bgt)                \
@@ -1507,7 +1519,7 @@ namespace eval oramet {
                                          -bd 0      \
                                          -color $public(fg)
                 #
-                $graph axis   configure y -title "Active Sessions (AAS)" -min 0.0 -max {} \
+                $graph axis   configure y -title "AS" -titlefont $public(smallfont) -min 0.0 -max {} \
                              -tickfont  $public(smallfont) -titlefont $public(smallfont) -titlecolor $public(fg) \
                                          -background $public(bgt) \
                                          -color $public(fg)
@@ -1747,7 +1759,6 @@ namespace eval oramet {
                 }
                 $public(ash,output) insert end "\n"
                 $public(ash,output) insert end "\n"
-                $public(ash,output) insert end "[ subst $public(sql,sqlio) ] \n"
         } err] } { ; } 
         unlock public(thread_actv) $cur_proc
     }
@@ -1927,11 +1938,24 @@ namespace eval oramet {
                 set handle none
                 set err "unknown"
 
+                if { [ catch {lappend ::auto_path [zipfs root]app/lib} err ] } {
+                    thread::send $parent "::callback_err \"Error appending auto path\""
+                    just_disconnect $parent
+                    return
+                }
+
+                if { [ catch {::tcl::tm::path add [zipfs root]app/modules modules} err ] } {
+                    thread::send $parent "::callback_err \"Error appending module path\""
+                    just_disconnect $parent
+                    return
+                }
+
                 if { [ catch { package require Oratcl} err ] } {
                     thread::send $parent "::callback_err \"Oratcl load failed in Metrics\""
                     just_disconnect $parent
                     return
                 }
+
 
                 set cmd [ list  oralogon $unpw ]
                 if { [ catch {
@@ -1966,13 +1990,14 @@ namespace eval oramet {
                 set cur_proc   ora_cursor   
                 thread::send -async $parent  " ::callback_mesg $cur_proc  "
                 set cursor [ oraopen $handle ]
+                catch {oraconfig $cursor utfmode true}
                 thread::send -async $parent  " ::callback_set $var $cursor"
             }
             proc ora_sql {parent  cursor sql } {
                 set cur_proc ora_sql 
-                thread::send  $parent  " ::callback_mesg $cur_proc  "
+                thread::send  -async $parent  " ::callback_mesg $cur_proc  "
                 orasql  $cursor $sql
-                thread::send $parent  " ::callback_mesg $cursor parsed"
+                thread::send -async $parent  " ::callback_mesg $cursor parsed"
             }
             proc ora_fetch { parent cursor var } {
                 set cur_proc ora_fetch 
@@ -1995,6 +2020,7 @@ namespace eval oramet {
 
                 if { ! [ info exists tpublic($cursor,open) ] } {
                     set tpublic($cursor) [ oraopen $handle ]
+                    catch {oraconfig tpublic($cursor) utfmode true}
                     set tpublic($cursor,open) 1
                 }
 
@@ -2033,7 +2059,6 @@ namespace eval oramet {
             set public(connected) 1
         }
     } 
-
 
     proc callback_set { var args } {
         set cur_proc callback_set 
@@ -2076,7 +2101,7 @@ namespace eval oramet {
 
 
     proc connect { } {
-        global public
+	global public dbmon_threadID
         global oramsg
         global  env
         set cur_proc connect 
@@ -2235,6 +2260,7 @@ namespace eval oramet {
         }
     }
 
+    #In Pg orall all thread send is async not sync
     proc mon_execute { i { backoff 1000 } } {
         global public dbmon_threadID
         set cur_proc mon_execute  
@@ -2248,7 +2274,7 @@ namespace eval oramet {
                 set crsr "crsr,$i"
                 if { [ catch {
                         set fetch [set i]_fetch
-                        thread::send $dbmon_threadID "ora_all $public(parent) $public(handle) $crsr \"$sql\" $fetch" 
+                        thread::send -async $dbmon_threadID "ora_all $public(parent) $public(handle) $crsr \"$sql\" $fetch" 
                     } err ] } { 
                     unlock public(thread_actv) $cur_proc:$i 
                     global errorInfo
@@ -2288,11 +2314,13 @@ namespace eval oramet {
     }
 
     proc set_ora_waits {} {
+	#Missing ora waits can cause ash fetch to fail
         global public
         set public(waits,"CPU") CPU
         set public(waits,"BCPU") BCPU
         set public(waits,"ARCH_random_i/o") System_IO
         set public(waits,"ARCH_sequential_i/o") System_IO
+	set public(waits,"Disk_file_operations_I_O") System_IO
         set public(waits,"ARCH_wait_for_flow-control") Network
         set public(waits,"ARCH_wait_for_net_re-connect") Network
         set public(waits,"ARCH_wait_for_netserver_detach") Network
@@ -2842,14 +2870,15 @@ namespace eval oramet {
 	  sum(decode(wait_class,'Network',1,0))          net,
 	  sum(decode(wait_class,'Application',1,0))      app,
 	  sum(decode(wait_class,'Administration',1,0))   admin,
-	  sum(decode(wait_class,'Cluster',1,0))      clust,
+	  sum(decode(wait_class,'Cluster',1,0))          clust,
 	  sum(decode(wait_class,'Concurrency',1,0))      concur,
 	  sum(decode(wait_class,'Configuration',1,0))    config,
 	  sum(decode(wait_class,'Commit',1,0))           commit,
 	  sum(decode(wait_class,'System I/O',1,0))       s_io,
 	  sum(decode(wait_class,'User I/O',1,0))         uio,
-	  sum(decode(wait_class,'ON CPU',1,0))        cpu,
-	  sum(decode(wait_class,'BCPU',1,0))        bcpu,
+	  sum(decode(wait_class,'Scheduler',1,0))        scheduler,
+	  sum(decode(wait_class,'ON CPU',1,0))           cpu,
+	  sum(decode(wait_class,'BCPU',1,0))             bcpu,
 	  decode(max(sql_opcode),1,'DDL',
 	                    2,'INSERT',
 			    3,'Query',
@@ -3263,7 +3292,7 @@ Order by tcnt, ash.sql_id, ash.cnt
         set public(pale_brown)        #EFD0B2
         set public(pale_ochre)        #FECA58
         set public(pale_brown)        #F0A06A
-	if { [ string match "*dark*" $ttk::currentTheme ] } {
+	if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set public(fg)        white
         set public(bg)        black
 	set public(graphselect) $defaultBackground
@@ -3377,7 +3406,7 @@ Order by tcnt, ash.sql_id, ash.cnt
         } else {
             set public(ORACLE_HOME) $env(HOME)
         }
-
         connect_to_oracle
+        ed_status_message -finish ""
     }
 }

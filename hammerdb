@@ -5,12 +5,13 @@ export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
 # \
 export PATH="./bin:$PATH"
 # \
-exec wish8.6 -file $0 ${1+"$@"}
+exec wish9.0 "$0" ${1+"$@"}
 # \
 exit
 ########################################################################
 # HammerDB
-# Copyright (C) 2003-2024 Steve Shaw
+# Copyright (C) HammerDB Ltd
+# Hosted by the TPC-Council
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
@@ -27,20 +28,31 @@ exit
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v4.12"
+set hdb_version "v5.0"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
+
+set hdb_path [ zipfs mount ]
+if { [ lindex $hdb_path 0 ] eq "[ zipfs root ]app" } {
+if [ catch {set cd_path [ file normalize [ file dirname [ lindex $hdb_path 1 ]]]} message ] {
+set cd_path [ pwd ]
+   }
+if { [ file isdirectory $cd_path ] } {
+catch {cd $cd_path}
+   }
+}
 
 namespace eval autostart {
     set autostartap "false"
-    if {$argc == 0} { ; } else {
-    if {$argc != 2 || [lindex $argv 0] != "auto" } {
+    if {$::argc == 0} { ; } else {
+    if {$::argc != 2 || [lindex $::argv 0] != "auto" } {
 puts {Usage: hammerdb [ auto [ script_to_autoload.tcl  ] ]}
 exit
 	} else {
         set autostartap "true"
-        set autoloadscript [lindex $argv 1]
+        set autoloadscript [lindex $::argv 1]
 if { [ file exists $autoloadscript ] && [ file isfile $autoloadscript ] && [ file extension $autoloadscript ] eq ".tcl" } {
 ;# autostart selected and tcl file exists
 	     } else {
@@ -62,18 +74,10 @@ namespace eval LoadingProgressMeter {
     tk appname "HammerDB Splash Screen"
 
       set logo_file logo.tcl
-if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
+if [catch {source [ file join $::UserDefaultDir images $logo_file ]}] {
                 puts stderr "While loading image file\
                         \"$logo_file\"...\n$errorInfo"
         }
-    #Display LOGO in SVG format to scale HD displays, fallback is PNG
-    if {[catch {package require tksvg}]} {
-    # SVG not supported use original PNG logo
-    set logoset [ create_logo_images ]
-    set logo [ dict get $logoset logo ]
-    set logim [ image create photo -height 120 -width 694 -data $logo ]
-    } else {
-    # SVG supported use SVG logo to scale
     set logoset [ create_logo_images ]
     set logosetsvg [ create_logo_images_svg ]
     set logosvg [ dict get $logosetsvg logosvg ]
@@ -83,7 +87,6 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
 	set scaleheight [ expr {round((240/1.333333)*[tk scaling])} ]
     set logim [ image create photo -data $logosvg -format "svg -scaletoheight $scaleheight" ]
 	}
-    }
     # Window Icon is not supported in SVG always use PNG
     set iconwht [ dict get $logoset iconwht ]
     set iconw [ image create photo -height 120 -width 97 -data $iconwht ]
@@ -92,7 +95,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
     set gbg white;
     set mid   {TkDefaultFont 20 {bold}} 
     set load  {TkDefaultFont 14}
-    if {$tcl_platform(platform) == "windows"} {
+    if {$::tcl_platform(platform) == "windows"} {
     if {{Segoe UI} in [ font families ] } {
     set mid   {{Segoe UI} 20 {bold}} 
     set load  {{Segoe UI} 14}
@@ -113,7 +116,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
 
     wm iconphoto . -default $iconw
     frame .progress -bg $gbg
-  label .title -text " $hdb_version "  -font $mid \
+  label .title -text " $::hdb_version "  -font $mid \
             -bg $gbg  -fg #f99317  -padx 0
     label .progress.loadmsg  -textvariable loadtext \
             -anchor s  -bg $gbg  -font $load
@@ -161,7 +164,7 @@ if [catch {source [ file join $UserDefaultDir images $logo_file ]}] {
             update idletasks
         }
     }
-    trace variable ::loadtext w [namespace code updateprogress]
+    trace add variable ::loadtext write [namespace code updateprogress]
     set ::loadtext ""
 
     namespace export check_progress_length
@@ -217,13 +220,13 @@ for { set iconcount 0 } { $iconcount < [llength $iconlist] } { incr iconcount } 
         }
     }
 
-append loadlist { gentheme.tcl genvu.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl gentab.tcl gencnv.tcl gentccmn.tcl gentc.tcl genmetrics.tcl gened.tcl genxml.tcl geninit.tcl }
+append loadlist { genvu.tcl genxml.tcl gentheme.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl gentab.tcl gencnv.tcl gentccmn.tcl gentc.tcl genmetrics.tcl gened.tcl geninit.tcl }
 
 set loadtext "Loading generic source"
 after 100
 for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
-		set loadtext $f
+		set loadtext [ file rootname $f ]
 	if [catch {source [ file join $UserDefaultDir src generic $f ]}] {
                 puts stderr "While loading component file\
                         \"$f\"...\n$errorInfo"
@@ -235,7 +238,7 @@ set loadtext "Loading database source"
 after 100
 for { set dbsrccount 0 } { $dbsrccount < [llength $dbsrclist] } { incr dbsrccount } {
     set f [lindex $dbsrclist $dbsrccount]
-		set loadtext $f
+		set loadtext [ file rootname $f ]
 	if [catch {source [ file join $UserDefaultDir src $f ]}] {
                 puts stderr "Error loading database source files/$f"
         }

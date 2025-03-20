@@ -14,7 +14,6 @@ proc gendata_tpcc {} {
         "MySQL" { set db "mysql" }
         "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
-        "Redis" { set db "redis" }
     }
     set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPROC-C schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
@@ -33,9 +32,7 @@ proc gendata_tpcc {} {
             puts "Failed to create thread(s) for data generation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh8.6
-#LOAD MODULES
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh9.0
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc set_filename { dirtowrite filename myposition } {
@@ -469,7 +466,6 @@ proc gendata_tpch {} {
         "MySQL" { set db "mysql" }
         "MariaDB" { set db "maria" }
         "PostgreSQL" { set db "pg" }
-        "Redis" { set db "redis" }
     }
     set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPROC-H schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
@@ -488,9 +484,7 @@ proc gendata_tpch {} {
             puts "Failed to create thread(s) for data generation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh8.6
-#LOAD MODULES
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#!/usr/local/bin/tclsh9.0
 if [catch {package require tpchcommon} ] { error "Failed to load tpch common functions" } else { namespace import tpchcommon::* }
 
 proc set_filename { dirtowrite filename myposition } {
@@ -770,7 +764,7 @@ proc gen_tpch { scale_fact directory num_vu db } {
         set_dist_list $i
     }
     set sup_rows [ expr {$scale_fact * 10000} ]
-    set max_threads 256
+    set max_threads 1024
     set sf_mult 1
     set cust_mult 15
     set part_mult 20

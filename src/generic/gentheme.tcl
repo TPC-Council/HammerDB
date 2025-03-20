@@ -9,13 +9,19 @@ proc tilestyle { defaultBackground icons theme } {
 	set selectedbackground [ list selected black ]
 	}
     #Set Tile styles common to both fixed and scaling
+    #With Tcl/Tk 9 TkDefaultFont shows as 1 size larger than Tcl/Tk 8 only on Linux, reduce it
+    if {!($::tcl_platform(platform) == "windows")} {
+    font configure TkDefaultFont -size [ expr [font actual TkDefaultFont -size] - 1 ]
+    	}
     ttk::style configure TFrame -background $defaultBackground
     ttk::style configure Heading -font TkDefaultFont
     ttk::style configure Treeview -background $fieldbackground
     ttk::style configure Treeview -fieldbackground $fieldbackground
-    ttk::style configure Treeview -borderwidth 0
     ttk::style map Treeview -background $selectedbackground
     ttk::style map Treeview -foreground [ list selected "#FF7900"]
+    ttk::style layout Treeview { Treeview.field -border 0 }
+    ttk::style layout Treeview { Treeview.treearea -border 0 }
+    ttk::style layout Treeview { Treeview.padding -border 0 }
     ttk::style configure TProgressbar -troughcolor [ dict get $icons defaultBackground ]
     ttk::style configure TProgressbar -lightcolor "#FF7900"
     ttk::style configure TProgressbar -darkcolor "#FF7900"
@@ -48,40 +54,12 @@ proc framesizes { win_scale_fact } {
     set mainmaxy [ expr {round(556.4 * $win_scale_fact)} ]
 }
 
-proc initfixedtheme { theme } {
-    global tcl_platform defaultForeground defaultBackground win_scale_fact treewidth
-    upvar #0 icons icons
-    upvar #0 iconalt iconalt
-    #Scaling factor for physical units to pixels with design default of 1.3333333
-    ##Theme is fixed at clearlooks for Linux and xpnative for Windows
-    #Force scaling to 1.333333
-    set win_scale_fact 1.333333
-    tk scaling $win_scale_fact
-    set treewidth 161
-    framesizes $win_scale_fact
-    #Reset fonts to scaling
-    font create basic -family arial -size 10
-    foreach font [ font names ] {
-        font configure $font -size [font configure $font -size ]
-    }
-    ttk::setTheme $theme
-    configmessagebox $theme
-    set icons [ create_icon_images $iconset ]
-    set iconhighlight iconicorange 
-    set iconalt [ create_icon_images $iconhighlight ]
-    dict set icons defaultBackground $defaultBackground
-    dict set icons defaultForeground $defaultForeground
-    #set Tile Styles
-    tilestyle $defaultBackground $icons $theme
-}
-
 proc initscaletheme {theme pixelsperpoint} {
     global tcl_platform defaultBackground defaultForeground win_scale_fact treewidth
     upvar #0 icons icons
     upvar #0 iconalt iconalt
     upvar #0 iconssvg iconssvg
     upvar #0 iconaltsvg iconaltsvg
-    package require tksvg
     package require colorutils
     package require awthemes
     ::themeutils::setHighlightColor $theme "#FF7900"
@@ -145,7 +123,6 @@ proc initscaletheme {theme pixelsperpoint} {
 	} else {
     set iconsetsvg iconicwhitesvg
 	}
-    #set iconsetsvg iconicgraysvg
     set iconssvg [ create_icon_images $iconsetsvg ]
     set iconhighlightsvg iconicorangesvg
     set iconaltsvg [ create_icon_images $iconhighlightsvg ]
@@ -163,8 +140,11 @@ proc initscaletheme {theme pixelsperpoint} {
     tilestyle $defaultBackground $icons $theme
     if { [ winfo pixels . 1i ] eq 96 } {
         font configure basic -size 10
+	#For Tcl/Tk 9.0 default linespace is too small, add additional space
+        ttk::style configure Treeview -rowheight [expr {[font metrics basic -linespace] + 4}]
         set treewidth 161
     } else {
+	    puts [ font configure TkDefaultFont -size ]
         font configure basic -size [ font configure TkDefaultFont -size ]
         ttk::style configure Treeview -rowheight [expr {[font metrics basic -linespace] + 8}]
         set treewidth [ expr {round(1.677 * [ winfo pixels . 1i ])}]
@@ -466,23 +446,49 @@ proc configmessagebox { theme } {
     }
 }
 
+#Load SQLite before first use
+package require sqlite3
 #Get a temporary copy of the generic settings to configure the display
-set tmpgendict [ ::XML::To_Dict config/generic.xml ]
-if {[dict exists $tmpgendict theme scaling ]} {
-    set scaling [dict get $tmpgendict theme scaling ]
-    if { $scaling eq "auto" } {
-        #Using a scaling theme default is awlight on Linux and breeze on Windows
-        #alternative themes are "awarc awbreeze awlight"
+set dirname [ find_config_dir ]
+if { $dirname eq "FNF" } {
+        set theme "dark"
+        set tmpgendict {}
+} else {
+if { [ file exists $dirname/generic.xml ] } {
+set tmpgendict [ ::XML::To_Dict $dirname/generic.xml ]
+	} else {
+set tmpgendict {}
+	}
+if { [ dict exists $tmpgendict theme scaletheme ] } {
         set theme [dict get $tmpgendict theme scaletheme ]
-        if { $theme ni {awarc awbreeze awbreezedark awlight} } {
+	} else {
+        set theme "dark"
+	}
+}
+#Get sqlitedb_dir from generic.xml
+if { [ dict exists $tmpgendict sqlitedb sqlitedb_dir ] } {
+        set sqlitedb_dir [ dict get $tmpgendict sqlitedb sqlitedb_dir ]
+	set tmpgenericdictdb [ SQLite2Dict "generic" ]
+#Replace theme from XML with theme from SQLite generic dict
+if { [ dict exists $tmpgenericdictdb theme scaletheme ] } {
+        set theme [ dict get $tmpgenericdictdb theme scaletheme ]
+        }
+}
+	if { $theme eq "light" } { set theme "awbreeze" }
+	if { $theme eq "dark" } { set theme "awbreezedark" }
+        if { $theme ni {awbreeze awbreezedark} } {
             #Options for Windows and Linux in case default is changed in future awtheme
             if {$tcl_platform(platform) == "windows"} {
-                set theme "awbreeze"
+                set theme "awbreezedark"
             } else {
-                set theme "awbreeze"
+                set theme "awbreezedark"
             }
         }
+        if { [ dict exists $tmpgendict theme pixelsperpoint ] } {
         set pixelsperpoint [dict get $tmpgendict theme pixelsperpoint ]
+	} else {
+        set pixelsperpoint "auto"
+	}
         if { $pixelsperpoint eq "auto" } {
             ;# Use detected value of tk scaling
         } else {
@@ -500,7 +506,8 @@ if {[dict exists $tmpgendict theme scaling ]} {
         proc tk_messageBox {args} {
             global jobid
             variable ::ttk::dialog_module::window_name
-            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
+	    #Uncomment to include message box messages in Jobs
+            #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
             if [ winfo exists $window_name ] {
                 raise $window_name
                 if [ llength $::ttk::dialog_module::args ] {
@@ -510,7 +517,7 @@ if {[dict exists $tmpgendict theme scaling ]} {
                         set message "Warning: a dialog is already open, close it first"
                     }
                     puts $message
-                    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+                    #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
                 }
                 return
             } else {
@@ -520,47 +527,4 @@ if {[dict exists $tmpgendict theme scaling ]} {
             }
         }
         initscaletheme $theme $pixelsperpoint
-    } else {
-        #Using a theme fixed to scaling of 1.33
-        if {$tcl_platform(platform) == "windows"} { 
-            set theme "xpnative" 
-        } else {
-            set theme "clearlooks" 
-        }
-        switch $theme {
-            xpnative {
-                set defaultBackground [ eval format #%04X%04X%04X [winfo rgb . SystemButtonFace]]
-                set defaultForeground black
-            }
-            clearlooks {
-                set defaultBackground #efebe7
-                set defaultForeground black
-                rename tk_messageBox _tk_messageBox
-                proc tk_messageBox {args} {
-                    global jobid
-                    variable ::ttk::dialog_module::window_name
-                    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $args)}
-                    if [ winfo exists $window_name ] {
-                        raise $window_name
-                        if [ llength $::ttk::dialog_module::args ] {
-                            if [ dict exists $::ttk::dialog_module::args -title ] {
-                                set message "Warning: [ dict get $::ttk::dialog_module::args -title ] dialog is already open, close it first"
-                            } else {
-                                set message "Warning: a dialog is already open, close it first"
-                            }
-                            puts $message
-                            hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
-                        }
-                        return
-                    } else {
-                        set ::ttk::dialog_module::args $args
-                        bell
-                        ttk::messageBox {*}$args
-                    }
-                }
-            }
-        }
-        initfixedtheme $theme
-    }
-    unset -nocomplain tmpgendict
-}
+        unset -nocomplain tmpgendict

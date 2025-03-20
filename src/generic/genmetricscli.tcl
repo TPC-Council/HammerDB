@@ -62,23 +62,33 @@ proc metstart {} {
 			set agent_id "10000"
 		}
                 global tcl_platform
-                set UserDefaultDir [ file dirname [ info script ] ]
-                ::tcl::tm::path add "../$UserDefaultDir/modules"
+                set dirname [ find_exec_dir ]
+                if { $dirname eq "FNF" } {
+                puts "Error: Cannot find a Valid Executable Directory"
+                return
+                }
+                set UserDefaultDir $dirname
+                ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
                 package require comm
                 namespace import comm::*
                 package require socktest
                 namespace import socktest::*
 	        if { $agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ] } { 
-                set result [ sockmesg [ socktest localhost $agent_id 1000 ]]
+                set result [ sockmesg [ socktest localhost $agent_id 5000 ]]
                 if { $result eq "OK" } {
                 } else {
                 putscli "Starting Local Metrics Agent on [ info hostname ]"
                 if {$tcl_platform(platform)=="windows"} {
-                if {[catch {exec cmd /c "cd /d agent && agent.bat $agent_id" &} message ]} {
+                    if {[file exists "$dirname/agent/agent.bat"]} {
+                        set agentfile "agent.bat"
+                        } else {
+                        set agentfile "agent"
+                    }
+                if {[catch {exec cmd /c "cd /d $dirname/agent && $agentfile $agent_id" &} message ]} {
 	        putscli "Error starting metrics agent: $message"
     	        }
                 } else {
-		  if {[catch {exec sh -c "cd agent && ./agent $agent_id >/dev/null 2>/dev/null" &} message ]} {
+		  if {[catch {exec sh -c "cd $dirname/agent && ./agent $agent_id >/dev/null 2>/dev/null" &} message ]} {
                   putscli $message
                 }
                 }}
@@ -97,7 +107,7 @@ proc metstart {} {
 proc metstatus {} {
 global tcl_platform agent_hostname agent_id
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest
@@ -116,7 +126,7 @@ putscli "Metrics Agent running on $agent_hostname:$agent_id"
 proc metstop {} {
 global tcl_platform agent_hostname agent_id 
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
 package require comm
 namespace import comm::*
 package require socktest

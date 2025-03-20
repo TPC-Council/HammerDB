@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH=.././lib:.././lib64:$LD_LIBRARY_PATH
 # \
 export PATH=.././bin:$PATH
 # \
-exec .././bin/tclsh8.6 $0 ${1+"$@"}
+exec .././bin/tclsh9.0 $0 ${1+"$@"}
 # \
 exit
 ########################################################################
@@ -15,7 +15,8 @@ exit
 # mpstatPlot -- visual display of mpstat idle value for all processors
 # by Keith Vetter
 #
-# Copyright (C) 2003-2024 Steve Shaw
+# Copyright (C) Steve Shaw
+# Hosted by the TPC-Council
 # Author contact information at: http://www.hammerdb.com
 #
 # This program is free software; you can redistribute it and/or
@@ -50,14 +51,15 @@ exit
           } 
 	}
 set UserDefaultDir [ file dirname [ info script ] ]
-::tcl::tm::path add "../$UserDefaultDir/modules"
+::tcl::tm::path add ::tcl::tm::path add [zipfs root]app/modules "../$UserDefaultDir/modules"
+lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
 #Enable report for more than 122 CPUs
 interp recursionlimit {} 3000
 global agentlist S iswin
 set iswin "false"
-set version 4.12
+set version 5.0
 
 if {$tcl_platform(platform) == "windows"} { 
 	package require twapi 
@@ -235,8 +237,14 @@ puts "Failed $b"
 puts "connection established"
                 }
 }
-if $iswin {
-    set fin [open "| mpstat.bat" r]
+if {$iswin} {
+    if {[file exists "mpstat.bat"]} {
+        set fin [open "| mpstat.bat" r]
+    } elseif {[file exists "mpstat.exe"]} {
+        set fin [open "| mpstat.exe" r]
+    } else {
+        puts "Neither mpstat.bat nor mpstat.exe were found."
+    }
     } else {
     set fin [open "|mpstat -P ALL 2" r]
 	}

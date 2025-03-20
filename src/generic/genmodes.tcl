@@ -33,7 +33,7 @@ proc start_autopilot {} {
     set apbackground black
     set apforeground white 
     } else {
-    set apbackground black
+    set apbackground white
     set apforeground #626262 
     }
     set Name .ed_mainFrame.treeframe.treeview  

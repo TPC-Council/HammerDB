@@ -1,9 +1,18 @@
 package require sqlite3
 global hdb_version
 
-#Get generic config data
-set genericdict [ ::XML::To_Dict config/generic.xml ]
+set dirname [ find_config_dir ]
+if { $dirname eq "FNF" } {
+	puts "Error: Cannot find a Valid XML Config Directory"
+	exit
+}
 
+#Get generic config data
+if { [ file exists $dirname/generic.xml ] } {
+set genericdict [ ::XML::To_Dict $dirname/generic.xml ]
+        } else {
+set genericdict {}
+        }
 #Get global variable sqlitedb_dir from generic.xml
 if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
     set sqlitedb_dir [ dict get $genericdict sqlitedb sqlitedb_dir ]
@@ -13,7 +22,9 @@ if { [ dict exists $genericdict sqlitedb sqlitedb_dir ] } {
 
 #Set hammerdb version to genericdict
 set hdb_version_dict [ dict create version $hdb_version ]
+if { [ dict size $genericdict ] != 0 } {
 dict append genericdict hdb_version $hdb_version_dict
+        }
 
 #Try to get generic config data from SQLite
 set genericdictdb [ SQLite2Dict "generic" ]
@@ -53,7 +64,7 @@ if { $genericdictdb eq "" } {
 set dbdict [ SQLite2Dict "database" ]
 if { $dbdict eq "" } {
     #Load database config from database.xml
-    set dbdict [ ::XML::To_Dict config/database.xml ]
+    set dbdict [ ::XML::To_Dict $dirname/database.xml ]
 
     #Change  TPROC-x terminology to working TPC-x
     set dbdict [ regsub -all {(TP)(RO)(C-[CH])} $dbdict {\1\3} ]
@@ -67,7 +78,7 @@ foreach { key } [ dict keys $dbdict ] {
     set dictname config$key
     set dbconfdict [ SQLite2Dict $key ]
     if { $dbconfdict eq "" } {
-        set dbconfdict [ ::XML::To_Dict config/$key.xml ]
+        set dbconfdict [ ::XML::To_Dict $dirname/$key.xml ]
         Dict2SQLite $key $dbconfdict
     }
     set $dictname $dbconfdict

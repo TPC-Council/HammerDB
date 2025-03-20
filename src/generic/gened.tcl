@@ -4,15 +4,8 @@ proc ttk::toplevel {w args} {
     set w
 }
 
-set tkcmdlist { tkCancelRepeat tkListboxBeginSelect tkCancelRepeat tkwait tkEntryInsert tkListboxMotion tkListboxUpDown tkEntryBackspace }
-foreach tkcmd $tkcmdlist {
-    if {![llength [ info commands $tkcmd]]} {
-        tk::unsupported::ExposePrivateCommand $tkcmd
-    }
-}
-
 proc ed_start_gui { dbdict icons iconalt } {
-    global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode win_scale_fact treewidth tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy treebuild pop_treel
+    global _ED rdbms bm ed_mainf tcl_platform succ fail vus repeat task run clo masterthread table opmode masterlist autopilot apmode win_scale_fact treewidth tabix tabiy mainx mainy mainminx mainminy mainmaxx mainmaxy treebuild pop_treel defaultBackground
     set opmode "Local"
     ttk::toplevel .ed_mainFrame
     wm withdraw .ed_mainFrame
@@ -67,46 +60,56 @@ proc ed_start_gui { dbdict icons iconalt } {
         {{separator} {} {}}
         {{command}  {Choose Font} {-command {catch {.ed_mainFrame.mainwin.textFrame.left.text configure -font "[choose_font "Arial 10"]"}} -underline 0}}
         {{command}  {Turn Highlighting Off} {-command "highlight_off_with_message" -underline 0}}
+        {{command}  {Switch Theme} {-command "switch_theme_with_message" -underline 0}}
         {{separator} {} {}}
         {{command } {Test} {-command "ed_run_package" -underline 0}}
     }
     proc wrap_on {} {
         .ed_mainFrame.mainwin.textFrame.left.text configure -wrap word
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -label "Turn Word Wrap Off"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -command "wrap_off"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 5 -label "Turn Word Wrap Off"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 5 -command "wrap_off"
     }
     proc wrap_off {} {
         .ed_mainFrame.mainwin.textFrame.left.text configure -wrap none
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -label "Turn Word Wrap On"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 6 -command "wrap_on"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 5 -label "Turn Word Wrap On"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 5 -command "wrap_on"
     }
     proc highlight_on {} {
         #only called on startup
         global highlight
         set highlight "true"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting Off"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_off_with_message"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -label "Turn Highlighting Off"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -command "highlight_off_with_message"
     }
     proc highlight_off {} {
         #only called on startup
         global highlight
         set highlight "false"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting On"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_on_with_message"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -label "Turn Highlighting On"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -command "highlight_on_with_message"
     }
     proc highlight_on_with_message {} {
         global highlight
         set highlight "true"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting Off"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_off_with_message"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -label "Turn Highlighting Off"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -command "highlight_off_with_message"
         tk_messageBox -title Highlight -message "Highlighting of keywords and program control will be enabled at next script editor load"
     }
     proc highlight_off_with_message {} {
         global highlight
         set highlight "false"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -label "Turn Highlighting On"
-        .ed_mainFrame.menuframe.edit.m2 entryconfigure 9 -command "highlight_on_with_message"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -label "Turn Highlighting On"
+        .ed_mainFrame.menuframe.edit.m2 entryconfigure 8 -command "highlight_on_with_message"
         tk_messageBox -title Highlight -message "Highlighting of keywords and program control will be disabled at next script editor load"
+    }
+    proc switch_theme_with_message {} {
+        global theme
+        upvar #0 genericdict genericdict
+	if { $theme eq "awbreeze" } { set tmptheme "light" ; set switchtheme "dark" }
+        if { $theme eq "awbreezedark" } { set tmptheme "dark" ; set switchtheme "light" }
+	set genericdict [ dict replace $genericdict theme [ subst { scaletheme $switchtheme }]]
+        Dict2SQLite "generic" $genericdict
+        tk_messageBox -title Highlight -message "Theme will be switched to $switchtheme at next HammerDB restart"
     }
 
     proc pop_up_menu {} {
@@ -124,7 +127,6 @@ proc ed_start_gui { dbdict icons iconalt } {
             update
         }
     }
-
     construct_menu $Name Edit $Menu_string($Name)
 
     set Name $Parent.menuframe.tpcc
@@ -180,8 +182,6 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.editbuttons.console edit ctext console.gif "convert_to_oratcl" "Convert Trace to Oratcl" 
     construct_button $Parent.editbuttons.distribute edit distribute distribute.ppm "distribute" "Primary Distribution" 
     $Parent.editbuttons.distribute configure -state disabled
-    #placeholder button for persistent saving of Xml options to database
-    #construct_button $Parent.editbuttons.savexml edit savexml savexml.ppm "xmlopts" "Save Configuration"
     construct_button $Parent.editbuttons.test edit test test.ppm "ed_run_package" "Test Tcl code"
     construct_button $Parent.editbuttons.search edit search search.ppm "ed_edit_searchf" "Search in text"
     construct_button $Parent.editbuttons.paste edit paste paste.ppm "ed_edit_paste" "Paste selected text"
@@ -195,7 +195,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     construct_button $Parent.buttons.boxes bar boxes boxes.ppm "build_schema" "Create TPROC Schema" 
     construct_button $Parent.buttons.thumbup bar thumbup thumbup.ppm "check_schema" "Check TPROC Schema" 
     construct_button $Parent.buttons.delete bar delete delete.ppm "delete_schema" "Delete TPROC Schema" 
-    construct_button $Parent.buttons.drive bar driveroptim drive.ppm {if {$bm eq "TPROC-C"} {loadtpcc} else {loadtpch} } "Load Driver Script" 
+    construct_button $Parent.buttons.drive bar driveroptim drive.ppm {
+	    if {$bm eq "TPROC-C"||$bm eq "TPC-C"} {loadtpcc} else {loadtpch}
+    } "Load Driver Script"
     construct_button $Parent.buttons.lvuser bar lvuser arrow.ppm "remote_command load_virtual; load_virtual" "Create Virtual Users" 
     construct_button $Parent.buttons.runworld bar runworld world.ppm "remote_command vurun; vurun" "Run Virtual Users" 
     construct_button $Parent.buttons.autopilot bar autopilot autopilot.ppm "start_autopilot" "Start Autopilot" 
@@ -218,11 +220,9 @@ proc ed_start_gui { dbdict icons iconalt } {
     foreach { tbicname } { succ fail vus run clo repeat task } { tbicon } { tick cross oneuser running clock repeat task } { set $tbicname [ create_image $tbicon icons ] }
 
     set Name $Parent.panedwin
-    if { $ttk::currentTheme eq "clearlooks" } {
-        panedwindow $Name -orient horizontal -handlesize 8 -background [ dict get $icons defaultBackground ] 
-        } elseif { $ttk::currentTheme in {awarc awbreeze awlight} } {
+        if { $::ttk::currentTheme eq "awbreeze" } {
         panedwindow $Name -orient horizontal -background [ dict get $icons defaultBackground ] -relief flat 
-        } elseif { $ttk::currentTheme eq "awbreezedark" } {
+        } elseif { $::ttk::currentTheme eq "awbreezedark" } {
         panedwindow $Name -orient horizontal -background  [ dict get $icons defaultBackground ] -relief flat
         } else {
         panedwindow $Name -orient horizontal -showhandle false
@@ -230,12 +230,10 @@ proc ed_start_gui { dbdict icons iconalt } {
     pack $Name -expand yes -fill both
 
     set Name $Parent.panedwin.subpanedwin
-    if { $ttk::currentTheme eq "clearlooks" } {
-        panedwindow $Name -orient vertical -handlesize 8 -background [ dict get $icons defaultBackground ]
-        } elseif { $ttk::currentTheme in {awarc awbreeze awawlight} } {
-        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat 
-        } elseif { $ttk::currentTheme eq "awbreezedark" } {
-        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ] -relief flat 
+        if { $::ttk::currentTheme eq "awbreeze" } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]
+        } elseif { $::ttk::currentTheme eq "awbreezedark" } {
+        panedwindow $Name -orient vertical -background [ dict get $icons defaultBackground ]
         } else {
         panedwindow $Name -orient vertical -showhandle false
         }
@@ -373,15 +371,15 @@ proc ed_start_gui { dbdict icons iconalt } {
     ttk::notebook $Name
     bind TNotebook <ButtonPress-1> {+Press %W %x %y}
     bind TNotebook <ButtonRelease-1> {+Release %W %x %y %X %Y}
-    $Name add [ tk::frame $Parent.mainwin ] -text "Script Editor"
-    $Name add [ tk::frame $Parent.tw ] -text "Virtual User Output" -state disabled
-    $Name add [ tk::frame $Parent.tc ] -text "Transaction Counter" -state disabled -compound right -image [list ::img::dock \
+    $Name add [ tk::frame $Parent.mainwin -background $defaultBackground ] -text "Script Editor"
+    $Name add [ tk::frame $Parent.tw -background $defaultBackground ] -text "Virtual User Output" -state disabled
+    $Name add [ tk::frame $Parent.tc -background $defaultBackground ] -text "Transaction Counter" -state disabled -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
                      {active !disabled} ::img::undock]
-    $Name add [ tk::frame $Parent.me ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
+    $Name add [ tk::frame $Parent.me -background $defaultBackground ] -text "Metrics" -state disabled -compound right -image [list ::img::dock \
                      {active pressed focus !disabled} ::img::dock \
                      {active !disabled} ::img::undock] -compound right
-    $Name add [ tk::frame $Parent.ap ] -text "Autopilot" -state disabled
+    $Name add [ tk::frame $Parent.ap -background $defaultBackground ] -text "Autopilot" -state disabled
     ttk::notebook::enableTraversal $Name
     set pminunit [ expr {$mainy / 10} ]
     $Parent.panedwin.subpanedwin add $Name -minsize [ expr $pminunit * 4.60 ] -stretch always
@@ -593,7 +591,7 @@ proc construct_menu {Name label cmd_list} {
     upvar #0 icons icons
     global _ED
 
-    ttk::menubutton $Name -text $label  -underline 0 -width [ string length $label ]
+    ttk::menubutton $Name -text $label  -underline 0 -width [ string length $label ] -direction below
     incr _ED(menuCount);
     set newmenu $Name.m$_ED(menuCount)
 
@@ -603,7 +601,7 @@ proc construct_menu {Name label cmd_list} {
     eval "menu $newmenu"
     eval [list add_items_to_menu $newmenu $cmd_list]
 
-    $newmenu configure -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
+    $newmenu configure -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
 
     pack $Name -anchor nw -expand 0 -ipadx 4 -ipady 0 -padx 0 \
          -pady 0 -side left
@@ -641,7 +639,7 @@ proc add_items_to_menu {menubutton cmdList} {
                     -menu $newmenu"
                 eval $doit
                 menu $newmenu
-                $newmenu configure -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground  [ dict get $icons defaultBackground ] -activeforeground "#FF7900" -selectcolor "#FF7900"
+                $newmenu configure -relief flat -font basic -background [ dict get $icons defaultBackground ] -foreground [ dict get $icons defaultForeground ] -activebackground [ dict get $icons defaultBackground ] -activeforeground "#FF7900"
                 add_items_to_menu $newmenu [lindex $cmd 2]
             }
         }
@@ -650,7 +648,7 @@ proc add_items_to_menu {menubutton cmdList} {
 
 proc disable_tree { } {
     #Up to v3.3 we could detach and move tree nodes around
-    #In v4.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
+    #In v4.0 & 5.0 with SVG themes, moving tree nodes left a trailing column header from the previously seleted database
     #This version entirely deletes all tree nodes and rebuilds the tree just to remove the trailing column header
     #This is not the best way to select a new database from a treeview but works around the trailing header
     global rdbms bm treebuild pop_treel
@@ -716,11 +714,11 @@ proc disable_enable_options_menu { disoren } {
         if { $validrdbms eq false } { set rdbms "Oracle" }
         if { $validbm eq false } { set bm "TPC-C" }
         if { $bm eq "TPC-C" } {
-            $Name entryconfigure 2 -state normal
-            $Name entryconfigure 3 -state disabled
-        } else {
-            $Name entryconfigure 3 -state normal
+            $Name entryconfigure 1 -state normal
             $Name entryconfigure 2 -state disabled
+        } else {
+            $Name entryconfigure 2 -state normal
+            $Name entryconfigure 1 -state disabled
         }
         set Name .ed_mainFrame.buttons.boxes
         $Name configure -state normal
@@ -746,11 +744,11 @@ proc disable_bm_menu {} {
     if { $validrdbms eq false } { set rdbms "Oracle" }
     if { $validbm eq false } { set bm "TPC-C" }
     if { $bm eq "TPC-C" } {
-        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state normal
-        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 3 -state disabled
-    } else {
-        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 3 -state normal
+        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 1 -state normal
         .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state disabled
+    } else {
+        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 2 -state normal
+        .ed_mainFrame.menuframe.tpcc.m3 entryconfigure 1 -state disabled
     }
     #Oracle has the option to convert trace files
     if {$rdbms == "Oracle"} {
@@ -768,38 +766,7 @@ proc disable_bm_menu {} {
 
 proc construct_button {Name button_type iconname file cmd helpmsg} {
     upvar #0 iconssvg iconssvg 
-    if { [ info exists iconssvg ] } {
-        if {[dict exists $iconssvg $iconname\svg ]} {
-            construct_button_svg $Name $button_type $iconname\svg $file $cmd $helpmsg
-        } else {
-            construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
-        }
-    } else { 
-        construct_button_png $Name $button_type $iconname $file $cmd $helpmsg
-    }
-}
-
-proc construct_button_png {Name button_type iconname file cmd helpmsg} {
-    #If called with button type of bar buttons are packed in the button bar along the top
-    #edit buttons are packed along the left hand side visible when the menu button is pressed
-    #all buttons are bound to show an alternative icon when entered and original when left
-    global tcl_version ctext
-    upvar #0 icons icons
-    upvar #0 iconalt iconalt
-    set im [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    button $Name -image $im -command "$cmd" -highlightthickness 0 -borderwidth 0 -width 32 -background [ dict get $icons defaultBackground ] -activebackground [ dict get $icons defaultBackground ]
-    tooltip::tooltip $Name $helpmsg
-    if { $button_type eq "bar" } {
-        pack $Name -anchor nw -side left -expand 0  -fill x -padx {4 4} -pady {4 4}
-    } else {
-        pack $Name -anchor sw -side bottom -expand 0  -fill y -pady {4 4} -padx {4 4}
-    }
-    bind $Name <Enter> [
-    list $Name config -image [image create photo -data [ dict get $iconalt $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
-    ]
-    bind $Name <Leave> [
-    list $Name config -image [image create photo -data [ dict get $icons $iconname ] -gamma 1 -height 16 -width 16 -palette 5/5/4] -command "$cmd"
-    ]
+    construct_button_svg $Name $button_type $iconname\svg $file $cmd $helpmsg
 }
 
 proc construct_button_svg {Name button_type iconname file cmd helpmsg} {
@@ -989,7 +956,7 @@ proc ed_loadsave {loadflag} {
     pack $Name -side top -anchor nw -expand yes -fill both
 
     set Name $Parent.list.lb1
-    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    if { [ string match "*dark*" $::ttk::currentTheme ] } {
     set lbbackground black
     set lbforeground white
     } else {
@@ -1009,13 +976,13 @@ proc ed_loadsave {loadflag} {
     bind $Name <Any-Triple-ButtonRelease> {break}
     bind $Name <Return> {ed_loadsaveselend %W %y}
     bind $Name <Up> {
-        tkCancelRepeat
-        tkListboxBeginSelect %W [%W index active]
+        tk::CancelRepeat
+        tk::ListboxBeginSelect %W [%W index active]
         %W activate [%W index active]
     }
     bind $Name <Down> {
-        tkCancelRepeat
-        tkListboxBeginSelect %W [%W index active]
+        tk::CancelRepeat
+        tk::ListboxBeginSelect %W [%W index active]
         %W activate [%W index active]
     }
 
@@ -1251,7 +1218,7 @@ proc ed_edit_searchf {} {
                        {bind .ed_edit_searchf.f1.e2 <Delete>} \
                        {bind .ed_edit_searchf.f1.e2 <Return>} \
                        {bind .ed_ediy_searchf.f1.e2 <Enter>}}
-    bind .ed_edit_searchf.f1.e2 <BackSpace> {tkEntryBackspace %W}
+    bind .ed_edit_searchf.f1.e2 <BackSpace> {tk::tkEntryBackspace %W}
     bind .ed_edit_searchf.f1.e2 <Delete> {
         if [%W selection present] {
             %W delete sel.first sel.last
@@ -1393,21 +1360,19 @@ proc applyctexthighlight {w} {
 
 proc setctexthighlight {w} {
     upvar #0 dbdict dbdict
-    if { [ string match "*dark*" $ttk::currentTheme ] } {
-    set colour(vars) green
-    set colour(cmds) yellow
-    set colour(functions) magenta
-    #set colour(brackets) lightblue
-    #set colour(comments) purple
-    set colour(brackets) #00a2ed
+    if { [ string match "*dark*" $::ttk::currentTheme ] } {
+    set colour(vars) #528723
+    set colour(cmds) #468CDE
+    set colour(functions) #edb926
+    set colour(brackets) gray50
     set colour(comments) gray50
-    set colour(strings) red
+    set colour(strings) #E94F64
     } else {
     set colour(vars) green
     set colour(cmds) blue
-    set colour(functions) magenta
+    set colour(functions) #edb926
     set colour(brackets) gray50
-    set colour(comments) black
+    set colour(comments) gray10
     set colour(strings) red
     }
     #Extract list of commands provided by each database for highlighting
@@ -1466,13 +1431,12 @@ proc ed_edit {} {
          -padx 0 -pady 0 -side right
 
     set Name $Parent.textFrame.left.text
-    if { [ string match "*dark*" $ttk::currentTheme ] } {
+    if { [ string match "*dark*" $::ttk::currentTheme ] } {
         set bwidth 0
         set hbgrd LightGray
-	set ctexthighlightbackground LightGray
 	set ctextbackground black
 	set ctextforeground white
-	set ctexthighlightbackground LightGray
+	set ctexthighlightbackground black
 	set ctextinsertbackground white
 	set ctextselectforeground white
     } else {
@@ -1480,7 +1444,6 @@ proc ed_edit {} {
         set hbgrd [ dict get $icons defaultBackground ]
         set bwidth 0
         set hbgrd LightGray
-	set ctexthighlightbackground LightGray
 	set ctextbackground white
 	set ctextforeground black
 	set ctexthighlightbackground LightGray
@@ -1490,7 +1453,7 @@ proc ed_edit {} {
     if { $highlight eq "true" } {
         ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground \
          -highlight 1 \
-         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -highlightthickness 1 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
          -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
@@ -1504,7 +1467,7 @@ proc ed_edit {} {
     } else {
         ctext $Name -relief flat -background $ctextbackground -borderwidth $bwidth -foreground $ctextforeground  \
          -highlight 0 \
-         -highlightthickness 0 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
+         -highlightthickness 1 -highlightbackground $ctexthighlightbackground -insertbackground $ctextinsertbackground \
          -selectbackground $hbgrd -selectforeground $ctextselectforeground \
          -wrap none \
          -font basic \
@@ -1528,18 +1491,6 @@ proc ed_edit {} {
     ed_edit_commit
     update
 }
-
-#proc ed_stop_button {} {
-    #global _ED tcl_version
-    #upvar #0 icons icons
-    #set Name .ed_mainFrame.editbuttons.test
-    #
-    #set im [image create photo -data [ dict get $icons stop ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    #
-    #$Name config -image $im -command "ed_kill_apps"
-    #bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-#		 "Stop running code"}
-#}
 
 proc create_image { iconname iconset } {
     global win_scale_fact
@@ -1629,18 +1580,6 @@ proc ed_metrics_button {} {
     list $Name config -image [ create_image dashboard icons ] -command "metrics"
     ]
 }
-
-#proc ed_test_button {} {
-    #global _ED tcl_version
-    #upvar #0 icons icons
-    #set Name .ed_mainFrame.editbuttons.test
-    #
-    #    set im [image create photo -data [ dict get $icons test ] -gamma 1 -height 16 -width 16 -palette 5/5/4]
-    #
-    #$Name config -image $im -command "ed_run_package"
-    #bind .ed_mainFrame.editbuttons.test <Enter> {ed_status_message -help \
-#		 "Test current code"}
-#}
 
 proc ed_stop_vuser {} {
     global _ED tcl_version
@@ -1932,7 +1871,6 @@ proc vuser_options {} {
     set Name $Parent.b1
     ttk::button $Name \
          -command {
-        # global rdbms bm
         set virtual_users [.vuserop.f1.e1 get]
         if { ![string is integer -strict $virtual_users] } {
             tk_messageBox -message "The number of virtual users must be an integer"
@@ -1943,12 +1881,10 @@ proc vuser_options {} {
             }
 
             #Find if workload test or timed
-            #upvar #0 dbdict dbdict
             foreach { key } [ dict keys $dbdict ] {
                 if { [ dict get $dbdict $key name ] eq $rdbms } {
                     set prefix [ dict get $dbdict $key prefix ]
                     set name [ string tolower [ dict get $dbdict $key name ] ]
-                    #upvar #0 config$name config$name
                     break
                 }
             }
@@ -1957,7 +1893,6 @@ proc vuser_options {} {
                 set timedwkl [ set $prefix\_driver ]
             } else {
                 #No timed workloads in TPC-H
-                #setlocaltpchvars [ subst \$config$name ] 
                 set timedwkl "false"
             }
             if { $timedwkl eq "timed" } {
@@ -2009,14 +1944,15 @@ proc vuser_options {} {
 proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright (C) 2003-2024
-Steve Shaw\n"
+Copyright \251 HammerDB Ltd
+Hosted by tpc.org 2019-2025\n"
 }
 
 proc license { } {
     tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
-Copyright (C) 2003-2024 Steve Shaw
+\251 HammerDB Ltd
+Hosted by the TPC-Council 2019-2025
 
 This program is free software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation,
@@ -2033,6 +1969,11 @@ proc ed_status_message {option {message ""}} {
     if { [ info exists inrun ] } {
         ;
     } else {
+    if { [ string match "*dark*" $::ttk::currentTheme ] } {
+    set smforeground white
+    } else {
+    set smforeground black
+    }
         set _ED(status) "$_ED(packagekeyname)"
         set _ED(permstatus) "$_ED(packagekeyname)"
         .ed_mainFrame.statusbar.l15 configure -text "  Mode: $opmode"
@@ -2062,7 +2003,7 @@ proc ed_status_message {option {message ""}} {
                 catch "$_ED(status_widget) configure -foreground \#D00000"
                 update
                 after 2000
-                catch "$_ED(status_widget) configure -foreground black"
+                catch "$_ED(status_widget) configure -foreground $smforeground"
                 if {$_ED(permstatus) != ""} {
                     set _ED(status) "$_ED(permstatus)"
                 }
@@ -2076,7 +2017,7 @@ proc ed_status_message {option {message ""}} {
             }
             -finish {
                 set _ED(status) "$message"
-                catch "$_ED(status_widget) configure -foreground black"
+                catch "$_ED(status_widget) configure -foreground $smforeground"
             }
             default {ed_status_message -temp "$message"}
         }
@@ -2336,7 +2277,7 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
         pack ${window}_f.sb -side left -fill y
 
         bind ${window}.e  <Insert> {
-            catch {tkEntryInsert %W [selection get -displayof %W]}
+            catch {tk::EntryInsert %W [selection get -displayof %W]}
             break
         }
         bind ${window}.e <Delete> {
@@ -2357,7 +2298,7 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
 
         bind ${window}_f.lb <Motion> "
             set tkPriv(y) %y
-            tkListboxMotion %W \[%W index @%x,%y]
+            tk::ListboxMotion %W \[%W index @%x,%y]
             combobox_export ${window}_f.lb ${window}.e
         "
 
@@ -2368,7 +2309,7 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             combobox_export ${window}_f.lb ${window}.e
         "
         bind ${window}_f.lb <Enter> {
-            tkCancelRepeat
+            tk::CancelRepeat
         }
 
         bind $tagname <FocusIn> {}
@@ -2399,12 +2340,12 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             combobox_release %W
         }
         bind $tagname <Up> "
-            tkListboxUpDown %W -1
+            tk::ListboxUpDown %W -1
             combobox_export ${window}_f.lb ${window}.e
             break
         "
         bind $tagname <Down> "
-            tkListboxUpDown %W 1
+            tk::ListboxUpDown %W 1
             combobox_export ${window}_f.lb ${window}.e
             break
         "
@@ -2435,7 +2376,7 @@ proc combobox {window {listproc {}} {cmdproc {}} {cb_textvar c_var} {cb_width 15
             } else {
                 return
             }
-            tkListboxMotion $w [$w index @$x,$y]
+            tk::ListboxMotion $w [$w index @$x,$y]
             combobox_export $w $e
             set tkPriv(afterId) [after 50 combobox_autoscan $e $w]
         }
@@ -2924,7 +2865,7 @@ proc job_options {} {
 }
 
 proc metricsopts {} {
-    #Introduced new option for Database metrics, currently Oracle and PostgreSQL
+    #Database metrics based on Active Session History, currently Oracle and PostgreSQL
     global rdbms
     if { $rdbms eq "Oracle" } {
         metoraopts
@@ -3660,7 +3601,8 @@ proc loadtpcc {} {
             if {[dict exists $genericdict timeprofile profiler]} {
                 set profiler [ dict get $genericdict timeprofile profiler]
             }
-            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "ettimeprofile" }
+	    #force timeprofiler to xtprof keep option to choose alternative as placeholder after deprecating etprof
+            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "xttimeprofile" }
             set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
             if { $timep != "" } {
                 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
@@ -3754,11 +3696,12 @@ proc wsstart {} {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
     }
-    if {[string match windows $::tcl_platform(platform)]} {
-        exec [ auto_execok ./hammerdbws.bat ] gui &
-    } else {
-        exec [ auto_execok ./hammerdbws ] gui &
-    }
+    set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+        puts "Error: Cannot find a Valid Executable Directory"
+        return
+        }
+    exec [ auto_execok $dirname/hammerdbws ] gui &
     after 100 {tk_messageBox -message "Starting HammerDB Web Service on port $ws_port"}
 }
 
@@ -3840,5 +3783,4 @@ proc copyfieldstoconfig { configdict fieldsdict wkload } {
                             catch {dict set $configdict $descriptor $val $field}
     }}}}}}
 }
-
-bind Entry <BackSpace> {tkEntryBackspace %W}
+bind Entry <BackSpace> {tk::tkEntryBackspace %W}

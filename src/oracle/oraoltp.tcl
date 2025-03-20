@@ -25,12 +25,11 @@ proc build_oratpcc {} {
             puts "Failed to create thread(s) for schema creation: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 proc CreateStoredProcs { lda timesten num_part } {
     puts "CREATING TPCC STORED PROCEDURES"
@@ -2157,18 +2156,17 @@ proc loadoratpcc { } {
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "Oracle TPROC-C"
-    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+    .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
 set KEYANDTHINK \"$keyandthink\" ;# Time for user thinking and keying (true or false)
 set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect string for tpc-c user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 #LOGON
@@ -2440,8 +2438,8 @@ proc loadtimedoratpcc { } {
     set _ED(packagekeyname) "Oracle Timed TPROC-C"
     if { !$async_scale } {
         #REGULAR TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
@@ -2453,11 +2451,10 @@ set mode \"$opmode\" ;# HammerDB operational mode
 set timesten \"$tpcc_tt_compat\" ;# Database is TimesTen
 set systemconnect $system_user/[ quotemeta $system_password ]@$instance ;# Oracle connect string for system user
 set connect $tpcc_user/[ quotemeta $tpcc_pass]@$instance ;# Oracle connect string for tpc-c user
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 #LOGON
@@ -2862,8 +2859,8 @@ switch $myposition {
         } 
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
-#EDITABLE OPTIONS##################################################
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
+#OPTIONS
 set library $library ;# Oracle OCI Library
 set total_iterations $total_iterations ;# Number of transactions before logging off
 set RAISEERROR \"$raiseerror\" ;# Exit script on Oracle error (true or false)
@@ -2878,11 +2875,10 @@ set connect $tpcc_user/[ quotemeta $tpcc_pass ]@$instance ;# Oracle connect stri
 set async_client $async_client;# Number of asynchronous clients per Vuser
 set async_verbose $async_verbose;# Report activity of asynchronous clients
 set async_delay $async_delay;# Delay in ms between logins of asynchronous clients
-#EDITABLE OPTIONS##################################################
+#OPTIONS
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 if [catch {package require promise } message] { error "Failed to load promise package for asynchronous clients" }
 
@@ -3345,12 +3341,11 @@ proc delete_oratpcc {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc drop_tpcc { system_user system_password instance tpcc_user hash_clusters } {
@@ -3399,12 +3394,11 @@ proc check_oratpcc {} {
             puts "Failed to create thread(s) for schema deletion: $message"
             return 1
         }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh8.6
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "#!/usr/local/bin/tclsh9.0
 #LOAD LIBRARIES AND MODULES
 set library $library
 "
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {if [catch {package require $library} message] { error "Failed to load $library - $message" }
-if [catch {::tcl::tm::path add modules} ] { error "Failed to find modules directory" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 
 proc standsql { curn sql } {

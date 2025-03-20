@@ -165,7 +165,8 @@ proc tk_messageBox { args } {
     } else {
         set message [ lindex $args [expr $messind + 1] ]
     }
-    hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
+    #Uncomment to include message box messages in Jobs
+    #hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($jobid, 0, $message)}
     putscli $message
     set typeind [ lsearch $args yesno ]
     if { $typeind eq -1 } { set yesno "false"
@@ -1633,7 +1634,8 @@ proc loadtpcc {} {
             if {[dict exists $genericdict timeprofile profiler]} {
                 set profiler [ dict get $genericdict timeprofile profiler]
             }
-            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "ettimeprofile" }
+	    #force timeprofiler to xtprof keep option to choose alternative as placeholder after deprecating etprof
+            if { $profiler eq "xtprof" } { set profile_func "xttimeprofile" }  else { set profile_func "xttimeprofile" }
             set timep [ lsearch -inline [ dict get [ set $dictname ] tpcc ] *timeprofile ]
             if { $timep != "" } {
                 set db_timeprofile [ dict get [ set $dictname ] tpcc $timep ]
@@ -1705,7 +1707,13 @@ proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} ar
 
 proc quit {} {
     puts "Shutting down HammerDB CLI"
+    if [expr {[llength [info procs TclReadLine::doExit]] > 0}] {
+    #in Tcl TclReadLine is loaded call exit
+    TclReadLine::doExit
+    } else {
+    #in Python TclReadLine is not loaded call exit direct
     exit
+    }
 }
 
 proc waittocomplete { args } {
@@ -1977,7 +1985,12 @@ proc wsstart {} {
         dict set genericdict "webservice" "ws_port" $ws_port
         Dict2SQLite "generic" $genericdict
     }
-    exec [ auto_execok ./hammerdbws ] &
+    set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+        puts "Error: Cannot find a Valid Executable Directory"
+        return
+        }
+    exec [ auto_execok $dirname/hammerdbws ] &
     after 100
 }
 

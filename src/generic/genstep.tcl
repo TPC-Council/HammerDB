@@ -25,17 +25,35 @@ proc write_port_file {} {
     }
 }
 
+  #Find a Valid steprun XML file
+  proc find_step_dir {} {
+  if [ catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]} message ] { set ISConfigDir "" }
+  set PWConfigDir [ file join [ pwd ] config ]
+  foreach CD { ISConfigDir PWConfigDir } {
+          if { [ file isdirectory [ set $CD ]] } {
+          if { [ file exists [ file join [ set $CD ] steps.xml ]] } {
+               return [ set $CD ]
+          }
+      }
+  }
+  return "FNF"
+  }
+
 #XML Connect Data
 proc get_step_xml {} {
-    if [catch {package require xml} ] { error "Failed to load xml package in tpcccom
-mon module" }
-    set stepxml "config/steps.xml"
+    if [catch {package require xml} ] { error "Failed to load xml package in tpcccommon module" }
+    set stepdir [ find_step_dir ]
+    if { $stepdir eq "FNF" } {
+      error "Step workload cannot find XML config directory or steps.xml file"
+        } else {
+    set stepxml "$stepdir/steps.xml"
     if { [ file exists $stepxml ] } {
         set steps [ ::XML::To_Dict_Ml $stepxml ]
         return $steps
     } else {
         error "Step workload specified but file $stepxml does not exist"
     }
+  }
 }
 
 #Return current Virtual User setting
@@ -86,13 +104,14 @@ proc dbsetall { stepcount dbname dbconfig } {
 #Start HammerDB Replicas, one replica per step
 proc start_replicas {stepnumbers callbackfile} {
     global tcl_platform
+    set dirname [ find_exec_dir ]
+    if { $dirname eq "FNF" } {
+        puts "Error: Cannot find a Valid Executable Directory"
+	return
+        }
     for {set step 1} {$step <= $stepnumbers} {incr step} {
         putscli "Starting $step replica HammerDB instance"
-        if {$tcl_platform(platform) == "windows"} {
-            exec ./bin/tclsh86t hammerdbcli auto $callbackfile &
-        } else {
-            exec ./bin/tclsh8.6 hammerdbcli auto $callbackfile &
-        }
+            exec $dirname/hammerdbcli auto $callbackfile &
     }
 }
 
