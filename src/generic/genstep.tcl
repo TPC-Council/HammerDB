@@ -193,16 +193,16 @@ proc replica_waittocomplete {} {
 proc primary_waittocomplete { port_file } {
     putscli "Primary entering loop waiting for vucomplete"
     proc primary_wait_to_complete_loop { port_file } {
-        global opmode
+        global opmode forever
         upvar wcomplete wcomplete
         set wcomplete [vucomplete]
-        if {!$wcomplete} { catch {after 5000 primary_wait_to_complete_loop $port_file} } else {
+        if {!$wcomplete} { catch {after 10000 primary_wait_to_complete_loop $port_file} } else {
             putscli "Primary complete"
             putscli "deleting port_file $port_file"
             delete_port_file $port_file
             putscli "Step workload complete"
-            #Call exit for primary
-            exit
+	    vudestroy
+	    set forever 1
         }
     }
     set wcomplete "false"
@@ -241,7 +241,7 @@ proc wait_to_connect_and_continue { rampup duration prefix dbconfig port_file } 
                 if { $prefix eq "ora" } {
                     foreach command [ list "diset tpcc ora_timeprofile false" "diset tpcc rampup 0" "diset tpcc duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
                 } else {
-                    foreach command [ list "diset tpcc $prefix\_timeprofile false" "diset tpcc $prefix\_rampup 0" "diset tpcc $prefix\_duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
+                    foreach command [ list "set opmode Local" "diset tpcc $prefix\_timeprofile false" "diset tpcc $prefix\_rampup 0" "diset tpcc $prefix\_duration $duration" "vuset vu $vucount" ] { sendonecommand $command $stepcount }
                 }
                 incr stepcount
             } else {
