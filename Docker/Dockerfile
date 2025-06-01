@@ -1,4 +1,3 @@
-
 FROM  docker.io/tpcorg/hammerdb:oracle as oracle
 
 FROM  docker.io/tpcorg/hammerdb:mssqls
@@ -16,10 +15,13 @@ FROM  docker.io/tpcorg/hammerdb:mssqls
 #    echo 'export PATH="$PATH:/home/db2_cli_odbc_driver/odbc_cli/clidriver/bin"' >> ~/.bashrc && \
 #    echo 'export PATH="$PATH:/home/db2_cli_odbc_driver/odbc_cli/clidriver/adm"' >>  ~/.bashrc
 
-COPY --from=oracle /home/instantclient_21_5 /home/instantclient_21_5
-ENV ORACLE_LIBRARY=/home/instantclient_21_5/libclntsh.so
-RUN echo 'export LD_LIBRARY_PATH=/home/instantclient_21_5/:$LD_LIBRARY_PATH'  >> ~/.bashrc
+COPY --from=oracle /home/instantclient_21_18 /home/instantclient_21_18
+ENV ORACLE_LIBRARY=/home/instantclient_21_18/libclntsh.so
+RUN echo 'export LD_LIBRARY_PATH=/home/instantclient_21_18/:$LD_LIBRARY_PATH'  >> ~/.bashrc  && \
+    ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y libmariadb3 libpq-dev libmysqlclient21 && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y libmariadb3 libpq-dev && \
+    wget -O /usr/lib/x86_64-linux-gnu/libmysqlclient.so.24  http://www.hammerdb.com/mysqllibs/libmysqlclient.so.24 && \
     rm -rf /var/lib/apt/lists/*
+
