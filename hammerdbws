@@ -34,7 +34,7 @@ global hdb_version
 set hdb_version "v5.0"
 	if { $argv0 != "gui" } {
 puts "HammerDB Web Service $hdb_version"
-puts "Copyright \251 HammerDB Ltd hosted by tpc.org 2019-2025"
+puts "Copyright \xc2\xa9 HammerDB Ltd hosted by tpc.org 2019-2025"
 puts "Type \"help\" for a list of commands"
 	}
 set UserDefaultDir [ file dirname [ info script ] ]
