@@ -1768,6 +1768,8 @@ proc ConnectToMaria { host port socket ssl_options user password db } {
     if {$connected} {
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+        set isi [maria::sel $maria_handler "show variables like 'innodb_snapshot_isolation'" -list]
+        if {[llength $isi] > 0} { catch {maria::exec $maria_handler "set session innodb_snapshot_isolation=0"} }
 	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
 	if { [ info exists ssl_status ] } {
 	puts [ join $ssl_status ]
@@ -2105,6 +2107,8 @@ proc ConnectToMaria { host port socket ssl_options user password db } {
     if {$connected} {
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+        set isi [maria::sel $maria_handler "show variables like 'innodb_snapshot_isolation'" -list]
+        if {[llength $isi] > 0} { catch {maria::exec $maria_handler "set session innodb_snapshot_isolation=0"} }
 	catch {set ssl_status [ maria::sel $maria_handler "show session status like 'ssl_cipher'" -list ]}
 	if { [ info exists ssl_status ] } {
 	puts [ join $ssl_status ]
@@ -2691,6 +2695,8 @@ proc ConnectToMariaAsynch { host port socket ssl_options user password db client
 	}}
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+        set isi [maria::sel $maria_handler "show variables like 'innodb_snapshot_isolation'" -list]
+        if {[llength $isi] > 0} { catch {maria::exec $maria_handler "set session innodb_snapshot_isolation=0"} }
         return $maria_handler
     } else {
 	return "$clientname:login failed:$mariastatus(message)"
