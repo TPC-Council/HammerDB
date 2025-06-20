@@ -1944,14 +1944,14 @@ proc vuser_options {} {
 proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
-Copyright \251 HammerDB Ltd
+Copyright \u00A9 HammerDB Ltd
 Hosted by tpc.org 2019-2025\n"
 }
 
 proc license { } {
     tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
-\251 HammerDB Ltd
+\u00A9 HammerDB Ltd
 Hosted by the TPC-Council 2019-2025
 
 This program is free software: you can redistribute it and/or modify it under the terms
