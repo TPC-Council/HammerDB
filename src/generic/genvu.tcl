@@ -241,6 +241,17 @@ proc load_virtual {}  {
     } 
     #Moved to running of virtual users
     #disable_enable_options_menu disable
+    #create list of database libraries
+    upvar #0 dbdict dbdict
+    set db_libs {}
+    if {[info exists dbdict]} {
+        foreach db [dict keys $dbdict] {
+            if {[dict exists $dbdict $db library]} {
+                lappend db_libs [ lindex [dict get $dbdict $db library] 0 ]
+            }
+        }
+        set db_libs [lsort -unique $db_libs]
+    }
     set Name .ed_mainFrame.buttons.datagen 
     $Name configure -state disabled
     set Name .ed_mainFrame.buttons.boxes 
@@ -266,7 +277,7 @@ proc load_virtual {}  {
                 }
             }
 
-            proc winsetup { MASTER OPTLOG } { 
+            proc winsetup { MASTER OPTLOG } {
                 global masterthread
                 global optlog
                 set masterthread $MASTER
@@ -306,12 +317,57 @@ proc load_virtual {}  {
                 }
             }
 
+           #Add retry logic for library loads on Windows
+           proc windows_package_retry { db_lib } {
+           global db_libs
+           set db_libs $db_lib
+           catch {rename package _package}
+           proc package {args} {
+           global db_libs
+           set pkg [lindex $args 1]
+           # If this is a 'package require' call for a DB library, retry loading
+               if {[llength $args] >= 2 && [lindex $args 0] eq "require" && [lsearch -exact $db_libs $pkg] >= 0} {
+                       set retries 5
+                       for {set i 0} {$i < $retries} {incr i} {
+                           if {[catch {eval _package $args} result] == 0} {
+                               return $result
+                           } elseif  {[string match "*already exists*" $result] || [string match "*permission denied*" $result]} {
+		           #reset and retry after pause
+			   catch {_package forget $pkg}
+			   catch {namepsace delete $pkg}
+		           #additional oo cleanup
+			   if { $pkg eq "tdbc::odbc" } {
+			     catch { namespace delete ::tdbc::odbc }
+                             catch { rename ::tdbc::odbc::connection "" }
+			   }
+			   after [expr {int(pow(2, $i) * (500 + rand() * 1000))}]
+			   } else {
+			   #unknown error
+                           error "Failed to load $pkg - $result"
+			   }
+                       }
+			   #All 5 Retries failed
+                           error "Failed to load $pkg - $result"
+                   } else {
+               # Default behavior for all other packages
+               return [eval _package $args]
+                   }
+           }
+           }
+
         thread::wait }]
         set threadscreated($vuser) $threadID
         catch {eval [ subst {thread::send $threadscreated($vuser) {lappend ::auto_path [zipfs root]app/lib}}]}
         catch {eval [ subst {thread::send $threadscreated($vuser) {::tcl::tm::path add [zipfs root]app/modules modules}}]}
-        if { $suppo == 1 } { eval [ subst {thread::send $threadscreated($vuser) { winsetup $masterthread $optlog }}] 
-    } else { eval [ subst {thread::send $threadscreated($vuser) { winsetup {-1} $optlog }}] }  }
+        if { $suppo == 1 } {
+	eval [ subst {thread::send $threadscreated($vuser) { winsetup $masterthread $optlog }}]
+        } else {
+	eval [ subst {thread::send $threadscreated($vuser) { winsetup {-1} $optlog }}]
+        }
+	if {[string match "windows" $::tcl_platform(platform)]} {
+	eval [ subst {thread::send $threadscreated($vuser) {windows_package_retry {$db_libs}}}]
+        }
+    }
     foreach {vuser threadID} [array get threadscreated] {
         set threadsbytid($threadID) $vuser
         #vusers thread has grabbed previous tc or monitor thread so remove variable
