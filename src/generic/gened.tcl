@@ -1927,7 +1927,7 @@ proc vuser_options {} {
             set ntimes 1
         }
         #Save new values to SQLite
-	set genericdict [ dict replace $genericdict virtual_user_options [ subst { virtual_users $virtual_users user_delay $conpause repeat_delay $delayms iterations $ntimes show_output $suppo log_to_temp $optlog unique_log_name $unique_log_name no_log_buffer $no_log_buffer log_timestamps $log_timestamps }] ]
+	set genericdict [ dict replace $genericdict virtual_user_options [ subst { virtual_users $virtual_users user_delay $delayms repeat_delay $conpause iterations $ntimes show_output $suppo log_to_temp $optlog unique_log_name $unique_log_name no_log_buffer $no_log_buffer log_timestamps $log_timestamps }] ]
         Dict2SQLite "generic" $genericdict
         remote_command [ concat vuser_slave_ops $maxvuser $virtual_users $delayms $conpause $ntimes $suppo $optlog ]
         destroy .vuserop

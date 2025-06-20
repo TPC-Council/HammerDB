@@ -457,35 +457,35 @@ proc vuset { args } {
                 remote_command [ concat vuset vu $val ]
             }
             delay {
-                set conpause $val
-                if { ![string is integer -strict $conpause] } {
-                    tk_messageBox -message "User Delay(ms) must be an integer"
-                    puts -nonewline "setting to value: "
-                    set conpause 500
-                } else {
-                    if { $conpause < 1 } { tk_messageBox -message "User Delay(ms) must be 1 or greater"
-                        puts -nonewline "setting to value: "
-                        set conpause 500
-                    }
-                }
-		dict set genericdict $dct "user_delay" $conpause
-                SQLiteUpdateKeyValue $db $dct "user_delay" $conpause
-                remote_command [ concat vuset delay $val ]
-            }
-            repeat {
                 set delayms $val
                 if { ![string is integer -strict $delayms] } {
-                    tk_messageBox -message "Repeat Delay(ms) must be an integer"
+                    tk_messageBox -message "User Delay(ms) must be an integer"
                     puts -nonewline "setting to value: "
                     set delayms 500
                 } else {
-                    if { $delayms < 1 } { tk_messageBox -message "Repeat Delay(ms) must be 1 or greater"
+                    if { $delayms < 0 } { tk_messageBox -message "User Delay(ms) must be 0 or greater"
                         puts -nonewline "setting to value: "
                         set delayms 500
                     }
                 }
-		dict set genericdict $dct "repeat_delay" $delayms
-                SQLiteUpdateKeyValue $db $dct "repeat_delay" $delayms
+		dict set genericdict $dct "user_delay" $delayms
+                SQLiteUpdateKeyValue $db $dct "user_delay" $delayms
+                remote_command [ concat vuset delay $val ]
+            }
+            repeat {
+                set conpause $val
+                if { ![string is integer -strict $conpause] } {
+                    tk_messageBox -message "Repeat Delay(ms) must be an integer"
+                    puts -nonewline "setting to value: "
+                    set conpause 500
+                } else {
+                    if { $conpause < 0 } { tk_messageBox -message "Repeat Delay(ms) must be 0 or greater"
+                        puts -nonewline "setting to value: "
+                        set conpause 500
+                    }
+                }
+		dict set genericdict $dct "repeat_delay" $conpause
+                SQLiteUpdateKeyValue $db $dct "repeat_delay" $conpause
                 remote_command [ concat vuset repeat $val ]
             }
             iterations {
@@ -848,7 +848,7 @@ proc print { args } {
                 pdict 2 $genericdict
             }
             vuconf {
-                foreach i { "Virtual Users" "User Delay(ms)" "Repeat Delay(ms)" "Iterations" "Show Output" "Log Output" "Unique Log Name" "No Log Buffer" "Log Timestamps" } j { virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps } {
+                foreach i { "Virtual Users" "User Delay(ms)" "Repeat Delay(ms)" "Iterations" "Show Output" "Log Output" "Unique Log Name" "No Log Buffer" "Log Timestamps" } j { virtual_users delayms conpause ntimes suppo optlog unique_log_name no_log_buffer log_timestamps } {
                     puts "$i = [ set $j ]"
                 }
             }
