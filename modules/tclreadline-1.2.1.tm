@@ -738,7 +738,7 @@ proc TclReadLine::rawInput {} {
     if {[string match windows $::tcl_platform(platform)]} {
         enableRaw
     } else {
-        stty raw -echo
+        catch { exec stty raw -echo }
     }
 }
 
@@ -748,7 +748,7 @@ proc TclReadLine::lineInput {} {
     if {[string match windows $::tcl_platform(platform)]} {
         disableRaw
     } else {
-        stty -raw echo
+        catch { exec stty -raw echo }
     }
 }
 
