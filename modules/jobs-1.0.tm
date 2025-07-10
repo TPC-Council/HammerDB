@@ -1848,7 +1848,7 @@ namespace eval jobs {
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name GEOMEAN -data [list "$geomeantime "] -itemStyle [ subst {color $color1 opacity 0.90} ]
             $bar AddBarSeries -name "QUERY SET" -data [list "$qsettime "] -itemStyle [ subst {color $color2 opacity 0.90} ]
-            set html [ $bar RenderX -title "$jobid Result" ]
+            set html [ $bar toHTML -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
           } else {
@@ -1866,7 +1866,7 @@ namespace eval jobs {
             $bar Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name NOPM -data [list "$nopm "] -itemStyle [ subst {color $color1 opacity 0.90} ]
             $bar AddBarSeries -name TPM -data [list "$tpm "] -itemStyle [ subst {color $color2 opacity 0.90} ]            
-            set html [ $bar RenderX -title "$jobid Result" ]
+            set html [ $bar toHTML -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
           }
@@ -1926,7 +1926,7 @@ namespace eval jobs {
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
             $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
             $bar AddBarSeries -name "VU 1 Query Set" -data [list $barseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
-            set html [ $bar RenderX -title "$jobid Query Times" ]
+            set html [ $bar toHTML -title "$jobid Query Times" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'timing',$html)}
             return $html
           } else {
@@ -1952,7 +1952,7 @@ namespace eval jobs {
             $bar AddBarSeries -name P95_MS -data [list "$P95_MS "]    
             $bar AddBarSeries -name P99_MS -data [list "$P99_MS "]    
             $bar AddBarSeries -name AVG_MS -data [list "$AVG_MS "]    
-            set html [ $bar RenderX -title "$jobid Response Times" ]
+            set html [ $bar toHTML -title "$jobid Response Times" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'timing',$html)}
             return $html
           }
@@ -2001,7 +2001,7 @@ namespace eval jobs {
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
           $line AddLineSeries -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
-          set html [ $line RenderX -title "$jobid Transaction Count" ]
+          set html [ $line toHTML -title "$jobid Transaction Count" ]
           #If we query the tcount chart while the job is running it will not be generated again
           #meaning the output will be truncated
           #only save the chart once the job is complete
@@ -2068,7 +2068,7 @@ namespace eval jobs {
           $line AddLineSeries -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
 	  #to include interrupt requests uncomment below
           #$line AddLineSeries -name "irq%" -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
-          set html [ $line RenderX -title "$jobid " ]
+          set html [ $line toHTML -title "$jobid " ]
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated
           #only save the chart once the job is complete
@@ -2118,7 +2118,7 @@ namespace eval jobs {
           $line Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
           $line AddLineSeries -name "NOPM" -data [ list $lineseries1 ] -itemStyle [ subst {color $color1 opacity 0.90} ]
           $line AddLineSeries -name "TPM" -data [ list $lineseries2 ] -itemStyle [ subst {color $color2 opacity 0.90} ]
-          set html [ $line RenderX -title "Performance Profile $profileid" ]
+          set html [ $line toHTML -title "Performance Profile $profileid" ]
           #If we query the profile chart while the job is running it will not be generated again
           #meaning the output will be truncated
           #only save the chart once the last job is complete
