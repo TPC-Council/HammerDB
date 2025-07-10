@@ -2040,34 +2040,38 @@ namespace eval jobs {
           dict with cpuvalues {
             lappend usrseries ${usr%}
             lappend sysseries ${sys%}
-	    #to include interrupt requests uncomment below
-            #lappend irqseries ${irq%}
+            lappend irqseries ${irq%}
           }}
           #Delete the first and trailing values if usr utilisation is 0, so we start from the first measurement and only chart when running
           if { [ lindex $usrseries 0 ] eq 0.0 } {
             set usrseries [ lreplace $usrseries 0 0 ]
             set sysseries [ lreplace $sysseries 0 0 ]
-	    #to include interrupt requests uncomment below
-            #set irqseries [ lreplace $irqseries 0 0 ]
+            set irqseries [ lreplace $irqseries 0 0 ]
             set xaxisvals [ lreplace $xaxisvals 0 0 ]
           }
           while { [ lindex $usrseries end ] eq 0.0 } {
             set usrseries [ lreplace $usrseries end end ]
             set sysseries [ lreplace $sysseries end end ]
-	    #to include interrupt requests uncomment below
-            #set irqseries [ lreplace $irqseries end end ]
+            set irqseries [ lreplace $irqseries end end ]
             set xaxisvals [ lreplace $xaxisvals end end ]
           }
 	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
           set line [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ; 
-          $line SetOptions -title [ subst {text "$dbdescription $jobid"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
+          set irqSeriesName "irq%"
+          # Set 'showIrqSeries' to True to show the IRQ series in the chart (default is 'False').
+          set showIrqSeries "False"
+          # Use 'irqJS' to toggle the visibility of the IRQ series in the chart.
+          set irqJS [ticklecharts::jsfunc new [subst {{'$irqSeriesName': [string tolower $showIrqSeries]}}]]
+          $line SetOptions -title [ subst {text "$dbdescription $jobid"} ] \
+                           -tooltip {show "True"} \
+                           -legend [list bottom "5%" left "40%" selected $irqJS]
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
           $line Add "lineSeries" -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
           $line Add "lineSeries" -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
-	  #to include interrupt requests uncomment below
-          #$line Add "lineSeries" -name "irq%" -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
+	        # 'irqseries' is included but hidden by default with 'showIrqSeries' variable set.
+          $line Add "lineSeries" -name $irqSeriesName -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
           set html [ $line toHTML -title "$jobid " ]
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated
