@@ -1845,9 +1845,9 @@ namespace eval jobs {
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Result $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-            $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name GEOMEAN -data [list "$geomeantime "] -itemStyle [ subst {color $color1 opacity 0.90} ]
-            $bar AddBarSeries -name "QUERY SET" -data [list "$qsettime "] -itemStyle [ subst {color $color2 opacity 0.90} ]
+            $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter {"{value}"}}
+            $bar Add "barSeries" -name GEOMEAN -data [list "$geomeantime "] -itemStyle [ subst {color $color1 opacity 0.90} ]
+            $bar Add "barSeries" -name "QUERY SET" -data [list "$qsettime "] -itemStyle [ subst {color $color2 opacity 0.90} ]
             set html [ $bar toHTML -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
@@ -1863,9 +1863,9 @@ namespace eval jobs {
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Result $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list [ subst {"$dbdescription $vus"}]] -axisLabel [list show "True"]
-            $bar Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name NOPM -data [list "$nopm "] -itemStyle [ subst {color $color1 opacity 0.90} ]
-            $bar AddBarSeries -name TPM -data [list "$tpm "] -itemStyle [ subst {color $color2 opacity 0.90} ]            
+            $bar Yaxis -name "Transactions" -position "left" -axisLabel {formatter {"{value}"}}
+            $bar Add "barSeries" -name NOPM -data [list "$nopm "] -itemStyle [ subst {color $color1 opacity 0.90} ]
+            $bar Add "barSeries" -name TPM -data [list "$tpm "] -itemStyle [ subst {color $color2 opacity 0.90} ]            
             set html [ $bar toHTML -title "$jobid Result" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'result',$html)}
             return $html
@@ -1924,8 +1924,8 @@ namespace eval jobs {
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-H Power Query Times $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "45%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-            $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name "VU 1 Query Set" -data [list $barseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
+            $bar Yaxis -name "Seconds" -position "left" -axisLabel {formatter {"{value}"}}
+            $bar Add "barSeries" -name "VU 1 Query Set" -data [list $barseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
             set html [ $bar toHTML -title "$jobid Query Times" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'timing',$html)}
             return $html
@@ -1947,11 +1947,11 @@ namespace eval jobs {
             set ::ticklecharts::htmlstdout "True" ; 
             $bar SetOptions -title [ subst {text "$dbdescription TPROC-C Response Times $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "30%"}
             $bar Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-            $bar Yaxis -name "Milliseconds" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-            $bar AddBarSeries -name P50_MS -data [list "$P50_MS "]    
-            $bar AddBarSeries -name P95_MS -data [list "$P95_MS "]    
-            $bar AddBarSeries -name P99_MS -data [list "$P99_MS "]    
-            $bar AddBarSeries -name AVG_MS -data [list "$AVG_MS "]    
+            $bar Yaxis -name "Milliseconds" -position "left" -axisLabel {formatter {"{value}"}}
+            $bar Add "barSeries" -name P50_MS -data [list "$P50_MS "]    
+            $bar Add "barSeries" -name P95_MS -data [list "$P95_MS "]    
+            $bar Add "barSeries" -name P99_MS -data [list "$P99_MS "]    
+            $bar Add "barSeries" -name AVG_MS -data [list "$AVG_MS "]    
             set html [ $bar toHTML -title "$jobid Response Times" ]
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'timing',$html)}
             return $html
@@ -1999,8 +1999,8 @@ namespace eval jobs {
           set ::ticklecharts::htmlstdout "True" ; 
           $line SetOptions -title [ subst {text "$dbdescription $workload Count $jobid $date"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-          $line AddLineSeries -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
+          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
+          $line Add "lineSeries" -name [ join $header ] -data [ list $lineseries ] -itemStyle [ subst {color $color1 opacity 0.90} ]
           set html [ $line toHTML -title "$jobid Transaction Count" ]
           #If we query the tcount chart while the job is running it will not be generated again
           #meaning the output will be truncated
@@ -2063,11 +2063,11 @@ namespace eval jobs {
           set ::ticklecharts::htmlstdout "True" ; 
           $line SetOptions -title [ subst {text "$dbdescription $jobid"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
-          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-          $line AddLineSeries -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
-          $line AddLineSeries -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
+          $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
+          $line Add "lineSeries" -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
+          $line Add "lineSeries" -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
 	  #to include interrupt requests uncomment below
-          #$line AddLineSeries -name "irq%" -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
+          #$line Add "lineSeries" -name "irq%" -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
           set html [ $line toHTML -title "$jobid " ]
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated
@@ -2115,9 +2115,9 @@ namespace eval jobs {
           foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
           $line SetOptions -title [ subst {text "$dbdescription Performance Profile $profileid $timestamp"} ] -tooltip {show "True"} -legend {bottom "5%" left "40%"}
           $line Xaxis -name "Active VU" -data [list $xaxisvals] -axisLabel [list show "True"]
-          $line Yaxis -name "Transactions" -position "left" -axisLabel {formatter "<0123>value<0125>"}
-          $line AddLineSeries -name "NOPM" -data [ list $lineseries1 ] -itemStyle [ subst {color $color1 opacity 0.90} ]
-          $line AddLineSeries -name "TPM" -data [ list $lineseries2 ] -itemStyle [ subst {color $color2 opacity 0.90} ]
+          $line Yaxis -name "Transactions" -position "left" -axisLabel {formatter {"{value}"}}
+          $line Add "lineSeries" -name "NOPM" -data [ list $lineseries1 ] -itemStyle [ subst {color $color1 opacity 0.90} ]
+          $line Add "lineSeries" -name "TPM" -data [ list $lineseries2 ] -itemStyle [ subst {color $color2 opacity 0.90} ]
           set html [ $line toHTML -title "Performance Profile $profileid" ]
           #If we query the profile chart while the job is running it will not be generated again
           #meaning the output will be truncated
