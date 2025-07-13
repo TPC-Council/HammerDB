@@ -44,6 +44,26 @@ namespace eval jobs {
     init_job_tables
   }
 
+  proc huddle_escape_double {huddleObj} {
+    # huddleObj looks like: HUDDLE {L { {s ...} {s ...} ... } }
+    set outerTag [lindex $huddleObj 0]
+    set innerList [lindex $huddleObj 1]
+    set tag [lindex $innerList 0]
+    set pairs [lindex $innerList 1]
+
+    set newPairs {}
+    foreach pair $pairs {
+        set sTag [lindex $pair 0]
+        set str [lindex $pair 1]
+        # Escape all internal double quotes
+        regsub -all {\"} $str {\\"} escapedStr
+        lappend newPairs [list $sTag $escapedStr]
+    }
+
+    # Rebuild the HUDDLE structure
+    return [list $outerTag [list $tag $newPairs]]
+}
+
   proc init_job_tables { } {
     upvar #0 genericdict genericdict
     if {[dict exists $genericdict commandline jobs_disable ]} {
@@ -391,30 +411,37 @@ namespace eval jobs {
   }
 
   proc common-header {} {
-    wapp-trim {
+    wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+    set url "/style.css"
+    set logoimg "[wapp-param BASE_URL]/logo.png"
+    wapp-subst {
+      <!DOCTYPE html>
       <html>
       <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-      <link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">
+      <link href="%url($url)" rel="stylesheet">
       <title>HammerDB Results</title>
       </head>
       <body>
-      <p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>
+      <p><img src='%unsafe($logoimg)' width='347' height='60'></p>
     }
   }
 
   proc summary-header {jobid} {
-    wapp-trim {
+    set logoimg "[wapp-param BASE_URL]/logo.png"
+    set url "/style.css"
+    wapp-subst {
+      <!DOCTYPE html>
       <html>
       <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-      <link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">
+      <link href="%url($url)" rel="stylesheet">
       <title>hdb_%html($jobid)</title>
       </head>
       <body>
-      <p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>
+      <p><img src='%unsafe($logoimg)' width='347' height='60'></p>
     }
   }
 
@@ -422,8 +449,7 @@ namespace eval jobs {
     set B [wapp-param BASE_URL]
     set dbfile [ getdatabasefile ]
     set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]]" 
-    wapp-subst {<h3 class="title">Env</h3><br>}
-      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
+    wapp-subst {<h3 class="title">Env</h3>}
       wapp-subst {<table>\n}
       wapp-subst {<th>SQLite</th><th>Size (bytes)</th><th>Web Service</th>\n}
       wapp-subst {<tr><td>%html($dbfile)</td><td>%html($size)</td></td><td><a href='%html($B)/env'>Configuration</a></td></tr>\n}
@@ -970,8 +996,7 @@ namespace eval jobs {
         <div class='hammerdb' data-title='TPROC-C'>
       }
       set jcount 0
-      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
-      wapp-subst {<br><table>\n}
+      wapp-subst {<table>\n}
       wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>NOPM</th><th>Status</th>\n}
       #one loop builds data for both TPROC-C and TPROC-H tables
       foreach job [ getjob joblist ] {
@@ -1050,11 +1075,9 @@ namespace eval jobs {
       if { $tprocccombined eq {} } {
         wapp-subst {%html(No TPROC-C jobs found)\ in database file %html([ getdatabasefile ])}
       }
-      wapp-subst {</ol></div>\n}
       set profcount 0
       wapp-subst {<h3 class="title">TPROC-C Performance Profiles</h3>}
-      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
-      wapp-subst {<br><table>\n}
+      wapp-subst {<table>\n}
       wapp-subst {<th>Profile ID</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th>\n}
         set profileids [ join [ hdbjobs eval {select distinct(profile_id) from jobmain where profile_id > 0 order by profile_id asc} ]]
       foreach profileid $profileids {
@@ -1086,21 +1109,18 @@ namespace eval jobs {
       if { $profcount eq 0 } {
         wapp-subst {%html(No performance profiles found)\ in database file %html([ getdatabasefile ])}
       }
-      wapp-subst {</ol></div>\n}
       wapp-subst {<h3 class="title">TPROC-H</h3>}
       wapp-trim {
         <div class='hammerdb' data-title='TPROC-H'>
       }
       set jcount 0
-      wapp-subst {<div><ol style='column-width: 20ex;'>\n}
-      wapp-subst {<br><table>\n}
+      wapp-subst {<table>\n}
       wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>Geomean</th><th>Status</th>\n}
       wapp-subst $tprochcombined
       wapp-subst {</table>\n}
       if { $tprochcombined eq {} } {
         wapp-subst {%html(No TPROC-H jobs found)\ in database file %html([ getdatabasefile ])}
       }
-      wapp-subst {</ol></div>\n}
       main-footer
       return
     } else {
@@ -1158,17 +1178,17 @@ namespace eval jobs {
           return
         } else {
           set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid} ]
-          set huddleobj [ huddle compile {list} $joboutput ]
+          set huddleobj [ huddle_escape_double [ huddle compile {list} $joboutput ]]
           wapp-mimetype application/json
           wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
         }
       } elseif { [ dict keys $paramdict ] eq "profileid" } {
         set profileid [ dict get $paramdict profileid ]
-        wapp-content-security-policy off
-        wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+        wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+        wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
              foreach l [ split [ getchart $profileid 0 "profile" ] \n] {
              if { [ string match [ string trim $l ] <body> ] } {
-                    set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
+                    set l "\t<body>\n\t<p><img src='[wapp-url BASE_URL]/logo.png' width='347' height='60'></p>"
                 }
         wapp-subst {%unsafe($l)\n}
 	}
@@ -1188,7 +1208,7 @@ namespace eval jobs {
 	if { [ lindex [ dict keys $paramdict ] 0 ] eq "profileid" } {
         set profileid [ dict get $paramdict profileid ]
         if { [ dict keys $paramdict ] eq "profileid profiledata" } {
-        set huddleobj [ get_job_profile $profileid ]
+        set huddleobj  [ huddle_escape_double [ get_job_profile $profileid ]]
             wapp-mimetype application/json
             wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
         return
@@ -1220,7 +1240,7 @@ namespace eval jobs {
              ;#No result exclude summary
 	   return
 		}
-      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3><br>}
+      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3>}
       wapp-trim {
             <div class='hammerdb' data-title='Jobs Summary'>
           }
@@ -1230,7 +1250,7 @@ namespace eval jobs {
       wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($bm)</td><td>%html($nopm)</td><td>%html($tpm)</td><td>%html($avu)</td></tr>\n}
       wapp-subst {</table>\n}
 	#Results chart - check for existence of result already done
-              wapp-content-security-policy off
+              wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
               foreach l [ split [ getchart $jobid 1 "result" ] \n] {
                 if { [ string match "*TPROC-C Result*" $l  ] } {
                 set l {"text": "Result",}
@@ -1292,7 +1312,7 @@ namespace eval jobs {
              ;#No result exclude summary
            return
                 }
-      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3><br>}
+      wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3>}
       wapp-trim {
             <div class='hammerdb' data-title='Jobs Summary'>
           }
@@ -1302,7 +1322,7 @@ namespace eval jobs {
       wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($bm)</td><td>%html($geo)</td><td>%html($queryset)</td></tr>\n }
       wapp-subst {</table>\n}
 	#Results chart - check for existence of result already done
-              wapp-content-security-policy off
+              wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
               foreach l [ split [ getchart $jobid 1 "result" ] \n] {
                 if { [ string match "*TPROC-H Result*" $l  ] } {
                 set l {"text": "Result",}
@@ -1340,7 +1360,7 @@ namespace eval jobs {
 	} else {
         if { [ dict keys $paramdict ] eq "jobid index" } {
           common-header
-          wapp-subst {<h3 class="title">Job:%html($jobid)</h3><br>}
+          wapp-subst {<h3 class="title">Job:%html($jobid)</h3>}
           wapp-trim {
             <div class='hammerdb' data-title='Jobs Index'>
           }
@@ -1435,7 +1455,7 @@ namespace eval jobs {
         } else {
           if { [ dict keys $paramdict ] eq "jobid vu" || [ dict keys $paramdict ] eq "jobid status" } {
             set joboutput [ hdbjobs eval {SELECT VU,OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=$vuid} ]
-            set huddleobj [ huddle compile {list} $joboutput ]
+            set huddleobj  [ huddle_escape_double [ huddle compile {list} $joboutput ]]
             wapp-mimetype application/json
             wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
             return
@@ -1476,8 +1496,8 @@ namespace eval jobs {
             }
           } else {
             if { [ dict keys $paramdict ] eq "jobid result" } {
-              wapp-content-security-policy off
-              wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+              wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+              wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
               foreach l [ split [ getchart $jobid $vuid "result" ] \n] {
                 if { [ string match [ string trim $l ] <body> ] } {
                   set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
@@ -1491,8 +1511,8 @@ namespace eval jobs {
               return
             } else {
               if { [ dict keys $paramdict ] eq "jobid timing" } {
-                wapp-content-security-policy off
-                wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+                wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+                wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
                 foreach l [ split [ getchart $jobid $vuid "timing" ] \n] {
                   if { [ string match [ string trim $l ] <body> ] } {
                     set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
@@ -1516,8 +1536,8 @@ namespace eval jobs {
                     return
                   } else {
                     if { [ dict keys $paramdict ] eq "jobid tcount" } {
-                      wapp-content-security-policy off
-                      wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+                      wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+                      wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
                       foreach l [ split [ getchart $jobid $vuid "tcount" ] \n] {
                         if { [ string match [ string trim $l ] <body> ] } {
                           set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
@@ -1531,8 +1551,8 @@ namespace eval jobs {
                       return
                   } else {
                     if { [ dict keys $paramdict ] eq "jobid metrics" } {
-                      wapp-content-security-policy off
-                      wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+                      wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+                      wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
                       foreach l [ split [ getchart $jobid $vuid "metrics" ] \n] {
                         if { [ string match [ string trim $l ] <body> ] } {
                           set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
@@ -1553,7 +1573,7 @@ namespace eval jobs {
                           if { [ string match "Geometric*" [ lindex $jobresult 2 ] ] } {
                             #TPROC-H
                             set jobtiming [ hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1} ]
-                            set huddleobj [ huddle compile {list} $jobtiming ]
+                            set huddleobj  [ huddle_escape_double [ huddle compile {list} $jobtiming ]]
                             wapp-mimetype application/json
                             wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
                           } else {
@@ -1598,7 +1618,7 @@ namespace eval jobs {
                                 set joboutput [ list $jobid "Cannot find Jobid output" ]
                               }
             }}}}}}}}}}}}
-            set huddleobj [ huddle compile {list} $joboutput ]
+            set huddleobj  [ huddle_escape_double [ huddle compile {list} $joboutput ]]
             wapp-mimetype application/json
             wapp-trim { %unsafe([huddle jsondump $huddleobj]) }
           }

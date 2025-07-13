@@ -90,6 +90,9 @@ switch $argv0 {
 "gui" {
         start_webservice gui
 }
+"scgi" {
+        start_webservice scgi
+}
 "wait" {
         start_webservice wait
 }
@@ -105,6 +108,6 @@ switch $argv0 {
 	quit
 }
 default {
-puts stderr "Error starting HammerDB Web Service: argument should be start, stop, gui, wait or nowait"
+puts stderr "Error starting HammerDB Web Service: argument should be start, stop, gui, scgi, wait or nowait"
 }
 }
