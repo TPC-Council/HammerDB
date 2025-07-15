@@ -27,4 +27,4 @@ Setup db2tcl            db2tcl-2.0.1.1.7z               db2tcl_NMake.bawt
 # Compiled Tcl packages.
 # Pure Tcl/Tk packages.
 Setup awthemes           awthemes-10.4.0.7z             awthemes.bawt
-Setup ticklecharts       ticklecharts-3.1.7z	        ticklecharts.bawt
+Setup ticklecharts       ticklecharts-3.2.8.7z	        ticklecharts.bawt
