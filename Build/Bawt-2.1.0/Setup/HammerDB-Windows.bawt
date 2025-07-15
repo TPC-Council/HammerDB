@@ -14,7 +14,7 @@ Setup TkS		Tk-[GetTkVersion].7z           TkS_NMake.bawt
 Setup TkStubs           Tk-[GetTkVersion].7z           TkStubs.bawt
 # Compiled Tcl packages.
 Setup twapi		twapi-5.0.7z                   twapi.bawt
-Setup tkpath            tkpath-0.3.3.1.7z              tkpath.bawt
+Setup tkpath            tkpath-0.4.1.7z                tkpath.bawt
 Setup tkblt             tkblt-3.2.24.7z                tkblt.bawt
 Setup tclpy             tclpy-0.4.1.7z                 tclpy_NMake.bawt
 Setup tclpyS            tclpyS-0.4.1.7z                tclpyS_NMake.bawt
