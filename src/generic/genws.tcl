@@ -54,67 +54,82 @@ proc env {} {
 
 proc wapp-page-env {} {
     wapp-allow-xorigin-params
-    wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
+    wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
     wapp-trim {
         <h1>Service Environment</h1>\n<pre>
         <pre>%html([wapp-debug-env])</pre>
     }
 }
 
+
 proc wapp-page-style.css {} {
+    wapp-mimetype text/css
     wapp-allow-xorigin-params
     wapp-subst {
-body {
-  margin-top: 0px;
-  margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  background-color: transparent;
-  background-repeat: repeat-x;
-  background-attachment: scroll;
-  background-position: left top;
-  font-family: Roboto, sans-serif;
-  font-size: 12px;
-  color: #444444;
+  body {
+  margin: 0;
+  padding: 0;
+  padding-left: 20px;
+  background-color: #f9f9f9;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
 }
+
 h1, h2, h3 {
-  margin-top: 0px;
-  margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  font-family: Roboto, sans-serif;
-  font-weight: normal;
-  color: #444444;
+  margin: 0 0 0.1em 0;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  color: #222;
 }
+
 h1 {
-  font-size: 2em;
+  font-size: 2.5em;
 }
+
 h2 {
   font-size: 2em;
 }
+
 h3 {
-  font-size: 1.6em;
+  font-size: 1.5em;
 }
+
 p, ul, ol {
-  margin-top: 0px;
-  line-height: 125%;
+  margin: 0 0 1em 0;
 }
+
+ul, ol {
+  padding-left: 1.5em;
+  column-count: 1 !important;
+  column-width: auto !important;
+}
+
 table {
-  font-family: Roboto, sans-serif;
-  font-size: 12px;
-  color: #444444;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  color: #333;
   border-collapse: collapse;
-  width: 50%;
+  width: 100%;
+  max-width: 800px;
+  margin: 1em 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 td, th {
-  border: 1px solid #dddddd;
+  border: 1px solid #ccc;
   text-align: left;
-  padding: 2px;
+  padding: 10px;
+}
+
+th {
+  background-color: #f0f0f0;
+  font-weight: 600;
 }
 
 tr:nth-child(even) {
-  background-color: #dddddd;
+  background-color: #f9f9f9;
 }
 }
 }
@@ -190,6 +205,9 @@ proc start_webservice { args } {
 switch $args {
 "gui" {
         if [catch {wapp-start [ list --server $ws_port ]} message ] { }
+}
+"scgi" {
+        if [catch {wapp-start [ list --scgi $ws_port ]} message ] { }
 }
 "wait" {
         if [catch {wapp-start [ list --server $ws_port ]} message ] {

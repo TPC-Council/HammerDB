@@ -245,9 +245,10 @@ proc wapp-cache-control {x} {
 
 # Redirect to a different web page
 #
-proc wapp-redirect {uri} {
+proc wapp-redirect {uri {code {303 Redirect}}} {
   wapp-reset
-  wapp-reply-code {303 Redirect}
+  wapp-trim {Redirect to %html($uri)}
+  wapp-reply-code $code
   wapp-reply-extra Location $uri
 }
 
@@ -530,13 +531,12 @@ proc wappInt-parse-header {chan} {
     error "unsupported request method: \"[dict get $W REQUEST_METHOD]\""
   }
   set uri [lindex $req 1]
-  if [ string match "*%20*" $uri ] { set uri "/[ file tail $uri ]" }
   dict set W REQUEST_URI $uri
-
   set split_uri [split $uri ?]
   set uri0 [lindex $split_uri 0]
   if {![regexp {^/[-.a-z0-9_/]*$} $uri0]} {
-    error "invalid request uri: \"$uri0\""
+    regsub -all {[-.a-z0-9_/]+} $uri0 {} bad
+    error "disallowed character(s) \"$bad\" in request uri: \"$uri0\""
   }
   dict set W PATH_INFO $uri0
   set uri1 [lindex $split_uri 1]
@@ -732,11 +732,14 @@ proc wappInt-handle-request-unsafe {chan} {
       puts "ERROR: $::errorInfo"
     }
     wapp-reset
-    wapp-reply-code "500 Internal Server Error"
-    wapp-mimetype text/html
-    wapp-trim {
-      <h1>Wapp Application Error</h1>
-      <pre>%html($::errorInfo)</pre>
+    if {[info command wapp-crash-handler]==""
+        || [catch wapp-crash-handler]} {
+      wapp-reply-code "500 Internal Server Error"
+      wapp-mimetype text/html
+      wapp-trim {
+        <h1>Wapp Application Error</h1>
+        <pre>%html($::errorInfo)</pre>
+      }
     }
     dict unset wapp .new-cookies
   }
