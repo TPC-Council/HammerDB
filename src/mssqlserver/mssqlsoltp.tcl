@@ -1636,7 +1636,18 @@ proc Orders_use_bcp { odbc w_id MAXITEMS ORD_PER_DIST DIST_PER_WARE} {
     return
 }
 
-proc LoadItems { odbc MAXITEMS } {
+proc LoadItems { odbc MAXITEMS use_bcp } {
+    puts "Loading Item"
+    if { $use_bcp eq "true"}  {
+	  puts "Loading Item use bcp"
+      Items_use_bcp $odbc $MAXITEMS
+    } else {
+      Items $odbc $MAXITEMS
+    }
+    return
+}
+
+proc Items { odbc MAXITEMS } {
     set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
     set chalen [ llength $globArray ]
     puts "Loading Item"
@@ -1666,6 +1677,71 @@ proc LoadItems { odbc MAXITEMS } {
         }
     }
     puts "Item done"
+    return
+}
+
+# item table loading procedure that implements the exec bcp command
+proc Items_use_bcp { odbc MAXITEMS} {
+    set globArray [ list 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ]
+    set chalen [ llength $globArray ]
+
+    puts "Loading Items [clock format [clock seconds]]"
+
+    for {set i 0} {$i < [expr {$MAXITEMS / 10}]} {incr i} {
+        set orig($i) 0
+    }
+    for {set i 0} {$i < [expr {$MAXITEMS / 10}]} {incr i} {
+        set pos [RandomNumber 0 $MAXITEMS]
+        set orig($pos) 1
+    }
+
+    # pass in values for secure connection to server and database name for bcp
+    upvar 2 uid userid
+    upvar 2 pwd pass
+    upvar 2 server serv
+    upvar 2 db db
+
+    # create files for item tables
+    set tmp_env $::env(TMP)
+    set ItemFilePath "$tmp_env/ItemTable.csv"
+    set item_list ""
+    file delete $ItemFilePath
+
+    for {set i_id 1} {$i_id <= $MAXITEMS} {incr i_id} {
+        set i_im_id [RandomNumber 1 10000]
+        set i_name [MakeAlphaString 14 24 $globArray $chalen]
+        set i_price_ran [RandomNumber 100 10000]
+        set i_price [format "%4.2f" [expr {$i_price_ran / 100.0}]]
+        set i_data [MakeAlphaString 26 50 $globArray $chalen]
+
+        if {[info exists orig($i_id)] && $orig($i_id) eq 1} {
+            set first [RandomNumber 0 [expr {[string length $i_data] - 8}]]
+            set last [expr {$first + 8}]
+            set i_data [string replace $i_data $first $last "original"]
+        }
+
+        append item_list "$i_id,$i_name,$i_price,$i_data,$i_im_id\n"
+
+        if {![expr {$i_id % 20000}]} {
+            puts "Loading Items - $i_id [ clock format [ clock seconds ]]"
+        }
+    }
+
+    # add any remaining data to item table
+    if {$item_list ne ""} {
+        set fileHandle [open $ItemFilePath "a"]
+        puts -nonewline $fileHandle $item_list
+        close $fileHandle
+        unset item_list
+    }
+
+    # bcp command to copy to item table
+    set tableName $db.dbo.item
+    bcpComm $tableName $ItemFilePath $userid $pass $serv
+
+    # delete files when copy is complete
+    file delete $ItemFilePath
+	puts "Item done"
     return
 }
 
@@ -1923,7 +1999,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
         }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
-            LoadItems odbc $MAXITEMS
+            LoadItems odbc $MAXITEMS $use_bcp
             puts "Monitoring Workers..."
             set prevactive 0
             while 1 {
@@ -1942,7 +2018,7 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
                 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
                 after 10000
             }} else {
-            LoadItems odbc $MAXITEMS
+            LoadItems odbc $MAXITEMS $use_bcp
     }}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
         if { $threaded eq "MULTI-THREADED" } {
