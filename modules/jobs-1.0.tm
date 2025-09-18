@@ -1188,7 +1188,7 @@ namespace eval jobs {
         wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
              foreach l [ split [ getchart $profileid 0 "profile" ] \n] {
              if { [ string match [ string trim $l ] <body> ] } {
-                    set l "\t<body>\n\t<p><img src='[wapp-url BASE_URL]/logo.png' width='347' height='60'></p>"
+                    set l "\t<body>\n\t<p><img src='[wapp-param BASE_URL]/logo.png' width='347' height='60'></p>"
                 }
         wapp-subst {%unsafe($l)\n}
 	}
