@@ -521,6 +521,8 @@ proc CreateDatabase { maria_handler db } {
             puts "Database $db exists but is not empty, specify a new or empty database name"
             return false
         }
+	set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
+            mariaexec $maria_handler $sql(1)
     } else {
         puts "CREATING DATABASE $db"
         set sql(1) "SET FOREIGN_KEY_CHECKS = 0"
