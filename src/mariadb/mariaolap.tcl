@@ -39,8 +39,15 @@ if [catch {package require tpchcommon} ] { error "Failed to load tpch common fun
 
 proc GatherStatistics { maria_handler } {
     puts "GATHERING SCHEMA STATISTICS"
-    set sql(1) "analyze table ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM"
-    mariaexec $maria_handler $sql(1)
+    if {[catch {mariaexec $maria_handler "SET GLOBAL use_stat_tables='PREFERABLY'"} message]} {
+        puts "Error: use_stat_tables not available - $message"
+    }
+    set analyze_persistent "ANALYZE TABLE ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM PERSISTENT FOR ALL"
+    if {[catch {mariaexec $maria_handler $analyze_persistent} message]} {
+        puts "Error: no persistent analyze, fall back to standard analyze - $message"
+        set analyze_standard "ANALYZE TABLE ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM"
+        mariaexec $maria_handler $analyze_standard
+    }
     return
 }
 
@@ -1235,7 +1242,7 @@ proc sub_query { query_no scale_factor myposition engine } {
 proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mariastatus
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
-
+    catch {mariaexec $maria_handler "SET SESSION use_stat_tables='PREFERABLY'"}
     puts "Verifying the scale factor of the existing schema..."
     set countsql "SELECT count(*) FROM SUPPLIER"
     set count [ standsql $maria_handler $countsql $RAISEERROR ]
