@@ -19,7 +19,7 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
         }
         #Test Agent Port
         namespace import socktest::*
-        puts "Connecting to HammerDB Agent @ $agenthostname:$agentid" 
+        puts "Connecting to HammerDB Agent @ $agenthostname:$agentid"
         puts -nonewline "Testing Agent Connectivity..."
         set result [ sockmesg [ socktest $agenthostname $agentid 1000 ]]
         #Test is OK so call agent to call back
@@ -32,7 +32,10 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
             }
         } else {
             puts $result
-            puts "Connection failed verify hostname and id @ $agenthostname:$agentid" 
+            puts "Connection failed verify agent hostname and id @ $agenthostname:$agentid"
+                if {$::tcl_platform(platform)!="windows"} {
+                puts "Check sysstat package is installed and mpstat command is available to agent"
+		}
             DoDisplay 1 "AGENT CONNECTION FAILED" local
             return
         } 
