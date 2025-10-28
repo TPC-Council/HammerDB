@@ -3026,39 +3026,46 @@ proc dgopts {} {
         set Name $Parent.f1.f2
         ttk::frame $Name -width 30
         grid $Name -column 1 -row 1 -sticky ew
+        # top row
         set rcnt 1
         foreach item {1} {
             set Name $Parent.f1.f2.r$rcnt
-            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 4
-            grid $Name -column $rcnt -row 0 
+            set width [string length $item]
+            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width $width
+            grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
         set rcnt 2
         foreach item {10 30} {
             set Name $Parent.f1.f2.r$rcnt
-            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 3
-            grid $Name -column $rcnt -row 0
+            set width [string length $item]
+            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width $width
+            grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
         set rcnt 4
-        foreach item {100 300 1000} {
+        foreach item {100 300} {
             set Name $Parent.f1.f2.r$rcnt
-            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 5
-            grid $Name -column $rcnt -row 0
+            set width [string length $item]
+            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width $width
+            grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
-        set rcnt 2
-        foreach item {3000 10000} {
+        # bottom row
+        set rcnt 1
+        foreach item {1000 3000} {
             set Name $Parent.f1.f2.ra$rcnt
-            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 6
-            grid $Name -column $rcnt -row 1
+            set width [string length $item]
+            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width $width
+            grid $Name -column $rcnt -row 1 -sticky w
             incr rcnt
         }
-        set rcnt 4
-        foreach item {30000 100000} {
+        set rcnt 3
+        foreach item {10000 30000 100000} {
             set Name $Parent.f1.f2.ra$rcnt
-            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width 7
-            grid $Name -column $rcnt -row 1
+            set width [string length $item]
+            ttk::radiobutton $Name -variable gen_scale_fact -text $item -value $item -width $width
+            grid $Name -column $rcnt -row 1 -sticky w
             incr rcnt
         }
     }
