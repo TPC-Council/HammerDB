@@ -1,3 +1,92 @@
+# Building HammerDB from Source
+
+HammerDB provides pre-compiled packages, but you can build from source if you need custom builds or the latest commits. Building from source requires installing compilers, dependencies, and database client/server libraries. For full details, see the [HammerDB documentation](https://www.hammerdb.com/docs/ch01s13.html) and [build blog](https://www.hammerdb.com/blog/uncategorized/how-to-build-hammerdb-from-source/).
+
+## Linux Build Instructions
+
+1. Prerequisites and Preparation
+
+Before building HammerDB from source, ensure the following steps are completed:
+
+- Download and install all supported database clients/servers (MariaDB, Db2, MySQL, PostgreSQL) on your machine.
+- Download and install the development packages for each database client/server (these provide the `include` and `lib` directories).
+- Update your `LD_LIBRARY_PATH` environment variable to include the `lib` folder path of each database client/server. For example:
+  ```sh
+  export LD_LIBRARY_PATH=/opt/postgresql-17.2/lib:/opt/mysql-8.4.4-linux-glibc2.28-x86_64/lib:/opt/mariadb-11.4.4-linux-systemd-x86_64/lib:/opt/ibm/sqllib/lib:$LD_LIBRARY_PATH
+  ```
+- Set the config file path of each database to the appropriate environment variable:
+  ```sh
+  export PG_CONFIG=/opt/postgresql-17.2/bin/pg_config
+  export MYSQL_CONFIG=/opt/mysql-8.4.4-linux-glibc2.28-x86_64/bin/mysql_config
+  export MARIADB_CONFIG=/opt/mariadb-11.4.4-linux-systemd-x86_64/bin/mariadb_config
+  export IBM_DB_DIR=/opt/ibm/sqllib
+  ```
+- Install the development package for your Python version (e.g. `python3.11-dev`).
+- Install the Cairo graphics development package (`libcairo2-dev`).
+- 
+
+2. **Install dependencies:**
+  ```sh
+  sudo yum install p7zip
+  sudo yum install libXft-devel
+  sudo yum group install "Development Tools"
+  ```
+  - Also install the client/server and development libraries for MariaDB, Db2, MySQL, and PostgreSQL. Ensure both `include` and `lib` directories are present.
+
+3. **Set environment variables:**
+  ```sh
+  export PG_CONFIG=/opt/postgresql-17.2/bin/pg_config
+  export MARIADB_CONFIG=/opt/mariadb-11.4.4-linux-systemd-x86_64/bin/mariadb_config
+  export MYSQL_CONFIG=/opt/mysql-8.4.4-linux-glibc2.28-x86_64/bin/mysql_config
+  export IBM_DB_DIR=/opt/ibm/sqllib
+  ```
+  - Ensure `python3` and `python3-config` are installed (typically via `python3-minimal` and `python3-dev` on Ubuntu).
+
+4. **Clone the source:**
+  ```sh
+  git clone https://github.com/TPC-Council/HammerDB.git
+  cd HammerDB
+  ```
+
+5. **Run the build:**
+  ```sh
+  cd Build/Bawt-2.1.0
+  ./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update
+  ```
+
+6. **Find your build:**
+  - The built distribution will be in:
+    `HammerDB/Build/BawtBuild/Linux/x64/Release/Distribution`
+  - Use the production build for running workloads.
+
+## Windows Build Instructions
+
+1. **Install Visual Studio 2022** (free for open source developers).
+2. **Install database client/server libraries** for MariaDB, Db2, MySQL, and PostgreSQL (with development headers and libs).
+3. **Set environment variables:**
+  ```bat
+  set MARIADB_CONFIG=C:\Program Files\MariaDB\MariaDB Connector C 64-bit
+  set MYSQL_CONFIG=C:\Program Files\MySQL\MySQL Server 8.4
+  set PG_CONFIG=C:\Program Files\PostgreSQL\17\bin
+  set IBM_DB_DIR=C:\Program Files\IBM\SQLLIB
+  set PYTHONHOME=C:\Users\username\AppData\Local\Programs\Python\Python312
+  ```
+4. **Clone the source:**
+  ```bat
+  git clone https://github.com/TPC-Council/HammerDB.git
+  cd HammerDB
+  ```
+5. **Run the build:**
+  ```bat
+  cd Build\Bawt-2.1.0
+  Build-Windows.bat x64 vs2022+gcc Setup\HammerDB-Windows.bawt update
+  ```
+6. **Find your build:**
+  - The built distribution will be in:
+    `HammerDB\Build\BawtBuild\vs2022\x64\Release\Distribution`
+
+---
+
 # Mixed Workload Benchmark Runner [Emumba's Automation Flow]
 
 ## Overview
