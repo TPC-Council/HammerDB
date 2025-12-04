@@ -80,13 +80,31 @@ set vectordbdict [ SQLite2Dict "vectordb" ]
 if { $vectordbdict eq "" } {
     #Load database config from database.xml
     set vectordbdict [ ::XML::To_Dict config/vectordb.xml ]
-
     #Save XML content to SQLite - database.db
     Dict2SQLite "vectordb" $vectordbdict
 }
 
+# Merge vectordb from genericdict with vectordbdict
+# genericdict has vindex, vectordbdict has the index configurations
+if { [dict exists $genericdict vectordb] } {
+    # Get the vindex from genericdict
+    set vindex_from_generic [dict get $genericdict vectordb]
+    # Merge: vindex_from_generic settings take precedence, then add all from vectordbdict
+    set merged_vectordb [dict merge $vectordbdict $vindex_from_generic]
+    dict set genericdict vectordb $merged_vectordb
+} else {
+    dict set genericdict vectordb $vectordbdict
+}
+
 global vindex
-set vindex [dict get $genericdict vectordb vindex]
+# Now safely get vindex - it should exist after the merge
+if { [dict exists $genericdict vectordb vindex] } {
+    set vindex [dict get $genericdict vectordb vindex]
+} else {
+    # Fallback to hnsw if vindex not found
+    set vindex "hnsw"
+    puts "Warning: vindex not found in configuration, defaulting to hnsw"
+}
 
 #get_xml_data
 set_global_config $genericdict
