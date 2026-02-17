@@ -1046,16 +1046,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         maria::autocommit $maria_handler 0
         set table_opts ""
         if { [ string toupper $maria_storage_engine ] eq "TIDESDB" && [llength $tidesdb_opts] > 0 } {
-            puts "CONFIGURING TIDESDB OPTIONS"
-            if { [dict exists $tidesdb_opts flush_threads] } {
-                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_flush_threads = [dict get $tidesdb_opts flush_threads]"}
-            }
-            if { [dict exists $tidesdb_opts compaction_threads] } {
-                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_compaction_threads = [dict get $tidesdb_opts compaction_threads]"}
-            }
-            if { [dict exists $tidesdb_opts block_cache_size] } {
-                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_block_cache_size = [dict get $tidesdb_opts block_cache_size]"}
-            }
+            puts "CONFIGURING TIDESDB TABLE OPTIONS"
             if { [dict exists $tidesdb_opts compression] } {
                 append table_opts " COMPRESSION='[string toupper [dict get $tidesdb_opts compression]]'"
             }
@@ -1081,6 +1072,36 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
             }
             if { [dict exists $tidesdb_opts isolation_level] } {
                 append table_opts " ISOLATION_LEVEL='[string toupper [dict get $tidesdb_opts isolation_level]]'"
+            }
+            if { [dict exists $tidesdb_opts bloom_fpr] } {
+                append table_opts " BLOOM_FPR=[dict get $tidesdb_opts bloom_fpr]"
+            }
+            if { [dict exists $tidesdb_opts sync_interval_us] } {
+                append table_opts " SYNC_INTERVAL_US=[dict get $tidesdb_opts sync_interval_us]"
+            }
+            if { [dict exists $tidesdb_opts level_size_ratio] } {
+                append table_opts " LEVEL_SIZE_RATIO=[dict get $tidesdb_opts level_size_ratio]"
+            }
+            if { [dict exists $tidesdb_opts min_levels] } {
+                append table_opts " MIN_LEVELS=[dict get $tidesdb_opts min_levels]"
+            }
+            if { [dict exists $tidesdb_opts skip_list_max_level] } {
+                append table_opts " SKIP_LIST_MAX_LEVEL=[dict get $tidesdb_opts skip_list_max_level]"
+            }
+            if { [dict exists $tidesdb_opts skip_list_probability] } {
+                append table_opts " SKIP_LIST_PROBABILITY=[dict get $tidesdb_opts skip_list_probability]"
+            }
+            if { [dict exists $tidesdb_opts l1_file_count_trigger] } {
+                append table_opts " L1_FILE_COUNT_TRIGGER=[dict get $tidesdb_opts l1_file_count_trigger]"
+            }
+            if { [dict exists $tidesdb_opts ttl] && [dict get $tidesdb_opts ttl] ne "0" } {
+                append table_opts " TTL=[dict get $tidesdb_opts ttl]"
+            }
+            if { [dict exists $tidesdb_opts encrypted] && [string toupper [dict get $tidesdb_opts encrypted]] eq "YES" } {
+                append table_opts " ENCRYPTED=YES"
+                if { [dict exists $tidesdb_opts encryption_key_id] } {
+                    append table_opts " ENCRYPTION_KEY_ID=[dict get $tidesdb_opts encryption_key_id]"
+                }
             }
             set table_opts [string trim $table_opts]
             if { $table_opts ne "" } {
@@ -1167,7 +1188,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
 }
 }
         if { [ string toupper $maria_storage_engine ] eq "TIDESDB" } {
-            set tidesdb_opts "compression $maria_tidesdb_compression sync_mode $maria_tidesdb_sync_mode write_buffer_size $maria_tidesdb_write_buffer_size bloom_filter $maria_tidesdb_bloom_filter use_btree $maria_tidesdb_use_btree isolation_level $maria_tidesdb_isolation_level flush_threads $maria_tidesdb_flush_threads compaction_threads $maria_tidesdb_compaction_threads block_cache_size $maria_tidesdb_block_cache_size"
+            set tidesdb_opts "compression $maria_tidesdb_compression sync_mode $maria_tidesdb_sync_mode write_buffer_size $maria_tidesdb_write_buffer_size bloom_filter $maria_tidesdb_bloom_filter use_btree $maria_tidesdb_use_btree isolation_level $maria_tidesdb_isolation_level bloom_fpr $maria_tidesdb_bloom_fpr sync_interval_us $maria_tidesdb_sync_interval_us level_size_ratio $maria_tidesdb_level_size_ratio min_levels $maria_tidesdb_min_levels skip_list_max_level $maria_tidesdb_skip_list_max_level skip_list_probability $maria_tidesdb_skip_list_probability l1_file_count_trigger $maria_tidesdb_l1_file_count_trigger ttl $maria_tidesdb_ttl encrypted $maria_tidesdb_encrypted encryption_key_id $maria_tidesdb_encryption_key_id"
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu {$tidesdb_opts}" 
         } else {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu" 

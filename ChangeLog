@@ -1249,6 +1249,37 @@ behavior and can be tuned for different workload characteristics:
                         Values: read_uncommitted, read_committed,
                         repeatable_read (default), snapshot, serializable.
 
+  BLOOM_FPR             Bloom filter false positive rate in parts per
+                        10,000. Default 100 (1%). Lower values use more
+                        memory but reduce false positives.
+
+  SYNC_INTERVAL_US      Sync interval in microseconds when SYNC_MODE
+                        is set to interval. Default 500000 (500 ms).
+
+  LEVEL_SIZE_RATIO      How much larger each LSM level is compared to
+                        the previous one. Default 10.
+
+  MIN_LEVELS            Minimum depth of the LSM-tree. Default 5.
+
+  SKIP_LIST_MAX_LEVEL   Maximum level of the in-memory skip list
+                        memtable. Default 12.
+
+  SKIP_LIST_PROBABILITY Skip list promotion probability. Default 25.
+
+  L1_FILE_COUNT_TRIGGER Number of SSTables at Level 1 before compaction
+                        merges them into deeper levels. Default 4.
+
+  TTL                   Table-level time-to-live in seconds. Rows
+                        expire automatically after this duration.
+                        Default 0 (no expiration).
+
+  ENCRYPTED             Enable data-at-rest encryption. Values: no
+                        (default), yes. Requires a MariaDB key
+                        management plugin (e.g. file_key_management).
+
+  ENCRYPTION_KEY_ID     Which encryption key ID to use when ENCRYPTED
+                        is set to yes. Default 1.
+
 Set these from the CLI with:
 
   diset tpcc maria_tidesdb_compression zstd
@@ -1257,13 +1288,32 @@ Set these from the CLI with:
   diset tpcc maria_tidesdb_bloom_filter true
   diset tpcc maria_tidesdb_use_btree false
   diset tpcc maria_tidesdb_isolation_level repeatable_read
+  diset tpcc maria_tidesdb_bloom_fpr 50
+  diset tpcc maria_tidesdb_sync_interval_us 500000
+  diset tpcc maria_tidesdb_level_size_ratio 10
+  diset tpcc maria_tidesdb_min_levels 5
+  diset tpcc maria_tidesdb_skip_list_max_level 12
+  diset tpcc maria_tidesdb_skip_list_probability 25
+  diset tpcc maria_tidesdb_l1_file_count_trigger 4
+  diset tpcc maria_tidesdb_ttl 0
+  diset tpcc maria_tidesdb_encrypted no
+  diset tpcc maria_tidesdb_encryption_key_id 1
 
 For TPROC-H the prefix is maria_tpch_tidesdb_ instead of maria_tidesdb_.
 
 TidesDB System Variables
 
-Global system variables are applied via SET GLOBAL before schema
-creation. These control TidesDB runtime behavior across all tables:
+TidesDB global system variables control engine-wide runtime behavior
+and should be configured in the MariaDB server configuration file
+(maria.cnf or my.cnf) rather than in HammerDB. For example:
+
+  [mariadb]
+  plugin_load_add = ha_tidesdb
+  tidesdb_flush_threads = 4
+  tidesdb_compaction_threads = 4
+  tidesdb_block_cache_size = 536870912
+
+Available system variables:
 
   tidesdb_flush_threads       Number of background flush threads.
                               Default 2.
@@ -1275,11 +1325,7 @@ creation. These control TidesDB runtime behavior across all tables:
                               shared across all column families.
                               Default 268435456 (256 MB).
 
-Set these from the CLI with:
-
-  diset tpcc maria_tidesdb_flush_threads 4
-  diset tpcc maria_tidesdb_compaction_threads 4
-  diset tpcc maria_tidesdb_block_cache_size 536870912
+These can also be changed at runtime with SET GLOBAL if needed.
 
 TPROC-H Foreign Key Handling
 
@@ -1300,7 +1346,7 @@ Files Modified
 
   config/mariadb.xml               Added TidesDB options for TPCC and TPCH
   src/mariadb/mariaopt.tcl         Added TidesDB tab, combobox engine selection
-  src/mariadb/mariaoltp.tcl        Table options and system variables for TPCC
+  src/mariadb/mariaoltp.tcl        Table options for TPCC
   src/mariadb/mariaolap.tcl        TidesDB table queries, options for TPCH
 
 Files Added

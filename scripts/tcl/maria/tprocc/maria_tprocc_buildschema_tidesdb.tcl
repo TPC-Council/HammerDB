@@ -23,9 +23,16 @@ diset tpcc maria_tidesdb_write_buffer_size 134217728
 diset tpcc maria_tidesdb_bloom_filter true
 diset tpcc maria_tidesdb_use_btree false
 diset tpcc maria_tidesdb_isolation_level repeatable_read
-diset tpcc maria_tidesdb_flush_threads 2
-diset tpcc maria_tidesdb_compaction_threads 2
-diset tpcc maria_tidesdb_block_cache_size 268435456
+diset tpcc maria_tidesdb_bloom_fpr 100
+diset tpcc maria_tidesdb_sync_interval_us 500000
+diset tpcc maria_tidesdb_level_size_ratio 10
+diset tpcc maria_tidesdb_min_levels 5
+diset tpcc maria_tidesdb_skip_list_max_level 12
+diset tpcc maria_tidesdb_skip_list_probability 25
+diset tpcc maria_tidesdb_l1_file_count_trigger 4
+diset tpcc maria_tidesdb_ttl 0
+diset tpcc maria_tidesdb_encrypted no
+diset tpcc maria_tidesdb_encryption_key_id 1
 if { $warehouse >= 200 } { 
 diset tpcc maria_partition true 
 	} else {

@@ -31,9 +31,16 @@
             <maria_tidesdb_bloom_filter>true</maria_tidesdb_bloom_filter>
             <maria_tidesdb_use_btree>false</maria_tidesdb_use_btree>
             <maria_tidesdb_isolation_level>repeatable_read</maria_tidesdb_isolation_level>
-            <maria_tidesdb_flush_threads>2</maria_tidesdb_flush_threads>
-            <maria_tidesdb_compaction_threads>2</maria_tidesdb_compaction_threads>
-            <maria_tidesdb_block_cache_size>268435456</maria_tidesdb_block_cache_size>
+            <maria_tidesdb_bloom_fpr>100</maria_tidesdb_bloom_fpr>
+            <maria_tidesdb_sync_interval_us>500000</maria_tidesdb_sync_interval_us>
+            <maria_tidesdb_level_size_ratio>10</maria_tidesdb_level_size_ratio>
+            <maria_tidesdb_min_levels>5</maria_tidesdb_min_levels>
+            <maria_tidesdb_skip_list_max_level>12</maria_tidesdb_skip_list_max_level>
+            <maria_tidesdb_skip_list_probability>25</maria_tidesdb_skip_list_probability>
+            <maria_tidesdb_l1_file_count_trigger>4</maria_tidesdb_l1_file_count_trigger>
+            <maria_tidesdb_ttl>0</maria_tidesdb_ttl>
+            <maria_tidesdb_encrypted>no</maria_tidesdb_encrypted>
+            <maria_tidesdb_encryption_key_id>1</maria_tidesdb_encryption_key_id>
         </schema>
         <driver>
             <maria_total_iterations>10000000</maria_total_iterations>
@@ -66,9 +73,16 @@
             <maria_tpch_tidesdb_bloom_filter>true</maria_tpch_tidesdb_bloom_filter>
             <maria_tpch_tidesdb_use_btree>false</maria_tpch_tidesdb_use_btree>
             <maria_tpch_tidesdb_isolation_level>repeatable_read</maria_tpch_tidesdb_isolation_level>
-            <maria_tpch_tidesdb_flush_threads>2</maria_tpch_tidesdb_flush_threads>
-            <maria_tpch_tidesdb_compaction_threads>2</maria_tpch_tidesdb_compaction_threads>
-            <maria_tpch_tidesdb_block_cache_size>268435456</maria_tpch_tidesdb_block_cache_size>
+            <maria_tpch_tidesdb_bloom_fpr>100</maria_tpch_tidesdb_bloom_fpr>
+            <maria_tpch_tidesdb_sync_interval_us>500000</maria_tpch_tidesdb_sync_interval_us>
+            <maria_tpch_tidesdb_level_size_ratio>10</maria_tpch_tidesdb_level_size_ratio>
+            <maria_tpch_tidesdb_min_levels>5</maria_tpch_tidesdb_min_levels>
+            <maria_tpch_tidesdb_skip_list_max_level>12</maria_tpch_tidesdb_skip_list_max_level>
+            <maria_tpch_tidesdb_skip_list_probability>25</maria_tpch_tidesdb_skip_list_probability>
+            <maria_tpch_tidesdb_l1_file_count_trigger>4</maria_tpch_tidesdb_l1_file_count_trigger>
+            <maria_tpch_tidesdb_ttl>0</maria_tpch_tidesdb_ttl>
+            <maria_tpch_tidesdb_encrypted>no</maria_tpch_tidesdb_encrypted>
+            <maria_tpch_tidesdb_encryption_key_id>1</maria_tpch_tidesdb_encryption_key_id>
         </schema>
         <driver>
             <maria_total_querysets>1</maria_total_querysets>
