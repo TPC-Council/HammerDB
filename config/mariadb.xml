@@ -25,6 +25,15 @@
             <maria_prepared>false</maria_prepared>
             <maria_no_stored_procs>false</maria_no_stored_procs>
             <maria_history_pk>false</maria_history_pk>
+            <maria_tidesdb_compression>lz4</maria_tidesdb_compression>
+            <maria_tidesdb_sync_mode>full</maria_tidesdb_sync_mode>
+            <maria_tidesdb_write_buffer_size>134217728</maria_tidesdb_write_buffer_size>
+            <maria_tidesdb_bloom_filter>true</maria_tidesdb_bloom_filter>
+            <maria_tidesdb_use_btree>false</maria_tidesdb_use_btree>
+            <maria_tidesdb_isolation_level>repeatable_read</maria_tidesdb_isolation_level>
+            <maria_tidesdb_flush_threads>2</maria_tidesdb_flush_threads>
+            <maria_tidesdb_compaction_threads>2</maria_tidesdb_compaction_threads>
+            <maria_tidesdb_block_cache_size>268435456</maria_tidesdb_block_cache_size>
         </schema>
         <driver>
             <maria_total_iterations>10000000</maria_total_iterations>
@@ -51,6 +60,15 @@
             <maria_tpch_dbase>tpch</maria_tpch_dbase>
             <maria_num_tpch_threads>1</maria_num_tpch_threads>
             <maria_tpch_storage_engine>innodb</maria_tpch_storage_engine>
+            <maria_tpch_tidesdb_compression>lz4</maria_tpch_tidesdb_compression>
+            <maria_tpch_tidesdb_sync_mode>full</maria_tpch_tidesdb_sync_mode>
+            <maria_tpch_tidesdb_write_buffer_size>134217728</maria_tpch_tidesdb_write_buffer_size>
+            <maria_tpch_tidesdb_bloom_filter>true</maria_tpch_tidesdb_bloom_filter>
+            <maria_tpch_tidesdb_use_btree>false</maria_tpch_tidesdb_use_btree>
+            <maria_tpch_tidesdb_isolation_level>repeatable_read</maria_tpch_tidesdb_isolation_level>
+            <maria_tpch_tidesdb_flush_threads>2</maria_tpch_tidesdb_flush_threads>
+            <maria_tpch_tidesdb_compaction_threads>2</maria_tpch_tidesdb_compaction_threads>
+            <maria_tpch_tidesdb_block_cache_size>268435456</maria_tpch_tidesdb_block_cache_size>
         </schema>
         <driver>
             <maria_total_querysets>1</maria_total_querysets>

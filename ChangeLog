@@ -1185,3 +1185,127 @@ expect 5.45.4.1 mariatcl 0.1.1 mysqltcl 3.052.1 oratcl 4.6.1 pgtcl 2.1.1.1
 tclpy 0.4.1 tclpyS 0.4.1 ticklecharts 3.1 tkblt 3.2.24 tkpath 0.3.3.1 twapi 5.0.7
 
 for Linux x86-64 and Windows x64
+
+---------------------------------------------------------------------
+
+Add TidesDB Storage Engine Support for MariaDB
+
+TidesDB (TideSQL) is a pluggable storage engine for MariaDB. 
+It supports ACID transactions, MVCC, primary and secondary indexes, 
+auto-increment, partitioning, online DDL, encryption, and TTL. 
+TidesDB does not support foreign keys.
+
+HammerDB now supports TidesDB as a selectable storage engine for both
+TPROC-C (OLTP) and TPROC-H (OLAP) MariaDB benchmarks.
+
+Prerequisites
+
+TidesDB must be built and installed as a MariaDB plugin before use.
+
+Selecting TidesDB as the Storage Engine
+
+In the GUI select tidesdb from the Transactional Storage Engine
+combobox for TPROC-C or Data Warehouse Storage Engine for TPROC-H.
+A dedicated TidesDB tab in the schema options notebook exposes
+engine-specific table and system variable settings.
+
+From the CLI or scripts set the storage engine with diset:
+
+  diset tpcc maria_storage_engine tidesdb
+  diset tpch maria_tpch_storage_engine tidesdb
+
+Example build scripts are provided for both TCL and Python:
+
+  scripts/tcl/maria/tprocc/maria_tprocc_buildschema_tidesdb.tcl
+  scripts/tcl/maria/tproch/maria_tproch_buildschema_tidesdb.tcl
+  scripts/python/maria/tprocc/maria_tprocc_buildschema_tidesdb.py
+  scripts/python/maria/tproch/maria_tproch_buildschema_tidesdb.py
+
+TidesDB Table Options
+
+Per-table options are appended to every CREATE TABLE statement when the
+engine is set to tidesdb. These control the underlying column family
+behavior and can be tuned for different workload characteristics:
+
+  COMPRESSION           Compression algorithm for SSTables.
+                        Values: none, snappy, lz4 (default), zstd, lz4_fast.
+                        ZSTD gives best ratio, LZ4 favors speed.
+
+  SYNC_MODE             How aggressively writes are flushed to durable storage.
+                        Values: none (fastest), interval, full (default, safest).
+                        For benchmarking none can dramatically improve throughput.
+
+  WRITE_BUFFER_SIZE     Size in bytes of the in-memory memtable before flush.
+                        Default 134217728 (128 MB). Larger values mean fewer
+                        flushes and can improve write throughput.
+
+  BLOOM_FILTER          Enable bloom filters for point lookup acceleration.
+                        Default true. Set false to disable.
+
+  USE_BTREE             Use B+tree layout for SSTable key log instead of the
+                        default block-based format. Default false.
+
+  ISOLATION_LEVEL       Transaction isolation level.
+                        Values: read_uncommitted, read_committed,
+                        repeatable_read (default), snapshot, serializable.
+
+Set these from the CLI with:
+
+  diset tpcc maria_tidesdb_compression zstd
+  diset tpcc maria_tidesdb_sync_mode none
+  diset tpcc maria_tidesdb_write_buffer_size 16777216
+  diset tpcc maria_tidesdb_bloom_filter true
+  diset tpcc maria_tidesdb_use_btree false
+  diset tpcc maria_tidesdb_isolation_level repeatable_read
+
+For TPROC-H the prefix is maria_tpch_tidesdb_ instead of maria_tidesdb_.
+
+TidesDB System Variables
+
+Global system variables are applied via SET GLOBAL before schema
+creation. These control TidesDB runtime behavior across all tables:
+
+  tidesdb_flush_threads       Number of background flush threads.
+                              Default 2.
+
+  tidesdb_compaction_threads  Number of background compaction threads.
+                              Default 2.
+
+  tidesdb_block_cache_size    Size in bytes of the global read cache
+                              shared across all column families.
+                              Default 268435456 (256 MB).
+
+Set these from the CLI with:
+
+  diset tpcc maria_tidesdb_flush_threads 4
+  diset tpcc maria_tidesdb_compaction_threads 4
+  diset tpcc maria_tidesdb_block_cache_size 536870912
+
+TPROC-H Foreign Key Handling
+
+TidesDB does not support foreign key constraints. The TPROC-H schema
+uses a dedicated GenerateTidesDBTableQueries procedure that creates
+all eight TPC-H tables with primary keys and secondary indexes but
+omits foreign key clauses. This follows the same pattern used for the
+existing Columnstore engine support. TPROC-C tables do not use foreign
+keys so no special handling is required there.
+
+TPROC-C History Table Primary Key
+
+The optional invisible auto-increment primary key on the history table
+(maria_history_pk) is supported for TidesDB as well as InnoDB since
+TidesDB supports AUTO_INCREMENT and primary keys.
+
+Files Modified
+
+  config/mariadb.xml               Added TidesDB options for TPCC and TPCH
+  src/mariadb/mariaopt.tcl         Added TidesDB tab, combobox engine selection
+  src/mariadb/mariaoltp.tcl        Table options and system variables for TPCC
+  src/mariadb/mariaolap.tcl        TidesDB table queries, options for TPCH
+
+Files Added
+
+  scripts/tcl/maria/tprocc/maria_tprocc_buildschema_tidesdb.tcl
+  scripts/tcl/maria/tproch/maria_tproch_buildschema_tidesdb.tcl
+  scripts/python/maria/tprocc/maria_tprocc_buildschema_tidesdb.py
+  scripts/python/maria/tproch/maria_tproch_buildschema_tidesdb.py

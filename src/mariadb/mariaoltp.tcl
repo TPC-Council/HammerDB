@@ -534,9 +534,10 @@ proc CreateDatabase { maria_handler db } {
     return true
 }
 
-proc CreateTables { maria_handler maria_storage_engine num_part history_pk } {
+proc CreateTables { maria_handler maria_storage_engine num_part history_pk {table_opts ""} } {
     puts "CREATING TPCC TABLES"
-    if { [ string toupper $maria_storage_engine ] eq "INNODB" && $history_pk } {
+    set engine_upper [ string toupper $maria_storage_engine ]
+    if { ( $engine_upper eq "INNODB" || $engine_upper eq "TIDESDB" ) && $history_pk } {
     set pkmin_version "10.3.3"
     set version [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]
     if { [ package vcompare $version $pkmin_version ]  eq -1 } {
@@ -571,7 +572,7 @@ proc CreateTables { maria_handler maria_storage_engine num_part history_pk } {
 PRIMARY KEY (`c_w_id`,`c_d_id`,`c_id`),
 KEY c_w_id (`c_w_id`,`c_d_id`,`c_last`(16),`c_first`(16))
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     set sql(2) "CREATE TABLE `district` (
 `d_id` INT(2) NOT NULL,
 `d_w_id` INT(6) NOT NULL,
@@ -586,7 +587,7 @@ ENGINE = $maria_storage_engine"
 `d_zip` CHAR(9) BINARY NULL,
 PRIMARY KEY (`d_w_id`,`d_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
 if $history_pk {
     set sql(3) "CREATE TABLE `history` (
   `h_c_id` INT NULL,
@@ -600,7 +601,7 @@ if $history_pk {
   `id` INT NOT NULL AUTO_INCREMENT INVISIBLE,
 PRIMARY KEY (`id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
         } else {
     set sql(3) "CREATE TABLE `history` (
 `h_c_id` INT NULL,
@@ -612,7 +613,7 @@ ENGINE = $maria_storage_engine"
 `h_amount` DECIMAL(6, 2) NULL,
 `h_data` VARCHAR(24) BINARY NULL
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
 	}
     set sql(4) "CREATE TABLE `item` (
 `i_id` INT(6) NOT NULL,
@@ -622,14 +623,14 @@ ENGINE = $maria_storage_engine"
 `i_data` VARCHAR(50) BINARY NULL,
 PRIMARY KEY (`i_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     set sql(5) "CREATE TABLE `new_order` (
 `no_w_id` INT NOT NULL,
 `no_d_id` INT NOT NULL,
 `no_o_id` INT NOT NULL,
 PRIMARY KEY (`no_w_id`, `no_d_id`, `no_o_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     set sql(6) "CREATE TABLE `orders` (
 `o_id` INT NOT NULL,
 `o_w_id` INT NOT NULL,
@@ -642,7 +643,7 @@ ENGINE = $maria_storage_engine"
 PRIMARY KEY (`o_w_id`,`o_d_id`,`o_id`),
 KEY o_w_id (`o_w_id`,`o_d_id`,`o_c_id`,`o_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     if {$num_part eq 0} {
         set sql(7) "CREATE TABLE `order_line` (
 `ol_w_id` INT NOT NULL,
@@ -657,7 +658,7 @@ ENGINE = $maria_storage_engine"
 `ol_dist_info` CHAR(24) BINARY NULL,
 PRIMARY KEY (`ol_w_id`,`ol_d_id`,`ol_o_id`,`ol_number`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     } else {
         set sql(7) "CREATE TABLE `order_line` (
 `ol_w_id` INT NOT NULL,
@@ -672,7 +673,7 @@ ENGINE = $maria_storage_engine"
 `ol_dist_info` CHAR(24) BINARY NULL,
 PRIMARY KEY (`ol_w_id`,`ol_d_id`,`ol_o_id`,`ol_number`)
 )
-ENGINE = $maria_storage_engine
+ENGINE = $maria_storage_engine $table_opts
 PARTITION BY HASH (`ol_w_id`)
 PARTITIONS $num_part"
     }
@@ -696,7 +697,7 @@ PARTITIONS $num_part"
 `s_data` VARCHAR(50) BINARY NULL,
 PRIMARY KEY (`s_w_id`,`s_i_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     set sql(9) "CREATE TABLE `warehouse` (
 `w_id` INT(6) NOT NULL,
 `w_ytd` DECIMAL(12, 2) NULL,
@@ -709,7 +710,7 @@ ENGINE = $maria_storage_engine"
 `w_zip` CHAR(9) BINARY NULL,
 PRIMARY KEY (`w_id`)
 )
-ENGINE = $maria_storage_engine"
+ENGINE = $maria_storage_engine $table_opts"
     for { set i 1 } { $i <= 9 } { incr i } {
         mariaexec $maria_handler $sql($i)
     }
@@ -1003,7 +1004,7 @@ proc chk_socket { host socket } {
     }
 }
 
-proc do_tpcc { host port socket ssl_options count_ware user password db maria_storage_engine partition history_pk num_vu } {
+proc do_tpcc { host port socket ssl_options count_ware user password db maria_storage_engine partition history_pk num_vu {tidesdb_opts {}} } {
     global mariastatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -1043,6 +1044,49 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         }
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
+        set table_opts ""
+        if { [ string toupper $maria_storage_engine ] eq "TIDESDB" && [llength $tidesdb_opts] > 0 } {
+            puts "CONFIGURING TIDESDB OPTIONS"
+            if { [dict exists $tidesdb_opts flush_threads] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_flush_threads = [dict get $tidesdb_opts flush_threads]"}
+            }
+            if { [dict exists $tidesdb_opts compaction_threads] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_compaction_threads = [dict get $tidesdb_opts compaction_threads]"}
+            }
+            if { [dict exists $tidesdb_opts block_cache_size] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_block_cache_size = [dict get $tidesdb_opts block_cache_size]"}
+            }
+            if { [dict exists $tidesdb_opts compression] } {
+                append table_opts " COMPRESSION='[string toupper [dict get $tidesdb_opts compression]]'"
+            }
+            if { [dict exists $tidesdb_opts sync_mode] } {
+                append table_opts " SYNC_MODE='[string toupper [dict get $tidesdb_opts sync_mode]]'"
+            }
+            if { [dict exists $tidesdb_opts write_buffer_size] } {
+                append table_opts " WRITE_BUFFER_SIZE=[dict get $tidesdb_opts write_buffer_size]"
+            }
+            if { [dict exists $tidesdb_opts bloom_filter] } {
+                if { [dict get $tidesdb_opts bloom_filter] eq "true" } {
+                    append table_opts " BLOOM_FILTER=1"
+                } else {
+                    append table_opts " BLOOM_FILTER=0"
+                }
+            }
+            if { [dict exists $tidesdb_opts use_btree] } {
+                if { [dict get $tidesdb_opts use_btree] eq "true" } {
+                    append table_opts " USE_BTREE=1"
+                } else {
+                    append table_opts " USE_BTREE=0"
+                }
+            }
+            if { [dict exists $tidesdb_opts isolation_level] } {
+                append table_opts " ISOLATION_LEVEL='[string toupper [dict get $tidesdb_opts isolation_level]]'"
+            }
+            set table_opts [string trim $table_opts]
+            if { $table_opts ne "" } {
+                puts "TidesDB table options: $table_opts"
+            }
+        }
         if { $partition eq "true" } {
             if {$count_ware < 200} {
                 set num_part 0
@@ -1052,7 +1096,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         } else {
             set num_part 0
         }
-        CreateTables $maria_handler $maria_storage_engine $num_part $history_pk
+        CreateTables $maria_handler $maria_storage_engine $num_part $history_pk $table_opts
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $maria_handler $MAXITEMS
@@ -1122,7 +1166,12 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
 }
 }
 }
+        if { [ string toupper $maria_storage_engine ] eq "TIDESDB" } {
+            set tidesdb_opts "compression $maria_tidesdb_compression sync_mode $maria_tidesdb_sync_mode write_buffer_size $maria_tidesdb_write_buffer_size bloom_filter $maria_tidesdb_bloom_filter use_btree $maria_tidesdb_use_btree isolation_level $maria_tidesdb_isolation_level flush_threads $maria_tidesdb_flush_threads compaction_threads $maria_tidesdb_compaction_threads block_cache_size $maria_tidesdb_block_cache_size"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu {$tidesdb_opts}" 
+        } else {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu" 
+        }
     } else {
         return 
     }

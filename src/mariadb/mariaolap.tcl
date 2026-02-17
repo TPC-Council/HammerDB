@@ -239,6 +239,111 @@ ENGINE = $maria_tpch_storage_engine"
     return $queries
 }
 
+proc GenerateTidesDBTableQueries { {table_opts ""} } {
+    set queries {}
+    lset queries 0 "CREATE TABLE `ORDERS` (
+`O_ORDERDATE` DATE NULL,
+`O_ORDERKEY` BIGINT NOT NULL,
+`O_CUSTKEY` INT NOT NULL,
+`O_ORDERPRIORITY` CHAR(15) BINARY NULL,
+`O_SHIPPRIORITY` INT NULL,
+`O_CLERK` CHAR(15) BINARY NULL,
+`O_ORDERSTATUS` CHAR(1) BINARY NULL,
+`O_TOTALPRICE` DECIMAL(10,2) NULL,
+`O_COMMENT` VARCHAR(79) BINARY NULL,
+PRIMARY KEY (`O_ORDERKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 1 "CREATE TABLE `PARTSUPP` (
+PS_PARTKEY INT NOT NULL,
+PS_SUPPKEY INT NOT NULL,
+PS_SUPPLYCOST INT NOT NULL,
+PS_AVAILQTY INT NULL,
+PS_COMMENT VARCHAR(199) BINARY NULL,
+PRIMARY KEY (`PS_PARTKEY`,`PS_SUPPKEY`),
+INDEX PARTSUPP_PART_FKIDX (`PS_PARTKEY`),
+INDEX PARTSUPP_SUPPLIER_FKIDX (`PS_SUPPKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 2 "CREATE TABLE `CUSTOMER` (
+C_CUSTKEY INT NOT NULL,
+C_MKTSEGMENT CHAR(10) BINARY NULL,
+C_NATIONKEY INT NULL,
+C_NAME VARCHAR(25) BINARY NULL,
+C_ADDRESS VARCHAR(40) BINARY NULL,
+C_PHONE CHAR(15) BINARY NULL,
+C_ACCTBAL DECIMAL(10,2) NULL,
+C_COMMENT VARCHAR(118) BINARY NULL,
+PRIMARY KEY (`C_CUSTKEY`),
+INDEX CUSTOMER_NATION_FKIDX (`C_NATIONKEY`)
+) 
+ENGINE = TIDESDB $table_opts"
+    lset queries 3 "CREATE TABLE `PART` (
+P_PARTKEY INT NOT NULL,
+P_TYPE VARCHAR(25) BINARY NULL,
+P_SIZE INT NULL,
+P_BRAND CHAR(10) BINARY NULL,
+P_NAME VARCHAR(55) BINARY NULL,
+P_CONTAINER CHAR(10) BINARY NULL,
+P_MFGR CHAR(25) BINARY NULL,
+P_RETAILPRICE DECIMAL(10,2) NULL,
+P_COMMENT VARCHAR(23) BINARY NULL,
+PRIMARY KEY (`P_PARTKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 4 "CREATE TABLE `SUPPLIER` (
+S_SUPPKEY INT NOT NULL,
+S_NATIONKEY INT NULL,
+S_COMMENT VARCHAR(102) BINARY NULL,
+S_NAME CHAR(25) BINARY NULL,
+S_ADDRESS VARCHAR(40) BINARY NULL,
+S_PHONE CHAR(15) BINARY NULL,
+S_ACCTBAL DECIMAL(10,2) NULL,
+PRIMARY KEY (`S_SUPPKEY`),
+INDEX SUPPLIER_NATION_FKIDX (`S_NATIONKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 5 "CREATE TABLE `NATION` (
+N_NATIONKEY INT NOT NULL,
+N_NAME CHAR(25) BINARY NULL,
+N_REGIONKEY INT NULL,
+N_COMMENT VARCHAR(152) BINARY NULL,
+PRIMARY KEY (`N_NATIONKEY`),
+INDEX NATION_REGIONKEY_FKIDX (`N_REGIONKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 6 "CREATE TABLE `REGION` (
+R_REGIONKEY INT NOT NULL,
+R_NAME CHAR(25) BINARY NULL,
+R_COMMENT VARCHAR(152) BINARY NULL,
+PRIMARY KEY (`R_REGIONKEY`)
+)
+ENGINE = TIDESDB $table_opts"
+    lset queries 7 "CREATE TABLE `LINEITEM` (
+L_SHIPDATE DATE NULL,
+L_ORDERKEY BIGINT NOT NULL,
+L_DISCOUNT DECIMAL(10,2) NOT NULL,
+L_EXTENDEDPRICE DECIMAL(10,2) NOT NULL,
+L_SUPPKEY INT NOT NULL,
+L_QUANTITY INT NOT NULL,
+L_RETURNFLAG CHAR(1) BINARY NULL,
+L_PARTKEY INT NOT NULL,
+L_LINESTATUS CHAR(1) BINARY NULL,
+L_TAX DECIMAL(10,2) NOT NULL,
+L_COMMITDATE DATE NULL,
+L_RECEIPTDATE DATE NULL,
+L_SHIPMODE CHAR(10) BINARY NULL,
+L_LINENUMBER INT NOT NULL,
+L_SHIPINSTRUCT CHAR(25) BINARY NULL,
+L_COMMENT VARCHAR(44) BINARY NULL,
+PRIMARY KEY (`L_ORDERKEY`, `L_LINENUMBER`),
+INDEX LINEITEM_PART_SUPP_FKIDX (`L_PARTKEY`,`L_SUPPKEY`),
+INDEX IDX_LINEITEM_ORDERKEY_FKIDX (`L_ORDERKEY`)
+) 
+ENGINE = TIDESDB $table_opts"
+    return $queries
+}
+
 proc GenerateColumnstoreTableQueries {} {
     set queries {}
     lset queries 0 "CREATE TABLE `ORDERS` (
@@ -329,9 +434,10 @@ ENGINE = Columnstore"
     return $queries
 }
 
-proc CreateTables { maria_handler maria_tpch_storage_engine } {
+proc CreateTables { maria_handler maria_tpch_storage_engine {table_opts ""} } {
     puts "CREATING TPCH TABLES"
-    set queries [if { [ string tolower $maria_tpch_storage_engine ] eq "columnstore" } { GenerateColumnstoreTableQueries } else { GenerateTableQueries $maria_tpch_storage_engine } ]
+    set engine_lower [ string tolower $maria_tpch_storage_engine ]
+    set queries [if { $engine_lower eq "columnstore" } { GenerateColumnstoreTableQueries } elseif { $engine_lower eq "tidesdb" } { GenerateTidesDBTableQueries $table_opts } else { GenerateTableQueries $maria_tpch_storage_engine } ]
     foreach sql $queries {
         mariaexec $maria_handler $sql
     }
@@ -591,7 +697,7 @@ proc mk_order { maria_handler start_rows end_rows upd_num scale_factor } {
     return
 }
 
-proc do_tpch { host port socket ssl_options scale_fact user password db maria_tpch_storage_engine num_vu } {
+proc do_tpch { host port socket ssl_options scale_fact user password db maria_tpch_storage_engine num_vu {tidesdb_opts {}} } {
     global mariastatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -651,7 +757,50 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
         }
         mariause $maria_handler $db
         maria::autocommit $maria_handler 0
-        CreateTables $maria_handler $maria_tpch_storage_engine
+        set table_opts ""
+        if { [ string toupper $maria_tpch_storage_engine ] eq "TIDESDB" && [llength $tidesdb_opts] > 0 } {
+            puts "CONFIGURING TIDESDB OPTIONS"
+            if { [dict exists $tidesdb_opts flush_threads] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_flush_threads = [dict get $tidesdb_opts flush_threads]"}
+            }
+            if { [dict exists $tidesdb_opts compaction_threads] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_compaction_threads = [dict get $tidesdb_opts compaction_threads]"}
+            }
+            if { [dict exists $tidesdb_opts block_cache_size] } {
+                catch {mariaexec $maria_handler "SET GLOBAL tidesdb_block_cache_size = [dict get $tidesdb_opts block_cache_size]"}
+            }
+            if { [dict exists $tidesdb_opts compression] } {
+                append table_opts " COMPRESSION='[string toupper [dict get $tidesdb_opts compression]]'"
+            }
+            if { [dict exists $tidesdb_opts sync_mode] } {
+                append table_opts " SYNC_MODE='[string toupper [dict get $tidesdb_opts sync_mode]]'"
+            }
+            if { [dict exists $tidesdb_opts write_buffer_size] } {
+                append table_opts " WRITE_BUFFER_SIZE=[dict get $tidesdb_opts write_buffer_size]"
+            }
+            if { [dict exists $tidesdb_opts bloom_filter] } {
+                if { [dict get $tidesdb_opts bloom_filter] eq "true" } {
+                    append table_opts " BLOOM_FILTER=1"
+                } else {
+                    append table_opts " BLOOM_FILTER=0"
+                }
+            }
+            if { [dict exists $tidesdb_opts use_btree] } {
+                if { [dict get $tidesdb_opts use_btree] eq "true" } {
+                    append table_opts " USE_BTREE=1"
+                } else {
+                    append table_opts " USE_BTREE=0"
+                }
+            }
+            if { [dict exists $tidesdb_opts isolation_level] } {
+                append table_opts " ISOLATION_LEVEL='[string toupper [dict get $tidesdb_opts isolation_level]]'"
+            }
+            set table_opts [string trim $table_opts]
+            if { $table_opts ne "" } {
+                puts "TidesDB table options: $table_opts"
+            }
+        }
+        CreateTables $maria_handler $maria_tpch_storage_engine $table_opts
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             puts "Loading REGION..."
@@ -742,7 +891,12 @@ proc do_tpch { host port socket ssl_options scale_fact user password db maria_tp
     }
 }
 }
+        if { [ string toupper $maria_tpch_storage_engine ] eq "TIDESDB" } {
+            set tidesdb_opts "compression $maria_tpch_tidesdb_compression sync_mode $maria_tpch_tidesdb_sync_mode write_buffer_size $maria_tpch_tidesdb_write_buffer_size bloom_filter $maria_tpch_tidesdb_bloom_filter use_btree $maria_tpch_tidesdb_use_btree isolation_level $maria_tpch_tidesdb_isolation_level flush_threads $maria_tpch_tidesdb_flush_threads compaction_threads $maria_tpch_tidesdb_compaction_threads block_cache_size $maria_tpch_tidesdb_block_cache_size"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_scale_fact $maria_tpch_user [ quotemeta $maria_tpch_pass ] $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads {$tidesdb_opts}"
+        } else {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_scale_fact $maria_tpch_user [ quotemeta $maria_tpch_pass ] $maria_tpch_dbase $maria_tpch_storage_engine $maria_num_tpch_threads"
+        }
     } else { return }
 }
 
