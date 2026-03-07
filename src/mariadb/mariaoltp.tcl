@@ -1091,8 +1091,33 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
             if { [dict exists $tidesdb_opts skip_list_probability] } {
                 append table_opts " SKIP_LIST_PROBABILITY=[dict get $tidesdb_opts skip_list_probability]"
             }
+            if { [dict exists $tidesdb_opts block_indexes] } {
+                if { [dict get $tidesdb_opts block_indexes] eq "true" } {
+                    append table_opts " BLOCK_INDEXES=1"
+                } else {
+                    append table_opts " BLOCK_INDEXES=0"
+                }
+            }
+            if { [dict exists $tidesdb_opts klog_value_threshold] } {
+                append table_opts " KLOG_VALUE_THRESHOLD=[dict get $tidesdb_opts klog_value_threshold]"
+            }
+            if { [dict exists $tidesdb_opts min_disk_space] } {
+                append table_opts " MIN_DISK_SPACE=[dict get $tidesdb_opts min_disk_space]"
+            }
+            if { [dict exists $tidesdb_opts index_sample_ratio] } {
+                append table_opts " INDEX_SAMPLE_RATIO=[dict get $tidesdb_opts index_sample_ratio]"
+            }
+            if { [dict exists $tidesdb_opts block_index_prefix_len] } {
+                append table_opts " BLOCK_INDEX_PREFIX_LEN=[dict get $tidesdb_opts block_index_prefix_len]"
+            }
+            if { [dict exists $tidesdb_opts dividing_level_offset] } {
+                append table_opts " DIVIDING_LEVEL_OFFSET=[dict get $tidesdb_opts dividing_level_offset]"
+            }
             if { [dict exists $tidesdb_opts l1_file_count_trigger] } {
                 append table_opts " L1_FILE_COUNT_TRIGGER=[dict get $tidesdb_opts l1_file_count_trigger]"
+            }
+            if { [dict exists $tidesdb_opts l0_queue_stall_threshold] } {
+                append table_opts " L0_QUEUE_STALL_THRESHOLD=[dict get $tidesdb_opts l0_queue_stall_threshold]"
             }
             if { [dict exists $tidesdb_opts ttl] && [dict get $tidesdb_opts ttl] ne "0" } {
                 append table_opts " TTL=[dict get $tidesdb_opts ttl]"
@@ -1188,7 +1213,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
 }
 }
         if { [ string toupper $maria_storage_engine ] eq "TIDESDB" } {
-            set tidesdb_opts "compression $maria_tidesdb_compression sync_mode $maria_tidesdb_sync_mode write_buffer_size $maria_tidesdb_write_buffer_size bloom_filter $maria_tidesdb_bloom_filter use_btree $maria_tidesdb_use_btree isolation_level $maria_tidesdb_isolation_level bloom_fpr $maria_tidesdb_bloom_fpr sync_interval_us $maria_tidesdb_sync_interval_us level_size_ratio $maria_tidesdb_level_size_ratio min_levels $maria_tidesdb_min_levels skip_list_max_level $maria_tidesdb_skip_list_max_level skip_list_probability $maria_tidesdb_skip_list_probability l1_file_count_trigger $maria_tidesdb_l1_file_count_trigger ttl $maria_tidesdb_ttl encrypted $maria_tidesdb_encrypted encryption_key_id $maria_tidesdb_encryption_key_id"
+            set tidesdb_opts "compression $maria_tidesdb_compression sync_mode $maria_tidesdb_sync_mode write_buffer_size $maria_tidesdb_write_buffer_size bloom_filter $maria_tidesdb_bloom_filter block_indexes $maria_tidesdb_block_indexes use_btree $maria_tidesdb_use_btree isolation_level $maria_tidesdb_isolation_level bloom_fpr $maria_tidesdb_bloom_fpr sync_interval_us $maria_tidesdb_sync_interval_us klog_value_threshold $maria_tidesdb_klog_value_threshold min_disk_space $maria_tidesdb_min_disk_space index_sample_ratio $maria_tidesdb_index_sample_ratio block_index_prefix_len $maria_tidesdb_block_index_prefix_len level_size_ratio $maria_tidesdb_level_size_ratio min_levels $maria_tidesdb_min_levels dividing_level_offset $maria_tidesdb_dividing_level_offset skip_list_max_level $maria_tidesdb_skip_list_max_level skip_list_probability $maria_tidesdb_skip_list_probability l1_file_count_trigger $maria_tidesdb_l1_file_count_trigger l0_queue_stall_threshold $maria_tidesdb_l0_queue_stall_threshold ttl $maria_tidesdb_ttl encrypted $maria_tidesdb_encrypted encryption_key_id $maria_tidesdb_encryption_key_id"
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu {$tidesdb_opts}" 
         } else {
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $maria_host $maria_port $maria_socket {$maria_ssl_options} $maria_count_ware $maria_user [ quotemeta $maria_pass ] $maria_dbase $maria_storage_engine $maria_partition $maria_history_pk $maria_num_vu" 

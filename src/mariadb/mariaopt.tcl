@@ -387,7 +387,7 @@ proc configmariatpcc {option} {
 
     #set variables to values in dict
     setlocaltpccvars $configmariadb
-    set tpccfields [ dict create tpcc {maria_user {.tpc.c1.e3 get} maria_pass {.tpc.c1.e4 get} maria_dbase {.tpc.c1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_no_stored_procs $maria_no_stored_procs maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk maria_purge $maria_purge maria_tidesdb_compression {.tpc.t1.e1 get} maria_tidesdb_sync_mode {.tpc.t1.e2 get} maria_tidesdb_write_buffer_size {.tpc.t1.e3 get} maria_tidesdb_bloom_filter $maria_tidesdb_bloom_filter maria_tidesdb_use_btree $maria_tidesdb_use_btree maria_tidesdb_isolation_level {.tpc.t1.e6 get} maria_tidesdb_bloom_fpr {.tpc.t1.e7 get} maria_tidesdb_sync_interval_us {.tpc.t1.e8 get} maria_tidesdb_level_size_ratio {.tpc.t1.e9 get} maria_tidesdb_min_levels {.tpc.t1.e10 get} maria_tidesdb_skip_list_max_level {.tpc.t1.e11 get} maria_tidesdb_skip_list_probability {.tpc.t1.e12 get} maria_tidesdb_l1_file_count_trigger {.tpc.t1.e13 get} maria_tidesdb_ttl {.tpc.t1.e14 get} maria_tidesdb_encrypted {.tpc.t1.e15 get} maria_tidesdb_encryption_key_id {.tpc.t1.e16 get}} ]
+    set tpccfields [ dict create tpcc {maria_user {.tpc.c1.e3 get} maria_pass {.tpc.c1.e4 get} maria_dbase {.tpc.c1.e5 get} maria_storage_engine {.tpc.f1.e6 get} maria_total_iterations {.tpc.f1.e14 get} maria_rampup {.tpc.f1.e17 get} maria_duration {.tpc.f1.e18 get} maria_async_client {.tpc.f1.e22 get} maria_async_delay {.tpc.f1.e23 get} maria_count_ware $maria_count_ware maria_num_vu $maria_num_vu maria_partition $maria_partition maria_driver $maria_driver maria_raiseerror $maria_raiseerror maria_keyandthink $maria_keyandthink maria_allwarehouse $maria_allwarehouse maria_timeprofile $maria_timeprofile maria_async_scale $maria_async_scale maria_async_verbose $maria_async_verbose maria_prepared $maria_prepared maria_no_stored_procs $maria_no_stored_procs maria_connect_pool $maria_connect_pool maria_history_pk $maria_history_pk maria_purge $maria_purge maria_tidesdb_compression {.tpc.t1.e1 get} maria_tidesdb_sync_mode {.tpc.t1.e2 get} maria_tidesdb_write_buffer_size {.tpc.t1.e3 get} maria_tidesdb_bloom_filter $maria_tidesdb_bloom_filter maria_tidesdb_block_indexes $maria_tidesdb_block_indexes maria_tidesdb_use_btree $maria_tidesdb_use_btree maria_tidesdb_isolation_level {.tpc.t1.e6 get} maria_tidesdb_bloom_fpr {.tpc.t1.e7 get} maria_tidesdb_sync_interval_us {.tpc.t1.e8 get} maria_tidesdb_klog_value_threshold {.tpc.t1.e18 get} maria_tidesdb_min_disk_space {.tpc.t1.e19 get} maria_tidesdb_index_sample_ratio {.tpc.t1.e20 get} maria_tidesdb_block_index_prefix_len {.tpc.t1.e21 get} maria_tidesdb_level_size_ratio {.tpc.t1.e9 get} maria_tidesdb_min_levels {.tpc.t1.e10 get} maria_tidesdb_dividing_level_offset {.tpc.t1.e22 get} maria_tidesdb_skip_list_max_level {.tpc.t1.e11 get} maria_tidesdb_skip_list_probability {.tpc.t1.e12 get} maria_tidesdb_l1_file_count_trigger {.tpc.t1.e13 get} maria_tidesdb_l0_queue_stall_threshold {.tpc.t1.e23 get} maria_tidesdb_ttl {.tpc.t1.e14 get} maria_tidesdb_encrypted {.tpc.t1.e15 get} maria_tidesdb_encryption_key_id {.tpc.t1.e16 get}} ]
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
     set mariaconn [ dict create connection {maria_host {.tpc.c1.e1 get} maria_port {.tpc.c1.e2 get} maria_socket {.tpc.c1.e2a get} maria_ssl_ca {.tpc.c1.e2d get} maria_ssl_cert {.tpc.c1.e2e get} maria_ssl_key {.tpc.c1.e2f get} maria_ssl_cipher {.tpc.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} ]
@@ -667,84 +667,126 @@ proc configmariatpcc {option} {
         ttk::checkbutton $Name -text "" -variable maria_tidesdb_bloom_filter -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky w
+        set Prompt $Parent.t1.p4a
+        ttk::label $Prompt -text "Block Indexes :"
+        set Name $Parent.t1.e4a
+        ttk::checkbutton $Name -text "" -variable maria_tidesdb_block_indexes -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 5 -sticky e
+        grid $Name -column 1 -row 5 -sticky w
         set Prompt $Parent.t1.p5
         ttk::label $Prompt -text "Use B+tree SSTable :"
         set Name $Parent.t1.e5
         ttk::checkbutton $Name -text "" -variable maria_tidesdb_use_btree -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 5 -sticky e
-        grid $Name -column 1 -row 5 -sticky w
+        grid $Prompt -column 0 -row 6 -sticky e
+        grid $Name -column 1 -row 6 -sticky w
         set Prompt $Parent.t1.p6
         ttk::label $Prompt -text "Isolation Level :"
         set Name $Parent.t1.e6
         ttk::combobox $Name -width 30 -textvariable maria_tidesdb_isolation_level -values {read_uncommitted read_committed repeatable_read snapshot serializable}
-        grid $Prompt -column 0 -row 6 -sticky e
-        grid $Name -column 1 -row 6 -sticky ew
+        grid $Prompt -column 0 -row 7 -sticky e
+        grid $Name -column 1 -row 7 -sticky ew
         set Prompt $Parent.t1.p7
         ttk::label $Prompt -text "Bloom FPR (per 10000) :"
         set Name $Parent.t1.e7
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_bloom_fpr
-        grid $Prompt -column 0 -row 7 -sticky e
-        grid $Name -column 1 -row 7 -sticky ew
+        grid $Prompt -column 0 -row 8 -sticky e
+        grid $Name -column 1 -row 8 -sticky ew
         set Prompt $Parent.t1.p8
         ttk::label $Prompt -text "Sync Interval (us) :"
         set Name $Parent.t1.e8
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_sync_interval_us
-        grid $Prompt -column 0 -row 8 -sticky e
-        grid $Name -column 1 -row 8 -sticky ew
+        grid $Prompt -column 0 -row 9 -sticky e
+        grid $Name -column 1 -row 9 -sticky ew
+        set Prompt $Parent.t1.p18
+        ttk::label $Prompt -text "Klog Value Threshold (bytes) :"
+        set Name $Parent.t1.e18
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_klog_value_threshold
+        grid $Prompt -column 0 -row 10 -sticky e
+        grid $Name -column 1 -row 10 -sticky ew
+        set Prompt $Parent.t1.p19
+        ttk::label $Prompt -text "Min Disk Space (bytes) :"
+        set Name $Parent.t1.e19
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_min_disk_space
+        grid $Prompt -column 0 -row 11 -sticky e
+        grid $Name -column 1 -row 11 -sticky ew
+        set Prompt $Parent.t1.p20
+        ttk::label $Prompt -text "Index Sample Ratio :"
+        set Name $Parent.t1.e20
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_index_sample_ratio
+        grid $Prompt -column 0 -row 12 -sticky e
+        grid $Name -column 1 -row 12 -sticky ew
+        set Prompt $Parent.t1.p21
+        ttk::label $Prompt -text "Block Index Prefix Len :"
+        set Name $Parent.t1.e21
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_block_index_prefix_len
+        grid $Prompt -column 0 -row 13 -sticky e
+        grid $Name -column 1 -row 13 -sticky ew
         set Prompt $Parent.t1.l1
         ttk::label $Prompt -text "LSM-Tree Tuning" -font TkHeadingFont
-        grid $Prompt -column 0 -row 9 -columnspan 2 -sticky w -padx 5 -pady {10 2}
+        grid $Prompt -column 0 -row 14 -columnspan 2 -sticky w -padx 5 -pady {10 2}
         set Prompt $Parent.t1.p9
         ttk::label $Prompt -text "Level Size Ratio :"
         set Name $Parent.t1.e9
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_level_size_ratio
-        grid $Prompt -column 0 -row 10 -sticky e
-        grid $Name -column 1 -row 10 -sticky ew
+        grid $Prompt -column 0 -row 15 -sticky e
+        grid $Name -column 1 -row 15 -sticky ew
         set Prompt $Parent.t1.p10
         ttk::label $Prompt -text "Min Levels :"
         set Name $Parent.t1.e10
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_min_levels
-        grid $Prompt -column 0 -row 11 -sticky e
-        grid $Name -column 1 -row 11 -sticky ew
+        grid $Prompt -column 0 -row 16 -sticky e
+        grid $Name -column 1 -row 16 -sticky ew
+        set Prompt $Parent.t1.p22
+        ttk::label $Prompt -text "Dividing Level Offset :"
+        set Name $Parent.t1.e22
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_dividing_level_offset
+        grid $Prompt -column 0 -row 17 -sticky e
+        grid $Name -column 1 -row 17 -sticky ew
         set Prompt $Parent.t1.p11
         ttk::label $Prompt -text "Skip List Max Level :"
         set Name $Parent.t1.e11
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_skip_list_max_level
-        grid $Prompt -column 0 -row 12 -sticky e
-        grid $Name -column 1 -row 12 -sticky ew
+        grid $Prompt -column 0 -row 18 -sticky e
+        grid $Name -column 1 -row 18 -sticky ew
         set Prompt $Parent.t1.p12
         ttk::label $Prompt -text "Skip List Probability :"
         set Name $Parent.t1.e12
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_skip_list_probability
-        grid $Prompt -column 0 -row 13 -sticky e
-        grid $Name -column 1 -row 13 -sticky ew
+        grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19 -sticky ew
         set Prompt $Parent.t1.p13
         ttk::label $Prompt -text "L1 File Count Trigger :"
         set Name $Parent.t1.e13
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_l1_file_count_trigger
-        grid $Prompt -column 0 -row 14 -sticky e
-        grid $Name -column 1 -row 14 -sticky ew
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky ew
+        set Prompt $Parent.t1.p23
+        ttk::label $Prompt -text "L0 Queue Stall Threshold :"
+        set Name $Parent.t1.e23
+        ttk::entry $Name -width 30 -textvariable maria_tidesdb_l0_queue_stall_threshold
+        grid $Prompt -column 0 -row 21 -sticky e
+        grid $Name -column 1 -row 21 -sticky ew
         set Prompt $Parent.t1.l2
         ttk::label $Prompt -text "Advanced Options" -font TkHeadingFont
-        grid $Prompt -column 0 -row 15 -columnspan 2 -sticky w -padx 5 -pady {10 2}
+        grid $Prompt -column 0 -row 22 -columnspan 2 -sticky w -padx 5 -pady {10 2}
         set Prompt $Parent.t1.p14
         ttk::label $Prompt -text "TTL (seconds, 0=none) :"
         set Name $Parent.t1.e14
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_ttl
-        grid $Prompt -column 0 -row 16 -sticky e
-        grid $Name -column 1 -row 16 -sticky ew
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23 -sticky ew
         set Prompt $Parent.t1.p15
         ttk::label $Prompt -text "Encrypted :"
         set Name $Parent.t1.e15
         ttk::combobox $Name -width 30 -textvariable maria_tidesdb_encrypted -values {no yes}
-        grid $Prompt -column 0 -row 17 -sticky e
-        grid $Name -column 1 -row 17 -sticky ew
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky ew
         set Prompt $Parent.t1.p16
         ttk::label $Prompt -text "Encryption Key ID :"
         set Name $Parent.t1.e16
         ttk::entry $Name -width 30 -textvariable maria_tidesdb_encryption_key_id
-        grid $Prompt -column 0 -row 18 -sticky e
-        grid $Name -column 1 -row 18 -sticky ew
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky ew
     }
 
     if { $option eq "all" || $option eq "drive" } {
@@ -1044,7 +1086,7 @@ proc configmariatpch {option} {
 
     #set variables to values in dict
     setlocaltpchvars $configmariadb
-    set tpchfields [ dict create tpch {maria_tpch_user {.mytpch.c1.e3 get} maria_tpch_pass {.mytpch.c1.e4 get} maria_tpch_dbase {.mytpch.c1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query maria_tpch_tidesdb_compression {.mytpch.t1.e1 get} maria_tpch_tidesdb_sync_mode {.mytpch.t1.e2 get} maria_tpch_tidesdb_write_buffer_size {.mytpch.t1.e3 get} maria_tpch_tidesdb_bloom_filter $maria_tpch_tidesdb_bloom_filter maria_tpch_tidesdb_use_btree $maria_tpch_tidesdb_use_btree maria_tpch_tidesdb_isolation_level {.mytpch.t1.e6 get} maria_tpch_tidesdb_bloom_fpr {.mytpch.t1.e7 get} maria_tpch_tidesdb_sync_interval_us {.mytpch.t1.e8 get} maria_tpch_tidesdb_level_size_ratio {.mytpch.t1.e9 get} maria_tpch_tidesdb_min_levels {.mytpch.t1.e10 get} maria_tpch_tidesdb_skip_list_max_level {.mytpch.t1.e11 get} maria_tpch_tidesdb_skip_list_probability {.mytpch.t1.e12 get} maria_tpch_tidesdb_l1_file_count_trigger {.mytpch.t1.e13 get} maria_tpch_tidesdb_ttl {.mytpch.t1.e14 get} maria_tpch_tidesdb_encrypted {.mytpch.t1.e15 get} maria_tpch_tidesdb_encryption_key_id {.mytpch.t1.e16 get}} ]
+    set tpchfields [ dict create tpch {maria_tpch_user {.mytpch.c1.e3 get} maria_tpch_pass {.mytpch.c1.e4 get} maria_tpch_dbase {.mytpch.c1.e5 get} maria_tpch_storage_engine {.mytpch.f1.e6 get} maria_total_querysets {.mytpch.f1.e9 get} maria_update_sets {.mytpch.f1.e13 get} maria_trickle_refresh {.mytpch.f1.e14 get} maria_scale_fact $maria_scale_fact  maria_num_tpch_threads $maria_num_tpch_threads maria_refresh_on $maria_refresh_on maria_raise_query_error $maria_raise_query_error maria_verbose $maria_verbose maria_refresh_verbose $maria_refresh_verbose maria_cloud_query $maria_cloud_query maria_tpch_tidesdb_compression {.mytpch.t1.e1 get} maria_tpch_tidesdb_sync_mode {.mytpch.t1.e2 get} maria_tpch_tidesdb_write_buffer_size {.mytpch.t1.e3 get} maria_tpch_tidesdb_bloom_filter $maria_tpch_tidesdb_bloom_filter maria_tpch_tidesdb_block_indexes $maria_tpch_tidesdb_block_indexes maria_tpch_tidesdb_use_btree $maria_tpch_tidesdb_use_btree maria_tpch_tidesdb_isolation_level {.mytpch.t1.e6 get} maria_tpch_tidesdb_bloom_fpr {.mytpch.t1.e7 get} maria_tpch_tidesdb_sync_interval_us {.mytpch.t1.e8 get} maria_tpch_tidesdb_klog_value_threshold {.mytpch.t1.e18 get} maria_tpch_tidesdb_min_disk_space {.mytpch.t1.e19 get} maria_tpch_tidesdb_index_sample_ratio {.mytpch.t1.e20 get} maria_tpch_tidesdb_block_index_prefix_len {.mytpch.t1.e21 get} maria_tpch_tidesdb_level_size_ratio {.mytpch.t1.e9 get} maria_tpch_tidesdb_min_levels {.mytpch.t1.e10 get} maria_tpch_tidesdb_dividing_level_offset {.mytpch.t1.e22 get} maria_tpch_tidesdb_skip_list_max_level {.mytpch.t1.e11 get} maria_tpch_tidesdb_skip_list_probability {.mytpch.t1.e12 get} maria_tpch_tidesdb_l1_file_count_trigger {.mytpch.t1.e13 get} maria_tpch_tidesdb_l0_queue_stall_threshold {.mytpch.t1.e23 get} maria_tpch_tidesdb_ttl {.mytpch.t1.e14 get} maria_tpch_tidesdb_encrypted {.mytpch.t1.e15 get} maria_tpch_tidesdb_encryption_key_id {.mytpch.t1.e16 get}} ]
     #set matching fields in dialog to temporary dict
        if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
@@ -1326,84 +1368,126 @@ proc configmariatpch {option} {
         ttk::checkbutton $Name -text "" -variable maria_tpch_tidesdb_bloom_filter -onvalue "true" -offvalue "false"
         grid $Prompt -column 0 -row 4 -sticky e
         grid $Name -column 1 -row 4 -sticky w
+        set Prompt $Parent.t1.p4a
+        ttk::label $Prompt -text "Block Indexes :"
+        set Name $Parent.t1.e4a
+        ttk::checkbutton $Name -text "" -variable maria_tpch_tidesdb_block_indexes -onvalue "true" -offvalue "false"
+        grid $Prompt -column 0 -row 5 -sticky e
+        grid $Name -column 1 -row 5 -sticky w
         set Prompt $Parent.t1.p5
         ttk::label $Prompt -text "Use B+tree SSTable :"
         set Name $Parent.t1.e5
         ttk::checkbutton $Name -text "" -variable maria_tpch_tidesdb_use_btree -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 5 -sticky e
-        grid $Name -column 1 -row 5 -sticky w
+        grid $Prompt -column 0 -row 6 -sticky e
+        grid $Name -column 1 -row 6 -sticky w
         set Prompt $Parent.t1.p6
         ttk::label $Prompt -text "Isolation Level :"
         set Name $Parent.t1.e6
         ttk::combobox $Name -width 30 -textvariable maria_tpch_tidesdb_isolation_level -values {read_uncommitted read_committed repeatable_read snapshot serializable}
-        grid $Prompt -column 0 -row 6 -sticky e
-        grid $Name -column 1 -row 6 -sticky ew
+        grid $Prompt -column 0 -row 7 -sticky e
+        grid $Name -column 1 -row 7 -sticky ew
         set Prompt $Parent.t1.p7
         ttk::label $Prompt -text "Bloom FPR (per 10000) :"
         set Name $Parent.t1.e7
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_bloom_fpr
-        grid $Prompt -column 0 -row 7 -sticky e
-        grid $Name -column 1 -row 7 -sticky ew
+        grid $Prompt -column 0 -row 8 -sticky e
+        grid $Name -column 1 -row 8 -sticky ew
         set Prompt $Parent.t1.p8
         ttk::label $Prompt -text "Sync Interval (us) :"
         set Name $Parent.t1.e8
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_sync_interval_us
-        grid $Prompt -column 0 -row 8 -sticky e
-        grid $Name -column 1 -row 8 -sticky ew
+        grid $Prompt -column 0 -row 9 -sticky e
+        grid $Name -column 1 -row 9 -sticky ew
+        set Prompt $Parent.t1.p18
+        ttk::label $Prompt -text "Klog Value Threshold (bytes) :"
+        set Name $Parent.t1.e18
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_klog_value_threshold
+        grid $Prompt -column 0 -row 10 -sticky e
+        grid $Name -column 1 -row 10 -sticky ew
+        set Prompt $Parent.t1.p19
+        ttk::label $Prompt -text "Min Disk Space (bytes) :"
+        set Name $Parent.t1.e19
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_min_disk_space
+        grid $Prompt -column 0 -row 11 -sticky e
+        grid $Name -column 1 -row 11 -sticky ew
+        set Prompt $Parent.t1.p20
+        ttk::label $Prompt -text "Index Sample Ratio :"
+        set Name $Parent.t1.e20
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_index_sample_ratio
+        grid $Prompt -column 0 -row 12 -sticky e
+        grid $Name -column 1 -row 12 -sticky ew
+        set Prompt $Parent.t1.p21
+        ttk::label $Prompt -text "Block Index Prefix Len :"
+        set Name $Parent.t1.e21
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_block_index_prefix_len
+        grid $Prompt -column 0 -row 13 -sticky e
+        grid $Name -column 1 -row 13 -sticky ew
         set Prompt $Parent.t1.l1
         ttk::label $Prompt -text "LSM-Tree Tuning" -font TkHeadingFont
-        grid $Prompt -column 0 -row 9 -columnspan 2 -sticky w -padx 5 -pady {10 2}
+        grid $Prompt -column 0 -row 14 -columnspan 2 -sticky w -padx 5 -pady {10 2}
         set Prompt $Parent.t1.p9
         ttk::label $Prompt -text "Level Size Ratio :"
         set Name $Parent.t1.e9
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_level_size_ratio
-        grid $Prompt -column 0 -row 10 -sticky e
-        grid $Name -column 1 -row 10 -sticky ew
+        grid $Prompt -column 0 -row 15 -sticky e
+        grid $Name -column 1 -row 15 -sticky ew
         set Prompt $Parent.t1.p10
         ttk::label $Prompt -text "Min Levels :"
         set Name $Parent.t1.e10
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_min_levels
-        grid $Prompt -column 0 -row 11 -sticky e
-        grid $Name -column 1 -row 11 -sticky ew
+        grid $Prompt -column 0 -row 16 -sticky e
+        grid $Name -column 1 -row 16 -sticky ew
+        set Prompt $Parent.t1.p22
+        ttk::label $Prompt -text "Dividing Level Offset :"
+        set Name $Parent.t1.e22
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_dividing_level_offset
+        grid $Prompt -column 0 -row 17 -sticky e
+        grid $Name -column 1 -row 17 -sticky ew
         set Prompt $Parent.t1.p11
         ttk::label $Prompt -text "Skip List Max Level :"
         set Name $Parent.t1.e11
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_skip_list_max_level
-        grid $Prompt -column 0 -row 12 -sticky e
-        grid $Name -column 1 -row 12 -sticky ew
+        grid $Prompt -column 0 -row 18 -sticky e
+        grid $Name -column 1 -row 18 -sticky ew
         set Prompt $Parent.t1.p12
         ttk::label $Prompt -text "Skip List Probability :"
         set Name $Parent.t1.e12
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_skip_list_probability
-        grid $Prompt -column 0 -row 13 -sticky e
-        grid $Name -column 1 -row 13 -sticky ew
+        grid $Prompt -column 0 -row 19 -sticky e
+        grid $Name -column 1 -row 19 -sticky ew
         set Prompt $Parent.t1.p13
         ttk::label $Prompt -text "L1 File Count Trigger :"
         set Name $Parent.t1.e13
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_l1_file_count_trigger
-        grid $Prompt -column 0 -row 14 -sticky e
-        grid $Name -column 1 -row 14 -sticky ew
+        grid $Prompt -column 0 -row 20 -sticky e
+        grid $Name -column 1 -row 20 -sticky ew
+        set Prompt $Parent.t1.p23
+        ttk::label $Prompt -text "L0 Queue Stall Threshold :"
+        set Name $Parent.t1.e23
+        ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_l0_queue_stall_threshold
+        grid $Prompt -column 0 -row 21 -sticky e
+        grid $Name -column 1 -row 21 -sticky ew
         set Prompt $Parent.t1.l2
         ttk::label $Prompt -text "Advanced Options" -font TkHeadingFont
-        grid $Prompt -column 0 -row 15 -columnspan 2 -sticky w -padx 5 -pady {10 2}
+        grid $Prompt -column 0 -row 22 -columnspan 2 -sticky w -padx 5 -pady {10 2}
         set Prompt $Parent.t1.p14
         ttk::label $Prompt -text "TTL (seconds, 0=none) :"
         set Name $Parent.t1.e14
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_ttl
-        grid $Prompt -column 0 -row 16 -sticky e
-        grid $Name -column 1 -row 16 -sticky ew
+        grid $Prompt -column 0 -row 23 -sticky e
+        grid $Name -column 1 -row 23 -sticky ew
         set Prompt $Parent.t1.p15
         ttk::label $Prompt -text "Encrypted :"
         set Name $Parent.t1.e15
         ttk::combobox $Name -width 30 -textvariable maria_tpch_tidesdb_encrypted -values {no yes}
-        grid $Prompt -column 0 -row 17 -sticky e
-        grid $Name -column 1 -row 17 -sticky ew
+        grid $Prompt -column 0 -row 24 -sticky e
+        grid $Name -column 1 -row 24 -sticky ew
         set Prompt $Parent.t1.p16
         ttk::label $Prompt -text "Encryption Key ID :"
         set Name $Parent.t1.e16
         ttk::entry $Name -width 30 -textvariable maria_tpch_tidesdb_encryption_key_id
-        grid $Prompt -column 0 -row 18 -sticky e
-        grid $Name -column 1 -row 18 -sticky ew
+        grid $Prompt -column 0 -row 25 -sticky e
+        grid $Name -column 1 -row 25 -sticky ew
     }
 
     if { $option eq "all" || $option eq "drive" } {

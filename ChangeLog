@@ -1236,11 +1236,14 @@ behavior and can be tuned for different workload characteristics:
                         For benchmarking none can dramatically improve throughput.
 
   WRITE_BUFFER_SIZE     Size in bytes of the in-memory memtable before flush.
-                        Default 134217728 (128 MB). Larger values mean fewer
+                        Default 33554432 (32 MB). Larger values mean fewer
                         flushes and can improve write throughput.
 
   BLOOM_FILTER          Enable bloom filters for point lookup acceleration.
                         Default true. Set false to disable.
+
+  BLOCK_INDEXES         Enable block-level indexes inside SSTables for
+                        faster key lookups within blocks. Default true.
 
   USE_BTREE             Use B+tree layout for SSTable key log instead of the
                         default block-based format. Default false.
@@ -1254,12 +1257,28 @@ behavior and can be tuned for different workload characteristics:
                         memory but reduce false positives.
 
   SYNC_INTERVAL_US      Sync interval in microseconds when SYNC_MODE
-                        is set to interval. Default 500000 (500 ms).
+                        is set to interval. Default 128000 (128 ms).
+
+  KLOG_VALUE_THRESHOLD  Values larger than this threshold in bytes are
+                        stored out-of-line in the SSTable value log
+                        instead of inline in the key log. Default 4096.
+
+  MIN_DISK_SPACE        Minimum free disk space in bytes before the
+                        engine stalls writes. Default 104857600 (100 MB).
+
+  INDEX_SAMPLE_RATIO    Sampling ratio for block indexes. Default 1
+                        (every key is indexed).
+
+  BLOCK_INDEX_PREFIX_LEN Prefix length in bytes for block index entries.
+                        Default 16.
 
   LEVEL_SIZE_RATIO      How much larger each LSM level is compared to
                         the previous one. Default 10.
 
   MIN_LEVELS            Minimum depth of the LSM-tree. Default 5.
+
+  DIVIDING_LEVEL_OFFSET Offset that determines where tiered vs leveled
+                        compaction switches in a hybrid strategy. Default 2.
 
   SKIP_LIST_MAX_LEVEL   Maximum level of the in-memory skip list
                         memtable. Default 12.
@@ -1268,6 +1287,9 @@ behavior and can be tuned for different workload characteristics:
 
   L1_FILE_COUNT_TRIGGER Number of SSTables at Level 1 before compaction
                         merges them into deeper levels. Default 4.
+
+  L0_QUEUE_STALL_THRESHOLD Number of immutable memtables queued for
+                        flush before writes stall. Default 10.
 
   TTL                   Table-level time-to-live in seconds. Rows
                         expire automatically after this duration.
@@ -1284,17 +1306,24 @@ Set these from the CLI with:
 
   diset tpcc maria_tidesdb_compression zstd
   diset tpcc maria_tidesdb_sync_mode none
-  diset tpcc maria_tidesdb_write_buffer_size 16777216
+  diset tpcc maria_tidesdb_write_buffer_size 33554432
   diset tpcc maria_tidesdb_bloom_filter true
+  diset tpcc maria_tidesdb_block_indexes true
   diset tpcc maria_tidesdb_use_btree false
   diset tpcc maria_tidesdb_isolation_level repeatable_read
-  diset tpcc maria_tidesdb_bloom_fpr 50
-  diset tpcc maria_tidesdb_sync_interval_us 500000
+  diset tpcc maria_tidesdb_bloom_fpr 100
+  diset tpcc maria_tidesdb_sync_interval_us 128000
+  diset tpcc maria_tidesdb_klog_value_threshold 4096
+  diset tpcc maria_tidesdb_min_disk_space 104857600
+  diset tpcc maria_tidesdb_index_sample_ratio 1
+  diset tpcc maria_tidesdb_block_index_prefix_len 16
   diset tpcc maria_tidesdb_level_size_ratio 10
   diset tpcc maria_tidesdb_min_levels 5
+  diset tpcc maria_tidesdb_dividing_level_offset 2
   diset tpcc maria_tidesdb_skip_list_max_level 12
   diset tpcc maria_tidesdb_skip_list_probability 25
   diset tpcc maria_tidesdb_l1_file_count_trigger 4
+  diset tpcc maria_tidesdb_l0_queue_stall_threshold 10
   diset tpcc maria_tidesdb_ttl 0
   diset tpcc maria_tidesdb_encrypted no
   diset tpcc maria_tidesdb_encryption_key_id 1
@@ -1303,9 +1332,9 @@ For TPROC-H the prefix is maria_tpch_tidesdb_ instead of maria_tidesdb_.
 
 TidesDB System Variables
 
-TidesDB global system variables control engine-wide runtime behavior
-and should be configured in the MariaDB server configuration file
-(maria.cnf or my.cnf) rather than in HammerDB. For example:
+TidesDB global system variables control engine-wide runtime behavior.
+Most should be configured in the MariaDB server configuration file
+(maria.cnf or my.cnf). For example:
 
   [mariadb]
   plugin_load_add = ha_tidesdb
@@ -1316,14 +1345,25 @@ and should be configured in the MariaDB server configuration file
 Available system variables:
 
   tidesdb_flush_threads       Number of background flush threads.
-                              Default 2.
+                              Default 4.
 
   tidesdb_compaction_threads  Number of background compaction threads.
-                              Default 2.
+                              Default 4.
 
   tidesdb_block_cache_size    Size in bytes of the global read cache
                               shared across all column families.
                               Default 268435456 (256 MB).
+
+  tidesdb_max_memory_usage    Global memory cap in bytes. 0 means
+                              auto-detect (~80% system RAM). This is
+                              a read-only startup variable and must be
+                              set in my.cnf / maria.cnf.
+
+  tidesdb_max_open_sstables   Maximum SSTable file handles in the LRU.
+                              Default 256.
+
+  tidesdb_log_level           Internal log level (DEBUG, INFO, WARN,
+                              ERROR, FATAL, NONE). Default DEBUG.
 
 These can also be changed at runtime with SET GLOBAL if needed.
 
