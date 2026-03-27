@@ -4197,6 +4197,15 @@ GO
                 </row>
 
                 <row>
+                  <entry>Azure Citus</entry>
+
+                  <entry>Prevents CREATE, ALTER and DROP database operations
+                  for Azure Citus (Azure Elastic Cluster) like managed
+                  environment.
+                  </entry>
+                </row>
+
+                <row>
                   <entry>PostgreSQL Superuser</entry>
 
                   <entry>The PostgreSQL Superuser is a user with sufficient

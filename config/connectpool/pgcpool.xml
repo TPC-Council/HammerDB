@@ -3,6 +3,7 @@
     <c1>
 	<pg_host>host1</pg_host>
         <pg_port>5432</pg_port>
+	<pg_azure_citus>false</pg_azure_citus>
 	<pg_sslmode>prefer</pg_sslmode>
 	<pg_user>tpcc</pg_user>
         <pg_pass>tpcc</pg_pass>
@@ -11,6 +12,7 @@
     <c2>
 	<pg_host>host2</pg_host>
         <pg_port>5432</pg_port>
+	<pg_azure_citus>false</pg_azure_citus>
 	<pg_sslmode>prefer</pg_sslmode>
 	<pg_user>tpcc</pg_user>
         <pg_pass>tpcc</pg_pass>
@@ -19,6 +21,7 @@
     <c3>
 	<pg_host>host3</pg_host>
         <pg_port>5432</pg_port>
+	<pg_azure_citus>false</pg_azure_citus>
 	<pg_sslmode>prefer</pg_sslmode>
 	<pg_user>tpcc</pg_user>
         <pg_pass>tpcc</pg_pass>

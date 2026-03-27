@@ -8,6 +8,7 @@ dbset('bm','TPC-H')
 diset('connection','pg_host','localhost')
 diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
+diset('connection','pg_azure_citus','false')
 
 vu = tclpy.eval('numberOfCPUs')
 diset('tpch','pg_scale_fact','10')
