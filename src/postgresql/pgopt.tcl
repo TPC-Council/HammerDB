@@ -17,9 +17,9 @@ proc countpgopts { bm } {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.countopt.c1.e3 get} pg_superuserpass {.countopt.c1.e4 get} pg_defaultdbase {.countopt.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.countopt.c1.e3 get} pg_superuserpass {.countopt.c1.e4 get} pg_defaultdbase {.countopt.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.countopt.c1.e3 get} pg_tpch_superuserpass {.countopt.c1.e4 get} pg_tpch_defaultdbase {.countopt.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.countopt.c1.e3 get} pg_tpch_superuserpass {.countopt.c1.e4 get} pg_tpch_defaultdbase {.countopt.c1.e5 get}} ]
     }
     if { [ info exists afval ] } {
         after cancel $afval
@@ -109,9 +109,16 @@ proc countpgopts { bm } {
     grid $Prompt -column 0 -row 7 -sticky e
     grid $Name -column 1 -row 7 -sticky w
 
+    set Prompt $Parent.c1.p6b
+    ttk::label $Prompt -text "Azure Citus (Azure Elastic Cluster) :"
+    set Name $Parent.c1.e6b
+    ttk::checkbutton $Name -text "" -variable pg_azure_citus -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8 -sticky w
+
     set Name $Parent.f1.e7
     ttk::checkbutton $Name -text "Log Output to Temp" -variable tclog -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 8 -sticky w
+    grid $Name -column 1 -row 9 -sticky w
     bind .countopt.f1.e7 <Button> {
         set opst [ .countopt.f1.e7 cget -state ]
         if {$opst != "disabled" && $tclog == 0} {
@@ -126,14 +133,14 @@ proc countpgopts { bm } {
     }
     set Name $Parent.f1.e8
     ttk::checkbutton $Name -text "Use Unique Log Name" -variable uniquelog -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 9 -sticky w
+    grid $Name -column 1 -row 10 -sticky w
     if {$tclog == 0} {
         $Name configure -state disabled
     }
 
     set Name $Parent.f1.e9
     ttk::checkbutton $Name -text "Log Timestamps" -variable tcstamp -onvalue 1 -offvalue 0
-    grid $Name -column 1 -row 10 -sticky w
+    grid $Name -column 1 -row 11 -sticky w
     if {$tclog == 0} {
         $Name configure -state disabled
     }
@@ -206,7 +213,7 @@ proc configpgtpcc {option} {
     setlocaltpccvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
+    set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
     set whlist [ get_warehouse_list_for_spinbox ]
     if { $pg_oracompat eq "true" } {
         if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -355,6 +362,12 @@ proc configpgtpcc {option} {
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky w
+    set Prompt $Parent.c1.p9d
+    ttk::label $Prompt -text "Azure Citus (Azure Elastic Cluster) :"
+    set Name $Parent.c1.e9d
+    ttk::checkbutton $Name -text "" -variable pg_azure_citus -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 14 -sticky e
+    grid $Name -column 1 -row 14 -sticky w
     if { $option eq "all" || $option eq "build" } {
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Number of Warehouses :"
@@ -371,8 +384,8 @@ proc configpgtpcc {option} {
                 .tpc.f1.e11a configure -state enabled
             }
         }
-        grid $Prompt -column 0 -row 14 -sticky e
-        grid $Name -column 1 -row 14 -sticky ew
+        grid $Prompt -column 0 -row 15 -sticky e
+        grid $Name -column 1 -row 15 -sticky ew
         set Prompt $Parent.f1.p11
         ttk::label $Prompt -text "Virtual Users to Build Schema :"
         set Name $Parent.f1.e11
@@ -384,14 +397,14 @@ proc configpgtpcc {option} {
         }
         event add <<Any-Button-Any-Key>> <Any-ButtonRelease>
         event add <<Any-Button-Any-Key>> <KeyRelease>
-        grid $Prompt -column 0 -row 15 -sticky e
-        grid $Name -column 1 -row 15 -sticky ew
+        grid $Prompt -column 0 -row 16 -sticky e
+        grid $Name -column 1 -row 16 -sticky ew
         set Prompt $Parent.f1.p11a
         ttk::label $Prompt -text "Partition Order Line Table :"
         set Name $Parent.f1.e11a
         ttk::checkbutton $Name -text "" -variable pg_partition -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 16 -sticky e
-        grid $Name -column 1 -row 16 -sticky w
+        grid $Prompt -column 0 -row 17 -sticky e
+        grid $Name -column 1 -row 17 -sticky w
         if {$pg_count_ware < 200 } {
             $Name configure -state disabled
         }
@@ -651,7 +664,7 @@ proc configpgtpch {option} {
     setlocaltpchvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.pgtpch.c1.e1 get} pg_port {.pgtpch.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.pgtpch.c1.e3 get} pg_tpch_superuserpass {.pgtpch.c1.e4 get} pg_tpch_defaultdbase {.pgtpch.c1.e5 get} pg_tpch_user {.pgtpch.c1.e6 get} pg_tpch_pass {.pgtpch.c1.e7 get} pg_tpch_dbase {.pgtpch.c1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
+    set pgfields [ dict create connection {pg_host {.pgtpch.c1.e1 get} pg_port {.pgtpch.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.pgtpch.c1.e3 get} pg_tpch_superuserpass {.pgtpch.c1.e4 get} pg_tpch_defaultdbase {.pgtpch.c1.e5 get} pg_tpch_user {.pgtpch.c1.e6 get} pg_tpch_pass {.pgtpch.c1.e7 get} pg_tpch_dbase {.pgtpch.c1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
     catch "destroy .pgtpch"
     ttk::toplevel .pgtpch
     wm transient .pgtpch .ed_mainFrame
@@ -732,6 +745,12 @@ proc configpgtpch {option} {
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 10 -sticky e
     grid $Name -column 1 -row 10 -sticky w
+    set Prompt $Parent.c1.p8c
+    ttk::label $Prompt -text "Azure Citus (Azure Elastic Cluster) :"
+    set Name $Parent.c1.e8c
+    ttk::checkbutton $Name -text "" -variable pg_azure_citus -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky w
     if { $option eq "all" || $option eq "build" } {
         set Name $Parent.f1.e8a
         set Prompt $Parent.f1.p8a
@@ -751,24 +770,24 @@ proc configpgtpch {option} {
                 .pgtpch.f1.e10 configure -state normal
             }
         }
-        grid $Prompt -column 0 -row 11 -sticky e
-        grid $Name -column 1 -row 11 -sticky w
+        grid $Prompt -column 0 -row 12 -sticky e
+        grid $Name -column 1 -row 12 -sticky w
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Greenplum Compressed Columns :"
         set Name $Parent.f1.e10
         ttk::checkbutton $Name -text "" -variable pg_tpch_gpcompress -onvalue "true" -offvalue "false"
-        grid $Prompt -column 0 -row 12 -sticky e
-        grid $Name -column 1 -row 12 -sticky w
+        grid $Prompt -column 0 -row 13 -sticky e
+        grid $Name -column 1 -row 13 -sticky w
         if {$pg_tpch_gpcompat == "false" } {
             $Name configure -state disabled
         }
         set Name $Parent.f1.e11
         set Prompt $Parent.f1.p11
         ttk::label $Prompt -text "Scale Factor :"
-        grid $Prompt -column 0 -row 13 -sticky e
+        grid $Prompt -column 0 -row 14 -sticky e
         set Name $Parent.f1.f2
         ttk::frame $Name -width 30
-        grid $Name -column 1 -row 13 -sticky ew
+        grid $Name -column 1 -row 14 -sticky ew
         # top row
         set rcnt 1
         foreach item {1} {
@@ -815,8 +834,8 @@ proc configpgtpch {option} {
         ttk::label $Prompt -text "Virtual Users to Build Schema :"
         set Name $Parent.f1.e12
         ttk::spinbox $Name -from 1 -to 512 -textvariable pg_num_tpch_threads
-        grid $Prompt -column 0 -row 14 -sticky e
-        grid $Name -column 1 -row 14 -sticky ew
+        grid $Prompt -column 0 -row 15 -sticky e
+        grid $Name -column 1 -row 15 -sticky ew
     }
     if { $option eq "all" || $option eq "drive" } {
         if { $option eq "all" } {
@@ -966,9 +985,9 @@ proc metpgopts {} {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.metric.c1.e3 get} pg_superuserpass {.metric.c1.e4 get} pg_defaultdbase {.metric.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.metric.c1.e3 get} pg_superuserpass {.metric.c1.e4 get} pg_defaultdbase {.metric.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode} tpch {pg_tpch_superuser {.metric.c1.e3 get} pg_tpch_superuserpass {.metric.c1.e4 get} pg_tpch_defaultdbase {.metric.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.metric.c1.e3 get} pg_tpch_superuserpass {.metric.c1.e4 get} pg_tpch_defaultdbase {.metric.c1.e5 get}} ]
     }
     if { $bm eq "TPC-C" } {
         if { $pg_oracompat eq "true" } {
@@ -1049,18 +1068,24 @@ proc metpgopts {} {
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
     grid $Prompt -column 0 -row 6 -sticky e
     grid $Name -column 1 -row 6 -sticky w
+    set Prompt $Parent.c1.p6a
+    ttk::label $Prompt -text "Azure Citus (Azure Elastic Cluster) :"
+    set Name $Parent.c1.e6a
+    ttk::checkbutton $Name -text "" -variable pg_azure_citus -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7 -sticky w
     set Name $Parent.f1.e7
     set Prompt $Parent.f1.p7
     ttk::label $Prompt -text "Agent ID :"
     ttk::entry $Name -width 30 -textvariable agent_id
-    grid $Prompt -column 0 -row 7 -sticky e
-    grid $Name -column 1 -row 7
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8
     set Name $Parent.f1.e8
     set Prompt $Parent.f1.p8
     ttk::label $Prompt -text "Agent Hostname :"
     ttk::entry $Name -width 30 -textvariable agent_hostname
-    grid $Prompt -column 0 -row 8 -sticky e
-    grid $Name -column 1 -row 8
+    grid $Prompt -column 0 -row 9 -sticky e
+    grid $Name -column 1 -row 9
     set Name $Parent.f1.e9
     set Prompt $Parent.f1.p9
     ttk::label $Prompt -text "Agent Start :"
@@ -1071,8 +1096,8 @@ proc metpgopts {} {
             tk_messageBox -message "Agent hostname must be local to start, start manually on remote hosts"
     }
     } -text Start
-    grid $Prompt -column 0 -row 9 -sticky e
-    grid $Name -column 1 -row 9 -sticky w
+    grid $Prompt -column 0 -row 10 -sticky e
+    grid $Name -column 1 -row 10 -sticky w
         if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
         $Name configure -state disabled
     }
@@ -1082,22 +1107,22 @@ proc metpgopts {} {
     ttk::button $Name -command {
     agstop $agent_hostname $agent_id
     } -text Stop
-    grid $Prompt -column 0 -row 10 -sticky e
-    grid $Name -column 1 -row 10 -sticky w
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky w
     set Name $Parent.f1.e11
     set Prompt $Parent.f1.p11
     ttk::label $Prompt -text "Agent Status :"
     ttk::button $Name -command {
     agstatus $agent_hostname $agent_id
     } -text Status
-    grid $Prompt -column 0 -row 11 -sticky e
-    grid $Name -column 1 -row 11 -sticky w
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
     set Name $Parent.f1.e12
     set Prompt $Parent.f1.p12
     ttk::label $Prompt -text "Start Display with Local Agent :"
     ttk::checkbutton $Name -text "" -variable start_display -onvalue "true" -offvalue "false"
-    grid $Prompt -column 0 -row 13 -sticky e
-    grid $Name -column 1 -row 13 -sticky w
+    grid $Prompt -column 0 -row 14 -sticky e
+    grid $Name -column 1 -row 14 -sticky w
         if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } { 
 	set start_display false
         $Name configure -state disabled

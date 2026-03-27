@@ -7,7 +7,7 @@ proc build_pgtpch {} {
     upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpchvars $configpostgresql
-    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $pg_scale_fact TPROC-H schema\n in host [string toupper $pg_host:$pg_port] sslmode [string toupper $pg_sslmode] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
+    if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $pg_scale_fact TPROC-H schema\n in host [string toupper $pg_host:$pg_port] sslmode [string toupper $pg_sslmode] in azure_citus [string toupper $pg_azure_citus] under user [ string toupper $pg_tpch_user ] in database [ string toupper $pg_tpch_dbase ]?" -type yesno ] == yes} {
 
         if { $pg_num_tpch_threads eq 1 } {
             set maxvuser 1
@@ -63,9 +63,11 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
     return $lda
 }
 
-proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_password user password } {
+proc CreateUserDatabase { lda host port sslmode azure_citus db tspace superuser superuser_password user password } {
     set stmnt_count 1
-    puts "CREATING DATABASE $db under OWNER $user"
+    if { !$azure_citus } {
+        puts "CREATING DATABASE $db under OWNER $user"
+    }
     set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
     if { [pg_result $result -numTuples] == 0 } {
         set sql($stmnt_count) "CREATE USER \"$user\" PASSWORD '$password'"
@@ -77,7 +79,7 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
     }
     incr stmnt_count;
     set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
-    if { [pg_result $result -numTuples] == 0} {
+    if { [pg_result $result -numTuples] == 0 && !$azure_citus } {
         set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
     } else {
         set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
@@ -86,8 +88,14 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         } else {
             set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
             if { [pg_result $result -numTuples] == 0 } {
-                puts "Using existing empty Database $db for Schema build"
-                set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
+                if { !$azure_citus } {
+                    puts "Using existing empty Database $db for Schema build"
+                    set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
+                } else {
+                    # Azure Citus (Azure Elastic Cluster) mode - database must pre-exist
+                    puts "Azure Citus (Azure Elastic Cluster) mode: Using existing database $db"
+                    puts "Ensure database $db exists and user $user has appropriate permissions"
+                }
             } else {
                 puts "Database with tables $db exists"
                 error "Database $db exists but is not empty, specify a new or empty database name"
@@ -95,7 +103,7 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         }
         pg_disconnect $existing_db
     }
-    if { $tspace != "pg_default" } {
+    if { $tspace != "pg_default" && !$azure_citus } {
         incr stmnt_count
         set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
     }
@@ -554,7 +562,7 @@ proc CreateIndexes { lda greenplum gpcompress } {
     return
 }
 
-proc do_tpch { host port sslmode scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
+proc do_tpch { host port sslmode azure_citus scale_fact superuser superuser_password defaultdb db tspace user password greenplum gpcompress num_vu } {
     global dist_names dist_weights weights dists weights
     ###############################################
     #Generating following rows
@@ -611,7 +619,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
         } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
+            CreateUserDatabase $lda $host $port $sslmode $azure_citus $db $tspace $superuser $superuser_password $user $password
             set result [ pg_exec $lda "commit" ]
             pg_result $result -clear
             pg_disconnect $lda
@@ -717,7 +725,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_sslmode $pg_scale_fact $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user [ quotemeta $pg_tpch_pass ] $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpch $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_scale_fact $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_tpch_tspace $pg_tpch_user [ quotemeta $pg_tpch_pass ] $pg_tpch_gpcompat $pg_tpch_gpcompress $pg_num_tpch_threads"
     } else { return }
 }
 
@@ -744,6 +752,7 @@ set scale_factor $pg_scale_fact ;#Scale factor of the tpc-h schema
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
+set azure_citus \"$pg_azure_citus\" ;# Azure like managed environment
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1196,7 +1205,7 @@ proc sub_query { query_no scale_factor myposition } {
 }
 #########################
 #TPCH QUERY SETS PROCEDURE
-proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
+proc do_tpch { host port sslmode azure_citus db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
     #Queries 17 and 20 are long running on PostgreSQL
     set SKIP_QUERY_17_20 "false" 
     set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
@@ -1327,7 +1336,7 @@ if { $refresh_on } {
         set update_sets 1
         set REFRESH_VERBOSE "false"
         do_refresh $host $port $sslmode $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF1
-        do_tpch $host $port $sslmode $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets 0
+        do_tpch $host $port $sslmode $azure_citus $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets 0
         do_refresh $host $port $sslmode $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE RF2
     } else {
         switch $myposition {
@@ -1335,12 +1344,12 @@ if { $refresh_on } {
                 do_refresh $host $port $sslmode $db $user $password $scale_factor $update_sets $trickle_refresh $REFRESH_VERBOSE BOTH
             }
             default { 
-                do_tpch $host $port $sslmode $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ]
+                do_tpch $host $port $sslmode $azure_citus $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets [ expr $myposition - 1 ]
             }
         }
     }
 } else {
-    do_tpch $host $port $sslmode $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
+    do_tpch $host $port $sslmode $azure_citus $db $user $password $scale_factor $RAISEERROR $VERBOSE $degree_of_parallel $total_querysets $myposition
 }}
 }
 
@@ -1366,6 +1375,7 @@ set redshift_compat \"$pg_rs_compat\" ;# Queries to run against redshift (true o
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
+set azure_citus \"$pg_azure_citus\" ;# Azure like managed environment
 set user \"$pg_tpch_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_tpch_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_tpch_dbase\" ;# Database containing the TPC Schema
@@ -1549,32 +1559,37 @@ proc ConnectToPostgres { host port sslmode user password dbname } {
     return $lda
 }
 
-proc drop_schema { host port sslmode user superuser superuser_password default_dbase dbase } {
+proc drop_schema { host port sslmode azure_citus user superuser superuser_password default_dbase dbase } {
     set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
     if { $suconnect eq "Failed" } {
         error "error, the database connection to $host could not be established"
     } else {
-        set result [ pg_exec $suconnect "drop database $dbase"]
-        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-            error "[pg_result $result -error]"
+        if { !$azure_citus } {
+            set result [ pg_exec $suconnect "drop database $dbase"]
+            if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+                error "[pg_result $result -error]"
+            } else {
+                puts "$dbase TPROC-H schema has been deleted successfully."
+                pg_result $result -clear
+            }
+            set result [ pg_exec $suconnect "drop role $user"]
+            if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+                error "[pg_result $result -error]"
+            } else {
+                puts "$user TPROC-H role has been deleted successfully."
+                pg_result $result -clear
+            }
+            pg_disconnect $suconnect
         } else {
-            puts "$dbase TPROC-H schema has been deleted successfully."
-            pg_result $result -clear
+            puts "Azure Citus (Azure Elastic Cluster) mode: DROP DATABASE not supported"
+            puts "Please manually drop database $dbase and role $user using Azure portal or CLI if permissible"
         }
-        set result [ pg_exec $suconnect "drop role $user"]
-        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
-            error "[pg_result $result -error]"
-        } else {
-            puts "$user TPROC-H role has been deleted successfully."
-            pg_result $result -clear
-        }
-        pg_disconnect $suconnect
     }
     return
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase"
     } else { return }
 }
 
@@ -1691,6 +1706,6 @@ proc check_tpch { host port sslmode user superuser superuser_password default_db
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $pg_host $pg_port $pg_sslmode $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_scale_fact"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "check_tpch $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_tpch_user $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $pg_tpch_dbase $pg_scale_fact"
     } else { return }
 }

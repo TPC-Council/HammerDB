@@ -8,6 +8,7 @@ dbset bm TPC-C
 diset connection pg_host localhost
 diset connection pg_port 5432
 diset connection pg_sslmode prefer
+diset connection pg_azure_citus false
 
 set vu [ numberOfCPUs ]
 set warehouse [ expr {$vu * 5} ]

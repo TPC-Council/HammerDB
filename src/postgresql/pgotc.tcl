@@ -17,7 +17,7 @@ proc tcount_pg {bm interval masterthread} {
             }
             return $lda
         }
-        proc read_more { MASTER library pg_host pg_port pg_sslmode pg_superuser pg_superuserpass pg_defaultdbase pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase interval old tce bm } {
+        proc read_more { MASTER library pg_host pg_port pg_sslmode pg_azure_citus pg_superuser pg_superuserpass pg_defaultdbase pg_tpch_superuser pg_tpch_superuserpass pg_tpch_defaultdbase interval old tce bm } {
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 } 
@@ -50,7 +50,7 @@ proc tcount_pg {bm interval masterthread} {
             } else { 
                 namespace import tcountcommon::* 
             }
-            set tc_lda [ ConnectToPostgres $pg_host $pg_port $pg_sslmode $tmp_pg_su $tmp_pg_supass $tmp_pg_defdb ]
+            set tc_lda [ ConnectToPostgres $pg_host $pg_port $pg_sslmode $pg_azure_citus $tmp_pg_su $tmp_pg_supass $tmp_pg_defdb ]
             if { [string match {*connection*} $tc_lda] } {
                 tsv::set application tc_errmsg $tc_lda
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
@@ -131,5 +131,5 @@ proc tcount_pg {bm interval masterthread} {
     catch {eval [ subst {thread::send $tc_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
     catch {eval [ subst {thread::send $tc_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $interval $old tce $bm }}] 
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_tpch_superuser [ quotemeta $pg_tpch_superuserpass ] $pg_tpch_defaultdbase $interval $old tce $bm }}]
 } 

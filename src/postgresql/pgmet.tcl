@@ -1939,6 +1939,7 @@ namespace eval pgmet {
         set public(host) $pg_host
         set public(port) $pg_port
         set public(sslmode) $pg_sslmode
+        set public(azure_citus) $pg_azure_citus
         if { $bm eq "TPC-C" } {
             set public(suser) $pg_superuser
             set public(suser_pw) [ quotemeta $pg_superuserpass ]
