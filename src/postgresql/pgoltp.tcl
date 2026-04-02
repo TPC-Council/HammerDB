@@ -2089,7 +2089,15 @@ proc LoadOrd { lda ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE ora
     pg_result $result -clear
     return
 }
-proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_password defaultdb db tspace user password ora_compatible citus_compatible pg_storedprocs partition num_vu } {
+
+proc GetDataPort { port citus_lb_port azure_citus citus_compatible } {
+    if { $azure_citus && $citus_compatible eq "true" && $citus_lb_port > 0 } {
+        return $citus_lb_port
+    }
+    return $port
+}
+
+proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_password defaultdb db tspace user password ora_compatible citus_compatible pg_storedprocs partition num_vu citus_lb_port } {
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
     set DIST_PER_WARE 10
@@ -2120,6 +2128,7 @@ proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_pass
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         puts "CREATING [ string toupper $user ] SCHEMA"
+        set schema_start_seconds [clock seconds]
         set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
@@ -2146,9 +2155,22 @@ proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_pass
                 pg_result $result -clear
             }
         }
+        set ddl_elapsed [expr {[clock seconds] - $schema_start_seconds}]
+        puts "DDL phase (create tables) completed in $ddl_elapsed seconds"
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
-            LoadItems $lda $MAXITEMS
+            set data_load_start [clock seconds]
+            set data_port [GetDataPort $port $citus_lb_port $azure_citus $citus_compatible]
+            if { $data_port ne $port } {
+                puts "Using load balancer port $data_port for data population"
+                set lda_data [ ConnectToPostgres $host $data_port $sslmode $user $password $db ]
+                if { $lda_data eq "Failed" } {
+                    error "error, the load balancer connection to $host:$data_port could not be established"
+                }
+            } else {
+                set lda_data $lda
+            }
+            LoadItems $lda_data $MAXITEMS
             puts "Monitoring Workers..."
             set prevactive 0
             while 1 {
@@ -2167,8 +2189,16 @@ proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_pass
                 if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
                 after 10000
             }
+            if { $data_port ne $port } {
+                pg_disconnect $lda_data
+            }
+            set data_load_elapsed [expr {[clock seconds] - $data_load_start}]
+            puts "Data population completed in $data_load_elapsed seconds"
         } else {
+            set data_load_start [clock seconds]
             LoadItems $lda $MAXITEMS
+            set data_load_elapsed [expr {[clock seconds] - $data_load_start}]
+            puts "Data population completed in $data_load_elapsed seconds"
         }
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
@@ -2187,7 +2217,11 @@ proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_pass
                 }
                 after 5000 
             }
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+            set data_port [GetDataPort $port $citus_lb_port $azure_citus $citus_compatible]
+            if { $data_port ne $port } {
+                puts "Worker $myposition: connecting via load balancer port $data_port"
+            }
+            set lda [ ConnectToPostgres $host $data_port $sslmode $user $password $db ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
             }
@@ -2210,16 +2244,24 @@ proc do_tpcc { host port sslmode azure_citus count_ware superuser superuser_pass
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        set index_start [clock seconds]
         CreateIndexes $lda
+        set index_elapsed [expr {[clock seconds] - $index_start}]
+        puts "Index creation completed in $index_elapsed seconds"
+        set sproc_start [clock seconds]
         CreateStoredProcs $lda $ora_compatible $citus_compatible $pg_storedprocs
-        GatherStatistics $lda 
+        set sproc_elapsed [expr {[clock seconds] - $sproc_start}]
+        puts "Stored procedures creation completed in $sproc_elapsed seconds"
+        GatherStatistics $lda
+        set total_elapsed [expr {[clock seconds] - $schema_start_seconds}]
+        puts "Schema build total: $total_elapsed seconds (DDL: ${ddl_elapsed}s, Data: ${data_load_elapsed}s, Index: ${index_elapsed}s, StoredProcs: ${sproc_elapsed}s)"
         puts "[ string toupper $user ] SCHEMA COMPLETE"
         pg_disconnect $lda
         return
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_count_ware $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_tspace $pg_user [ quotemeta $pg_pass ] $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_azure_citus $pg_count_ware $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_tspace $pg_user [ quotemeta $pg_pass ] $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu $pg_citus_loadbalancer"
     } else { return }
 }
 
@@ -2543,10 +2585,17 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL Server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set azure_citus \"$pg_azure_citus\" ;# Azure like managed environment
+set citus_compatible \"$pg_cituscompat\" ;# Citus compatible schema
+set citus_lb_port \"$pg_citus_loadbalancer\" ;# Citus load balancer port
 set user \"$pg_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #OPTIONS
+#Override port if load balancer is configured
+if { \$azure_citus eq \"true\" && \$citus_compatible eq \"true\" && \$citus_lb_port > 0 } {
+    set port \$citus_lb_port
+    puts \"Using Citus load balancer port \$port for benchmark\"
+}
 "
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
@@ -2852,6 +2901,8 @@ set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set azure_citus \"$pg_azure_citus\" ;# Azure like managed environment
+set citus_compatible \"$pg_cituscompat\" ;# Citus compatible schema
+set citus_lb_port \"$pg_citus_loadbalancer\" ;# Citus load balancer port
 set superuser \"$pg_superuser\" ;# Superuser privilege user
 set superuser_password \"[ quotemeta $pg_superuserpass ]\" ;# Password for Superuser
 set default_database \"$pg_defaultdbase\" ;# Default Database for Superuser
@@ -3023,6 +3074,11 @@ switch $myposition {
         }
     }
     default {
+        #Override port if load balancer is configured
+        if { $azure_citus eq "true" && $citus_compatible eq "true" && $citus_lb_port > 0 } {
+            set port $citus_lb_port
+            puts "Using Citus load balancer port $port for benchmark"
+        }
         #TIMESTAMP
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
@@ -3463,6 +3519,11 @@ switch $myposition {
         }
     }
     default {
+        #Override port if load balancer is configured
+        if { $azure_citus eq "true" && $citus_compatible eq "true" && $citus_lb_port > 0 } {
+            set port $citus_lb_port
+            puts "Using Citus load balancer port $port for benchmark"
+        }
         #TIMESTAMP
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]

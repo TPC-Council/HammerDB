@@ -17,9 +17,9 @@ proc countpgopts { bm } {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.countopt.c1.e3 get} pg_superuserpass {.countopt.c1.e4 get} pg_defaultdbase {.countopt.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer $pg_citus_loadbalancer} tpcc {pg_superuser {.countopt.c1.e3 get} pg_superuserpass {.countopt.c1.e4 get} pg_defaultdbase {.countopt.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.countopt.c1.e3 get} pg_tpch_superuserpass {.countopt.c1.e4 get} pg_tpch_defaultdbase {.countopt.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.countopt.c1.e1 get} pg_port {.countopt.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer $pg_citus_loadbalancer} tpch {pg_tpch_superuser {.countopt.c1.e3 get} pg_tpch_superuserpass {.countopt.c1.e4 get} pg_tpch_defaultdbase {.countopt.c1.e5 get}} ]
     }
     if { [ info exists afval ] } {
         after cancel $afval
@@ -213,7 +213,7 @@ proc configpgtpcc {option} {
     setlocaltpccvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
+    set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer {.tpc.c1.e9e get}} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
     set whlist [ get_warehouse_list_for_spinbox ]
     if { $pg_oracompat eq "true" } {
         if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -366,8 +366,24 @@ proc configpgtpcc {option} {
     ttk::label $Prompt -text "Azure Citus (Azure Elastic Cluster) :"
     set Name $Parent.c1.e9d
     ttk::checkbutton $Name -text "" -variable pg_azure_citus -onvalue "true" -offvalue "false"
+    bind $Parent.c1.e9d <Button> {
+        if {$pg_azure_citus eq "true"} {
+            .tpc.c1.e9e configure -state disabled
+        } else {
+            .tpc.c1.e9e configure -state normal
+        }
+    }
     grid $Prompt -column 0 -row 14 -sticky e
     grid $Name -column 1 -row 14 -sticky w
+    set Prompt $Parent.c1.p9e
+    ttk::label $Prompt -text "Citus Load Balancer Port :"
+    set Name $Parent.c1.e9e
+    ttk::entry $Name -width 30 -textvariable pg_citus_loadbalancer
+    grid $Prompt -column 0 -row 15 -sticky e
+    grid $Name -column 1 -row 15 -sticky ew
+    if { $pg_azure_citus ne "true" } {
+        $Name configure -state disabled
+    }
     if { $option eq "all" || $option eq "build" } {
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Number of Warehouses :"
@@ -664,7 +680,7 @@ proc configpgtpch {option} {
     setlocaltpchvars $configpostgresql
     #set matching fields in dialog to temporary dict
     variable pgfields
-    set pgfields [ dict create connection {pg_host {.pgtpch.c1.e1 get} pg_port {.pgtpch.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.pgtpch.c1.e3 get} pg_tpch_superuserpass {.pgtpch.c1.e4 get} pg_tpch_defaultdbase {.pgtpch.c1.e5 get} pg_tpch_user {.pgtpch.c1.e6 get} pg_tpch_pass {.pgtpch.c1.e7 get} pg_tpch_dbase {.pgtpch.c1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
+    set pgfields [ dict create connection {pg_host {.pgtpch.c1.e1 get} pg_port {.pgtpch.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer $pg_citus_loadbalancer} tpch {pg_tpch_superuser {.pgtpch.c1.e3 get} pg_tpch_superuserpass {.pgtpch.c1.e4 get} pg_tpch_defaultdbase {.pgtpch.c1.e5 get} pg_tpch_user {.pgtpch.c1.e6 get} pg_tpch_pass {.pgtpch.c1.e7 get} pg_tpch_dbase {.pgtpch.c1.e8 get} pg_tpch_tspace {.pgtpch.f1.e8a get} pg_num_tpch_threads {.pgtpch.f1.e12 get} pg_total_querysets {.pgtpch.f1.e14 get} pg_degree_of_parallel {.pgtpch.f1.e16a get} pg_update_sets {.pgtpch.f1.e18 get} pg_trickle_refresh {.pgtpch.f1.e19 get} pg_scale_fact $pg_scale_fact pg_tpch_gpcompat $pg_tpch_gpcompat pg_tpch_gpcompress $pg_tpch_gpcompress pg_raise_query_error $pg_raise_query_error pg_verbose $pg_verbose pg_refresh_on $pg_refresh_on pg_refresh_verbose $pg_refresh_verbose pg_cloud_query $pg_cloud_query pg_rs_compat $pg_rs_compat}]
     catch "destroy .pgtpch"
     ttk::toplevel .pgtpch
     wm transient .pgtpch .ed_mainFrame
@@ -985,9 +1001,9 @@ proc metpgopts {} {
         if {[dict exists configpostgresql tpcc pg_oracompat ]} {
             set pg_oracompat [ dict get configpostgresql tpcc pg_oracompat ]
         }
-        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpcc {pg_superuser {.metric.c1.e3 get} pg_superuserpass {.metric.c1.e4 get} pg_defaultdbase {.metric.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer $pg_citus_loadbalancer} tpcc {pg_superuser {.metric.c1.e3 get} pg_superuserpass {.metric.c1.e4 get} pg_defaultdbase {.metric.c1.e5 get}} ]
     } else {
-        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus} tpch {pg_tpch_superuser {.metric.c1.e3 get} pg_tpch_superuserpass {.metric.c1.e4 get} pg_tpch_defaultdbase {.metric.c1.e5 get}} ]
+        set pgoptsfields [ dict create connection {pg_host {.metric.c1.e1 get} pg_port {.metric.c1.e2 get} pg_sslmode $pg_sslmode pg_azure_citus $pg_azure_citus pg_citus_loadbalancer $pg_citus_loadbalancer} tpch {pg_tpch_superuser {.metric.c1.e3 get} pg_tpch_superuserpass {.metric.c1.e4 get} pg_tpch_defaultdbase {.metric.c1.e5 get}} ]
     }
     if { $bm eq "TPC-C" } {
         if { $pg_oracompat eq "true" } {

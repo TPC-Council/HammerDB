@@ -9,6 +9,7 @@ diset('connection','pg_host','localhost')
 diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
 diset('connection','pg_azure_citus','false')
+diset('connection','pg_citus_loadbalancer','5432')
 
 vu = tclpy.eval('numberOfCPUs')
 warehouse = int(vu) * 5
