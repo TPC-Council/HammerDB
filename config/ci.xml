@@ -107,7 +107,48 @@
         <build>
             <repo_url>https://github.com/mysql/mysql-server.git</repo_url>
             <ref_regexp>refs/(tags|heads)/(.+)</ref_regexp>
+            <overwrite>false</overwrite>
+            <local_dir_root>/opt/hammerdb-ci/providers/mysql</local_dir_root>
+            <build_dir>/opt/hammerdb-ci/providers/mysql/builds</build_dir>
+            <build_cmd>cmake . -DFORCE_INSOURCE_BUILD=1 -DBUILD_CONFIG=mysql_release -DWITH_BOOST=boost -DDOWNLOAD_BOOST=1 ; cmake --build .</build_cmd>
+            <build_cmd_args>--parallel 8</build_cmd_args>
+            <package_cmd>make package</package_cmd>
         </build>
+        <install>
+            <install_package>tar -xvf</install_package>
+            <installer>bin/mysqld</installer>
+            <install_dir>/opt/hammerdb-ci/providers/mysql/installs</install_dir>
+            <config_dir>/opt/hammerdb-ci/providers/mysql/config</config_dir>
+            <defaults_file>/opt/hammerdb-ci/providers/mysql/config/my.cnf</defaults_file>
+            <io_config_file>/opt/hammerdb-ci/providers/mysql/config/myio.cnf</io_config_file>
+            <basedir>/opt/hammerdb-ci/providers/mysql/installs</basedir>
+            <datadir>data</datadir>
+            <innodb_log_group_home_dir>redo</innodb_log_group_home_dir>
+            <innodb_buffer_pool_size>auto</innodb_buffer_pool_size>
+            <init_args>defaults_file basedir datadir innodb_log_group_home_dir</init_args>
+            <start_cmd>bin/mysqld</start_cmd>
+            <start_args>defaults_file basedir datadir innodb_log_group_home_dir socket port</start_args>
+            <socket>/tmp/mysql.sock</socket>
+            <port>3306</port>
+            <run_sql_cmd>./bin/mysql -S {socket} --ssl-mode=DISABLED -vvv -e "{sql}"</run_sql_cmd>
+            <change_password>ALTER USER 'root'@'localhost' IDENTIFIED BY 'mysql'</change_password>
+            <shutdown>shutdown</shutdown>
+            <ping>select @@version</ping>
+        </install>
+        <test>
+            <oltp>scripts/tcl/mysql/tprocc/mysql_tprocc_single.sh</oltp>
+            <olap>scripts/tcl/mysql/tproch/mysql_tproch_single.sh</olap>
+            <profile>scripts/tcl/mysql/tprocc/mysql_tprocc_profile.sh</profile>
+            <compare>scripts/tcl/mysql/tprocc/mysql_tprocc_profile.sh</compare>
+        </test>
+        <pipeline>
+            <single_c>clone build package commit_msg install init run_sql:shutdown start ping run_sql:change_password start_tests:oltp run_sql:shutdown</single_c>
+            <single_h>clone build package commit_msg install init run_sql:shutdown start ping run_sql:change_password start_tests:olap run_sql:shutdown</single_h>
+            <profile>profile</profile>
+            <profileid>1000</profileid>
+            <compare>compare</compare>
+            <compare_profileid>1000</compare_profileid>
+        </pipeline>
     </MySQL>
     <Oracle>
     <!-- Placeholder for Oracle database automation -->
