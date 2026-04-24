@@ -62,7 +62,45 @@
         <build>
             <repo_url>https://github.com/postgres/postgres.git</repo_url>
             <ref_regexp>refs/(tags|heads)/(.+)</ref_regexp>
+            <overwrite>false</overwrite>
+            <local_dir_root>/opt/hammerdb-ci/providers/postgresql</local_dir_root>
+            <build_dir>/opt/hammerdb-ci/providers/postgresql/builds</build_dir>
+            <build_cmd>./configure --without-readline --without-zlib --without-icu ; make</build_cmd>
+            <build_cmd_args>-j 8</build_cmd_args>
+            <package_cmd>true</package_cmd>
         </build>
+        <install>
+            <install_package>make install</install_package>
+            <installer>bin/initdb</installer>
+            <install_dir>/opt/hammerdb-ci/providers/postgresql/installs</install_dir>
+            <config_dir>/opt/hammerdb-ci/providers/postgresql/config</config_dir>
+            <defaults_file>/opt/hammerdb-ci/providers/postgresql/config/postgresql.conf</defaults_file>
+            <io_config_file>/opt/hammerdb-ci/providers/postgresql/config/postgresqlio.conf</io_config_file>
+            <basedir>/opt/hammerdb-ci/providers/postgresql/installs</basedir>
+            <datadir>data</datadir>
+            <pg_wal_dir>pg_wal</pg_wal_dir>
+            <shared_buffers>auto</shared_buffers>
+            <start_cmd>bin/pg_ctl</start_cmd>
+            <port>5432</port>
+            <socket>/tmp</socket>
+            <change_password>ALTER USER postgres WITH PASSWORD 'postgres'</change_password>
+            <shutdown>pg_ctl stop -m fast</shutdown>
+            <ping>SELECT version()</ping>
+        </install>
+        <test>
+            <oltp>scripts/tcl/postgres/tprocc/pg_tprocc_single.sh</oltp>
+            <olap>scripts/tcl/postgres/tproch/pg_tproch_single.sh</olap>
+            <profile>scripts/tcl/postgres/tprocc/pg_tprocc_profile.sh</profile>
+            <compare>scripts/tcl/postgres/tprocc/pg_tprocc_profile.sh</compare>
+        </test>
+        <pipeline>
+            <single_c>clone build package commit_msg install init start ping run_sql:change_password start_tests:oltp run_sql:shutdown</single_c>
+            <single_h>clone build package commit_msg install init start ping run_sql:change_password start_tests:olap run_sql:shutdown</single_h>
+            <profile>profile</profile>
+            <profileid>1000</profileid>
+            <compare>compare</compare>
+            <compare_profileid>1000</compare_profileid>
+        </pipeline>
     </PostgreSQL>
     <MySQL>
         <build>
