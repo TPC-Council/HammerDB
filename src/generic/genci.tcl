@@ -1336,6 +1336,24 @@ proc calc_buffer_pool_mb {} {
     return $bp_mb
 }
 
+proc calc_redo_mb {} {
+    # derive from buffer pool
+    set bp_mb [calc_buffer_pool_mb]
+
+    if {$bp_mb <= 0} {
+        return 2048
+    }
+
+    # 25% of buffer pool
+    set redo_mb [expr {$bp_mb / 4}]
+
+    # range 2GB–32GB
+    if {$redo_mb < 2048}  { set redo_mb 2048 }
+    if {$redo_mb > 32768} { set redo_mb 32768 }
+
+    return $redo_mb
+}
+
 # watcher
 proc job_watcher {} {
     if {$::watcher_running} {

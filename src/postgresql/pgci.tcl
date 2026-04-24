@@ -762,8 +762,9 @@ proc postgresql_start {cidict refname} {
     }
 
     set ::pipe_done 0
+    set shell_safe_cmd [string map {\" \\\"} $full_cmd]
     if {[catch {
-        set pipe [open "|bash -c \"$full_cmd\"" "r"]
+        set pipe [open "|bash -c \"$shell_safe_cmd\"" "r"]
         fconfigure $pipe -blocking 0 -buffering line
         fileevent $pipe readable [list handle_output $pipe]
         after 30000 {set ::pipe_done 1}
