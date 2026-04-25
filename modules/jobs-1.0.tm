@@ -107,7 +107,7 @@ namespace eval jobs {
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
           return
-        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, iops REAL, mbps REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBMETRIC table in SQLite in-memory database : $message"
           return
 	      } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, system_vendor TEXT, system_type TEXT, os_name TEXT, memory TEXT, nic TEXT, storage TEXT, cloud_instance TEXT, other_software TEXT, extra TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
@@ -150,7 +150,7 @@ namespace eval jobs {
             } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
               puts "Error creating JOBTCOUNT table in SQLite on-disk database : $message"
               return
-            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, iops REAL, mbps REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
              puts "Error creating JOBMETRIC table in SQLite on-disk database : $message"
              return
 	          } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, system_vendor TEXT, system_type TEXT, os_name TEXT, memory TEXT, nic TEXT, storage TEXT, cloud_instance TEXT, other_software TEXT, extra TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
@@ -210,6 +210,18 @@ namespace eval jobs {
                }
            } message] } {
                puts "Error upgrading JOBSYSTEM table with system discovery fields: $message"
+           }
+           if { [catch {
+               set metriccol_iops [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBMETRIC') WHERE name='iops'}]
+               if { $metriccol_iops eq 0 } {
+                   hdbjobs eval {ALTER TABLE JOBMETRIC ADD COLUMN iops REAL}
+               }
+               set metriccol_mbps [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBMETRIC') WHERE name='mbps'}]
+               if { $metriccol_mbps eq 0 } {
+                   hdbjobs eval {ALTER TABLE JOBMETRIC ADD COLUMN mbps REAL}
+               }
+           } message] } {
+               puts "Error upgrading JOBMETRIC table with I/O fields: $message"
            }
 	   }}}}
       tsv::set commandline sqldb $sqlite_db
@@ -2502,8 +2514,8 @@ if {$rawmode} {
 
   proc getjobmetrics { jobid } {
     set jobmetric [ dict create ]
-    hdbjobs eval {select JOBMETRIC.timestamp, usr, sys, irq, idle from JOBMETRIC WHERE JOBMETRIC.JOBID=$jobid order by JOBMETRIC.timestamp asc} {
-    set metrics "usr% $usr sys% $sys irq% $irq idle% $idle" 
+    hdbjobs eval {select JOBMETRIC.timestamp, usr, sys, irq, idle, coalesce(iops,0) as iops, coalesce(mbps,0) as mbps from JOBMETRIC WHERE JOBMETRIC.JOBID=$jobid order by JOBMETRIC.timestamp asc} {
+    set metrics "usr% $usr sys% $sys irq% $irq idle% $idle iops $iops mbps $mbps" 
 	if { [dict keys $jobmetric $timestamp] eq {} } {
     	dict append jobmetric $timestamp $metrics
 		}
@@ -2958,24 +2970,31 @@ if {$rawmode} {
 	  return
 	}
 	  set axisname "CPU %"
+          set ioaxisname "I/O"
           set xaxisvals [ dict keys $chartdata ]
           dict for {tstamp cpuvalues} $chartdata {
           dict with cpuvalues {
             lappend usrseries ${usr%}
             lappend sysseries ${sys%}
             lappend irqseries ${irq%}
+            lappend iopsseries $iops
+            lappend mbpsseries $mbps
           }}
           #Delete the first and trailing values if usr utilisation is 0, so we start from the first measurement and only chart when running
           if { [ lindex $usrseries 0 ] eq 0.0 } {
             set usrseries [ lreplace $usrseries 0 0 ]
             set sysseries [ lreplace $sysseries 0 0 ]
             set irqseries [ lreplace $irqseries 0 0 ]
+            set iopsseries [ lreplace $iopsseries 0 0 ]
+            set mbpsseries [ lreplace $mbpsseries 0 0 ]
             set xaxisvals [ lreplace $xaxisvals 0 0 ]
           }
           while { [ lindex $usrseries end ] eq 0.0 } {
             set usrseries [ lreplace $usrseries end end ]
             set sysseries [ lreplace $sysseries end end ]
             set irqseries [ lreplace $irqseries end end ]
+            set iopsseries [ lreplace $iopsseries end end ]
+            set mbpsseries [ lreplace $mbpsseries end end ]
             set xaxisvals [ lreplace $xaxisvals end end ]
           }
 	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
@@ -2991,10 +3010,13 @@ if {$rawmode} {
                            -legend [list bottom "5%" left "40%" selected $irqJS]
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
+          $line Yaxis -name "$ioaxisname" -position "right" -axisLabel {formatter {"{value}"}}
           $line Add "lineSeries" -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
           $line Add "lineSeries" -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
 	        # 'irqseries' is included but hidden by default with 'showIrqSeries' variable set.
           $line Add "lineSeries" -name $irqSeriesName -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
+          $line Add "lineSeries" -name "IOPS" -yAxisIndex 1 -data [ list $iopsseries ] -itemStyle [ subst {color orange opacity 0.90} ]
+          $line Add "lineSeries" -name "MB/s" -yAxisIndex 1 -data [ list $mbpsseries ] -itemStyle [ subst {color purple opacity 0.90} ]
           set html [ $line toHTML -title "$jobid " ]
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated

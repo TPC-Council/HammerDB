@@ -75,6 +75,17 @@ global agentlist
 Agent send [ lindex $agentlist 0 ] [lindex $agentlist 1 ] StatsOneLine [list $line ]
 }
 
+proc SendIOLine { iops mbps } {
+global agentlist
+set iops [format "%.2f" $iops]
+set mbps [format "%.2f" $mbps]
+foreach f $agentlist {
+    if {[catch {Agent send $f StatsOneLine [list [list IOSTAT $iops $mbps]]}]} {
+        # Ignore transient send errors; normal agent reconnection logic handles disconnects.
+    }
+}
+}
+
 proc lremove { list item {all ""} } {
   set index [lsearch -exact $list $item]
   if {$index == -1} { return $list }
@@ -471,7 +482,7 @@ puts "Error Sending Data: $b"
 }
 
 proc StartMetrics {} {
-global agentlist S cpu_model iswin sysinfo
+global agentlist S cpu_model iswin sysinfo io_metrics_running
 puts "Prepared CPU metrics for $cpu_model"
 #Discover system information before sending metrics
 if {$iswin} {
@@ -498,6 +509,8 @@ puts "Failed $b"
 puts "connection established"
                 }
 }
+set io_metrics_running 1
+after 2000 RunIOMetrics
 if {$iswin} {
     if {[file exists "mpstat.bat"]} {
         set fin [open "| mpstat.bat" r]
@@ -512,7 +525,96 @@ if {$iswin} {
     fconfigure $fin -blocking false
     fileevent $fin readable [list isReadable $fin] 
     vwait ::DONE
+    set io_metrics_running 0
     close $fin
+}
+
+proc RunIOMetrics {} {
+global iswin io_metrics_running
+if {![info exists io_metrics_running] || !$io_metrics_running} {
+    return
+}
+set iops 0.0
+set mbps 0.0
+if {$iswin} {
+    if {[catch {lassign [CollectIOMetricsWindows] iops mbps}]} {
+        set iops 0.0
+        set mbps 0.0
+    }
+} else {
+    if {[catch {set iom [CollectIOMetricsLinux]}]} {
+        set iom {}
+    }
+    if {[llength $iom] eq 2} {
+        lassign $iom iops mbps
+    }
+}
+if {[string is double -strict $iops] && [string is double -strict $mbps]} {
+    SendIOLine $iops $mbps
+}
+after 2000 RunIOMetrics
+}
+
+proc CollectIOMetricsLinux {} {
+    global io_last_time io_last_reads io_last_writes io_last_sectors
+    set now [clock milliseconds]
+    if {[catch {set fin [open /proc/diskstats r]}]} {
+        return {}
+    }
+    set reads 0
+    set writes 0
+    set sectors 0
+    while {[gets $fin line] >= 0} {
+        set fields [regexp -all -inline {\S+} $line]
+        if {[llength $fields] < 14} { continue }
+        set dev [lindex $fields 2]
+        if {[regexp {^(loop|ram|fd|sr|dm-|md)} $dev]} { continue }
+        set reads [expr {$reads + [lindex $fields 3]}]
+        set writes [expr {$writes + [lindex $fields 7]}]
+        set sectors [expr {$sectors + [lindex $fields 5] + [lindex $fields 9]}]
+    }
+    close $fin
+    if {![info exists io_last_time]} {
+        set io_last_time $now
+        set io_last_reads $reads
+        set io_last_writes $writes
+        set io_last_sectors $sectors
+        return {}
+    }
+    set dt [expr {($now - $io_last_time) / 1000.0}]
+    if {$dt <= 0} { return {} }
+    set diops [expr {(($reads - $io_last_reads) + ($writes - $io_last_writes)) / $dt}]
+    set dmbps [expr {(($sectors - $io_last_sectors) * 512.0 / 1048576.0) / $dt}]
+    set io_last_time $now
+    set io_last_reads $reads
+    set io_last_writes $writes
+    set io_last_sectors $sectors
+    if {$diops < 0} { set diops 0.0 }
+    if {$dmbps < 0} { set dmbps 0.0 }
+    return [list $diops $dmbps]
+}
+
+proc CollectIOMetricsWindows {} {
+    global io_pdh_query
+    if {![info exists io_pdh_query]} {
+        if {[catch {set io_pdh_query [twapi::pdh_system_performance_query disk_transfer_per_sec disk_bytes_per_sec]}]} {
+            return [list 0.0 0.0]
+        }
+        after 1000
+    }
+    catch {twapi::pdh_query_update $io_pdh_query}
+    if {[catch {set perf_data [twapi::pdh_query_get $io_pdh_query]}]} {
+        return [list 0.0 0.0]
+    }
+    set iops 0.0
+    set mbps 0.0
+    if {[dict exists $perf_data disk_transfer_per_sec]} {
+        set iops [dict get $perf_data disk_transfer_per_sec]
+    }
+    if {[dict exists $perf_data disk_bytes_per_sec]} {
+        set mbps [expr {[dict get $perf_data disk_bytes_per_sec] / 1048576.0}]
+    }
+    return [list $iops $mbps]
 }
 
 set agentlist ""
