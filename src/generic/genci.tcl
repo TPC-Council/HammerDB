@@ -764,7 +764,7 @@ proc cifix {} {
         }
 
         set name [file tail $f]
-        if {$name ni {"maria.cnf" "mariaio.cnf" "postgresql.conf" "postgresqlio.conf"}} {
+        if {$name ni {"maria.cnf" "mariaio.cnf" "my.cnf" "myio.cnf" "postgresql.conf" "postgresqlio.conf"}} {
             putsci "CI FIX ERROR: no download rule for missing file $f"
             return 1
         }

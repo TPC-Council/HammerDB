@@ -720,12 +720,18 @@ proc postgresql_start {cidict refname} {
 
     set wal_mb [calc_redo_mb]
 
+    set listen_addrs "localhost"
+    if {[dict exists $install listen_addresses]} {
+        set la [string trim [dict get $install listen_addresses]]
+        if {$la ne ""} { set listen_addrs $la }
+    }
+
     set server_opts [list]
     lappend server_opts "-p $port"
     lappend server_opts "-k $socket_dir"
     lappend server_opts "-c shared_buffers=${bp_mb}MB"
     lappend server_opts "-c max_wal_size=${wal_mb}MB"
-    lappend server_opts "-c listen_addresses=localhost"
+    lappend server_opts "-c listen_addresses=$listen_addrs"
     set opts_str [join $server_opts " "]
 
     set logfile [file join $basedir "postgres.log"]

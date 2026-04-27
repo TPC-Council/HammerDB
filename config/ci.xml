@@ -83,6 +83,7 @@
             <start_cmd>bin/pg_ctl</start_cmd>
             <port>5432</port>
             <socket>/tmp</socket>
+            <listen_addresses>localhost</listen_addresses>
             <change_password>ALTER USER postgres WITH PASSWORD 'postgres'</change_password>
             <shutdown>pg_ctl stop -m fast</shutdown>
             <ping>SELECT version()</ping>
