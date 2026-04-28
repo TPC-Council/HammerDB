@@ -722,7 +722,7 @@ proc mysql_init {cidict refname} {
     if {$want_basedir} {
         lappend arglist "--basedir=\"$basedir\""
     }
-        lappend arglist "--innodb-log-file-size=[calc_redo_mb]M"
+        lappend arglist "--innodb-redo-log-capacity=[calc_redo_mb]M"
 
     # MySQL-specific: mysqld needs --initialize-insecure to perform first-time
     # data directory initialization (MariaDB uses scripts/mariadb-install-db
@@ -939,7 +939,7 @@ proc mysql_start {cidict refname} {
     if {$want_basedir} {
         lappend arglist "--basedir=\"$basedir\""
     }
-        lappend arglist "--innodb-log-file-size=[calc_redo_mb]M"
+        lappend arglist "--innodb-redo-log-capacity=[calc_redo_mb]M"
     # Note: --thread-pool-size is intentionally omitted here. The thread_pool
     # plugin is only bundled with MySQL Enterprise Edition; Community builds
     # (what cipush compiles from source) abort startup with "Plugin 'thread_pool'
