@@ -9,7 +9,7 @@ if {![info exists ::env(TMP)] || $::env(TMP) eq ""} {
 
 set tmpdir $::env(TMP)
 puts "SETTING CONFIGURATION"
-dbset db maria
+dbset db mysql
 dbset bm TPC-C
 
 # --- PROFILEID ---
@@ -67,7 +67,6 @@ if {$uaw} {
     diset tpcc mysql_allwarehouse true
 }
 diset tpcc mysql_timeprofile true
-diset tpcc mysql_purge true
 
 puts "TEST STARTED"
 
