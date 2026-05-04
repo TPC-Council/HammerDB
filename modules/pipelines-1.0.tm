@@ -17,9 +17,12 @@ namespace eval pipelines {
     proc __db_label {dbprefix} {
         set dbprefix [string tolower [string trim $dbprefix]]
         switch -exact -- $dbprefix {
-            maria { return "MariaDB" }
-            pg    { return "PostgreSQL" }
-            mysql { return "MySQL" }
+            maria  { return "MariaDB" }
+            pg     { return "PostgreSQL" }
+            mysql  { return "MySQL" }
+            ora    { return "Oracle" }
+            mssqls { return "SQL Server" }
+            db2    { return "Db2" }
             default { return $dbprefix }
         }
     }
@@ -609,10 +612,10 @@ proc __url_encode {s} {
             set tag_sel "__custom__"
         }
 
-# MariaDB only
-if {$dbprefix ne "maria"} {
+# Block databases that cannot be built/run by HammerDB pipelines yet.
+if {$dbprefix in {ora mssqls db2}} {
     if {$action eq "run"} {
-        __store_last 0 0 "[string totitle $dbprefix] pipelines are not yet enabled." "" "" "MariaDB is currently enabled. Other databases will be added at a future release."
+        __store_last 0 0 "[__db_label $dbprefix] pipelines are not yet enabled." "" "" "Support for already-running Oracle, SQL Server, and Db2 instances is planned for a future release."
         set q "db=$dbprefix"
 if {$tag_sel ne ""} { append q "&tag_sel=[__url_encode $tag_sel]" }
 if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
@@ -855,7 +858,7 @@ return
         # database chooser
         wapp-subst {<p><b>Database</b></p>}
         wapp-subst "<select class='aut-ctl' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
-        foreach {pfx label} [ list maria MariaDB mysql MySQL pg PostgreSQL ] {
+        foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB ] {
             set sel ""
             if {$dbprefix eq $pfx} { set sel " selected" }
             wapp-subst "<option value='%html($pfx)'$sel>%html($label)</option>"
@@ -871,15 +874,15 @@ return
         wapp-subst "</p>"
 
         # run form
-            if {$dbprefix ne "maria"} {
+            if {$dbprefix in {ora mssqls db2}} {
             wapp-subst "<div class='aut-banner aut-fail' style='margin-top:10px;'>"
-            wapp-subst "<b>%html([string totitle $dbprefix]) pipelines are not yet enabled.</b><br>"
-            wapp-subst "MariaDB is currently enabled. Other databases will be added at future releases."
+            wapp-subst "<b>%html([__db_label $dbprefix]) pipelines are not yet enabled.</b><br>"
+            wapp-subst "Support for already-running Oracle, SQL Server, and Db2 instances is planned for a future release."
             wapp-subst "</div>"
         } elseif {$windows_host} {
             wapp-subst {
 <div class="aut-banner aut-fail" style="margin-top:10px;">
-    <b>MariaDB CI pipelines are not available on Windows in this release.</b><br>
+    <b>CI pipelines are not available on Windows in this release.</b><br>
 </div>
 }
         } else {

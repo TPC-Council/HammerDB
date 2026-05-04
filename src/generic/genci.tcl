@@ -764,7 +764,7 @@ proc cifix {} {
         }
 
         set name [file tail $f]
-        if {$name ni {"maria.cnf" "mariaio.cnf"}} {
+        if {$name ni {"maria.cnf" "mariaio.cnf" "my.cnf" "myio.cnf" "postgresql.conf" "postgresqlio.conf"}} {
             putsci "CI FIX ERROR: no download rule for missing file $f"
             return 1
         }
@@ -1334,6 +1334,24 @@ proc calc_buffer_pool_mb {} {
     if {$bp_mb > 262144} { set bp_mb 262144 }
 
     return $bp_mb
+}
+
+proc calc_redo_mb {} {
+    # derive from buffer pool
+    set bp_mb [calc_buffer_pool_mb]
+
+    if {$bp_mb <= 0} {
+        return 2048
+    }
+
+    # 25% of buffer pool
+    set redo_mb [expr {$bp_mb / 4}]
+
+    # range 2GB–32GB
+    if {$redo_mb < 2048}  { set redo_mb 2048 }
+    if {$redo_mb > 32768} { set redo_mb 32768 }
+
+    return $redo_mb
 }
 
 # watcher
