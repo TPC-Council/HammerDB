@@ -540,6 +540,16 @@ proc __url_encode {s} {
 
     proc wapp-page-pipelines {} {
         set B [wapp-param BASE_URL]
+        set xfproto [wapp-param HTTP_X_FORWARDED_PROTO]
+        set xfhost  [wapp-param HTTP_X_FORWARDED_HOST]
+        set host  [wapp-param HTTP_HOST]
+        if {$xfproto ne ""} {
+        if {$xfhost ne ""} {
+           set B "$xfproto://$xfhost"
+           } elseif {$host ne ""} {
+          set B "$xfproto://$host"
+          }
+        }
 	set windows_host [expr {$::tcl_platform(platform) eq "windows"}]
 
         # parse query
