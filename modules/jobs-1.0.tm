@@ -2961,25 +2961,30 @@ if {$rawmode} {
             set html [ join [ hdbjobs eval {SELECT html FROM JOBCHART WHERE JOBID=$jobid AND CHART="metrics"} ]]
             return $html
           }
+
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
           hdbjobs eval {SELECT cpucount,cpumodel from JOBSYSTEM WHERE JOBID=$jobid} {
-	  set cpudescription "$cpucount x $cpumodel"
-		}
-	if {[ dict size $chartdata ] <= 1} {
-          putscli "Chart for jobid $jobid not available, Jobid has insufficient metrics data"
-	  return
-	}
-	  set axisname "CPU %"
-          set ioaxisname "I/O"
+            set cpudescription "$cpucount x $cpumodel"
+          }
+
+          if {[ dict size $chartdata ] <= 1} {
+            putscli "Chart for jobid $jobid not available, Jobid has insufficient metrics data"
+            return
+          }
+
+          set axisname "CPU %"
           set xaxisvals [ dict keys $chartdata ]
+
           dict for {tstamp cpuvalues} $chartdata {
-          dict with cpuvalues {
-            lappend usrseries ${usr%}
-            lappend sysseries ${sys%}
-            lappend irqseries ${irq%}
-            lappend iopsseries $iops
-            lappend mbpsseries $mbps
-          }}
+            dict with cpuvalues {
+              lappend usrseries ${usr%}
+              lappend sysseries ${sys%}
+              lappend irqseries ${irq%}
+              lappend iopsseries $iops
+              lappend mbpsseries $mbps
+            }
+          }
+
           #Delete the first and trailing values if usr utilisation is 0, so we start from the first measurement and only chart when running
           if { [ lindex $usrseries 0 ] eq 0.0 } {
             set usrseries [ lreplace $usrseries 0 0 ]
@@ -2989,6 +2994,7 @@ if {$rawmode} {
             set mbpsseries [ lreplace $mbpsseries 0 0 ]
             set xaxisvals [ lreplace $xaxisvals 0 0 ]
           }
+
           while { [ lindex $usrseries end ] eq 0.0 } {
             set usrseries [ lreplace $usrseries end end ]
             set sysseries [ lreplace $sysseries end end ]
@@ -2997,27 +3003,78 @@ if {$rawmode} {
             set mbpsseries [ lreplace $mbpsseries end end ]
             set xaxisvals [ lreplace $xaxisvals end end ]
           }
-	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
+
+          if { ![ info exists dbdescription ] } {
+            set dbdescription "Generic CPU"
+          }
+
+          #
+          # CPU chart
+          #
           set line [ticklecharts::chart new]
-          set ::ticklecharts::htmlstdout "True" ; 
+          set ::ticklecharts::htmlstdout "True" ;
+
           set irqSeriesName "irq%"
-          # Set 'showIrqSeries' to True to show the IRQ series in the chart (default is 'False').
           set showIrqSeries "False"
-          # Use 'irqJS' to toggle the visibility of the IRQ series in the chart.
           set irqJS [ticklecharts::jsfunc new [subst {{'$irqSeriesName': [string tolower $showIrqSeries]}}]]
+
           $line SetOptions -title [ subst {text "$dbdescription Metrics $jobid $cpudescription"} ] \
                            -tooltip {show "True"} \
                            -legend [list bottom "5%" left "40%" selected $irqJS]
+
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
-          $line Yaxis -name "$ioaxisname" -position "right" -axisLabel {formatter {"{value}"}}
+
           $line Add "lineSeries" -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
           $line Add "lineSeries" -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
-	        # 'irqseries' is included but hidden by default with 'showIrqSeries' variable set.
           $line Add "lineSeries" -name $irqSeriesName -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
-          $line Add "lineSeries" -name "IOPS" -yAxisIndex 1 -data [ list $iopsseries ] -itemStyle [ subst {color orange opacity 0.90} ]
-          $line Add "lineSeries" -name "MB/s" -yAxisIndex 1 -data [ list $mbpsseries ] -itemStyle [ subst {color purple opacity 0.90} ]
+
           set html [ $line toHTML -title "$jobid " ]
+
+          #
+          # IOPS chart
+          #
+          set iopsline [ticklecharts::chart new]
+          set ::ticklecharts::htmlstdout "True" ;
+
+          $iopsline SetOptions -title [ subst {text "$dbdescription IOPS"} ] \
+                                -tooltip {show "True"} \
+                                -legend [list bottom "5%" left "40%"]
+
+          $iopsline Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+          $iopsline Yaxis -name "IOPS" -position "left" -axisLabel {formatter {"{value}"}}
+          $iopsline Add "lineSeries" -name "IOPS" -data [ list $iopsseries ] -itemStyle [ subst {color #9467bd opacity 0.90} ]
+
+          set iopshtml [ $iopsline toHTML -title "$dbdescription IOPS" ]
+
+          regsub -all {(?is)^.*?<body[^>]*>} $iopshtml "" iopshtml
+          regsub -all {(?is)</body>\s*</html>\s*$} $iopshtml "" iopshtml
+          regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $iopshtml "" iopshtml
+
+          append html " " $iopshtml
+
+          #
+          # MBPS chart
+          #
+          set mbpsline [ticklecharts::chart new]
+          set ::ticklecharts::htmlstdout "True" ;
+
+          $mbpsline SetOptions -title [ subst {text "$dbdescription MBPS"} ] \
+                                -tooltip {show "True"} \
+                                -legend [list bottom "5%" left "40%"]
+
+          $mbpsline Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+          $mbpsline Yaxis -name "MBPS" -position "left" -axisLabel {formatter {"{value}"}}
+          $mbpsline Add "lineSeries" -name "MBPS" -data [ list $mbpsseries ] -itemStyle [ subst {color #7f7f7f opacity 0.90} ]
+
+          set mbpshtml [ $mbpsline toHTML -title "$dbdescription MBPS" ]
+
+          regsub -all {(?is)^.*?<body[^>]*>} $mbpshtml "" mbpshtml
+          regsub -all {(?is)</body>\s*</html>\s*$} $mbpshtml "" mbpshtml
+          regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $mbpshtml "" mbpshtml
+
+          append html " " $mbpshtml
+
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated
           #only save the chart once the job is complete
@@ -3025,6 +3082,7 @@ if {$rawmode} {
           if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'metrics',$html)}
           }
+
           return $html
         }
       }

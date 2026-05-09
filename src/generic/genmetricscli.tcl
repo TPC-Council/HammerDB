@@ -305,9 +305,14 @@ global jobid usrlist syslist irqlist idlelist iopslist mbpslist agent_hostname
 proc gmean L {
     expr pow([join $L *],1./[llength $L])
 }
-    proc amean L {
-        expr {[join $L +] / double([llength $L])}
+proc amean L {
+    set sum 0.0
+    foreach v $L {
+        set sum [expr {$sum + $v}]
     }
+    expr {$sum / double([llength $L])}
+}
+
     #Called by agent remotely
     if { [llength $line] eq 3 && [lindex $line 0] eq "IOSTAT" } {
         lassign $line tag iops mbps
