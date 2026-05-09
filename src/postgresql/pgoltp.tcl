@@ -500,7 +500,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 stock_dist_array	CHAR(24)[];
                 s_quantity_array	SMALLINT[];
                 price_array			NUMERIC(5,2)[];
-                amount_array		NUMERIC(5,2)[];
+                amount_array		NUMERIC(6,2)[];
                 BEGIN
                 no_o_all_local := 1;
                 SELECT c_discount, c_last, c_credit, w_tax
@@ -554,7 +554,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_01 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_01 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -569,7 +569,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_02 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_02 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -584,7 +584,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_03 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_03 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -599,7 +599,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_04 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_04 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -614,7 +614,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_05 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_05 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -629,7 +629,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_06 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_06 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -644,7 +644,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_07 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_07 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -659,7 +659,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_08 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_08 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -674,7 +674,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_09 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_09 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -689,7 +689,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_10 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_10 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1037,7 +1037,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 stock_dist_array	CHAR(24)[];
                 s_quantity_array	SMALLINT[];
                 price_array			NUMERIC(5,2)[];
-                amount_array		NUMERIC(5,2)[];
+                amount_array		NUMERIC(6,2)[];
                 BEGIN
                 no_o_all_local := 1;
                 SELECT c_discount, c_last, c_credit, w_tax
@@ -1091,7 +1091,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_01 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_01 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1106,7 +1106,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_02 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_02 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1121,7 +1121,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_03 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_03 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1136,7 +1136,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_04 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_04 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1151,7 +1151,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_05 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_05 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1166,7 +1166,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_06 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_06 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1181,7 +1181,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_07 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_07 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1196,7 +1196,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_08 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_08 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1211,7 +1211,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_09 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_09 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
@@ -1226,7 +1226,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE stock.s_i_id = item_stock.item_id
                 AND stock.s_w_id = item_stock.supply_wid
                 AND stock.s_w_id = ANY(supply_wid_array)
-                RETURNING stock.s_dist_10 as s_dist, stock.s_quantity, ( item_stock.quantity + item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
+                RETURNING stock.s_dist_10 as s_dist, stock.s_quantity, ( item_stock.quantity * item_stock.price * ( 1 + no_w_tax + no_d_tax ) * ( 1 - no_c_discount ) ) amount
                 )
                 SELECT array_agg ( s_dist ), array_agg ( s_quantity ), array_agg ( amount )
                 FROM stock_update
