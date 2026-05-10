@@ -343,10 +343,10 @@ proc amean L {
     set iopsmean 0.00
     set mbpsmean 0.00
     if {[info exists iopslist] && [llength $iopslist] > 0} {
-        set iopsmean [format "%3.2f" [amean $iopslist]]
+        set iopsmean [format "%.0f" [amean $iopslist]]
     }
     if {[info exists mbpslist] && [llength $mbpslist] > 0} {
-        set mbpsmean [format "%3.2f" [amean $mbpslist]]
+        set mbpsmean [format "%.2f" [amean $mbpslist]]
     }
     	if { [ interp exists metrics_interp ] } {
 	putscli "CPU all usr%-$usrgmean sys%-$sysgmean irq%-$irqgmean idle%-$idlegmean IOPS-$iopsmean MB/s-$mbpsmean"
