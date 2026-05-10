@@ -1965,7 +1965,7 @@ proc wapp-page-jobs {} {
 
             set jobtiming [getjobtiming $jobid]
             if {![llength $jobtiming] eq 2 || ![string match [lindex $jobtiming 1] "Jobid has no timing data"]} {
-                foreach l [split [strip_jobid_ts [getchart $jobid 1 "timing"]] \n] { wapp-subst {%unsafe($l)\n} }
+                foreach l [split [strip_jobid_ts [getchart $jobid 1 "boxplot"]] \n] { wapp-subst {%unsafe($l)\n} }
             }
 
             set jobmetrics [getjobmetrics $jobid]
@@ -2842,7 +2842,7 @@ if {$rawmode} {
               lappend P99_MS [dict get $spdata p99_ms]
               lappend AVG_MS [dict get $spdata avg_ms]
 
-              #Boxplot format: min, q1, median, q3, max
+            # Boxplot format: min, q1, median, q3, max
             # Use p99 instead of max_ms as max only shows whiskers due to extended scale
             # [dict get $spdata max_ms]
               lappend boxdata [list \
@@ -2891,6 +2891,62 @@ if {$rawmode} {
             return $html
           }
         }
+      }
+      "boxplot" {
+          set chartdata [ getjobtiming $jobid ]
+        if { [ llength $chartdata ] eq 2 && [ string match [ lindex $chartdata 1 ] "Jobid has no timing data" ] } {
+          putscli "Chart for jobid $jobid not available, Jobid has no timing data"
+          return
+        } else {
+          set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBCHART WHERE JOBID=$jobid AND CHART="boxplot"} ]
+          if { $query eq 0 } {
+            #No result chart exists create one and insert into JOBCHART table
+          } else {
+            #Return existing results chart from JOBCHART table
+            set html [ join [ hdbjobs eval {SELECT html FROM JOBCHART WHERE JOBID=$jobid AND CHART="boxplot"} ]]
+            return $html
+          }
+          set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+          foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
+          if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
+          set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+            #CREATE TPROC-C boxplot chart
+            #X axis
+            set xaxisvals {}
+            foreach sp {NEWORD PAYMENT DELIVERY SLEV OSTAT} {
+              lappend xaxisvals $sp
+            }
+
+            #Series data for new box plot
+            set boxdata {}
+
+            foreach sp {NEWORD PAYMENT DELIVERY SLEV OSTAT} {
+              set spdata [dict get $chartdata $sp]
+            # Boxplot format: min, q1, median, q3, max
+            # Use p99 instead of max_ms as max only shows whiskers due to extended scale
+            # [dict get $spdata max_ms]
+              lappend boxdata [list \
+                [dict get $spdata min_ms] \
+                [dict get $spdata p25_ms] \
+                [dict get $spdata p50_ms] \
+                [dict get $spdata p75_ms] \
+                [dict get $spdata p99_ms] \
+              ]
+            }
+
+            #boxplot chart
+            set boxdescription $dbdescription
+            set box [ticklecharts::chart new]
+            set ::ticklecharts::htmlstdout "True"
+            $box SetOptions -title [ subst {text "$boxdescription TPROC-C Box Plot $jobid"} ] -tooltip {show "True"} -legend {show "False"}
+            $box Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+            $box Yaxis -name "Milliseconds" -position "left" -axisLabel {formatter {"{value}"}}
+            $box Add "boxPlotSeries" -name "Response Distribution" -data $boxdata -itemStyle [ subst {color $color1 opacity 0.70} ]
+            set boxhtml [ $box toHTML -title "$jobid Response Time Distribution" ]
+            set html "$boxhtml"
+            hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'boxplot',$html)}
+            return $html
+          }
       }
       "tcount" {
         set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
@@ -3018,7 +3074,7 @@ if {$rawmode} {
           set showIrqSeries "False"
           set irqJS [ticklecharts::jsfunc new [subst {{'$irqSeriesName': [string tolower $showIrqSeries]}}]]
 
-          $line SetOptions -title [ subst {text "$dbdescription Metrics $jobid $cpudescription"} ] \
+          $line SetOptions -title [ subst {text "$dbdescription CPU $jobid $cpudescription"} ] \
                            -tooltip {show "True"} \
                            -legend [list bottom "5%" left "40%" selected $irqJS]
 
@@ -3059,7 +3115,7 @@ if {$rawmode} {
           set mbpsline [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ;
 
-          $mbpsline SetOptions -title [ subst {text "$dbdescription MBPS"} ] \
+          $mbpsline SetOptions -title [ subst {text "$dbdescription MB/s"} ] \
                                 -tooltip {show "True"} \
                                 -legend [list bottom "5%" left "40%"]
 
