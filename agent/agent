@@ -597,22 +597,21 @@ proc CollectIOMetricsLinux {} {
 proc CollectIOMetricsWindows {} {
     global io_pdh_query
     if {![info exists io_pdh_query]} {
-        if {[catch {set io_pdh_query [twapi::pdh_system_performance_query disk_transfer_per_sec disk_bytes_per_sec]}]} {
+        if {[catch {set io_pdh_query [twapi::pdh_system_performance_query disk_transfer_rate disk_bytes_rate]}]} {
             return [list 0.0 0.0]
         }
         after 1000
     }
-    catch {twapi::pdh_query_update $io_pdh_query}
     if {[catch {set perf_data [twapi::pdh_query_get $io_pdh_query]}]} {
         return [list 0.0 0.0]
     }
     set iops 0.0
     set mbps 0.0
-    if {[dict exists $perf_data disk_transfer_per_sec]} {
-        set iops [dict get $perf_data disk_transfer_per_sec]
+    if {[dict exists $perf_data disk_transfer_rate]} {
+        set iops [dict get $perf_data disk_transfer_rate]
     }
-    if {[dict exists $perf_data disk_bytes_per_sec]} {
-        set mbps [expr {[dict get $perf_data disk_bytes_per_sec] / 1048576.0}]
+    if {[dict exists $perf_data disk_bytes_rate]} {
+        set mbps [expr {[dict get $perf_data disk_bytes_rate] / 1048576.0}]
     }
     return [list $iops $mbps]
 }
