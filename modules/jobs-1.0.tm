@@ -2024,6 +2024,19 @@ proc wapp-page-jobs {} {
             }
         }
 
+        wapp-subst {
+<style>
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+</style>
+<p class="no-print" style="text-align:left; margin:0px 0;">
+  <a href="#" onclick="window.print(); return false;">Save to PDF</a>
+</p>
+}
+
         common-footer
         return
     }
