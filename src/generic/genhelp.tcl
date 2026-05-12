@@ -10,13 +10,12 @@ proc helpws {} {
     putscli ""
     putscli "HammerDB Web Service"
     putscli ""
-    putscli "The HammerDB Web Service provides a read-only HTTP API to inspect"
-    putscli "benchmark jobs created by the HammerDB CLI (for example with"
-    putscli "buildschema and vurun)."
+    putscli "The HammerDB Web Service provides HTTP and browser views for"
+    putscli "benchmark jobs, performance profiles and CI pipelines."
     putscli ""
-    putscli "The web service does not start tests, change configuration, or run"
-    putscli "CI pipelines. All job creation and control happens in the CLI; the web"
-    putscli "interface is for viewing results and metadata only."
+    putscli "Benchmark jobs can still be created and controlled from the CLI"
+    putscli "with commands such as buildschema and vurun. CI pipeline runs can"
+    putscli "also be started from the web service Pipelines page where enabled."
     putscli ""
     putscli "Jobs endpoint"
     putscli "GET /jobs is the main endpoint. It returns information about"
@@ -106,7 +105,7 @@ Type \"help command\" for more details on specific commands below\n"
         buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset \
         diset distributescript giset jobs librarycheck loadscript metset metstart metstatus metstop print quit steprun switchmode tcset tcstart \
         tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop \
-        citmp cilisten cistop cistatus cipush ciset cifix\
+        pipe pipes ci citmp cilisten cistop cistatus cipush ciset cifix\
     ]
 
     if {[ llength $args ] != 1} {
@@ -342,6 +341,13 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                     putscli "Stops the Web Service."
                 }
 
+                pipes -
+                ci {
+                    putscli "pipes - Usage: pipes | pipes <pipeid>"
+                    putscli "pipes: show CI pipeline summary table."
+                    putscli "pipes <pipeid>: show detailed CI pipeline output and linked jobs."
+                    putscli "pipe and ci are aliases for pipes."
+                }
                 citmp {
                     putscli "citmp - Usage: citmp"
                     putscli "Shows the TMP directory and jobs DB path used by CI."
@@ -404,7 +410,7 @@ proc wapp-page-help {} {
 
         <br>
 
-        <b>GET pipelines</b>: Show CI pipeline runs including database, reference, pipeline type and status.
+        <b>GET pipelines</b>: Show CI pipeline runs including database, reference, pipeline type and status. The Pipelines page can also start configured CI pipeline runs.
         <br><br>
         get http://localhost:8080/pipelines<br>
 

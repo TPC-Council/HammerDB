@@ -343,6 +343,121 @@ proc jobmain { jobid jobtype } {
     }
 }
 
+
+proc jobs_summary_status { jobid topjobs } {
+    set output  [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0}]]
+    set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+
+    if {[string match "*FINISHED FAILED*" $output] || [string match "*FINISHED FAILED*" $output1]} {
+        return "FAILED"
+    }
+
+    if {[string match "*ALL VIRTUAL USERS COMPLETE*" $output]} {
+        if {[llength [string_occurrences ":RUNNING" $output]] eq [llength [string_occurrences ":FINISHED SUCCESS" $output]]} {
+            if {[dict values $topjobs $jobid] eq $jobid} {
+                return "TOP"
+            }
+            return "SUCCESS"
+        }
+    } elseif {[string match "*TEST RESULT*" $output1]} {
+        if {[dict values $topjobs $jobid] eq $jobid} {
+            return "TOP"
+        }
+        return "SUCCESS"
+    }
+
+    return "RUNNING"
+}
+
+proc jobs_summary_workload_metric { jobid bm } {
+    set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+    set workload "--"
+    set metric "--"
+
+    if {[string match -nocase "*creating*" $output1]} {
+        set workload "Schema Build"
+    } elseif {[string match -nocase "*delete*" $output1]} {
+        set workload "Schema Delete"
+    } elseif {[string match -nocase "*checking*" $output1]} {
+        set workload "Schema Check"
+    } elseif {[string match -nocase "*rampup*" $output1] || [string match -nocase "*scale factor*" $output1]} {
+        set workload "Benchmark Run"
+        set jobresult [getjobresult $jobid 1]
+        set noresult [expr {[llength $jobresult] == 2 && [string match [lindex $jobresult 1] "Jobid has no test result"]}]
+        if {!$noresult} {
+            if {$bm eq "TPROC-C"} {
+                lassign [getnopmtpm $jobresult] _jobid _tstamp _activevu nopm _tpm _dbdescription
+                set metric $nopm
+            } else {
+                set geomean [lindex $jobresult 2]
+                if {[string match "Geometric*" $geomean]} {
+                    set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $geomean]
+                    if {[llength $numbers] > 1} {
+                        set metric [format "%.2f" [lindex $numbers 1]]
+                    }
+                }
+            }
+        }
+    }
+
+    return [list $workload $metric]
+}
+
+proc jobs_summary {} {
+    set topjobs [gettopjobs]
+    set tprocc_rows {}
+    set tproch_rows {}
+
+    foreach jobid [lreverse [getjob joblist]] {
+        set db   [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
+        set bm   [string map {TPC TPROC} [join [hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid}]]]
+        set date [join [hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid}]]
+
+        set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+        if {[string match "*DBVersion*" $output1]} {
+            set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $output1 match header version]
+            if {$matcheddbversion} { set db "$db ($version)" }
+        }
+
+        lassign [jobs_summary_workload_metric $jobid $bm] workload metric
+        set status [jobs_summary_status $jobid $topjobs]
+        set row [list $jobid $db $date $workload $metric $status]
+
+        if {$bm eq "TPROC-C"} {
+            lappend tprocc_rows $row
+        } else {
+            lappend tproch_rows $row
+        }
+    }
+
+    set out ""
+    append out "TPROC-C Jobs\n"
+    append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" "Jobid" "Database" "Date" "Workload" "NOPM" "Status"]
+    append out [string repeat "-" 100] "\n"
+    if {[llength $tprocc_rows] == 0} {
+        append out "No TPROC-C runs found in database file [getdatabasefile].\n"
+    } else {
+        foreach r $tprocc_rows {
+            lassign $r jobid db date workload metric status
+            append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" $jobid $db $date $workload $metric $status]
+        }
+    }
+
+    append out "\nTPROC-H Jobs\n"
+    append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" "Jobid" "Database" "Date" "Workload" "Geomean" "Status"]
+    append out [string repeat "-" 100] "\n"
+    if {[llength $tproch_rows] == 0} {
+        append out "No TPROC-H jobs found in database file [getdatabasefile].\n"
+    } else {
+        foreach r $tproch_rows {
+            lassign $r jobid db date workload metric status
+            append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" $jobid $db $date $workload $metric $status]
+        }
+    }
+
+    return [string trimright $out "\n"]
+}
+
 # Usage summary:
 #   jobs
 #   jobs result|timestamp|joblist|profileid
@@ -383,7 +498,7 @@ proc jobs {args} {
 
     # 0 args
     if {$nt == 0} {
-        return [getjob ""]
+        return [jobs_summary]
     }
 
     # diff
