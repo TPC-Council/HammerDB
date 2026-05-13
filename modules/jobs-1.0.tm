@@ -1774,7 +1774,7 @@ proc wapp-page-jobs {} {
         }
         wapp-subst {<h3 class="title">TPROC-C Performance Profiles</h3>}
         wapp-subst {<p style="margin:0 0 6px 0; opacity:0.75;">Select one <b>Base</b> profile and one <b>New</b> profile, click <b>Compare Profiles</b> to compare.</p>}
-        wapp-subst {<form method="GET" action="%html([wapp-param BASE_URL]/jobs)" style="width:100%; max-width:800px; margin:0 0 18px 0;">}
+        wapp-subst {<form method="GET" action="%html(/jobs)" style="width:100%; max-width:800px; margin:0 0 18px 0;">}
         wapp-subst {<input type="hidden" name="cmd" value="profilediff">}
         wapp-subst {<div style="overflow-x:auto; max-width:100%;">}
         wapp-subst {<table>\n}

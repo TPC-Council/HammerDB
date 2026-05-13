@@ -890,6 +890,8 @@ return
         wapp-subst {<p><b>Database</b></p>}
         wapp-subst "<select class='aut-ctl' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
         foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB ] {
+            # Hide DBs until support is enabled
+            if {$pfx in {ora mssqls db2}} continue
             set sel ""
             if {$dbprefix eq $pfx} { set sel " selected" }
             wapp-subst "<option value='%html($pfx)'$sel>%html($label)</option>"
