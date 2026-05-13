@@ -2071,16 +2071,30 @@ proc wapp-page-jobs {} {
             }
 
             wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+
+            # Print layout:
+            #   page 1: summary + system
+            #   page 2: TPROC-C result + transaction count
+            #   page 3: box plot + CPU
+            #   page 4: IOPS + MB/s
+            wapp-subst {<div class="print-page-break"></div>\n}
+            wapp-subst {<div class="print-avoid-break">\n}
             foreach l [split [strip_jobid_ts [getchart $jobid 1 "result"]] \n] { wapp-subst {%unsafe($l)\n} }
+            wapp-subst {</div>\n}
 
             set jobtcount [getjobtcount $jobid]
             if {![llength $jobtcount] eq 2 || ![string match [lindex $jobtcount 1] "Jobid has no transaction counter data"]} {
+                wapp-subst {<div class="print-avoid-break">\n}
                 foreach l [split [strip_jobid_ts [getchart $jobid 1 "tcount"]] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobtiming [getjobtiming $jobid]
             if {![llength $jobtiming] eq 2 || ![string match [lindex $jobtiming 1] "Jobid has no timing data"]} {
+                wapp-subst {<div class="print-page-break"></div>\n}
+                wapp-subst {<div class="print-avoid-break">\n}
                 foreach l [split [strip_jobid_ts [getchart $jobid 1 "boxplot"]] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobmetrics [getjobmetrics $jobid]
@@ -2127,26 +2141,25 @@ proc wapp-page-jobs {} {
             }
 
             wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+            wapp-subst {<div class="print-page-break"></div>\n}
+            wapp-subst {<div class="print-avoid-break">\n}
             foreach l [split [getchart $jobid 1 "result"] \n] { wapp-subst {%unsafe($l)\n} }
+            wapp-subst {</div>\n}
 
             if {[string match "Geometric*" [lindex $jobresult 2]]} {
+                wapp-subst {<div class="print-avoid-break">\n}
                 foreach l [split [getchart $jobid 1 "timing"] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobmetrics [getjobmetrics $jobid]
             if {![llength $jobmetrics] eq 2 || ![string match [lindex $jobmetrics 1] "Jobid has no metric data"]} {
+                wapp-subst {<div class="print-page-break"></div>\n}
                 foreach l [split [getchart $jobid 1 "metrics"] \n] { wapp-subst {%unsafe($l)\n} }
             }
         }
 
         wapp-subst {
-<style>
-@media print {
-  .no-print {
-    display: none !important;
-  }
-}
-</style>
 <p class="no-print" style="text-align:left; margin:0px 0;">
   <a href="#" onclick="window.print(); return false;">Save to PDF</a>
 </p>
@@ -3147,6 +3160,8 @@ if {$rawmode} {
           }
 
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+          set metricsdescription $dbdescription
+          if { $metricsdescription eq "MSSQLServer" } { set metricsdescription "SQL Server" }
           hdbjobs eval {SELECT cpucount,cpumodel from JOBSYSTEM WHERE JOBID=$jobid} {
             set cpudescription "$cpucount x $cpumodel"
           }
@@ -3202,7 +3217,7 @@ if {$rawmode} {
           set showIrqSeries "False"
           set irqJS [ticklecharts::jsfunc new [subst {{'$irqSeriesName': [string tolower $showIrqSeries]}}]]
 
-          $line SetOptions -title [ subst {text "$dbdescription CPU $jobid $cpudescription"} ] \
+          $line SetOptions -title [ subst {text "$metricsdescription CPU $jobid $cpudescription"} ] \
                            -tooltip {show "True"} \
                            -legend [list bottom "5%" left "40%" selected $irqJS]
 
@@ -3214,6 +3229,7 @@ if {$rawmode} {
           $line Add "lineSeries" -name $irqSeriesName -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
 
           set html [ $line toHTML -title "$jobid " ]
+          set html "<div class=\"print-avoid-break\"> $html </div>"
 
           #
           # IOPS chart
@@ -3221,7 +3237,7 @@ if {$rawmode} {
           set iopsline [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ;
 
-          $iopsline SetOptions -title [ subst {text "$dbdescription IOPS"} ] \
+          $iopsline SetOptions -title [ subst {text "$metricsdescription IOPS"} ] \
                                 -tooltip {show "True"} \
                                 -legend [list bottom "5%" left "40%"]
 
@@ -3229,13 +3245,13 @@ if {$rawmode} {
           $iopsline Yaxis -name "IOPS" -position "left" -axisLabel {formatter {"{value}"}}
           $iopsline Add "lineSeries" -name "IOPS" -data [ list $iopsseries ] -itemStyle [ subst {color #9467bd opacity 0.90} ]
 
-          set iopshtml [ $iopsline toHTML -title "$dbdescription IOPS" ]
+          set iopshtml [ $iopsline toHTML -title "$metricsdescription IOPS" ]
 
           regsub -all {(?is)^.*?<body[^>]*>} $iopshtml "" iopshtml
           regsub -all {(?is)</body>\s*</html>\s*$} $iopshtml "" iopshtml
           regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $iopshtml "" iopshtml
 
-          append html " " $iopshtml
+          append html " <div class=\"print-page-break\"></div> <div class=\"print-avoid-break\"> " $iopshtml " </div>"
 
           #
           # MBPS chart
@@ -3243,7 +3259,7 @@ if {$rawmode} {
           set mbpsline [ticklecharts::chart new]
           set ::ticklecharts::htmlstdout "True" ;
 
-          $mbpsline SetOptions -title [ subst {text "$dbdescription MB/s"} ] \
+          $mbpsline SetOptions -title [ subst {text "$metricsdescription MB/s"} ] \
                                 -tooltip {show "True"} \
                                 -legend [list bottom "5%" left "40%"]
 
@@ -3251,13 +3267,13 @@ if {$rawmode} {
           $mbpsline Yaxis -name "MBPS" -position "left" -axisLabel {formatter {"{value}"}}
           $mbpsline Add "lineSeries" -name "MBPS" -data [ list $mbpsseries ] -itemStyle [ subst {color #7f7f7f opacity 0.90} ]
 
-          set mbpshtml [ $mbpsline toHTML -title "$dbdescription MBPS" ]
+          set mbpshtml [ $mbpsline toHTML -title "$metricsdescription MBPS" ]
 
           regsub -all {(?is)^.*?<body[^>]*>} $mbpshtml "" mbpshtml
           regsub -all {(?is)</body>\s*</html>\s*$} $mbpshtml "" mbpshtml
           regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $mbpshtml "" mbpshtml
 
-          append html " " $mbpshtml
+          append html " <div class=\"print-avoid-break\"> " $mbpshtml " </div>"
 
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated

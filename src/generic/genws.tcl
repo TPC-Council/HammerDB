@@ -143,6 +143,22 @@ th {
 tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
 .aut-wrap {
   max-width: 800px;
 }
