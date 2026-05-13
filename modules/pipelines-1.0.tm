@@ -709,6 +709,27 @@ wapp-redirect "$B/pipelines?$q#runresult"
             }
 
             
+# Do not allow a second pipeline to be submitted while one is active
+set active_ci_count [join [hdbjobs eval {
+    SELECT COUNT(*)
+    FROM JOBCI
+    WHERE status IN ('PENDING','INIT','BUILDING','RUNNING')
+}]]
+
+if {$active_ci_count > 0} {
+    __store_last 0 0 "Pipeline already active. Please wait for the current pipeline to finish before starting another benchmark." "" "" "Another pipeline is already pending or running."
+
+    set q "db=$dbprefix"
+    if {$tag_sel ne ""} { append q "&tag_sel=[__url_encode $tag_sel]" }
+    if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
+    if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
+    if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
+    if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+
+    wapp-redirect "$B/pipelines?$q#runresult"
+    return
+}
+
 # request payload
 set payload_json [__make_payload_json $ref_trim $dbprefix $pipeline_ui $workload_ui $io_intensive]
 

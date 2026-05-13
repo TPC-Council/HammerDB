@@ -1088,6 +1088,26 @@ proc cilisten {args} {
             return
         }
 
+        # This prevents multiple webhook requests adding multiple PENDING rows.
+        set active_ci_count 0
+        if {[catch {
+            set active_ci_count [join [hdbjobs eval {
+                SELECT COUNT(*)
+                FROM JOBCI
+                WHERE status IN ('PENDING','INIT','BUILDING','RUNNING')
+            }]]
+        } err]} {
+            putscli "Error checking active CI rows: $err"
+            http_reply $sock "500 Internal Server Error" "Active pipeline check failed"
+            return
+        }
+
+        if {$active_ci_count > 0} {
+            putscli "CI webhook rejected: pipeline already active"
+            http_reply $sock "409 Conflict" "Pipeline already active"
+            return
+        }
+
         if {$overwrite} {
             catch {hdbjobs eval {DELETE FROM JOBCI WHERE refname=$name}}
         }
