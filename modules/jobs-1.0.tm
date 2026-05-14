@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format wapp-page-jobs wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format cireset wapp-page-jobs wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -403,6 +403,47 @@ proc jobs_summary_workload_metric { jobid bm } {
     return [list $workload $metric]
 }
 
+proc cireset {} {
+    if {[catch {set tblname [hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBCI'}]} message]} {
+        return "Error: Could not query JOBCI table: $message"
+    }
+
+    if {$tblname eq ""} {
+        return "CI reset: JOBCI table not found"
+    }
+
+    if {[catch {
+        set rows [hdbjobs eval {
+            SELECT ci_id, status
+            FROM JOBCI
+            WHERE status IS NULL
+               OR upper(status) NOT IN ('SUCCESS','FAILED','COMPLETE','COMPLETED')
+            ORDER BY ci_id
+        }]
+    } message]} {
+        return "Error: Could not read blocked CI pipeline rows: $message"
+    }
+
+    set count [expr {[llength $rows] / 2}]
+    if {$count == 0} {
+        return "CI reset: no blocked CI pipeline rows found"
+    }
+
+    if {[catch {
+        hdbjobs eval {
+            UPDATE JOBCI
+               SET status='FAILED',
+                   end_timestamp=datetime(CURRENT_TIMESTAMP, 'localtime')
+             WHERE status IS NULL
+                OR upper(status) NOT IN ('SUCCESS','FAILED','COMPLETE','COMPLETED')
+        }
+    } message]} {
+        return "Error: Could not reset blocked CI pipeline rows: $message"
+    }
+
+    return "CI reset: marked $count blocked CI pipeline row(s) as FAILED"
+}
+
 proc jobs_summary {} {
     set topjobs [gettopjobs]
     set tprocc_rows {}
@@ -471,6 +512,7 @@ proc jobs_summary {} {
 #   jobs <jobid> timing <vuid|vu=<n>>
 #   jobs <jobid> getchart <type>  (result|timing|tcount|metrics|profile|diff:<pid>)
 #   jobs diff <basepid> <comppid> [true|false]
+#   jobs cireset
 
 proc jobs {args} {
     upvar #0 genericdict genericdict
@@ -494,7 +536,7 @@ proc jobs {args} {
 
     proc ::_jobs_usage_error {msg} {
         puts $msg
-        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs jobid | jobs jobid save | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
+        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs cireset | jobs jobid | jobs jobid save | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
     }
 
     # 0 args
@@ -528,6 +570,10 @@ proc jobs {args} {
     # route on first token
     # global commands
     switch -nocase -- $opt {
+        cireset {
+            if {$nt != 1} { ::_jobs_usage_error "Error: Usage: jobs cireset"; return }
+            return [cireset]
+        }
         result {
             if {$nt != 1} { ::_jobs_usage_error "Error: Usage: jobs result"; return }
             return [getjob "allresults"]
@@ -1677,6 +1723,24 @@ proc wapp-page-jobs {} {
     set rawmode 0
     if {[dict exists $paramdict raw]} {
         set rawmode [__is_true [dict get $paramdict raw]]
+    }
+
+    if {[dict exists $paramdict cireset]} {
+        set msg [cireset]
+        common-header
+        if {[string match "Error:*" $msg]} {
+            set boxstyle "margin:16px; padding:12px; background:#fdecea; color:#b00020; border-left:6px solid #e74c3c; font-weight:600;"
+        } else {
+            set boxstyle "margin:16px; padding:12px; background:#e6f4ea; color:#1e7e34; border-left:6px solid #2ecc71; font-weight:600;"
+        }
+        wapp-subst {<div style="%html($boxstyle)">%html($msg)</div>
+}
+        set pipelines_url "$B/pipelines"
+        set jobs_url "$B/jobs"
+        wapp-subst {<p style="margin:16px;"><a href="%html($pipelines_url)">Back to Pipelines</a> | <a href="%html($jobs_url)">Back to Jobs</a></p>
+}
+        common-footer
+        return
     }
 
     if {$paramlen eq 0 || $query eq ""} {

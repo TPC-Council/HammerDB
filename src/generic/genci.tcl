@@ -895,6 +895,13 @@ proc cilisten {args} {
 
     putsci "CI validation passed"
 
+    if {[llength [info commands cireset]] > 0} {
+        set reset_msg [cireset]
+        putsci $reset_msg
+    } else {
+        putsci "CI reset skipped: cireset command not available"
+    }
+
     if {[dict exists $cidict common tmp]} {
         set tmpdir [string trim [dict get $cidict common tmp]]
         if {$tmpdir ne ""} {

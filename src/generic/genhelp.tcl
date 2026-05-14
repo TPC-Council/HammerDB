@@ -105,7 +105,7 @@ Type \"help command\" for more details on specific commands below\n"
         buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset \
         diset distributescript giset jobs librarycheck loadscript metset metstart metstatus metstop print quit steprun switchmode tcset tcstart \
         tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop \
-        pipe pipes ci citmp cilisten cistop cistatus cipush ciset cifix\
+        pipe pipes ci citmp cilisten cireset cistop cistatus cipush ciset cifix\
     ]
 
     if {[ llength $args ] != 1} {
@@ -356,6 +356,13 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                 cilisten {
                     putscli "cilisten - Usage: cilisten"
                     putscli "Starts the CI GitHub webhook listener and job watcher (Linux/Unix only)."
+                    putscli "At startup cilisten runs cireset to clear stale blocking CI rows."
+                }
+                cireset {
+                    putscli "cireset - Usage: cireset"
+                    putscli "Marks all incomplete CI pipeline rows as FAILED."
+                    putscli "Use this to clear stale PENDING or RUNNING rows that block a new CI pipeline."
+                    putscli "This preserves the CI history and allows the next run to proceed."
                 }
                 cistop {
                     putscli "cistop - Usage: cistop"
