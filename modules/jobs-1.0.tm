@@ -467,6 +467,7 @@ proc jobs_summary {} {
 #   jobs profileid [<id>]
 #   jobs profile <id>
 #   jobs <jobid> <cmd>            (cmd may be integer vu -> vu=<n>)
+#   jobs <jobid> save
 #   jobs <jobid> timing <vuid|vu=<n>>
 #   jobs <jobid> getchart <type>  (result|timing|tcount|metrics|profile|diff:<pid>)
 #   jobs diff <basepid> <comppid> [true|false]
@@ -493,7 +494,7 @@ proc jobs {args} {
 
     proc ::_jobs_usage_error {msg} {
         puts $msg
-        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs jobid | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
+        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs jobid | jobs jobid save | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
     }
 
     # 0 args
@@ -580,6 +581,16 @@ proc jobs {args} {
 
     # jobs <jobid> <cmd> [arg]
     set cmd [lindex $tokens 1]
+
+    # jobs <jobid> save
+    if {[string equal -nocase $cmd "save"]} {
+        if {$nt != 2} {
+            ::_jobs_usage_error "Error: Usage: jobs jobid save"
+            return
+        }
+        jobs_save_json $jobid
+        return
+    }
 
 # jobs <jobid> timing [vu]
 if {[string equal -nocase $cmd "timing"]} {
@@ -2964,6 +2975,34 @@ if {$rawmode} {
 
     lappend pairs [jobs_json_pair metrics [jobs_json_metrics $jobid]]
     return [jobs_json_object $pairs]
+  }
+
+  proc jobs_save_json { jobid } {
+    set exists [hdbjobs eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid}]
+    if {$exists == 0} {
+      puts "Error: Jobid $jobid does not exist"
+      return
+    }
+
+    set tmpdir [findtempdir]
+    if {$tmpdir eq "notmpdir"} {
+      puts "Error: TMP directory not found"
+      return
+    }
+
+    set outfile [file join $tmpdir "hdb_${jobid}.json"]
+
+    if {[catch {
+      set fd [open $outfile w]
+      puts $fd [jobs_report_json $jobid]
+      close $fd
+    } message]} {
+      catch {close $fd}
+      puts "Error: Could not save JSON report: $message"
+      return
+    }
+
+    puts "Saved job report JSON to $outfile"
   }
 
   proc getdatabasefile {} {
