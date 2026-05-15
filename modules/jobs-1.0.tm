@@ -1,6 +1,6 @@
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format wapp-page-jobs wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format cireset wapp-page-jobs wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
   interp alias {} job {} jobs
 
   proc commify {x} {
@@ -107,7 +107,7 @@ namespace eval jobs {
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBTCOUNT table in SQLite in-memory database : $message"
           return
-        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, iops REAL, mbps REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBMETRIC table in SQLite in-memory database : $message"
           return
 	      } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, system_vendor TEXT, system_type TEXT, os_name TEXT, memory TEXT, nic TEXT, storage TEXT, cloud_instance TEXT, other_software TEXT, extra TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
@@ -150,7 +150,7 @@ namespace eval jobs {
             } elseif [ catch {hdbjobs eval {CREATE TABLE JOBTCOUNT(jobid TEXT, counter INTEGER, metric TEXT, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
               puts "Error creating JOBTCOUNT table in SQLite on-disk database : $message"
               return
-            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
+            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBMETRIC (jobid TEXT, usr REAL, sys REAL, irq REAL, idle REAL, iops REAL, mbps REAL, timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
              puts "Error creating JOBMETRIC table in SQLite on-disk database : $message"
              return
 	          } elseif [ catch {hdbjobs eval {CREATE TABLE JOBSYSTEM (jobid TEXT primary key, hostname TEXT, cpumodel TEXT, cpucount INTEGER, system_vendor TEXT, system_type TEXT, os_name TEXT, memory TEXT, nic TEXT, storage TEXT, cloud_instance TEXT, other_software TEXT, extra TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
@@ -210,6 +210,18 @@ namespace eval jobs {
                }
            } message] } {
                puts "Error upgrading JOBSYSTEM table with system discovery fields: $message"
+           }
+           if { [catch {
+               set metriccol_iops [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBMETRIC') WHERE name='iops'}]
+               if { $metriccol_iops eq 0 } {
+                   hdbjobs eval {ALTER TABLE JOBMETRIC ADD COLUMN iops REAL}
+               }
+               set metriccol_mbps [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBMETRIC') WHERE name='mbps'}]
+               if { $metriccol_mbps eq 0 } {
+                   hdbjobs eval {ALTER TABLE JOBMETRIC ADD COLUMN mbps REAL}
+               }
+           } message] } {
+               puts "Error upgrading JOBMETRIC table with I/O fields: $message"
            }
 	   }}}}
       tsv::set commandline sqldb $sqlite_db
@@ -331,6 +343,162 @@ proc jobmain { jobid jobtype } {
     }
 }
 
+
+proc jobs_summary_status { jobid topjobs } {
+    set output  [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=0}]]
+    set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+
+    if {[string match "*FINISHED FAILED*" $output] || [string match "*FINISHED FAILED*" $output1]} {
+        return "FAILED"
+    }
+
+    if {[string match "*ALL VIRTUAL USERS COMPLETE*" $output]} {
+        if {[llength [string_occurrences ":RUNNING" $output]] eq [llength [string_occurrences ":FINISHED SUCCESS" $output]]} {
+            if {[dict values $topjobs $jobid] eq $jobid} {
+                return "TOP"
+            }
+            return "SUCCESS"
+        }
+    } elseif {[string match "*TEST RESULT*" $output1]} {
+        if {[dict values $topjobs $jobid] eq $jobid} {
+            return "TOP"
+        }
+        return "SUCCESS"
+    }
+
+    return "RUNNING"
+}
+
+proc jobs_summary_workload_metric { jobid bm } {
+    set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+    set workload "--"
+    set metric "--"
+
+    if {[string match -nocase "*creating*" $output1]} {
+        set workload "Schema Build"
+    } elseif {[string match -nocase "*delete*" $output1]} {
+        set workload "Schema Delete"
+    } elseif {[string match -nocase "*checking*" $output1]} {
+        set workload "Schema Check"
+    } elseif {[string match -nocase "*rampup*" $output1] || [string match -nocase "*scale factor*" $output1]} {
+        set workload "Benchmark Run"
+        set jobresult [getjobresult $jobid 1]
+        set noresult [expr {[llength $jobresult] == 2 && [string match [lindex $jobresult 1] "Jobid has no test result"]}]
+        if {!$noresult} {
+            if {$bm eq "TPROC-C"} {
+                lassign [getnopmtpm $jobresult] _jobid _tstamp _activevu nopm _tpm _dbdescription
+                set metric $nopm
+            } else {
+                set geomean [lindex $jobresult 2]
+                if {[string match "Geometric*" $geomean]} {
+                    set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $geomean]
+                    if {[llength $numbers] > 1} {
+                        set metric [format "%.2f" [lindex $numbers 1]]
+                    }
+                }
+            }
+        }
+    }
+
+    return [list $workload $metric]
+}
+
+proc cireset {} {
+    if {[catch {set tblname [hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBCI'}]} message]} {
+        return "Error: Could not query JOBCI table: $message"
+    }
+
+    if {$tblname eq ""} {
+        return "CI reset: JOBCI table not found"
+    }
+
+    if {[catch {
+        set rows [hdbjobs eval {
+            SELECT ci_id, status
+            FROM JOBCI
+            WHERE status IS NULL
+               OR upper(status) NOT IN ('SUCCESS','FAILED','COMPLETE','COMPLETED')
+            ORDER BY ci_id
+        }]
+    } message]} {
+        return "Error: Could not read blocked CI pipeline rows: $message"
+    }
+
+    set count [expr {[llength $rows] / 2}]
+    if {$count == 0} {
+        return "CI reset: no blocked CI pipeline rows found"
+    }
+
+    if {[catch {
+        hdbjobs eval {
+            UPDATE JOBCI
+               SET status='FAILED',
+                   end_timestamp=datetime(CURRENT_TIMESTAMP, 'localtime')
+             WHERE status IS NULL
+                OR upper(status) NOT IN ('SUCCESS','FAILED','COMPLETE','COMPLETED')
+        }
+    } message]} {
+        return "Error: Could not reset blocked CI pipeline rows: $message"
+    }
+
+    return "CI reset: marked $count blocked CI pipeline row(s) as FAILED"
+}
+
+proc jobs_summary {} {
+    set topjobs [gettopjobs]
+    set tprocc_rows {}
+    set tproch_rows {}
+
+    foreach jobid [lreverse [getjob joblist]] {
+        set db   [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
+        set bm   [string map {TPC TPROC} [join [hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid}]]]
+        set date [join [hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid}]]
+
+        set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+        if {[string match "*DBVersion*" $output1]} {
+            set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $output1 match header version]
+            if {$matcheddbversion} { set db "$db ($version)" }
+        }
+
+        lassign [jobs_summary_workload_metric $jobid $bm] workload metric
+        set status [jobs_summary_status $jobid $topjobs]
+        set row [list $jobid $db $date $workload $metric $status]
+
+        if {$bm eq "TPROC-C"} {
+            lappend tprocc_rows $row
+        } else {
+            lappend tproch_rows $row
+        }
+    }
+
+    set out ""
+    append out "TPROC-C Jobs\n"
+    append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" "Jobid" "Database" "Date" "Workload" "NOPM" "Status"]
+    append out [string repeat "-" 100] "\n"
+    if {[llength $tprocc_rows] == 0} {
+        append out "No TPROC-C runs found in database file [getdatabasefile].\n"
+    } else {
+        foreach r $tprocc_rows {
+            lassign $r jobid db date workload metric status
+            append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" $jobid $db $date $workload $metric $status]
+        }
+    }
+
+    append out "\nTPROC-H Jobs\n"
+    append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" "Jobid" "Database" "Date" "Workload" "Geomean" "Status"]
+    append out [string repeat "-" 100] "\n"
+    if {[llength $tproch_rows] == 0} {
+        append out "No TPROC-H jobs found in database file [getdatabasefile].\n"
+    } else {
+        foreach r $tproch_rows {
+            lassign $r jobid db date workload metric status
+            append out [format "%-26s %-18s %-19s %-14s %-10s %-8s\n" $jobid $db $date $workload $metric $status]
+        }
+    }
+
+    return [string trimright $out "\n"]
+}
+
 # Usage summary:
 #   jobs
 #   jobs result|timestamp|joblist|profileid
@@ -340,9 +508,11 @@ proc jobmain { jobid jobtype } {
 #   jobs profileid [<id>]
 #   jobs profile <id>
 #   jobs <jobid> <cmd>            (cmd may be integer vu -> vu=<n>)
+#   jobs <jobid> save
 #   jobs <jobid> timing <vuid|vu=<n>>
 #   jobs <jobid> getchart <type>  (result|timing|tcount|metrics|profile|diff:<pid>)
 #   jobs diff <basepid> <comppid> [true|false]
+#   jobs cireset
 
 proc jobs {args} {
     upvar #0 genericdict genericdict
@@ -366,12 +536,12 @@ proc jobs {args} {
 
     proc ::_jobs_usage_error {msg} {
         puts $msg
-        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs jobid | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
+        puts "Error: Usage: \[ jobs | jobs format <fmt> | jobs disable <0|1> | jobs cireset | jobs jobid | jobs jobid save | jobs jobid <command> \[option\] | jobs jobid timing <vuid|vu=n> | jobs jobid getchart \[result|timing|tcount|metrics|profile|diff:pid\] | jobs profileid \[id\] | jobs profile <id> | jobs diff basepid comppid \[true|false\] \] - type \"help jobs\""
     }
 
     # 0 args
     if {$nt == 0} {
-        return [getjob ""]
+        return [jobs_summary]
     }
 
     # diff
@@ -400,6 +570,10 @@ proc jobs {args} {
     # route on first token
     # global commands
     switch -nocase -- $opt {
+        cireset {
+            if {$nt != 1} { ::_jobs_usage_error "Error: Usage: jobs cireset"; return }
+            return [cireset]
+        }
         result {
             if {$nt != 1} { ::_jobs_usage_error "Error: Usage: jobs result"; return }
             return [getjob "allresults"]
@@ -453,6 +627,16 @@ proc jobs {args} {
 
     # jobs <jobid> <cmd> [arg]
     set cmd [lindex $tokens 1]
+
+    # jobs <jobid> save
+    if {[string equal -nocase $cmd "save"]} {
+        if {$nt != 2} {
+            ::_jobs_usage_error "Error: Usage: jobs jobid save"
+            return
+        }
+        jobs_save_json $jobid
+        return
+    }
 
 # jobs <jobid> timing [vu]
 if {[string equal -nocase $cmd "timing"]} {
@@ -1541,6 +1725,24 @@ proc wapp-page-jobs {} {
         set rawmode [__is_true [dict get $paramdict raw]]
     }
 
+    if {[dict exists $paramdict cireset]} {
+        set msg [cireset]
+        common-header
+        if {[string match "Error:*" $msg]} {
+            set boxstyle "margin:16px; padding:12px; background:#fdecea; color:#b00020; border-left:6px solid #e74c3c; font-weight:600;"
+        } else {
+            set boxstyle "margin:16px; padding:12px; background:#e6f4ea; color:#1e7e34; border-left:6px solid #2ecc71; font-weight:600;"
+        }
+        wapp-subst {<div style="%html($boxstyle)">%html($msg)</div>
+}
+        set pipelines_url "$B/pipelines"
+        set jobs_url "$B/jobs"
+        wapp-subst {<p style="margin:16px;"><a href="%html($pipelines_url)">Back to Pipelines</a> | <a href="%html($jobs_url)">Back to Jobs</a></p>
+}
+        common-footer
+        return
+    }
+
     if {$paramlen eq 0 || $query eq ""} {
         set topjobs [gettopjobs]
         home-common-header
@@ -1647,11 +1849,10 @@ proc wapp-page-jobs {} {
         }
         wapp-subst {<h3 class="title">TPROC-C Performance Profiles</h3>}
         wapp-subst {<p style="margin:0 0 6px 0; opacity:0.75;">Select one <b>Base</b> profile and one <b>New</b> profile, click <b>Compare Profiles</b> to compare.</p>}
-        wapp-subst {<form method="GET" action="%html(/jobs)">}
+        wapp-subst {<form method="GET" action="%html(/jobs)" style="width:100%; max-width:800px; margin:0 0 18px 0;">}
         wapp-subst {<input type="hidden" name="cmd" value="profilediff">}
-        wapp-subst {<div style="display:inline-block; max-width:100%;">}
-        wapp-subst {<div style="overflow-x:auto;">}
-        wapp-subst {<table style="width:100%; font-size:0.92em;">\n}
+        wapp-subst {<div style="overflow-x:auto; max-width:100%;">}
+        wapp-subst {<table>\n}
         wapp-subst {<tr><th>Profile ID</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th><th>Base</th><th>New</th></tr>\n}
 
         set profileids [lreverse [join [hdbjobs eval {select distinct(profile_id) from jobmain where profile_id > 0 order by profile_id asc}]]]
@@ -1699,8 +1900,8 @@ proc wapp-page-jobs {} {
         }
         wapp-subst {</table>\n}
         wapp-subst {</div>}
-        wapp-subst {<div style="margin-top:6px; text-align:right;"><button type="submit" style="padding:4px 10px;">Compare Profiles</button></div>}
-        wapp-subst {</div></form>\n}
+        wapp-subst {<div style="margin-top:8px; text-align:right;"><button type="submit" style="padding:4px 10px;">Compare Profiles</button></div>}
+        wapp-subst {</form>\n}
 
         # TPROC-H
         wapp-subst {<h3 class="title">TPROC-H</h3>}
@@ -1904,6 +2105,39 @@ proc wapp-page-jobs {} {
         return $chart
     }
 
+    proc qset_summary {queryset} {
+    set secslist [regexp -all -inline -- {in[[:space:]]+([0-9]+)[[:space:]]+secs} $queryset]
+
+    set total 0
+    set count 0
+
+    foreach {match secs} $secslist {
+        incr total $secs
+        incr count
+    }
+
+    if {$count == 0} {
+        return "Avg Qset : unavailable"
+    }
+
+    set avg [expr {double($total) / double($count)}]
+    return [format "AvgQS : %.2f secs" $avg]
+    }
+
+
+
+    if {[dict exists $paramdict jobid] && [dict exists $paramdict summaryjson]} {
+        set jobid [dict get $paramdict jobid]
+        if {![__job_exists $jobid]} {
+            dict set jsondict error message "Jobid $jobid does not exist"
+            wapp-2-json 2 $jsondict
+            return
+        }
+        set json [jobs_report_json $jobid]
+        wapp-mimetype application/json
+        wapp-trim { %unsafe($json) }
+        return
+    }
 
     if {[dict exists $paramdict jobid] && [dict exists $paramdict summary]} {
         set jobid [dict get $paramdict jobid]
@@ -1944,16 +2178,30 @@ proc wapp-page-jobs {} {
             }
 
             wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+
+            # Print layout:
+            #   page 1: summary + system
+            #   page 2: TPROC-C result + transaction count
+            #   page 3: box plot + CPU
+            #   page 4: IOPS + MB/s
+            wapp-subst {<div class="print-page-break"></div>\n}
+            wapp-subst {<div class="print-avoid-break">\n}
             foreach l [split [strip_jobid_ts [getchart $jobid 1 "result"]] \n] { wapp-subst {%unsafe($l)\n} }
+            wapp-subst {</div>\n}
 
             set jobtcount [getjobtcount $jobid]
             if {![llength $jobtcount] eq 2 || ![string match [lindex $jobtcount 1] "Jobid has no transaction counter data"]} {
+                wapp-subst {<div class="print-avoid-break">\n}
                 foreach l [split [strip_jobid_ts [getchart $jobid 1 "tcount"]] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobtiming [getjobtiming $jobid]
             if {![llength $jobtiming] eq 2 || ![string match [lindex $jobtiming 1] "Jobid has no timing data"]} {
-                foreach l [split [strip_jobid_ts [getchart $jobid 1 "timing"]] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {<div class="print-page-break"></div>\n}
+                wapp-subst {<div class="print-avoid-break">\n}
+                foreach l [split [strip_jobid_ts [getchart $jobid 1 "boxplot"]] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobmetrics [getjobmetrics $jobid]
@@ -1972,6 +2220,7 @@ proc wapp-page-jobs {} {
             regsub -all "Completed " $queryset "" queryset
             regsub -all "query set" $queryset "qset" queryset
             regsub -all "seconds" $queryset "secs" queryset
+	    set qsetsummary [ qset_summary $queryset ]
 
             set dbversion [get_dbversion $jobid]
             set jobsystem [getjobsystem $jobid]
@@ -1981,7 +2230,7 @@ proc wapp-page-jobs {} {
 
             wapp-subst {<table style="font-size: 150%;">\n}
             wapp-subst {<th>HDB</th><th>Database</th><th>Release</th><th>Benchmark</th><th>Geomean</th><th>Query Time</th>\n}
-            wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($dbversion)</td><td>%html($bm)</td><td>%html($geo)</td><td>%html($queryset)</td></tr>\n}
+            wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($dbversion)</td><td>%html($bm)</td><td>%html($geo)</td><td>%html($qsetsummary)</td></tr>\n}
             wapp-subst {</table>\n}
 
             if {![llength $jobsystem] eq 2 || ![string match [lindex $jobsystem 1] "Jobid has no system data"]} {
@@ -2000,17 +2249,30 @@ proc wapp-page-jobs {} {
             }
 
             wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
+            wapp-subst {<div class="print-page-break"></div>\n}
+            wapp-subst {<div class="print-avoid-break">\n}
             foreach l [split [getchart $jobid 1 "result"] \n] { wapp-subst {%unsafe($l)\n} }
+            wapp-subst {</div>\n}
 
             if {[string match "Geometric*" [lindex $jobresult 2]]} {
+                wapp-subst {<div class="print-avoid-break">\n}
                 foreach l [split [getchart $jobid 1 "timing"] \n] { wapp-subst {%unsafe($l)\n} }
+                wapp-subst {</div>\n}
             }
 
             set jobmetrics [getjobmetrics $jobid]
             if {![llength $jobmetrics] eq 2 || ![string match [lindex $jobmetrics 1] "Jobid has no metric data"]} {
+                wapp-subst {<div class="print-page-break"></div>\n}
                 foreach l [split [getchart $jobid 1 "metrics"] \n] { wapp-subst {%unsafe($l)\n} }
             }
         }
+
+        wapp-subst {
+<p class="no-print" style="text-align:left; margin:0px 0;">
+  <a href="#" onclick="window.print(); return false;">Save to PDF</a><br>
+  <a href="%html($B)/jobs?jobid=%html($jobid)&summaryjson" download="hdb_%html($jobid).json">Save as JSON</a>
+</p>
+}
 
         common-footer
         return
@@ -2429,6 +2691,384 @@ if {$rawmode} {
     return
 }
 
+
+  proc jobs_json_quote {s} {
+    set s [string map [list \\ \\\\ \" \\\" \n \\n \r \\r \t \\t] $s]
+    return "\"$s\""
+  }
+
+  proc jobs_json_number_or_string {v} {
+    set t [string trim [string map {, {}} $v]]
+    if {$t ne "" && [string is double -strict $t]} {
+      return $t
+    }
+    return [jobs_json_quote $v]
+  }
+
+  proc jobs_json_pair {key valuejson} {
+    return "[jobs_json_quote $key]:$valuejson"
+  }
+
+  proc jobs_json_object {pairs} {
+    return "\{[join $pairs ,]\}"
+  }
+
+  proc jobs_json_array {items} {
+    return "\[[join $items ,]\]"
+  }
+
+
+
+  proc jobs_database_display {db} {
+    if {$db eq "MSSQLServer"} {
+      return "SQL Server"
+    }
+    return $db
+  }
+
+
+
+  proc jobs_json_add_chart {varname title chart_type data_path args} {
+    upvar $varname charts
+    set cpairs {}
+    lappend cpairs [jobs_json_pair title [jobs_json_quote $title]]
+    lappend cpairs [jobs_json_pair chart_type [jobs_json_quote $chart_type]]
+    lappend cpairs [jobs_json_pair data_path [jobs_json_quote $data_path]]
+    foreach {key value} $args {
+      if {$key eq "values" || $key eq "y_series"} {
+        set arr {}
+        foreach item $value { lappend arr [jobs_json_quote $item] }
+        lappend cpairs [jobs_json_pair $key [jobs_json_array $arr]]
+      } else {
+        lappend cpairs [jobs_json_pair $key [jobs_json_quote $value]]
+      }
+    }
+    lappend charts [jobs_json_object $cpairs]
+  }
+
+  proc jobs_json_report_hints {bm dbdisplay} {
+    set title "HammerDB $bm Benchmark Report"
+    if {$dbdisplay ne ""} {
+      set title "$dbdisplay $bm Benchmark Report"
+    }
+
+    set charts {}
+    if {$bm eq "TPROC-C"} {
+      set primary [jobs_json_array [list [jobs_json_quote "NOPM"] [jobs_json_quote "TPM"]]]
+      jobs_json_add_chart charts "$dbdisplay TPROC-C Result" "bar" "result.chart_data" x metric y value
+      jobs_json_add_chart charts "$dbdisplay TPROC-C Transaction Count" "line" {transaction_count.series[].points} x timestamp y value
+      jobs_json_add_chart charts "$dbdisplay TPROC-C Response Times" "boxplot" "response_times.rows" category name values {p25_ms p50_ms p75_ms p95_ms p99_ms}
+    } else {
+      set primary [jobs_json_array [list [jobs_json_quote "geomean_seconds"] [jobs_json_quote "total_query_time_seconds"]]]
+      jobs_json_add_chart charts "$dbdisplay TPROC-H Result" "bar" "result.chart_data" x metric y value
+      jobs_json_add_chart charts "$dbdisplay TPROC-H Query Times" "bar" "query_times.rows" x name y total_ms
+    }
+
+    jobs_json_add_chart charts "$dbdisplay CPU %" "line" "metrics.cpu_percent" x timestamp y_series {usr_pct sys_pct irq_pct idle_pct}
+    jobs_json_add_chart charts "$dbdisplay IOPS" "line" "metrics.iops" x timestamp y value
+    jobs_json_add_chart charts "$dbdisplay MB/s" "line" "metrics.mbps" x timestamp y value
+
+    set notes {}
+    lappend notes [jobs_json_quote "For TPROC-C, final low transaction_count values may be the end-of-test shutdown tail rather than steady-state throughput."]
+    lappend notes [jobs_json_quote "Use database_display for human-readable report headings and database for HammerDB internal identifiers."]
+
+    set hints {}
+    lappend hints [jobs_json_pair title [jobs_json_quote $title]]
+    lappend hints [jobs_json_pair intended_use [jobs_json_quote "Paste this JSON into AI or another analysis tool to generate a benchmark narrative, summary tables, and charts."]]
+    lappend hints [jobs_json_pair primary_result_metrics $primary]
+    lappend hints [jobs_json_pair recommended_charts [jobs_json_array $charts]]
+    lappend hints [jobs_json_pair notes [jobs_json_array $notes]]
+    return [jobs_json_object $hints]
+  }
+
+
+  proc jobs_json_dict_strings {d fields} {
+    set pairs {}
+    foreach field $fields {
+      if {[dict exists $d $field]} {
+        set value [dict get $d $field]
+        if {$value ne ""} {
+          lappend pairs [jobs_json_pair $field [jobs_json_quote $value]]
+        }
+      }
+    }
+    return [jobs_json_object $pairs]
+  }
+
+  proc jobs_json_timing_rows {jobid} {
+    set rows {}
+    set jobtiming [getjobtiming $jobid]
+    if {[llength $jobtiming] eq 2 && [string match [lindex $jobtiming 1] "Jobid has no timing data"]} {
+      return [jobs_json_array $rows]
+    }
+    foreach {procname timing} $jobtiming {
+      set row {}
+      lappend row [jobs_json_pair name [jobs_json_quote $procname]]
+      foreach field {elapsed_ms calls min_ms avg_ms max_ms total_ms p99_ms p95_ms p75_ms p50_ms p25_ms sd ratio_pct} {
+        if {[dict exists $timing $field]} {
+          lappend row [jobs_json_pair $field [jobs_json_number_or_string [dict get $timing $field]]]
+        }
+      }
+      lappend rows [jobs_json_object $row]
+    }
+    return [jobs_json_array $rows]
+  }
+
+  proc jobs_json_tcount_rows {jobid} {
+    set outpairs {}
+    set jobtcount [getjobtcount $jobid]
+    if {[llength $jobtcount] eq 2 && [string match [lindex $jobtcount 1] "Jobid has no transaction counter data"]} {
+      lappend outpairs [jobs_json_pair available false]
+      lappend outpairs [jobs_json_pair series [jobs_json_array {}]]
+      return [jobs_json_object $outpairs]
+    }
+    set serieslist {}
+    foreach {series data} $jobtcount {
+      set spairs {}
+      lappend spairs [jobs_json_pair name [jobs_json_quote [join $series " "]]]
+      if {[llength $series] >= 1} {
+        set seriesdb [lindex $series 0]
+        lappend spairs [jobs_json_pair database [jobs_json_quote $seriesdb]]
+        lappend spairs [jobs_json_pair database_display [jobs_json_quote [jobs_database_display $seriesdb]]]
+      }
+      if {[llength $series] >= 2} { lappend spairs [jobs_json_pair metric [jobs_json_quote [lindex $series 1]]] }
+      set points {}
+      foreach {timestamp counter} $data {
+        set ppairs {}
+        lappend ppairs [jobs_json_pair timestamp [jobs_json_quote $timestamp]]
+        lappend ppairs [jobs_json_pair value [jobs_json_number_or_string $counter]]
+        lappend points [jobs_json_object $ppairs]
+      }
+      lappend spairs [jobs_json_pair points [jobs_json_array $points]]
+      lappend serieslist [jobs_json_object $spairs]
+    }
+    lappend outpairs [jobs_json_pair available true]
+    lappend outpairs [jobs_json_pair series [jobs_json_array $serieslist]]
+    return [jobs_json_object $outpairs]
+  }
+
+  proc jobs_json_metrics {jobid} {
+    set outpairs {}
+    set jobmetric [getjobmetrics $jobid]
+    if {[llength $jobmetric] eq 2 && [string match [lindex $jobmetric 1] "Jobid has no metric data"]} {
+      lappend outpairs [jobs_json_pair available false]
+      lappend outpairs [jobs_json_pair cpu_percent [jobs_json_array {}]]
+      lappend outpairs [jobs_json_pair iops [jobs_json_array {}]]
+      lappend outpairs [jobs_json_pair mbps [jobs_json_array {}]]
+      return [jobs_json_object $outpairs]
+    }
+    set cpurows {}
+    set iopsrows {}
+    set mbpsrows {}
+    foreach {timestamp metrics} $jobmetric {
+      set usr 0; set sys 0; set irq 0; set idle 0; set iops 0; set mbps 0
+      foreach field {usr% sys% irq% idle% iops mbps} var {usr sys irq idle iops mbps} {
+        if {[dict exists $metrics $field]} { set $var [dict get $metrics $field] }
+      }
+      set cpupairs {}
+      lappend cpupairs [jobs_json_pair timestamp [jobs_json_quote $timestamp]]
+      lappend cpupairs [jobs_json_pair usr_pct [jobs_json_number_or_string $usr]]
+      lappend cpupairs [jobs_json_pair sys_pct [jobs_json_number_or_string $sys]]
+      lappend cpupairs [jobs_json_pair irq_pct [jobs_json_number_or_string $irq]]
+      lappend cpupairs [jobs_json_pair idle_pct [jobs_json_number_or_string $idle]]
+      lappend cpurows [jobs_json_object $cpupairs]
+      lappend iopsrows [jobs_json_object [list [jobs_json_pair timestamp [jobs_json_quote $timestamp]] [jobs_json_pair value [jobs_json_number_or_string $iops]]]]
+      lappend mbpsrows [jobs_json_object [list [jobs_json_pair timestamp [jobs_json_quote $timestamp]] [jobs_json_pair value [jobs_json_number_or_string $mbps]]]]
+    }
+    lappend outpairs [jobs_json_pair available true]
+    lappend outpairs [jobs_json_pair cpu_percent [jobs_json_array $cpurows]]
+    lappend outpairs [jobs_json_pair iops [jobs_json_array $iopsrows]]
+    lappend outpairs [jobs_json_pair mbps [jobs_json_array $mbpsrows]]
+    return [jobs_json_object $outpairs]
+  }
+
+  proc jobs_json_analysis_hints {jobid bm} {
+    set pairs {}
+    if {$bm eq "TPROC-C"} {
+      set threshold 1000
+      set start ""
+      set end ""
+      set shutdown false
+      set jobtcount [getjobtcount $jobid]
+      if {![llength $jobtcount] eq 2 || ![string match [lindex $jobtcount 1] "Jobid has no transaction counter data"]} {
+        foreach {series data} $jobtcount {
+          set seen_active 0
+          foreach {timestamp counter} $data {
+            set c [string trim [string map {, {}} $counter]]
+            if {$c ne "" && [string is double -strict $c] && $c > $threshold} {
+              if {$start eq ""} { set start $timestamp }
+              set end $timestamp
+              set seen_active 1
+            } elseif {$seen_active && $c ne "" && [string is double -strict $c] && $c <= $threshold} {
+              set shutdown true
+            }
+          }
+          break
+        }
+      }
+
+      set awpairs {}
+      if {$start ne "" && $end ne ""} {
+        lappend awpairs [jobs_json_pair available true]
+        lappend awpairs [jobs_json_pair start [jobs_json_quote $start]]
+        lappend awpairs [jobs_json_pair end [jobs_json_quote $end]]
+        lappend awpairs [jobs_json_pair method [jobs_json_quote "First to last transaction_count value above shutdown-tail threshold."]]
+        lappend awpairs [jobs_json_pair transaction_count_min_active_value $threshold]
+        lappend awpairs [jobs_json_pair recommended_filter [jobs_json_quote "For charts and narrative summaries, filter transaction_count, CPU, IOPS and MB/s to this active_window."]]
+      } else {
+        lappend awpairs [jobs_json_pair available false]
+        lappend awpairs [jobs_json_pair note [jobs_json_quote "No active TPROC-C transaction-count window could be inferred."]]
+      }
+
+      set tailpairs {}
+      lappend tailpairs [jobs_json_pair present $shutdown]
+      lappend tailpairs [jobs_json_pair threshold $threshold]
+      lappend tailpairs [jobs_json_pair note [jobs_json_quote "Repeated low transaction_count, IOPS and MB/s values after active_window.end are usually the end-of-test shutdown tail and should normally be excluded from charts and summaries."]]
+
+      lappend pairs [jobs_json_pair active_window [jobs_json_object $awpairs]]
+      lappend pairs [jobs_json_pair shutdown_tail [jobs_json_object $tailpairs]]
+    } else {
+      lappend pairs [jobs_json_pair active_window [jobs_json_object [list \
+        [jobs_json_pair available false] \
+        [jobs_json_pair note [jobs_json_quote "TPROC-H does not use transaction_count to infer an active window. Use result and query_times for benchmark reporting; metrics may include post-run idle tail."]] \
+      ]]]
+      lappend pairs [jobs_json_pair shutdown_tail [jobs_json_object [list \
+        [jobs_json_pair present true] \
+        [jobs_json_pair note [jobs_json_quote "CPU, IOPS and MB/s metrics may include post-run idle samples after query execution completes."]] \
+      ]]]
+    }
+    return [jobs_json_object $pairs]
+  }
+
+
+  proc jobs_report_json {jobid} {
+    global hdb_version
+    set pairs {}
+    set bm_raw [join [hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid}]]
+    set bm [string map {TPC TPROC} $bm_raw]
+    set db [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
+    set dbdisplay [jobs_database_display $db]
+    set timestamp [join [hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid}]]
+    set dbversion [get_dbversion $jobid]
+    set jobresult [getjobresult $jobid 1]
+
+    lappend pairs [jobs_json_pair schema [jobs_json_quote "hammerdb-job-report-v1"]]
+    lappend pairs [jobs_json_pair description [jobs_json_quote "AI-friendly HammerDB benchmark export. Machine-readable data, report_hints and analysis_hints are included for narrative reports, summary tables, and chart generation."]]
+    lappend pairs [jobs_json_pair report_hints [jobs_json_report_hints $bm $dbdisplay]]
+    lappend pairs [jobs_json_pair analysis_hints [jobs_json_analysis_hints $jobid $bm]]
+
+    set jobpairs {}
+    lappend jobpairs [jobs_json_pair jobid [jobs_json_quote $jobid]]
+    lappend jobpairs [jobs_json_pair hdb_version [jobs_json_quote $hdb_version]]
+    lappend jobpairs [jobs_json_pair database [jobs_json_quote $db]]
+    lappend jobpairs [jobs_json_pair database_display [jobs_json_quote $dbdisplay]]
+    lappend jobpairs [jobs_json_pair release [jobs_json_quote $dbversion]]
+    lappend jobpairs [jobs_json_pair benchmark [jobs_json_quote $bm]]
+    lappend jobpairs [jobs_json_pair timestamp [jobs_json_quote $timestamp]]
+    lappend pairs [jobs_json_pair job [jobs_json_object $jobpairs]]
+
+    set jobsystem [getjobsystem $jobid]
+
+    if {[dict exists $jobsystem message]} {
+        lappend pairs [jobs_json_pair system [jobs_json_object [list \
+            [jobs_json_pair available false] \
+            [jobs_json_pair message [jobs_json_quote [dict get $jobsystem message]]] \
+        ]]]
+    } elseif {[dict size $jobsystem] == 0} {
+        lappend pairs [jobs_json_pair system [jobs_json_object [list \
+            [jobs_json_pair available false] \
+            [jobs_json_pair message [jobs_json_quote "System information not available"]] \
+        ]]]
+    } else {
+      set sysfields {hostname cpumodel cpucount system_vendor system_type os_name memory nic storage cloud_instance other_software extra}
+      set syspairs [list [jobs_json_pair available true]]
+      foreach field $sysfields {
+        if {[dict exists $jobsystem $field]} {
+          set value [dict get $jobsystem $field]
+          if {$value ne ""} {
+            lappend syspairs [jobs_json_pair $field [jobs_json_quote $value]]
+          }
+        }
+      }
+      lappend pairs [jobs_json_pair system [jobs_json_object $syspairs]]
+    }
+
+    set resultpairs {}
+    if {$bm eq "TPROC-C"} {
+      if {![llength $jobresult] eq 2 || ![string match [lindex $jobresult 1] "Jobid has no test result"]} {
+        lassign [getnopmtpm $jobresult] jid tstamp activevu nopm tpm dbdescription
+        set avu [regexp -all -inline -- {[0-9]*\.?[0-9]+} $activevu]
+        lappend resultpairs [jobs_json_pair type [jobs_json_quote "tproc_c_result"]]
+        lappend resultpairs [jobs_json_pair database_display [jobs_json_quote $dbdisplay]]
+        lappend resultpairs [jobs_json_pair active_virtual_users [jobs_json_number_or_string [lindex $avu 0]]]
+        lappend resultpairs [jobs_json_pair nopm [jobs_json_number_or_string $nopm]]
+        lappend resultpairs [jobs_json_pair tpm [jobs_json_number_or_string $tpm]]
+        set bars {}
+        lappend bars [jobs_json_object [list [jobs_json_pair metric [jobs_json_quote "NOPM"]] [jobs_json_pair value [jobs_json_number_or_string $nopm]]]]
+        lappend bars [jobs_json_object [list [jobs_json_pair metric [jobs_json_quote "TPM"]] [jobs_json_pair value [jobs_json_number_or_string $tpm]]]]
+        lappend resultpairs [jobs_json_pair chart_data [jobs_json_array $bars]]
+      }
+      lappend pairs [jobs_json_pair result [jobs_json_object $resultpairs]]
+      lappend pairs [jobs_json_pair transaction_count [jobs_json_tcount_rows $jobid]]
+      lappend pairs [jobs_json_pair response_times [jobs_json_object [list [jobs_json_pair type [jobs_json_quote "boxplot"]] [jobs_json_pair unit [jobs_json_quote "milliseconds"]] [jobs_json_pair rows [jobs_json_timing_rows $jobid]]]]]
+    } else {
+      set geo ""; set querytime ""; set queries ""; set querysets ""
+      if {![llength $jobresult] eq 2 || ![string match [lindex $jobresult 1] "Jobid has no test result"]} {
+        set geomean [lindex $jobresult 2]
+        set queryset [lindex $jobresult 3]
+        set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $geomean]
+        set queries [lindex $numbers 0]
+        set geo [lindex $numbers 1]
+        set numbers [regexp -all -inline -- {[0-9]*\.?[0-9]+} $queryset]
+        set querysets [lindex $numbers 0]
+        set querytime [lindex $numbers 1]
+        lappend resultpairs [jobs_json_pair type [jobs_json_quote "tproc_h_result"]]
+        lappend resultpairs [jobs_json_pair database_display [jobs_json_quote $dbdisplay]]
+        lappend resultpairs [jobs_json_pair queries [jobs_json_number_or_string $queries]]
+        lappend resultpairs [jobs_json_pair query_sets [jobs_json_number_or_string $querysets]]
+        lappend resultpairs [jobs_json_pair geomean_seconds [jobs_json_number_or_string $geo]]
+        lappend resultpairs [jobs_json_pair total_query_time_seconds [jobs_json_number_or_string $querytime]]
+        set bars {}
+        lappend bars [jobs_json_object [list [jobs_json_pair metric [jobs_json_quote "Geomean"]] [jobs_json_pair value [jobs_json_number_or_string $geo]]]]
+        lappend bars [jobs_json_object [list [jobs_json_pair metric [jobs_json_quote "Query Time"]] [jobs_json_pair value [jobs_json_number_or_string $querytime]]]]
+        lappend resultpairs [jobs_json_pair chart_data [jobs_json_array $bars]]
+      }
+      lappend pairs [jobs_json_pair result [jobs_json_object $resultpairs]]
+      lappend pairs [jobs_json_pair query_times [jobs_json_object [list [jobs_json_pair type [jobs_json_quote "bar"]] [jobs_json_pair unit [jobs_json_quote "milliseconds"]] [jobs_json_pair rows [jobs_json_timing_rows $jobid]]]]]
+    }
+
+    lappend pairs [jobs_json_pair metrics [jobs_json_metrics $jobid]]
+    return [jobs_json_object $pairs]
+  }
+
+  proc jobs_save_json { jobid } {
+    set exists [hdbjobs eval {SELECT COUNT(*) FROM JOBMAIN WHERE JOBID=$jobid}]
+    if {$exists == 0} {
+      puts "Error: Jobid $jobid does not exist"
+      return
+    }
+
+    set tmpdir [findtempdir]
+    if {$tmpdir eq "notmpdir"} {
+      puts "Error: TMP directory not found"
+      return
+    }
+
+    set outfile [file join $tmpdir "hdb_${jobid}.json"]
+
+    if {[catch {
+      set fd [open $outfile w]
+      puts $fd [jobs_report_json $jobid]
+      close $fd
+    } message]} {
+      catch {close $fd}
+      puts "Error: Could not save JSON report: $message"
+      return
+    }
+
+    puts "Saved job report JSON to $outfile"
+  }
+
   proc getdatabasefile {} {
     set dbfile [ join [ hdbjobs eval {select file from pragma_database_list where name='main'} ] ]
     return $dbfile
@@ -2502,8 +3142,8 @@ if {$rawmode} {
 
   proc getjobmetrics { jobid } {
     set jobmetric [ dict create ]
-    hdbjobs eval {select JOBMETRIC.timestamp, usr, sys, irq, idle from JOBMETRIC WHERE JOBMETRIC.JOBID=$jobid order by JOBMETRIC.timestamp asc} {
-    set metrics "usr% $usr sys% $sys irq% $irq idle% $idle" 
+    hdbjobs eval {select JOBMETRIC.timestamp, usr, sys, irq, idle, coalesce(iops,0) as iops, coalesce(mbps,0) as mbps from JOBMETRIC WHERE JOBMETRIC.JOBID=$jobid order by JOBMETRIC.timestamp asc} {
+    set metrics "usr% $usr sys% $sys irq% $irq idle% $idle iops $iops mbps $mbps" 
 	if { [dict keys $jobmetric $timestamp] eq {} } {
     	dict append jobmetric $timestamp $metrics
 		}
@@ -2670,7 +3310,7 @@ if {$rawmode} {
 
   proc getchart { jobid vuid chart } {
     set chartcolors [ list MariaDB { color1 "#42ADB6" color2 "#9fd7dc" } PostgreSQL { color1 "#062671" color2 "#457af5" } \
-	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#FFFF00" color2 "#ffff80" } \
+	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#F2C811" color2 "#FFE066" } \
 	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } ]
     set color1 "#808080"
     set color2 "#bfbfbf"
@@ -2830,7 +3470,7 @@ if {$rawmode} {
               lappend P99_MS [dict get $spdata p99_ms]
               lappend AVG_MS [dict get $spdata avg_ms]
 
-              #Boxplot format: min, q1, median, q3, max
+            # Boxplot format: min, q1, median, q3, max
             # Use p99 instead of max_ms as max only shows whiskers due to extended scale
             # [dict get $spdata max_ms]
               lappend boxdata [list \
@@ -2879,6 +3519,62 @@ if {$rawmode} {
             return $html
           }
         }
+      }
+      "boxplot" {
+          set chartdata [ getjobtiming $jobid ]
+        if { [ llength $chartdata ] eq 2 && [ string match [ lindex $chartdata 1 ] "Jobid has no timing data" ] } {
+          putscli "Chart for jobid $jobid not available, Jobid has no timing data"
+          return
+        } else {
+          set query [ hdbjobs eval {SELECT COUNT(*) FROM JOBCHART WHERE JOBID=$jobid AND CHART="boxplot"} ]
+          if { $query eq 0 } {
+            #No result chart exists create one and insert into JOBCHART table
+          } else {
+            #Return existing results chart from JOBCHART table
+            set html [ join [ hdbjobs eval {SELECT html FROM JOBCHART WHERE JOBID=$jobid AND CHART="boxplot"} ]]
+            return $html
+          }
+          set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+          foreach colour {color1 color2} {set $colour [ dict get $chartcolors $dbdescription $colour ]}
+          if { $dbdescription eq "MSSQLServer" } { set dbdescription "SQL Server" }
+          set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
+            #CREATE TPROC-C boxplot chart
+            #X axis
+            set xaxisvals {}
+            foreach sp {NEWORD PAYMENT DELIVERY SLEV OSTAT} {
+              lappend xaxisvals $sp
+            }
+
+            #Series data for new box plot
+            set boxdata {}
+
+            foreach sp {NEWORD PAYMENT DELIVERY SLEV OSTAT} {
+              set spdata [dict get $chartdata $sp]
+            # Boxplot format: min, q1, median, q3, max
+            # Use p99 instead of max_ms as max only shows whiskers due to extended scale
+            # [dict get $spdata max_ms]
+              lappend boxdata [list \
+                [dict get $spdata min_ms] \
+                [dict get $spdata p25_ms] \
+                [dict get $spdata p50_ms] \
+                [dict get $spdata p75_ms] \
+                [dict get $spdata p99_ms] \
+              ]
+            }
+
+            #boxplot chart
+            set boxdescription $dbdescription
+            set box [ticklecharts::chart new]
+            set ::ticklecharts::htmlstdout "True"
+            $box SetOptions -title [ subst {text "$boxdescription TPROC-C Box Plot $jobid"} ] -tooltip {show "True"} -legend {show "False"}
+            $box Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+            $box Yaxis -name "Milliseconds" -position "left" -axisLabel {formatter {"{value}"}}
+            $box Add "boxPlotSeries" -name "Response Distribution" -data $boxdata -itemStyle [ subst {color $color1 opacity 0.70} ]
+            set boxhtml [ $box toHTML -title "$jobid Response Time Distribution" ]
+            set html "$boxhtml"
+            hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'boxplot',$html)}
+            return $html
+          }
       }
       "tcount" {
         set date [ join [ hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid} ]]
@@ -2949,53 +3645,123 @@ if {$rawmode} {
             set html [ join [ hdbjobs eval {SELECT html FROM JOBCHART WHERE JOBID=$jobid AND CHART="metrics"} ]]
             return $html
           }
+
           set dbdescription [ join [ hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid} ]]
+          set metricsdescription $dbdescription
+          if { $metricsdescription eq "MSSQLServer" } { set metricsdescription "SQL Server" }
           hdbjobs eval {SELECT cpucount,cpumodel from JOBSYSTEM WHERE JOBID=$jobid} {
-	  set cpudescription "$cpucount x $cpumodel"
-		}
-	if {[ dict size $chartdata ] <= 1} {
-          putscli "Chart for jobid $jobid not available, Jobid has insufficient metrics data"
-	  return
-	}
-	  set axisname "CPU %"
+            set cpudescription "$cpucount x $cpumodel"
+          }
+
+          if {[ dict size $chartdata ] <= 1} {
+            putscli "Chart for jobid $jobid not available, Jobid has insufficient metrics data"
+            return
+          }
+
+          set axisname "CPU %"
           set xaxisvals [ dict keys $chartdata ]
+
           dict for {tstamp cpuvalues} $chartdata {
-          dict with cpuvalues {
-            lappend usrseries ${usr%}
-            lappend sysseries ${sys%}
-            lappend irqseries ${irq%}
-          }}
+            dict with cpuvalues {
+              lappend usrseries ${usr%}
+              lappend sysseries ${sys%}
+              lappend irqseries ${irq%}
+              lappend iopsseries $iops
+              lappend mbpsseries $mbps
+            }
+          }
+
           #Delete the first and trailing values if usr utilisation is 0, so we start from the first measurement and only chart when running
           if { [ lindex $usrseries 0 ] eq 0.0 } {
             set usrseries [ lreplace $usrseries 0 0 ]
             set sysseries [ lreplace $sysseries 0 0 ]
             set irqseries [ lreplace $irqseries 0 0 ]
+            set iopsseries [ lreplace $iopsseries 0 0 ]
+            set mbpsseries [ lreplace $mbpsseries 0 0 ]
             set xaxisvals [ lreplace $xaxisvals 0 0 ]
           }
+
           while { [ lindex $usrseries end ] eq 0.0 } {
             set usrseries [ lreplace $usrseries end end ]
             set sysseries [ lreplace $sysseries end end ]
             set irqseries [ lreplace $irqseries end end ]
+            set iopsseries [ lreplace $iopsseries end end ]
+            set mbpsseries [ lreplace $mbpsseries end end ]
             set xaxisvals [ lreplace $xaxisvals end end ]
           }
-	  if { ![ info exists dbdescription ] } { set dbdescription "Generic CPU" }
+
+          if { ![ info exists dbdescription ] } {
+            set dbdescription "Generic CPU"
+          }
+
+          #
+          # CPU chart
+          #
           set line [ticklecharts::chart new]
-          set ::ticklecharts::htmlstdout "True" ; 
+          set ::ticklecharts::htmlstdout "True" ;
+
           set irqSeriesName "irq%"
-          # Set 'showIrqSeries' to True to show the IRQ series in the chart (default is 'False').
           set showIrqSeries "False"
-          # Use 'irqJS' to toggle the visibility of the IRQ series in the chart.
           set irqJS [ticklecharts::jsfunc new [subst {{'$irqSeriesName': [string tolower $showIrqSeries]}}]]
-          $line SetOptions -title [ subst {text "$dbdescription Metrics $jobid $cpudescription"} ] \
+
+          $line SetOptions -title [ subst {text "$metricsdescription CPU $jobid $cpudescription"} ] \
                            -tooltip {show "True"} \
                            -legend [list bottom "5%" left "40%" selected $irqJS]
+
           $line Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
           $line Yaxis -name "$axisname" -position "left" -axisLabel {formatter {"{value}"}}
+
           $line Add "lineSeries" -name "usr%" -data [ list $usrseries ] -itemStyle [ subst {color green opacity 0.90} ]
           $line Add "lineSeries" -name "sys%" -data [ list $sysseries ] -itemStyle [ subst {color red opacity 0.90} ]
-	        # 'irqseries' is included but hidden by default with 'showIrqSeries' variable set.
           $line Add "lineSeries" -name $irqSeriesName -data [ list $irqseries ] -itemStyle [ subst {color blue opacity 0.90} ]
+
           set html [ $line toHTML -title "$jobid " ]
+          set html "<div class=\"print-avoid-break\"> $html </div>"
+
+          #
+          # IOPS chart
+          #
+          set iopsline [ticklecharts::chart new]
+          set ::ticklecharts::htmlstdout "True" ;
+
+          $iopsline SetOptions -title [ subst {text "$metricsdescription IOPS"} ] \
+                                -tooltip {show "True"} \
+                                -legend [list bottom "5%" left "40%"]
+
+          $iopsline Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+          $iopsline Yaxis -name "IOPS" -position "left" -axisLabel {formatter {"{value}"}}
+          $iopsline Add "lineSeries" -name "IOPS" -data [ list $iopsseries ] -itemStyle [ subst {color #9467bd opacity 0.90} ]
+
+          set iopshtml [ $iopsline toHTML -title "$metricsdescription IOPS" ]
+
+          regsub -all {(?is)^.*?<body[^>]*>} $iopshtml "" iopshtml
+          regsub -all {(?is)</body>\s*</html>\s*$} $iopshtml "" iopshtml
+          regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $iopshtml "" iopshtml
+
+          append html " <div class=\"print-page-break\"></div> <div class=\"print-avoid-break\"> " $iopshtml " </div>"
+
+          #
+          # MBPS chart
+          #
+          set mbpsline [ticklecharts::chart new]
+          set ::ticklecharts::htmlstdout "True" ;
+
+          $mbpsline SetOptions -title [ subst {text "$metricsdescription MB/s"} ] \
+                                -tooltip {show "True"} \
+                                -legend [list bottom "5%" left "40%"]
+
+          $mbpsline Xaxis -data [list $xaxisvals] -axisLabel [list show "True"]
+          $mbpsline Yaxis -name "MBPS" -position "left" -axisLabel {formatter {"{value}"}}
+          $mbpsline Add "lineSeries" -name "MBPS" -data [ list $mbpsseries ] -itemStyle [ subst {color #7f7f7f opacity 0.90} ]
+
+          set mbpshtml [ $mbpsline toHTML -title "$metricsdescription MBPS" ]
+
+          regsub -all {(?is)^.*?<body[^>]*>} $mbpshtml "" mbpshtml
+          regsub -all {(?is)</body>\s*</html>\s*$} $mbpshtml "" mbpshtml
+          regsub -all {(?is)<p><img[^>]*logo\.png[^>]*></p>} $mbpshtml "" mbpshtml
+
+          append html " <div class=\"print-avoid-break\"> " $mbpshtml " </div>"
+
           #If we query the metrics chart while the job is running it will not be generated again
           #meaning the output will be truncated
           #only save the chart once the job is complete
@@ -3003,6 +3769,7 @@ if {$rawmode} {
           if { [ string match "*ALL VIRTUAL USERS COMPLETE*" $jobstatus ] } {
             hdbjobs eval {INSERT INTO JOBCHART(jobid,chart,html) VALUES($jobid,'metrics',$html)}
           }
+
           return $html
         }
       }

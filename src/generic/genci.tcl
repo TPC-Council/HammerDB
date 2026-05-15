@@ -895,6 +895,13 @@ proc cilisten {args} {
 
     putsci "CI validation passed"
 
+    if {[llength [info commands cireset]] > 0} {
+        set reset_msg [cireset]
+        putsci $reset_msg
+    } else {
+        putsci "CI reset skipped: cireset command not available"
+    }
+
     if {[dict exists $cidict common tmp]} {
         set tmpdir [string trim [dict get $cidict common tmp]]
         if {$tmpdir ne ""} {
@@ -1085,6 +1092,26 @@ proc cilisten {args} {
         if {!$matched} {
             putscli "Ref did not match CI rules: $ref"
             http_reply $sock "400 Bad Request" "Invalid ref"
+            return
+        }
+
+        # This prevents multiple webhook requests adding multiple PENDING rows.
+        set active_ci_count 0
+        if {[catch {
+            set active_ci_count [join [hdbjobs eval {
+                SELECT COUNT(*)
+                FROM JOBCI
+                WHERE status IN ('PENDING','INIT','BUILDING','RUNNING')
+            }]]
+        } err]} {
+            putscli "Error checking active CI rows: $err"
+            http_reply $sock "500 Internal Server Error" "Active pipeline check failed"
+            return
+        }
+
+        if {$active_ci_count > 0} {
+            putscli "CI webhook rejected: pipeline already active"
+            http_reply $sock "409 Conflict" "Pipeline already active"
             return
         }
 
@@ -1613,10 +1640,228 @@ proc cisteps {cidict refname pipeline_name io_intensive} {
     putsci "CI: pipeline '$pipeline_name' completed"
 }
 
+proc _pipes_db_label {dbprefix} {
+    switch -exact -- [string tolower [string trim $dbprefix]] {
+        maria { return "MariaDB" }
+        pg    { return "PostgreSQL" }
+        mysql { return "MySQL" }
+        default { return $dbprefix }
+    }
+}
+
+proc _pipes_pipeline_label {pipeline} {
+    switch -exact -- [string tolower [string trim $pipeline]] {
+        single_c { return "Single" }
+        single_h { return "Single" }
+        profile  { return "Profile" }
+        compare  { return "Compare" }
+        default  { return $pipeline }
+    }
+}
+
+proc _pipes_table_exists {tablename} {
+    if {[catch {
+        set cnt [hdbjobs eval {SELECT count(*) FROM sqlite_master WHERE type='table' AND name=$tablename}]
+    }]} {
+        return 0
+    }
+    return [expr {$cnt > 0}]
+}
+
+proc _pipes_truncate {text {maxlines 60} {maxchars 8000}} {
+    set text [string map [list \r\n \n \r \n] $text]
+    set truncated 0
+
+    set lines [split $text \n]
+    if {$maxlines > 0 && [llength $lines] > $maxlines} {
+        set text [join [lrange $lines 0 [expr {$maxlines - 1}]] \n]
+        set truncated 1
+    }
+
+    if {$maxchars > 0 && [string length $text] > $maxchars} {
+        set text [string range $text 0 [expr {$maxchars - 1}]]
+        set truncated 1
+    }
+
+    if {$truncated} {
+        append text "\n... output truncated. Use the web service pipeline page for full output ..."
+    }
+
+    return $text
+}
+
+proc _pipes_get_row {pipeid} {
+    set ci [dict create]
+    set cols [list ci_id refname dbprefix pipeline io_intensive profile_id cidict \
+        clone_cmd clone_output build_cmd build_output install_cmd install_output \
+        package_cmd commit_msg config_file start_cmd status timestamp end_timestamp]
+
+    if {![_pipes_table_exists JOBCI]} {
+        return [dict create error "No CI pipeline table found."]
+    }
+
+    if {[catch {
+        hdbjobs eval {SELECT
+            ci_id, refname, dbprefix, pipeline,
+            io_intensive, profile_id,
+            clone_cmd, clone_output,
+            build_cmd, build_output,
+            install_cmd, install_output,
+            package_cmd, commit_msg,
+            config_file, start_cmd,
+            status, timestamp, end_timestamp,
+            cidict
+        FROM JOBCI
+        WHERE ci_id=$pipeid} row {
+            foreach col $cols {
+                if {[info exists row($col)]} {
+                    dict set ci $col $row($col)
+                } else {
+                    dict set ci $col ""
+                }
+            }
+            break
+        }
+    } err]} {
+        return [dict create error "Error querying pipeline $pipeid: $err"]
+    }
+
+    if {[dict size $ci] == 0} {
+        return [dict create error "Pipeline not found for pipeid $pipeid"]
+    }
+
+    return $ci
+}
+
+proc pipes_summary {} {
+    if {![_pipes_table_exists JOBCI]} {
+        return "No CI pipeline table found."
+    }
+
+    set rows {}
+    if {[catch {
+        hdbjobs eval {SELECT ci_id, refname, dbprefix, pipeline, timestamp, status
+                      FROM JOBCI ORDER BY ci_id DESC LIMIT 25} row {
+            lappend rows [list $row(ci_id) [_pipes_db_label $row(dbprefix)] $row(refname) \
+                [_pipes_pipeline_label $row(pipeline)] $row(timestamp) $row(status)]
+        }
+    } err]} {
+        return "Error querying pipeline runs: $err"
+    }
+
+    set out ""
+    append out [format "%-8s %-12s %-28s %-10s %-19s %-10s\n" "Pipeid" "DB" "Ref" "Pipeline" "Date" "Status"]
+    append out [string repeat "-" 96] "\n"
+
+    if {[llength $rows] == 0} {
+        append out "No CI pipeline runs found.\n"
+    } else {
+        foreach r $rows {
+            lassign $r pipeid db ref pipeline date status
+            append out [format "%-8s %-12s %-28s %-10s %-19s %-10s\n" $pipeid $db $ref $pipeline $date $status]
+        }
+    }
+
+    return [string trimright $out "\n"]
+}
+
+proc _pipes_append_field {outvar label value {maxlines 0} {maxchars 0}} {
+    upvar 1 $outvar out
+    if {$value eq ""} {
+        set value "(empty)"
+    } elseif {$maxlines > 0 || $maxchars > 0} {
+        set value [_pipes_truncate $value $maxlines $maxchars]
+    }
+    append out "\n$label:\n"
+    append out $value "\n"
+}
+
+proc pipes_detail {pipeid} {
+    set ci [_pipes_get_row $pipeid]
+    if {[dict exists $ci error]} {
+        return [dict get $ci error]
+    }
+
+    set out ""
+    append out "Pipeline $pipeid: [dict get $ci refname]\n"
+    append out [string repeat "=" 72] "\n"
+
+    _pipes_append_field out "Status"          [dict get $ci status]
+    _pipes_append_field out "Start time"      [dict get $ci timestamp]
+    _pipes_append_field out "End time"        [dict get $ci end_timestamp]
+    _pipes_append_field out "Commit message"  [dict get $ci commit_msg]
+    _pipes_append_field out "Clone command"   [dict get $ci clone_cmd]
+    _pipes_append_field out "Clone output"    [dict get $ci clone_output] 40 4000
+    _pipes_append_field out "Build command"   [dict get $ci build_cmd]
+    _pipes_append_field out "Build output"    [dict get $ci build_output] 60 8000
+    _pipes_append_field out "Install command" [dict get $ci install_cmd]
+    _pipes_append_field out "Install output"  [dict get $ci install_output] 60 8000
+    _pipes_append_field out "Package command" [dict get $ci package_cmd]
+    _pipes_append_field out "Config file"     [dict get $ci config_file]
+    _pipes_append_field out "Start command"   [dict get $ci start_cmd]
+    _pipes_append_field out "CI dictionary"   [dict get $ci cidict] 40 4000
+
+    set start_ts [dict get $ci timestamp]
+    set end_ts   [dict get $ci end_timestamp]
+    if {$end_ts eq ""} {
+        set end_ts [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+    }
+
+    append out "\nJobs between CI start/end ($start_ts -> $end_ts):\n"
+    set jobs {}
+    if {[_pipes_table_exists JOBMAIN]} {
+        if {[catch {
+            hdbjobs eval {
+                SELECT jobid
+                FROM JOBMAIN
+                WHERE timestamp >= $start_ts
+                  AND timestamp <= $end_ts
+                ORDER BY timestamp ASC
+            } row {
+                lappend jobs $row(jobid)
+            }
+        } err]} {
+            append out "Error querying jobs: $err\n"
+            return [string trimright $out "\n"]
+        }
+    }
+
+    if {[llength $jobs] == 0} {
+        append out "(none)\n"
+    } else {
+        set n 1
+        foreach jobid $jobs {
+            append out [format "%2d. %s\n" $n $jobid]
+            incr n
+        }
+    }
+
+    return [string trimright $out "\n"]
+}
+
+proc pipes {args} {
+    if {[llength $args] == 0} {
+        return [pipes_summary]
+    }
+
+    if {[llength $args] == 1} {
+        set pipeid [lindex $args 0]
+        if {![string is integer -strict $pipeid]} {
+            return "Error: Usage: pipes | pipes <pipeid>"
+        }
+        return [pipes_detail $pipeid]
+    }
+
+    return "Error: Usage: pipes | pipes <pipeid>"
+}
+
+interp alias {} pipe {} pipes
+interp alias {} ci {} pipes
+
 # Unix only at this release
 if {![info exists ::tcl_platform(platform)] || $::tcl_platform(platform) ne "unix"} {
-    foreach p {citmp cilisten cistop cistatus cipush cistep ciset} {
-        if {[info procs $p] ne ""} {
+    foreach p {pipe pipes ci citmp cilisten cistop cistatus cipush cistep ciset} {
+        if {[info commands $p] ne ""} {
             if {[info procs _$p] eq ""} {
                 rename $p _$p
             }

@@ -10,13 +10,12 @@ proc helpws {} {
     putscli ""
     putscli "HammerDB Web Service"
     putscli ""
-    putscli "The HammerDB Web Service provides a read-only HTTP API to inspect"
-    putscli "benchmark jobs created by the HammerDB CLI (for example with"
-    putscli "buildschema and vurun)."
+    putscli "The HammerDB Web Service provides HTTP and browser views for"
+    putscli "benchmark jobs, performance profiles and CI pipelines."
     putscli ""
-    putscli "The web service does not start tests, change configuration, or run"
-    putscli "CI pipelines. All job creation and control happens in the CLI; the web"
-    putscli "interface is for viewing results and metadata only."
+    putscli "Benchmark jobs can still be created and controlled from the CLI"
+    putscli "with commands such as buildschema and vurun. CI pipeline runs can"
+    putscli "also be started from the web service Pipelines page where enabled."
     putscli ""
     putscli "Jobs endpoint"
     putscli "GET /jobs is the main endpoint. It returns information about"
@@ -106,7 +105,7 @@ Type \"help command\" for more details on specific commands below\n"
         buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset \
         diset distributescript giset jobs librarycheck loadscript metset metstart metstatus metstop print quit steprun switchmode tcset tcstart \
         tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop \
-        citmp cilisten cistop cistatus cipush ciset cifix\
+        pipe pipes ci citmp cilisten cireset cistop cistatus cipush ciset cifix\
     ]
 
     if {[ llength $args ] != 1} {
@@ -146,13 +145,14 @@ Type \"help command\" for more details on specific commands below\n"
                     putscli "basepid: baseline/reference performance profile id."
                     putscli "comppid: profile compared relative to the baseline."
                     putscli "true|false: optional weighted compare mode.\n"
-                    putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|metrics|result|status|system|tcount|timestamp|timing|vuid]}
+                    putscli {jobs jobid - Usage: jobs jobid [bm|db|delete|dict|metrics|result|save|status|system|tcount|timestamp|timing|vuid]}
                     putscli "bm: list benchmark for jobid."
                     putscli "db: list database for jobid."
                     putscli "delete: delete jobid."
                     putscli "dict: list dict for jobid."
                     putscli "metrics: show system metrics for jobid."
                     putscli "result: list result for jobid."
+                    putscli "save: save AI-friendly job report JSON to TMP/hdb_jobid.json."
                     putscli "status: list status for jobid."
                     putscli "system: show system data for jobid."
                     putscli "tcount: list count for jobid."
@@ -342,6 +342,13 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                     putscli "Stops the Web Service."
                 }
 
+                pipes -
+                ci {
+                    putscli "pipes - Usage: pipes | pipes <pipeid>"
+                    putscli "pipes: show CI pipeline summary table."
+                    putscli "pipes <pipeid>: show detailed CI pipeline output and linked jobs."
+                    putscli "pipe and ci are aliases for pipes."
+                }
                 citmp {
                     putscli "citmp - Usage: citmp"
                     putscli "Shows the TMP directory and jobs DB path used by CI."
@@ -349,6 +356,13 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                 cilisten {
                     putscli "cilisten - Usage: cilisten"
                     putscli "Starts the CI GitHub webhook listener and job watcher (Linux/Unix only)."
+                    putscli "At startup cilisten runs cireset to clear stale blocking CI rows."
+                }
+                cireset {
+                    putscli "cireset - Usage: cireset"
+                    putscli "Marks all incomplete CI pipeline rows as FAILED."
+                    putscli "Use this to clear stale PENDING or RUNNING rows that block a new CI pipeline."
+                    putscli "This preserves the CI history and allows the next run to proceed."
                 }
                 cistop {
                     putscli "cistop - Usage: cistop"
@@ -404,7 +418,7 @@ proc wapp-page-help {} {
 
         <br>
 
-        <b>GET pipelines</b>: Show CI pipeline runs including database, reference, pipeline type and status.
+        <b>GET pipelines</b>: Show CI pipeline runs including database, reference, pipeline type and status. The Pipelines page can also start configured CI pipeline runs.
         <br><br>
         get http://localhost:8080/pipelines<br>
 

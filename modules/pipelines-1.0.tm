@@ -373,6 +373,9 @@ if {!$__last_ok && [string match "*connection refused*" $__last_err]} {
     wapp-subst "<div class='aut-mini' style='margin-top:6px;'>Start the listener: <code>hammerdbcli</code> → <code>cilisten maria</code></div>"
 } elseif {!$__last_ok && [string match "*connect failed*" $__last_err]} {
     wapp-subst "<div class='aut-mini' style='margin-top:6px;'>Start the listener: <code>hammerdbcli</code> → <code>cilisten maria</code></div>"
+} elseif {!$__last_ok && ([string match "*pipeline already*" [string tolower $__last_msg]] || [string match "*pipeline is already*" [string tolower $__last_err]])} {
+    set reset_url "[wapp-param BASE_URL]/jobs?cireset=1"
+    wapp-subst "<div class='aut-mini' style='margin-top:8px;'><a href='%html($reset_url)'>Clear blocked CI pipeline</a></div>"
 }
         if {$__last_code ne 0} {
             wapp-subst " <span class='aut-mini'>(HTTP %html($__last_code))</span>"
@@ -709,6 +712,27 @@ wapp-redirect "$B/pipelines?$q#runresult"
             }
 
             
+# Do not allow a second pipeline to be submitted while one is active
+set active_ci_count [join [hdbjobs eval {
+    SELECT COUNT(*)
+    FROM JOBCI
+    WHERE status IN ('PENDING','INIT','BUILDING','RUNNING')
+}]]
+
+if {$active_ci_count > 0} {
+    __store_last 0 0 "Pipeline state is active." "" "" "Use Clear blocked CI pipeline if the previous run has stopped but left stale state."
+
+    set q "db=$dbprefix"
+    if {$tag_sel ne ""} { append q "&tag_sel=[__url_encode $tag_sel]" }
+    if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
+    if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
+    if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
+    if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+
+    wapp-redirect "$B/pipelines?$q#runresult"
+    return
+}
+
 # request payload
 set payload_json [__make_payload_json $ref_trim $dbprefix $pipeline_ui $workload_ui $io_intensive]
 

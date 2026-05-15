@@ -96,7 +96,7 @@ proc DoDisplay {maxcpu cpu_model caller} {
     set S(mask) [ expr {round((4/1.333333)*$win_scale_fact)} ]
     set S(maskplus) [ expr {round((1/1.333333)*$win_scale_fact)} ]
     set S(widscl) [ expr {round((375/1.333333)*$win_scale_fact)} ]
-    set S(hdscl) [ expr {round((25/1.333333)*$win_scale_fact)} ]
+    set S(hdscl) [ expr {round((40/1.333333)*$win_scale_fact)} ]
     set S(txtalign) [ expr {round((12/1.333333)*$win_scale_fact)} ]
     set S(hdralign) [ expr {round((15/1.333333)*$win_scale_fact)} ]
     #Remove descriptive name from CPU so does not overrun buffer
@@ -130,6 +130,12 @@ proc DoDisplay {maxcpu cpu_model caller} {
     #Create fixed header
     tkp::canvas $metframe.f.header -highlightthickness 0 -bd 0 -width $width -height $S(hdscl) -bg $CLR(bg)
     $metframe.f.header create text [ expr {$width/2 - $S(hdralign)} ] $S(txtalign) -text "$cpu_model ($maxcpu CPUs)" -fill $CLR(usr) -font {basic} -tags "cpumodel"
+    $metframe.f.header create text [ expr {$width/2 - $S(hdralign)} ] [ expr {$S(txtalign) + 16} ] \
+    -anchor center \
+    -text "IOPS: 0    MBPS: 0.00" \
+    -fill $CLR(usr) \
+    -font [ list basic [ expr [ font actual basic -size ] - 2 ] bold ] \
+    -tags "iotext"
     pack $metframe.f.header
     #Store CPU model in Job - only if DoDiscovery has not already stored system data
     	if { [ info exists cpu_model ] && ![ string match "AGENT CONNECTION FAILED" $cpu_model ] } {
@@ -191,12 +197,36 @@ foreach x { usrlist syslist irqlist idlelist } y { usr sys irq idle } {
 	}
 }
 
+proc addiostats { iops mbps } {
+    global iopslist mbpslist
+    foreach x { iopslist mbpslist } y { iops mbps } {
+        lappend $x [set $y]
+        if {[llength [set $x]] > 5} {
+            set $x [lrange [set $x] end-4 end]
+        }
+    }
+}
+
 proc StatsOneLine {line} {
-global jobid usrlist syslist irqlist idlelist agent_hostname
+global jobid usrlist syslist irqlist idlelist iopslist mbpslist agent_hostname metframe
 proc gmean L {
     expr pow([join $L *],1./[llength $L])
 }
+proc amean L {
+    set sum 0.0
+    foreach v $L {
+        set sum [expr {$sum + $v}]
+    }
+    expr {$sum / double([llength $L])}
+}
     #Called by agent remotely
+    if { [llength $line] eq 3 && [lindex $line 0] eq "IOSTAT" } {
+        lassign $line tag iops mbps
+        if {[string is double -strict $iops] && [string is double -strict $mbps]} {
+            addiostats $iops $mbps
+        }
+        return
+    }
     #Different formats some include AMPM some don't
     if { [ llength $line ] eq 12 } {
         lassign $line when ampm cpu usr nice sys iowait irq soft steal guest idle
@@ -216,9 +246,21 @@ proc gmean L {
 	foreach x { usrlist syslist irqlist idlelist } y { usrgmean sysgmean irqgmean idlegmean } {
 	set $y [format "%3.2f" [ gmean [ set $x ]]]
 	}
+        set iopsmean 0.00
+        set mbpsmean 0.00
+        if {[info exists iopslist] && [llength $iopslist] > 0} {
+            set iopsmean [format "%.0f" [amean $iopslist]]
+        }
+        if {[info exists mbpslist] && [llength $mbpslist] > 0} {
+            set mbpsmean [format "%.2f" [amean $mbpslist]]
+        }
+        catch {
+            $metframe.f.header itemconfigure iotext \
+                -text "IOPS: $iopsmean    MBPS: $mbpsmean"
+        }
     	if { [ interp exists metrics_interp ] } {
 	 if { [ info exists jobid] && $jobid != "" && $jobid != 0 } {
-        hdbjobs eval {INSERT INTO JOBMETRIC(jobid,usr,sys,irq,idle) VALUES($jobid,$usrgmean,$sysgmean,$irqgmean,$idlegmean)}
+        hdbjobs eval {INSERT INTO JOBMETRIC(jobid,usr,sys,irq,idle,iops,mbps) VALUES($jobid,$usrgmean,$sysgmean,$irqgmean,$idlegmean,$iopsmean,$mbpsmean)}
 	#Metrics started before job was running, if placeholder in jobsystem update with correct jobid
         set jobhost [ hdbjobs eval {select hostname from JOBSYSTEM where JOBID=$jobid} ]
 	if {$jobhost eq ""} {
