@@ -949,6 +949,13 @@ __auto_refresh_js 120000
               font-weight:500;">
      Pipelines
     </a>
+    <span class="hdb-jump-inline">
+      <a href="#jobs-tprocc">TPROC-C</a>
+      <a href="#jobs-profiles">Profiles</a>
+      <a href="#jobs-tproch">TPROC-H</a>
+      <a href="#jobs-activity">Activity</a>
+      <a href="#jobs-env">ENV</a>
+    </span>
   </div>
 </div>
 }
@@ -993,10 +1000,10 @@ __auto_refresh_js 120000
     set B [wapp-param BASE_URL]
     set dbfile [ getdatabasefile ]
     set size "[ commify [ hdbjobs eval {SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()} ]]" 
-    wapp-subst {<h3 class="title">ENV</h3>}
+    wapp-subst {<h3 class="title" id="jobs-env">ENV</h3>}
       wapp-subst {<table>\n}
       wapp-subst {<th>SQLite</th><th>Size (bytes)</th><th>Web Service</th>\n}
-      wapp-subst {<tr><td>%html($dbfile)</td><td>%html($size)</td></td><td><a href='%html($B)/env'>Configuration</a></td></tr>\n}
+      wapp-subst {<tr><td>%html($dbfile)</td><td>%html($size)</td><td><a href='%html($B)/env'>Configuration</a></td></tr>\n}
       wapp-subst {</table>\n}
     wapp-trim {
       <br>
@@ -1746,13 +1753,18 @@ proc wapp-page-jobs {} {
     if {$paramlen eq 0 || $query eq ""} {
         set topjobs [gettopjobs]
         home-common-header
-        wapp-subst {<h3 class="title">TPROC-C</h3>}
+        wapp-subst {<div class="hdb-page">
+}
+        wapp-subst {<div class="hdb-section">
+}
+        wapp-subst {<h3 class="title" id="jobs-tprocc">TPROC-C</h3>}
         wapp-trim {<div class='hammerdb' data-title='TPROC-C'>}
 
         set tprocccombined {}
         set tprochcombined {}
 
-        wapp-subst {<table>\n}
+        wapp-subst {<div class="hdb-table-wrap">\n}
+        wapp-subst {<table class="hdb-table">\n}
         wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>NOPM</th><th>Status</th>\n}
 
         foreach job [ lreverse [getjob joblist] ] {
@@ -1840,19 +1852,27 @@ proc wapp-page-jobs {} {
         if {$tprocccombined eq {}} {
             wapp-subst {<tr><td colspan="6">No TPROC-C runs found in database file %html([getdatabasefile])</td></tr>\n}
         }
-        wapp-subst {</table>\n}
+        wapp-subst {</table>
+}
+        wapp-subst {</div>
+}
+        wapp-subst {</div>
+}
 
         # Profiles table
         set profcount 0
         if {![info exists ::profile_dbdesc]} {
             set ::profile_dbdesc [dict create]
         }
-        wapp-subst {<h3 class="title">TPROC-C Performance Profiles</h3>}
+        wapp-subst {<div class="hdb-section">
+}
+        wapp-subst {<h3 class="title" id="jobs-profiles">TPROC-C Performance Profiles</h3>}
         wapp-subst {<p style="margin:0 0 6px 0; opacity:0.75;">Select one <b>Base</b> profile and one <b>New</b> profile, click <b>Compare Profiles</b> to compare.</p>}
-        wapp-subst {<form method="GET" action="%html(/jobs)" style="width:100%; max-width:800px; margin:0 0 18px 0;">}
+        wapp-subst {<form method="GET" action="%html(/jobs)" class="hdb-form">}
         wapp-subst {<input type="hidden" name="cmd" value="profilediff">}
-        wapp-subst {<div style="overflow-x:auto; max-width:100%;">}
-        wapp-subst {<table>\n}
+        wapp-subst {<div class="hdb-table-wrap">}
+        wapp-subst {<table class="hdb-table">
+}
         wapp-subst {<tr><th>Profile ID</th><th>Jobs</th><th>Database</th><th>Max Job</th><th>Max NOPM</th><th>Max TPM</th><th>Max AVU</th><th>Base</th><th>New</th></tr>\n}
 
         set profileids [lreverse [join [hdbjobs eval {select distinct(profile_id) from jobmain where profile_id > 0 order by profile_id asc}]]]
@@ -1898,43 +1918,45 @@ proc wapp-page-jobs {} {
         if {$profcount eq 0} {
             wapp-subst {<tr><td colspan="9">No performance profiles found in database file %html([getdatabasefile])</td></tr>\n}
         }
-        wapp-subst {</table>\n}
+        wapp-subst {</table>
+}
         wapp-subst {</div>}
-        wapp-subst {<div style="margin-top:8px; text-align:right;"><button type="submit" style="padding:4px 10px;">Compare Profiles</button></div>}
-        wapp-subst {</form>\n}
+        wapp-subst {<div class="hdb-actions"><button type="submit" style="padding:4px 10px;">Compare Profiles</button></div>}
+        wapp-subst {</form>
+}
+        wapp-subst {</div>
+}
 
         # TPROC-H
-        wapp-subst {<h3 class="title">TPROC-H</h3>}
+        wapp-subst {<div class="hdb-section">
+}
+        wapp-subst {<h3 class="title" id="jobs-tproch">TPROC-H</h3>}
         wapp-trim {<div class='hammerdb' data-title='TPROC-H'>}
-        wapp-subst {<table>\n}
+        wapp-subst {<div class="hdb-table-wrap">
+}
+        wapp-subst {<table class="hdb-table">
+}
         wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>Geomean</th><th>Status</th>\n}
         wapp-subst $tprochcombined
         if {$tprochcombined eq {}} {
             wapp-subst {<tr><td colspan="6">No TPROC-H jobs found in database file %html([getdatabasefile])</td></tr>\n}
         }
-        wapp-subst {</table>\n}
+        wapp-subst {</table>
+}
+        wapp-subst {</div>
+}
+        wapp-subst {</div>
+}
         # Benchmark Activity
         wapp-subst {
-        <div style="margin:18px 0 20px 0; max-width:800px; border-radius:6px; background:#eef6ff; border:1px solid #d0d7de;">
+        <div id="jobs-activity" class="hdb-activity">
           <details id="workload-log-panel">
             <summary style="cursor:pointer; padding:10px 14px; font-weight:600; color:#0a3d62; border-left:4px solid #0969da;">
               Benchmark Activity
             </summary>
 
             <div style="padding:12px;">
-              <pre id="workload-log-box"
-                   style="margin:0;
-                          padding:12px;
-                          height:320px;
-                          overflow:auto;
-                          background:#eef6ff;
-                          color:#0a3d62;
-                          border:1px solid #d0d7de;
-                          border-radius:6px;
-                          font-family:monospace;
-                          font-size:13px;
-                          line-height:1.35;
-                          white-space:pre-wrap;">
+              <pre id="workload-log-box" class="hdb-log-box">
               </pre>
             </div>
 

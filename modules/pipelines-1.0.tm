@@ -111,11 +111,20 @@ namespace eval pipelines {
         wapp-subst {
 <style>
 .aut-wrap{max-width:980px;}
-.aut-form{max-width:720px;}
+.aut-form{width:100%;max-width:980px;}
 .aut-ctl{width:100%; box-sizing:border-box; min-width:0;}
 .aut-row{margin-top:8px;}
 .aut-actions{margin-top:14px;}
 .aut-btn{padding:6px 14px;}
+.hdb-page{max-width:1180px;margin:0 16px 40px 16px;}
+.hdb-section{max-width:980px;margin:0 0 24px 0;}
+.hdb-table-wrap{width:100%;max-width:980px;overflow-x:auto;margin:0 0 14px 0;}
+.hdb-table-wrap table,table.hdb-table{width:100%;max-width:none!important;min-width:760px;margin:1em 0;}
+.hdb-form-narrow{width:100%;max-width:980px;margin:0 0 18px 0;}
+.hdb-actions-left{width:100%;max-width:980px;text-align:left;margin:14px 0 22px 0;}
+.hdb-activity{width:100%;max-width:980px;margin:18px 0 20px 0;border-radius:6px;background:#eef6ff;border:1px solid #d0d7de;box-sizing:border-box;}
+.hdb-log-box{margin:0;padding:12px;height:320px;overflow:auto;background:#eef6ff;color:#0a3d62;border:1px solid #d0d7de;border-radius:6px;font-family:monospace;font-size:13px;line-height:1.35;white-space:pre-wrap;box-sizing:border-box;}
+@media (max-width:760px){.hdb-page{margin:0 8px 32px 8px;}.hdb-table-wrap table,table.hdb-table{min-width:680px;}.hdb-actions-left{text-align:left;}}
 .aut-banner{border:1px solid #ddd; padding:10px 12px; border-radius:6px; margin:10px 0 14px 0;}
 .aut-ok{background:#e7f6ea; border-color:#7ac189; color:#155724;}
 .aut-fail{background:#fdeaea; border-color:#e18b8b; color:#721c24;}
@@ -778,7 +787,7 @@ return
         __page_head $B "HammerDB Pipelines"
         __auto_refresh_js 120000
         wapp-subst "<!-- pipelines-module:1.5 -->"
-        wapp-subst {<div class="aut-wrap">}
+        wapp-subst {<div class="hdb-page aut-wrap">}
 
         __render_last_if_any
 
@@ -792,7 +801,9 @@ return
         }
 
         # recent runs
-        wapp-subst {<table>}
+        wapp-subst {<div class="hdb-section">}
+        wapp-subst {<div class="hdb-table-wrap" style="width:100%; max-width:980px; overflow-x:auto;">}
+        wapp-subst {<table class="hdb-table" style="width:100%; max-width:none; min-width:760px;">}
         wapp-subst {<tr><th>Pipeid</th><th>DB</th><th>Ref</th><th>Pipeline</th><th>Date</th><th>Status</th></tr>}
 
         set cicount [join [hdbjobs eval {SELECT COUNT(*) FROM JOBCI}]]
@@ -886,12 +897,14 @@ return
             }
         }
         wapp-subst {</table>}
+        wapp-subst {</div>}
+        wapp-subst {</div>}
 
-        wapp-subst {<div class="aut-form">}
+        wapp-subst {<div class="hdb-section" style="width:100%; max-width:980px; margin:0 0 24px 0;">}
 
         # database chooser
         wapp-subst {<p><b>Database</b></p>}
-        wapp-subst "<select class='aut-ctl' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
+        wapp-subst "<select class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
         foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB ] {
             # Hide DBs until support is enabled
             if {$pfx in {ora mssqls db2}} continue
@@ -927,7 +940,7 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         wapp-subst "<input type='hidden' name='db' value='%html($dbprefix)'>"
 
         wapp-subst {<p style='margin-top:12px;'><b>Ref</b></p>}
-        wapp-subst {<select class="aut-ctl" name="tag_sel" form="runform">}
+        wapp-subst {<select class="aut-ctl" style="width:100%; max-width:980px; box-sizing:border-box;" name="tag_sel" form="runform">}
         if {[llength $tags] == 0} {
             wapp-subst "<option value='' disabled selected>(no tags found — use Custom...)</option>"
         }
@@ -941,12 +954,12 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         wapp-subst "<option value='__custom__'$sel>Custom...</option>"
         wapp-subst {</select>}
 
-        wapp-subst {<div class="aut-row">}
+        wapp-subst {<div class="aut-row" style="width:100%; max-width:980px;">}
         wapp-subst {Custom ref (tag, branch, or commit SHA):}
         if {$ref_custom eq ""} {
-            wapp-subst "<input class='aut-ctl' type='text' name='ref_custom' form='runform' placeholder='refs/tags/... or refs/heads/... or a1b2c3d4e5f6...'>"
+            wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' placeholder='refs/tags/... or refs/heads/... or a1b2c3d4e5f6...'>"
         } else {
-            wapp-subst "<input class='aut-ctl' type='text' name='ref_custom' form='runform' value='%html($ref_custom)' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
+            wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' value='%html($ref_custom)' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
         }
         wapp-subst {</div>}
 
@@ -994,26 +1007,14 @@ wapp-subst {</div>}
 wapp-subst {</div>}
 
 wapp-subst {
-<div style="margin:18px 0 20px 0; max-width:800px; border-radius:6px; background:#eef6ff; border:1px solid #d0d7de;">
+<div class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
   <details id="ci-log-panel">
     <summary style="cursor:pointer; padding:10px 14px; font-weight:600; color:#0a3d62; border-left:4px solid #0969da;">
       Pipeline Activity
     </summary>
 
     <div style="padding:12px;">
-      <pre id="ci-log-box"
-           style="margin:0;
-                  padding:12px;
-                  height:320px;
-                  overflow:auto;
-                  background:#eef6ff;
-                  color:#0a3d62;
-                  border:1px solid #d0d7de;
-                  border-radius:6px;
-                  font-family:monospace;
-                  font-size:13px;
-                  line-height:1.35;
-                  white-space:pre-wrap;"></pre>
+      <pre id="ci-log-box" class="hdb-log-box"></pre>
     </div>
   </details>
 </div>
@@ -1050,7 +1051,7 @@ wapp-subst "<script>
 })();
 </script>"
 
-        wapp-subst {<div class="aut-actions">}
+        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
         wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
         wapp-subst {</div>}
         wapp-subst {</form>}
