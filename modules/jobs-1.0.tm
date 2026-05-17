@@ -2292,7 +2292,6 @@ proc wapp-page-jobs {} {
         wapp-subst {
 <p class="no-print" style="text-align:left; margin:0px 0;">
   <a href="#" onclick="window.print(); return false;">Save to PDF</a><br>
-  <a href="%html($B)/jobs?jobid=%html($jobid)&summaryjson" download="hdb_%html($jobid).json">Save as JSON</a>
 </p>
 }
 
