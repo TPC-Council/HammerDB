@@ -729,7 +729,7 @@ set active_ci_count [join [hdbjobs eval {
 }]]
 
 if {$active_ci_count > 0} {
-    __store_last 0 0 "Pipeline state is active." "" "" "Use Clear blocked CI pipeline if the previous run has stopped but left stale state."
+    __store_last 0 0 "Pipeline already active." "" "" "Previous run may have left stale CI state."
 
     set q "db=$dbprefix"
     if {$tag_sel ne ""} { append q "&tag_sel=[__url_encode $tag_sel]" }
