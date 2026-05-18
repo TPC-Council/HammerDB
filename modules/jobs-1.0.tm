@@ -1733,7 +1733,7 @@ proc wapp-page-jobs {} {
             set openattr ""
             if {$first} { set openattr " open"; set first 0 }
             wapp-subst "<details class='hdb-date-group'$openattr>\n"
-            wapp-subst "<summary>%html($datekey) <span>%html([llength $rows]) run(s)</span></summary>\n"
+            wapp-subst "<summary>%html($datekey) <span>%html([llength $rows]) job(s)</span></summary>\n"
             wapp-subst "<div class='hdb-table-wrap'>\n"
             wapp-subst "<table class='hdb-table'>\n"
             wapp-subst "<tr>"
