@@ -1699,6 +1699,51 @@ proc wapp-page-jobs {} {
         set url "$B/jobs?jobid=$jobid&$name"
         wapp-subst "<li><a href='%html($url)'>%html($label)</a></li>\n"
     }
+    proc __jobs_date_key {dateval} {
+        set d [string trim $dateval]
+        if {[string length $d] >= 10} {
+            return [string range $d 0 9]
+        }
+        if {$d eq ""} { return "Unknown date" }
+        return $d
+    }
+
+    proc __jobs_append_group {varname datekey row} {
+        upvar 1 $varname groups
+        if {![dict exists $groups $datekey]} {
+            dict set groups $datekey {}
+        }
+        dict lappend groups $datekey $row
+    }
+
+    proc __jobs_render_grouped_table {groups headers emptymsg} {
+        if {[dict size $groups] == 0} {
+            wapp-subst "<div class='hdb-table-wrap'>\n"
+            wapp-subst "<table class='hdb-table'>\n"
+            wapp-subst "<tr>"
+            foreach h $headers { wapp-subst "<th>%html($h)</th>" }
+            wapp-subst "</tr>\n"
+            wapp-subst "<tr><td colspan='%html([llength $headers])'>%html($emptymsg)</td></tr>\n"
+            wapp-subst "</table>\n</div>\n"
+            return
+        }
+
+        set first 1
+        dict for {datekey rows} $groups {
+            set openattr ""
+            if {$first} { set openattr " open"; set first 0 }
+            wapp-subst "<details class='hdb-date-group'$openattr>\n"
+            wapp-subst "<summary>%html($datekey) <span>%html([llength $rows]) run(s)</span></summary>\n"
+            wapp-subst "<div class='hdb-table-wrap'>\n"
+            wapp-subst "<table class='hdb-table'>\n"
+            wapp-subst "<tr>"
+            foreach h $headers { wapp-subst "<th>%html($h)</th>" }
+            wapp-subst "</tr>\n"
+            foreach row $rows { wapp-subst $row }
+            wapp-subst "</table>\n</div>\n"
+            wapp-subst "</details>\n"
+        }
+    }
 
     set B [wapp-param BASE_URL]
     set query  [wapp-param QUERY_STRING]
@@ -1760,12 +1805,8 @@ proc wapp-page-jobs {} {
         wapp-subst {<h3 class="title" id="jobs-tprocc">TPROC-C</h3>}
         wapp-trim {<div class='hammerdb' data-title='TPROC-C'>}
 
-        set tprocccombined {}
-        set tprochcombined {}
-
-        wapp-subst {<div class="hdb-table-wrap">\n}
-        wapp-subst {<table class="hdb-table">\n}
-        wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>NOPM</th><th>Status</th>\n}
+        set tproccgroups [dict create]
+        set tprochgroups [dict create]
 
         foreach job [ lreverse [getjob joblist] ] {
             set nopm "--"
@@ -1842,20 +1883,15 @@ proc wapp-page-jobs {} {
             }
 
             if {$bm eq "TPROC-C"} {
-                append tprocccombined [subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($nopm)</td><td class='status'>%unsafe($statusimg)</td></tr>\n}]
+                set row [subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($nopm)</td><td class='status'>%unsafe($statusimg)</td></tr>\n}]
+                __jobs_append_group tproccgroups [__jobs_date_key $date] $row
             } else {
-                append tprochcombined [subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($geo)</td><td class='status'>%unsafe($statusimg)</td></tr>\n}]
+                set row [subst {<tr><td><a href='%html($url)'>%html($job)</a></td><td>%html($db)</td><td>%html($date)</td><td>%html($jobtype)</td><td>%html($geo)</td><td class='status'>%unsafe($statusimg)</td></tr>\n}]
+                __jobs_append_group tprochgroups [__jobs_date_key $date] $row
             }
         }
 
-        wapp-subst $tprocccombined
-        if {$tprocccombined eq {}} {
-            wapp-subst {<tr><td colspan="6">No TPROC-C runs found in database file %html([getdatabasefile])</td></tr>\n}
-        }
-        wapp-subst {</table>
-}
-        wapp-subst {</div>
-}
+        __jobs_render_grouped_table $tproccgroups [list Jobid Database Date Workload NOPM Status] "No TPROC-C runs found in database file [getdatabasefile]"
         wapp-subst {</div>
 }
 
@@ -1932,19 +1968,7 @@ proc wapp-page-jobs {} {
 }
         wapp-subst {<h3 class="title" id="jobs-tproch">TPROC-H</h3>}
         wapp-trim {<div class='hammerdb' data-title='TPROC-H'>}
-        wapp-subst {<div class="hdb-table-wrap">
-}
-        wapp-subst {<table class="hdb-table">
-}
-        wapp-subst {<th>Jobid</th><th>Database</th><th>Date</th><th>Workload</th><th>Geomean</th><th>Status</th>\n}
-        wapp-subst $tprochcombined
-        if {$tprochcombined eq {}} {
-            wapp-subst {<tr><td colspan="6">No TPROC-H jobs found in database file %html([getdatabasefile])</td></tr>\n}
-        }
-        wapp-subst {</table>
-}
-        wapp-subst {</div>
-}
+        __jobs_render_grouped_table $tprochgroups [list Jobid Database Date Workload Geomean Status] "No TPROC-H jobs found in database file [getdatabasefile]"
         wapp-subst {</div>
 }
         # Benchmark Activity

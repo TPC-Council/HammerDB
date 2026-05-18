@@ -812,6 +812,10 @@ return
         } else {
             set has_dbprefix 0
             if {![catch {hdbjobs eval {SELECT dbprefix FROM JOBCI LIMIT 1}}]} { set has_dbprefix 1 }
+            set has_io_intensive 0
+            if {![catch {hdbjobs eval {SELECT io_intensive FROM JOBCI LIMIT 1}}]} { set has_io_intensive 1 }
+            set io_select "0 AS row_io_intensive"
+            if {$has_io_intensive} { set io_select "io_intensive AS row_io_intensive" }
     # cleanup stale CI rows
     set now [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
     if {$has_dbprefix} {
@@ -868,30 +872,34 @@ return
     }
             if {$has_dbprefix} {
                 # alias columns
-                hdbjobs eval {SELECT ci_id,
+                hdbjobs eval "SELECT ci_id,
                                      refname,
                                      dbprefix AS row_dbprefix,
                                      pipeline AS row_pipeline,
+                                     $io_select,
                                      timestamp AS row_timestamp,
                                      status AS row_status
                               FROM JOBCI
                               ORDER BY ci_id DESC
-                              LIMIT 25} {
+                              LIMIT 25" {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
+                    if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
                     wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>%html([__db_label $row_dbprefix])</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
                 }
             } else {
-                hdbjobs eval {SELECT ci_id,
+                hdbjobs eval "SELECT ci_id,
                                      refname,
                                      pipeline AS row_pipeline,
+                                     $io_select,
                                      timestamp AS row_timestamp,
                                      status AS row_status
                               FROM JOBCI
                               ORDER BY ci_id DESC
-                              LIMIT 25} {
+                              LIMIT 25" {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
+                    if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
                     wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>-</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
                 }
             }
@@ -970,7 +978,7 @@ set bench_c_single ""
 set bench_c_profile ""
 set bench_c_compare ""
 set bench_h_single ""
-set io_intensive ""
+# keep current io_intensive selection from query
 
 if {$workload_ui eq "H"} {
     set bench_h_single " checked"
@@ -996,7 +1004,7 @@ wapp-subst {<div style='min-width:82px; font-weight:600;'>TPROC-C</div>}
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_single'$bench_c_single onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='single';\"> Single</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_profile'$bench_c_profile onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='profile';\"> Profile</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_compare'$bench_c_compare onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='compare';\"> Compare</label>"
-wapp-subst "<label style='cursor:pointer; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive> Full Durability + I/O intensive</label>"
+wapp-subst "<label style='cursor:pointer; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive_checked> Full Durability + I/O intensive</label>"
 wapp-subst {</div>}
 
 # TPROC-H

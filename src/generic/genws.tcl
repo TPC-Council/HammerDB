@@ -219,6 +219,42 @@ table.hdb-table {
   margin: 14px 0 22px 0;
 }
 
+
+.hdb-date-group {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 0 12px 0;
+  box-sizing: border-box;
+}
+
+.hdb-date-group > summary {
+  cursor: pointer;
+  padding: 8px 10px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.hdb-date-group > summary span {
+  font-weight: 400;
+  opacity: 0.72;
+  margin-left: 6px;
+}
+
+.hdb-date-group[open] > summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.hdb-date-group .hdb-table-wrap {
+  margin-top: 0;
+}
+
+.hdb-date-group .hdb-table {
+  margin-top: 0;
+}
+
 .hdb-activity {
   width: 100%;
   max-width: 980px;
