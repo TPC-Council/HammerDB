@@ -305,7 +305,7 @@ proc load_virtual {}  {
                         if { $masterthread eq -1 } { ; } else {
                             lappend Stack $s$nl
                             if { [ llength $Stack ]  > 5 } { set Stack [lreplace $Stack 0 0 ] }
-                            eval [subst {thread::send $masterthread {::Log [ list $id $Stack $s$nl ]}}]
+                            eval [subst {thread::send -async $masterthread {::Log [ list $id $Stack $s$nl ]}}]
                             if { $optlog eq 1 } { 
                             eval [subst {thread::send -async $masterthread {::logtofile [ list $id $s$nl ]}}] 			}
                         } } else {
