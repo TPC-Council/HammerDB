@@ -2089,55 +2089,55 @@ proc wapp-page-jobs {} {
         set jobresult [getjobresult $jobid 1]
         if {![llength $jobresult] eq 2 || ![string match [lindex $jobresult 1] "Jobid has no test result"]} {
             set url "$B/jobs?jobid=$jobid&summary"
-            wapp-subst "<li><a href='%html($url)'>%html(benchmark report)</a></li>\n"
+            wapp-subst "<li><a href='%html($url)'>%html(Benchmark report)</a></li>\n"
         }
 
         # output (human readable default)
         set url "$B/jobs?jobid=$jobid"
-        wapp-subst "<li><a href='%html($url)'>%html(output)</a></li>\n"
+        wapp-subst "<li><a href='%html($url)'>%html(Output)</a></li>\n"
 
         foreach option "bm db dict result status tcount system metrics timestamp timing delete" {
             set url "$B/jobs?jobid=$jobid&$option"
             switch $option {
-                bm       { wapp-subst "<li><a href='%html($url)'>%html(benchmark)</a></li>\n" }
-                db       { wapp-subst "<li><a href='%html($url)'>%html(database)</a></li>\n" }
-                dict     { wapp-subst "<li><a href='%html($url)'>%html(dict configuration)</a></li>\n" }
+                bm       { wapp-subst "<li><a href='%html($url)'>%html(Benchmark)</a></li>\n" }
+                db       { wapp-subst "<li><a href='%html($url)'>%html(Database)</a></li>\n" }
+                dict     { wapp-subst "<li><a href='%html($url)'>%html(Dict configuration)</a></li>\n" }
                 result {
                     set jr [getjobresult $jobid 1]
                     if {![llength $jr] eq 2 || ![string match [lindex $jr 1] "Jobid has no test result"]} {
-                        wapp-subst "<li><a href='%html($url)'>%html(result)</a></li>\n"
+                        wapp-subst "<li><a href='%html($url)'>%html(Result)</a></li>\n"
                     }
                 }
                 tcount {
                     set jt [getjobtcount $jobid]
                     if {![llength $jt] eq 2 || ![string match [lindex $jt 1] "Jobid has no transaction counter data"]} {
-                        wapp-subst "<li><a href='%html($url)'>%html(transaction count)</a></li>\n"
+                        wapp-subst "<li><a href='%html($url)'>%html(Transaction count)</a></li>\n"
                     }
                 }
                 system {
                     set js [getjobsystem $jobid]
                     if {![llength $js] eq 2 || ![string match [lindex $js 1] "Jobid has no system data"]} {
-                        wapp-subst "<li><a href='%html($url)'>%html(system)</a></li>\n"
+                        wapp-subst "<li><a href='%html($url)'>%html(System)</a></li>\n"
                     }
                 }
                 metrics {
                     set jm [getjobmetrics $jobid]
                     if {![llength $jm] eq 2 || ![string match [lindex $jm 1] "Jobid has no metric data"]} {
-                        wapp-subst "<li><a href='%html($url)'>%html(metrics)</a></li>\n"
+                        wapp-subst "<li><a href='%html($url)'>%html(Metrics)</a></li>\n"
                     }
                 }
                 timing {
                     set jr [getjobresult $jobid 1]
                     if {[string match "Geometric*" [lindex $jr 2]]} {
-                        wapp-subst "<li><a href='%html($url)'>%html(response times)</a></li>\n"
+                        wapp-subst "<li><a href='%html($url)'>%html(Response times)</a></li>\n"
                     } else {
                         set jt [getjobtiming $jobid]
                         if {![llength $jt] eq 2 || ![string match [lindex $jt 1] "Jobid has no timing data"]} {
-                            wapp-subst "<li><a href='%html($url)'>%html(response times)</a></li>\n"
+                            wapp-subst "<li><a href='%html($url)'>%html(Response times)</a></li>\n"
                         }
                     }
                 }
-                default { wapp-subst "<li><a href='%html($url)'>%html($option)</a></li>\n" }
+                default { wapp-subst "<li><a href='%html($url)'>%html([string totitle $option])</a></li>\n" }
             }
         }
 
