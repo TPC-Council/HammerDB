@@ -1102,7 +1102,6 @@ proc metpgopts {} {
 	set start_display false
         $Name configure -state disabled
     }
-    #Placeholder if feature desired in GUI for only CPU metrics
     set Name $Parent.f1.e13
     set Prompt $Parent.f1.p13
     ttk::label $Prompt -text "CPU Metrics Only :"

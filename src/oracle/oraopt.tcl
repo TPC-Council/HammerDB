@@ -956,7 +956,6 @@ set Name $Parent.f1.e3
 	set start_display false
         $Name configure -state disabled
     }
-    #Placeholder if feature desired in GUI for only CPU metrics
     set Name $Parent.f1.e7
     set Prompt $Parent.f1.p7
     ttk::label $Prompt -text "CPU Metrics Only :"
