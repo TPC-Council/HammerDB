@@ -1318,3 +1318,314 @@ proc configmariatpch {option} {
     raise .mytpch
     update
 }
+proc metmariaopts {} {
+    global agent_hostname agent_id bm start_display cpu_only
+    upvar #0 icons icons
+    upvar #0 configmariadb configmariadb
+
+    setlocaltcountvars $configmariadb 1
+
+    variable mariaoptsfields
+    if { $bm eq "TPC-C" } {
+        if {![string match windows $::tcl_platform(platform)]} {
+            set platform "lin"
+            set mariaoptsfields [ dict create connection {maria_host {.metric.c1.e1 get} maria_port {.metric.c1.e2 get} maria_socket {.metric.c1.e2a get} maria_ssl_ca {.metric.c1.e2d get} maria_ssl_cert {.metric.c1.e2e get} maria_ssl_key {.metric.c1.e2f get} maria_ssl_cipher {.metric.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpcc {maria_user {.metric.c1.e3 get} maria_pass {.metric.c1.e4 get}} ]
+        } else {
+            set platform "win"
+            set mariaoptsfields [ dict create connection {maria_host {.metric.c1.e1 get} maria_port {.metric.c1.e2 get} maria_socket {.metric.c1.e2a get} maria_ssl_ca {.metric.c1.e2d get} maria_ssl_cert {.metric.c1.e2e get} maria_ssl_key {.metric.c1.e2f get} maria_ssl_cipher {.metric.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpcc {maria_user {.metric.c1.e3 get} maria_pass {.metric.c1.e4 get}} ]
+        }
+    } else {
+        if {![string match windows $::tcl_platform(platform)]} {
+            set platform "lin"
+            set mariaoptsfields [ dict create connection {maria_host {.metric.c1.e1 get} maria_port {.metric.c1.e2 get} maria_socket {.metric.c1.e2a get} maria_ssl_ca {.metric.c1.e2d get} maria_ssl_cert {.metric.c1.e2e get} maria_ssl_key {.metric.c1.e2f get} maria_ssl_cipher {.metric.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_linux_capath $maria_ssl_linux_capath} tpch {maria_tpch_user {.metric.c1.e3 get} maria_tpch_pass {.metric.c1.e4 get}} ]
+        } else {
+            set platform "win"
+            set mariaoptsfields [ dict create connection {maria_host {.metric.c1.e1 get} maria_port {.metric.c1.e2 get} maria_socket {.metric.c1.e2a get} maria_ssl_ca {.metric.c1.e2d get} maria_ssl_cert {.metric.c1.e2e get} maria_ssl_key {.metric.c1.e2f get} maria_ssl_cipher {.metric.c1.e2g get} maria_ssl $maria_ssl maria_ssl_two_way $maria_ssl_two_way maria_ssl_windows_capath {$maria_ssl_windows_capath}} tpch {maria_tpch_user {.metric.c1.e3 get} maria_tpch_pass {.metric.c1.e4 get}} ]
+        }
+    }
+
+    if { [ info exists agent_hostname ] } { ; } else { set agent_hostname "localhost" }
+    if { [ info exists agent_id ] } { ; } else { set agent_id 0 }
+    if { [ info exists cpu_only ] } { ; } else { set cpu_only "false" }
+    if { [ info exists start_display ] } { ; } else { set start_display "true" }
+
+    catch "destroy .metric"
+    ttk::toplevel .metric
+    wm transient .metric .ed_mainFrame
+    wm withdraw .metric
+    wm title .metric {MariaDB Metrics Options}
+
+    set Parent .metric
+    set Prompt $Parent.h1
+    ttk::label $Prompt -compound left -text "MariaDB Metrics Options" -image [ create_image dashboard icons ]
+    pack $Prompt -anchor center -side top
+
+    set Name $Parent.notebook
+    ttk::notebook $Name
+    $Name add [ ttk::frame $Parent.c1 ] -text "Connection" -sticky ne
+    $Name add [ ttk::frame $Parent.f1 ] -text "Settings" -sticky ne
+    pack $Name -anchor nw -fill x -side top -padx 5
+
+    set Name $Parent.c1.e1
+    set Prompt $Parent.c1.p1
+    ttk::label $Prompt -text "MariaDB Host :"
+    ttk::entry $Name -width 30 -textvariable maria_host
+    grid $Prompt -column 0 -row 1 -sticky e
+    grid $Name -column 1 -row 1 -sticky ew
+
+    set Name $Parent.c1.e2
+    set Prompt $Parent.c1.p2
+    ttk::label $Prompt -text "MariaDB Port :"
+    ttk::entry $Name -width 30 -textvariable maria_port
+    grid $Prompt -column 0 -row 2 -sticky e
+    grid $Name -column 1 -row 2 -sticky ew
+
+    set Name $Parent.c1.e2a
+    set Prompt $Parent.c1.p2a
+    ttk::label $Prompt -text "MariaDB Socket :"
+    ttk::entry $Name -width 30 -textvariable maria_socket
+    grid $Prompt -column 0 -row 3 -sticky e
+    grid $Name -column 1 -row 3 -sticky ew
+    if {[string match windows $::tcl_platform(platform)]} {
+        set maria_socket "null"
+        .metric.c1.e2a configure -state disabled
+    }
+
+    set Name $Parent.c1.e2b
+    set Prompt $Parent.c1.p2b
+    ttk::label $Prompt -text "Enable SSL :"
+    ttk::checkbutton $Name -text "" -variable maria_ssl -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 4 -sticky e
+    grid $Name -column 1 -row 4 -sticky w
+
+    bind .metric.c1.e2b <Any-ButtonRelease> {
+        if { $maria_ssl eq "true" } {
+            .metric.c1.e2ba configure -state disabled
+            .metric.c1.e2bb configure -state disabled
+            .metric.c1.e2c configure -state disabled
+            .metric.c1.e2d configure -state disabled
+            .metric.c1.e2e configure -state disabled
+            .metric.c1.e2f configure -state disabled
+            .metric.c1.e2g configure -state disabled
+        } else {
+            .metric.c1.e2ba configure -state normal
+            .metric.c1.e2bb configure -state normal
+            .metric.c1.e2c configure -state normal
+            .metric.c1.e2d configure -state normal
+            if { $maria_ssl_two_way eq "true" } {
+                .metric.c1.e2e configure -state normal
+                .metric.c1.e2f configure -state normal
+            }
+            .metric.c1.e2g configure -state normal
+        }
+    }
+
+    set Name $Parent.c1.e2ba
+    ttk::radiobutton $Name -value "false" -text "SSL One-Way" -variable maria_ssl_two_way
+    grid $Name -column 1 -row 5 -sticky w
+    if { $maria_ssl eq "false" } {
+        .metric.c1.e2ba configure -state disabled
+    }
+    bind .metric.c1.e2ba <ButtonPress-1> {
+        if { $maria_ssl eq "true" } {
+            .metric.c1.e2e configure -state disabled
+            .metric.c1.e2f configure -state disabled
+        }
+    }
+
+    set Name $Parent.c1.e2bb
+    ttk::radiobutton $Name -value "true" -text "SSL Two-Way" -variable maria_ssl_two_way
+    grid $Name -column 1 -row 6 -sticky w
+    if { $maria_ssl eq "false" } {
+        .metric.c1.e2bb configure -state disabled
+    }
+    bind .metric.c1.e2bb <ButtonPress-1> {
+        if { $maria_ssl eq "true" } {
+            .metric.c1.e2e configure -state normal
+            .metric.c1.e2f configure -state normal
+        }
+    }
+
+    set Name $Parent.c1.e2c
+    set Prompt $Parent.c1.p2c
+    ttk::label $Prompt -text "SSL CApath :"
+    if { $platform eq "lin" } {
+        ttk::entry $Name -width 30 -textvariable maria_ssl_linux_capath
+    } else {
+        ttk::entry $Name -width 30 -textvariable maria_ssl_windows_capath
+    }
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7 -sticky ew
+    if { $maria_ssl == "false" } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.c1.e2d
+    set Prompt $Parent.c1.p2d
+    ttk::label $Prompt -text "SSL CA :"
+    ttk::entry $Name -width 30 -textvariable maria_ssl_ca
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8 -sticky ew
+    if { $maria_ssl == "false" } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.c1.e2e
+    set Prompt $Parent.c1.p2e
+    ttk::label $Prompt -text "SSL Cert :"
+    ttk::entry $Name -width 30 -textvariable maria_ssl_cert
+    grid $Prompt -column 0 -row 9 -sticky e
+    grid $Name -column 1 -row 9 -sticky ew
+    if { $maria_ssl == "false" } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.c1.e2f
+    set Prompt $Parent.c1.p2f
+    ttk::label $Prompt -text "SSL Key :"
+    ttk::entry $Name -width 30 -textvariable maria_ssl_key
+    grid $Prompt -column 0 -row 10 -sticky e
+    grid $Name -column 1 -row 10 -sticky ew
+    if { $maria_ssl == "false" } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.c1.e2g
+    set Prompt $Parent.c1.p2g
+    ttk::label $Prompt -text "SSL Cipher :"
+    ttk::entry $Name -width 30 -textvariable maria_ssl_cipher
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky ew
+    if { $maria_ssl == "false" } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.c1.e3
+    set Prompt $Parent.c1.p3
+    ttk::label $Prompt -text "MariaDB User :"
+    if { $bm eq "TPC-C" } {
+        ttk::entry $Name -width 30 -textvariable maria_user
+    } else {
+        ttk::entry $Name -width 30 -textvariable maria_tpch_user
+    }
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky ew
+
+    set Name $Parent.c1.e4
+    set Prompt $Parent.c1.p4
+    ttk::label $Prompt -text "MariaDB User Password :"
+    if { $bm eq "TPC-C" } {
+        ttk::entry $Name -show * -width 30 -textvariable maria_pass
+    } else {
+        ttk::entry $Name -show * -width 30 -textvariable maria_tpch_pass
+    }
+    grid $Prompt -column 0 -row 13 -sticky e
+    grid $Name -column 1 -row 13 -sticky ew
+
+    set Name $Parent.f1.e7
+    set Prompt $Parent.f1.p7
+    ttk::label $Prompt -text "Agent ID :"
+    ttk::entry $Name -width 30 -textvariable agent_id
+    grid $Prompt -column 0 -row 7 -sticky e
+    grid $Name -column 1 -row 7
+
+    set Name $Parent.f1.e8
+    set Prompt $Parent.f1.p8
+    ttk::label $Prompt -text "Agent Hostname :"
+    ttk::entry $Name -width 30 -textvariable agent_hostname
+    grid $Prompt -column 0 -row 8 -sticky e
+    grid $Name -column 1 -row 8
+
+    set Name $Parent.f1.e9
+    set Prompt $Parent.f1.p9
+    ttk::label $Prompt -text "Agent Start :"
+    ttk::button $Name -command {
+        if { $agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ] } {
+            agstart $agent_id $start_display
+        } else {
+            tk_messageBox -message "Agent hostname must be local to start, start manually on remote hosts"
+        }
+    } -text Start
+    grid $Prompt -column 0 -row 9 -sticky e
+    grid $Name -column 1 -row 9 -sticky w
+    if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } {
+        $Name configure -state disabled
+    }
+
+    set Name $Parent.f1.e10
+    set Prompt $Parent.f1.p10
+    ttk::label $Prompt -text "Agent Stop :"
+    ttk::button $Name -command {
+        agstop $agent_hostname $agent_id
+    } -text Stop
+    grid $Prompt -column 0 -row 10 -sticky e
+    grid $Name -column 1 -row 10 -sticky w
+
+    set Name $Parent.f1.e11
+    set Prompt $Parent.f1.p11
+    ttk::label $Prompt -text "Agent Status :"
+    ttk::button $Name -command {
+        agstatus $agent_hostname $agent_id
+    } -text Status
+    grid $Prompt -column 0 -row 11 -sticky e
+    grid $Name -column 1 -row 11 -sticky w
+
+    set Name $Parent.f1.e12
+    set Prompt $Parent.f1.p12
+    ttk::label $Prompt -text "CPU Metrics Only :"
+    ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
+
+    set Name $Parent.f1.e13
+    set Prompt $Parent.f1.p13
+    ttk::label $Prompt -text "Start Display with Local Agent :"
+    ttk::checkbutton $Name -text "" -variable start_display -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 13 -sticky e
+    grid $Name -column 1 -row 13 -sticky w
+    if { !($agent_hostname eq "localhost" || $agent_hostname eq [ info hostname ]) } {
+        set start_display false
+        $Name configure -state disabled
+    }
+
+    bind .metric.c1.e1 <Delete> {
+        if [%W selection present] {
+            %W delete sel.first sel.last
+        } else {
+            %W delete insert
+        }
+    }
+
+    set Name $Parent.b4
+    ttk::button $Name -command {
+        unset -nocomplain mariaoptsfields
+        destroy .metric
+    } -text Cancel
+    pack $Name -anchor w -side right -padx 3 -pady 3
+
+    set Name $Parent.b5
+    ttk::button $Name -command {
+        set agent_id [.metric.f1.e7 get]
+        set agent_hostname [.metric.f1.e8 get]
+        if { $bm eq "TPC-C" } {
+            copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpcc
+            unset mariaoptsfields
+        } else {
+            copyfieldstoconfig configmariadb [ subst $mariaoptsfields ] tpch
+            unset mariaoptsfields
+        }
+        Dict2SQLite "mariadb" $configmariadb
+        check_maria_ssl $configmariadb
+        catch "destroy .metric"
+        if { ![string is integer -strict $agent_id] } {
+            tk_messageBox -message "Agent id must be an integer"
+            set agent_id 0
+        }
+    } -text {OK}
+    pack $Name -anchor w -side right -padx 3 -pady 3
+
+    wm geometry .metric +50+50
+    wm deiconify .metric
+    raise .metric
+    update
+}

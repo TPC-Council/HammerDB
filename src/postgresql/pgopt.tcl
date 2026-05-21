@@ -1103,12 +1103,12 @@ proc metpgopts {} {
         $Name configure -state disabled
     }
     #Placeholder if feature desired in GUI for only CPU metrics
-    #set Name $Parent.f1.e13
-    #set Prompt $Parent.f1.p13
-    #ttk::label $Prompt -text "CPU Metrics Only :"
-    #ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
-    #grid $Prompt -column 0 -row 12 -sticky e
-    #grid $Name -column 1 -row 12 -sticky w
+    set Name $Parent.f1.e13
+    set Prompt $Parent.f1.p13
+    ttk::label $Prompt -text "CPU Metrics Only :"
+    ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
     set Name $Parent.b4
     ttk::button $Name -command { destroy .metric } -text Cancel
     pack $Name -anchor w -side right -padx 3 -pady 3

@@ -957,12 +957,12 @@ set Name $Parent.f1.e3
         $Name configure -state disabled
     }
     #Placeholder if feature desired in GUI for only CPU metrics
-    #set Name $Parent.f1.e7
-    #set Prompt $Parent.f1.p7
-    #ttk::label $Prompt -text "CPU Metrics Only :"
-    #ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
-    #grid $Prompt -column 0 -row 12 -sticky e
-    #grid $Name -column 1 -row 12 -sticky w
+    set Name $Parent.f1.e7
+    set Prompt $Parent.f1.p7
+    ttk::label $Prompt -text "CPU Metrics Only :"
+    ttk::checkbutton $Name -text "" -variable cpu_only -onvalue "true" -offvalue "false"
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
     set Name $Parent.c1.e3
     set Prompt $Parent.c1.p3
     ttk::label $Prompt -text "Oracle Service Name :"
