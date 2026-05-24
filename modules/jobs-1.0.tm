@@ -2411,7 +2411,11 @@ proc wapp-page-jobs {} {
         }
         set json [jobs_report_json $jobid]
         wapp-mimetype application/json
-        wapp-allow-xorigin-params
+        dict set ::wapp .reply-extra {
+            Access-Control-Allow-Origin *
+            Access-Control-Allow-Methods "GET, OPTIONS"
+            Access-Control-Allow-Headers Content-Type
+        }
         wapp-trim { %unsafe($json) }
         return
     }
