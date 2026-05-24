@@ -51,7 +51,7 @@ return "FNF"
 
 proc get_xml_data {} {
 #proc get_xml_data not called when using SQLite
-    global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
+    global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu tpcoss_submit_url
     set dirname [ file dirname [ file normalize $argv0 ]]
     if { $dirname eq "[zipfs root]app" } {
     #Is a zip directory
@@ -85,6 +85,7 @@ proc get_xml_data {} {
                     autopilot_mode { set myvariable apmode }
                     autopilot_duration { set myvariable apduration }
                     autopilot_sequence { set myvariable apsequence }
+                    submit_url { set myvariable tpcoss_submit_url }
                 }
             } else {
                 if {$type == "XML" && $etype == "END"} { 
@@ -107,7 +108,7 @@ proc xmlopts {} {
 }
 
 proc set_global_config {genericdict} {
-    global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu 
+    global rdbms bm virtual_users maxvuser delayms conpause ntimes suppo optlog apmode apduration apsequence unique_log_name no_log_buffer log_timestamps interval hostname id agent_hostname agent_id highlight quote_passwords gen_count_ware gen_scale_fact gen_directory gen_num_vu tpcoss_submit_url
 
     if { $genericdict eq "" } {
         puts "Error: empty genericdict"
@@ -127,6 +128,7 @@ proc set_global_config {genericdict} {
                 autopilot_mode { set myvariable apmode }
                 autopilot_duration { set myvariable apduration }
                 autopilot_sequence { set myvariable apsequence }
+                submit_url { set myvariable tpcoss_submit_url }
             }
             set [ set myvariable ] $subattributes
         }

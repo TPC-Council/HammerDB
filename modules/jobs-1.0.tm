@@ -2171,6 +2171,53 @@ proc wapp-page-jobs {} {
     }
 
 
+
+    proc __jobs_urlencode {s} {
+        set out ""
+        foreach c [split $s ""] {
+            scan $c %c x
+            if {
+                ($x >= 48 && $x <= 57) ||
+                ($x >= 65 && $x <= 90) ||
+                ($x >= 97 && $x <= 122) ||
+                $c in {- _ . ~}
+            } {
+                append out $c
+            } else {
+                append out %[format %02X $x]
+            }
+        }
+        return $out
+    }
+
+    proc jobs_summary_tpcoss_link {jobid base_url} {
+        upvar #0 genericdict genericdict
+
+        set submit_base ""
+
+        if {[info exists ::tpcoss_submit_url]} {
+            set submit_base [string trim $::tpcoss_submit_url]
+        }
+
+        if {$submit_base eq "" && [info exists genericdict]} {
+            if {[dict exists $genericdict tpcoss submit_url]} {
+                set submit_base [string trim [dict get $genericdict tpcoss submit_url]]
+            }
+        }
+
+        if {$submit_base eq ""} {
+            return
+        }
+
+        set artifact_url "$base_url/jobs?jobid=$jobid&summaryjson"
+        set submit_url "$submit_base?artifact_url=[__jobs_urlencode $artifact_url]"
+        wapp-subst {
+<p class="no-print" style="text-align:left; margin:0px 0 1em 0;">
+  <a href="%html($submit_url)" target="_blank" rel="noopener">Share with TPC-OSS</a><br>
+</p>
+}
+    }
+
     proc jobs_summary_public_config {jobid avu {bm "TPROC-C"}} {
         set cfg [dict create]
         set raw [join [hdbjobs eval {SELECT jobdict FROM JOBMAIN WHERE JOBID=$jobid}]]
@@ -2364,6 +2411,7 @@ proc wapp-page-jobs {} {
         }
         set json [jobs_report_json $jobid]
         wapp-mimetype application/json
+        wapp-allow-xorigin-params
         wapp-trim { %unsafe($json) }
         return
     }
@@ -2513,6 +2561,8 @@ proc wapp-page-jobs {} {
             jobs_summary_disclaimer
             wapp-subst {</div>\n}
         }
+
+        jobs_summary_tpcoss_link $jobid $B
 
         wapp-subst {
 <p class="no-print" style="text-align:left; margin:0px 0;">

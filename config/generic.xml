@@ -70,6 +70,9 @@
     <webservice>
 	   <ws_port>8080</ws_port> 
     </webservice>
+    <tpcoss>
+       <submit_url>https://tpc-council.github.io/hammerdb-results/submit.html</submit_url>
+    </tpcoss>
     <timeprofile>
            <profiler>xtprof</profiler>
            <xt_unique_log_name>0</xt_unique_log_name>
