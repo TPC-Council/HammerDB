@@ -2865,12 +2865,18 @@ proc job_options {} {
 }
 
 proc metricsopts {} {
-    #Database metrics based on Active Session History, currently Oracle and PostgreSQL
+    # Database metrics based on Active Session History:
+    # Oracle, PostgreSQL, MySQL and MariaDB
     global rdbms
+
     if { $rdbms eq "Oracle" } {
         metoraopts
     } elseif { $rdbms eq "PostgreSQL" } {
         metpgopts
+    } elseif { $rdbms eq "MySQL" } {
+        metmysqlopts
+    } elseif { $rdbms eq "MariaDB" } {
+        metmariaopts
     } else {
         metgenopts
     }

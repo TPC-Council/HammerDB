@@ -315,9 +315,7 @@ proc AdjustBarHeight {cpu usr sys percent} {
 
 proc metrics {} {
     global rdbms cpu_only
-    #Intentional setting of cpu_only to false below for Oracle and PostgreSQL with database metrics.
-    #cpu_only is a placeholder if feature to be added in future.
-    if {  [ info exists cpu_only ] } { set cpu_only "false" } else { set cpu_only "false" }
+    if {  ![ info exists cpu_only ] } { set cpu_only "false" }
     if { [catch {
             namespace import comm::*
             namespace import blt::*
