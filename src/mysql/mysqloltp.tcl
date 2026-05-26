@@ -519,7 +519,7 @@ proc CreateTables { mysql_handler mysql_storage_engine num_part history_pk } {
     puts "CREATING TPCC TABLES"
     if { [ string toupper $mysql_storage_engine ] eq "INNODB" && $history_pk } {
     set pkmin_version "8.0.30"
-    set version [ list [ mysql::sel $mysql_handler "select version()" -list ] ]
+    set version [ lindex [ split [ list [ mysql::sel $mysql_handler "select version()" -list ] ] - ] 0 ]
     if { [ package vcompare $version $pkmin_version ]  eq -1 } {
 	    puts "Minimum MySQL version for invisible PK is $pkmin_version"
 	    set history_pk "false"
