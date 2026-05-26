@@ -111,11 +111,20 @@ namespace eval pipelines {
         wapp-subst {
 <style>
 .aut-wrap{max-width:980px;}
-.aut-form{max-width:720px;}
+.aut-form{width:100%;max-width:980px;}
 .aut-ctl{width:100%; box-sizing:border-box; min-width:0;}
 .aut-row{margin-top:8px;}
 .aut-actions{margin-top:14px;}
 .aut-btn{padding:6px 14px;}
+.hdb-page{max-width:1180px;margin:0 16px 40px 16px;}
+.hdb-section{max-width:980px;margin:0 0 24px 0;}
+.hdb-table-wrap{width:100%;max-width:980px;overflow-x:auto;margin:0 0 14px 0;}
+.hdb-table-wrap table,table.hdb-table{width:100%;max-width:none!important;min-width:760px;margin:1em 0;}
+.hdb-form-narrow{width:100%;max-width:980px;margin:0 0 18px 0;}
+.hdb-actions-left{width:100%;max-width:980px;text-align:left;margin:14px 0 22px 0;}
+.hdb-activity{width:100%;max-width:980px;margin:18px 0 20px 0;border-radius:6px;background:#eef6ff;border:1px solid #d0d7de;box-sizing:border-box;}
+.hdb-log-box{margin:0;padding:12px;height:320px;overflow:auto;background:#eef6ff;color:#0a3d62;border:1px solid #d0d7de;border-radius:6px;font-family:monospace;font-size:13px;line-height:1.35;white-space:pre-wrap;box-sizing:border-box;}
+@media (max-width:760px){.hdb-page{margin:0 8px 32px 8px;}.hdb-table-wrap table,table.hdb-table{min-width:680px;}.hdb-actions-left{text-align:left;}}
 .aut-banner{border:1px solid #ddd; padding:10px 12px; border-radius:6px; margin:10px 0 14px 0;}
 .aut-ok{background:#e7f6ea; border-color:#7ac189; color:#155724;}
 .aut-fail{background:#fdeaea; border-color:#e18b8b; color:#721c24;}
@@ -720,7 +729,7 @@ set active_ci_count [join [hdbjobs eval {
 }]]
 
 if {$active_ci_count > 0} {
-    __store_last 0 0 "Pipeline state is active." "" "" "Use Clear blocked CI pipeline if the previous run has stopped but left stale state."
+    __store_last 0 0 "Pipeline already active." "" "" "Previous run may have left stale CI state."
 
     set q "db=$dbprefix"
     if {$tag_sel ne ""} { append q "&tag_sel=[__url_encode $tag_sel]" }
@@ -778,7 +787,7 @@ return
         __page_head $B "HammerDB Pipelines"
         __auto_refresh_js 120000
         wapp-subst "<!-- pipelines-module:1.5 -->"
-        wapp-subst {<div class="aut-wrap">}
+        wapp-subst {<div class="hdb-page aut-wrap">}
 
         __render_last_if_any
 
@@ -792,7 +801,9 @@ return
         }
 
         # recent runs
-        wapp-subst {<table>}
+        wapp-subst {<div class="hdb-section">}
+        wapp-subst {<div class="hdb-table-wrap" style="width:100%; max-width:980px; overflow-x:auto;">}
+        wapp-subst {<table class="hdb-table" style="width:100%; max-width:none; min-width:760px;">}
         wapp-subst {<tr><th>Pipeid</th><th>DB</th><th>Ref</th><th>Pipeline</th><th>Date</th><th>Status</th></tr>}
 
         set cicount [join [hdbjobs eval {SELECT COUNT(*) FROM JOBCI}]]
@@ -801,6 +812,10 @@ return
         } else {
             set has_dbprefix 0
             if {![catch {hdbjobs eval {SELECT dbprefix FROM JOBCI LIMIT 1}}]} { set has_dbprefix 1 }
+            set has_io_intensive 0
+            if {![catch {hdbjobs eval {SELECT io_intensive FROM JOBCI LIMIT 1}}]} { set has_io_intensive 1 }
+            set io_select "0 AS row_io_intensive"
+            if {$has_io_intensive} { set io_select "io_intensive AS row_io_intensive" }
     # cleanup stale CI rows
     set now [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
     if {$has_dbprefix} {
@@ -857,41 +872,47 @@ return
     }
             if {$has_dbprefix} {
                 # alias columns
-                hdbjobs eval {SELECT ci_id,
+                hdbjobs eval "SELECT ci_id,
                                      refname,
                                      dbprefix AS row_dbprefix,
                                      pipeline AS row_pipeline,
+                                     $io_select,
                                      timestamp AS row_timestamp,
                                      status AS row_status
                               FROM JOBCI
                               ORDER BY ci_id DESC
-                              LIMIT 25} {
+                              LIMIT 25" {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
+                    if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
                     wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>%html([__db_label $row_dbprefix])</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
                 }
             } else {
-                hdbjobs eval {SELECT ci_id,
+                hdbjobs eval "SELECT ci_id,
                                      refname,
                                      pipeline AS row_pipeline,
+                                     $io_select,
                                      timestamp AS row_timestamp,
                                      status AS row_status
                               FROM JOBCI
                               ORDER BY ci_id DESC
-                              LIMIT 25} {
+                              LIMIT 25" {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
+                    if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
                     wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>-</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
                 }
             }
         }
         wapp-subst {</table>}
+        wapp-subst {</div>}
+        wapp-subst {</div>}
 
-        wapp-subst {<div class="aut-form">}
+        wapp-subst {<div class="hdb-section" style="width:100%; max-width:980px; margin:0 0 24px 0;">}
 
         # database chooser
         wapp-subst {<p><b>Database</b></p>}
-        wapp-subst "<select class='aut-ctl' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
+        wapp-subst "<select class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
         foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB ] {
             # Hide DBs until support is enabled
             if {$pfx in {ora mssqls db2}} continue
@@ -927,7 +948,7 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         wapp-subst "<input type='hidden' name='db' value='%html($dbprefix)'>"
 
         wapp-subst {<p style='margin-top:12px;'><b>Ref</b></p>}
-        wapp-subst {<select class="aut-ctl" name="tag_sel" form="runform">}
+        wapp-subst {<select class="aut-ctl" style="width:100%; max-width:980px; box-sizing:border-box;" name="tag_sel" form="runform">}
         if {[llength $tags] == 0} {
             wapp-subst "<option value='' disabled selected>(no tags found — use Custom...)</option>"
         }
@@ -941,12 +962,12 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         wapp-subst "<option value='__custom__'$sel>Custom...</option>"
         wapp-subst {</select>}
 
-        wapp-subst {<div class="aut-row">}
+        wapp-subst {<div class="aut-row" style="width:100%; max-width:980px;">}
         wapp-subst {Custom ref (tag, branch, or commit SHA):}
         if {$ref_custom eq ""} {
-            wapp-subst "<input class='aut-ctl' type='text' name='ref_custom' form='runform' placeholder='refs/tags/... or refs/heads/... or a1b2c3d4e5f6...'>"
+            wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' placeholder='refs/tags/... or refs/heads/... or a1b2c3d4e5f6...'>"
         } else {
-            wapp-subst "<input class='aut-ctl' type='text' name='ref_custom' form='runform' value='%html($ref_custom)' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
+            wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' value='%html($ref_custom)' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
         }
         wapp-subst {</div>}
 
@@ -957,7 +978,7 @@ set bench_c_single ""
 set bench_c_profile ""
 set bench_c_compare ""
 set bench_h_single ""
-set io_intensive ""
+# keep current io_intensive selection from query
 
 if {$workload_ui eq "H"} {
     set bench_h_single " checked"
@@ -983,7 +1004,7 @@ wapp-subst {<div style='min-width:82px; font-weight:600;'>TPROC-C</div>}
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_single'$bench_c_single onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='single';\"> Single</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_profile'$bench_c_profile onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='profile';\"> Profile</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_compare'$bench_c_compare onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='compare';\"> Compare</label>"
-wapp-subst "<label style='cursor:pointer; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive> Full Durability + I/O intensive</label>"
+wapp-subst "<label style='cursor:pointer; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive_checked> Full Durability + I/O intensive</label>"
 wapp-subst {</div>}
 
 # TPROC-H
@@ -994,26 +1015,14 @@ wapp-subst {</div>}
 wapp-subst {</div>}
 
 wapp-subst {
-<div style="margin:18px 0 20px 0; max-width:800px; border-radius:6px; background:#eef6ff; border:1px solid #d0d7de;">
+<div class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
   <details id="ci-log-panel">
     <summary style="cursor:pointer; padding:10px 14px; font-weight:600; color:#0a3d62; border-left:4px solid #0969da;">
       Pipeline Activity
     </summary>
 
     <div style="padding:12px;">
-      <pre id="ci-log-box"
-           style="margin:0;
-                  padding:12px;
-                  height:320px;
-                  overflow:auto;
-                  background:#eef6ff;
-                  color:#0a3d62;
-                  border:1px solid #d0d7de;
-                  border-radius:6px;
-                  font-family:monospace;
-                  font-size:13px;
-                  line-height:1.35;
-                  white-space:pre-wrap;"></pre>
+      <pre id="ci-log-box" class="hdb-log-box"></pre>
     </div>
   </details>
 </div>
@@ -1050,7 +1059,7 @@ wapp-subst "<script>
 })();
 </script>"
 
-        wapp-subst {<div class="aut-actions">}
+        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
         wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
         wapp-subst {</div>}
         wapp-subst {</form>}
