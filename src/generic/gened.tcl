@@ -1945,14 +1945,14 @@ proc about { } {
     global hdb_version
     tk_messageBox -title About -message "HammerDB $hdb_version
 Copyright \u00A9 HammerDB Ltd
-Hosted by tpc.org 2019-2025\n"
+Hosted by tpc.org 2019-2026\n"
 }
 
 proc license { } {
     tk_messageBox -title License -message "
 This copyright notice must be included in all distributions.
 \u00A9 HammerDB Ltd
-Hosted by the TPC-Council 2019-2025
+Hosted by the TPC-Council 2019-2026
 
 This program is free software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation,

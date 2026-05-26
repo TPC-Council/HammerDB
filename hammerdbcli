@@ -28,9 +28,9 @@ exec ./bin/tclsh9.0 "$0" ${1+"$@"}
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v5.0"
+set hdb_version "v6.0"
 puts "HammerDB CLI $hdb_version"
-puts "Copyright \u00A9 HammerDB Ltd hosted by tpc.org 2019-2025"
+puts "Copyright \u00A9 HammerDB Ltd hosted by tpc.org 2019-2026"
 if { $argc eq 0 } {
 set argv0 "" } else { set argv0 [ string tolower [lindex $argv 0 ]] }
 if { $argv0 == "" || $argv0 == "tcl" || $argv0 == "auto" } {

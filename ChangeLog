@@ -1185,3 +1185,50 @@ expect 5.45.4.1 mariatcl 0.1.1 mysqltcl 3.052.1 oratcl 4.6.1 pgtcl 2.1.1.1
 tclpy 0.4.1 tclpyS 0.4.1 ticklecharts 3.1 tkblt 3.2.24 tkpath 0.3.3.1 twapi 5.0.7
 
 for Linux x86-64 and Windows x64
+
+---------------------------------------------------------------------
+
+Version 6.0 June 2026
+
+Pull Requests & Issues
+
+Add database metrics options for MySQL and MariaDB #885
+Fix Web Service Jobs and Pipelines HTML Formatting #884
+Add I/O Metrics (IOPS/MB/s) to Metrics #880 (#874)
+Fix arithmetic in PostgreSQL stock update #879
+Fix profile compare form and hide unsupported from automation #878
+Fix form warnings for proxy #877
+Add CI/Pipeline Automation for MySQL #876 (#872)
+Add PostgreSQL CI/Pipeline automation #875 (#871)
+Fix pgsentinel discovery for PostgreSQL metrics #870 (#869)
+Improve performance profile comparison, response time reporting, and CI bug fixes #868
+Auto fix PostgreSQL choice of functions or stored procedures #867 (#832)
+Fix Windows clearline in default COLOR #866 (#779)
+Standardise Cluster Connect Pool terminology #865 (#828)
+Add reservoir sampling, extended percentile support to timing profiles and boxplots #864 (#831)
+Add Active Session History (ASH) metrics viewer for MySQL and MariaDB #863 (#842)
+Remove arbitrary upper limit on num_vu for schema build #861
+Add CI/Pipeline capabilities for MariaDB #860 (#845)
+Add Detailed System, Hardware, and Software Fields to Results #859 (#848)
+pg_vacuum runs on wrong database #856 (#855)
+Update ASH metrics for PostgreSQL 18 #854 (#841)
+Update TPROC-H GUI Options for all Scale Factors #835 (#833)
+Improve message if metstart fails because sysstat not installed #830 (#820)
+Add engine independent statistics to MariaDB TPROC-H #829 (#827)
+Disable FK checks for MariaDB/MySQL pre-created database builds #825 (#824)
+Fix invalid command wapp-url #818 (#816)
+Update Tcl/Tk and TkPath versions #810 (#809)
+Enable Web Service to run as SCGI application #808 (#807)
+Update ticklecharts package #805
+Add handling of innodb_snapshot_isolation to MariaDB #797 (#778)
+Add catch to CLI stty command on Linux #796 (#792)
+Fix permission denied on loading database libraries on Windows #795 (#791)
+Copyright message UTF-8 #794 (#793)
+Docker Updates related to version 5.0 #789 (#771)
+Fix steprun replica timing #787 (#782)
+
+Updated Binaries and Packages include:
+
+Tcl9.0.2 TclS9.0.2 Tk9.0.2 TkS 9.0.2 ticklecharts 3.2.8 tkpath 0.4.1
+
+for Linux x86-64 and Windows x64

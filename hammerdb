@@ -28,7 +28,7 @@ exit
 # License along with this program; If not, see <https://www.gnu.org/licenses/>
 ########################################################################
 global hdb_version
-set hdb_version "v5.0"
+set hdb_version "v6.0"
 set mainGeometry +10+10
 set UserDefaultDir [ file dirname [ info script ] ]
 ::tcl::tm::path add [zipfs root]app/modules "$UserDefaultDir/modules"
