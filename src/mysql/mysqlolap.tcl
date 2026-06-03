@@ -1451,12 +1451,24 @@ proc sub_query { query_no scale_factor myposition engine } {
     }
     return $q2sub
 }
+proc CheckDBVersion { mysql_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ mysql::sel $mysql_handler "select version()" -list ] ] - ] 0 ]}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition mysql_tpch_obcompat ob_tenant_name} {
     global mysqlstatus
     set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $db $mysql_tpch_obcompat $ob_tenant_name]
-    
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion $mysql_handler ]
+    }
+
     puts "Verifying the scale factor of the existing schema..."
     set countsql "SELECT count(*) FROM SUPPLIER"
     set count [ standsql $mysql_handler $countsql $RAISEERROR ]
