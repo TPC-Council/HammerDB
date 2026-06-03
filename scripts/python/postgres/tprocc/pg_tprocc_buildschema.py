@@ -10,7 +10,7 @@ diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
 
 vu = tclpy.eval('numberOfCPUs')
-warehouse = int(vu) * 5
+warehouse = int(tclpy.eval('numberOfWHs'))
 diset('tpcc','pg_count_ware',warehouse)
 diset('tpcc','pg_num_vu',vu)
 diset('tpcc','pg_superuser','postgres')

@@ -10,7 +10,7 @@ diset connection maria_port 3306
 diset connection maria_socket /tmp/mariadb.sock
 
 set vu [ numberOfCPUs ]
-set warehouse [ expr {$vu * 5} ]
+set warehouse [ numberOfWHs ]
 diset tpcc maria_count_ware $warehouse
 diset tpcc maria_num_vu $vu
 diset tpcc maria_user root

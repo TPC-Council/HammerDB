@@ -19,7 +19,7 @@ diset('connection','mssqls_uid','sa')
 diset('connection','mssqls_pass','admin')
 
 vu = tclpy.eval('numberOfCPUs')
-warehouse = int(vu) * 5
+warehouse = int(tclpy.eval('numberOfWHs'))
 diset('tpcc','mssqls_count_ware',warehouse)
 diset('tpcc','mssqls_num_vu',vu)
 diset('tpcc','mssqls_dbase','tpcc')

@@ -414,6 +414,25 @@ proc numberOfCPUs {} {
   return 1
 }
 
+proc numberOfWHs {} {
+    set vu [ numberOfCPUs ]
+    set wh [ expr {$vu * 10} ]
+
+    if {$wh <= 100} {
+        set wh [ expr {int(ceil($wh / 10.0)) * 10} ]
+    } elseif {$wh <= 1000} {
+        set wh [ expr {int(ceil($wh / 100.0)) * 100} ]
+    } else {
+        set wh [ expr {int(ceil($wh / 1000.0)) * 1000} ]
+    }
+
+    if {$wh > 4000} {
+        set wh 4000
+    }
+
+    return $wh
+}
+
 proc vuset { args } {
     global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
     upvar #0 genericdict genericdict

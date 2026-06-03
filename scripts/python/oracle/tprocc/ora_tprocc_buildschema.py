@@ -10,7 +10,7 @@ diset('connection','system_password','manager')
 diset('connection','instance','oracle')
 
 vu = tclpy.eval('numberOfCPUs')
-warehouse = int(vu) * 5
+warehouse = int(tclpy.eval('numberOfWHs'))
 diset('tpcc','count_ware',warehouse)
 diset('tpcc','num_vu',vu)
 diset('tpcc','tpcc_user','tpcc')

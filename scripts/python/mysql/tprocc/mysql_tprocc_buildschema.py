@@ -10,7 +10,7 @@ diset('connection','mysql_port','3306')
 diset('connection','mysql_socket','/tmp/mysql.sock')
 
 vu = tclpy.eval('numberOfCPUs')
-warehouse = int(vu) * 5
+warehouse = int(tclpy.eval('numberOfWHs'))
 diset('tpcc','mysql_count_ware',warehouse)
 diset('tpcc','mysql_num_vu',vu)
 diset('tpcc','mysql_user','root')

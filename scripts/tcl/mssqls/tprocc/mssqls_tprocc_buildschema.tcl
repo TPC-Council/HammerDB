@@ -19,7 +19,7 @@ diset connection mssqls_linux_authent sql
 diset connection mssqls_linux_odbc {ODBC Driver 18 for SQL Server}
 
 set vu [ numberOfCPUs ]
-set warehouse [ expr {$vu * 5} ]
+set warehouse [ numberOfWHs ]
 diset tpcc mssqls_count_ware $warehouse
 diset tpcc mssqls_num_vu $vu
 diset tpcc mssqls_dbase tpcc
