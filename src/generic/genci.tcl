@@ -1354,8 +1354,8 @@ proc system_memory_mb {} {
 proc calc_buffer_pool_mb {} {
     set mem_mb [system_memory_mb]
     if {$mem_mb <= 0} { return 0 }
-
-    set bp_mb [expr {int($mem_mb / 2)}]
+    # General default: use 60% of system memory for the database buffer pool.
+    set bp_mb [expr {int($mem_mb * 0.60)}]
 
     if {$bp_mb < 1024}   { set bp_mb 1024 }
     if {$bp_mb > 262144} { set bp_mb 262144 }
