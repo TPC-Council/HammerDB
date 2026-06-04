@@ -8,6 +8,7 @@
             <diff_threshold>0.025</diff_threshold>
             <use_sudo>false</use_sudo>
             <ci_log_to_temp>1</ci_log_to_temp>
+            <warehouse_limit>4000</warehouse_limit>
             <root>/opt/hammerdb-ci</root>
             <tmp>/opt/hammerdb-ci/TMP</tmp>
     </common>
