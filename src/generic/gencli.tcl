@@ -415,45 +415,24 @@ proc numberOfCPUs {} {
 }
 
 proc numberOfWHs {} {
-    set vu [ numberOfCPUs ]
-    set wh [ expr {$vu * 10} ]
-
-    if {$wh <= 100} {
-        set wh [ expr {int(ceil($wh / 10.0)) * 10} ]
-    } elseif {$wh <= 1000} {
-        set wh [ expr {int(ceil($wh / 100.0)) * 100} ]
-    } else {
-        set wh [ expr {int(ceil($wh / 1000.0)) * 1000} ]
-    }
-
     set warehouse_limit 4000
+
     global cidict
     if {[info exists cidict] && [dict exists $cidict common warehouse_limit]} {
-        set ci_warehouse_limit [dict get $cidict common warehouse_limit]
-    } else {
-        set ci_warehouse_limit ""
-        if {[catch {set ISConfigDir [ file join  {*}[ lrange [ file split [ file normalize [ file dirname [ info script ] ]]] 0 end-2 ] config ]}]} { set ISConfigDir "" }
-        if {[info exists argv0]} {
-            set AGConfigDir [ file join  {*}[ file split [ file normalize [ file dirname $argv0 ]]] config ]
-        } else {
-            set AGConfigDir .
-        }
-        set PWConfigDir [ file join [ pwd ] config ]
-        foreach CD {ISConfigDir AGConfigDir PWConfigDir} {
-            set cixml [ file join [ set $CD ] ci.xml ]
-            if {[ file readable $cixml ]} {
-                if {![catch {open $cixml r} ci_fd]} {
-                    set ci_xml [read $ci_fd]
-                    close $ci_fd
-                    if {[regexp {<warehouse_limit>([^<]+)</warehouse_limit>} $ci_xml -> ci_warehouse_limit]} {
-                        break
-                    }
-                }
-            }
+        set configured_limit [dict get $cidict common warehouse_limit]
+        if {[string is integer -strict $configured_limit] && $configured_limit >= 1} {
+            set warehouse_limit $configured_limit
         }
     }
-    if {[string is integer -strict $ci_warehouse_limit] && $ci_warehouse_limit >= 1} {
-        set warehouse_limit $ci_warehouse_limit
+
+    set wh [expr {[numberOfCPUs] * 10}]
+
+    if {$wh <= 100} {
+        set wh [expr {int(ceil($wh / 10.0)) * 10}]
+    } elseif {$wh <= 1000} {
+        set wh [expr {int(ceil($wh / 100.0)) * 100}]
+    } else {
+        set wh [expr {int(ceil($wh / 1000.0)) * 1000}]
     }
 
     if {$wh > $warehouse_limit} {
