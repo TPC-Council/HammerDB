@@ -425,14 +425,12 @@ proc numberOfWHs {} {
         }
     }
 
-    set wh [expr {[numberOfCPUs] * 10}]
+    # Default to 8 warehouses per CPU.
+    set wh [expr {[numberOfCPUs] * 8}]
 
+    # For small systems, round up to a multiple of 10.
     if {$wh <= 100} {
         set wh [expr {int(ceil($wh / 10.0)) * 10}]
-    } elseif {$wh <= 1000} {
-        set wh [expr {int(ceil($wh / 100.0)) * 100}]
-    } else {
-        set wh [expr {int(ceil($wh / 1000.0)) * 1000}]
     }
 
     if {$wh > $warehouse_limit} {
