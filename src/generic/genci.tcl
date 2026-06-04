@@ -1366,7 +1366,7 @@ proc calc_buffer_pool_mb {} {
 proc calc_redo_mb {} {
     set redo_gb [expr {int(ceil([numberOfCPUs] * 0.5))}]
 
-    if {$redo_gb < 8}  { set redo_gb 8 }
+    if {$redo_gb < 4}  { set redo_gb 4 }
     if {$redo_gb > 64} { set redo_gb 64 }
 
     return [expr {$redo_gb * 1024}]
