@@ -1364,21 +1364,12 @@ proc calc_buffer_pool_mb {} {
 }
 
 proc calc_redo_mb {} {
-    # derive from buffer pool
-    set bp_mb [calc_buffer_pool_mb]
+    set redo_gb [expr {int(ceil([numberOfCPUs] * 0.5))}]
 
-    if {$bp_mb <= 0} {
-        return 2048
-    }
+    if {$redo_gb < 8}  { set redo_gb 8 }
+    if {$redo_gb > 64} { set redo_gb 64 }
 
-    # 25% of buffer pool
-    set redo_mb [expr {$bp_mb / 4}]
-
-    # range 2GB–32GB
-    if {$redo_mb < 2048}  { set redo_mb 2048 }
-    if {$redo_mb > 32768} { set redo_mb 32768 }
-
-    return $redo_mb
+    return [expr {$redo_gb * 1024}]
 }
 
 # watcher
