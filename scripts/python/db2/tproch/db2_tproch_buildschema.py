@@ -9,7 +9,7 @@ diset ('connection','db2_def_pass','ibmdb2')
 diset('connection','db2_def_dbase','db2')
 
 vu = tclpy.eval('numberOfCPUs')
-diset('tpch','db2_scale_fact','1')
+diset('tpch','db2_scale_fact','10')
 diset('tpch','db2_num_tpch_threads',vu)
 diset('tpch','db2_tpch_user','db2inst1')
 diset('tpch','db2_tpch_pass','ibmdb2')

@@ -9,7 +9,7 @@ diset connection pg_host localhost
 diset connection pg_port 5432
 diset connection pg_sslmode prefer
 
-diset tpch pg_scale_fact 1
+diset tpch pg_scale_fact 10
 diset tpch pg_num_tpch_threads [ numberOfCPUs ]
 diset tpch pg_tpch_superuser postgres
 diset tpch pg_tpch_superuserpass postgres

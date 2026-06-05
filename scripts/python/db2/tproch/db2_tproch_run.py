@@ -10,7 +10,7 @@ dbset('bm','TPC-H')
 diset('tpch','db2_tpch_user','db2inst1')
 diset('tpch','db2_tpch_pass','ibmdb2')
 diset('tpch','db2_tpch_dbase','tpch')
-diset('tpch','db2_scale_fact','1')
+diset('tpch','db2_scale_fact','10')
 
 loadscript()
 print("TEST STARTED")

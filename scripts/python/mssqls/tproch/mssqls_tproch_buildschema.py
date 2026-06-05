@@ -20,7 +20,7 @@ diset('connection','mssqls_pass','admin')
 
 vu = tclpy.eval('numberOfCPUs')
 diset('tpch','mssqls_num_tpch_threads',vu)
-diset('tpch','mssqls_scale_fact','1')
+diset('tpch','mssqls_scale_fact','10')
 diset('tpch','mssqls_maxdop','2')
 diset('tpch','mssqls_tpch_dbase','tpch')
 diset('tpch','mssqls_colstore','false')

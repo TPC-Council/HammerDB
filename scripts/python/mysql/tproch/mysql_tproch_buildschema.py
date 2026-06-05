@@ -10,7 +10,7 @@ diset('connection','mysql_port','3306')
 diset('connection','mysql_socket','/tmp/mysql.sock')
 
 vu = tclpy.eval('numberOfCPUs')
-diset('tpch','mysql_scale_fact','1')
+diset('tpch','mysql_scale_fact','10')
 diset('tpch','mysql_num_tpch_threads',vu)
 diset('tpch','mysql_tpch_user','root')
 diset('tpch','mysql_tpch_pass','mysql')
