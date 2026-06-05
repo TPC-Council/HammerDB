@@ -1148,7 +1148,7 @@ proc mysql_ping {cidict refname} {
         set sql [string trim [dict get $cidict $rdbms ping]]
     }
     set cli "./bin/mysql -S $socket --ssl-mode=DISABLED -u root"
-    set sql_cmd "$cli -vvv -e \\\"$sql\\\" || $cli -pmysql -vvv -e \\\"$sql\\\""
+    set sql_cmd "$cli -vvv -e \"$sql\" || $cli -pmysql -vvv -e \"$sql\""
 
     putsci "PING:"
     putsci $sql_cmd

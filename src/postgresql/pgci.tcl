@@ -959,7 +959,7 @@ proc postgresql_ping {cidict refname} {
         set sql [string trim [dict get $install ping]]
     }
     set sql_esc [string map {\" \\\"} $sql]
-    set sql_cmd "./bin/psql -h localhost -p $port -U postgres -d postgres -t -c \\\"$sql_esc\\\""
+    set sql_cmd "./bin/psql -h localhost -p $port -U postgres -d postgres -t -c \"$sql_esc\""
 
     putsci "PING:"
     putsci $sql_cmd

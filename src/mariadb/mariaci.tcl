@@ -1122,7 +1122,7 @@ proc mariadb_ping {cidict refname} {
     if {[dict exists $cidict $rdbms ping]} {
         set sql [string trim [dict get $cidict $rdbms ping]]
     }
-    set sql_cmd "./bin/mariadb -S $socket --skip-ssl -vvv -e \\\"$sql\\\""
+    set sql_cmd "./bin/mariadb -S $socket --skip-ssl -vvv -e \"$sql\""
 
     putsci "PING:"
     putsci $sql_cmd
