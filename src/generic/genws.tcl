@@ -650,6 +650,8 @@ proc wapp-page-ci {} {
         set val ""
     }
 
+    if {$field eq "start_cmd"} { set val [string map [list {\\\"} {"} {\"} {"}] $val] }
+
     if {$val eq ""} {
         wapp-subst {<p><i>(empty)</i></p>}
         return
