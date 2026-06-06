@@ -1192,6 +1192,8 @@ Version 6.0 June 2026
 
 Pull Requests & Issues
 
+Update TPROC-C automated schema sizing #889
+Add TPROC-H version and metrics to result sharing #888
 Add database metrics options for MySQL and MariaDB #885
 Fix Web Service Jobs and Pipelines HTML Formatting #884
 Add I/O Metrics (IOPS/MB/s) to Metrics #880 (#874)
