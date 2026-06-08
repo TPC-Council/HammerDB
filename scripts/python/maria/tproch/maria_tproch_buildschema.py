@@ -10,7 +10,7 @@ diset('connection','maria_port','3306')
 diset('connection','maria_socket','/tmp/mariadb.sock')
 
 vu = tclpy.eval('numberOfCPUs')
-diset('tpch','maria_scale_fact','1')
+diset('tpch','maria_scale_fact','10')
 diset('tpch','maria_num_tpch_threads',vu)
 diset('tpch','maria_tpch_user','root')
 diset('tpch','maria_tpch_pass','maria')

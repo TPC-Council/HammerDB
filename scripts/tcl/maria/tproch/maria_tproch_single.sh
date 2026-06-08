@@ -17,7 +17,7 @@ echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "RUN HAMMERDB TEST"
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
-./hammerdbcli auto ./scripts/tcl/maria/tproch/maria_tproch_run.tcl 
+./hammerdbcli auto ./scripts/tcl/maria/tproch/maria_tproch_run_single.tcl
 echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 echo "DROP HAMMERDB SCHEMA"
 ./hammerdbcli auto ./scripts/tcl/maria/tproch/maria_tproch_deleteschema.tcl

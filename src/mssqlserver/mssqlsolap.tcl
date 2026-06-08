@@ -1904,6 +1904,15 @@ proc sub_query { query_no scale_factor maxdop myposition } {
     }
     return $q2sub
 }
+proc CheckDBVersion { odbc } {
+	   if {[catch {set rows [ odbc allrows "SELECT SERVERPROPERTY('productversion')" ]} message ]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+	        set dbversion "DBVersion:[ lindex {*}$rows 1 ]"
+	   }
+	   return "$dbversion"
+	}
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp azure db encrypt trust_cert msi_object_id RAISEERROR VERBOSE maxdop total_querysets myposition} {
@@ -1913,6 +1922,9 @@ proc do_tpch { server port scale_factor odbc_driver authentication uid pwd tcp a
     } else {
         if {!$azure} {odbc evaldirect "use $db"}
         odbc evaldirect "set implicit_transactions OFF"
+    }
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion odbc ]
     }
 
     puts "Verifying the scale factor of the existing schema..."

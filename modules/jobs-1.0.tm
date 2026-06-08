@@ -2522,8 +2522,8 @@ proc wapp-page-jobs {} {
             wapp-subst {<h3 class="title">Job %html($jobid) %html($bm) Summary %html($tstamp)</h3>\n}
 
             wapp-subst {<table class="hdb-report-table" style="font-size: 150%;">\n}
-            wapp-subst {<tr><th>HDB</th><th>Database</th><th>Benchmark</th><th>Geomean</th><th>Query Time</th></tr>\n}
-            wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($bm)</td><td><span class="hdb-nopm-value">%html($geo)</span></td><td>%html($qsetsummary)</td></tr>\n}
+            wapp-subst {<tr><th>HDB</th><th>Database</th><th>Release</th><th>Benchmark</th><th>Geomean</th><th>Query Time</th></tr>\n}
+            wapp-subst {<tr><td>%html($hdb_version)</td><td>%html($db)</td><td>%html($dbversion)</td><td>%html($bm)</td><td><span class="hdb-nopm-value">%html($geo)</span></td><td>%html($qsetsummary)</td></tr>\n}
             wapp-subst {</table>\n}
 
             jobs_summary_config_table $jobid "" $bm
@@ -3290,6 +3290,7 @@ if {$rawmode} {
     set db [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
     set dbdisplay [jobs_database_display $db]
     set timestamp [join [hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid}]]
+    # TPROC-C and TPROC-H workloads emit DBVersion markers consumed by get_dbversion for job.release.
     set dbversion [get_dbversion $jobid]
     set jobresult [getjobresult $jobid 1]
 

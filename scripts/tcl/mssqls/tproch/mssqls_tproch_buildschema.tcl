@@ -18,7 +18,7 @@ diset connection mssqls_pass admin
 diset connection mssqls_linux_authent sql
 diset connection mssqls_linux_odbc {ODBC Driver 18 for SQL Server}
 
-diset tpch mssqls_scale_fact 1
+diset tpch mssqls_scale_fact 10
 diset tpch mssqls_maxdop 2
 diset tpch mssqls_num_tpch_threads [ numberOfCPUs ]
 diset tpch mssqls_tpch_dbase tpch

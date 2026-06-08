@@ -9,7 +9,7 @@ diset    mysql_host 127.0.0.1
 diset connection mysql_port 2881
 diset connection mysql_socket /tmp/mysql.sock
 
-diset tpch mysql_scale_fact 1
+diset tpch mysql_scale_fact 10
 diset tpch mysql_tpch_user root
 diset tpch mysql_tpch_pass 123
 diset tpch mysql_tpch_dbase tpch

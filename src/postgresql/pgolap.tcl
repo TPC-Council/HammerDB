@@ -1194,6 +1194,17 @@ proc sub_query { query_no scale_factor myposition } {
     }
     return $q2sub
 }
+proc CheckDBVersion { lda1 } {
+           if {[catch {pg_select $lda1 "select current_setting('server_version')" version_arr {
+                set dbversion $version_arr(current_setting)
+            }}]} {
+                set dbversion "DBVersion:NULL"
+           } else {
+                set dbversion "DBVersion:$dbversion"
+           }
+           return "$dbversion"
+        }
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
@@ -1202,6 +1213,9 @@ proc do_tpch { host port sslmode db user password scale_factor RAISEERROR VERBOS
     set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
     if { $lda eq "Failed" } {
         error "error, the database connection to $host could not be established"
+    }
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion $lda ]
     }
     set result [ pg_exec $lda "set max_parallel_workers_per_gather=$degree_of_parallel"]
     if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {

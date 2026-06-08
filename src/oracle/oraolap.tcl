@@ -1422,12 +1422,30 @@ proc sub_query { query_no scale_factor myposition timesten } {
     }
     return $q2sub
 }
+proc CheckDBVersion { curn } {
+set dbversion ""
+    if {[catch {orasql $curn {select version from v$instance}}]} {
+	    set dbversion "DBVersion:NULL"
+    } else {
+        orafetch  $curn -datavariable output
+        while { [ oramsg  $curn ] == 0 } {
+            lappend dbversion $output
+            orafetch $curn -datavariable output
+        }
+        set dbversion "DBVersion:$dbversion"
+    }
+    return "$dbversion"
+}
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { connect  scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets timesten myposition } {
     set lda [ oralogon $connect ]
     if { !$timesten } { SetNLS $lda }
     set curn1 [ oraopen $lda ]
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion $curn1 ]
+    }
     if { !$timesten } {
         set sql(1) "alter session force parallel dml parallel (degree $degree_of_parallel)"
         set sql(2) "alter session force parallel ddl parallel (degree $degree_of_parallel)"

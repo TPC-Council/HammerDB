@@ -1239,11 +1239,23 @@ proc sub_query { query_no scale_factor myposition engine } {
     return $q2sub
 }
 
+proc CheckDBVersion { maria_handler } {
+           if {[catch {set dbversion [ lindex [ split [ list [ maria::sel $maria_handler "select version()" -list ] ] - ] 0 ]}]} {
+		set dbversion "DBVersion:NULL"
+	   } else {
+		set dbversion "DBVersion:$dbversion"
+	   }
+	   return "$dbversion"
+	}
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { host port socket ssl_options user password db scale_factor RAISEERROR VERBOSE total_querysets myposition } {
     global mariastatus
     set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password $db ]
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion $maria_handler ]
+    }
     catch {mariaexec $maria_handler "SET SESSION use_stat_tables='PREFERABLY'"}
     puts "Verifying the scale factor of the existing schema..."
     set countsql "SELECT count(*) FROM SUPPLIER"

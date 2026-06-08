@@ -1091,11 +1091,26 @@ proc sub_query { query_no scale_factor myposition } {
     }
     return $q2sub
 }
+proc CheckDBVersion { db_handle } {
+           if {[catch {set stmnt_handledbv [ db2_select_direct $db_handle "SELECT service_level from SYSIBMADM.ENV_INST_INFO" ]}]} {
+           set dbversion "DBVersion:NULL"
+           } else {
+            set dbversion [ db2_fetchrow $stmnt_handledbv ]
+            db2_finish $stmnt_handledbv
+	    regsub -all {DB2\ v} $dbversion "" dbversion
+            set dbversion "DBVersion:[join $dbversion]"
+           }
+           return "$dbversion"
+        }
+
 #########################
 #TPCH QUERY SETS PROCEDURE
 proc do_tpch { dbname user password scale_factor RAISEERROR VERBOSE degree_of_parallel total_querysets myposition } {
     set db_handle [ ConnectToDb2 $dbname $user $password ]
     db2_exec_direct $db_handle "SET CURRENT DEGREE '$degree_of_parallel'"
+    if { $myposition <= 1 } {
+        puts [ CheckDBVersion $db_handle ]
+    }
 
     puts "Verifying the scale factor of the existing schema..."
     set countsql "SELECT count(*) FROM SUPPLIER"

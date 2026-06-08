@@ -20,7 +20,9 @@ loadscript
 puts "TEST STARTED"
 vuset vu 1
 vucreate
+metstart
 set jobid [ vurun ]
+metstop
 vudestroy
 puts "TEST COMPLETE"
 set of [ open $tmpdir/mysql_tproch w ]

@@ -12,7 +12,7 @@ diset('connection','system_password','manager')
 diset('connection','instance','oracle')
 
 vu = tclpy.eval('numberOfCPUs')
-diset('tpch','scale_fact','1')
+diset('tpch','scale_fact','10')
 diset('tpch','num_tpch_threads',vu)
 diset('tpch','tpch_user','tpch')
 diset('tpch','tpch_pass','tpch')

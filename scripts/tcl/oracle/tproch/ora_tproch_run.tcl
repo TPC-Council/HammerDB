@@ -10,7 +10,7 @@ diset connection system_user system
 diset connection system_password manager
 diset connection instance oracle
 
-diset tpch scale_fact 1
+diset tpch scale_fact 10
 diset tpch num_tpch_threads [ numberOfCPUs ]
 diset tpch tpch_user tpch
 diset tpch tpch_pass tpch
