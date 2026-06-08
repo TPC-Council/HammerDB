@@ -1122,7 +1122,7 @@ proc mariadb_ping {cidict refname} {
     if {[dict exists $cidict $rdbms ping]} {
         set sql [string trim [dict get $cidict $rdbms ping]]
     }
-    set sql_cmd "./bin/mariadb -S $socket --skip-ssl -vvv -e \\\"$sql\\\""
+    set sql_cmd "./bin/mariadb -S $socket --skip-ssl -vvv -e \"$sql\""
 
     putsci "PING:"
     putsci $sql_cmd
@@ -1132,22 +1132,35 @@ proc mariadb_ping {cidict refname} {
 
     for {set attempt 1} {$attempt <= $attempts} {incr attempt} {
         set ::_mariadb_ping_output ""
-        set ::pipe_done 0
         set close_status OK
 
         if {[catch {
-            set pipe [open "|bash -c \"cd $basedir && $sql_cmd\"" "r"]
-            fconfigure $pipe -blocking 0 -buffering line
-            fileevent $pipe readable [list _mariadb_ping_capture $pipe]
-            after 3000 { if {$::pipe_done == 0} { set ::pipe_done 1 } }
-            vwait ::pipe_done
-            if {[catch {close $pipe} errMsg]} { set close_status $errMsg }
+            set cmd "cd \"$basedir\" && $sql_cmd 2>&1"
+            set pipe [open "|bash -c {$cmd}" "r"]
+            fconfigure $pipe -blocking 1
+            set ::_mariadb_ping_output [read $pipe]
+
+            if {[catch {close $pipe} errMsg]} {
+                set close_status $errMsg
+            }
         } errMsg]} {
             set close_status $errMsg
+            set ::_mariadb_ping_output $errMsg
         }
 
-        if {$close_status eq "OK" && [string trim $::_mariadb_ping_output] ne ""} {
+        set output_trim [string trim [string map {\r ""} $::_mariadb_ping_output]]
+        if {$close_status eq "OK" && [regexp -nocase {[0-9]+(\.[0-9]+)+.*mariadb} $output_trim]} {
+            foreach line [split $output_trim "\n"] {
+                putsci $line
+            }
             return "PING SUCCEEDED"
+        }
+
+        putsci "PING attempt $attempt failed"
+        putsci "PING close_status: $close_status"
+        putsci "PING output:"
+        foreach line [split $output_trim "\n"] {
+            putsci $line
         }
 
         if {$attempt < $attempts} {
@@ -1156,7 +1169,6 @@ proc mariadb_ping {cidict refname} {
     }
 
     putsci "PING FAILED: no version returned"
-    putsci $::_mariadb_ping_output
     return "PING FAILED"
 }
 

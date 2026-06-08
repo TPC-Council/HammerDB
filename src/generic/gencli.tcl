@@ -414,6 +414,32 @@ proc numberOfCPUs {} {
   return 1
 }
 
+proc numberOfWHs {} {
+    set warehouse_limit 4000
+
+    global cidict
+    if {[info exists cidict] && [dict exists $cidict common warehouse_limit]} {
+        set configured_limit [dict get $cidict common warehouse_limit]
+        if {[string is integer -strict $configured_limit] && $configured_limit >= 1} {
+            set warehouse_limit $configured_limit
+        }
+    }
+
+    # Default to 8 warehouses per CPU.
+    set wh [expr {[numberOfCPUs] * 8}]
+
+    # For small systems, round up to a multiple of 10.
+    if {$wh <= 100} {
+        set wh [expr {int(ceil($wh / 10.0)) * 10}]
+    }
+
+    if {$wh > $warehouse_limit} {
+        set wh $warehouse_limit
+    }
+
+    return $wh
+}
+
 proc vuset { args } {
     global virtual_users conpause delayms ntimes suppo optlog unique_log_name no_log_buffer log_timestamps opmode
     upvar #0 genericdict genericdict

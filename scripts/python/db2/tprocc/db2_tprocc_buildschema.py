@@ -10,7 +10,7 @@ diset ('connection','db2_def_pass','ibmdb2')
 diset('connection','db2_def_dbase','db2')
 
 vu = tclpy.eval('numberOfCPUs')
-warehouse = int(vu) * 5
+warehouse = int(tclpy.eval('numberOfWHs'))
 diset('tpcc','db2_count_ware',warehouse)
 diset('tpcc','db2_num_vu',vu)
 diset('tpcc','db2_user','db2inst1')

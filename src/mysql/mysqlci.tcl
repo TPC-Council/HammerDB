@@ -10,24 +10,6 @@ proc mysql_ci_id {cidict refname} {
     return $ci_id
 }
 
-proc calc_redo_mb {} {
-    # derive from buffer pool
-    set bp_mb [calc_buffer_pool_mb]
-
-    if {$bp_mb <= 0} {
-        return 2048
-    }
-
-    # 25% of buffer pool
-    set redo_mb [expr {$bp_mb / 4}]
-
-    # range 2GB–32GB
-    if {$redo_mb < 2048}  { set redo_mb 2048 }
-    if {$redo_mb > 32768} { set redo_mb 32768 }
-
-    return $redo_mb
-}
-
 proc mysql_ci_safe_ref {refname} {
     # safe path part
     return [string map {/ _} $refname]
@@ -1166,7 +1148,7 @@ proc mysql_ping {cidict refname} {
         set sql [string trim [dict get $cidict $rdbms ping]]
     }
     set cli "./bin/mysql -S $socket --ssl-mode=DISABLED -u root"
-    set sql_cmd "$cli -vvv -e \\\"$sql\\\" || $cli -pmysql -vvv -e \\\"$sql\\\""
+    set sql_cmd "$cli -vvv -e \"$sql\" || $cli -pmysql -vvv -e \"$sql\""
 
     putsci "PING:"
     putsci $sql_cmd
@@ -1176,22 +1158,35 @@ proc mysql_ping {cidict refname} {
 
     for {set attempt 1} {$attempt <= $attempts} {incr attempt} {
         set ::_mysql_ping_output ""
-        set ::pipe_done 0
         set close_status OK
 
         if {[catch {
-            set pipe [open "|bash -c \"cd $basedir && $sql_cmd\"" "r"]
-            fconfigure $pipe -blocking 0 -buffering line
-            fileevent $pipe readable [list _mysql_ping_capture $pipe]
-            after 3000 { if {$::pipe_done == 0} { set ::pipe_done 1 } }
-            vwait ::pipe_done
-            if {[catch {close $pipe} errMsg]} { set close_status $errMsg }
+            set cmd "cd \"$basedir\" && $sql_cmd 2>&1"
+            set pipe [open "|bash -c {$cmd}" "r"]
+            fconfigure $pipe -blocking 1
+            set ::_mysql_ping_output [read $pipe]
+
+            if {[catch {close $pipe} errMsg]} {
+                set close_status $errMsg
+            }
         } errMsg]} {
             set close_status $errMsg
+            set ::_mysql_ping_output $errMsg
         }
 
-        if {$close_status eq "OK" && [string trim $::_mysql_ping_output] ne ""} {
+        set output_trim [string trim [string map {\r ""} $::_mysql_ping_output]]
+        if {$close_status eq "OK" && [regexp {[0-9]+(\.[0-9]+)+} $output_trim]} {
+            foreach line [split $output_trim "\n"] {
+                putsci $line
+            }
             return "PING SUCCEEDED"
+        }
+
+        putsci "PING attempt $attempt failed"
+        putsci "PING close_status: $close_status"
+        putsci "PING output:"
+        foreach line [split $output_trim "\n"] {
+            putsci $line
         }
 
         if {$attempt < $attempts} {
@@ -1200,7 +1195,6 @@ proc mysql_ping {cidict refname} {
     }
 
     putsci "PING FAILED: no version returned"
-    putsci $::_mysql_ping_output
     return "PING FAILED"
 }
 

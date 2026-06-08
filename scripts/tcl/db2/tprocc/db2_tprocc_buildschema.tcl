@@ -10,7 +10,7 @@ diset connection db2_def_pass ibmdb2
 diset connection db2_def_dbase db2
 
 set vu [ numberOfCPUs ]
-set warehouse [ expr {$vu * 5} ]
+set warehouse [ numberOfWHs ]
 diset tpcc db2_count_ware $warehouse
 diset tpcc db2_num_vu $vu
 diset tpcc db2_user db2inst1
