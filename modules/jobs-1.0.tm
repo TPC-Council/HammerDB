@@ -2209,11 +2209,10 @@ proc wapp-page-jobs {} {
             return
         }
 
-        set artifact_url "$base_url/jobs?jobid=$jobid&summaryjson"
-        set submit_url "$submit_base?artifact_url=[__jobs_urlencode $artifact_url]"
+        set submit_url $submit_base
         wapp-subst {
 <p class="no-print" style="text-align:left; margin:0px 0 1em 0;">
-  <a href="%html($submit_url)" target="_blank" rel="noopener">Share with TPC-OSS</a><br>
+  <a href="%html($submit_url)" target="_blank" rel="noopener">Share result artifact with TPC-OSS</a><br>
 </p>
 }
     }
@@ -2565,6 +2564,14 @@ proc wapp-page-jobs {} {
             jobs_summary_disclaimer
             wapp-subst {</div>\n}
         }
+
+        set result_url "$B/jobs?jobid=$jobid&summaryjson"
+
+        wapp-subst {
+<p class="no-print" style="text-align:left; margin:0px 0;">
+  <a href="%html($result_url)" download="hammerdb-result-%html($jobid).json">Save HammerDB result artifact</a><br>
+</p>
+}
 
         jobs_summary_tpcoss_link $jobid $B
 
