@@ -1193,6 +1193,7 @@ Version 6.0 June 2026
 Pull Requests & Issues
 
 Fix virtual user state across mixed automated, GUI and CLI runs #892
+Simplify artifact submit process #891
 Update TPROC-C automated schema sizing #889
 Add TPROC-H version and metrics to result sharing #888
 Add database metrics options for MySQL and MariaDB #885
