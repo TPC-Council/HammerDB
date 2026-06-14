@@ -514,7 +514,7 @@ return
   }}
   if { $start_display } {
   after 500 {metrics}
-  tk_messageBox -message "Starting Metrics Agent and Display on [ info hostname ]"
+  puts "Starting Metrics Agent and Display on [ info hostname ]"
   catch "destroy .metric"
   } else {
   tk_messageBox -message "Starting Metrics Agent on [ info hostname ]"

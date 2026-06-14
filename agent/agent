@@ -435,7 +435,16 @@ if { [ string match "*STOP*" $buffer ] } {
 puts "Closing HammerDB Metric Agent"
 ::Agent destroy
 exit
-}	
+}
+set display "$id $host"
+if {[llength $agentlist] > 0} {
+    puts "HammerDB Metric Agent busy: rejecting display request from $display"
+    catch {
+        Agent send $display DoDisplay 1 [ list "AGENT BUSY - STREAM IN USE" ] local
+        Agent send $display update
+    }
+    return
+}
 lappend agentlist "$id $host"
 puts "New display accepted @ $id $host"
 #Start Gathering and Sending Metrics
