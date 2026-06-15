@@ -220,13 +220,38 @@ return $sysinfo
 
 proc DetectCloudInstance {} {
 #Detect cloud environment by checking metadata services
-#AWS
+#AWS - IMDSv2
 if { [catch {
     package require http
-    set tok [::http::geturl "http://169.254.169.254/latest/meta-data/instance-type" -timeout 1000]
-    set itype [::http::data $tok]
+    set tok [::http::geturl "http://169.254.169.254/latest/api/token" \
+        -method PUT \
+        -timeout 500 \
+        -headers [list X-aws-ec2-metadata-token-ttl-seconds 60]]
+    set token [string trim [::http::data $tok]]
+    set code [::http::ncode $tok]
     ::http::cleanup $tok
-    if { $itype ne "" } { return "AWS $itype" }
+    if { $code eq "200" && $token ne "" } {
+        set tok [::http::geturl "http://169.254.169.254/latest/meta-data/instance-type" \
+            -timeout 500 \
+            -headers [list X-aws-ec2-metadata-token $token]]
+        set itype [string trim [::http::data $tok]]
+        set code [::http::ncode $tok]
+        ::http::cleanup $tok
+        if { $code eq "200" && $itype ne "" } {
+            return "AWS $itype"
+        }
+    }
+} err] } { ; }
+#AWS - IMDSv1 fallback
+if { [catch {
+    package require http
+    set tok [::http::geturl "http://169.254.169.254/latest/meta-data/instance-type" -timeout 500]
+    set itype [string trim [::http::data $tok]]
+    set code [::http::ncode $tok]
+    ::http::cleanup $tok
+    if { $code eq "200" && $itype ne "" } {
+        return "AWS $itype"
+    }
 } err] } { ; }
 #Azure
 if { [catch {
