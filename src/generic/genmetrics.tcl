@@ -444,6 +444,9 @@ proc ed_kill_metrics {args} {
         interp delete metrics_interp
     }
     catch { DisplayMetrics destroy } 
+    catch { destroy .ed_mainFrame.me }
+    frame .ed_mainFrame.me
+    .ed_mainFrame.notebook insert 3 .ed_mainFrame.me -text "Metrics"
     if ![ string match "*.ed_mainFrame.me*" [ .ed_mainFrame.notebook tabs ]] {
         #transaction counter has been detached so reattach before disabling
         Attach .ed_mainFrame.notebook .ed_mainFrame.me 3
@@ -460,6 +463,9 @@ proc ed_kill_cpu_metrics {args} {
             interp delete metrics_interp
         }
         catch { DisplayMetrics destroy } 
+        catch { destroy .ed_mainFrame.me }
+        frame .ed_mainFrame.me
+        .ed_mainFrame.notebook insert 3 .ed_mainFrame.me -text "Metrics"
     } else {
         ed_status_message -show "... Stopping Metrics ..."
         ed_metrics_button
@@ -467,6 +473,9 @@ proc ed_kill_cpu_metrics {args} {
             interp delete metrics_interp
         }
         catch { DisplayMetrics destroy } 
+        catch { destroy .ed_mainFrame.me }
+        frame .ed_mainFrame.me
+        .ed_mainFrame.notebook insert 3 .ed_mainFrame.me -text "Metrics"
         if ![ string match "*.ed_mainFrame.me*" [ .ed_mainFrame.notebook tabs ]] {
             #transaction counter has been detached so reattach before disabling
             Attach .ed_mainFrame.notebook .ed_mainFrame.me 3
