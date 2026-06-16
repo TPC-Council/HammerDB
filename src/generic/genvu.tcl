@@ -141,7 +141,7 @@ proc stacktrace {} {
 }
 
 proc load_virtual {}  {
-    global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm
+    global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm apmode
     set vuser_create_ok true
     set thlist [ thread::names ]
     if { [ info exists tc_threadID ] } {
@@ -152,7 +152,8 @@ proc load_virtual {}  {
     }
     #Additional thread for Database Metrics initially Oracle only
     #Additional thread for Database Metrics PostgreSQL added
-    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" } {
+    #Additional thread for Database Metrics MySQL and MariaDB added
+    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" } {
         if { [ info exists dbmon_threadID ] } {
             if { [ thread::exists $dbmon_threadID ] || [ tsv::get application themonitor ] eq "NOWVUSER" } {
                 set idx [ lsearch $thlist $dbmon_threadID ]
@@ -217,6 +218,16 @@ proc load_virtual {}  {
     if { [ info exists suppo ] } { ; } else { set suppo 0 }
     if { [ info exists optlog ] } { ; } else { set optlog 0 }
     if { [ info exists ntimes ] && $ntimes > 1 } { ; } else { set ntimes 1 }
+    # In the GUI, a normal Create Virtual Users should not inherit a profile id
+    # from a previous autopilot/profile run. Autopilot manages profile ids itself.
+    upvar #0 genericdict genericdict
+    upvar #0 icons icons
+    if { ![ info exists apmode ] } { set apmode "disabled" }
+    if { [ info exists icons ] && $apmode eq "disabled" } {
+        catch {
+            dict set genericdict commandline jobs_profile_id 0
+        }
+    }
     #For web version build_schema is not at the end of the stacktrace, modified to find build anywhere in trace
     set result [ lsearch [ lindex [ split [ join [ stacktrace ] ] ] ] "build_schema" ]
     if { $result != -1 }  {
@@ -375,7 +386,7 @@ proc load_virtual {}  {
         if { [ info exists tc_threadID ] } { 
             if { $threadID eq $tc_threadID } { unset -nocomplain tc_threadID }
         }
-        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL") && [ info exists dbmon_threadID ] } { 
+        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB") && [ info exists dbmon_threadID ] } { 
             if { $threadID eq $dbmon_threadID } { 
                 tsv::set application themonitor "NOWVUSER"
                 unset -nocomplain dbmon_threadID
@@ -490,7 +501,7 @@ proc load_virtual {}  {
     }
     configtable 
     if { $optlog == 1 } {
-        global flog opmode apmode unique_log_name no_log_buffer log_timestamps
+        global flog opmode unique_log_name no_log_buffer log_timestamps
         if { [ info exists opmode ] } { ; } else { set opmode "Local" }
         if { [ info exists apmode ] } { ; } else { set apmode "disabled" }
         if { [ info exists unique_log_name ] } { ; } else { set unique_log_name 0 }
@@ -514,19 +525,11 @@ proc load_virtual {}  {
                 puts $flog "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
             }
             if { $opmode != "Replica" } {
-                if { $apmode eq "disabled" } {
-                    tk_messageBox -title "Logging Active" -message "Logging activated\nto $filename"
-                } else {
                     puts "Logging activated to $filename"
-                }
             }
         } else {
             if { $opmode != "Replica" } {
-                if { $apmode eq "disabled" } {
-                    tk_messageBox -icon error -message "Could not create Logfile"
-                } else {
                     puts "Could not create Logfile"
-                }
             }
         }
     }

@@ -914,6 +914,11 @@ proc cilisten {args} {
         }
     }
 
+    # Enable temp logging here so the web log tail receives all VU output
+    catch {
+        vuset logtotemp 1
+    }
+
     if {[catch {
         set ci_optlog [dict get $cidict common ci_log_to_temp]
     }]} {
