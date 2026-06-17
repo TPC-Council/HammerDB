@@ -221,54 +221,73 @@ return $sysinfo
 proc DetectCloudInstance {} {
 #Detect cloud environment by checking metadata services
 #AWS - IMDSv2
+set cloud_instance ""
 if { [catch {
     package require http
     set tok [::http::geturl "http://169.254.169.254/latest/api/token" \
         -method PUT \
-        -timeout 500 \
+        -query "" \
+        -timeout 5000 \
         -headers [list X-aws-ec2-metadata-token-ttl-seconds 60]]
     set token [string trim [::http::data $tok]]
     set code [::http::ncode $tok]
     ::http::cleanup $tok
+
     if { $code eq "200" && $token ne "" } {
         set tok [::http::geturl "http://169.254.169.254/latest/meta-data/instance-type" \
-            -timeout 500 \
+            -timeout 5000 \
             -headers [list X-aws-ec2-metadata-token $token]]
         set itype [string trim [::http::data $tok]]
         set code [::http::ncode $tok]
         ::http::cleanup $tok
+
         if { $code eq "200" && $itype ne "" } {
-            return "AWS $itype"
+            set cloud_instance "AWS $itype"
         }
     }
 } err] } { ; }
-#AWS - IMDSv1 fallback
+
+if { $cloud_instance ne "" } {
+    return $cloud_instance
+}
+#Azure
+set cloud_instance ""
 if { [catch {
     package require http
-    set tok [::http::geturl "http://169.254.169.254/latest/meta-data/instance-type" -timeout 500]
-    set itype [string trim [::http::data $tok]]
+    set tok [::http::geturl "http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2021-02-01&format=text" \
+        -timeout 1000 \
+        -headers [list Metadata true]]
+    set vmsize [string trim [::http::data $tok]]
     set code [::http::ncode $tok]
     ::http::cleanup $tok
-    if { $code eq "200" && $itype ne "" } {
-        return "AWS $itype"
+
+    if { $code eq "200" && $vmsize ne "" } {
+        set cloud_instance "Azure $vmsize"
     }
 } err] } { ; }
-#Azure
-if { [catch {
-    package require http
-    set tok [::http::geturl "http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2021-02-01&format=text" -timeout 1000 -headers [list Metadata true]]
-    set vmsize [::http::data $tok]
-    ::http::cleanup $tok
-    if { $vmsize ne "" } { return "Azure $vmsize" }
-} err] } { ; }
+
+if { $cloud_instance ne "" } {
+    return $cloud_instance
+}
 #GCP
+set cloud_instance ""
 if { [catch {
     package require http
-    set tok [::http::geturl "http://metadata.google.internal/computeMetadata/v1/instance/machine-type" -timeout 1000 -headers [list Metadata-Flavor Google]]
-    set mtype [::http::data $tok]
+    set tok [::http::geturl "http://metadata.google.internal/computeMetadata/v1/instance/machine-type" \
+        -timeout 1000 \
+        -headers [list Metadata-Flavor Google]]
+    set mtype [string trim [::http::data $tok]]
+    set code [::http::ncode $tok]
     ::http::cleanup $tok
-    if { $mtype ne "" } { return "GCP [file tail $mtype]" }
+
+    if { $code eq "200" && $mtype ne "" } {
+        set cloud_instance "GCP [file tail $mtype]"
+    }
 } err] } { ; }
+
+if { $cloud_instance ne "" } {
+    return $cloud_instance
+}
 return "Not Detected"
 }
 
