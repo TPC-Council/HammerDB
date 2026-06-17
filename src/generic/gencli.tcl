@@ -824,7 +824,7 @@ proc print { args } {
         set ind [ lsearch {db bm ci dict generic script vuconf vucreated vustatus vucomplete datagen tcconf} $args ]
         if { $ind eq -1 } {
             puts "Error: invalid option"
-            puts {Usage: print [db|bm|ci||dict|generic|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
+            puts {Usage: print [db|bm|ci|dict|generic|script|vuconf|vucreated|vustatus|vucomplete|datagen|tcconf]}
             return
         }
         switch $args {
