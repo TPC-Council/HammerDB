@@ -929,7 +929,7 @@ proc configmssqlstpch {option} {
         foreach item {1} {
             set Name $Parent.f1.f2.r$rcnt
             set width [string length $item]
-            ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width $width
+            ttk::radiobutton $Name -variable mssqls_scale_fact -text $item -value $item -width $width
             grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
@@ -937,7 +937,7 @@ proc configmssqlstpch {option} {
         foreach item {10 30} {
             set Name $Parent.f1.f2.r$rcnt
             set width [string length $item]
-            ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width $width
+            ttk::radiobutton $Name -variable mssqls_scale_fact -text $item -value $item -width $width
             grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
@@ -945,7 +945,7 @@ proc configmssqlstpch {option} {
         foreach item {100 300} {
             set Name $Parent.f1.f2.r$rcnt
             set width [string length $item]
-            ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width $width
+            ttk::radiobutton $Name -variable mssqls_scale_fact -text $item -value $item -width $width
             grid $Name -column $rcnt -row 0 -sticky w
             incr rcnt
         }
@@ -954,7 +954,7 @@ proc configmssqlstpch {option} {
         foreach item {1000 3000} {
             set Name $Parent.f1.f2.ra$rcnt
             set width [string length $item]
-            ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width $width
+            ttk::radiobutton $Name -variable mssqls_scale_fact -text $item -value $item -width $width
             grid $Name -column $rcnt -row 1 -sticky w
             incr rcnt
         }
@@ -962,7 +962,7 @@ proc configmssqlstpch {option} {
         foreach item {10000 30000 100000} {
             set Name $Parent.f1.f2.ra$rcnt
             set width [string length $item]
-            ttk::radiobutton $Name -variable db2_scale_fact -text $item -value $item -width $width
+            ttk::radiobutton $Name -variable mssqls_scale_fact -text $item -value $item -width $width
             grid $Name -column $rcnt -row 1 -sticky w
             incr rcnt
         }

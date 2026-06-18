@@ -1192,6 +1192,7 @@ Version 6.0 June 2026
 
 Pull Requests & Issues
 
+Fix SQL Server GUI Scale Factor Option #894
 Fix AWS cloud metadata detection #893
 Fix virtual user state across mixed automated, GUI and CLI runs #892
 Simplify artifact submit process #891
