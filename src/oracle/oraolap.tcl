@@ -1424,7 +1424,7 @@ proc sub_query { query_no scale_factor myposition timesten } {
 }
 proc CheckDBVersion { curn } {
 set dbversion ""
-    if {[catch {orasql $curn {select version from v$instance}}]} {
+    if {[catch {orasql $curn {SELECT version FROM PRODUCT_COMPONENT_VERSION WHERE product LIKE 'Oracle Database%'}}]} {
 	    set dbversion "DBVersion:NULL"
     } else {
         orafetch  $curn -datavariable output
