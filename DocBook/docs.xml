@@ -4197,6 +4197,28 @@ GO
                 </row>
 
                 <row>
+                  <entry>Azure Citus</entry>
+
+                  <entry>Prevents CREATE, ALTER and DROP database operations
+                  for Azure Citus (Azure Elastic Cluster) like managed
+                  environment.
+                  </entry>
+                </row>
+
+                <row>
+                  <entry>Citus Load Balancer Port</entry>
+
+                  <entry>The port of the Citus load balancer used to distribute
+                  connections across worker nodes. This setting is enabled when
+                  Azure Citus is enabled. When set and Citus Compatible mode is
+                  also enabled, schema data population and OLTP benchmark
+                  workload connections will be routed through this port instead
+                  of the standard PostgreSQL port. DDL operations are always
+                  routed through the coordinator via the standard PostgreSQL
+                  port. The default value is 5432.</entry>
+                </row>
+
+                <row>
                   <entry>PostgreSQL Superuser</entry>
 
                   <entry>The PostgreSQL Superuser is a user with sufficient

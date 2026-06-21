@@ -4,6 +4,8 @@
         <pg_host>localhost</pg_host>
         <pg_port>5432</pg_port>
         <pg_sslmode>prefer</pg_sslmode>
+        <pg_azure_citus>false</pg_azure_citus>
+        <pg_citus_loadbalancer>5432</pg_citus_loadbalancer>
     </connection>
 	<tpcc>
         <schema>
