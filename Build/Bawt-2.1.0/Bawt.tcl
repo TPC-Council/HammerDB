@@ -2239,7 +2239,7 @@ namespace eval BawtBuild {
     }
 
     proc GetValidArchitectures {} {
-        return [list "x86" "x64"]
+        return [list "x86" "x64" "arm64"]
     }
 
     proc Is32Bit {} {
@@ -2251,7 +2251,7 @@ namespace eval BawtBuild {
     }
 
     proc Is64Bit {} {
-        if { [GetArchitecture] eq "x64" } {
+        if { [GetArchitecture] eq "x64" || [GetArchitecture] eq "arm64" } {
             return true
         } else {
             return false
@@ -2918,7 +2918,7 @@ namespace eval BawtBuild {
     }
 
     proc GetPngLibDir {} {
-        foreach libDir { /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu } {
+        foreach libDir { /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu } {
             set fileList [glob -nocomplain -type f $libDir/libpng*.so]
             if { [llength $fileList] != 0 } {
                 return $libDir
