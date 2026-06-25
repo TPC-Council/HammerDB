@@ -90,6 +90,10 @@ namespace eval jobs {
     } else {
       catch {hdbjobs timeout 30000}
       #hdbjobs eval {PRAGMA foreign_keys=ON}
+      if { $sqlite_db ne ":memory:" } {
+        catch {hdbjobs eval {PRAGMA journal_mode=WAL}}
+        catch {hdbjobs eval {PRAGMA synchronous=NORMAL}}
+      }
       if { $sqlite_db eq ":memory:" } {
         catch {hdbjobs eval {DROP TABLE JOBMAIN}}
         catch {hdbjobs eval {DROP TABLE JOBTIMING}}
@@ -249,6 +253,10 @@ namespace eval jobs {
     }
     if [catch {sqlite3 hdbjobs $sqlite_db} message ] {} else {
       catch {hdbjobs timeout 30000}
+      if { $sqlite_db ne ":memory:" } {
+        catch {hdbjobs eval {PRAGMA journal_mode=WAL}}
+        catch {hdbjobs eval {PRAGMA synchronous=NORMAL}}
+      }
       if [catch {set tblname [ hdbjobs eval {SELECT name FROM sqlite_master WHERE type='table' AND name='JOBMAIN'}]} message ] {
         puts "Error querying  JOBOUTPUT table in SQLite on-disk database : $message"
         return
