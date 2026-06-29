@@ -3,7 +3,7 @@
 if [ $# -le 2 ] ; then
     echo ""
     echo "Usage: `basename $0` Architecture SetupFile Action [Target1] [TargetN]"
-    echo "  Architecture  : x86 x64"
+    echo "  Architecture  : x86 x64 arm64"
     echo "  Actions       : list clean extract configure compile distribute finalize complete update simulate touch"
     echo "  Default target: all"
     echo ""
@@ -31,12 +31,19 @@ fi
 
 if [ "${ARCH}" == "x64" ] ; then
     BITS=64
+elif [ "${ARCH}" == "arm64" ] ; then
+    BITS=64
 else
     BITS=32
 fi
 
 OUTROOTDIR="../BawtBuild"
 TCLKIT="./tclkit-Linux${BITS}"
+# aarch64 is 64-bit, but the "tclkit-Linux64" bootstrap interpreter is the x86_64
+# build. Select the native Arm64 bootstrap interpreter explicitly for arm64.
+if [ "${ARCH}" == "arm64" ] ; then
+    TCLKIT="./tclkit-LinuxArm64"
+fi
 NUMJOBS=`nproc`
 ACTION="--${ACTION}"
 
