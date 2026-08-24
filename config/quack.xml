@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<quack>
+    <connection>
+        <quack_host>localhost</quack_host>
+        <quack_port>15432</quack_port>
+    </connection>
+    <tpcc>
+        <schema>
+            <quack_count_ware>1</quack_count_ware>
+            <quack_num_vu>1</quack_num_vu>
+        </schema>
+        <driver>
+            <quack_total_iterations>10000000</quack_total_iterations>
+            <quack_raiseerror>false</quack_raiseerror>
+            <quack_keyandthink>false</quack_keyandthink>
+            <quack_driver>timed</quack_driver>
+            <quack_rampup>1</quack_rampup>
+            <quack_duration>2</quack_duration>
+            <quack_allwarehouse>false</quack_allwarehouse>
+            <quack_timeprofile>false</quack_timeprofile>
+        </driver>
+    </tpcc>
+    <tpch>
+        <schema>
+            <quack_scale_fact>1</quack_scale_fact>
+            <quack_num_tpch_threads>1</quack_num_tpch_threads>
+        </schema>
+        <driver>
+            <quack_total_querysets>1</quack_total_querysets>
+            <quack_raise_query_error>false</quack_raise_query_error>
+            <quack_verbose>false</quack_verbose>
+            <quack_degree_of_parallel>1</quack_degree_of_parallel>
+        </driver>
+    </tpch>
+</quack>

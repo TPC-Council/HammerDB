@@ -49,4 +49,12 @@
         <workloads>TPROC-C TPROC-H</workloads>
         <commands>maria::sel mariause mariaescape mariasel marianext mariaseek mariamap mariaexec mariaclose mariainfo mariaresult mariacol mariastate mariainsertid mariaquery mariaendquery mariabaseinfo mariaping mariachangeuser mariareceive</commands>
 </mariadb>
+<quack>
+	<name>Quack</name>
+	<description>sqlxtc (Quack)</description>
+	<prefix>quack</prefix>
+	<library>quacktcl</library>
+	<workloads>TPROC-C</workloads>
+	<commands>quackconnect quackexec quacksel quackcommit quackrollback quackclose quackping quackescape</commands>
+</quack>
 </database>
