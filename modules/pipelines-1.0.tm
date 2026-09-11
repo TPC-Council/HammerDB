@@ -20,6 +20,7 @@ namespace eval pipelines {
             maria  { return "MariaDB" }
             pg     { return "PostgreSQL" }
             mysql  { return "MySQL" }
+            vsql   { return "VillageSQL" }
             ora    { return "Oracle" }
             mssqls { return "SQL Server" }
             db2    { return "Db2" }
@@ -33,6 +34,7 @@ namespace eval pipelines {
             maria { return "MariaDB" }
             pg    { return "PostgreSQL" }
             mysql { return "MySQL" }
+            vsql  { return "VillageSQL" }
             default { return "" }
         }
     }
@@ -611,7 +613,7 @@ proc __url_encode {s} {
 
         set dbprefix [string tolower [string trim [__qget $__qsdict db ""]]]
         if {$dbprefix eq ""} { set dbprefix "maria" }
-        if {$dbprefix ni {"maria" "pg" "mysql"}} { set dbprefix "maria" }
+        if {$dbprefix ni {"maria" "pg" "mysql" "vsql"}} { set dbprefix "maria" }
         set pipeline_ui [string tolower [string trim [__qget $__qsdict pipeline ""]]]
         if {$pipeline_ui eq ""} { set pipeline_ui "single" }
         if {$pipeline_ui ni {"single" "profile" "compare"}} { set pipeline_ui "single" }
@@ -913,7 +915,7 @@ return
         # database chooser
         wapp-subst {<p><b>Database</b></p>}
         wapp-subst "<select class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
-        foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB ] {
+        foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB vsql VillageSQL ] {
             # Hide DBs until support is enabled
             if {$pfx in {ora mssqls db2}} continue
             set sel ""

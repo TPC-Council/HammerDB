@@ -41,14 +41,14 @@ if { $genericdictdb eq "" } {
     if { $sqlite_hdb_version ne $hdb_version } {
         puts "The existing SQLite DBs are from version $sqlite_hdb_version. SQLite DBs will be reset to $hdb_version."
 	#Close SQLite before deleting else get permission denied on Windows
-	if { [catch {hdb close} message]} { 
-		puts "Failed to close SQLite: $message" 
+	if { [catch {hdb close} message]} {
+		puts "Failed to close SQLite: $message"
 	}
-        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql } {
+        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql villagesql } {
             set dbfile [ CheckSQLiteDB $dbname ]
             #Remove SQLite file
-	    if { [catch {file delete $dbfile} message]} { 
-		    puts "Error deleting SQLite file from $sqlite_hdb_version: $message" 
+	    if { [catch {file delete $dbfile} message]} {
+		    puts "Error deleting SQLite file from $sqlite_hdb_version: $message"
 	    }
         }
         #After remove old SQLite, save genericdict to SQLite DB

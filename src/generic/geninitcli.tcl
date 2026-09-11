@@ -45,7 +45,7 @@ if { $genericdictdb eq "" } {
         if { [catch {hdb close} message]} {
                 puts "Failed to close SQLite: $message"
         }
-        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql } {
+        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql villagesql } {
             set dbfile [ CheckSQLiteDB $dbname ]
             #Remove SQLite file
 	    if { [catch {file delete $dbfile} message]} {
@@ -83,7 +83,7 @@ foreach { key } [ dict keys $dbdict ] {
     }
     set $dictname $dbconfdict
     set prefix [ dict get $dbdict $key prefix ]
-    lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\olap.tcl" "$key/$prefix\otc.tcl" "$key/$prefix\ci.tcl" 
+    lappend dbsrclist "$key/$prefix\opt.tcl" "$key/$prefix\oltp.tcl" "$key/$prefix\olap.tcl" "$key/$prefix\otc.tcl" "$key/$prefix\ci.tcl"
 }
 
 #get_xml_data
