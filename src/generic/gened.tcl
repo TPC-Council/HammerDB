@@ -2877,6 +2877,8 @@ proc metricsopts {} {
         metmysqlopts
     } elseif { $rdbms eq "MariaDB" } {
         metmariaopts
+    } elseif { $rdbms eq "VillageSQL" } {
+        metvsqlopts
     } else {
         metgenopts
     }

@@ -327,6 +327,7 @@ proc metrics {} {
         namespace forget pgmet::*
         namespace forget mysqlmet::*
         namespace forget mariamet::*
+        namespace forget vsqlmet::*
         namespace import oramet::*
         if { $cpu_only } { 
 		genmetrics 
@@ -337,6 +338,7 @@ proc metrics {} {
         namespace forget oramet::*
         namespace forget mysqlmet::*
         namespace forget mariamet::*
+        namespace forget vsqlmet::*
         namespace import pgmet::*
         if { $cpu_only } { 
 		genmetrics 
@@ -347,6 +349,7 @@ proc metrics {} {
         namespace forget oramet::*
         namespace forget pgmet::*
         namespace forget mariamet::*
+        namespace forget vsqlmet::*
         namespace import mysqlmet::*
         if { $cpu_only } {
 		genmetrics
@@ -357,11 +360,23 @@ proc metrics {} {
         namespace forget oramet::*
         namespace forget pgmet::*
         namespace forget mysqlmet::*
+        namespace forget vsqlmet::*
         namespace import mariamet::*
         if { $cpu_only } {
 		genmetrics
 	} else {
 		mariametrics
+	}
+    } elseif { $rdbms eq "VillageSQL" } {
+        namespace forget oramet::*
+        namespace forget pgmet::*
+        namespace forget mysqlmet::*
+        namespace forget mariamet::*
+        namespace import vsqlmet::*
+        if { $cpu_only } {
+		genmetrics
+	} else {
+		vsqlmetrics
 	}
     } else {
         genmetrics
@@ -436,6 +451,8 @@ proc ed_kill_metrics {args} {
         catch { mysql_post_kill_dbmon_cleanup }
     } elseif { $rdbms == "MariaDB" } {
         catch { maria_post_kill_dbmon_cleanup }
+    } elseif { $rdbms == "VillageSQL" } {
+        catch { vsql_post_kill_dbmon_cleanup }
     }
     }
     ed_status_message -show "... Stopping Metrics ..."
