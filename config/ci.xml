@@ -158,7 +158,13 @@
             <overwrite>false</overwrite>
             <local_dir_root>/opt/hammerdb-ci/providers/villagesql</local_dir_root>
             <build_dir>/opt/hammerdb-ci/providers/villagesql/builds</build_dir>
-            <build_cmd>cmake . -DFORCE_INSOURCE_BUILD=1 -DBUILD_CONFIG=mysql_release -DWITH_BOOST=boost -DDOWNLOAD_BOOST=1 ; cmake --build .</build_cmd>
+            <!-- VillageSQL is a MySQL 8.4 fork built with its own flags (WITH_SSL=system,
+                 RelWithDebInfo; no boost download). Driven as a raw mysqld like the MySQL
+                 provider: the packaged tarball has the standard bin/mysqld layout, so
+                 install/init/start below are MySQL-style. PROVISIONAL: verify on the Linux
+                 CI host, and confirm whether bundled extensions must be checked out/built
+                 first (villagesql/bld_tools) before this cmake step. -->
+            <build_cmd>cmake . -DFORCE_INSOURCE_BUILD=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_SSL=system ; cmake --build .</build_cmd>
             <build_cmd_args>--parallel 8</build_cmd_args>
             <package_cmd>make package</package_cmd>
         </build>
