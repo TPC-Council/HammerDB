@@ -50,7 +50,7 @@ proc tcount_vsql {bm interval masterthread} {
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 }
-            set gcol "orange"
+            set gcol "#6B4FBB"
             if { ![ info exists tcdata ] } { set tcdata {} }
             if { ![ info exists timedata ] } { set timedata {} }
             if { $bm eq "TPC-C" } {
