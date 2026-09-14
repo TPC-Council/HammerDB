@@ -101,6 +101,16 @@ proc CreateStoredProcs { vsql_handler } {
                             'w', no_ol_supply_w_id, 'q', no_ol_quantity));
             SET loop_counter = loop_counter + 1;
         END WHILE;
+        -- Preserve the TPC-C 2.4.2.3 forced rollback: on the ~1% of transactions
+        -- that generate the invalid item (100001, the only value the loop above
+        -- can emit for a bad line), the whole New Order must roll back. Test the
+        -- built JSON directly (MEMBER OF is an in-memory check, no JSON_TABLE
+        -- expansion or item-table join); if the poison item is present, force the
+        -- NOT FOUND EXIT HANDLER declared above, which rolls back, exactly as the
+        -- row-by-row baseline does.
+        IF 100001 MEMBER OF (JSON_EXTRACT(lines_json, '$[*].i')) THEN
+            SELECT i_id INTO x FROM item WHERE i_id = 100001;
+        END IF;
         -- bulk INSERT order_line, static per-district branch (no dynamic SQL).
         -- Each branch is identical except the literal s_dist_NN column.
         IF no_d_id = 1 THEN
@@ -154,14 +164,9 @@ proc CreateStoredProcs { vsql_handler } {
             FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
             LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
         END IF;
-        -- All-or-nothing rollback (matches baseline's NOT FOUND on the ~1% TPC-C
-        -- forced-rollback item 100001): if the JOIN item/stock dropped any line,
-        -- fewer than no_o_ol_cnt rows were inserted -> roll back the whole order.
-        -- bulk UPDATE stock (+91 restock rule). LEFT JOIN so a poison-item line
-        -- (item 100001, no stock row) is simply not updated -- matching PG, which
-        -- keeps the order_line row (NULL amount/dist) so count stays = o_ol_cnt and
-        -- HammerDB consistency check 4 passes. No rollback: neither PG nor baseline-
-        -- equivalent set-based code aborts the poison order; it commits a degenerate line.
+        -- bulk UPDATE stock (+91 restock rule). Reached only when all items were
+        -- valid (the invalid-item case rolled back above), so an inner JOIN is
+        -- safe here and every order line has a matching stock row.
         UPDATE stock s
         JOIN JSON_TABLE(lines_json,'$[*]' COLUMNS(i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
           ON s.s_i_id=ol.i AND s.s_w_id=ol.w
