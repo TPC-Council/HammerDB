@@ -170,7 +170,7 @@ proc CreateStoredProcs { vsql_handler } {
         UPDATE stock s
         JOIN JSON_TABLE(lines_json,'$[*]' COLUMNS(i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
           ON s.s_i_id=ol.i AND s.s_w_id=ol.w
-        SET s.s_quantity = CASE WHEN s.s_quantity > ol.q THEN s.s_quantity-ol.q ELSE s.s_quantity-ol.q+91 END;
+        SET s.s_quantity = CASE WHEN s.s_quantity >= ol.q+10 THEN s.s_quantity-ol.q ELSE s.s_quantity-ol.q+91 END;
         INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
         INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
@@ -1476,7 +1476,7 @@ proc insert_vsql_no_stored_procs { testtype timedtype } {
       set quantity_data_dist [ mysql::sel $vsql_handler "SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM stock WHERE s_i_id = $no_ol_i_id AND s_w_id = $no_ol_supply_w_id" -flatlist ]
       set no_i_price [ lindex $price_name_data 0 ]
       set no_s_quantity [ lindex $quantity_data_dist 0 ]
-      if { $no_s_quantity > $no_ol_quantity } {
+      if { $no_s_quantity >= [ expr {$no_ol_quantity + 10} ] } {
         set no_s_quantity [ expr {$no_s_quantity - $no_ol_quantity} ]
       } else {
         set no_s_quantity [ expr {$no_s_quantity - $no_ol_quantity + 91} ]
