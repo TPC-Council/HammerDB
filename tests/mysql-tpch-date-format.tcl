@@ -20,9 +20,10 @@ test generated-date-shape {TPROC-H generates abbreviated month names} -body {
 
 test mysql-date-parser {MySQL parses generated dates with the matching format specifier} -body {
     list \
-        [regexp -all {str_to_date\([^\n]*'%Y-%M-%d'\)} $mysqlolap] \
-        [regexp -all {str_to_date\([^\n]*'%Y-%b-%d'\)} $mysqlolap]
-} -result {0 4}
+        [regexp -all {str_to_date\([^)]*\)} $mysqlolap] \
+        [regexp -all {str_to_date\([^)]*'%Y-%M-%d'\)} $mysqlolap] \
+        [regexp -all {str_to_date\([^)]*'%Y-%b-%d'\)} $mysqlolap]
+} -result {8 0 8}
 
 set failed $::tcltest::numTests(Failed)
 cleanupTests
