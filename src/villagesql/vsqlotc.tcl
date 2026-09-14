@@ -14,19 +14,15 @@ proc tcount_vsql {bm interval masterthread} {
             }
         }
 
-        proc ConnectToVillageSQL { MASTER host port socket ssl_options user password is_oceanbase ob_tenant_name} {
+        proc ConnectToVillageSQL { MASTER host port socket ssl_options user password } {
             global mysqlstatus
             #ssl_options is variable length so build a connectstring
-            if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
+            if { [ chk_socket $host $socket ] eq "TRUE" } {
                 set use_socket "true"
                 append connectstring " -socket $socket"
             } else {
                 set use_socket "false"
                 append connectstring " -host $host -port $port"
-		#if is_oceanbase is false and chk_socket is false we don't want to change the username
-            if { $is_oceanbase == "true" } {
-                set user "$user@$ob_tenant_name"
-	        }
             }
 
             foreach key [ dict keys $ssl_options ] {
@@ -50,7 +46,7 @@ proc tcount_vsql {bm interval masterthread} {
             }
         }
 
-        proc read_more { MASTER library vsql_host vsql_port vsql_socket vsql_ssl_options vsql_user vsql_pass vsql_tpch_user vsql_tpch_pass interval old tce bm vsql_tpch_obcompat ob_tenant_name} {
+        proc read_more { MASTER library vsql_host vsql_port vsql_socket vsql_ssl_options vsql_user vsql_pass vsql_tpch_user vsql_tpch_pass interval old tce bm } {
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 }
@@ -63,11 +59,7 @@ proc tcount_vsql {bm interval masterthread} {
                 set tmp_vsql_pass $vsql_pass
                 set tval 60
             } else {
-                if {$vsql_tpch_obcompat eq "true"} {
-                    set sqc "select 'Queries' as Variable_name, count(*) as Value FROM oceanbase.GV\$OB_SQL_AUDIT where TENANT_NAME='$ob_tenant_name'"
-                } else {
-                    set sqc "show global status where Variable_name = 'Queries' or Variable_name = 'Com_show_status'"
-                }
+                set sqc "show global status where Variable_name = 'Queries' or Variable_name = 'Com_show_status'"
                 set tmp_vsql_user $vsql_tpch_user
                 set tmp_vsql_pass $vsql_tpch_pass
                 set tval 3600
@@ -87,7 +79,7 @@ proc tcount_vsql {bm interval masterthread} {
             } else {
                 namespace import tcountcommon::*
             }
-            set vsql_handler [ ConnectToVillageSQL $MASTER $vsql_host $vsql_port $vsql_socket $vsql_ssl_options $tmp_vsql_user $tmp_vsql_pass $vsql_tpch_obcompat $ob_tenant_name]
+            set vsql_handler [ ConnectToVillageSQL $MASTER $vsql_host $vsql_port $vsql_socket $vsql_ssl_options $tmp_vsql_user $tmp_vsql_pass ]
             #Enter loop until stop button pressed
             while { $timeout eq 0 } {
                 set timeout [ tsv::get application timeout ]
@@ -103,15 +95,9 @@ proc tcount_vsql {bm interval masterthread} {
                         regexp {\{\{Com_commit\ ([0-9]+)\}\ \{Com_rollback\ ([0-9]+)\}\}} $handler_stat all com_comm com_roll
                         set outc [ expr $com_comm + $com_roll ]
                     } else {
-                        if {$vsql_tpch_obcompat eq "true"} {
-                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all queries show_stat
-                            set outc [ expr $queries - 1]
-                        } else {
-                            regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            set outc [ expr $queries - $show_stat ]
-                        }
-
+                        regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
+                        regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
+                        set outc [ expr $queries - $show_stat ]
                     }
                 }
                 set new $outc
@@ -176,5 +162,5 @@ proc tcount_vsql {bm interval masterthread} {
     catch {eval [ subst {thread::send $tc_threadID {lappend ::auto_path [zipfs root]app/lib}}]}
     catch {eval [ subst {thread::send $tc_threadID {::tcl::tm::path add [zipfs root]app/modules modules}}]}
     #Call Transaction Counter to start read_more loop
-    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $vsql_host $vsql_port $vsql_socket {$vsql_ssl_options} $vsql_user [ quotemeta $vsql_pass ] $vsql_tpch_user [ quotemeta $vsql_tpch_pass ] $interval $old tce $bm $vsql_tpch_obcompat $vsql_ob_tenant_name }}]
+    eval [ subst {thread::send -async $tc_threadID { read_more $masterthread $library $vsql_host $vsql_port $vsql_socket {$vsql_ssl_options} $vsql_user [ quotemeta $vsql_pass ] $vsql_tpch_user [ quotemeta $vsql_tpch_pass ] $interval $old tce $bm }}]
 }
