@@ -83,7 +83,6 @@ proc countvsqlopts { bm } {
     setlocaltcountvars $configvillagesql 1
     global default_vsql_port
     set default_vsql_port $vsql_port
-    if { $vsql_port eq $vsql_oceanbase_port } { set default_vsql_port 3306 }
     variable myoptsfields
     if { $bm eq "TPC-C" } {
         if {![string match windows $::tcl_platform(platform)]} {
@@ -96,10 +95,10 @@ proc countvsqlopts { bm } {
     } else {
         if {![string match windows $::tcl_platform(platform)]} {
             set platform "lin"
-            set myoptsfields [ dict create connection {vsql_host {.countopt.c1.e1 get} vsql_port {.countopt.c1.e2 get} vsql_socket {.countopt.c1.e2a get} vsql_ssl_ca {.countopt.c1.e2d get} vsql_ssl_cert {.countopt.c1.e2e get} vsql_ssl_key {.countopt.c1.e2f get} vsql_ssl_cipher {.countopt.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath $vsql_ssl_linux_capath vsql_oceanbase_port $vsql_oceanbase_port} tpch {vsql_tpch_user {.countopt.c1.e3 get} vsql_tpch_pass {.countopt.c1.e4 get} vsql_tpch_obcompat $vsql_tpch_obcompat vsql_ob_tenant_name $vsql_ob_tenant_name} ]
+            set myoptsfields [ dict create connection {vsql_host {.countopt.c1.e1 get} vsql_port {.countopt.c1.e2 get} vsql_socket {.countopt.c1.e2a get} vsql_ssl_ca {.countopt.c1.e2d get} vsql_ssl_cert {.countopt.c1.e2e get} vsql_ssl_key {.countopt.c1.e2f get} vsql_ssl_cipher {.countopt.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath $vsql_ssl_linux_capath} tpch {vsql_tpch_user {.countopt.c1.e3 get} vsql_tpch_pass {.countopt.c1.e4 get}} ]
         } else {
             set platform "win"
-            set myoptsfields [ dict create connection {vsql_host {.countopt.c1.e1 get} vsql_port {.countopt.c1.e2 get} vsql_socket {.countopt.c1.e2a get} vsql_ssl_ca {.countopt.c1.e2d get} vsql_ssl_cert {.countopt.c1.e2e get} vsql_ssl_key {.countopt.c1.e2f get} vsql_ssl_cipher {.countopt.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath} vsql_oceanbase_port $vsql_oceanbase_port} tpch {vsql_tpch_user {.countopt.c1.e3 get} vsql_tpch_pass {.countopt.c1.e4 get} vsql_tpch_obcompat $vsql_tpch_obcompat vsql_ob_tenant_name $vsql_ob_tenant_name} ]
+            set myoptsfields [ dict create connection {vsql_host {.countopt.c1.e1 get} vsql_port {.countopt.c1.e2 get} vsql_socket {.countopt.c1.e2a get} vsql_ssl_ca {.countopt.c1.e2d get} vsql_ssl_cert {.countopt.c1.e2e get} vsql_ssl_key {.countopt.c1.e2f get} vsql_ssl_cipher {.countopt.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath}} tpch {vsql_tpch_user {.countopt.c1.e3 get} vsql_tpch_pass {.countopt.c1.e4 get}} ]
         }
     }
     if { [ info exists afval ] } {
@@ -275,42 +274,6 @@ proc countvsqlopts { bm } {
     grid $Prompt -column 0 -row 13 -sticky e
     grid $Name -column 1 -row 13 -sticky ew
 
-set Name $Parent.c1.e5a
-    set Prompt $Parent.c1.p5a
-    ttk::label $Prompt -text "Oceanbase Database Compatible :"
-    ttk::checkbutton $Name -text "" -variable vsql_tpch_obcompat -onvalue "true" -offvalue "false"
-    grid $Prompt -column 0 -row 14 -sticky e
-    grid $Name -column 1 -row 14 -sticky w
-    bind $Parent.c1.e5a <Button> {
-        if { $vsql_tpch_obcompat eq "true" } {
-             set vsql_port $default_vsql_port
-            .countopt.c1.e2b configure -state normal
-            .countopt.c1.e5b configure -state disabled
-        } else {
-             set vsql_ssl "false"
-             set vsql_port $vsql_oceanbase_port
-            .countopt.c1.e2b configure -state disabled
-            .countopt.c1.e2ba configure -state disabled
-            .countopt.c1.e2bb configure -state disabled
-            .countopt.c1.e2c configure -state disabled
-            .countopt.c1.e2d configure -state disabled
-            .countopt.c1.e2e configure -state disabled
-            .countopt.c1.e2f configure -state disabled
-            .countopt.c1.e2g configure -state disabled
-            .countopt.c1.e5b configure -state normal
-        }
-    }
-  set Name $Parent.c1.e5b
-    set Prompt $Parent.c1.5b
-    ttk::label $Prompt -text "Oceanbase Tenant Name:"
-    ttk::entry $Name -width 30 -textvariable vsql_ob_tenant_name
-    grid $Prompt -column 0 -row 14 -sticky e
-    grid $Name -column 1 -row 14 -sticky ew
-    if {$vsql_tpch_obcompat == "false" } {
-        $Name configure -state disabled
-    }
-    grid $Prompt -column 0 -row 15 -sticky e
-    grid $Name -column 1 -row 15 -sticky ew
     set Name $Parent.f1.e5
     set Prompt $Parent.f1.p5
     ttk::label $Prompt -text "Refresh Rate(secs) :"
@@ -921,15 +884,14 @@ proc configvsqltpch {option} {
     setlocaltpchvars $configvillagesql
     global default_vsql_port
     set default_vsql_port $vsql_port
-    if { $vsql_port eq $vsql_oceanbase_port } { set default_vsql_port 3306 }
-    set tpchfields [ dict create tpch {vsql_tpch_user {.mytpch.c1.e3 get} vsql_tpch_pass {.mytpch.c1.e4 get} vsql_tpch_dbase {.mytpch.c1.e5 get} vsql_tpch_storage_engine {.mytpch.f1.e6 get} vsql_total_querysets {.mytpch.f1.e9 get} vsql_update_sets {.mytpch.f1.e13 get} vsql_trickle_refresh {.mytpch.f1.e14 get} vsql_tpch_obcompat $vsql_tpch_obcompat vsql_ob_partition_num $vsql_ob_partition_num vsql_ob_tenant_name $vsql_ob_tenant_name vsql_scale_fact $vsql_scale_fact  vsql_num_tpch_threads $vsql_num_tpch_threads vsql_refresh_on $vsql_refresh_on vsql_raise_query_error $vsql_raise_query_error vsql_verbose $vsql_verbose vsql_refresh_verbose $vsql_refresh_verbose vsql_cloud_query $vsql_cloud_query} ]
+    set tpchfields [ dict create tpch {vsql_tpch_user {.mytpch.c1.e3 get} vsql_tpch_pass {.mytpch.c1.e4 get} vsql_tpch_dbase {.mytpch.c1.e5 get} vsql_tpch_storage_engine {.mytpch.f1.e6 get} vsql_total_querysets {.mytpch.f1.e9 get} vsql_update_sets {.mytpch.f1.e13 get} vsql_trickle_refresh {.mytpch.f1.e14 get} vsql_scale_fact $vsql_scale_fact  vsql_num_tpch_threads $vsql_num_tpch_threads vsql_refresh_on $vsql_refresh_on vsql_raise_query_error $vsql_raise_query_error vsql_verbose $vsql_verbose vsql_refresh_verbose $vsql_refresh_verbose vsql_cloud_query $vsql_cloud_query} ]
     #set matching fields in dialog to temporary dict
     if {![string match windows $::tcl_platform(platform)]} {
         set platform "lin"
-    set vsqlconn [ dict create connection {vsql_host {.mytpch.c1.e1 get} vsql_port {.mytpch.c1.e2 get} vsql_socket {.mytpch.c1.e2a get} vsql_ssl_ca {.mytpch.c1.e2d get} vsql_ssl_cert {.mytpch.c1.e2e get} vsql_ssl_key {.mytpch.c1.e2f get} vsql_ssl_cipher {.mytpch.c1.e2g get} vsql_oceanbase_port $vsql_oceanbase_port vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath {$vsql_ssl_linux_capath}} ]
+    set vsqlconn [ dict create connection {vsql_host {.mytpch.c1.e1 get} vsql_port {.mytpch.c1.e2 get} vsql_socket {.mytpch.c1.e2a get} vsql_ssl_ca {.mytpch.c1.e2d get} vsql_ssl_cert {.mytpch.c1.e2e get} vsql_ssl_key {.mytpch.c1.e2f get} vsql_ssl_cipher {.mytpch.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath {$vsql_ssl_linux_capath}} ]
         } else {
         set platform "win"
-    set vsqlconn [ dict create connection {vsql_host {.mytpch.c1.e1 get} vsql_port {.mytpch.c1.e2 get} vsql_socket {.mytpch.c1.e2a get} vsql_ssl_ca {.mytpch.c1.e2d get} vsql_ssl_cert {.mytpch.c1.e2e get} vsql_ssl_key {.mytpch.c1.e2f get} vsql_ssl_cipher {.mytpch.c1.e2g get} vsql_oceanbase_port $vsql_oceanbase_port vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath}} ]
+    set vsqlconn [ dict create connection {vsql_host {.mytpch.c1.e1 get} vsql_port {.mytpch.c1.e2 get} vsql_socket {.mytpch.c1.e2a get} vsql_ssl_ca {.mytpch.c1.e2d get} vsql_ssl_cert {.mytpch.c1.e2e get} vsql_ssl_key {.mytpch.c1.e2f get} vsql_ssl_cipher {.mytpch.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath}} ]
         }
     variable myfields
     set myfields [ dict merge $vsqlconn $tpchfields ]
@@ -987,10 +949,6 @@ proc configvsqltpch {option} {
     ttk::checkbutton $Name -text "" -variable vsql_ssl -onvalue "true" -offvalue "false"
     grid $Prompt -column 0 -row 4 -sticky e
     grid $Name -column 1 -row 4 -sticky w
-    if {$vsql_tpch_obcompat == "true" } {
-        $Name configure -state disabled
-        set $vsql_ssl "false"
-    }
 
     bind .mytpch.c1.e2b <Any-ButtonRelease> {
         if { $vsql_ssl eq "true" } {
@@ -1002,7 +960,6 @@ proc configvsqltpch {option} {
             .mytpch.c1.e2f configure -state disabled
             .mytpch.c1.e2g configure -state disabled
         } else {
-	if { !$vsql_tpch_obcompat } {
             .mytpch.c1.e2ba configure -state normal
             .mytpch.c1.e2bb configure -state normal
             .mytpch.c1.e2c configure -state normal
@@ -1012,7 +969,6 @@ proc configvsqltpch {option} {
                 .mytpch.c1.e2f configure -state normal
             }
             .mytpch.c1.e2g configure -state normal
-    	    }
         }
     }
 
@@ -1115,65 +1071,14 @@ proc configvsqltpch {option} {
     ttk::entry $Name -width 30 -textvariable vsql_tpch_dbase
     grid $Prompt -column 0 -row 14 -sticky e
     grid $Name -column 1 -row 14 -sticky ew
-    set Name $Parent.c1.e5a
-    set Prompt $Parent.c1.p5a
-    ttk::label $Prompt -text "Oceanbase Database Compatible :"
-    ttk::checkbutton $Name -text "" -variable vsql_tpch_obcompat -onvalue "true" -offvalue "false"
-    grid $Prompt -column 0 -row 15 -sticky e
-    grid $Name -column 1 -row 15 -sticky w
-    bind $Parent.c1.e5a <Button> {
-        if { $vsql_tpch_obcompat eq "true" } {
-             set vsql_port $default_vsql_port
-            .mytpch.c1.e2b configure -state normal
-            .mytpch.c1.e5b configure -state disabled
-	    #only disable partitions in build
-            if { [ llength [info commands .mytpch.f1.e6a ] ] != 0 } { .mytpch.f1.e6a configure -state disabled }
-        } else {
-             set vsql_ssl "false"
-             set vsql_port $vsql_oceanbase_port
-            .mytpch.c1.e2b configure -state disabled
-            .mytpch.c1.e2ba configure -state disabled
-            .mytpch.c1.e2bb configure -state disabled
-            .mytpch.c1.e2c configure -state disabled
-            .mytpch.c1.e2d configure -state disabled
-            .mytpch.c1.e2e configure -state disabled
-            .mytpch.c1.e2f configure -state disabled
-            .mytpch.c1.e2g configure -state disabled
-            .mytpch.c1.e5b configure -state normal
-	    #only enable partitions in build
-            if { [ llength [info commands .mytpch.f1.e6a ] ] != 0  } { .mytpch.f1.e6a configure -state normal }
-        }
-    }
-    set Name $Parent.c1.e5b
-    set Prompt $Parent.c1.5b
-    ttk::label $Prompt -text "Oceanbase Tenant Name:"
-    ttk::entry $Name -width 30 -textvariable vsql_ob_tenant_name
-    grid $Prompt -column 0 -row 16 -sticky e
-    grid $Name -column 1 -row 16 -sticky ew
-    if {$vsql_tpch_obcompat == "false" } {
-        $Name configure -state disabled
-    }
-
     if { $option eq "all" || $option eq "build" } {
 
-    set Name $Parent.f1.e6a
-    set Prompt $Parent.f1.p6a
-    ttk::label $Prompt -text "Oceanbase Partitions:"
-    ttk::entry $Name -width 30 -textvariable vsql_ob_partition_num
-    grid $Prompt -column 0 -row 17 -sticky e
-    grid $Name -column 1 -row 17 -sticky ew
-    if {$vsql_tpch_obcompat == "false" } {
-        $Name configure -state disabled
-    }
         set Name $Parent.f1.e6
         set Prompt $Parent.f1.p6
         ttk::label $Prompt -text "Data Warehouse Storage Engine :"
         ttk::entry $Name -width 30 -textvariable vsql_tpch_storage_engine
         grid $Prompt -column 0 -row 18 -sticky e
         grid $Name -column 1 -row 18 -sticky ew
-        if {$vsql_tpch_obcompat == "true" } {
-            $Name configure -state disabled
-        }
         set Name $Parent.f1.e7
         set Prompt $Parent.f1.p7
         ttk::label $Prompt -text "Scale Factor :"
@@ -1359,9 +1264,6 @@ proc metvsqlopts {} {
     setlocaltcountvars $configvillagesql 1
 
     set default_vsql_port $vsql_port
-    if { [info exists vsql_oceanbase_port] && $vsql_port eq $vsql_oceanbase_port } {
-        set default_vsql_port 3306
-    }
 
     variable myoptsfields
     if { $bm eq "TPC-C" } {
@@ -1375,10 +1277,10 @@ proc metvsqlopts {} {
     } else {
         if {![string match windows $::tcl_platform(platform)]} {
             set platform "lin"
-            set myoptsfields [ dict create connection {vsql_host {.metric.c1.e1 get} vsql_port {.metric.c1.e2 get} vsql_socket {.metric.c1.e2a get} vsql_ssl_ca {.metric.c1.e2d get} vsql_ssl_cert {.metric.c1.e2e get} vsql_ssl_key {.metric.c1.e2f get} vsql_ssl_cipher {.metric.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath $vsql_ssl_linux_capath vsql_oceanbase_port $vsql_oceanbase_port} tpch {vsql_tpch_user {.metric.c1.e3 get} vsql_tpch_pass {.metric.c1.e4 get} vsql_tpch_obcompat $vsql_tpch_obcompat vsql_ob_tenant_name $vsql_ob_tenant_name} ]
+            set myoptsfields [ dict create connection {vsql_host {.metric.c1.e1 get} vsql_port {.metric.c1.e2 get} vsql_socket {.metric.c1.e2a get} vsql_ssl_ca {.metric.c1.e2d get} vsql_ssl_cert {.metric.c1.e2e get} vsql_ssl_key {.metric.c1.e2f get} vsql_ssl_cipher {.metric.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_linux_capath $vsql_ssl_linux_capath} tpch {vsql_tpch_user {.metric.c1.e3 get} vsql_tpch_pass {.metric.c1.e4 get}} ]
         } else {
             set platform "win"
-            set myoptsfields [ dict create connection {vsql_host {.metric.c1.e1 get} vsql_port {.metric.c1.e2 get} vsql_socket {.metric.c1.e2a get} vsql_ssl_ca {.metric.c1.e2d get} vsql_ssl_cert {.metric.c1.e2e get} vsql_ssl_key {.metric.c1.e2f get} vsql_ssl_cipher {.metric.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath} vsql_oceanbase_port $vsql_oceanbase_port} tpch {vsql_tpch_user {.metric.c1.e3 get} vsql_tpch_pass {.metric.c1.e4 get} vsql_tpch_obcompat $vsql_tpch_obcompat vsql_ob_tenant_name $vsql_ob_tenant_name} ]
+            set myoptsfields [ dict create connection {vsql_host {.metric.c1.e1 get} vsql_port {.metric.c1.e2 get} vsql_socket {.metric.c1.e2a get} vsql_ssl_ca {.metric.c1.e2d get} vsql_ssl_cert {.metric.c1.e2e get} vsql_ssl_key {.metric.c1.e2f get} vsql_ssl_cipher {.metric.c1.e2g get} vsql_ssl $vsql_ssl vsql_ssl_two_way $vsql_ssl_two_way vsql_ssl_windows_capath {$vsql_ssl_windows_capath}} tpch {vsql_tpch_user {.metric.c1.e3 get} vsql_tpch_pass {.metric.c1.e4 get}} ]
         }
     }
 

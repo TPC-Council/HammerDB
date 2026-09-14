@@ -12,7 +12,6 @@
         <vsql_ssl_cert>client-cert.pem</vsql_ssl_cert>
         <vsql_ssl_key>client-key.pem</vsql_ssl_key>
         <vsql_ssl_cipher>server</vsql_ssl_cipher>
-        <vsql_oceanbase_port>2881</vsql_oceanbase_port>
     </connection>
     <tpcc>
         <schema>
@@ -47,12 +46,9 @@
         <schema>
             <vsql_scale_fact>1</vsql_scale_fact>
             <vsql_tpch_user>root</vsql_tpch_user>
-            <vsql_ob_tenant_name>tpch</vsql_ob_tenant_name>
             <vsql_tpch_pass>mysql</vsql_tpch_pass>
             <vsql_tpch_dbase>tpch</vsql_tpch_dbase>
             <vsql_num_tpch_threads>1</vsql_num_tpch_threads>
-            <vsql_tpch_obcompat>false</vsql_tpch_obcompat>
-            <vsql_ob_partition_num>1</vsql_ob_partition_num>
             <vsql_tpch_storage_engine>innodb</vsql_tpch_storage_engine>
         </schema>
         <driver>
