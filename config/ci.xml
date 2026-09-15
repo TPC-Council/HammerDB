@@ -170,11 +170,22 @@
         </build>
         <install>
             <install_package>tar -xvf</install_package>
+            <!-- The build emits several .tar.gz artifacts (server package plus an
+                 extension SDK). package_pattern selects the server package
+                 deterministically; the server tarball is mysql-<ver>-villagesql-...
+                 -linux-<arch>.tar.gz, whereas the SDK is villagesql-extension-sdk-*. -->
+            <package_pattern>mysql-*-linux-*.tar.gz</package_pattern>
             <installer>bin/mysqld</installer>
             <install_dir>/opt/hammerdb-ci/providers/villagesql/installs</install_dir>
             <config_dir>/opt/hammerdb-ci/providers/villagesql/config</config_dir>
             <defaults_file>/opt/hammerdb-ci/providers/villagesql/config/vsql.cnf</defaults_file>
             <io_config_file>/opt/hammerdb-ci/providers/villagesql/config/vsqlio.cnf</io_config_file>
+            <!-- Compare-pipeline release-tag pattern. VillageSQL numbered releases
+                 are 0.0.N; NOTE the repo also carries inherited upstream mysql-*
+                 tags and a divergent release/0.0.6 form, so Compare tag matching
+                 is only reliable once server-side release tags are consistent
+                 (see PR discussion). Single/Profile pipelines are unaffected. -->
+            <tag_pattern>0.0.*</tag_pattern>
             <basedir>/opt/hammerdb-ci/providers/villagesql/installs</basedir>
             <datadir>data</datadir>
             <innodb_log_group_home_dir>redo</innodb_log_group_home_dir>
