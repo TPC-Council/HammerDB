@@ -51,6 +51,47 @@ proc CIDict2SQLite {dbname dbdict} {
 }
 
 # read ci.db
+proc CIOverrideDBVersion {dbhandle} {
+    set version ""
+    if {[catch {
+        set version [$dbhandle eval {SELECT val FROM "_ci_meta" WHERE key='schema_version' LIMIT 1}]
+    }]} {
+        return ""
+    }
+    return [string trim $version]
+}
+
+proc CIPrepareOverrideDB {dbhandle} {
+    if {[CIOverrideDBVersion $dbhandle] eq "2"} {
+        return 1
+    }
+
+    if {[catch {
+        set tbllist [$dbhandle eval {SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'}]
+    } err]} {
+        putscli "CI ERROR: Failed to inspect legacy CI SQLite: $err"
+        return 0
+    }
+
+    foreach tbl $tbllist {
+        set qtbl [string map [list "\"" "\"\""] $tbl]
+        if {[catch {$dbhandle eval "DROP TABLE IF EXISTS \"$qtbl\""} err]} {
+            putscli "CI ERROR: Failed to clear legacy CI SQLite table '$tbl': $err"
+            return 0
+        }
+    }
+
+    if {[catch {
+        $dbhandle eval {CREATE TABLE "_ci_meta"(key TEXT PRIMARY KEY, val TEXT)}
+        $dbhandle eval {INSERT INTO "_ci_meta"(key,val) VALUES('schema_version','2')}
+    } err]} {
+        putscli "CI ERROR: Failed to initialise CI override database: $err"
+        return 0
+    }
+
+    return 1
+}
+
 proc SQLite2Dict_ci {dbname} {
     set sqlitedb [CheckSQLiteDB $dbname]
 
@@ -65,6 +106,13 @@ proc SQLite2Dict_ci {dbname} {
 
     catch {cih timeout 30000}
 
+    # v6.0 ci.db files were full XML snapshots. They are not overrides and
+    # must not mask changes made to the external config/ci.xml.
+    if {[CIOverrideDBVersion cih] ne "2"} {
+        catch {cih close}
+        return ""
+    }
+
     set overrides [dict create]
 
     if {[catch {set tbllist [cih eval {SELECT name FROM sqlite_master WHERE type='table'}]} err]} {
@@ -74,6 +122,10 @@ proc SQLite2Dict_ci {dbname} {
     }
 
     foreach tbl $tbllist {
+        if {$tbl eq "_ci_meta"} {
+            continue
+        }
+
         # common overrides
         if {$tbl eq "common"} {
             set subdict [dict create]
@@ -117,13 +169,22 @@ proc SQLite2Dict_ci {dbname} {
 }
 
 proc find_ciplan_dir {} {
+    set PWConfigDir [file join [pwd] config]
+    if {[info exists ::UserDefaultDir] && [string trim $::UserDefaultDir] ne ""} {
+        if {[catch {
+            set UDConfigDir [file join [file normalize $::UserDefaultDir] config]
+        }]} {
+            set UDConfigDir [file join [pwd] config]
+        }
+    } else {
+        set UDConfigDir [file join [pwd] config]
+    }
     if {[catch {
         set ISConfigDir [file join {*}[lrange [file split [file normalize [file dirname [info script]]]] 0 end-2] config]
     }]} {
         set ISConfigDir ""
     }
-    set PWConfigDir [file join [pwd] config]
-    foreach CD {ISConfigDir PWConfigDir} {
+    foreach CD {PWConfigDir UDConfigDir ISConfigDir} {
         if {[file isdirectory [set $CD]]} {
             if {[file exists [file join [set $CD] ci.xml]]} {
                 return [set $CD]
@@ -157,37 +218,31 @@ set cidict [dict create]
 proc ci_init_config {} {
     global cidict
 
-    # XML base
+    # ci.xml is always the base configuration.
     if {[catch { set xml_cfg [get_ciplan_xml] } err]} {
         putscli "CI CONFIG: could not load ci.xml ($err)"
         set cidict [dict create]
         return
     }
 
-    # load overrides
+    # ci.db contains only explicit ciset overrides. Legacy v6.0 snapshot
+    # databases have no metadata marker and are deliberately ignored.
     set override_cfg [SQLite2Dict_ci "ci"]
 
     if {$override_cfg eq ""} {
-        # seed ci.db
         set cidict $xml_cfg
-        if {[catch { CIDict2SQLite "ci" $cidict } derr]} {
-            putscli "CI CONFIG: failed to save CI config to SQLite ($derr)"
-        }
         return
     }
 
-    # merge config
     set merged $xml_cfg
 
     foreach top [dict keys $override_cfg] {
         if {$top eq "common"} {
-            # common
             set sub [dict get $override_cfg common]
             foreach k [dict keys $sub] {
                 dict set merged common $k [dict get $sub $k]
             }
         } else {
-            # per-db sections
             set topdict [dict get $override_cfg $top]
             foreach section [dict keys $topdict] {
                 set secdict [dict get $topdict $section]
@@ -203,7 +258,6 @@ proc ci_init_config {} {
 
 # update ci.db
 proc SQLiteUpdateKeyValue_ci {dbname table keyname value} {
-    # ci.db path
     set sqlitedb [CheckSQLiteDB $dbname]
 
     if {$sqlitedb eq ""} {
@@ -211,14 +265,19 @@ proc SQLiteUpdateKeyValue_ci {dbname table keyname value} {
         return
     }
 
-    # separate handle
     if {[catch {sqlite3 hci $sqlitedb} err]} {
         putscli "CI ERROR: Failed to open SQLite DB '$sqlitedb': $err"
         return
     }
     catch {hci timeout 30000}
 
-    # ensure table
+    # The first ciset after upgrading converts any legacy snapshot database
+    # into a clean override-only database.
+    if {![CIPrepareOverrideDB hci]} {
+        catch {hci close}
+        return
+    }
+
     set create_sql [format {CREATE TABLE IF NOT EXISTS "%s"(key TEXT, val TEXT)} $table]
     if {[catch {hci eval $create_sql} err]} {
         putscli "CI ERROR: Failed to ensure table '$table' in '$sqlitedb': $err"
@@ -226,11 +285,9 @@ proc SQLiteUpdateKeyValue_ci {dbname table keyname value} {
         return
     }
 
-    # escape key/value
     set esckey [string map {' ''} $keyname]
     set escval [string map {' ''} $value]
 
-    # UPDATE first
     set update_sql [format {UPDATE "%s" SET val = '%s' WHERE key = '%s'} \
                         $table $escval $esckey]
     if {[catch {hci eval $update_sql} err]} {
@@ -239,11 +296,9 @@ proc SQLiteUpdateKeyValue_ci {dbname table keyname value} {
         return
     }
 
-    # row updated?
     set changed 0
     catch { set changed [hci eval {SELECT changes()}] }
 
-    # else INSERT
     if {$changed == 0} {
         set insert_sql [format {INSERT INTO "%s"(key,val) VALUES('%s','%s')} \
                             $table $esckey $escval]
@@ -358,9 +413,6 @@ proc ciset {args} {
 
     if {[catch {
         SQLiteUpdateKeyValue_ci "ci" "${top}_${section}" $key $val
-
-        set secdict_str [dict get $cidict $top $section]
-        SQLiteUpdateKeyValue_ci "ci" $top $section $secdict_str
     } err]} {
         putscli "CI ERROR: Failed to update SQLite: $err"
     }
