@@ -63,6 +63,24 @@ namespace eval jobs {
     return [list $outerTag [list $tag $newPairs]]
 }
 
+  proc upgrade_job_timing { sqlite_db } {
+    if { [catch {
+        set timingcol_p75 [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBTIMING') WHERE name='p75_ms'}]
+        if { $timingcol_p75 eq 0 } {
+            hdbjobs eval {ALTER TABLE JOBTIMING ADD COLUMN p75_ms REAL}
+        }
+        set timingcol_p25 [hdbjobs eval {SELECT COUNT(*) FROM pragma_table_info('JOBTIMING') WHERE name='p25_ms'}]
+        if { $timingcol_p25 eq 0 } {
+            hdbjobs eval {ALTER TABLE JOBTIMING ADD COLUMN p25_ms REAL}
+        }
+        if { $timingcol_p75 eq 0 || $timingcol_p25 eq 0 } {
+            puts "Upgraded database $sqlite_db JOBTIMING table with percentile fields"
+        }
+    } message] } {
+        puts "Error upgrading JOBTIMING table with percentile fields: $message"
+    }
+  }
+
   proc init_job_tables { } {
     upvar #0 genericdict genericdict
     if {[dict exists $genericdict commandline jobs_disable ]} {
@@ -223,6 +241,7 @@ namespace eval jobs {
            } message] } {
                puts "Error upgrading JOBMETRIC table with I/O fields: $message"
            }
+           upgrade_job_timing $sqlite_db
 	   }}}}
       tsv::set commandline sqldb $sqlite_db
     }
@@ -258,6 +277,7 @@ namespace eval jobs {
           exit
 	  }
       } else {
+         upgrade_job_timing $sqlite_db
          puts "Web Service using $sqlite_db database"
        }
     }
@@ -3508,7 +3528,20 @@ if {$rawmode} {
   proc getjobtiming { jobid } {
     set jobtiming [ dict create ]
     hdbjobs eval {SELECT procname,elapsed_ms,calls,min_ms,avg_ms,max_ms,total_ms,p99_ms,p95_ms,p75_ms,p50_ms,p25_ms,sd,ratio_pct FROM JOBTIMING WHERE JOBID=$jobid and SUMMARY=1 ORDER BY RATIO_PCT DESC}  {
-    set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p75_ms $p75_ms p50_ms $p50_ms p25_ms $p25_ms sd $sd ratio_pct $ratio_pct"
+    set timing [list \
+    elapsed_ms $elapsed_ms \
+    calls $calls \
+    min_ms $min_ms \
+    avg_ms $avg_ms \
+    max_ms $max_ms \
+    total_ms $total_ms \
+    p99_ms $p99_ms \
+    p95_ms $p95_ms \
+    p75_ms $p75_ms \
+    p50_ms $p50_ms \
+    p25_ms $p25_ms \
+    sd $sd \
+    ratio_pct $ratio_pct]
       dict append jobtiming $procname $timing
     }
     if { [ dict size $jobtiming ] eq 0 } {
@@ -4527,7 +4560,20 @@ proc getjob { query } {
                 WHERE JOBID=$jobid AND VU=$vuid AND SUMMARY=0
                 ORDER BY RATIO_PCT DESC
             } {
-                set timing "elapsed_ms $elapsed_ms calls $calls min_ms $min_ms avg_ms $avg_ms max_ms $max_ms total_ms $total_ms p99_ms $p99_ms p95_ms $p95_ms p75_ms $p75_ms p50_ms $p50_ms p25_ms $p25_ms sd $sd ratio_pct $ratio_pct"
+                set timing [list \
+    elapsed_ms $elapsed_ms \
+    calls $calls \
+    min_ms $min_ms \
+    avg_ms $avg_ms \
+    max_ms $max_ms \
+    total_ms $total_ms \
+    p99_ms $p99_ms \
+    p95_ms $p95_ms \
+    p75_ms $p75_ms \
+    p50_ms $p50_ms \
+    p25_ms $p25_ms \
+    sd $sd \
+    ratio_pct $ratio_pct]
                 dict append jobtiming $procname $timing
             }
 
@@ -4720,6 +4766,18 @@ proc getjob { query } {
 
         # jobid + timing  (SUMMARY across VUs)
         if {[dict exists $paramdict timing]} {
+            set jobbm [join [hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid}]]
+            if {$jobbm eq "TPC-H"} {
+                set timingmessage "Percentile timing data is not applicable to TPROC-H"
+                if {[string equal -nocase $outputformat "JSON"]} {
+                    set timingresponse [dict create jobid $jobid message $timingmessage]
+                    set huddleobj [huddle compile {dict * string} $timingresponse]
+                    puts [huddle jsondump $huddleobj]
+                } else {
+                    puts $timingmessage
+                }
+                return
+            }
             set jobtiming [getjobtiming $jobid]
             set huddleobj [huddle compile {dict * dict} $jobtiming]
             if {[string equal -nocase $outputformat "JSON"]} {
