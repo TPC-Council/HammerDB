@@ -1246,6 +1246,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Add Azure Elastic Cluster support for PostgreSQL TPROC-C #895
 Fix MySQL and VillageSQL async connection pool SSL arguments #943
 Fix MySQL-family generated transaction and schema-check errors #926 (#927)
 Centralize schema loader worker state handling #941 (#928)
