@@ -1,3 +1,18 @@
+# Select the worker/VU port without changing the standard PostgreSQL connection interface.
+# A zero or empty load-balancer port falls back to the configured PostgreSQL port.
+proc resolve_pgtpcc_data_port { pg_port citus_azure_ec citus_compatible citus_lb_port } {
+    if { $citus_azure_ec eq "true" && $citus_compatible ne "true" } {
+        error "Azure Elastic Cluster requires Citus Compatible mode"
+    }
+    if { $citus_azure_ec ne "true" || $citus_compatible ne "true" || $citus_lb_port eq "" || $citus_lb_port eq "0" } {
+        return $pg_port
+    }
+    if { ![ string is integer -strict $citus_lb_port ] || $citus_lb_port < 1 || $citus_lb_port > 65535 } {
+        error "Citus Load Balancer Port must be 0 or an integer from 1 to 65535"
+    }
+    return $citus_lb_port
+}
+
 proc build_pgtpcc {} {
     global maxvuser suppo ntimes threadscreated _ED
     upvar #0 dbdict dbdict
@@ -7,6 +22,7 @@ proc build_pgtpcc {} {
     upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpccvars $configpostgresql
+    set data_port [ resolve_pgtpcc_data_port $pg_port $pg_citus_azure_elastic_cluster $pg_cituscompat $pg_citus_loadbalancer ]
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a $pg_count_ware Warehouse PostgreSQL TPROC-C schema\nin host [string toupper $pg_host:$pg_port] sslmode [string toupper $pg_sslmode] under user [ string toupper $pg_user ] in database [ string toupper $pg_dbase ]?" -type yesno ] == yes} {
         if { $pg_num_vu eq 1 || $pg_count_ware eq 1 } {
             set maxvuser 1
@@ -1645,9 +1661,11 @@ proc detect_pg_tpcc_routine_mode { lda requested_pg_storedprocs } {
 }
 
 
-proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_password user password } {
+proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_password user password citus_azure_ec } {
     set stmnt_count 1
-    puts "CREATING DATABASE $db under OWNER $user"
+    if { $citus_azure_ec ne "true" } {
+        puts "CREATING DATABASE $db under OWNER $user"
+    }
     set result [ pg_exec $lda "SELECT 1 FROM pg_roles WHERE rolname = '$user'"]
     if { [pg_result $result -numTuples] == 0 } {
         set sql($stmnt_count) "CREATE USER \"$user\" PASSWORD '$password'"
@@ -1660,8 +1678,12 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
     
     set result [ pg_exec $lda "SELECT 1 FROM pg_database WHERE datname = '$db'"]
     if { [pg_result $result -numTuples] == 0} {
-	incr stmnt_count;
-        set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
+        if { $citus_azure_ec eq "true" } {
+            error "Azure Elastic Cluster requires the database $db to exist before schema build"
+        } else {
+	    incr stmnt_count;
+            set sql($stmnt_count) "CREATE DATABASE \"$db\" OWNER \"$user\""
+        }
     } else {
         set existing_db [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $db ]
         if { $existing_db eq "Failed" } {
@@ -1669,23 +1691,26 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         } else {
             set result [ pg_exec $existing_db "SELECT 1 FROM pg_tables WHERE schemaname = 'public'"]
             if { [pg_result $result -numTuples] == 0 } {
-
-  	        puts "Using existing empty Database $db for Schema build"
-    	        set is_db_owner_query [ pg_exec $existing_db "WITH RECURSIVE cte AS (SELECT oid, 0 AS steps, true AS inherit_option FROM pg_roles WHERE  rolname = '$user' UNION ALL SELECT m.roleid, c.steps + 1, c.inherit_option AND c.inherit_option FROM   cte c JOIN pg_auth_members m ON m.member = c.oid ) SELECT count(*) > 0 AS is_owner FROM cte, pg_database db WHERE cte.oid=db.datdba and db.datname = '$db'"]
-
-                if { [pg_result $is_db_owner_query -status] != "PGRES_TUPLES_OK"} {
-                    puts "is_db_owner_query returned [pg_result $is_db_owner_query -status]"
-                    error "[pg_result $is_db_owner_query -error]"
+                if { $citus_azure_ec eq "true" } {
+                    puts "Using existing Azure Elastic Cluster database $db for Schema build"
                 } else {
-                    set is_db_owner [pg_result $is_db_owner_query -list]
-                    if { $is_db_owner == f } {
-                         incr stmnt_count;
-                         set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
-                    }
-                }
+                    puts "Using existing empty Database $db for Schema build"
+                    set is_db_owner_query [ pg_exec $existing_db "WITH RECURSIVE cte AS (SELECT oid, 0 AS steps, true AS inherit_option FROM pg_roles WHERE  rolname = '$user' UNION ALL SELECT m.roleid, c.steps + 1, c.inherit_option AND c.inherit_option FROM   cte c JOIN pg_auth_members m ON m.member = c.oid ) SELECT count(*) > 0 AS is_owner FROM cte, pg_database db WHERE cte.oid=db.datdba and db.datname = '$db'"]
 
-                puts "Using existing empty Database $db for Schema build"
-                set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
+                    if { [pg_result $is_db_owner_query -status] != "PGRES_TUPLES_OK"} {
+                        puts "is_db_owner_query returned [pg_result $is_db_owner_query -status]"
+                        error "[pg_result $is_db_owner_query -error]"
+                    } else {
+                        set is_db_owner [pg_result $is_db_owner_query -list]
+                        if { $is_db_owner == f } {
+                             incr stmnt_count;
+                             set sql($stmnt_count) "ALTER DATABASE $db OWNER TO $user"
+                        }
+                    }
+
+                    puts "Using existing empty Database $db for Schema build"
+                    set sql($stmnt_count) "ALTER DATABASE \"$db\" OWNER TO \"$user\""
+                }
             } else {
                 puts "Database with tables $db exists"
                 error "Database $db exists but is not empty, specify a new or empty database name"
@@ -1693,7 +1718,7 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
         }
         pg_disconnect $existing_db
     }
-    if { $tspace != "pg_default" } {
+    if { $tspace != "pg_default" && $citus_azure_ec ne "true" } {
         incr stmnt_count
         set sql($stmnt_count) "ALTER DATABASE $db SET TABLESPACE $tspace"
     }
@@ -2132,7 +2157,7 @@ proc LoadOrd { lda ware_start count_ware MAXITEMS ORD_PER_DIST DIST_PER_WARE ora
     pg_result $result -clear
     return
 }
-proc do_tpcc { host port sslmode count_ware superuser superuser_password defaultdb db tspace user password ora_compatible citus_compatible pg_storedprocs partition num_vu } {
+proc do_tpcc { host port sslmode count_ware superuser superuser_password defaultdb db tspace user password ora_compatible citus_compatible pg_storedprocs partition num_vu citus_azure_ec data_port } {
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
     set DIST_PER_WARE 10
@@ -2167,7 +2192,7 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
         } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
+            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password $citus_azure_ec
             set result [ pg_exec $lda "commit" ]
             pg_result $result -clear
             pg_disconnect $lda
@@ -2189,9 +2214,21 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
                 pg_result $result -clear
             }
         }
+        # DDL stays on the configured PostgreSQL connection; only data loading may use the load balancer.
+        set load_lda $lda
+        if { $data_port ne $port } {
+            puts "Using Citus load balancer port $data_port for data population"
+            set load_lda [ ConnectToPostgres $host $data_port $sslmode $user $password $db ]
+            if { $load_lda eq "Failed" } {
+                error "error, the database connection to $host:$data_port could not be established"
+            }
+        }
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
-            LoadItems $lda $MAXITEMS
+            LoadItems $load_lda $MAXITEMS
+            if { $data_port ne $port } {
+                pg_disconnect $load_lda
+            }
             puts "Monitoring Workers..."
             set prevactive 0
             while 1 {
@@ -2211,7 +2248,7 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
                 after 10000
             }
         } else {
-            LoadItems $lda $MAXITEMS
+            LoadItems $load_lda $MAXITEMS
         }
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
@@ -2230,7 +2267,10 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
                 }
                 after 5000 
             }
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+            if { $data_port ne $port } {
+                puts "Worker $myposition: connecting via load balancer port $data_port"
+            }
+            set lda [ ConnectToPostgres $host $data_port $sslmode $user $password $db ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
             }
@@ -2242,14 +2282,21 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
             set myend $count_ware
         }
         puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare $lda $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust $lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $ora_compatible
-        LoadOrd $lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $ora_compatible
+        if { $threaded eq "MULTI-THREADED" } {
+            set data_lda $lda
+        } else {
+            set data_lda $load_lda
+        }
+        LoadWare $data_lda $mystart $myend $MAXITEMS $DIST_PER_WARE
+        LoadCust $data_lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $ora_compatible
+        LoadOrd $data_lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $ora_compatible
         puts "End:[ clock format [ clock seconds ] ]"
         set result [ pg_exec $lda "commit" ]
         pg_result $result -clear
         if { $threaded eq "MULTI-THREADED" } {
             tsv::lreplace common thrdlst $myposition $myposition done
+        } elseif { $data_port ne $port } {
+            pg_disconnect $data_lda
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
@@ -2262,11 +2309,11 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
     }
 }
 }
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_count_ware $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_tspace $pg_user [ quotemeta $pg_pass ] $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "do_tpcc $pg_host $pg_port $pg_sslmode $pg_count_ware $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_tspace $pg_user [ quotemeta $pg_pass ] $pg_oracompat $pg_cituscompat $pg_storedprocs $pg_partition $pg_num_vu $pg_citus_azure_elastic_cluster $data_port"
     } else { return }
 }
 
-proc insert_pgconnectpool_drivescript { testtype timedtype } {
+proc insert_pgconnectpool_drivescript { testtype timedtype pg_port data_port } {
     #When using connect pooling delete the existing portions of the script and replace with new connect pool version
     set syncdrvt(1) {
         proc fn_prep_statement { lda curn_fn } {
@@ -2308,8 +2355,8 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
         dict for {id conparams} $connectonly {
             #Set the parameters to variables named from the keys, this allows us to build the connect strings according to the database
             dict with conparams {
-                #set PostgreSQL connect string
-                set $id [ list $pg_host $pg_port $pg_sslmode $pg_user $pg_pass $pg_dbase ]
+                #Use the resolved data port for pooled benchmark connections.
+                set $id [ list $pg_host @DATA_PORT@ $pg_sslmode $pg_user $pg_pass $pg_dbase ]
             }
         }
         #For the connect keys c1, c2 etc make a connection
@@ -2422,6 +2469,13 @@ proc insert_pgconnectpool_drivescript { testtype timedtype } {
         foreach lda [ dict values $connlist ] {  pg_disconnect $lda }
         pg_disconnect $mlda
 }
+    # Preserve each pool entry's configured port unless a load-balancer override is active.
+    if { $data_port eq $pg_port } {
+        set pool_data_port {$pg_port}
+    } else {
+        set pool_data_port $data_port
+    }
+    set syncdrvt(1) [ string map [ list @DATA_PORT@ $pool_data_port ] $syncdrvt(1) ]
     #Find single connection start and end points
     set syncdrvi(1a) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "proc fn_prep_statement" end ]
     set syncdrvi(1b) [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "pg_disconnect \$lda" end ]
@@ -2571,6 +2625,7 @@ proc loadpgtpcc { } {
     upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpccvars $configpostgresql
+    set data_port [ resolve_pgtpcc_data_port $pg_port $pg_citus_azure_elastic_cluster $pg_cituscompat $pg_citus_loadbalancer ]
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-C"
@@ -2583,13 +2638,16 @@ set KEYANDTHINK \"$pg_keyandthink\" ;# Time for user thinking and keying (true o
 set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
-set port \"$pg_port\" ;# Port of the PostgreSQL Server
+set port \"$data_port\" ;# Effective data port for TPROC-C virtual users
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set user \"$pg_user\" ;# PostgreSQL user
 set password \"[ quotemeta $pg_pass ]\" ;# Password for the PostgreSQL user
 set db \"$pg_dbase\" ;# Database containing the TPC Schema
 #OPTIONS
 "
+    if { $data_port ne $pg_port } {
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "puts \"Using Citus load balancer port $data_port for benchmark\"\n"
+    }
     .ed_mainFrame.mainwin.textFrame.left.text fastinsert end {#LOAD LIBRARIES AND MODULES
 if [catch {package require $library} message] { error "Failed to load $library - $message" }
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
@@ -2910,7 +2968,7 @@ for {set it 0} {$it < $total_iterations} {incr it} {
 }
 pg_disconnect $lda}
     if { $pg_connect_pool } {
-        insert_pgconnectpool_drivescript test sync
+        insert_pgconnectpool_drivescript test sync $pg_port $data_port
     }
 }
 
@@ -2923,6 +2981,7 @@ proc loadtimedpgtpcc { } {
     upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpccvars $configpostgresql
+    set data_port [ resolve_pgtpcc_data_port $pg_port $pg_citus_azure_elastic_cluster $pg_cituscompat $pg_citus_loadbalancer ]
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "PostgreSQL TPROC-C Timed"
@@ -2943,6 +3002,7 @@ set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
+set data_port \"$data_port\" ;# Effective data port for TPROC-C virtual users
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set superuser \"$pg_superuser\" ;# Superuser privilege user
 set superuser_password \"[ quotemeta $pg_superuserpass ]\" ;# Password for Superuser
@@ -3174,6 +3234,9 @@ switch $myposition {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
             return $tstamp
         }
+        if { $data_port ne $port } {
+            puts "Using Citus load balancer port $data_port for benchmark"
+        }
         #NEW ORDER
         proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } {
             #2.4.1.2 select district id randomly from home warehouse where d_w_id = d_id
@@ -3360,7 +3423,7 @@ switch $myposition {
             }
         }
         #RUN TPC-C
-        set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+        set lda [ ConnectToPostgres $host $data_port $sslmode $user $password $db ]
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
         } else {
@@ -3414,7 +3477,7 @@ switch $myposition {
     }
 }}
         if { $pg_connect_pool } {
-            insert_pgconnectpool_drivescript timed sync
+            insert_pgconnectpool_drivescript timed sync $pg_port $data_port
         }
     } else {
         #ASYNCHRONOUS TIMED SCRIPT
@@ -3433,6 +3496,7 @@ set ora_compatible \"$pg_oracompat\" ;#Postgres Plus Oracle Compatible Schema
 set pg_storedprocs \"$pg_storedprocs\" ;#Postgres v11 Stored Procedures
 set host \"$pg_host\" ;# Address of the server hosting PostgreSQL
 set port \"$pg_port\" ;# Port of the PostgreSQL server
+set data_port \"$data_port\" ;# Effective data port for TPROC-C virtual users
 set sslmode \"$pg_sslmode\" ;# SSLMode of the PostgreSQL Server
 set superuser \"$pg_superuser\" ;# Superuser privilege user
 set superuser_password \"[ quotemeta $pg_superuserpass ]\" ;# Password for Superuser
@@ -3667,6 +3731,9 @@ switch $myposition {
         proc gettimestamp { } {
             set tstamp [ clock format [ clock seconds ] -format %Y%m%d%H%M%S ]
             return $tstamp
+        }
+        if { $data_port ne $port } {
+            puts "Using Citus load balancer port $data_port for benchmark"
         }
         proc ConnectToPostgresAsynch { host port sslmode user password dbname RAISEERROR clientname async_verbose } {
             global tcl_platform
@@ -3937,7 +4004,7 @@ switch $myposition {
         for {set ac 1} {$ac <= $async_client} {incr ac} {
             set clientdesc "vuser$myposition:ac$ac"
             lappend clientlist $clientdesc
-            lappend clients [simulate_client $clientdesc $total_iterations $host $port $sslmode $user $password $db $ora_compatible $pg_storedprocs $RAISEERROR $KEYANDTHINK $async_verbose $async_delay]
+            lappend clients [simulate_client $clientdesc $total_iterations $host $data_port $sslmode $user $password $db $ora_compatible $pg_storedprocs $RAISEERROR $KEYANDTHINK $async_verbose $async_delay]
         }
         puts "Started asynchronous clients:$clientlist"
         set acprom [ promise::eventloop [ promise::all $clients ] ]
@@ -3948,7 +4015,7 @@ switch $myposition {
     }
 }}
         if { $pg_connect_pool } {
-            insert_pgconnectpool_drivescript timed async
+            insert_pgconnectpool_drivescript timed async $pg_port $data_port
         }
     }
 }
@@ -3962,7 +4029,13 @@ proc delete_pgtpcc {} {
     upvar #0 configpostgresql configpostgresql
     #set variables to values in dict
     setlocaltpccvars $configpostgresql
-    if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $pg_dbase ] TPROC-C schema and role [ string toupper $pg_user ]\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_superuser ]?" -type yesno ] == yes} {
+    resolve_pgtpcc_data_port $pg_port $pg_citus_azure_elastic_cluster $pg_cituscompat $pg_citus_loadbalancer
+    if { $pg_citus_azure_elastic_cluster eq "true" } {
+        set delete_message "Do you want to delete the [ string toupper $pg_dbase ] TPROC-C schema objects\n in host [string toupper $pg_host:$pg_port] while retaining the database and role?"
+    } else {
+        set delete_message "Do you want to delete the [ string toupper $pg_dbase ] TPROC-C schema and role [ string toupper $pg_user ]\n in host [string toupper $pg_host:$pg_port] under user [ string toupper $pg_superuser ]?"
+    }
+    if {[ tk_messageBox -title "Delete Schema" -icon question -message $delete_message -type yesno ] == yes} {
         set maxvuser 1
         set suppo 1
         set ntimes 1
@@ -4043,11 +4116,26 @@ proc detect_pg_tpcc_routine_mode { lda requested_pg_storedprocs } {
 }
 
 
-proc drop_schema { host port sslmode user superuser superuser_password default_dbase dbase } {
-    set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
-    if { $suconnect eq "Failed" } {
-        error "error, the database connection to $host could not be established"
+proc drop_schema { host port sslmode user password superuser superuser_password default_dbase dbase citus_azure_ec } {
+    if { $citus_azure_ec eq "true" } {
+        # The managed database and role are retained; remove only objects owned by the TPROC-C user.
+        set userconnect [ ConnectToPostgres $host $port $sslmode $user $password $dbase ]
+        if { $userconnect eq "Failed" } {
+            error "error, the database connection to $host could not be established"
+        }
+        set result [ pg_exec $userconnect "DROP OWNED BY CURRENT_USER"]
+        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+            error "[pg_result $result -error]"
+        } else {
+            puts "$dbase TPROC-C schema objects have been deleted successfully; database and role retained."
+            pg_result $result -clear
+        }
+        pg_disconnect $userconnect
     } else {
+        set suconnect [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $default_dbase ]
+        if { $suconnect eq "Failed" } {
+            error "error, the database connection to $host could not be established"
+        }
         set result [ pg_exec $suconnect "drop database $dbase"]
         if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
             error "[pg_result $result -error]"
@@ -4068,7 +4156,7 @@ proc drop_schema { host port sslmode user superuser superuser_password default_d
 }
 }
 
-        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase"
+        .ed_mainFrame.mainwin.textFrame.left.text fastinsert end "drop_schema $pg_host $pg_port $pg_sslmode $pg_user [ quotemeta $pg_pass ] $pg_superuser [ quotemeta $pg_superuserpass ] $pg_defaultdbase $pg_dbase $pg_citus_azure_elastic_cluster"
     } else { return }
 }
 
