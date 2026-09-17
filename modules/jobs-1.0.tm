@@ -3579,7 +3579,7 @@ if {$rawmode} {
    set dbversion ""
    set db [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
    set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
-   if {$output1 eq "" || ![regexp -nocase {DBVersion|version|PostgreSQL|MariaDB|MySQL|Oracle|SQL Server|Db2} $output1]} {
+   if {$output1 eq "" || ![regexp -nocase {DBVersion|version|PostgreSQL|MariaDB|MySQL|Oracle|SQL Server|Db2|VillageSQL} $output1]} {
       set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid}]]
    }
    if {[regexp -nocase {DBVersion:?[[:space:]]*([^[:space:]]+)} $output1 match version]} {
@@ -3587,6 +3587,8 @@ if {$rawmode} {
    } elseif {$db eq "PostgreSQL" && [regexp -nocase {PostgreSQL[^0-9]*([0-9]+(\.[0-9]+)+)} $output1 match version]} {
       set dbversion $version
    } elseif {$db eq "MariaDB" && [regexp -nocase {MariaDB[^0-9]*([0-9]+(\.[0-9]+)+)} $output1 match version]} {
+      set dbversion $version
+   } elseif {$db eq "VillageSQL" && [regexp -nocase {([0-9]+(\.[0-9]+)+)[^0-9]*villagesql} $output1 match version]} {
       set dbversion $version
    } elseif {$db eq "MySQL" && [regexp -nocase {MySQL[^0-9]*([0-9]+(\.[0-9]+)+)} $output1 match version]} {
       set dbversion $version
@@ -3743,7 +3745,8 @@ if {$rawmode} {
   proc getchart { jobid vuid chart } {
     set chartcolors [ list MariaDB { color1 "#42ADB6" color2 "#9fd7dc" } PostgreSQL { color1 "#062671" color2 "#457af5" } \
 	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#F2C811" color2 "#FFE066" } \
-	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } ]
+	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } \
+	VillageSQL { color1 "#6B4FBB" color2 "#b3a3e0" } ]
     set color1 "#808080"
     set color2 "#bfbfbf"
     switch -glob $chart {

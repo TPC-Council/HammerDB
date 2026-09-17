@@ -49,4 +49,12 @@
         <workloads>TPROC-C TPROC-H</workloads>
         <commands>maria::sel mariause mariaescape mariasel marianext mariaseek mariamap mariaexec mariaclose mariainfo mariaresult mariacol mariastate mariainsertid mariaquery mariaendquery mariabaseinfo mariaping mariachangeuser mariareceive</commands>
 </mariadb>
+<villagesql>
+        <name>VillageSQL</name>
+        <description>VillageSQL</description>
+        <prefix>vsql</prefix>
+        <library>mysqltcl</library>
+        <workloads>TPROC-C TPROC-H</workloads>
+        <commands>mysql::sel mysqluse mysqlescape mysqlsel mysqlnext mysqlseek mysqlmap mysqlexec mysqlclose mysqlinfo mysqlresult mysqlcol mysqlstate mysqlinsertid mysqlquery mysqlendquery mysqlbaseinfo mysqlping mysqlchangeuser mysqlreceive</commands>
+</villagesql>
 </database>
