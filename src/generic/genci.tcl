@@ -816,7 +816,7 @@ proc cifix {} {
         }
 
         set name [file tail $f]
-        if {$name ni {"maria.cnf" "mariaio.cnf" "my.cnf" "myio.cnf" "postgresql.conf" "postgresqlio.conf"}} {
+        if {$name ni {"maria.cnf" "mariaio.cnf" "my.cnf" "myio.cnf" "vsql.cnf" "vsqlio.cnf" "postgresql.conf" "postgresqlio.conf"}} {
             putsci "CI FIX ERROR: no download rule for missing file $f"
             return 1
         }
@@ -1693,6 +1693,7 @@ proc _pipes_db_label {dbprefix} {
         maria { return "MariaDB" }
         pg    { return "PostgreSQL" }
         mysql { return "MySQL" }
+        vsql  { return "VillageSQL" }
         default { return $dbprefix }
     }
 }
