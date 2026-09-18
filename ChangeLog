@@ -1239,4 +1239,4 @@ Updated Binaries and Packages include:
 Tcl9.0.2 TclS9.0.2 Tk9.0.2 TkS 9.0.2 ticklecharts 3.2.8 tkpath 0.4.1
 
 for Linux x86-64 and Windows x64
-Add MariaDB UPDATE RETURNING INTO support with feature detection
+Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
