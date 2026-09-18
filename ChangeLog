@@ -1239,4 +1239,24 @@ Updated Binaries and Packages include:
 Tcl9.0.2 TclS9.0.2 Tk9.0.2 TkS 9.0.2 ticklecharts 3.2.8 tkpath 0.4.1
 
 for Linux x86-64 and Windows x64
+
+---------------------------------------------------------------------
+
+Version 6.1 October 2026
+
+Pull Requests & Issues
+
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
+Add VillageSQL CI provider #930
+Fix single pipeline runs inheriting a previous profile ID #925
+Fix transaction counter graph clipping #924
+Fix JOBTIMING upgrade and TPROC-H timing message #923 (#916)
+Fix external CI config discovery and override persistence #922 (#914)
+Add VillageSQL database engine (TPROC-C / TPROC-H) #920
+Fix Linux I/O metric partition double counting #913
+Fix Windows BCP trust certificate handling #912
+Update pgtcl to 2.1.1.2 #907
+Fix MySQL and MariaDB ASH completed wait attribution #906 (#905)
+Fix pg_vacuum end-of-run ordering and false VU-shutdown-timeout report #904
+Add HammerDB 6.0 multi-architecture Docker images #902
+Add arm64 (aarch64) build support to Bawt build system #899
