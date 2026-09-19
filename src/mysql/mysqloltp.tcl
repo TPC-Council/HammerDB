@@ -985,6 +985,7 @@ proc chk_socket { host socket } {
 }
 
 proc do_tpcc { host port socket ssl_options count_ware user password db mysql_storage_engine partition history_pk num_vu } {
+    try {
     global mysqlstatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -1040,6 +1041,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
             puts "Monitoring Workers..."
             set prevactive 0
             while 1 {
+                if {[tsv::get application abort]} {error "Schema build aborted after a loader failure"}
                 set idlcnt 0; set lvcnt 0; set dncnt 0;
                 for {set th 2} {$th <= $totalvirtualusers } {incr th} {
                     switch [tsv::lindex common thrdlst $th] {
@@ -1100,6 +1102,11 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         mysqlclose $mysql_handler
         return
+    }
+    } on error {message options} {
+        # Notify the monitor and workers without losing the original error.
+        tsv::set application abort 1
+        return -options $options $message
     }
 }
 }

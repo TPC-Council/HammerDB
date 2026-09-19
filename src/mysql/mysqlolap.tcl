@@ -762,6 +762,7 @@ proc mk_order { mysql_handler start_rows end_rows upd_num scale_factor oceanbase
 }
 
 proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tpch_storage_engine num_vu oceanbase_db ob_partition_num ob_tenant_name} {
+    try {
     global mysqlstatus
     global dist_names dist_weights weights dists weights
     ###############################################
@@ -846,6 +847,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             after 10000
             set prevactive 0
             while 1 {
+                if {[tsv::get application abort]} {error "Schema build aborted after a loader failure"}
                 set idlcnt 0; set lvcnt 0; set dncnt 0;
                 for {set th 2} {$th <= $totalvirtualusers } {incr th} {
                     switch [tsv::lindex common thrdlst $th] {
@@ -927,6 +929,11 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         GatherStatistics $mysql_handler $oceanbase_db $ob_partition_num
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         return
+    }
+    } on error {message options} {
+        # Notify the monitor and workers without losing the original error.
+        tsv::set application abort 1
+        return -options $options $message
     }
 }
 }
