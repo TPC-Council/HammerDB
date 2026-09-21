@@ -10,7 +10,7 @@ proc build_vsqltpch {} {
     #If the options menu has been run under the GUI vsql_ssl_options is set
     #If build is run under the GUI, CLI or WS vsql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists vsql_ssl_options ] { check_vsql_ssl $configvillagesql }
+    check_vsql_ssl $configvillagesql
     if { ![string match windows $::tcl_platform(platform)] && ($vsql_host eq "127.0.0.1" || [ string tolower $vsql_host ] eq "localhost") && [ string tolower $vsql_socket ] != "null" } { set vsql_connector "$vsql_host:$vsql_socket" } else { set vsql_connector "$vsql_host:$vsql_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $vsql_scale_fact TPROC-H schema\n in host [string toupper $vsql_connector] under user [ string toupper $vsql_tpch_user ] in database [ string toupper $vsql_tpch_dbase ] with storage engine [ string toupper $vsql_tpch_storage_engine ]?" -type yesno ] == yes} {
         if { $vsql_num_tpch_threads eq 1 } {
@@ -738,7 +738,7 @@ proc loadvsqltpch { } {
     #If the options menu has been run under the GUI vsql_ssl_options is set
     #If build is run under the GUI, CLI or WS vsql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists vsql_ssl_options ] { check_vsql_ssl $configvillagesql }
+    check_vsql_ssl $configvillagesql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "VillageSQL TPROC-H"
@@ -1402,7 +1402,7 @@ proc loadvsqlcloud {} {
     #If the options menu has been run under the GUI vsql_ssl_options is set
     #If build is run under the GUI, CLI or WS vsql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists vsql_ssl_options ] { check_vsql_ssl $configvillagesql }
+    check_vsql_ssl $configvillagesql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "VillageSQL Cloud"
@@ -1558,7 +1558,7 @@ proc delete_vsqltpch {} {
     #If the options menu has been run under the GUI vsql_ssl_options is set
     #If build is run under the GUI, CLI or WS vsql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists vsql_ssl_options ] { check_vsql_ssl $configvillagesql }
+    check_vsql_ssl $configvillagesql
     if { ![string match windows $::tcl_platform(platform)] && ($vsql_host eq "127.0.0.1" || [ string tolower $vsql_host ] eq "localhost") && [ string tolower $vsql_socket ] != "null" } { set vsql_connector "$vsql_host:$vsql_socket" } else { set vsql_connector "$vsql_host:$vsql_port" }
     if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $vsql_tpch_dbase ] TPROC-H schema\n in host [string toupper $vsql_connector] under user [ string toupper $vsql_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
@@ -1659,7 +1659,7 @@ proc check_vsqltpch {} {
     #If the options menu has been run under the GUI vsql_ssl_options is set
     #If build is run under the GUI, CLI or WS vsql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists vsql_ssl_options ] { check_vsql_ssl $configvillagesql }
+    check_vsql_ssl $configvillagesql
     if { ![string match windows $::tcl_platform(platform)] && ($vsql_host eq "127.0.0.1" || [ string tolower $vsql_host ] eq "localhost") && [ string tolower $vsql_socket ] != "null" } { set vsql_connector "$vsql_host:$vsql_socket" } else {
         set vsql_connector "$vsql_host:$vsql_port"
     }

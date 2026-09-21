@@ -10,7 +10,7 @@ proc build_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} {
         if { $mysql_num_tpch_threads eq 1 } {
@@ -946,7 +946,7 @@ proc loadmysqltpch { } {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-H"
@@ -1616,7 +1616,7 @@ proc loadmysqlcloud {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL Cloud"
@@ -1778,7 +1778,7 @@ proc delete_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mysql_tpch_dbase ] TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
@@ -1883,7 +1883,7 @@ proc check_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
+    check_mysql_ssl $configmysql 
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { 
         set mysql_connector "$mysql_host:$mysql_port" 
     }
