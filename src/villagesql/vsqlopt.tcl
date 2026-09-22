@@ -1,6 +1,5 @@
 proc check_vsql_ssl { configdict } {
-    global vsql_ssl_options
-    unset -nocomplain vsql_ssl_options
+    global vsql_ssl_options vsql_ssl_config
     upvar #0 configvillagesql configvillagesql
     #set local variables to dict for checking
     foreach key [ dict keys [ dict get $configdict connection ] *ssl* ] {
@@ -12,12 +11,38 @@ proc check_vsql_ssl { configdict } {
     } else {
         set capath $vsql_ssl_windows_capath
     }
+    #Reuse SSL options when SSL settings are unchanged; rebuild only after an SSL setting changes
+    set current_ssl_config [ list $vsql_ssl $vsql_ssl_two_way $capath $vsql_ssl_ca $vsql_ssl_cert $vsql_ssl_key $vsql_ssl_cipher ]
+    if { [ info exists vsql_ssl_config ] && [ info exists vsql_ssl_options ] && $vsql_ssl_config eq $current_ssl_config } {
+        return
+    }
+    set vsql_ssl_config $current_ssl_config
+    unset -nocomplain vsql_ssl_options
+    #Allow one-way TLS without explicit CA/certificate files when CApath is also blank
+    set no_ssl_files [ expr {$vsql_ssl_ca eq "" && $vsql_ssl_cert eq "" && $vsql_ssl_key eq ""} ]
+    if { $vsql_ssl eq "true" && $vsql_ssl_two_way ne "true" && $no_ssl_files && $capath eq "" } {
+        set vsql_ssl_options " -ssl true "
+        if { $vsql_ssl_cipher != "server" } { append vsql_ssl_options " -sslcipher $vsql_ssl_cipher " }
+        return
+    }
     #If SSL not enabled return
     if { $vsql_ssl != "true" } {
         #nothing to check, vsql_ssl_options is not set
         set vsql_ssl_options " -ssl false "
         return
     } else {
+        #Preserve requested SSL options if validation fails
+        set requested_ssl_options " -ssl true "
+        if { $vsql_ssl_ca eq "" && $vsql_ssl_cert eq "" && $vsql_ssl_key eq "" } {
+            append requested_ssl_options " -sslcapath $capath "
+        } else {
+            append requested_ssl_options " -sslca [ file join $capath $vsql_ssl_ca ] "
+            if { $vsql_ssl_two_way eq "true" } {
+                append requested_ssl_options " -sslcert [ file join $capath $vsql_ssl_cert ] "
+                append requested_ssl_options " -sslkey [ file join $capath $vsql_ssl_key ] "
+            }
+        }
+        if { $vsql_ssl_cipher != "server" } { append requested_ssl_options " -sslcipher $vsql_ssl_cipher " }
         #SSL is enabled, check that capath is valid
         if { [ file isdirectory $capath ] } {
             if { $vsql_ssl_ca eq "" && $vsql_ssl_cert eq "" && $vsql_ssl_key eq "" } {
@@ -26,8 +51,8 @@ proc check_vsql_ssl { configdict } {
                 #CApath is valid, file entries are not blank, always check CA
                 if { [ file readable [ file join $capath $vsql_ssl_ca ]] } {
                 } else {
-                    tk_messageBox -message "[ file join $capath $vsql_ssl_ca ] is not readable, disabling SSL"
-                    dict set configvillagesql connection vsql_ssl "false"
+                    tk_messageBox -message "[ file join $capath $vsql_ssl_ca ] is not readable, SSL configuration invalid"
+                    set vsql_ssl_options $requested_ssl_options
                     return
                 }
                 #capath and ca are readable
@@ -36,17 +61,17 @@ proc check_vsql_ssl { configdict } {
                     foreach sslfile [ list $vsql_ssl_cert $vsql_ssl_key ] {
                         if { [ file readable [ file join $capath $sslfile ]] } {
                         } else {
-                            tk_messageBox -message "[ file join $capath $sslfile ] is not readable, disabling SSL"
-                            dict set configvillagesql connection vsql_ssl "false"
+                            tk_messageBox -message "[ file join $capath $sslfile ] is not readable, SSL configuration invalid"
+                            set vsql_ssl_options $requested_ssl_options
                             return
                         }
                     }
                 }
             }
         } else {
-            tk_messageBox -message "SSL CApath is not a valid directory, disabling SSL"
-            #Set SSL to false
-            dict set configvillagesql connection vsql_ssl "false"
+            tk_messageBox -message "SSL CApath is not a valid directory, SSL configuration invalid"
+            #Preserve requested SSL options
+            set vsql_ssl_options $requested_ssl_options
             return
         }
     }
