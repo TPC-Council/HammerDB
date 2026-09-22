@@ -12,7 +12,7 @@ proc build_mariatpch {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $maria_scale_fact TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ] in database [ string toupper $maria_tpch_dbase ] with storage engine [ string toupper $maria_tpch_storage_engine ]?" -type yesno ] == yes} { 
         if { $maria_num_tpch_threads eq 1 } {
@@ -760,7 +760,7 @@ proc loadmariatpch { } {
      #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-H"
@@ -1397,7 +1397,7 @@ proc loadmariacloud {} {
      #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB Cloud"
@@ -1561,7 +1561,7 @@ proc delete_mariatpch {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { set maria_connector "$maria_host:$maria_port" }
     if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $maria_tpch_dbase ] TPROC-H schema\n in host [string toupper $maria_connector] under user [ string toupper $maria_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
@@ -1663,7 +1663,7 @@ proc check_mariatpch {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
