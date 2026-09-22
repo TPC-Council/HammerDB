@@ -1246,6 +1246,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Fix benchmark report CPU count when reusing system details #938
 Fix PostgreSQL New Order invalid-item rollback #936
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
 Add VillageSQL CI provider #930
