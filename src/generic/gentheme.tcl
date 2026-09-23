@@ -39,7 +39,48 @@ proc tilestyle { defaultBackground icons theme } {
     ttk::style configure TEntry -borderwidth 0
     ttk::style configure TPanedwindow -background $defaultBackground
     ttk::style configure TButton -relief flat
-    ttk::style map TButton -background [ list active "#FF7900" ]
+
+    # The light awbreeze Toolbutton already gives the required flat menu bar
+    # with an orange hover outline.  awbreezedark uses a blue image-backed
+    # hover graphic, so give only the dark HammerDB menu bar its own matching
+    # image-backed border.  Normal buttons and all other widget colours stay
+    # under the theme's control.
+    if {[string match "*dark*" $theme]} {
+        catch {image delete ::img::hdbmenu-normal}
+        catch {image delete ::img::hdbmenu-hover}
+        catch {image delete ::img::hdbmenu-pressed}
+
+        set hdbmenu_normal_svg "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><rect x='0.5' y='0.5' width='11' height='11' fill='$defaultBackground' stroke='$defaultBackground' stroke-width='1'/></svg>"
+        set hdbmenu_hover_svg "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><rect x='0.5' y='0.5' width='11' height='11' fill='$defaultBackground' stroke='#FF7900' stroke-width='1'/></svg>"
+        set hdbmenu_pressed_svg "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><rect x='0.5' y='0.5' width='11' height='11' fill='#FF7900' stroke='#FF7900' stroke-width='1'/></svg>"
+
+        image create photo ::img::hdbmenu-normal -data $hdbmenu_normal_svg -format svg
+        image create photo ::img::hdbmenu-hover -data $hdbmenu_hover_svg -format svg
+        image create photo ::img::hdbmenu-pressed -data $hdbmenu_pressed_svg -format svg
+
+        catch {
+            ttk::style element create HDBMenuDark.border image [list \
+                ::img::hdbmenu-normal \
+                {pressed !disabled} ::img::hdbmenu-pressed \
+                {hover !disabled} ::img::hdbmenu-hover \
+                {active !disabled} ::img::hdbmenu-hover] \
+                -border 2 -sticky nswe
+        }
+
+        ttk::style layout HDBMenu.Toolbutton {
+            HDBMenuDark.border -sticky nswe -children {
+                Button.padding -sticky nswe -children {
+                    Button.label -sticky nswe
+                }
+            }
+        }
+        ttk::style configure HDBMenu.Toolbutton \
+            -foreground $foreground \
+            -background $defaultBackground \
+            -padding {4 1}
+        ttk::style map HDBMenu.Toolbutton \
+            -foreground [list {pressed !disabled} black]
+    }
     }
 
 proc framesizes { win_scale_fact } {
