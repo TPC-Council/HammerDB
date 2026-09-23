@@ -906,7 +906,6 @@ tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.
 
 Pull Requests & Issues
 
-Modernize GUI menu styling on Linux and Windows #939
 Inclusive Language Updates (#152)
 Add runtimer and waittocomplete routines to CLI (#149)
 HammerDB CLI on Windows can have incorrect colours (#148)
@@ -1247,6 +1246,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Flatten GUI menus on Linux and Windows #939
 Fix benchmark report CPU count when reusing system details #938
 Fix PostgreSQL New Order invalid-item rollback #936
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
