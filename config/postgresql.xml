@@ -24,7 +24,7 @@
             <pg_partition>false</pg_partition>
         </schema>
         <driver>
-            <pg_total_iterations>10000000</pg_total_iterations>
+            <pg_total_iterations>2147483647</pg_total_iterations>
             <pg_raiseerror>false</pg_raiseerror>
             <pg_keyandthink>false</pg_keyandthink>
             <pg_driver>timed</pg_driver>
