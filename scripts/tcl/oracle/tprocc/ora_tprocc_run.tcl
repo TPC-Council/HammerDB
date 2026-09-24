@@ -14,7 +14,7 @@ diset tpcc tpcc_user tpcc
 diset tpcc tpcc_pass tpcc
 
 diset tpcc ora_driver timed
-diset tpcc total_iterations 10000000
+diset tpcc total_iterations 2147483647
 diset tpcc rampup 2
 diset tpcc duration 5
 diset tpcc ora_timeprofile true

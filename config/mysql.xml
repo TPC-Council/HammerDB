@@ -28,7 +28,7 @@
             <mysql_no_stored_procs>false</mysql_no_stored_procs>
         </schema>
         <driver>
-            <mysql_total_iterations>10000000</mysql_total_iterations>
+            <mysql_total_iterations>2147483647</mysql_total_iterations>
             <mysql_raiseerror>false</mysql_raiseerror>
             <mysql_keyandthink>false</mysql_keyandthink>
             <mysql_driver>timed</mysql_driver>

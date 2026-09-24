@@ -27,7 +27,7 @@
             <vsql_no_stored_procs>false</vsql_no_stored_procs>
         </schema>
         <driver>
-            <vsql_total_iterations>10000000</vsql_total_iterations>
+            <vsql_total_iterations>2147483647</vsql_total_iterations>
             <vsql_raiseerror>false</vsql_raiseerror>
             <vsql_keyandthink>false</vsql_keyandthink>
             <vsql_driver>timed</vsql_driver>

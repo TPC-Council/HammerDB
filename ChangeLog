@@ -1246,6 +1246,8 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Increase TPROC-C total iterations default to 2147483647 #940 (#910)
+Flatten GUI menus on Linux and Windows #939
 Fix benchmark report CPU count when reusing system details #938
 Fix PostgreSQL New Order invalid-item rollback #936
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
