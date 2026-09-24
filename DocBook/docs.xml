@@ -4053,16 +4053,21 @@ MariaDB [(none)]&gt; </programlisting>
         PL/SQL and additional Postgres Plus Advanced Server features (such as
         DRITA snapshots) that will only operate against Enterprise DB Postgres
         Plus Advanced Server. Secondly Citus compatible mode supports
-        distributed PostgreSQL with the Citus Data extension. Finally by not
-        selecting Citus or Oracle compatibility HammerDB can continue to
-        operate against a regular PostgreSQL build using native PostgreSQL
-        features. You must ensure before proceeding with OLTP that you are
-        aware of the version of PostgreSQL you have installed and the features
-        available, if you wish to test Oracle compatibility then you must use
-        Postgres Plus Advanced Server from EnterpriseDB and install in Oracle
-        compatible mode, if you wish to use Citus Data you must be running
-        against a Citus enabled installation either installed or in the
-        cloud.</para>
+        distributed PostgreSQL with the Citus Data extension. Azure Elastic
+        Cluster support is enabled explicitly within Citus compatible mode.
+        In this mode HammerDB uses a pre-provisioned database and can route
+        schema population workers and benchmark virtual users through an
+        optional Citus load-balancer port. DDL, schema checking, metrics,
+        transaction counter, and administrative connections continue to use
+        the configured PostgreSQL port. Finally by not selecting Citus
+        or Oracle compatibility HammerDB can continue to operate against a
+        regular PostgreSQL build using native PostgreSQL features. You must
+        ensure before proceeding with OLTP that you are aware of the version
+        of PostgreSQL you have installed and the features available, if you
+        wish to test Oracle compatibility then you must use Postgres Plus
+        Advanced Server from EnterpriseDB and install in Oracle compatible
+        mode, if you wish to use Citus Data you must be running against a Citus
+        enabled installation either installed or in the cloud.</para>
 
         <para>During the installation make a note of your postgres superuser
         password, you will need it for the test schema creation. You must be
@@ -5202,9 +5207,13 @@ GO
               <row>
                 <entry>PostgreSQL Port</entry>
 
-                <entry>The port of the PostgreSQL service. By default this
-                will be 5432 for a standard PostgreSQL installation or 5444
-                for EnterpriseDB.</entry>
+                <entry>The pg_port setting specifies the port of the
+                PostgreSQL service. By default this will be 5432 for a
+                standard PostgreSQL installation or 5444 for EnterpriseDB.
+                When Citus Compatible is enabled, HammerDB uses pg_port to
+                connect to the Citus coordinator for DDL, schema checking,
+                metrics, transaction counting, and administrative
+                operations.</entry>
               </row>
 
               <row>
@@ -5258,7 +5267,8 @@ GO
                 not already exist will be created and owned by the PostgreSQL
                 User that contains the TPROC-C schema. If the named database
                 has already been created and is empty then that database will
-                be used to create the schema.</entry>
+                be used to create the schema. Azure Elastic Cluster requires
+                this database to be created before the schema build.</entry>
               </row>
 
               <row>
@@ -5288,8 +5298,35 @@ GO
               <row>
                 <entry>Citus Compatible</entry>
 
-                <entry>Installs a schema into a PostgreSQL database with the
-                Citus Data Distributed PostgreSQL extension.</entry>
+                <entry>The pg_cituscompat setting installs a schema into a
+                PostgreSQL database with the Citus Data Distributed PostgreSQL
+                extension.</entry>
+              </row>
+
+              <row>
+                <entry>Citus Azure Elastic Cluster</entry>
+
+                <entry>The pg_citus_azure_elastic_cluster setting enables Azure
+                Elastic Cluster behavior when Citus
+                Compatible is selected. It has no effect unless Citus
+                Compatible is enabled. The configured TPROC-C database must
+                already exist, and database create, alter, and drop operations
+                are not performed. Deleting the schema removes objects owned
+                by the TPROC-C user while retaining the database and role.</entry>
+              </row>
+
+              <row>
+                <entry>Citus Load Balancer Port</entry>
+
+                <entry>The pg_citus_loadbalancer setting specifies an optional
+                port for TPROC-C schema population workers and benchmark
+                virtual users, including Cluster Connect Pool connections. A
+                value of 0 uses the PostgreSQL Port for these data
+                connections. Connections to the Citus coordinator for DDL,
+                schema checking, metrics, transaction counting, and
+                administrative operations always use the PostgreSQL Port.
+                This option has no effect unless both Citus Compatible and
+                Azure Elastic Cluster are enabled.</entry>
               </row>
 
               <row>
