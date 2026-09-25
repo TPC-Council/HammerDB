@@ -1084,83 +1084,103 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $db ] SCHEMA"
-        set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
-        set db_created [ CreateDatabase $maria_handler $db ]
-        if { !$db_created } {
-            tsv::set application abort 1
-            error "Database not created"
-        }
-        mariause $maria_handler $db
-        maria::autocommit $maria_handler 0
-        if { $partition eq "true" } {
-            if {$count_ware < 200} {
-                set num_part 0
+        try {
+            puts "CREATING [ string toupper $db ] SCHEMA"
+            set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+            set db_created [ CreateDatabase $maria_handler $db ]
+            if { !$db_created } {
+                error "Database not created"
+            }
+            mariause $maria_handler $db
+            maria::autocommit $maria_handler 0
+            if { $partition eq "true" } {
+                if {$count_ware < 200} {
+                    set num_part 0
+                } else {
+                    set num_part [ expr round($count_ware/100) ]
+                }
             } else {
-                set num_part [ expr round($count_ware/100) ]
+                set num_part 0
             }
-        } else {
-            set num_part 0
-        }
-        CreateTables $maria_handler $maria_storage_engine $num_part $history_pk
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems $maria_handler $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
+            CreateTables $maria_handler $maria_storage_engine $num_part $history_pk
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems $maria_handler $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
                     }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
                 }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
+            } else {
+                LoadItems $maria_handler $MAXITEMS
             }
-        } else {
-            LoadItems $maria_handler $MAXITEMS
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::get application abort ] } { return }
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if { [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if { [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
                     }
+                    after 5000
                 }
-                after 5000
+                set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
+                mariause $maria_handler $db
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
             }
-            set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
-            mariause $maria_handler $db
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
-        }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare $maria_handler $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust $maria_handler $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
-        LoadOrd $maria_handler $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
-        puts "End:[ clock format [ clock seconds ] ]"
-        maria::commit $maria_handler
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            puts "Start:[ clock format [ clock seconds ] ]"
+            LoadWare $maria_handler $mystart $myend $MAXITEMS $DIST_PER_WARE
+            LoadCust $maria_handler $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
+            LoadOrd $maria_handler $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
+            puts "End:[ clock format [ clock seconds ] ]"
+            maria::commit $maria_handler
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

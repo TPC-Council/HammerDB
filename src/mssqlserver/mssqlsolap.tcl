@@ -1349,100 +1349,122 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $db ] SCHEMA"
-        if [catch {tdbc::odbc::connection create odbc $connection} message ] {
-            error "Connection to $connection could not be established : $message"
-        } else {
-            CreateDatabase odbc $db $azure
-            if {!$azure} {odbc evaldirect "use $db"}
-            if {$partition_orders_and_lineitems} { CreateDateScheme odbc }
-            CreateTables odbc $colstore $use_bcp $partition_orders_and_lineitems
-        }
-        set location [ location odbc ]
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            puts "Loading REGION..."
-            load_region odbc $use_bcp
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            load_nation odbc $use_bcp
-            puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }} else {
-            puts "Loading REGION..."
-            load_region odbc $use_bcp
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            load_nation odbc $use_bcp
-            puts "Loading NATION COMPLETE"
-    }}
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+        try {
+            puts "CREATING [ string toupper $db ] SCHEMA"
             if [catch {tdbc::odbc::connection create odbc $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
+                CreateDatabase odbc $db $azure
                 if {!$azure} {odbc evaldirect "use $db"}
-                odbc evaldirect "set implicit_transactions OFF"
+                if {$partition_orders_and_lineitems} { CreateDateScheme odbc }
+                CreateTables odbc $colstore $use_bcp $partition_orders_and_lineitems
             }
-            if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
-            if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
-            set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
-            set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
-            set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
-            set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set myposition 1
-            set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
-            set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
+            set location [ location odbc ]
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                puts "Loading REGION..."
+                load_region odbc $use_bcp
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                load_nation odbc $use_bcp
+                puts "Loading NATION COMPLETE"
+                puts "Monitoring Workers..."
+                after 10000
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }} else {
+                puts "Loading REGION..."
+                load_region odbc $use_bcp
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                load_nation odbc $use_bcp
+                puts "Loading NATION COMPLETE"
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
-        set location [ location odbc ]
-        puts "Start:[ clock format [ clock seconds ] ]"
+    }
+    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
+                    }
+                    after 5000
+                }
+                if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+                    error "Connection to $connection could not be established : $message"
+                } else {
+                    if {!$azure} {odbc evaldirect "use $db"}
+                    odbc evaldirect "set implicit_transactions OFF"
+                }
+                if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
+                if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
+                set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
+                set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
+                set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
+                set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set myposition 1
+                set sf_chunk "1 $sup_rows"
+                set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+                set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
+                set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
+            }
+            set location [ location odbc ]
+            puts "Start:[ clock format [ clock seconds ] ]"
 
-        puts "Loading SUPPLIER..."
-        load_supp odbc [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ] $use_bcp
-        puts "Loading CUSTOMER..."
-        load_customer odbc [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ] $use_bcp
-        puts "Loading PART and PARTSUPP..."
-        load_part odbc [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $use_bcp
-        puts "Loading ORDERS and LINEITEM..."
-        load_order odbc $myposition [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
-        puts "Loading TPCH TABLES COMPLETE"
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            puts "Loading SUPPLIER..."
+            load_supp odbc [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ] $use_bcp
+            puts "Loading CUSTOMER..."
+            load_customer odbc [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ] $use_bcp
+            puts "Loading PART and PARTSUPP..."
+            load_part odbc [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $use_bcp
+            puts "Loading ORDERS and LINEITEM..."
+            load_order odbc $myposition [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
+            puts "Loading TPCH TABLES COMPLETE"
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

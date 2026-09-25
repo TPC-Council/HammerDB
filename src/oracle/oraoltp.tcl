@@ -1749,100 +1749,122 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $tpcc_user ] SCHEMA"
-        if { $timesten } {
-            puts "TimesTen expects the Database [ string toupper $instance ] and User [ string toupper $tpcc_user ] to have been created by the instance administrator in advance and be granted create table, session, procedure, view (and admin for checkpoints) privileges"
-        } else {
-            set connect $system_user/$system_password@$instance
-            set lda [ oralogon $connect ]
-            SetNLS $lda
-            CreateUser $lda $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_def_temp $tpcc_ol_tab $partition
-            oralogoff $lda
-        }
-        set connect $tpcc_user/$tpcc_pass@$instance
-        set lda [ oralogon $connect ]
-        if { $timesten } {
-            if { $partition eq "true" } {
-                set num_part 10
+        try {
+            puts "CREATING [ string toupper $tpcc_user ] SCHEMA"
+            if { $timesten } {
+                puts "TimesTen expects the Database [ string toupper $instance ] and User [ string toupper $tpcc_user ] to have been created by the instance administrator in advance and be granted create table, session, procedure, view (and admin for checkpoints) privileges"
             } else {
-                set num_part 0
-            }
-        } else {
-            SetNLS $lda
-            if { $partition eq "true" } {
-                if {$count_ware < 200} {
-                    set num_part 0
-                    set hash_clusters "false"
-                } else {
-                    set num_part [ expr round($count_ware/100) ]
-                }
-            } else {
-                set num_part 0
-                set hash_clusters "false"
-        }}
-        CreateTables $lda $num_part $tpcc_ol_tab $timesten $hash_clusters $count_ware
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems $lda $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {  
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000 
-            }} else {
-            LoadItems $lda $MAXITEMS
-    }}
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 { 
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } { 
-                        puts "Monitor failed to notify ready state" 
-                        return
-                    }
-                }
-                after 5000 
+                set connect $system_user/$system_password@$instance
+                set lda [ oralogon $connect ]
+                SetNLS $lda
+                CreateUser $lda $tpcc_user $tpcc_pass $tpcc_def_tab $tpcc_def_temp $tpcc_ol_tab $partition
+                oralogoff $lda
             }
             set connect $tpcc_user/$tpcc_pass@$instance
             set lda [ oralogon $connect ]
             if { $timesten } {
-                ;
+                if { $partition eq "true" } {
+                    set num_part 10
+                } else {
+                    set num_part 0
+                }
             } else {
                 SetNLS $lda
+                if { $partition eq "true" } {
+                    if {$count_ware < 200} {
+                        set num_part 0
+                        set hash_clusters "false"
+                    } else {
+                        set num_part [ expr round($count_ware/100) ]
+                    }
+                } else {
+                    set num_part 0
+                    set hash_clusters "false"
+            }}
+            CreateTables $lda $num_part $tpcc_ol_tab $timesten $hash_clusters $count_ware
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems $lda $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }} else {
+                LoadItems $lda $MAXITEMS
             }
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        if { $timesten } { if { $partition eq "true" } { set num_part 10 } else { set num_part 0 }} else { set num_part 0 }
-        LoadWare $lda $mystart $myend $MAXITEMS $DIST_PER_WARE $timesten
-        LoadCust $lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $timesten
-        LoadOrd $lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $timesten $num_part
-        puts "End:[ clock format [ clock seconds ] ]"
-        oracommit $lda
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+    }
+    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
+                    }
+                    after 5000
+                }
+                set connect $tpcc_user/$tpcc_pass@$instance
+                set lda [ oralogon $connect ]
+                if { $timesten } {
+                    ;
+                } else {
+                    SetNLS $lda
+                }
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
+            }
+            puts "Start:[ clock format [ clock seconds ] ]"
+            if { $timesten } { if { $partition eq "true" } { set num_part 10 } else { set num_part 0 }} else { set num_part 0 }
+            LoadWare $lda $mystart $myend $MAXITEMS $DIST_PER_WARE $timesten
+            LoadCust $lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $timesten
+            LoadOrd $lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $timesten $num_part
+            puts "End:[ clock format [ clock seconds ] ]"
+            oracommit $lda
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

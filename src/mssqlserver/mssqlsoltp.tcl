@@ -1959,73 +1959,96 @@ proc do_tpcc { server port odbc_driver authentication uid pwd tcp azure count_wa
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $db ] SCHEMA"
-        if [catch {tdbc::odbc::connection create odbc $connection} message ] {
-            error "Connection to $connection could not be established : $message"
-        } else {
-            CreateDatabase odbc $db $imdb $azure 
-            if {!$azure} {odbc evaldirect "use $db"}
-            CreateTables odbc $imdb $count_ware $bucket_factor $durability
-        }
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems odbc $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }} else {
-            LoadItems odbc $MAXITEMS
-    }}
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+        try {
+            puts "CREATING [ string toupper $db ] SCHEMA"
             if [catch {tdbc::odbc::connection create odbc $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
+                CreateDatabase odbc $db $imdb $azure
                 if {!$azure} {odbc evaldirect "use $db"}
-                odbc evaldirect "set implicit_transactions OFF"
-            } 
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
+                CreateTables odbc $imdb $count_ware $bucket_factor $durability
+            }
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems odbc $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }} else {
+                LoadItems odbc $MAXITEMS
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
-	set location [ location odbc ]
-        puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare odbc $mystart $myend $MAXITEMS $DIST_PER_WARE $use_bcp
-        LoadCust odbc $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $use_bcp
-        LoadOrd odbc $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $use_bcp
-        puts "End:[ clock format [ clock seconds ] ]"
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+    }
+    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
+                    }
+                    after 5000
+                }
+                if [catch {tdbc::odbc::connection create odbc $connection} message ] {
+                    error "Connection to $connection could not be established : $message"
+                } else {
+                    if {!$azure} {odbc evaldirect "use $db"}
+                    odbc evaldirect "set implicit_transactions OFF"
+                }
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
+            }
+            set location [ location odbc ]
+            puts "Start:[ clock format [ clock seconds ] ]"
+            LoadWare odbc $mystart $myend $MAXITEMS $DIST_PER_WARE $use_bcp
+            LoadCust odbc $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $use_bcp
+            LoadOrd odbc $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $use_bcp
+            puts "End:[ clock format [ clock seconds ] ]"
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

@@ -606,106 +606,128 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $user ] SCHEMA"
-        set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
-        if { $lda eq "Failed" } {
-            error "error, the database connection to $host could not be established"
-        } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
-            set result [ pg_exec $lda "commit" ]
-            pg_result $result -clear
-            pg_disconnect $lda
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+        try {
+            puts "CREATING [ string toupper $user ] SCHEMA"
+            set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
             } else {
-                CreateTables $lda $greenplum $gpcompress
+                CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
                 set result [ pg_exec $lda "commit" ]
                 pg_result $result -clear
+                pg_disconnect $lda
+                set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+                if { $lda eq "Failed" } {
+                    error "error, the database connection to $host could not be established"
+                } else {
+                    CreateTables $lda $greenplum $gpcompress
+                    set result [ pg_exec $lda "commit" ]
+                    pg_result $result -clear
+                }
             }
-        }
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            puts "Loading REGION..."
-            mk_region $lda
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            mk_nation $lda
-            puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                puts "Loading REGION..."
+                mk_region $lda
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                mk_nation $lda
+                puts "Loading NATION COMPLETE"
+                puts "Monitoring Workers..."
                 after 10000
-            }} else {
-            puts "Loading REGION..."
-            mk_region $lda
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            mk_nation $lda
-            puts "Loading NATION COMPLETE"
-    }}
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
                     }
-                }
-                after 5000
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }} else {
+                puts "Loading REGION..."
+                mk_region $lda
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                mk_nation $lda
+                puts "Loading NATION COMPLETE"
             }
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
-            if { $lda eq "Failed" } {
-                error "error, the database connection to $host could not be established"
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
             }
-            if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
-            if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
-            set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
-            set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
-            set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
-            set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]" 
-            set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
+            return -options $options $message
         }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        puts "Loading SUPPLIER..."
-        mk_supp $lda [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ] $greenplum
-        puts "Loading CUSTOMER..."
-        mk_cust $lda [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ] $greenplum
-        puts "Loading PART and PARTSUPP..."
-        mk_part $lda [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $greenplum
-        puts "Loading ORDERS and LINEITEM..."
-        mk_order $lda [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $greenplum
-        puts "Loading TPCH TABLES COMPLETE"
-        puts "End:[ clock format [ clock seconds ] ]"
-        set result [ pg_exec $lda "commit" ]
-        pg_result $result -clear
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+    }
+    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
+                    }
+                    after 5000
+                }
+                set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+                if { $lda eq "Failed" } {
+                    error "error, the database connection to $host could not be established"
+                }
+                if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
+                if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
+                set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
+                set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
+                set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
+                set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set sf_chunk "1 $sup_rows"
+                set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+                set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
+                set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
+            }
+            puts "Start:[ clock format [ clock seconds ] ]"
+            puts "Loading SUPPLIER..."
+            mk_supp $lda [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ] $greenplum
+            puts "Loading CUSTOMER..."
+            mk_cust $lda [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ] $greenplum
+            puts "Loading PART and PARTSUPP..."
+            mk_part $lda [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact $greenplum
+            puts "Loading ORDERS and LINEITEM..."
+            mk_order $lda [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $greenplum
+            puts "Loading TPCH TABLES COMPLETE"
+            puts "End:[ clock format [ clock seconds ] ]"
+            set result [ pg_exec $lda "commit" ]
+            pg_result $result -clear
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

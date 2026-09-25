@@ -2172,94 +2172,115 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $user ] SCHEMA"
-        set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
-        if { $lda eq "Failed" } {
-            error "error, the database connection to $host could not be established"
-        } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
-            set result [ pg_exec $lda "commit" ]
-            pg_result $result -clear
-            pg_disconnect $lda
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+        try {
+            puts "CREATING [ string toupper $user ] SCHEMA"
+            set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
             } else {
-                if { $partition eq "true" } {
-                    if {$count_ware < 200} {
-                        set num_part 0
-                    } else {
-                        set num_part [ expr round($count_ware/100) ]
-                    }
-                } else {
-                    set num_part 0
-                }
-                CreateTables $lda $ora_compatible $citus_compatible $num_part
+                CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
                 set result [ pg_exec $lda "commit" ]
                 pg_result $result -clear
-            }
-        }
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems $lda $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
+                pg_disconnect $lda
+                set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+                if { $lda eq "Failed" } {
+                    error "error, the database connection to $host could not be established"
+                } else {
+                    if { $partition eq "true" } {
+                        if {$count_ware < 200} {
+                            set num_part 0
+                        } else {
+                            set num_part [ expr round($count_ware/100) ]
+                        }
+                    } else {
+                        set num_part 0
                     }
+                    CreateTables $lda $ora_compatible $citus_compatible $num_part
+                    set result [ pg_exec $lda "commit" ]
+                    pg_result $result -clear
                 }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
             }
-        } else {
-            LoadItems $lda $MAXITEMS
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems $lda $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }
+            } else {
+                LoadItems $lda $MAXITEMS
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 { 
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } { 
-                        puts "Monitor failed to notify ready state" 
-                        return
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
                     }
+                    after 5000
                 }
-                after 5000 
+                set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
+                if { $lda eq "Failed" } {
+                    error "error, the database connection to $host could not be established"
+                }
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
             }
-            set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
-            if { $lda eq "Failed" } {
-                error "error, the database connection to $host could not be established"
+            puts "Start:[ clock format [ clock seconds ] ]"
+            LoadWare $lda $mystart $myend $MAXITEMS $DIST_PER_WARE
+            LoadCust $lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $ora_compatible
+            LoadOrd $lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $ora_compatible
+            puts "End:[ clock format [ clock seconds ] ]"
+            set result [ pg_exec $lda "commit" ]
+            pg_result $result -clear
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
             }
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
-        }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare $lda $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust $lda $mystart $myend $CUST_PER_DIST $DIST_PER_WARE $ora_compatible
-        LoadOrd $lda $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE $ora_compatible
-        puts "End:[ clock format [ clock seconds ] ]"
-        set result [ pg_exec $lda "commit" ]
-        pg_result $result -clear
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

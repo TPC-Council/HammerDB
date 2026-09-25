@@ -860,97 +860,119 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-	 set newdb [ CreateDatabase $dbname ]
-         set db_handle [ ConnectToDb2 $dbname $user $password ]
-         if { !$newdb }  {
-         set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
-         set tabcount [ db2_fetchrow $newdb_handle ]
-         db2_finish $newdb_handle
-         if { [ llength $tabcount ] > 0 } {
-         #tabcount len will be 0 for empty, 1 for table exists
-                error "DATABASE $dbname is not empty, if $dbname is pre-created it must be empty"
-        } else {
-                puts "DATABASE $dbname is empty, using $dbname"
-        }
-        }
-        if { $partition eq "true" && [ expr $count_ware >= 10 ] } {
-            set num_part 10
-            set tspace_dict $tpcc_part_tabs
-            dict for {tbl tblspc} $tspace_dict {
-                if { $tblspc eq "" } { dict set tspace_dict $tbl $tpcc_def_tab }
+        try {
+             set newdb [ CreateDatabase $dbname ]
+             set db_handle [ ConnectToDb2 $dbname $user $password ]
+             if { !$newdb }  {
+             set newdb_handle [ db2_select_direct $db_handle "select tabname from syscat.tables where type = 'T' and tabschema = '[ string toupper $user]'" ]
+             set tabcount [ db2_fetchrow $newdb_handle ]
+             db2_finish $newdb_handle
+             if { [ llength $tabcount ] > 0 } {
+             #tabcount len will be 0 for empty, 1 for table exists
+                    error "DATABASE $dbname is not empty, if $dbname is pre-created it must be empty"
+            } else {
+                    puts "DATABASE $dbname is empty, using $dbname"
             }
-        } else {
-            set num_part 0
-            #All tablespaces are default
-            set tspace_dict [ dict create ]
-            foreach tbl {C D H I W S NO OR OL} {
-                dict set tspace_dict $tbl $tpcc_def_tab
             }
-        }
-        if { [ dict size $tspace_dict ] != 9 } {
-            error "Incorrect number of tablspaces defined"
-        }
-        CreateTables $db_handle $num_part $count_ware $tspace_dict
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems $db_handle $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {  
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000 
-            }} else {
-            LoadItems $db_handle $MAXITEMS
-    }}
-    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {  
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 480 } { 
-                        puts "Monitor failed to notify ready state" 
-                        return
-                    }
-                }
-                after 5000 
-            }
-            set db_handle [ ConnectToDb2 $dbname $user $password ]
             if { $partition eq "true" && [ expr $count_ware >= 10 ] } {
                 set num_part 10
+                set tspace_dict $tpcc_part_tabs
+                dict for {tbl tblspc} $tspace_dict {
+                    if { $tblspc eq "" } { dict set tspace_dict $tbl $tpcc_def_tab }
+                }
             } else {
                 set num_part 0
+                #All tablespaces are default
+                set tspace_dict [ dict create ]
+                foreach tbl {C D H I W S NO OR OL} {
+                    dict set tspace_dict $tbl $tpcc_def_tab
+                }
             }
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
+            if { [ dict size $tspace_dict ] != 9 } {
+                error "Incorrect number of tablspaces defined"
+            }
+            CreateTables $db_handle $num_part $count_ware $tspace_dict
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems $db_handle $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }} else {
+                LoadItems $db_handle $MAXITEMS
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare $db_handle $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust $db_handle $mystart $myend $CUST_PER_DIST $DIST_PER_WARE 
-        LoadOrd $db_handle $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
-        puts "End:[ clock format [ clock seconds ] ]"
-        db2_disconnect $db_handle
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+    }
+    if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if {  [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 480 } {
+                            error "Monitor failed to notify ready state"
+                        }
+                    }
+                    after 5000
+                }
+                set db_handle [ ConnectToDb2 $dbname $user $password ]
+                if { $partition eq "true" && [ expr $count_ware >= 10 ] } {
+                    set num_part 10
+                } else {
+                    set num_part 0
+                }
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
+            }
+            puts "Start:[ clock format [ clock seconds ] ]"
+            LoadWare $db_handle $mystart $myend $MAXITEMS $DIST_PER_WARE
+            LoadCust $db_handle $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
+            LoadOrd $db_handle $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
+            puts "End:[ clock format [ clock seconds ] ]"
+            db2_disconnect $db_handle
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {

@@ -611,102 +611,122 @@ proc do_tpch { host port socket ssl_options scale_fact user password db vsql_tpc
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $user ] SCHEMA"
-        set vsql_handler [ ConnectToVillageSQL $host $port $socket $ssl_options $user $password ]
-        set db_created [ CreateDatabase $vsql_handler $db ]
-        if { !$db_created } {
-            tsv::set application abort 1
-            error "Database not created"
-        }
-        mysqluse $vsql_handler $db
-        mysql::autocommit $vsql_handler 0
-        # If storage_engine is set to heatwave, first, create the db schema using InnoDB and migrate it after data generation.
-        if { [string equal -nocase $vsql_tpch_storage_engine "Heatwave" ] } {
-            CreateTables $vsql_handler "InnoDB"
-        } else {
-            CreateTables $vsql_handler $vsql_tpch_storage_engine
-        }
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            puts "Loading REGION..."
-            mk_region $vsql_handler
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            mk_nation $vsql_handler
-            puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
+        try {
+            puts "CREATING [ string toupper $user ] SCHEMA"
+            set vsql_handler [ ConnectToVillageSQL $host $port $socket $ssl_options $user $password ]
+            set db_created [ CreateDatabase $vsql_handler $db ]
+            if { !$db_created } {
+                error "Database not created"
             }
-        } else {
-            puts "Loading REGION..."
-            mk_region $vsql_handler
-            puts "Loading REGION COMPLETE"
-            puts "Loading NATION..."
-            mk_nation $vsql_handler
-            puts "Loading NATION COMPLETE"
+            mysqluse $vsql_handler $db
+            mysql::autocommit $vsql_handler 0
+            # If storage_engine is set to heatwave, first, create the db schema using InnoDB and migrate it after data generation.
+            if { [string equal -nocase $vsql_tpch_storage_engine "Heatwave" ] } {
+                CreateTables $vsql_handler "InnoDB"
+            } else {
+                CreateTables $vsql_handler $vsql_tpch_storage_engine
+            }
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                puts "Loading REGION..."
+                mk_region $vsql_handler
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                mk_nation $vsql_handler
+                puts "Loading NATION COMPLETE"
+                puts "Monitoring Workers..."
+                after 10000
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
+                    }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
+                }
+            } else {
+                puts "Loading REGION..."
+                mk_region $vsql_handler
+                puts "Loading REGION COMPLETE"
+                puts "Loading NATION..."
+                mk_nation $vsql_handler
+                puts "Loading NATION COMPLETE"
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::get application abort ] } { return }
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if { [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if { [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
                     }
+                    after 5000
                 }
-                after 5000
+                set vsql_handler [ ConnectToVillageSQL $host $port $socket $ssl_options $user $password ]
+                mysqluse $vsql_handler $db
+                mysqlexec $vsql_handler "SET FOREIGN_KEY_CHECKS = 0"
+                if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
+                if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
+                set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
+                set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
+                set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
+                set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set sf_chunk "1 $sup_rows"
+                set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
+                set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
+                set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
             }
-            set vsql_handler [ ConnectToVillageSQL $host $port $socket $ssl_options $user $password ]
-            mysqluse $vsql_handler $db
-            mysqlexec $vsql_handler "SET FOREIGN_KEY_CHECKS = 0"
-            if { [ expr $myposition - 1 ] > $max_threads } { puts "No Data to Create"; return }
-            if { [ expr $num_vu + 1 ] > $max_threads } { set num_vu $max_threads }
-            set sf_chunk [ split [ start_end $sup_rows $myposition $sf_mult $num_vu ] ":" ]
-            set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
-            set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
-            set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set sf_chunk "1 $sup_rows"
-            set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
-            set part_chunk "1 [ expr {$sup_rows * $part_mult} ]"
-            set ord_chunk "1 [ expr {$sup_rows * $ord_mult} ]"
-        }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        puts "Loading SUPPLIER..."
-        mk_supp $vsql_handler [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ]
-        puts "Loading CUSTOMER..."
-        mk_cust $vsql_handler [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ]
-        puts "Loading PART and PARTSUPP..."
-        mk_part $vsql_handler [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact
-        puts "Loading ORDERS and LINEITEM..."
-        mk_order $vsql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact
-        puts "Loading TPCH TABLES COMPLETE"
-        puts "End:[ clock format [ clock seconds ] ]"
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            puts "Start:[ clock format [ clock seconds ] ]"
+            puts "Loading SUPPLIER..."
+            mk_supp $vsql_handler [ lindex $sf_chunk 0 ] [ lindex $sf_chunk 1 ]
+            puts "Loading CUSTOMER..."
+            mk_cust $vsql_handler [ lindex $cust_chunk 0 ] [ lindex $cust_chunk 1 ]
+            puts "Loading PART and PARTSUPP..."
+            mk_part $vsql_handler [ lindex $part_chunk 0 ] [ lindex $part_chunk 1 ] $scale_fact
+            puts "Loading ORDERS and LINEITEM..."
+            mk_order $vsql_handler [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact
+            puts "Loading TPCH TABLES COMPLETE"
+            puts "End:[ clock format [ clock seconds ] ]"
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     # Update schema and set secondary_engine. Start data migration to Heatwave.

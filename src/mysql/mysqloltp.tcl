@@ -985,7 +985,6 @@ proc chk_socket { host socket } {
 }
 
 proc do_tpcc { host port socket ssl_options count_ware user password db mysql_storage_engine partition history_pk num_vu } {
-    try {
     global mysqlstatus
     set MAXITEMS 100000
     set CUST_PER_DIST 3000
@@ -1016,84 +1015,103 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
-        puts "CREATING [ string toupper $db ] SCHEMA"
-        set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
-        set db_created [ CreateDatabase $mysql_handler $db ]
-        if { !$db_created } {
-            tsv::set application abort 1
-            error "Database not created"
-        }
-        mysqluse $mysql_handler $db
-        mysql::autocommit $mysql_handler 0
-        if { $partition eq "true" } {
-            if {$count_ware < 200} {
-                set num_part 0
+        try {
+            puts "CREATING [ string toupper $db ] SCHEMA"
+            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+            set db_created [ CreateDatabase $mysql_handler $db ]
+            if { !$db_created } {
+                error "Database not created"
+            }
+            mysqluse $mysql_handler $db
+            mysql::autocommit $mysql_handler 0
+            if { $partition eq "true" } {
+                if {$count_ware < 200} {
+                    set num_part 0
+                } else {
+                    set num_part [ expr round($count_ware/100) ]
+                }
             } else {
-                set num_part [ expr round($count_ware/100) ]
+                set num_part 0
             }
-        } else {
-            set num_part 0
-        }
-        CreateTables $mysql_handler $mysql_storage_engine $num_part $history_pk
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::set application load "READY"
-            LoadItems $mysql_handler $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {
-                if {[tsv::get application abort]} {error "Schema build aborted after a loader failure"}
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
+            CreateTables $mysql_handler $mysql_storage_engine $num_part $history_pk
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "READY"
+                LoadItems $mysql_handler $MAXITEMS
+                puts "Monitoring Workers..."
+                set prevactive 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0;
+                    for {set th 2} {$th <= $totalvirtualusers } {incr th} {
+                        switch [tsv::lindex common thrdlst $th] {
+                            idle { incr idlcnt }
+                            active { incr lvcnt }
+                            done { incr dncnt }
+                            error { incr errcnt }
+                        }
                     }
+                    if { $errcnt > 0 } {
+                        error "Schema build failed: $errcnt loader worker(s) reported an error"
+                    }
+                    if { $lvcnt != $prevactive } {
+                        puts "Workers: $lvcnt Active $dncnt Done"
+                    }
+                    set prevactive $lvcnt
+                    if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
+                    after 10000
                 }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
+            } else {
+                LoadItems $mysql_handler $MAXITEMS
             }
-        } else {
-            LoadItems $mysql_handler $MAXITEMS
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
-        if { $threaded eq "MULTI-THREADED" } {
-            puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::get application abort ] } { return }
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if { [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
+        try {
+            if { $threaded eq "MULTI-THREADED" } {
+                puts "Waiting for Monitor Thread..."
+                set mtcnt 0
+                while 1 {
+                    if { [ tsv::get application abort ] } { return }
+                    if { [ tsv::exists application load ] } {
+                        incr mtcnt
+                        if { [ tsv::get application load ] eq "ERROR" } {
+                            error "Schema build failed: monitor reported an error"
+                        }
+                        if { [ tsv::get application load ] eq "READY" } { break }
+                        if { $mtcnt eq 48 } {
+                            error "Monitor failed to notify ready state"
+                        }
                     }
+                    after 5000
                 }
-                after 5000
+                set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
+                mysqluse $mysql_handler $db
+                set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
+                puts "Loading $chunk Warehouses start:$mystart end:$myend"
+                tsv::lreplace common thrdlst $myposition $myposition active
+            } else {
+                set mystart 1
+                set myend $count_ware
             }
-            set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password ]
-            mysqluse $mysql_handler $db
-            set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
-            puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
-        } else {
-            set mystart 1
-            set myend $count_ware
-        }
-        puts "Start:[ clock format [ clock seconds ] ]"
-        LoadWare $mysql_handler $mystart $myend $MAXITEMS $DIST_PER_WARE
-        LoadCust $mysql_handler $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
-        LoadOrd $mysql_handler $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
-        puts "End:[ clock format [ clock seconds ] ]"
-        mysql::commit $mysql_handler
-        if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            puts "Start:[ clock format [ clock seconds ] ]"
+            LoadWare $mysql_handler $mystart $myend $MAXITEMS $DIST_PER_WARE
+            LoadCust $mysql_handler $mystart $myend $CUST_PER_DIST $DIST_PER_WARE
+            LoadOrd $mysql_handler $mystart $myend $MAXITEMS $ORD_PER_DIST $DIST_PER_WARE
+            puts "End:[ clock format [ clock seconds ] ]"
+            mysql::commit $mysql_handler
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition done
+            }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::lreplace common thrdlst $myposition $myposition error
+            }
+            return -options $options $message
         }
     }
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
@@ -1102,11 +1120,6 @@ proc do_tpcc { host port socket ssl_options count_ware user password db mysql_st
         puts "[ string toupper $db ] SCHEMA COMPLETE"
         mysqlclose $mysql_handler
         return
-    }
-    } on error {message options} {
-        # Notify the monitor and workers without losing the original error.
-        tsv::set application abort 1
-        return -options $options $message
     }
 }
 }
