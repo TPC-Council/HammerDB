@@ -1,6 +1,6 @@
 package provide tpcccommon 1.0
 namespace eval tpcccommon {
-  namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime async_keytime async_thinktime async_time get_connect_xml
+  namespace export chk_thread RandomNumber NURand Lastname MakeAlphaString Makezip MakeAddress MakeNumberString findchunk findvuposition randname keytime thinktime async_keytime async_thinktime async_time get_connect_xml loader_set_state loader_wait_ready loader_monitor
   #gettimestamp not included as uses different formats per database
   #TPCC BUILD PROCEDURES
   proc chk_thread {} {
@@ -11,6 +11,46 @@ namespace eval tpcccommon {
       return "FALSE"
     }
   }
+  proc loader_set_state {myposition state} {
+    tsv::lreplace common thrdlst $myposition $myposition $state
+  }
+  proc loader_wait_ready {{maxtries 48} {delay 5000}} {
+    set mtcnt 0
+    while 1 {
+      if {[tsv::exists application abort] && [tsv::get application abort]} { return "ABORT" }
+      if {[tsv::exists application load]} {
+        set loadstate [tsv::get application load]
+        if {$loadstate eq "ERROR"} { error "Schema build failed: monitor reported an error" }
+        if {$loadstate eq "READY"} { return "READY" }
+        incr mtcnt
+        if {$mtcnt eq $maxtries} { error "Monitor failed to notify ready state" }
+      }
+      after $delay
+    }
+  }
+  proc loader_monitor {totalvirtualusers {initial_delay 0} {delay 10000}} {
+    puts "Monitoring Workers..."
+    if {$initial_delay > 0} { after $initial_delay }
+    set prevactive 0
+    while 1 {
+      if {[tsv::exists application abort] && [tsv::get application abort]} { return "ABORT" }
+      set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0
+      for {set th 2} {$th <= $totalvirtualusers} {incr th} {
+        switch [tsv::lindex common thrdlst $th] {
+          idle { incr idlcnt }
+          active { incr lvcnt }
+          done { incr dncnt }
+          error { incr errcnt }
+        }
+      }
+      if {$errcnt > 0} { error "Schema build failed: $errcnt loader worker(s) reported an error" }
+      if {$lvcnt != $prevactive} { puts "Workers: $lvcnt Active $dncnt Done" }
+      set prevactive $lvcnt
+      if {$dncnt eq [expr {$totalvirtualusers - 1}]} { return "DONE" }
+      after $delay
+    }
+  }
+
   #RANDOM NUMBER
   proc RandomNumber {m M} {return [expr {int($m+rand()*($M+1-$m))}]}
   #NON UNIFORM RANDOM NUMBER BUILD AND DRIVE
