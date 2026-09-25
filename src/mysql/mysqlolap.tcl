@@ -1964,9 +1964,9 @@ proc check_tpch { host port socket ssl_options user password dbase scale_factor 
 	if { $match == -1 } {
 	error "TPROC-H Schema check failed $dbase schema is missing table $table"
 	} else {
-	if { $table eq "supplier" } {
+	if { $table eq "SUPPLIER" } {
 	#Check 3 scale factor in schema is the same as dict setting
-        set count [  mysql::sel $mysql_handler "select count(*) from supplier" -flatlist ]
+        set count [  mysql::sel $mysql_handler "select count(*) from $table" -flatlist ]
 	if { $count } {
         set actual_scale_factor [ expr {$count / 10000} ]
         if { $actual_scale_factor != $scale_factor } {
