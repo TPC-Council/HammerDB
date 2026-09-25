@@ -92,10 +92,16 @@ proc postgresql_clone {cidict refname} {
     set is_commit 0
     if {[regexp {^[0-9a-fA-F]{7,40}$} $ref_trim]} { set is_commit 1 }
 
+    # Preserve multi-segment branch/tag names such as feature/test-branch.
+    # git clone --branch accepts the complete branch or tag name.
+    if {!$is_commit} {
+        set branch $ref_trim
+    }
+
     if {$is_commit} {
         putsci "Cloning repository for commit $ref_trim into $local_dir"
     } else {
-        putsci "Cloning branch [file tail $ref_trim] into $local_dir"
+        putsci "Cloning branch $branch into $local_dir"
     }
     putsci "repo_url is $repo_url"
 
@@ -104,7 +110,6 @@ proc postgresql_clone {cidict refname} {
     } else {
         set raw_cmd  [dict get $cidict common clone_cmd]
         set raw_args [dict get $cidict common clone_cmd_args]
-        set branch   [file tail $ref_trim]
         set args_sub [string map [list ":branch" $branch ":repo_url" $repo_url] $raw_args]
         set shell_cmd "cd \"$local_dir\" && $raw_cmd $args_sub 2>&1"
     }
