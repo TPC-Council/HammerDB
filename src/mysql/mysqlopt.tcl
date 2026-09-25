@@ -1,7 +1,6 @@
 proc check_mysql_ssl { configdict } {
-    global mysql_ssl_options
-    unset -nocomplain mysql_ssl_options
-    upvar #0 configmysql configmysql
+    global mysql_ssl_options mysql_ssl_config
+        upvar #0 configmysql configmysql
     #set local variables to dict for checking
     foreach key [ dict keys [ dict get $configdict connection ] *ssl* ] {
         set $key [ dict get $configdict connection $key ]
@@ -12,12 +11,38 @@ proc check_mysql_ssl { configdict } {
     } else {
         set capath $mysql_ssl_windows_capath
     }
+    #Reuse SSL options when SSL settings are unchanged; rebuild only after an SSL setting changes
+    set current_ssl_config [ list $mysql_ssl $mysql_ssl_two_way $capath $mysql_ssl_ca $mysql_ssl_cert $mysql_ssl_key $mysql_ssl_cipher ]
+    if { [ info exists mysql_ssl_config ] && [ info exists mysql_ssl_options ] && $mysql_ssl_config eq $current_ssl_config } {
+        return
+    }
+    set mysql_ssl_config $current_ssl_config
+    unset -nocomplain mysql_ssl_options
+    #Allow one-way TLS without explicit CA/certificate files when CApath is also blank
+    set no_ssl_files [ expr {$mysql_ssl_ca eq "" && $mysql_ssl_cert eq "" && $mysql_ssl_key eq ""} ]
+    if { $mysql_ssl eq "true" && $mysql_ssl_two_way ne "true" && $no_ssl_files && $capath eq "" } {
+        set mysql_ssl_options " -ssl true "
+        if { $mysql_ssl_cipher != "server" } { append mysql_ssl_options " -sslcipher $mysql_ssl_cipher " }
+        return
+    }
     #If SSL not enabled return
     if { $mysql_ssl != "true" } { 
         #nothing to check, mysql_ssl_options is not set
         set mysql_ssl_options " -ssl false "
         return	
     } else {
+        #Preserve requested SSL options if validation fails
+        set requested_ssl_options " -ssl true "
+        if { $mysql_ssl_ca eq "" && $mysql_ssl_cert eq "" && $mysql_ssl_key eq "" } {
+            append requested_ssl_options " -sslcapath $capath "
+        } else {
+            append requested_ssl_options " -sslca [ file join $capath $mysql_ssl_ca ] "
+            if { $mysql_ssl_two_way eq "true" } {
+                append requested_ssl_options " -sslcert [ file join $capath $mysql_ssl_cert ] "
+                append requested_ssl_options " -sslkey [ file join $capath $mysql_ssl_key ] "
+            }
+        }
+        if { $mysql_ssl_cipher != "server" } { append requested_ssl_options " -sslcipher $mysql_ssl_cipher " }
         #SSL is enabled, check that capath is valid
         if { [ file isdirectory $capath ] } {
             if { $mysql_ssl_ca eq "" && $mysql_ssl_cert eq "" && $mysql_ssl_key eq "" } {
@@ -26,8 +51,8 @@ proc check_mysql_ssl { configdict } {
                 #CApath is valid, file entries are not blank, always check CA
                 if { [ file readable [ file join $capath $mysql_ssl_ca ]] } {
                 } else {
-                    tk_messageBox -message "[ file join $capath $mysql_ssl_ca ] is not readable, disabling SSL"
-                    dict set configmysql connection mysql_ssl "false"
+                    tk_messageBox -message "[ file join $capath $mysql_ssl_ca ] is not readable, SSL configuration invalid"
+                    set mysql_ssl_options $requested_ssl_options
                     return
                 }
                 #capath and ca are readable
@@ -36,17 +61,17 @@ proc check_mysql_ssl { configdict } {
                     foreach sslfile [ list $mysql_ssl_cert $mysql_ssl_key ] {
                         if { [ file readable [ file join $capath $sslfile ]] } {
                         } else {
-                            tk_messageBox -message "[ file join $capath $sslfile ] is not readable, disabling SSL"
-                            dict set configmysql connection mysql_ssl "false"
+                            tk_messageBox -message "[ file join $capath $sslfile ] is not readable, SSL configuration invalid"
+                            set mysql_ssl_options $requested_ssl_options
                             return
                         }
                     }
                 }
             }
         } else {
-            tk_messageBox -message "SSL CApath is not a valid directory, disabling SSL"
-            #Set SSL to false
-            dict set configmysql connection mysql_ssl "false"
+            tk_messageBox -message "SSL CApath is not a valid directory, SSL configuration invalid"
+            #Preserve requested SSL options
+            set mysql_ssl_options $requested_ssl_options
             return
         }
     }

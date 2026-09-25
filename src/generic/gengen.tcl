@@ -13,6 +13,7 @@ proc gendata_tpcc {} {
         "Db2" { set db "db2" }
         "MySQL" { set db "mysql" }
         "MariaDB" { set db "maria" }
+        "VillageSQL" { set db "vsql" }
         "PostgreSQL" { set db "pg" }
     }
     set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPROC-C schema\nin directory $gen_directory ?" 
@@ -465,6 +466,7 @@ proc gendata_tpch {} {
         "Db2" { set db "db2" }
         "MySQL" { set db "mysql" }
         "MariaDB" { set db "maria" }
+        "VillageSQL" { set db "vsql" }
         "PostgreSQL" { set db "pg" }
     }
     set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPROC-H schema\nin directory $gen_directory ?" 

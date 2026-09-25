@@ -22,7 +22,7 @@ diset('connection','mssqls_pass','admin')
 
 diset('tpcc','mssqls_dbase','tpcc')
 diset('tpcc','mssqls_driver','timed')
-diset('tpcc','mssqls_total_iterations','10000000')
+diset('tpcc','mssqls_total_iterations','2147483647')
 diset('tpcc','mssqls_rampup','2')
 diset('tpcc','mssqls_duration','5')
 diset('tpcc','mssqls_allwarehouse','true')

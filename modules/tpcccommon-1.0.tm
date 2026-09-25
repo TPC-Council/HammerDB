@@ -180,7 +180,7 @@ namespace eval tpcccommon {
   set PWConfigDir [ file join [ pwd ] config connectpool ]
   foreach CD { ISConfigDir PWConfigDir } {
           if { [ file isdirectory [ set $CD ]] } {
-          if { [ file exists [ file join [ set $CD ] db2cpool.xml ]] && [ file exists [ file join [ set $CD ] mariacpool.xml ]] && [ file exists [ file join [ set $CD ] mssqlscpool.xml ]] && [ file exists [ file join [ set $CD ] mysqlcpool.xml ]] && [ file exists [ file join [ set $CD ] oracpool.xml ]] && [ file exists [ file join [ set $CD ] pgcpool.xml ]]} {
+          if { [ file exists [ file join [ set $CD ] db2cpool.xml ]] && [ file exists [ file join [ set $CD ] mariacpool.xml ]] && [ file exists [ file join [ set $CD ] mssqlscpool.xml ]] && [ file exists [ file join [ set $CD ] mysqlcpool.xml ]] && [ file exists [ file join [ set $CD ] oracpool.xml ]] && [ file exists [ file join [ set $CD ] pgcpool.xml ]] && [ file exists [ file join [ set $CD ] vsqlcpool.xml ]]} {
                return [ set $CD ]
           }
       }

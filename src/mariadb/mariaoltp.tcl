@@ -14,7 +14,7 @@ proc build_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
@@ -42,6 +42,23 @@ if [catch {package require $library} message] { error "Failed to load $library -
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 proc CreateStoredProcs { maria_handler } {
     puts "CREATING TPCC STORED PROCEDURES"
+    set update_returning_test {
+        CREATE PROCEDURE `HDB_UPDATE_RETURNING_TEST` ()
+        BEGIN
+        DECLARE test_next_o_id INTEGER;
+        DECLARE test_tax DECIMAL(4,4);
+        UPDATE district SET d_next_o_id = d_next_o_id + 1
+        WHERE 1 = 0
+        RETURNING d_next_o_id - 1, d_tax INTO test_next_o_id, test_tax;
+        END
+    }
+    catch { mariaexec $maria_handler "DROP PROCEDURE IF EXISTS `HDB_UPDATE_RETURNING_TEST`" }
+    if { [ catch { mariaexec $maria_handler $update_returning_test } ] } {
+        set update_returning false
+    } else {
+        set update_returning true
+    }
+    catch { mariaexec $maria_handler "DROP PROCEDURE IF EXISTS `HDB_UPDATE_RETURNING_TEST`" }
     set sql(1) {
         CREATE PROCEDURE `NEWORD` (
         no_w_id    INTEGER,
@@ -164,6 +181,39 @@ proc CreateStoredProcs { maria_handler } {
         INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
         END 
+    }
+    if { $update_returning } {
+        set sql(1) [ string map [ list \
+            {        SELECT d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax
+        FROM district
+        WHERE d_id = no_d_id AND d_w_id = no_w_id FOR UPDATE;
+        UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id;} \
+            {        UPDATE district SET d_next_o_id = d_next_o_id + 1
+        WHERE d_id = no_d_id AND d_w_id = no_w_id
+        RETURNING d_next_o_id - 1, d_tax INTO no_d_next_o_id, no_d_tax;} \
+            {        SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
+        INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10
+        FROM stock WHERE s_i_id = no_ol_i_id AND s_w_id = no_ol_supply_w_id;
+        IF ( no_s_quantity > no_ol_quantity )
+        THEN
+        SET no_s_quantity = ( no_s_quantity - no_ol_quantity );
+        ELSE
+        SET no_s_quantity = ( no_s_quantity - no_ol_quantity + 91 );
+        END IF;
+        UPDATE stock SET s_quantity = no_s_quantity
+        WHERE s_i_id = no_ol_i_id
+        AND s_w_id = no_ol_supply_w_id;} \
+            {        UPDATE stock
+        SET s_quantity = CASE
+        WHEN s_quantity > no_ol_quantity
+        THEN s_quantity - no_ol_quantity
+        ELSE s_quantity - no_ol_quantity + 91
+        END
+        WHERE s_i_id = no_ol_i_id
+        AND s_w_id = no_ol_supply_w_id
+        RETURNING s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
+        INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10;} \
+        ] $sql(1) ]
     }
     set sql(2) { 
         CREATE PROCEDURE `DELIVERY`(
@@ -1700,7 +1750,7 @@ proc loadmariatpcc { } {
      #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C"
@@ -2033,7 +2083,7 @@ proc loadtimedmariatpcc { } {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C Timed"
@@ -3199,7 +3249,7 @@ proc delete_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
@@ -3303,7 +3353,7 @@ proc check_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }

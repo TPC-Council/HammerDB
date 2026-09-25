@@ -544,6 +544,11 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 FROM UNNEST(item_id_array) item_id
                 LEFT JOIN item ON i_id = item_id;
 
+                IF array_position(price_array, NULL) IS NOT NULL
+                THEN
+                    RAISE NO_DATA_FOUND;
+                END IF;
+
                 IF no_d_id = 1
                 THEN
                 WITH stock_update AS (
@@ -1080,6 +1085,11 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 INTO price_array
                 FROM UNNEST(item_id_array) item_id
                 LEFT JOIN item ON i_id = item_id;
+
+                IF array_position(price_array, NULL) IS NOT NULL
+                THEN
+                    RAISE NO_DATA_FOUND;
+                END IF;
 
                 IF no_d_id = 1
                 THEN
