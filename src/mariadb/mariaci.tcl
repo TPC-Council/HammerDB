@@ -69,10 +69,15 @@ proc mariadb_clone {cidict refname} {
         set is_commit 1
     }
 
+    # Preserve multi-segment branch/tag names such as poc/blink-tree-mariadb-2.
+    # git clone --branch accepts the complete branch or tag name.
+    if {!$is_commit} {
+        set branch $ref_trim
+    }
+
     if {$is_commit} {
         putsci "Cloning repository for commit $ref_trim into $local_dir"
     } else {
-        set branch [file tail $ref_trim]
         putsci "Cloning branch $branch into $local_dir"
     }
     putsci "repo_url is $repo_url"
@@ -84,7 +89,6 @@ proc mariadb_clone {cidict refname} {
         # clone branch/tag
         set raw_cmd  [dict get $cidict common clone_cmd]
         set raw_args [dict get $cidict common clone_cmd_args]
-        set branch   [file tail $ref_trim]
         set args_sub [string map [list ":branch" $branch ":repo_url" $repo_url] $raw_args]
         set cmd_full "$raw_cmd $args_sub"
         set shell_cmd "cd \"$local_dir\" && $cmd_full 2>&1"
