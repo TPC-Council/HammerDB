@@ -1749,6 +1749,7 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $tpcc_user ] SCHEMA"
         if { $timesten } {
             puts "TimesTen expects the Database [ string toupper $instance ] and User [ string toupper $tpcc_user ] to have been created by the instance administrator in advance and be granted create table, session, procedure, view (and admin for checkpoints) privileges"
@@ -1784,42 +1785,21 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $lda $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {  
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000 
-            }} else {
+            if {[loader_monitor $totalvirtualusers] eq "ABORT"} { return }} else {
             LoadItems $lda $MAXITEMS
-    }}
+    }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 { 
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } { 
-                        puts "Monitor failed to notify ready state" 
-                        return
-                    }
-                }
-                after 5000 
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             set connect $tpcc_user/$tpcc_pass@$instance
             set lda [ oralogon $connect ]
             if { $timesten } {
@@ -1829,7 +1809,7 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
             }
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set mystart 1
             set myend $count_ware
@@ -1842,9 +1822,16 @@ proc do_tpcc { system_user system_password instance count_ware tpcc_user tpcc_pa
         puts "End:[ clock format [ clock seconds ] ]"
         oracommit $lda
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         CreateIndexes $lda $timesten $num_part $hash_clusters
         if { $timesten } { TTPLSQLSettings $lda }

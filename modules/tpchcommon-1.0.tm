@@ -1,6 +1,6 @@
 package provide tpchcommon 1.0
 namespace eval tpchcommon {
-  namespace export chk_thread start_end findvuhposition RandomNumber set_dists get_dists set_dist_list LEAP LEAP_ADJ julian mk_time mk_time_bcp mk_sparse PART_SUPP_BRIDGE rpb_routine gen_phone MakeAlphaString calc_weight pick_str_1 pick_str_2 txt_vp_1 txt_vp_2 txt_np_1 txt_np_2 txt_sentence_1 txt_sentence_2 dbg_text_1 dbg_text_2 V_STR TEXT_1 TEXT_2 ordered_set gmean printlist
+  namespace export chk_thread start_end findvuhposition RandomNumber set_dists get_dists set_dist_list LEAP LEAP_ADJ julian mk_time mk_time_bcp mk_sparse PART_SUPP_BRIDGE rpb_routine gen_phone MakeAlphaString calc_weight pick_str_1 pick_str_2 txt_vp_1 txt_vp_2 txt_np_1 txt_np_2 txt_sentence_1 txt_sentence_2 dbg_text_1 dbg_text_2 V_STR TEXT_1 TEXT_2 ordered_set gmean printlist loader_set_state loader_wait_ready loader_monitor
   #TPCH BUILD PROCEDURES
   proc chk_thread {} {
     set chk [package provide Thread]
@@ -10,6 +10,46 @@ namespace eval tpchcommon {
       return "FALSE"
     }
   }
+  proc loader_set_state {myposition state} {
+    tsv::lreplace common thrdlst $myposition $myposition $state
+  }
+  proc loader_wait_ready {{maxtries 48} {delay 5000}} {
+    set mtcnt 0
+    while 1 {
+      if {[tsv::exists application abort] && [tsv::get application abort]} { return "ABORT" }
+      if {[tsv::exists application load]} {
+        set loadstate [tsv::get application load]
+        if {$loadstate eq "ERROR"} { error "Schema build failed: monitor reported an error" }
+        if {$loadstate eq "READY"} { return "READY" }
+        incr mtcnt
+        if {$mtcnt eq $maxtries} { error "Monitor failed to notify ready state" }
+      }
+      after $delay
+    }
+  }
+  proc loader_monitor {totalvirtualusers {initial_delay 0} {delay 10000}} {
+    puts "Monitoring Workers..."
+    if {$initial_delay > 0} { after $initial_delay }
+    set prevactive 0
+    while 1 {
+      if {[tsv::exists application abort] && [tsv::get application abort]} { return "ABORT" }
+      set idlcnt 0; set lvcnt 0; set dncnt 0; set errcnt 0
+      for {set th 2} {$th <= $totalvirtualusers} {incr th} {
+        switch [tsv::lindex common thrdlst $th] {
+          idle { incr idlcnt }
+          active { incr lvcnt }
+          done { incr dncnt }
+          error { incr errcnt }
+        }
+      }
+      if {$errcnt > 0} { error "Schema build failed: $errcnt loader worker(s) reported an error" }
+      if {$lvcnt != $prevactive} { puts "Workers: $lvcnt Active $dncnt Done" }
+      set prevactive $lvcnt
+      if {$dncnt eq [expr {$totalvirtualusers - 1}]} { return "DONE" }
+      after $delay
+    }
+  }
+
   #FIND BUILD START AND END
   proc start_end { sup_rows myposition my_mult num_vu } {
     set sf_chunk [ expr $sup_rows / $num_vu ]

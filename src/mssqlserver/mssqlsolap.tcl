@@ -1349,6 +1349,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $db ] SCHEMA"
         if [catch {tdbc::odbc::connection create odbc $connection} message ] {
             error "Connection to $connection could not be established : $message"
@@ -1367,48 +1368,26 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             puts "Loading NATION..."
             load_nation odbc $use_bcp
             puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }} else {
+            if {[loader_monitor $totalvirtualusers 10000] eq "ABORT"} { return }} else {
             puts "Loading REGION..."
             load_region odbc $use_bcp
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
             load_nation odbc $use_bcp
             puts "Loading NATION COMPLETE"
-    }}
+    }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             if [catch {tdbc::odbc::connection create odbc $connection} message ] {
                 error "Connection to $connection could not be established : $message"
             } else {
@@ -1421,7 +1400,7 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
             set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
             set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
             set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set myposition 1
             set sf_chunk "1 $sup_rows"
@@ -1442,9 +1421,16 @@ proc do_tpch { server port scale_fact odbc_driver authentication uid pwd tcp azu
         load_order odbc $myposition [ lindex $ord_chunk 0 ] [ lindex $ord_chunk 1 ] [ expr {$upd_num % 10000} ] $scale_fact $use_bcp
         puts "Loading TPCH TABLES COMPLETE"
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         CreateIndexes odbc $maxdop $colstore $use_bcp $partition_orders_and_lineitems
         UpdateStatistics odbc $db $azure $advanced_stats
