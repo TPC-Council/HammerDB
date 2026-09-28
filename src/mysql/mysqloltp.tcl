@@ -1519,10 +1519,7 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
     if { $byname } {
       set namecnt [ mysql::sel $mysql_handler "SELECT count(c_id) FROM customer WHERE c_last = '$name' AND c_d_id = $p_c_d_id AND c_w_id = $p_c_w_id" -flatlist ]
       set cust_list [ mysql::sel $mysql_handler "SELECT c_first, c_middle, c_id, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_credit, c_credit_lim, c_discount, c_balance, c_since FROM customer WHERE c_w_id = $p_c_w_id AND c_d_id = $p_c_d_id AND c_last = '$name' ORDER BY c_first" -list ]
-      if { [ expr {$namecnt % 2} ] eq 1 } {
-        set $namecnt [ expr {$namecnt + 1} ]
-      }
-      set cust_id_to_query [ lindex $cust_list [ expr {$namecnt / 2} ] ]
+      set cust_id_to_query [ lindex $cust_list [ expr {($namecnt - 1) / 2} ] ]
       lassign $cust_id_to_query p_c_first p_c_middle p_c_id p_c_street_1 p_c_street_2 p_c_city p_c_state p_c_zip p_c_phone p_c_credit p_c_credit_lim p_c_discount p_c_balance p_c_since
       set p_c_last $name
     } else {
@@ -1567,14 +1564,18 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
       }
       set cust_list [ mysql::sel $mysql_handler "SELECT c_balance, c_first, c_middle, c_id FROM customer WHERE c_last = '$name' AND c_d_id = $d_id AND c_w_id = $w_id ORDER BY c_first" -list ]
       set cust_id_to_query [ lindex $cust_list [ expr ($namecnt/2)-1 ] ]
+      lassign $cust_id_to_query os_c_balance os_c_first os_c_middle c_id
+      set os_c_last $name
     } else {
-      set cust_id_to_query [ mysql::sel $mysql_handler "SELECT c_balance, c_first, c_middle, c_last FROM customer WHERE c_id = $c_id AND c_d_id = $d_id AND c_w_id = $w_id" -list ]
+      set cust_id_to_query [ mysql::sel $mysql_handler "SELECT c_balance, c_first, c_middle, c_last FROM customer WHERE c_id = $c_id AND c_d_id = $d_id AND c_w_id = $w_id" -flatlist ]
+      lassign $cust_id_to_query os_c_balance os_c_first os_c_middle os_c_last
     }
-    lassign $cust_id_to_query os_c_balance os_c_first os_c_middle os_c_last
     set cust_orders [ mysql::sel $mysql_handler "SELECT o_id, o_carrier_id, o_entry_d FROM (SELECT o_id, o_carrier_id, o_entry_d FROM orders where o_d_id = $d_id AND o_w_id = $w_id and o_c_id = $c_id ORDER BY o_id DESC) AS sb LIMIT 1" -flatlist ]
     if { [ llength $cust_orders ] eq 0 } {
       set no_order_status "No orders for customer"
       set o_id 0
+      set o_entry_d ""
+      set o_carrier_id ""
     } else {
       lassign $cust_orders o_id o_carrier_id o_entry_d
     }
@@ -1640,15 +1641,10 @@ proc insert_mysql_no_stored_procs { testtype timedtype } {
 
         set index_sp_1 [.ed_mainFrame.mainwin.textFrame.left.text search -forwards "\#NEW ORDER" 1.0 ]
         set index_sp_2 [.ed_mainFrame.mainwin.textFrame.left.text search -backwards "proc prep_statement" end ]
-        #End of run loop is previous line
-	#CLI indexes are characters in the string and integers GUI indexes are based on lines and position. Move back 1 line
-	if { [ string is entier $index_sp_2 ] } {
-       set index_sp_2 [ expr $index_sp_2 - 10 ]
-       	} else {
-       set index_sp_2 [ expr $index_sp_2 - 1 ]
-	}
-        #Delete stored procedures
-        .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index_sp_1 $index_sp_2+1l
+        # Remove up to the next procedure, including the old closing braces.
+        # CLI offsets are inclusive; Tk text indices use an exclusive end.
+        if {[string is entier -strict $index_sp_2]} {incr index_sp_2 -1}
+        .ed_mainFrame.mainwin.textFrame.left.text fastdelete $index_sp_1 $index_sp_2
         #Insert no stored procedures version
         .ed_mainFrame.mainwin.textFrame.left.text fastinsert $index_sp_1 "$neword_no_sp \n\n $pay_no_sp \n\n $ostat_no_sp \n\n $deliv_no_sp \n\n $stock_no_sp \n\n"
 }
