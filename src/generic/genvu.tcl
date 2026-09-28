@@ -153,7 +153,7 @@ proc load_virtual {}  {
     #Additional thread for Database Metrics initially Oracle only
     #Additional thread for Database Metrics PostgreSQL added
     #Additional thread for Database Metrics MySQL and MariaDB added
-    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" } {
+    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL" } {
         if { [ info exists dbmon_threadID ] } {
             if { [ thread::exists $dbmon_threadID ] || [ tsv::get application themonitor ] eq "NOWVUSER" } {
                 set idx [ lsearch $thlist $dbmon_threadID ]
@@ -387,7 +387,7 @@ proc load_virtual {}  {
         if { [ info exists tc_threadID ] } { 
             if { $threadID eq $tc_threadID } { unset -nocomplain tc_threadID }
         }
-        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB") && [ info exists dbmon_threadID ] } { 
+        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL") && [ info exists dbmon_threadID ] } {
             if { $threadID eq $dbmon_threadID } { 
                 tsv::set application themonitor "NOWVUSER"
                 unset -nocomplain dbmon_threadID

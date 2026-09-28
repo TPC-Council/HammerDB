@@ -606,6 +606,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $user ] SCHEMA"
         set lda [ ConnectToPostgres $host $port $sslmode $superuser $superuser_password $defaultdb ]
         if { $lda eq "Failed" } {
@@ -632,48 +633,26 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
             puts "Loading NATION..."
             mk_nation $lda
             puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }} else {
+            if {[loader_monitor $totalvirtualusers 10000] eq "ABORT"} { return }} else {
             puts "Loading REGION..."
             mk_region $lda
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
             mk_nation $lda
             puts "Loading NATION COMPLETE"
-    }}
+    }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             set lda [ ConnectToPostgres $host $port $sslmode $user $password $db ]
             if { $lda eq "Failed" } {
                 error "error, the database connection to $host could not be established"
@@ -684,7 +663,7 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
             set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
             set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
             set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
             set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
@@ -705,9 +684,16 @@ proc do_tpch { host port sslmode scale_fact superuser superuser_password default
         set result [ pg_exec $lda "commit" ]
         pg_result $result -clear
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         CreateIndexes $lda $greenplum $gpcompress
         GatherStatistics $lda

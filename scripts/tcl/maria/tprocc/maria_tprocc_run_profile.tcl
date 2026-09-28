@@ -33,12 +33,10 @@ if {$profileid == 1} {
     exit 1
 }
 
-# If PROFILEID > 1 then multirun PROFILE 
-if {$profileid > 1} {
-    if {[catch { jobs profileid $profileid } jerr]} {
-        puts "ERROR: jobs profileid failed: $jerr"
-        exit 1
-    }
+# Set PROFILEID for both single runs (0) and profile runs (>1)
+if {[catch { jobs profileid $profileid } jerr]} {
+    puts "ERROR: jobs profileid failed: $jerr"
+    exit 1
 }
 
 set uaw 0

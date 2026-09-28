@@ -1,6 +1,5 @@
 proc check_maria_ssl { configdict } {
-global maria_ssl_options
-unset -nocomplain maria_ssl_options
+global maria_ssl_options maria_ssl_config
 upvar #0 configmariadb configmariadb
 #set local variables to dict for checking
 foreach key [ dict keys [ dict get $configdict connection ] *ssl* ] {
@@ -12,12 +11,38 @@ set capath $maria_ssl_linux_capath
 } else {
 set capath $maria_ssl_windows_capath
 }
+#Reuse SSL options when SSL settings are unchanged; rebuild only after an SSL setting changes
+set current_ssl_config [ list $maria_ssl $maria_ssl_two_way $capath $maria_ssl_ca $maria_ssl_cert $maria_ssl_key $maria_ssl_cipher ]
+if { [ info exists maria_ssl_config ] && [ info exists maria_ssl_options ] && $maria_ssl_config eq $current_ssl_config } {
+return
+}
+set maria_ssl_config $current_ssl_config
+unset -nocomplain maria_ssl_options
+#Allow one-way TLS without explicit CA/certificate files when CApath is also blank
+set no_ssl_files [ expr {$maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq ""} ]
+if { $maria_ssl eq "true" && $maria_ssl_two_way ne "true" && $no_ssl_files && $capath eq "" } {
+set maria_ssl_options " -ssl true "
+if { $maria_ssl_cipher != "server" } { append maria_ssl_options " -sslcipher $maria_ssl_cipher " }
+return
+}
 #If SSL not enabled return
 if { $maria_ssl != "true" } { 
 #nothing to check, maria_ssl_options is not set
 set maria_ssl_options " -ssl false "
 return	
 } else {
+#Preserve requested SSL options if validation fails
+set requested_ssl_options " -ssl true "
+if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
+append requested_ssl_options " -sslcapath $capath "
+} else {
+if { $maria_ssl_ca != "" } { append requested_ssl_options " -sslca [ file join $capath $maria_ssl_ca ] " }
+if { $maria_ssl_two_way eq "true" } {
+append requested_ssl_options " -sslcert [ file join $capath $maria_ssl_cert ] "
+append requested_ssl_options " -sslkey [ file join $capath $maria_ssl_key ] "
+}
+}
+if { $maria_ssl_cipher != "server" } { append requested_ssl_options " -sslcipher $maria_ssl_cipher " }
 #SSL is enabled, check that capath is valid
 if { [ file isdirectory $capath ] } {
 if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
@@ -29,8 +54,8 @@ if { $maria_ssl_ca eq "" && $maria_ssl_cert eq "" && $maria_ssl_key eq "" } {
 #but we don't want to verify CA certificate (useful for self signing scenarios)
 if { $maria_ssl_ca eq "" || [ file readable [ file join $capath $maria_ssl_ca ]] } {
 } else {
-tk_messageBox -message "[ file join $capath $maria_ssl_ca ] is not readable, disabling SSL"
-dict set configmariadb connection maria_ssl "false"
+tk_messageBox -message "[ file join $capath $maria_ssl_ca ] is not readable, SSL configuration invalid"
+set maria_ssl_options $requested_ssl_options
 return
 }
 #capath and ca are readable
@@ -39,17 +64,17 @@ if { $maria_ssl_two_way eq "true" } {
 foreach sslfile [ list $maria_ssl_cert $maria_ssl_key ] {
 if { [ file readable [ file join $capath $sslfile ]] } {
 } else {
-tk_messageBox -message "[ file join $capath $sslfile ] is not readable, disabling SSL"
-dict set configmariadb connection maria_ssl "false"
+tk_messageBox -message "[ file join $capath $sslfile ] is not readable, SSL configuration invalid"
+set maria_ssl_options $requested_ssl_options
 return
 }
 }
 }
 }
 } else {
-tk_messageBox -message "SSL CApath is not a valid directory, disabling SSL"
-#Set SSL to false
-dict set configmariadb connection maria_ssl "false"
+tk_messageBox -message "SSL CApath is not a valid directory, SSL configuration invalid"
+#Preserve requested SSL options
+set maria_ssl_options $requested_ssl_options
 return
 }
 }

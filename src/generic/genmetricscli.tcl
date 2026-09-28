@@ -263,7 +263,8 @@ global agent_hostname jobid discovery_data
 }
 
 proc DoDisplay {maxcpu cpu_model caller} {
-global agent_hostname jobid discovery_data
+global agent_hostname jobid discovery_data metrics_cpucount
+	set metrics_cpucount $maxcpu
 	putscli "Started CPU Metrics for $cpu_model:($maxcpu CPUs)"
 	if { [ info exists cpu_model ] && ![ string match "AGENT CONNECTION FAILED" $cpu_model ] } {
 	#Only insert CPU-only data if DoDiscovery has not already stored system data
@@ -301,7 +302,7 @@ proc addiostats { iops mbps } {
 }
 
 proc StatsOneLine {line} {
-global jobid usrlist syslist irqlist idlelist iopslist mbpslist agent_hostname
+global jobid usrlist syslist irqlist idlelist iopslist mbpslist agent_hostname metrics_cpucount
 proc gmean L {
     expr pow([join $L *],1./[llength $L])
 }
@@ -362,8 +363,8 @@ proc amean L {
         if {$placehold eq ""} {
         #The jobid is not present in the jobsystem table and there is no placeholder
         #Likely metrics are continual running for multiple jobs so find system data from previous job
-        hdbjobs eval {select hostname,cpumodel,cpucount,system_vendor,system_type,os_name,memory,nic,storage,cloud_instance,other_software,extra from JOBSYSTEM where hostname=$agent_hostname LIMIT 1} {
-        hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount,system_vendor,system_type,os_name,memory,nic,storage,cloud_instance,other_software,extra) VALUES($jobid,$agent_hostname,$cpumodel,$cpucount,$system_vendor,$system_type,$os_name,$memory,$nic,$storage,$cloud_instance,$other_software,$extra)}}
+        hdbjobs eval {select hostname,cpumodel,system_vendor,system_type,os_name,memory,nic,storage,cloud_instance,other_software,extra from JOBSYSTEM where hostname=$agent_hostname LIMIT 1} {
+        hdbjobs eval {INSERT INTO JOBSYSTEM(jobid,hostname,cpumodel,cpucount,system_vendor,system_type,os_name,memory,nic,storage,cloud_instance,other_software,extra) VALUES($jobid,$agent_hostname,$cpumodel,$metrics_cpucount,$system_vendor,$system_type,$os_name,$memory,$nic,$storage,$cloud_instance,$other_software,$extra)}}
         } else {
         hdbjobs eval {select hostname,cpumodel,cpucount from JOBSYSTEM where JOBID="@@@"} {
         hdbjobs eval {update JOBSYSTEM set jobid = $jobid where JOBID="@@@"}

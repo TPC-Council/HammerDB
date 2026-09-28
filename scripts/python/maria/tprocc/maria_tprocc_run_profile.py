@@ -2,7 +2,7 @@
 # maintainer: Pooja Jain
 #
 # Behaviour matches maria_tprocc_run_profile.tcl:
-#   PROFILEID=0   => single run at VUs=vcpu, no jobs profileid
+#   PROFILEID=0   => single run at VUs=vcpu, jobs profileid 0
 #   PROFILEID>1   => profile sweep, jobs profileid, VU list: 1 then 4..(cpus+8) step 4
 #   otherwise     => error
 #
@@ -57,12 +57,11 @@ if uaw_env in {"1", "true", "yes", "on"}:
 dbset("db", "maria")
 dbset("bm", "TPC-C")
 
-# Only set jobs profileid when PROFILEID > 1
-if profileid > 1:
-    try:
-        jobs("profileid", str(profileid))
-    except Exception as e:
-        fatal(f"ERROR: jobs profileid failed: {e}")
+# Set jobs profileid for both single runs (0) and profile runs (>1)
+try:
+    jobs("profileid", str(profileid))
+except Exception as e:
+    fatal(f"ERROR: jobs profileid failed: {e}")
 
 giset("commandline", "keepalive_margin", 1200)
 giset("timeprofile", "xt_gather_timeout", 1200)

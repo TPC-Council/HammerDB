@@ -400,8 +400,10 @@ proc ::tkcon::Init {args} {
     # do it for the tkcon bits
     set optclass [tk appname]$PRIV(root)
     option add $optclass*Menu.tearOff 0
+    option add $optclass*Menu.relief flat
     option add $optclass*Menu.borderWidth 0
     option add $optclass*Menu.activeBorderWidth 0
+    option add $optclass*Menu.activeRelief flat
     if {!$PRIV(AQUA)} {
 	option add $optclass*Scrollbar.borderWidth 0
     }
@@ -712,10 +714,11 @@ proc ::tkcon::InitUI {title} {
     ## Menus
     ## catch against use in plugin
     if {[catch {menu $w.mbar} PRIV(menubar)]} {
-	set PRIV(menubar) [frame $w.mbar -relief raised -borderwidth 0]
+	set PRIV(menubar) [frame $w.mbar -relief flat -borderwidth 0]
     }
 
     InitMenus $PRIV(menubar) $title
+    FlattenMenus $PRIV(menubar)
     Bindings
 
     if {$OPT(showmenu)} {
@@ -1488,6 +1491,47 @@ proc ::tkcon::About {} {
 	bind $w <Escape> [list destroy $w]
     }
     wm deiconify $w
+}
+
+## ::tkcon::FlattenMenus - remove classic Tk menu relief without changing
+# colours, selection behaviour, or native cascade handling.
+proc ::tkcon::FlattenMenus {w} {
+    if {[winfo exists $w] && [winfo class $w] eq "Menu"} {
+        # Keep the native light menu colours.  On Windows dark theme the
+        # classic Tk menu otherwise falls back to the Windows system grey,
+        # so explicitly match the HammerDB dark background/foreground.
+        set menubg [$w cget -background]
+        set menufg [$w cget -foreground]
+
+        if {$::tcl_platform(platform) eq "windows" &&
+            [string match "*dark*" $::ttk::currentTheme]} {
+            if {[info exists ::defaultBackground]} {
+                set menubg $::defaultBackground
+            } else {
+                set menubg [ttk::style lookup TFrame -background]
+            }
+            if {[info exists ::defaultForeground]} {
+                set menufg $::defaultForeground
+            } else {
+                set menufg white
+            }
+        }
+
+        catch {
+            $w configure \
+                -relief flat \
+                -borderwidth 0 \
+                -activeborderwidth 0 \
+                -activerelief flat \
+                -background $menubg \
+                -foreground $menufg \
+                -activebackground $menubg \
+                -activeforeground "#FF7900"
+        }
+    }
+    foreach child [winfo children $w] {
+        FlattenMenus $child
+    }
 }
 
 ## ::tkcon::InitMenus - inits the menubar and popup for the console

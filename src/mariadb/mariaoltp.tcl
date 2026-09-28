@@ -14,7 +14,7 @@ proc build_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
@@ -42,6 +42,23 @@ if [catch {package require $library} message] { error "Failed to load $library -
 if [catch {package require tpcccommon} ] { error "Failed to load tpcc common functions" } else { namespace import tpcccommon::* }
 proc CreateStoredProcs { maria_handler } {
     puts "CREATING TPCC STORED PROCEDURES"
+    set update_returning_test {
+        CREATE PROCEDURE `HDB_UPDATE_RETURNING_TEST` ()
+        BEGIN
+        DECLARE test_next_o_id INTEGER;
+        DECLARE test_tax DECIMAL(4,4);
+        UPDATE district SET d_next_o_id = d_next_o_id + 1
+        WHERE 1 = 0
+        RETURNING d_next_o_id - 1, d_tax INTO test_next_o_id, test_tax;
+        END
+    }
+    catch { mariaexec $maria_handler "DROP PROCEDURE IF EXISTS `HDB_UPDATE_RETURNING_TEST`" }
+    if { [ catch { mariaexec $maria_handler $update_returning_test } ] } {
+        set update_returning false
+    } else {
+        set update_returning true
+    }
+    catch { mariaexec $maria_handler "DROP PROCEDURE IF EXISTS `HDB_UPDATE_RETURNING_TEST`" }
     set sql(1) {
         CREATE PROCEDURE `NEWORD` (
         no_w_id    INTEGER,
@@ -164,6 +181,39 @@ proc CreateStoredProcs { maria_handler } {
         INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
         END 
+    }
+    if { $update_returning } {
+        set sql(1) [ string map [ list \
+            {        SELECT d_next_o_id, d_tax INTO no_d_next_o_id, no_d_tax
+        FROM district
+        WHERE d_id = no_d_id AND d_w_id = no_w_id FOR UPDATE;
+        UPDATE district SET d_next_o_id = d_next_o_id + 1 WHERE d_id = no_d_id AND d_w_id = no_w_id;} \
+            {        UPDATE district SET d_next_o_id = d_next_o_id + 1
+        WHERE d_id = no_d_id AND d_w_id = no_w_id
+        RETURNING d_next_o_id - 1, d_tax INTO no_d_next_o_id, no_d_tax;} \
+            {        SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
+        INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10
+        FROM stock WHERE s_i_id = no_ol_i_id AND s_w_id = no_ol_supply_w_id;
+        IF ( no_s_quantity > no_ol_quantity )
+        THEN
+        SET no_s_quantity = ( no_s_quantity - no_ol_quantity );
+        ELSE
+        SET no_s_quantity = ( no_s_quantity - no_ol_quantity + 91 );
+        END IF;
+        UPDATE stock SET s_quantity = no_s_quantity
+        WHERE s_i_id = no_ol_i_id
+        AND s_w_id = no_ol_supply_w_id;} \
+            {        UPDATE stock
+        SET s_quantity = CASE
+        WHEN s_quantity > no_ol_quantity
+        THEN s_quantity - no_ol_quantity
+        ELSE s_quantity - no_ol_quantity + 91
+        END
+        WHERE s_i_id = no_ol_i_id
+        AND s_w_id = no_ol_supply_w_id
+        RETURNING s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
+        INTO no_s_quantity, no_s_data, no_s_dist_01, no_s_dist_02, no_s_dist_03, no_s_dist_04, no_s_dist_05, no_s_dist_06, no_s_dist_07, no_s_dist_08, no_s_dist_09, no_s_dist_10;} \
+        ] $sql(1) ]
     }
     set sql(2) { 
         CREATE PROCEDURE `DELIVERY`(
@@ -1034,6 +1084,7 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $db ] SCHEMA"
         set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
         set db_created [ CreateDatabase $maria_handler $db ]
@@ -1056,49 +1107,28 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $maria_handler $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }
+            if {[loader_monitor $totalvirtualusers] eq "ABORT"} { return }
         } else {
             LoadItems $maria_handler $MAXITEMS
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::get application abort ] } { return }
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if { [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             set maria_handler [ ConnectToMaria $host $port $socket $ssl_options $user $password ]
             mariause $maria_handler $db
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set mystart 1
             set myend $count_ware
@@ -1110,9 +1140,16 @@ proc do_tpcc { host port socket ssl_options count_ware user password db maria_st
         puts "End:[ clock format [ clock seconds ] ]"
         maria::commit $maria_handler
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         CreateStoredProcs $maria_handler
         GatherStatistics $maria_handler
@@ -1700,7 +1737,7 @@ proc loadmariatpcc { } {
      #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C"
@@ -2033,7 +2070,7 @@ proc loadtimedmariatpcc { } {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb }
+    check_maria_ssl $configmariadb
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MariaDB TPROC-C Timed"
@@ -3199,7 +3236,7 @@ proc delete_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }
@@ -3303,7 +3340,7 @@ proc check_mariatpcc {} {
     #If the options menu has been run under the GUI maria_ssl_options is set
     #If build is run under the GUI, CLI or WS maria_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists maria_ssl_options ] { check_maria_ssl $configmariadb } 
+    check_maria_ssl $configmariadb 
     if { ![string match windows $::tcl_platform(platform)] && ($maria_host eq "127.0.0.1" || [ string tolower $maria_host ] eq "localhost") && [ string tolower $maria_socket ] != "null" } { set maria_connector "$maria_host:$maria_socket" } else { 
         set maria_connector "$maria_host:$maria_port" 
     }

@@ -860,6 +860,7 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
 	 set newdb [ CreateDatabase $dbname ]
          set db_handle [ ConnectToDb2 $dbname $user $password ]
          if { !$newdb }  {
@@ -894,42 +895,21 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
         if { $threaded eq "MULTI-THREADED" } {
             tsv::set application load "READY"
             LoadItems $db_handle $MAXITEMS
-            puts "Monitoring Workers..."
-            set prevactive 0
-            while 1 {  
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000 
-            }} else {
+            if {[loader_monitor $totalvirtualusers] eq "ABORT"} { return }} else {
             LoadItems $db_handle $MAXITEMS
-    }}
+    }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {  
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 480 } { 
-                        puts "Monitor failed to notify ready state" 
-                        return
-                    }
-                }
-                after 5000 
-            }
+            if {[loader_wait_ready 480 5000] eq "ABORT"} { return }
             set db_handle [ ConnectToDb2 $dbname $user $password ]
             if { $partition eq "true" && [ expr $count_ware >= 10 ] } {
                 set num_part 10
@@ -938,7 +918,7 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
             }
             set remb [ lassign [ findchunk $num_vu $count_ware $myposition ] chunk mystart myend ]
             puts "Loading $chunk Warehouses start:$mystart end:$myend"
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set mystart 1
             set myend $count_ware
@@ -950,9 +930,16 @@ proc do_tpcc { dbname user password count_ware partition num_vu tpcc_def_tab tpc
         puts "End:[ clock format [ clock seconds ] ]"
         db2_disconnect $db_handle
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         #108 Monitoring Virtual User disconnects during Db2 TPCC schema build
         catch {db2_disconnect $db_handle}

@@ -69,10 +69,18 @@ proc mysql_clone {cidict refname} {
         set is_commit 1
     }
 
+    # The webhook has already reduced the incoming ref to the branch/tag name via
+    # ref_regexp (e.g. refs/tags/release/0.0.6 -> release/0.0.6), and git clone
+    # --branch accepts either a branch or a tag. Use that name verbatim; a
+    # multi-segment name such as release/0.0.6 must NOT be reduced with file tail
+    # (which would drop the release/ segment and fail the clone).
+    if {!$is_commit} {
+        set branch $ref_trim
+    }
+
     if {$is_commit} {
         putsci "Cloning repository for commit $ref_trim into $local_dir"
     } else {
-        set branch [file tail $ref_trim]
         putsci "Cloning branch $branch into $local_dir"
     }
     putsci "repo_url is $repo_url"
@@ -84,7 +92,6 @@ proc mysql_clone {cidict refname} {
         # clone branch/tag
         set raw_cmd  [dict get $cidict common clone_cmd]
         set raw_args [dict get $cidict common clone_cmd_args]
-        set branch   [file tail $ref_trim]
         set args_sub [string map [list ":branch" $branch ":repo_url" $repo_url] $raw_args]
         set cmd_full "$raw_cmd $args_sub"
         set shell_cmd "cd \"$local_dir\" && $cmd_full 2>&1"
@@ -436,8 +443,17 @@ proc mysql_install {cidict refname} {
 
     file mkdir $install_dir
 
-    # package file
-    set files [glob -nocomplain -directory $local_dir *.tar.gz]
+    # package file — the build may emit more than one .tar.gz (e.g. the server
+    # package plus an extension/SDK archive). Select deterministically using the
+    # provider's install/package_pattern when set; otherwise fall back to the
+    # historical "first *.tar.gz" behaviour so existing providers are unchanged.
+    if {[dict exists $cidict $rdbms install package_pattern] && \
+        [string trim [dict get $cidict $rdbms install package_pattern]] ne ""} {
+        set pkg_pattern [string trim [dict get $cidict $rdbms install package_pattern]]
+    } else {
+        set pkg_pattern "*.tar.gz"
+    }
+    set files [lsort [glob -nocomplain -directory $local_dir $pkg_pattern]]
     if {[llength $files] > 0} {
         set first_file [file tail [lindex $files 0]]
     } else {
@@ -1676,7 +1692,16 @@ proc mysql_compare {cidict refname} {
         set good_tag [string trim $good_tag]
     } else {
         # baseline = previous tag
-        if {[catch { set alltags [exec git -C $repo tag -l "mysql-*" --sort=v:refname] } derr]} {
+        # Release-tag pattern for finding the previous release. Providers whose
+        # release tags are not "mysql-*" can set install/tag_pattern; default
+        # keeps the historical MySQL behaviour so existing providers are unchanged.
+        if {[dict exists $cidict $rdbms install tag_pattern] && \
+            [string trim [dict get $cidict $rdbms install tag_pattern]] ne ""} {
+            set tag_pattern [string trim [dict get $cidict $rdbms install tag_pattern]]
+        } else {
+            set tag_pattern "mysql-*"
+        }
+        if {[catch { set alltags [exec git -C $repo tag -l $tag_pattern --sort=v:refname] } derr]} {
             putsci "COMPARE FAILED: could not list tags in $repo: $derr"
             return "COMPARE FAILED"
         }

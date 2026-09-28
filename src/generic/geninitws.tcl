@@ -45,7 +45,7 @@ if { $genericdictdb eq "" } {
         if { [catch {hdb close} message]} {
                 puts "Failed to close SQLite: $message"
         }
-        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql } {
+        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql villagesql } {
             set dbfile [ CheckSQLiteDB $dbname ]
             #Remove SQLite file
 	    if { [catch {file delete $dbfile} message]} {

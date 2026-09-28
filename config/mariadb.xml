@@ -27,7 +27,7 @@
             <maria_history_pk>false</maria_history_pk>
         </schema>
         <driver>
-            <maria_total_iterations>10000000</maria_total_iterations>
+            <maria_total_iterations>2147483647</maria_total_iterations>
             <maria_raiseerror>false</maria_raiseerror>
             <maria_keyandthink>false</maria_keyandthink>
             <maria_driver>timed</maria_driver>

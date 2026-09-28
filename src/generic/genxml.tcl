@@ -257,3 +257,33 @@ proc SetKeyAsFirst { olddict keyname } {
         return
     }
 }
+
+# Find prefix for a database. This is needed by generic provider-aware code
+# in GUI, CLI and Web Service, so keep it in a source file loaded by all three.
+proc find_prefix { db } {
+    upvar #0 dbdict dbdict
+    dict for {database attributes} $dbdict {
+        dict with attributes {
+            lappend dbl $name
+            lappend prefixl $prefix
+        }
+    }
+    set ind [ lsearch $dbl $db ]
+    if { $ind eq -1 } {
+        return ""
+    } else {
+        return [ lindex $prefixl $ind ]
+    }
+}
+
+# Find the global config dictionary name for a database. As above, this helper
+# must be available consistently in GUI, CLI and Web Service execution paths.
+proc find_config { db } {
+    upvar #0 dbdict dbdict
+    foreach key [ dict keys $dbdict ] {
+        if { [ dict get $dbdict $key name ] eq $db } {
+            return config$key
+        }
+    }
+    return ""
+}

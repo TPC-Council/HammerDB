@@ -1,0 +1,53 @@
+<connpool>
+<connections>
+    <c1>
+        <vsql_host>host1</vsql_host>
+        <vsql_port>3306</vsql_port>
+        <vsql_socket>/tmp/villagesql.sock</vsql_socket>
+        <vsql_ssl_options>-ssl false</vsql_ssl_options>
+        <vsql_user>root</vsql_user>
+        <vsql_pass>mysql</vsql_pass>
+        <vsql_dbase>tpcc</vsql_dbase>
+    </c1>
+    <c2>
+        <vsql_host>host2</vsql_host>
+        <vsql_port>3306</vsql_port>
+        <vsql_socket>/tmp/villagesql.sock</vsql_socket>
+        <vsql_ssl_options>-ssl false</vsql_ssl_options>
+        <vsql_user>root</vsql_user>
+        <vsql_pass>mysql</vsql_pass>
+        <vsql_dbase>tpcc</vsql_dbase>
+    </c2>
+    <c3>
+        <vsql_host>host3</vsql_host>
+        <vsql_port>3306</vsql_port>
+        <vsql_socket>/tmp/villagesql.sock</vsql_socket>
+        <vsql_ssl_options>-ssl false</vsql_ssl_options>
+        <vsql_user>root</vsql_user>
+        <vsql_pass>mysql</vsql_pass>
+        <vsql_dbase>tpcc</vsql_dbase>
+    </c3>
+</connections>
+<sprocs>
+    <neworder>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </neworder>
+        <payment>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </payment>
+        <delivery>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </delivery>
+        <stocklevel>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </stocklevel>
+        <orderstatus>
+        <connections>c1 c2 c3</connections>
+        <policy>round_robin</policy>
+    </orderstatus>
+</sprocs>
+</connpool>

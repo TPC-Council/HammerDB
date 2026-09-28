@@ -791,6 +791,7 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $tpch_user ] SCHEMA"
         if { $timesten } {
             puts "TimesTen expects the Database [ string toupper $instance ] and User [ string toupper $tpch_user ] to have been created by the instance administrator in advance and be granted create table, session, procedure (and admin for checkpoints) privileges"
@@ -814,48 +815,26 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
             puts "Loading NATION..."
             mk_nation $lda
             puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }} else {
+            if {[loader_monitor $totalvirtualusers 10000] eq "ABORT"} { return }} else {
             puts "Loading REGION..."
             mk_region $lda
             puts "Loading REGION COMPLETE"
             puts "Loading NATION..."
             mk_nation $lda
             puts "Loading NATION COMPLETE"
-    }}
+    }
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if {  [ tsv::get application load ] eq "READY" } { break }
-                    if {  [ tsv::get application abort ]  } { return }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             set connect $tpch_user/$tpch_pass@$instance
             set lda [ oralogon $connect ]
             if { $timesten } { ; } else { SetNLS $lda }
@@ -865,7 +844,7 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
             set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
             set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
             set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
             set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]" 
@@ -896,9 +875,16 @@ proc do_tpch { system_user system_password instance scale_fact tpch_user tpch_pa
         puts "End:[ clock format [ clock seconds ] ]"
         oracommit $lda
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" || $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
         oracommit $lda
         CreateIndexes $lda $timesten

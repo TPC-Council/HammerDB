@@ -665,6 +665,8 @@ if { ![ info exists ribenable ] } { set ribenable false }
 	set coords [concat $x_min_c $y_min_c $coords $x_max_c $y_min_c ]
         set coordscopy2 [ lreplace $coords end-1 end ]
         set coordscopy2 [ lreplace $coordscopy2 0 1 ]
+        #Keep the 5 pixel graph stroke inside the right plot boundary
+        lset coordscopy2 end-1 [ expr {[lindex $coordscopy2 end-1] - [pad_stroke]} ]
 	set transition [ subst {$canvas gradient create linear -method pad -lineartransition {0 1 0 0} -stops {{0 $graphcolor} {0.4 $colour1}}}]
 	set gradcolour1 [ eval $transition ]
 	eval "$canvas create polyline $coords -stroke $graphcolor -strokewidth 0 -strokelinejoin round -fill $gradcolour1 -fillopacity 0.25 -tag {$tag}"

@@ -10,7 +10,7 @@ proc build_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Create Schema" -icon question -message "Ready to create a Scale Factor $mysql_scale_fact TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ] in database [ string toupper $mysql_tpch_dbase ] with storage engine [ string toupper $mysql_tpch_storage_engine ]?" -type yesno ] == yes} {
         if { $mysql_num_tpch_threads eq 1 } {
@@ -812,6 +812,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         set num_vu 1
     }
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition eq 1 } {
+        try {
         puts "CREATING [ string toupper $user ] SCHEMA"
         if { $oceanbase_db == "true" } {
             PrepareOceanbase $host $port $socket $ssl_options $user $password $ob_tenant_name
@@ -842,25 +843,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             puts "Loading NATION..."
             mk_nation $mysql_handler
             puts "Loading NATION COMPLETE"
-            puts "Monitoring Workers..."
-            after 10000
-            set prevactive 0
-            while 1 {
-                set idlcnt 0; set lvcnt 0; set dncnt 0;
-                for {set th 2} {$th <= $totalvirtualusers } {incr th} {
-                    switch [tsv::lindex common thrdlst $th] {
-                        idle { incr idlcnt }
-                        active { incr lvcnt }
-                        done { incr dncnt }
-                    }
-                }
-                if { $lvcnt != $prevactive } {
-                    puts "Workers: $lvcnt Active $dncnt Done"
-                }
-                set prevactive $lvcnt
-                if { $dncnt eq [expr  $totalvirtualusers - 1] } { break }
-                after 10000
-            }
+            if {[loader_monitor $totalvirtualusers 10000] eq "ABORT"} { return }
         } else {
             puts "Loading REGION..."
             mk_region $mysql_handler
@@ -869,23 +852,19 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             mk_nation $mysql_handler
             puts "Loading NATION COMPLETE"
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                tsv::set application load "ERROR"
+            }
+            return -options $options $message
+        }
+}
     if { $threaded eq "SINGLE-THREADED" ||  $threaded eq "MULTI-THREADED" && $myposition != 1 } {
+        try {
         if { $threaded eq "MULTI-THREADED" } {
             puts "Waiting for Monitor Thread..."
-            set mtcnt 0
-            while 1 {
-                if { [ tsv::get application abort ] } { return }
-                if { [ tsv::exists application load ] } {
-                    incr mtcnt
-                    if { [ tsv::get application load ] eq "READY" } { break }
-                    if { $mtcnt eq 48 } {
-                        puts "Monitor failed to notify ready state"
-                        return
-                    }
-                }
-                after 5000
-            }
+            if {[loader_wait_ready 48 5000] eq "ABORT"} { return }
             set mysql_handler [ ConnectToMySQL $host $port $socket $ssl_options $user $password $oceanbase_db $ob_tenant_name]
             mysqluse $mysql_handler $db
             mysqlexec $mysql_handler "SET FOREIGN_KEY_CHECKS = 0"
@@ -895,7 +874,7 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
             set cust_chunk [ split [ start_end $sup_rows $myposition $cust_mult $num_vu ] ":" ]
             set part_chunk [ split [ start_end $sup_rows $myposition $part_mult $num_vu ] ":" ]
             set ord_chunk [ split [ start_end $sup_rows $myposition $ord_mult $num_vu ] ":" ]
-            tsv::lreplace common thrdlst $myposition $myposition active
+            loader_set_state $myposition active
         } else {
             set sf_chunk "1 $sup_rows"
             set cust_chunk "1 [ expr {$sup_rows * $cust_mult} ]"
@@ -914,9 +893,16 @@ proc do_tpch { host port socket ssl_options scale_fact user password db mysql_tp
         puts "Loading TPCH TABLES COMPLETE"
         puts "End:[ clock format [ clock seconds ] ]"
         if { $threaded eq "MULTI-THREADED" } {
-            tsv::lreplace common thrdlst $myposition $myposition done
+            loader_set_state $myposition done
         }
-    }
+    
+        } on error {message options} {
+            if { $threaded eq "MULTI-THREADED" } {
+                loader_set_state $myposition error
+            }
+            return -options $options $message
+        }
+}
     # Update schema and set secondary_engine. Start data migration to Heatwave.
     if { [string equal -nocase $mysql_tpch_storage_engine "Heatwave" ] } {
         puts "Migrating data to Heatwave..."
@@ -946,7 +932,7 @@ proc loadmysqltpch { } {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL TPROC-H"
@@ -1616,7 +1602,7 @@ proc loadmysqlcloud {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     ed_edit_clear
     .ed_mainFrame.notebook select .ed_mainFrame.mainwin
     set _ED(packagekeyname) "MySQL Cloud"
@@ -1778,7 +1764,7 @@ proc delete_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql }
+    check_mysql_ssl $configmysql
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { set mysql_connector "$mysql_host:$mysql_port" }
     if {[ tk_messageBox -title "Delete Schema" -icon question -message "Do you want to delete the [ string toupper $mysql_tpch_dbase ] TPROC-H schema\n in host [string toupper $mysql_connector] under user [ string toupper $mysql_tpch_user ]?" -type yesno ] == yes} {
         set maxvuser 1
@@ -1883,7 +1869,7 @@ proc check_mysqltpch {} {
     #If the options menu has been run under the GUI mysql_ssl_options is set
     #If build is run under the GUI, CLI or WS mysql_ssl_options is not set
     #Set it now if it doesn't exist
-    if ![ info exists mysql_ssl_options ] { check_mysql_ssl $configmysql } 
+    check_mysql_ssl $configmysql 
     if { ![string match windows $::tcl_platform(platform)] && ($mysql_host eq "127.0.0.1" || [ string tolower $mysql_host ] eq "localhost") && [ string tolower $mysql_socket ] != "null" } { set mysql_connector "$mysql_host:$mysql_socket" } else { 
         set mysql_connector "$mysql_host:$mysql_port" 
     }
