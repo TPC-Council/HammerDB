@@ -1246,6 +1246,8 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Fix MySQL and VillageSQL async connection pool SSL arguments #943
+Fix MySQL-family generated transaction and schema-check errors #926 (#927)
 Centralize schema loader worker state handling #941 (#928)
 Increase TPROC-C total iterations default to 2147483647 #940 (#910)
 Fix MariaDB and PostgreSQL CI multi-segment branch and tag refs #942
