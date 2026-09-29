@@ -424,6 +424,61 @@ proc CreateStoredProcs { maria_handler } {
         COMMIT;
         END 
     }
+    if { $json_table } {
+        #Set based Delivery modelled on the PostgreSQL array_agg/UNNEST and Oracle FORALL versions
+        #JSON_ARRAYAGG collects the oldest new order in each district and the customer totals
+        #JSON_TABLE exposes the JSON arrays as rows for the set based deletes and updates
+        set sql(2) {
+        CREATE PROCEDURE `DELIVERY`(
+        d_w_id      INTEGER,
+        d_o_carrier_id    INTEGER,
+        IN timestamp     DATETIME
+        )
+        BEGIN
+        DECLARE oldest_json  JSON;
+        DECLARE deliver_json  JSON;
+        DECLARE customer_json  JSON;
+        DECLARE `Constraint Violation` CONDITION FOR SQLSTATE '23000';
+        DECLARE EXIT HANDLER FOR `Constraint Violation` ROLLBACK;
+        START TRANSACTION;
+        -- oldest undelivered order in each of the 10 districts, one index lookup per district
+        SELECT JSON_ARRAYAGG(JSON_OBJECT('d', dist.d, 'o',
+        (SELECT no_o_id FROM new_order WHERE no_w_id = d_w_id AND no_d_id = dist.d ORDER BY no_o_id LIMIT 1)))
+        INTO oldest_json
+        FROM JSON_TABLE('[1,2,3,4,5,6,7,8,9,10]', '$[*]' COLUMNS(d INT PATH '$')) AS dist;
+        -- lock the orders to deliver, an order delivered concurrently is no longer present
+        SELECT JSON_ARRAYAGG(JSON_OBJECT('d', new_order.no_d_id, 'o', new_order.no_o_id))
+        INTO deliver_json
+        FROM JSON_TABLE(oldest_json, '$[*]' COLUMNS(d INT PATH '$.d', o INT PATH '$.o')) AS ids
+        JOIN new_order ON new_order.no_w_id = d_w_id AND new_order.no_d_id = ids.d AND new_order.no_o_id = ids.o
+        FOR UPDATE;
+        DELETE new_order FROM new_order
+        JOIN JSON_TABLE(deliver_json, '$[*]' COLUMNS(d INT PATH '$.d', o INT PATH '$.o')) AS ids
+        ON new_order.no_w_id = d_w_id AND new_order.no_d_id = ids.d AND new_order.no_o_id = ids.o;
+        UPDATE orders
+        JOIN JSON_TABLE(deliver_json, '$[*]' COLUMNS(d INT PATH '$.d', o INT PATH '$.o')) AS ids
+        ON orders.o_w_id = d_w_id AND orders.o_d_id = ids.d AND orders.o_id = ids.o
+        SET orders.o_carrier_id = d_o_carrier_id;
+        UPDATE order_line
+        JOIN JSON_TABLE(deliver_json, '$[*]' COLUMNS(d INT PATH '$.d', o INT PATH '$.o')) AS ids
+        ON order_line.ol_w_id = d_w_id AND order_line.ol_d_id = ids.d AND order_line.ol_o_id = ids.o
+        SET order_line.ol_delivery_d = timestamp;
+        -- total amount per delivered order for each customer
+        SELECT JSON_ARRAYAGG(JSON_OBJECT('d', sums.d, 'c', sums.c, 'a', sums.a))
+        INTO customer_json
+        FROM (SELECT ids.d, orders.o_c_id AS c, SUM(order_line.ol_amount) AS a
+        FROM JSON_TABLE(deliver_json, '$[*]' COLUMNS(d INT PATH '$.d', o INT PATH '$.o')) AS ids
+        JOIN orders ON orders.o_w_id = d_w_id AND orders.o_d_id = ids.d AND orders.o_id = ids.o
+        JOIN order_line ON order_line.ol_w_id = d_w_id AND order_line.ol_d_id = ids.d AND order_line.ol_o_id = ids.o
+        GROUP BY ids.d, ids.o, orders.o_c_id) AS sums;
+        UPDATE customer
+        JOIN JSON_TABLE(customer_json, '$[*]' COLUMNS(d INT PATH '$.d', c INT PATH '$.c', a DECIMAL(12,2) PATH '$.a')) AS ids
+        ON customer.c_w_id = d_w_id AND customer.c_d_id = ids.d AND customer.c_id = ids.c
+        SET customer.c_balance = customer.c_balance + ids.a;
+        COMMIT;
+        END 
+        }
+    }
     set sql(3) { 
         CREATE PROCEDURE `PAYMENT` (
         p_w_id      INTEGER,
