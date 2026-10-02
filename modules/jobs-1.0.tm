@@ -477,7 +477,7 @@ proc jobs_summary {} {
         set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
         if {[string match "*DBVersion*" $output1]} {
             set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $output1 match header version]
-            if {$matcheddbversion} { set db "$db ($version)" }
+            if {$matcheddbversion} { set db "[jobs_job_database $jobid $db] ($version)" }
         }
 
         lassign [jobs_summary_workload_metric $jobid $bm] workload metric
@@ -1851,7 +1851,7 @@ proc wapp-page-jobs {} {
                 # add version if present in VU1 output
                 if {[string match "*DBVersion*" $output1]} {
                     set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $output1 match header version]
-                    if {$matcheddbversion} { set db "$db ($version)" }
+                    if {$matcheddbversion} { set db "[jobs_job_database $job $db] ($version)" }
                 }
 
                 set jobresult [getjobresult $job 1]
@@ -1956,7 +1956,7 @@ proc wapp-page-jobs {} {
                             set temp_db [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$maxjob AND VU=1}]]
                             if {[string match "*DBVersion*" $temp_db]} {
                                 set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $temp_db match header version]
-                                if {$matcheddbversion} { set maxdb "$maxdb ($version)" }
+                                if {$matcheddbversion} { set maxdb "[jobs_job_database $maxjob $maxdb] ($version)" }
                             }
                             set maxtpm [dict get $profiledata tpm]
                             set maxavu [dict get $profiledata activevu]
@@ -2861,7 +2861,7 @@ if {$rawmode} {
 
                     if {[string match "*DBVersion*" $temp_output]} {
                         set matcheddbversion [regexp {(DBVersion:)(\d.+?)\s} $temp_output match header version]
-                        if {$matcheddbversion} { set dbv "$dbv ($version)" }
+                        if {$matcheddbversion} { set dbv "[jobs_job_database $jobid $dbv] ($version)" }
                     }
                     __pre_block $dbv
                 }
@@ -3057,6 +3057,18 @@ if {$rawmode} {
     return $db
   }
 
+  # MySQL-protocol servers are all run as db "MySQL"; tell forks apart by the VersionComment
+  # that CheckDBVersion prints in the VU1 output. Any other db is returned unchanged.
+  proc jobs_job_database {jobid db} {
+    if {$db eq "MySQL"} {
+      set output1 [join [hdbjobs eval {SELECT OUTPUT FROM JOBOUTPUT WHERE JOBID=$jobid AND VU=1}]]
+      if {[regexp -nocase {VersionComment:[^\n]*Percona Server} $output1]} {
+        return "Percona Server for MySQL"
+      }
+    }
+    return $db
+  }
+
 
 
   proc jobs_json_add_chart {varname title chart_type data_path args} {
@@ -3197,7 +3209,7 @@ if {$rawmode} {
       if {[llength $series] >= 1} {
         set seriesdb [lindex $series 0]
         lappend spairs [jobs_json_pair database [jobs_json_quote $seriesdb]]
-        lappend spairs [jobs_json_pair database_display [jobs_json_quote [jobs_database_display $seriesdb]]]
+        lappend spairs [jobs_json_pair database_display [jobs_json_quote [jobs_database_display [jobs_job_database $jobid $seriesdb]]]]
       }
       if {[llength $series] >= 2} { lappend spairs [jobs_json_pair metric [jobs_json_quote [lindex $series 1]]] }
       set points {}
@@ -3315,7 +3327,7 @@ if {$rawmode} {
     set bm_raw [join [hdbjobs eval {SELECT bm FROM JOBMAIN WHERE JOBID=$jobid}]]
     set bm [string map {TPC TPROC} $bm_raw]
     set db [join [hdbjobs eval {SELECT db FROM JOBMAIN WHERE JOBID=$jobid}]]
-    set dbdisplay [jobs_database_display $db]
+    set dbdisplay [jobs_database_display [jobs_job_database $jobid $db]]
     set timestamp [join [hdbjobs eval {SELECT timestamp FROM JOBMAIN WHERE JOBID=$jobid}]]
     # TPROC-C and TPROC-H workloads emit DBVersion markers consumed by get_dbversion for job.release.
     set dbversion [get_dbversion $jobid]
