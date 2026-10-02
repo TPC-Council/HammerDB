@@ -1438,6 +1438,12 @@ proc sub_query { query_no scale_factor myposition engine } {
     return $q2sub
 }
 proc CheckDBVersion { mysql_handler } {
+           if {![catch {lassign [ lindex [ mysql::sel $mysql_handler "select version(), @@version_comment" -list ] 0 ] version comment}]} {
+                if { ![ string match -nocase "*Percona Server*" $comment ] } {
+                    set version [ lindex [ split $version - ] 0 ]
+                }
+                return "DBVersion:$version VersionComment:$comment"
+           }
            if {[catch {set dbversion [ lindex [ split [ list [ mysql::sel $mysql_handler "select version()" -list ] ] - ] 0 ]}]} {
                 set dbversion "DBVersion:NULL"
            } else {
