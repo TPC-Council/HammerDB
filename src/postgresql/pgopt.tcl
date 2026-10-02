@@ -207,6 +207,9 @@ proc configpgtpcc {option} {
     #set matching fields in dialog to temporary dict
     variable pgfields
     set pgfields [ dict create connection {pg_host {.tpc.c1.e1 get} pg_port {.tpc.c1.e2 get} pg_sslmode $pg_sslmode} tpcc {pg_superuser {.tpc.c1.e3 get} pg_superuserpass {.tpc.c1.e4 get} pg_defaultdbase {.tpc.c1.e5 get} pg_user {.tpc.c1.e6 get} pg_pass {.tpc.c1.e7 get} pg_dbase {.tpc.c1.e8 get} pg_tspace {.tpc.f1.e8a get} pg_total_iterations {.tpc.f1.e15 get} pg_rampup {.tpc.f1.e21 get} pg_duration {.tpc.f1.e22 get} pg_async_client {.tpc.f1.e26 get} pg_async_delay {.tpc.f1.e27 get} pg_count_ware $pg_count_ware pg_vacuum $pg_vacuum pg_dritasnap $pg_dritasnap pg_oracompat $pg_oracompat pg_cituscompat $pg_cituscompat pg_storedprocs $pg_storedprocs pg_partition $pg_partition pg_num_vu $pg_num_vu pg_total_iterations $pg_total_iterations pg_raiseerror $pg_raiseerror pg_keyandthink $pg_keyandthink pg_driver $pg_driver pg_rampup $pg_rampup pg_duration $pg_duration pg_allwarehouse $pg_allwarehouse pg_timeprofile $pg_timeprofile pg_async_scale $pg_async_scale pg_connect_pool $pg_connect_pool pg_async_verbose $pg_async_verbose}]
+    set tpccfields [ dict get $pgfields tpcc ]
+    lappend tpccfields pg_citus_azure_elastic_cluster {$pg_citus_azure_elastic_cluster} pg_citus_loadbalancer {.tpc.c1.e9e get}
+    dict set pgfields tpcc $tpccfields
     set whlist [ get_warehouse_list_for_spinbox ]
     if { $pg_oracompat eq "true" } {
         if { $pg_port eq "5432" } { set pg_port "5444" }
@@ -338,23 +341,54 @@ proc configpgtpcc {option} {
             set pg_partition "false"
             .tpc.c1.e9 configure -state disabled
             .tpc.f1.e9a configure -state disabled
+	    .tpc.c1.e9d configure -state normal
 	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state disabled }
         } else {
             if { $pg_superuser eq "citus" } { set pg_superuser "postgres" }
             if { $pg_defaultdbase eq "citus" } { set pg_defaultdbase "postgres" }
             .tpc.c1.e9 configure -state normal
             .tpc.f1.e9a configure -state normal
+            set pg_citus_azure_elastic_cluster "false"
+            .tpc.c1.e9d configure -state disabled
+            .tpc.c1.e9e configure -state disabled
             if { $pg_count_ware > 200 } {
 	    if { ".tpc.f1.e11a" in [ info commands ] } { .tpc.f1.e11a configure -state normal }
             }
         }
     }
+    # Citus Azure Elastic Cluster options are available only for Citus-compatible TPROC-C.
+    set Prompt $Parent.c1.p9d
+    ttk::label $Prompt -text "Citus Azure Elastic Cluster :"
+    set Name $Parent.c1.e9d
+    ttk::checkbutton $Name -text "" -variable pg_citus_azure_elastic_cluster -onvalue "true" -offvalue "false"
+    bind .tpc.c1.e9d <Button> {
+        if { $pg_citus_azure_elastic_cluster ne "true" } {
+            .tpc.c1.e9e configure -state normal
+        } else {
+            .tpc.c1.e9e configure -state disabled
+        }
+    }
+    grid $Prompt -column 0 -row 12 -sticky e
+    grid $Name -column 1 -row 12 -sticky w
+    if { $pg_cituscompat ne "true" } {
+        set pg_citus_azure_elastic_cluster "false"
+        $Name configure -state disabled
+    }
+    set Prompt $Parent.c1.p9e
+    ttk::label $Prompt -text "Citus Load Balancer Port :"
+    set Name $Parent.c1.e9e
+    ttk::entry $Name -width 30 -textvariable pg_citus_loadbalancer
+    grid $Prompt -column 0 -row 13 -sticky e
+    grid $Name -column 1 -row 13 -sticky ew
+    if { $pg_cituscompat ne "true" || $pg_citus_azure_elastic_cluster ne "true" } {
+        $Name configure -state disabled
+    }
     set Prompt $Parent.c1.p9b
     ttk::label $Prompt -text "Prefer PostgreSQL SSL Mode :"
     set Name $Parent.c1.e9b
     ttk::checkbutton $Name -text "" -variable pg_sslmode -onvalue "prefer" -offvalue "disable"
-    grid $Prompt -column 0 -row 13 -sticky e
-    grid $Name -column 1 -row 13 -sticky w
+    grid $Prompt -column 0 -row 14 -sticky e
+    grid $Name -column 1 -row 14 -sticky w
     if { $option eq "all" || $option eq "build" } {
         set Prompt $Parent.f1.p10
         ttk::label $Prompt -text "Number of Warehouses :"

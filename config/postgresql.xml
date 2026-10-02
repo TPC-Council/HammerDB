@@ -20,6 +20,8 @@
             <pg_dritasnap>false</pg_dritasnap>
             <pg_oracompat>false</pg_oracompat>
             <pg_cituscompat>false</pg_cituscompat>
+            <pg_citus_azure_elastic_cluster>false</pg_citus_azure_elastic_cluster>
+            <pg_citus_loadbalancer>0</pg_citus_loadbalancer>
             <pg_storedprocs>false</pg_storedprocs>
             <pg_partition>false</pg_partition>
         </schema>
