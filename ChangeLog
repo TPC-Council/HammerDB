@@ -1255,6 +1255,8 @@ Flatten GUI menus on Linux and Windows #939
 Fix benchmark report CPU count when reusing system details #938
 Fix PostgreSQL New Order invalid-item rollback #936
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
+Add MariaDB set-based New Order and Delivery with JSON arrays #945
+Fix VillageSQL New Order deadlock and amount rounding #946
 Add VillageSQL CI provider #930
 Fix single pipeline runs inheriting a previous profile ID #925
 Fix transaction counter graph clipping #924

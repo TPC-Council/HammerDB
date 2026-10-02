@@ -111,66 +111,65 @@ proc CreateStoredProcs { vsql_handler } {
         IF 100001 MEMBER OF (JSON_EXTRACT(lines_json, '$[*].i')) THEN
             SELECT i_id INTO x FROM item WHERE i_id = 100001;
         END IF;
-        -- bulk INSERT order_line, static per-district branch (no dynamic SQL).
-        -- Each branch is identical except the literal s_dist_NN column.
-        IF no_d_id = 1 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_01
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 2 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_02
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 3 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_03
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 4 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_04
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 5 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_05
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 6 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_06
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 7 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_07
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 8 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_08
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSEIF no_d_id = 9 THEN
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_09
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        ELSE
-            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
-            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,(ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)),s.s_dist_10
-            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
-            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
-        END IF;
-        -- bulk UPDATE stock (+91 restock rule). Reached only when all items were
-        -- valid (the invalid-item case rolled back above), so an inner JOIN is
-        -- safe here and every order line has a matching stock row.
+        -- Update stock before the order_line INSERT ... SELECT reads it to avoid
+        -- shared-to-exclusive lock upgrades when concurrent New Orders share stock rows.
         UPDATE stock s
         JOIN JSON_TABLE(lines_json,'$[*]' COLUMNS(i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
           ON s.s_i_id=ol.i AND s.s_w_id=ol.w
         SET s.s_quantity = CASE WHEN s.s_quantity >= ol.q+10 THEN s.s_quantity-ol.q ELSE s.s_quantity-ol.q+91 END;
+        -- bulk INSERT order_line, static per-district branch (no dynamic SQL).
+        -- Each branch is identical except the literal s_dist_NN column.
+        IF no_d_id = 1 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_01
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 2 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_02
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 3 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_03
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 4 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_04
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 5 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_05
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 6 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_06
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 7 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_07
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 8 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_08
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSEIF no_d_id = 9 THEN
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_09
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        ELSE
+            INSERT INTO order_line (ol_o_id,ol_d_id,ol_w_id,ol_number,ol_i_id,ol_supply_w_id,ol_quantity,ol_amount,ol_dist_info)
+            SELECT o_id,no_d_id,no_w_id,ol.n,ol.i,ol.w,ol.q,CAST((ol.q*i.i_price*(1+no_w_tax+no_d_tax)*(1-no_c_discount)) AS DECIMAL(6,2)),s.s_dist_10
+            FROM JSON_TABLE(lines_json,'$[*]' COLUMNS(n INT PATH '$.n',i INT PATH '$.i',w INT PATH '$.w',q INT PATH '$.q')) ol
+            LEFT JOIN item i ON i.i_id=ol.i LEFT JOIN stock s ON s.s_i_id=ol.i AND s.s_w_id=ol.w;
+        END IF;
         INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (o_id, no_d_id, no_w_id, no_c_id, timestamp, no_o_ol_cnt, no_o_all_local);
         INSERT INTO new_order (no_o_id, no_d_id, no_w_id) VALUES (o_id, no_d_id, no_w_id);
         COMMIT;
