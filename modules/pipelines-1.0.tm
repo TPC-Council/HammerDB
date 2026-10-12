@@ -72,8 +72,9 @@ namespace eval pipelines {
 
     proc __page_head {B title} {
         wapp-content-security-policy { default-src 'self'; style-src 'self' 'unsafe-inline' *; img-src * data:; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; }
-        wapp-subst {<link href="%url(/style.css)" rel="stylesheet">}
-        wapp-subst {<p><img src='%html($B)/logo.png' width='55' height='60'></p>}
+        wapp-subst {<title>Pipelines - HammerDB</title><meta name="viewport" content="width=device-width,initial-scale=1">}
+        wapp-subst {<link href="%url(/style.css)" rel="stylesheet"><link href="%url([wapp-param BASE_URL]/hdb-theme.css)" rel="stylesheet"><script src="%url([wapp-param BASE_URL]/hdb-theme.js)"></script>}
+        wapp-subst {<p class="hdb-brand-logo"><img src="%html($B)/logo.png" width="55" alt="HammerDB"></p>}
 
         # button from title
         set btn_label ""
@@ -90,8 +91,8 @@ namespace eval pipelines {
         # header
         if {$btn_label ne ""} {
             wapp-subst {
-<div style="margin:0 16px 18px 16px; padding-bottom:8px; border-bottom:1px solid #ddd;">
-    <div style="display:flex; justify-content:flex-start; align-items:center; gap:12px;">
+<div class="hdb-service-header" style="margin:0 16px 18px 16px; padding-bottom:8px; border-bottom:1px solid #ddd;">
+    <div class="hdb-service-nav" style="display:flex; justify-content:flex-start; align-items:center; gap:12px;">
         <h3 class="title" style="margin:0;">%html($title)</h3>
         <a href="%html($btn_url)"
            style="margin-top:2px;
@@ -789,6 +790,20 @@ return
         __page_head $B "HammerDB Pipelines"
         __auto_refresh_js 120000
         wapp-subst "<!-- pipelines-module:1.5 -->"
+        # Pipeline-only navigation; leave the Jobs page unchanged.
+        wapp-subst {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var sidebar = document.querySelector('aside, .sidebar, #sidebar');
+  if (!sidebar || sidebar.querySelector('#pipe-views-nav')) return;
+  var section = document.createElement('div');
+  section.id = 'pipe-views-nav';
+  section.innerHTML = '<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#9bb5dd;margin:26px 12px 10px">PIPE VIEWS</div><a href="#pipeline-activity" style="display:block;padding:12px 14px;color:#9fc5ff;text-decoration:none">Activity</a>';
+  sidebar.appendChild(section);
+});
+</script>
+}
+
         wapp-subst {<div class="hdb-page aut-wrap">}
 
         __render_last_if_any
@@ -806,7 +821,7 @@ return
         wapp-subst {<div class="hdb-section">}
         wapp-subst {<div class="hdb-table-wrap" style="width:100%; max-width:980px; overflow-x:auto;">}
         wapp-subst {<table class="hdb-table" style="width:100%; max-width:none; min-width:760px;">}
-        wapp-subst {<tr><th>Pipeid</th><th>DB</th><th>Ref</th><th>Pipeline</th><th>Date</th><th>Status</th></tr>}
+        wapp-subst {<tr><th>Pipeline ID</th><th>DB</th><th>Ref</th><th>Pipeline</th><th>Date</th><th>Status</th></tr>}
 
         set cicount [join [hdbjobs eval {SELECT COUNT(*) FROM JOBCI}]]
         if {$cicount eq 0} {
@@ -1016,8 +1031,12 @@ wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' valu
 wapp-subst {</div>}
 wapp-subst {</div>}
 
+        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
+        wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
+        wapp-subst {</div>}
+
 wapp-subst {
-<div class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
+<div id="pipeline-activity" class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
   <details id="ci-log-panel">
     <summary style="cursor:pointer; padding:10px 14px; font-weight:600; color:#0a3d62; border-left:4px solid #0969da;">
       Pipeline Activity
@@ -1061,9 +1080,6 @@ wapp-subst "<script>
 })();
 </script>"
 
-        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
-        wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
-        wapp-subst {</div>}
         wapp-subst {</form>}
         }
 

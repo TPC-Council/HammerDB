@@ -906,6 +906,7 @@ tcl8.6.10, tk8.6.10, thread2.8.5, oratcl4.6, mysqltcl3.052, pgtcl2.1.1, db2tcl2.
 
 Pull Requests & Issues
 
+Align pipeline activity navigation and move Run Benchmark above activity #955
 Inclusive Language Updates (#152)
 Add runtimer and waittocomplete routines to CLI (#149)
 HammerDB CLI on Windows can have incorrect colours (#148)
@@ -1247,6 +1248,7 @@ Version 6.1 October 2026
 Pull Requests & Issues
 
 Fix metrics callbacks for numeric hostnames and agent disconnect cleanup #952
+Modernize Web Service UI and improve dark-theme benchmark report logo contrast #951
 Add Azure Elastic Cluster support for PostgreSQL TPROC-C #895
 Detect Percona Server for MySQL from @@version_comment #944
 Fix MySQL and VillageSQL async connection pool SSL arguments #943
