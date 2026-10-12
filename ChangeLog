@@ -1247,6 +1247,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Fix metrics callbacks for numeric hostnames and agent disconnect cleanup #952
 Modernize Web Service UI and improve dark-theme benchmark report logo contrast #951
 Add Azure Elastic Cluster support for PostgreSQL TPROC-C #895
 Detect Percona Server for MySQL from @@version_comment #944

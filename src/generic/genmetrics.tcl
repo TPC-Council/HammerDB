@@ -4,7 +4,11 @@ proc ConfigureNetworkDisplay {agentid agenthostname} {
         puts "Creation of Port Failed : $b" 
     } else {
         set displayid [ DisplayMetrics self ]
-        set displayhost [ info hostname ]
+        if { $agenthostname eq "localhost" || $agenthostname eq [ info hostname ] } {
+            set displayhost "127.0.0.1"
+        } else {
+            set displayhost [ info hostname ]
+        }
         puts "Metric receive port open @ $displayid on $displayhost"
         DisplayMetrics hook lost {
             if { [catch { DisplayMetrics destroy } b] } {
