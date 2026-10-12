@@ -789,6 +789,20 @@ return
         __page_head $B "HammerDB Pipelines"
         __auto_refresh_js 120000
         wapp-subst "<!-- pipelines-module:1.5 -->"
+        # Pipeline-only navigation; leave the Jobs page unchanged.
+        wapp-subst {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var sidebar = document.querySelector('aside, .sidebar, #sidebar');
+  if (!sidebar || sidebar.querySelector('#pipe-views-nav')) return;
+  var section = document.createElement('div');
+  section.id = 'pipe-views-nav';
+  section.innerHTML = '<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#9bb5dd;margin:26px 12px 10px">PIPE VIEWS</div><a href="#pipeline-activity" style="display:block;padding:12px 14px;color:#9fc5ff;text-decoration:none">Activity</a>';
+  sidebar.appendChild(section);
+});
+</script>
+}
+
         wapp-subst {<div class="hdb-page aut-wrap">}
 
         __render_last_if_any
@@ -1016,8 +1030,12 @@ wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' valu
 wapp-subst {</div>}
 wapp-subst {</div>}
 
+        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
+        wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
+        wapp-subst {</div>}
+
 wapp-subst {
-<div class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
+<div id="pipeline-activity" class="hdb-activity" style="width:100%; max-width:980px; box-sizing:border-box;">
   <details id="ci-log-panel">
     <summary style="cursor:pointer; padding:10px 14px; font-weight:600; color:#0a3d62; border-left:4px solid #0969da;">
       Pipeline Activity
@@ -1061,9 +1079,6 @@ wapp-subst "<script>
 })();
 </script>"
 
-        wapp-subst {<div class="hdb-actions-left aut-actions" style="width:100%; max-width:980px; text-align:left;">}
-        wapp-subst {<button class="aut-btn" type="submit" form="runform">Run Benchmark</button>}
-        wapp-subst {</div>}
         wapp-subst {</form>}
         }
 
