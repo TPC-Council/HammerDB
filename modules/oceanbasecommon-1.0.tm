@@ -17,6 +17,58 @@ namespace eval oceanbasecommon {
         }
     }
 
+    proc ssl_options {configuration} {
+        set c [dict get $configuration connection]
+        if {[dict get $c ob_ssl] ne "true"} {return {-ssl false}}
+        set result {-ssl true}
+        set key [expr {$::tcl_platform(platform) eq "windows" ? "ob_ssl_windows_capath" : "ob_ssl_linux_capath"}]
+        set path [dict get $c $key]
+        set ca [dict get $c ob_ssl_ca]
+        set two_way [expr {[dict get $c ob_ssl_two_way] eq "true"}]
+        if {$ca ne ""} {
+            set file [file join $path $ca]
+            if {![file readable $file]} {error "SSL CA file is not readable: $file"}
+            lappend result -sslca $file
+        } elseif {$path ne ""} {
+            if {![file isdirectory $path]} {error "SSL CApath is not a directory: $path"}
+            lappend result -sslcapath $path
+        }
+        if {$two_way} {
+            foreach {field flag} {ob_ssl_cert -sslcert ob_ssl_key -sslkey} {
+                set file [file join $path [dict get $c $field]]
+                if {![file isfile $file] || ![file readable $file]} {error "SSL client file is not readable: $file"}
+                lappend result $flag $file
+            }
+        }
+        if {[dict get $c ob_ssl_cipher] ne "server"} {lappend result -sslcipher [dict get $c ob_ssl_cipher]}
+        return $result
+    }
+
+    proc pool_connection {configuration} {
+        foreach key {ob_pass ob_tenant ob_cluster} {
+            if {![dict exists $configuration $key]} {dict set configuration $key {}}
+        }
+        foreach key {ob_host ob_port ob_user ob_dbase ob_ssl_options} {
+            if {![dict exists $configuration $key]} {error "OceanBase connect pool is missing $key"}
+        }
+        set user [dict get $configuration ob_user]
+        set tenant [dict get $configuration ob_tenant]
+        set cluster [dict get $configuration ob_cluster]
+        foreach part [list $user $tenant $cluster] {
+            if {[regexp {[@#:\s]} $part]} {error "Connect pool requires separate user, tenant and cluster fields"}
+        }
+        if {$user eq "" || ($cluster ne "" && $tenant eq "")} {error "Invalid OceanBase connect pool user or tenant"}
+        if {$tenant ne ""} {append user @$tenant}
+        if {$cluster ne ""} {append user #$cluster}
+        set port [dict get $configuration ob_port]
+        if {![string is integer -strict $port] || $port < 1 || $port > 65535} {error "Invalid OceanBase connect pool port"}
+        set mapped [dict create mysql_user $user mysql_socket null]
+        foreach key {host port pass dbase ssl_options} {dict set mapped mysql_$key [dict get $configuration ob_$key]}
+        # Validate the option list before it enters generated connection code.
+        dict size [dict get $mapped mysql_ssl_options]
+        return $mapped
+    }
+
     proc counter_sql {} {
         # A MySQL tenant sees its own server statistics. Aggregate across its OBServers.
         return {SELECT NAME, SUM(VALUE) FROM oceanbase.GV$SYSSTAT

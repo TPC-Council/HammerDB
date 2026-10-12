@@ -30,6 +30,7 @@
             <ob_partition_count>24</ob_partition_count>
             <ob_prepared>false</ob_prepared>
             <ob_no_stored_procs>false</ob_no_stored_procs>
+            <ob_history_pk>false</ob_history_pk>
         </schema>
         <driver>
             <ob_total_iterations>10000000</ob_total_iterations>
@@ -40,6 +41,11 @@
             <ob_duration>5</ob_duration>
             <ob_allwarehouse>false</ob_allwarehouse>
             <ob_timeprofile>false</ob_timeprofile>
+            <ob_async_scale>false</ob_async_scale>
+            <ob_async_client>10</ob_async_client>
+            <ob_async_verbose>false</ob_async_verbose>
+            <ob_async_delay>1000</ob_async_delay>
+            <ob_connect_pool>false</ob_connect_pool>
         </driver>
     </tpcc>
     <tpch>
@@ -61,6 +67,7 @@
             <ob_update_sets>1</ob_update_sets>
             <ob_trickle_refresh>1000</ob_trickle_refresh>
             <ob_refresh_verbose>false</ob_refresh_verbose>
+            <ob_cloud_query>false</ob_cloud_query>
         </driver>
     </tpch>
 </oceanbase>

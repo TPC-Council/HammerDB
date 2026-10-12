@@ -24,7 +24,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                 append connectstring " -socket $socket"
             } else {
                 set use_socket "false"
-                append connectstring " -host $host -port $port"
+                lappend connectstring -host $host -port $port
 		#if is_oceanbase is false and chk_socket is false we don't want to change the username
             if { $is_oceanbase == "true" } {
                 set user "$user@$ob_tenant_name"
@@ -32,7 +32,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
             }
 
             foreach key [ dict keys $ssl_options ] {
-                append connectstring " $key [ dict get $ssl_options $key ] "
+                lappend connectstring $key [dict get $ssl_options $key]
             }
             lappend connectstring -user $user -password $password
             set login_command [linsert $connectstring 0 mysqlconnect]
@@ -169,8 +169,10 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                         set iconflag 1
                     }
                     if { [ zeroes $tcdata ] eq 0 } {
-                        set tcdata {}
-                        set timedata {}
+                        # Keep a baseline through idle periods. Clearing the
+                        # samples loses the first activity burst after idle.
+                        set tcdata [list 1 0]
+                        set timedata [list 1 $tstamp]
                         if { [ catch {thread::send -async $MASTER { tce destroy }}]} { break }
                     } else {
                         if { [ catch [ subst {thread::send -async $MASTER { tce data d1 -colour $gcol -points 0 -lines 1 -coords {$tcdata} -time {$timedata} }} ] ] } { break }

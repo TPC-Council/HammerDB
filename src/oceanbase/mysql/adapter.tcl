@@ -1,8 +1,13 @@
 # MySQL tenant backend. Oracle-specific options, connections and SQL belong in a separate backend.
+if {[catch {package require oceanbasecommon}]} {
+    # Source-tree test interpreters do not inherit the application's tm paths.
+    source [file join [file dirname [info script]] .. .. .. modules oceanbasecommon-1.0.tm]
+}
 source [file join [file dirname [info script]] tprocc.tcl]
 source [file join [file dirname [info script]] tproch.tcl]
 source [file join [file dirname [info script]] runtime.tcl]
 source [file join [file dirname [info script]] counter.tcl]
+source [file join [file dirname [info script]] options.tcl]
 namespace eval oceanbase::mysql {
     proc username {user tenant cluster} {
         foreach part [list $user $tenant $cluster] {
@@ -20,6 +25,34 @@ namespace eval oceanbase::mysql {
 
     proc config {config} {
         set config [::oceanbaseconfig::normalize $config]
+        foreach {group key minimum maximum} {
+            connection ob_port 1 65535
+            tpcc ob_count_ware 1 100000
+            tpcc ob_num_vu 1 512
+            tpcc ob_total_iterations 1 2147483647
+            tpcc ob_rampup 0 2147483647
+            tpcc ob_duration 1 2147483647
+            tpch ob_num_tpch_threads 1 512
+            tpch ob_total_querysets 1 2147483647
+            tpch ob_update_sets 1 2147483647
+            tpch ob_trickle_refresh 0 2147483647
+        } {
+            if {[dict exists $config $group $key]} {
+                set value [dict get $config $group $key]
+                if {![string is integer -strict $value] || $value < $minimum || $value > $maximum} {
+                    error "$key must be an integer from $minimum to $maximum"
+                }
+            }
+        }
+        dict for {group values} $config {
+            dict for {key value} $values {
+                if {[boolean_option $key] && $value ni {true false}} {error "$key must be true or false"}
+            }
+        }
+        if {[dict exists $config tpcc ob_driver] && [dict get $config tpcc ob_driver] ni {test timed}} {error "Driver must be test or timed"}
+        if {[dict exists $config tpch ob_scale_fact] && [dict get $config tpch ob_scale_fact] ni {1 10 30 100 300 1000 3000 10000 30000 100000}} {
+            error "Unsupported TPROC-H scale factor"
+        }
         # Start with MySQL defaults, not the user's current MySQL configuration.
         set mapped [::XML::To_Dict [file join [find_config_dir] mysql.xml]]
         dict for {group values} $config {
@@ -61,6 +94,15 @@ namespace eval oceanbase::mysql {
             # replaces the full table DDL instead.
             dict set mapped tpcc mysql_partition false
         }
+        foreach {key minimum} {ob_async_client 1 ob_async_delay 0} {
+            set value [dict get $config tpcc $key]
+            if {![string is integer -strict $value] || $value < $minimum} {error "$key must be an integer >= $minimum"}
+        }
+        if {[dict get $config tpcc ob_connect_pool] eq "true"} {
+            if {[dict get $config tpcc ob_no_stored_procs] eq "true"} {error "Cluster Connect Pool requires stored procedures"}
+            dict set mapped tpcc mysql_prepared true
+        }
+        if {[dict get $config tpcc ob_async_scale] eq "true"} {dict set mapped tpcc mysql_keyandthink true}
         # The legacy OceanBase option under MySQL prepares sys settings and uses
         # different DDL. The new category needs only the business tenant login.
         dict set mapped tpch mysql_tpch_obcompat false
@@ -79,6 +121,12 @@ namespace eval oceanbase::mysql {
         }
         set configmysql $mapped
         try {
+            # Match the native SSL cache key while retaining list-safe OB options.
+            set c [dict get $configoceanbase connection]
+            set capath_key [expr {$::tcl_platform(platform) eq "windows" ? "ob_ssl_windows_capath" : "ob_ssl_linux_capath"}]
+            set mysql_ssl_options [::oceanbasecommon::ssl_options $configoceanbase]
+            set mysql_ssl_config [list [dict get $c ob_ssl] [dict get $c ob_ssl_two_way] [dict get $c $capath_key] \
+                [dict get $c ob_ssl_ca] [dict get $c ob_ssl_cert] [dict get $c ob_ssl_key] [dict get $c ob_ssl_cipher]]
             # Preserve schema-operation callers so GUI load_virtual uses the loader count.
             return [uplevel 1 [list $command {*}$args]]
         } finally {
@@ -94,11 +142,17 @@ namespace eval oceanbase::mysql {
     }
 
     proc generate {workload action} {
-        set commands [dict create tpcc [dict create build build_mysqltpcc test loadmysqltpcc timed loadtimedmysqltpcc check check_mysqltpcc delete delete_mysqltpcc] tpch [dict create build build_mysqltpch test loadmysqltpch check check_mysqltpch delete delete_mysqltpch]]
+        set commands [dict create tpcc [dict create build build_mysqltpcc test loadmysqltpcc timed loadtimedmysqltpcc check check_mysqltpcc delete delete_mysqltpcc] tpch [dict create build build_mysqltpch test loadmysqltpch cloud loadmysqlcloud check check_mysqltpch delete delete_mysqltpch]]
         if {![dict exists $commands $workload $action]} {error "Unsupported OceanBase MySQL operation: $workload $action"}
         set command [dict get $commands $workload $action]
         global configoceanbase _ED
         set normalized [::oceanbaseconfig::normalize $configoceanbase]
+        if {$workload eq "tpcc" && $action eq "test" && [dict get $normalized tpcc ob_allwarehouse] eq "true"} {
+            error "Use All Warehouses requires the Timed Driver Script"
+        }
+        if {$workload eq "tpcc" && $action eq "test" && [dict get $normalized tpcc ob_async_scale] eq "true"} {
+            error "Asynchronous Scaling requires the Timed Driver Script"
+        }
         with_config $command
         set graphical [info exists ::tk_version]
         if {$graphical} {ed_edit_commit}
@@ -108,7 +162,7 @@ namespace eval oceanbase::mysql {
             if {$action in {build check delete}} {
                 set _ED(package) [rewrite_schema_entry $_ED(package) $workload $action [config $normalized]]
             }
-            if {$action in {test timed}} {
+            if {$action in {test timed cloud}} {
                 set _ED(package) [rewrite_workload_credentials $_ED(package) $workload [config $normalized]]
             }
             if {$workload eq "tpch" && $action eq "build" && [dict get $normalized tpch ob_tpch_optimized_schema] eq "true"} {
@@ -125,6 +179,12 @@ namespace eval oceanbase::mysql {
                 }
                 set _ED(package) [rewrite_distributed_tprocc_queries $_ED(package)]
             }
+            if {$workload eq "tpcc" && $action eq "build" && [dict get $normalized tpcc ob_history_pk] eq "true"} {
+                set _ED(package) [rewrite_history_pk $_ED(package) [dict get $normalized tpcc ob_distributed_schema]]
+            }
+            if {$workload eq "tpcc" && $action in {test timed} && [dict get $normalized tpcc ob_connect_pool] eq "true"} {
+                set _ED(package) [rewrite_connect_pool $_ED(package)]
+            }
             if {$graphical} {
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete 1.0 end
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end $_ED(package)
@@ -136,9 +196,11 @@ namespace eval oceanbase::mysql {
     proc save_options {} {
         global configoceanbase
         variable options
+        variable options_context
         set updated $configoceanbase
         foreach entry [array names options] {
             lassign [split $entry ,] group key
+            if {$group eq "counter"} {continue}
             set value $options($entry)
             if {$key in {ob_pass ob_tpch_pass}} {set value [quotemeta $value]}
             dict set updated $group $key $value
@@ -147,12 +209,40 @@ namespace eval oceanbase::mysql {
             tk_messageBox -parent .oboptions -icon error -message $message
             return
         }
-        if {[catch {::oceanbaseconfig::save $updated} message]} {
+        if {[catch {::oceanbasecommon::ssl_options $updated} message]} {
+            tk_messageBox -parent .oboptions -icon error -message $message
+            return
+        }
+        if {[info exists options_context] && [lindex $options_context 1] eq "counter"} {
+            set interval $options(counter,tc_refresh_rate)
+            if {![string is integer -strict $interval] || $interval < 1 || $interval >= 60} {
+                tk_messageBox -parent .oboptions -icon error -message "Refresh rate must be more than 0 secs and less than 60 secs"
+                return
+            }
+        }
+        set counter_settings {}
+        if {[info exists options_context] && [lindex $options_context 1] eq "counter"} {
+            foreach key {tc_refresh_rate tc_log_to_temp tc_unique_log_name tc_log_timestamps} {
+                set value $options(counter,$key)
+                if {$key in {tc_unique_log_name tc_log_timestamps} && !$options(counter,tc_log_to_temp)} {set value 0}
+                dict set counter_settings $key $value
+            }
+        }
+        if {[catch {::oceanbaseconfig::save $updated $counter_settings} message]} {
             tk_messageBox -parent .oboptions -icon error -message "Cannot save OceanBase options: $message"
             return
         }
         set configoceanbase $updated
+        if {[info exists options_context] && [lindex $options_context 1] eq "counter"} {
+            global genericdict
+            dict for {key value} $counter_settings {
+                dict set genericdict transaction_counter $key $value
+            }
+        }
         destroy .oboptions
+        if {[info exists options_context] && [lindex $options_context 1] eq "drive"} {
+            if {[lindex $options_context 0] eq "tpcc"} {loadtpcc} else {loadtpch}
+        }
     }
 
     proc update_partition_count_state {widget {group tpcc} {key ob_distributed_schema}} {
@@ -168,72 +258,11 @@ namespace eval oceanbase::mysql {
         expr {$key in {ob_ssl ob_ssl_two_way ob_partition ob_distributed_schema
             ob_prepared ob_no_stored_procs ob_raiseerror ob_keyandthink
             ob_allwarehouse ob_timeprofile ob_tpch_optimized_schema
-            ob_raise_query_error ob_verbose ob_refresh_on ob_refresh_verbose}}
+            ob_raise_query_error ob_verbose ob_refresh_on ob_refresh_verbose
+            ob_history_pk ob_async_scale ob_async_verbose ob_connect_pool ob_cloud_query}}
     }
 
-    proc options {group option} {
-        global configoceanbase
-        variable options
-        set configoceanbase [::oceanbaseconfig::normalize $configoceanbase]
-        catch {destroy .oboptions}
-        array unset options
-        ttk::toplevel .oboptions
-        wm title .oboptions "OceanBase MySQL Tenant Options"
-        wm transient .oboptions .ed_mainFrame
-        ttk::notebook .oboptions.tabs
-        pack .oboptions.tabs -fill both -expand 1 -padx 8 -pady 8
-        set schema_keys {ob_user ob_pass ob_dbase ob_count_ware ob_num_vu ob_partition ob_distributed_schema ob_partition_count ob_storage_engine ob_tpch_user ob_tpch_pass ob_tpch_dbase ob_scale_fact ob_num_tpch_threads ob_tpch_storage_engine ob_tpch_optimized_schema ob_tpch_partition_count}
-        foreach page {connection schema driver} {
-            ttk::frame .oboptions.tabs.$page -padding 8
-            .oboptions.tabs add .oboptions.tabs.$page -text [string totitle $page]
-            set row($page) 0
-        }
-        dict for {section values} $configoceanbase {
-            if {$section ni [list connection $group]} {continue}
-            dict for {key value} $values {
-                # Keep the legacy key in saved configurations and CLI scripts.
-                if {$key eq "ob_partition"} {continue}
-                if {$section eq "connection"} {set page connection} elseif {$key in $schema_keys} {set page schema} else {set page driver}
-                set frame .oboptions.tabs.$page
-                set i [incr row($page)]
-                if {$key in {ob_pass ob_tpch_pass}} {set value [decode_password $value]}
-                set options($section,$key) $value
-                set label [string totitle [string map {_ " "} [string range $key 3 end]]]
-                if {$key eq "ob_tpch_optimized_schema"} {set label "Distributed schema"}
-                if {$key eq "ob_tpch_partition_count"} {set label "Partition count"}
-                ttk::label $frame.l$i -text $label
-                if {$key eq "ob_compatibility_mode"} {
-                    ttk::combobox $frame.e$i -textvariable ::oceanbase::mysql::options($section,$key) -values [::oceanbase::supported_modes] -state readonly
-                } elseif {[boolean_option $key]} {
-                    ttk::checkbutton $frame.e$i -variable ::oceanbase::mysql::options($section,$key) -onvalue true -offvalue false
-                } elseif {$key eq "ob_driver"} {
-                    ttk::combobox $frame.e$i -textvariable ::oceanbase::mysql::options($section,$key) -values {test timed} -state readonly
-                } else {
-                    ttk::entry $frame.e$i -textvariable ::oceanbase::mysql::options($section,$key) -width 30
-                    if {[string match *pass $key]} {$frame.e$i configure -show *}
-                }
-                if {$key eq "ob_distributed_schema"} {set distributed_widget $frame.e$i}
-                if {$key eq "ob_partition_count"} {set partition_count_widget $frame.e$i}
-                if {$key eq "ob_tpch_optimized_schema"} {set h_optimized_widget $frame.e$i}
-                if {$key eq "ob_tpch_partition_count"} {set h_partition_widget $frame.e$i}
-                grid $frame.l$i -row $i -column 0 -sticky e -padx 5 -pady 2
-                grid $frame.e$i -row $i -column 1 -sticky ew -padx 5 -pady 2
-            }
-        }
-        if {$group eq "tpcc"} {
-            $distributed_widget configure -command [list ::oceanbase::mysql::update_partition_count_state $partition_count_widget]
-            update_partition_count_state $partition_count_widget
-        } elseif {$group eq "tpch"} {
-            $h_optimized_widget configure -command [list ::oceanbase::mysql::update_partition_count_state $h_partition_widget tpch ob_tpch_optimized_schema]
-            update_partition_count_state $h_partition_widget tpch ob_tpch_optimized_schema
-        }
-        if {$option eq "drive"} {.oboptions.tabs select .oboptions.tabs.driver}
-        ttk::frame .oboptions.buttons
-        ttk::button .oboptions.buttons.ok -text OK -command ::oceanbase::mysql::save_options
-        ttk::button .oboptions.buttons.cancel -text Cancel -command {destroy .oboptions}
-        pack .oboptions.buttons.cancel .oboptions.buttons.ok -side right -padx 5 -pady 5
-        pack .oboptions.buttons -fill x
-    }
+    proc options {group option} {show_options $group $option}
     proc validate {configuration} {config $configuration}
     proc counter {bm interval masterthread} {
         global configoceanbase

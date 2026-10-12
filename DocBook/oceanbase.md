@@ -55,11 +55,15 @@ change the tenant's global timeout or SQL mode.
 
 ## Workloads and results
 
+The independent OceanBase dialogs use MySQL's **Connection / Settings** layout,
+control types and option dependencies. OceanBase credentials and workload
+settings are saved separately from MySQL. Driver Options generates the selected
+driver when OK is clicked; Cancel discards edits.
+
 TPROC-C supports schema creation/checking/deletion, stored procedure test and
-timed drivers, prepared procedure calls, and the shared non-stored-procedure
-driver. The optional MySQL connection pool, asynchronous client scaling,
-invisible history primary key, and HeatWave features are not exposed by the
-OceanBase category. The legacy MySQL `Partition` checkbox is not exposed here;
+timed drivers, prepared procedure calls, client SQL, Cluster Connect Pool,
+asynchronous client scaling, Time Profile and an invisible history primary key.
+The legacy MySQL `Partition` checkbox is not exposed here;
 OceanBase schema distribution is controlled by `Distributed schema` and
 `Partition count`. Enable the distributed TPROC-C layout with:
 
@@ -73,14 +77,46 @@ using `SHARDING='PARTITION'`; the item table uses
 `DUPLICATE_SCOPE='CLUSTER'`. This option affects new schema creation only.
 The distributed layout was exercised on OceanBase 4.4.2.1 with three replicas.
 
+### Optional TPROC-C client features
+
+`ob_prepared` selects prepared procedure calls; `ob_no_stored_procs` selects
+client SQL. Cluster Connect Pool (`ob_connect_pool`) requires prepared stored
+procedures. Configure its endpoints and per-transaction routing policies in
+`config/connectpool/obcpool.xml`, independently of MySQL's pool configuration.
+Each endpoint has separate `ob_user`, `ob_tenant`, `ob_cluster`, `ob_pass` and
+`ob_dbase` fields, plus host, port and TLS options. All endpoints must reach the
+same business tenant and dataset. This is HammerDB's multiple-endpoint
+transaction routing pool; no sys tenant connection is needed.
+
+Asynchronous Scaling (`ob_async_scale`) uses the native client scheduling and
+requires the Timed Driver Script and Keying and Thinking Time. The dialog sets
+the required dependencies. `ob_async_client`, `ob_async_delay` and
+`ob_async_verbose` control clients per active VU, login delay in milliseconds
+and output. The timed driver also creates a monitor VU, which does not run
+asynchronous clients. These are multiple client sessions scheduled by HammerDB;
+this option does not change the server's SQL execution model.
+
+`ob_history_pk` adds the native invisible AUTO_INCREMENT history ID without
+using MySQL's version-number gate. For distributed history, the primary key is
+`(h_w_id,id)` and `h_w_id` is NOT NULL to satisfy OceanBase's partitioned primary
+key requirements. Enable this before building a fresh schema. It requires an
+OceanBase version supporting invisible columns and was tested on 4.4.2.1.
+
+Time Profile (`ob_timeprofile`) and Use All Warehouses (`ob_allwarehouse`) are
+timed-driver options. Selecting the Test Driver Script clears timed-only
+options in the dialog.
+
 TPROC-H uses abbreviated-month parsing consistently for load and refresh data,
 case-insensitive table discovery, and regular MySQL `ANALYZE TABLE`. Its single
 user refresh driver runs RF1, the 22 queries, then RF2. Keep verbose result output
 off for ordinary validation; some queries return many values.
+Cloud Analytic Queries (`ob_cloud_query`) selects the native MySQL cloud query
+workload. It does not enable HeatWave server features on OceanBase.
 
 ### Optional OceanBase distributed TPROC-H schema
 
-Enable `Distributed schema` in the TPROC-H Schema tab and set `Partition count`, or configure:
+Enable `Distributed schema` in the TPROC-H Schema Options **Settings** tab and
+set `Partition count`, or configure:
 
 ```tcl
 diset tpch ob_tpch_optimized_schema true
@@ -133,6 +169,12 @@ its own polling requests from the delta. It is a tenant SQL activity indicator,
 not the number of completed benchmark query sets. SQL Audit/ASH database metrics
 are not exposed by this category yet; generic host CPU metrics remain available.
 
+Transaction Counter Options has independent OceanBase connection fields and a
+Settings tab for refresh interval (1–59 seconds), logging, unique log names and
+timestamps. These preferences persist in HammerDB's generic counter settings,
+as they do for MySQL. Counter startup, polling and shutdown use the OceanBase
+tenant counters above.
+
 ## Reproducible CLI runs
 
 Set `OB_HOST`, `OB_TENANT`, `OB_USER`, `OB_PASSWORD`, and a **new** `OB_DATABASE` in
@@ -162,6 +204,15 @@ saved passwords and benchmark settings are retained.
 
 ```sh
 ./hammerdbcli auto tests/oceanbase-generated.tcl
+./hammerdbcli auto tests/oceanbase-feature-validation.tcl
+```
+
+The real Tk dialog suite runs in the packaged CLI with a working X display and
+the matching `hammerdb` GUI executable in the current directory. It uses
+disposable configuration copies and retains saved credentials and preferences:
+
+```sh
+./hammerdbcli auto tests/oceanbase-options.tcl
 ```
 
 ## Validation status (2026-09-14)
@@ -175,8 +226,8 @@ migration, and 29 helper/generated-driver assertions passed. The original
 MySQL installation and earlier test databases were retained.
 
 This is compatibility validation, not a performance result or certification.
-Windows execution, TLS connections and native MySQL server regression remain
-unverified. The earlier Linux GUI startup blocker was resolved during subsequent
+At that date, Windows execution, TLS connections and native MySQL server
+regression remained unverified. The earlier Linux GUI startup blocker was resolved during subsequent
 validation. The bundled Linux MySQL client emitted a non-fatal character-set 45
 warning during the earlier statistics collection; schema checks still passed.
 
@@ -201,6 +252,34 @@ profile uses global scope for `ob_sql_work_area_percentage` and
 `parallel_servers_target`, which do not accept `SET SESSION` on the tested
 OceanBase version. Tuning profiles are optional benchmark candidates and do not
 establish performance gains.
+
+### Client feature validation (2026-10-12)
+
+The Ubuntu 24.04 x86-64 package was exercised on the three-replica OceanBase
+4.4.2.1 AWS lab using fresh, isolated schemas and business-tenant credentials:
+
+- TPROC-C native and distributed four-warehouse builds with History Primary
+  Key enabled, followed by consistency checks.
+- Stored procedures, prepared procedures, client SQL and a two-endpoint
+  Cluster Connect Pool (OBProxy plus a direct OBServer connection).
+- Timed asynchronous stored procedures, client SQL and pool drivers, each with
+  three active VUs, two asynchronous clients per VU, plus the monitor VU.
+- SF1 distributed TPROC-H build/check, RF1/all 22 queries/RF2/check and the
+  Cloud Analytic Queries workload.
+- Time Profile and counter lifecycle/logging tests. Every requested workload
+  VU must finish successfully for these tests to pass.
+
+The packaged helper, generated-driver, feature-validation and real Tk dialog
+suites passed 100 assertions (60 + 19 + 8 + 13). A counter regression test also
+checks that one activity burst after an idle sample is reported for both C and
+H; the corresponding real-server tests observed nonzero TPM/QPH and confirmed
+timestamped unique logs and removal of the worker thread after shutdown.
+
+TLS-requested connections succeeded through both OBProxy and a direct OBServer.
+This connection test did not establish mutual TLS or certificate verification.
+Windows execution and native MySQL server regression remain unverified. These
+tests establish functional compatibility on the stated environment, not a
+performance improvement or a certified benchmark result.
 
 ## Tenant-mode extension boundary
 

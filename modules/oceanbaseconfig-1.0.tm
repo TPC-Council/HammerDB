@@ -31,11 +31,15 @@ namespace eval oceanbaseconfig {
         return [dict merge $saved $missing]
     }
 
-    proc save {configuration} {
+    proc save {configuration {counter {}}} {
         package require sqlite3
         sqlite3 ::oceanbaseconfig::savedb [CheckSQLiteDB oceanbase]
         try {
             savedb timeout 30000
+            if {[dict size $counter]} {
+                set generic_file [CheckSQLiteDB generic]
+                savedb eval {ATTACH DATABASE $generic_file AS generic_config}
+            }
             savedb transaction {
                 dict for {group values} $configuration {
                     if {$group ni {connection tpcc tpch}} {error "Unknown OceanBase configuration group: $group"}
@@ -44,6 +48,13 @@ namespace eval oceanbaseconfig {
                     dict for {key value} $values {
                         savedb eval "INSERT INTO ${group}(key,val) VALUES(\$key,\$value)"
                     }
+                }
+                dict for {key value} $counter {
+                    if {$key ni {tc_refresh_rate tc_log_to_temp tc_unique_log_name tc_log_timestamps} || ![string is integer -strict $value]} {
+                        error "Invalid transaction counter option: $key"
+                    }
+                    savedb eval {UPDATE generic_config.transaction_counter SET val=$value WHERE key=$key}
+                    if {[savedb changes] == 0} {savedb eval {INSERT INTO generic_config.transaction_counter(key,val) VALUES($key,$value)}}
                 }
             }
         } finally {
@@ -85,9 +96,13 @@ namespace eval oceanbaseconfig {
             dict set defaults tpcc ob_pass ""
             dict set defaults tpcc ob_distributed_schema false
             dict set defaults tpcc ob_partition_count 24
+            foreach {key value} {ob_history_pk false ob_async_scale false ob_async_client 10 ob_async_verbose false ob_async_delay 1000 ob_connect_pool false} {
+                dict set defaults tpcc $key $value
+            }
             dict set defaults tpch ob_tpch_pass ""
             dict set defaults tpch ob_tpch_optimized_schema false
             dict set defaults tpch ob_tpch_partition_count 24
+            dict set defaults tpch ob_cloud_query false
         }
         dict for {group values} $defaults {
             dict for {key value} $values {

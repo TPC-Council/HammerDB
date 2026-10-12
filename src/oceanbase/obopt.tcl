@@ -25,7 +25,7 @@ namespace eval oceanbase {
     }
     proc dispatch {operation args} {
         global configoceanbase
-        if {$operation ni {generate counter options}} {error "Unknown OceanBase operation: $operation"}
+        if {$operation ni {generate counter options counter_options}} {error "Unknown OceanBase operation: $operation"}
         set implementation [backend $configoceanbase]
         return [${implementation}::$operation {*}$args]
     }
@@ -33,4 +33,4 @@ namespace eval oceanbase {
 source [file join [file dirname [info script]] mysql adapter.tcl]
 proc configobtpcc {option} {oceanbase::dispatch options tpcc $option}
 proc configobtpch {option} {oceanbase::dispatch options tpch $option}
-proc countobopts {bm} {oceanbase::dispatch options [expr {$bm eq "TPC-C" ? "tpcc" : "tpch"}] all}
+proc countobopts {bm} {oceanbase::dispatch counter_options $bm}

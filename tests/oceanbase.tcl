@@ -561,6 +561,9 @@ test options-save-failure {GUI publishes new configuration and closes only after
         set ::oceanbase::mysql::options(tpcc,ob_pass) new
         namespace eval oceanbaseconfig {proc save {args} {error "disk failure"}}
         namespace eval oceanbase {proc validate {args} {}}
+        # This fixture isolates persistence failure; TLS validation has its own
+        # tests and requires connection fields absent from this minimal fixture.
+        namespace eval oceanbasecommon {proc ssl_options {args} {return {-ssl false}}}
         proc quotemeta {value} {return $value}
         proc tk_messageBox {args} {set ::message $args}
         proc destroy {args} {set ::closed true}
@@ -662,13 +665,13 @@ test tls-cache-presence {Restore both cache values and prior absence on success 
     $worker eval {
         namespace eval oceanbase::mysql {proc config {value} {return $value}}
         set configmysql native
-        set configoceanbase oceanbase
         proc generator {fail} {
             set ::mysql_ssl_options modified-options
             set ::mysql_ssl_config modified-key
             if {$fail} {error expected}
         }
     }
+    $worker eval [list set configoceanbase [oceanbaseconfig::normalize [::XML::To_Dict [file join $root config oceanbase.xml]]]]
 } -body {
     set results {}
     foreach options_exists {0 1} {

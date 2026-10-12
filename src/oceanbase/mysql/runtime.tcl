@@ -52,6 +52,8 @@ namespace eval oceanbase::mysql {
         set setup $library_check
         append setup "package require oceanbasecommon\n" [list oceanbasecommon::configure $timeout] "\n"
         set script [string map [list $library_check $setup \
+            {append connectstring " -host $host -port $port"} {lappend connectstring -host $host -port $port} \
+            {append connectstring " $key [ dict get $ssl_options $key ] "} {lappend connectstring $key [dict get $ssl_options $key]} \
             {append connectstring " -user $user -password $password"} {lappend connectstring -user $user -password $password} \
             {set login_command "mysqlconnect [ dict get $connectstring ]"} {set login_command [linsert $connectstring 0 mysqlconnect]} \
             {puts "login_command $login_command"} {} \
@@ -75,5 +77,36 @@ namespace eval oceanbase::mysql {
             set script [string map [list $original $replacement] $script]
         }
         return $script
+    }
+
+    proc rewrite_connect_pool {script} {
+        set original {set cpool [ get_connect_xml mysql ]}
+        if {[string first $original $script] < 0} {error "Cannot locate cluster connect pool configuration"}
+        set marker {dict with conparams }
+        append marker "\{"
+        set replacement "set conparams \[oceanbasecommon::pool_connection \$conparams\]\n            $marker"
+        if {[string first $marker $script] < 0} {error "Cannot locate cluster connect pool endpoints"}
+        return [string map [list $original {set cpool [ get_connect_xml ob ]} $marker $replacement] $script]
+    }
+
+    proc rewrite_history_pk {script distributed} {
+        if {$distributed eq "true"} {
+            set original {`h_data` VARCHAR(24) BINARY NULL
+)}
+            set replacement {`h_data` VARCHAR(24) BINARY NULL,
+  `id` INT NOT NULL AUTO_INCREMENT INVISIBLE,
+PRIMARY KEY (`h_w_id`, `id`)
+)}
+            if {[string first $original $script] < 0} {error "Cannot locate distributed HISTORY table"}
+            return [string map [list $original $replacement {`h_w_id` INT NULL} {`h_w_id` INT NOT NULL}] $script]
+        }
+        # OB's compatibility VERSION() is not a MySQL server version. Try the
+        # requested native DDL and let the server report unsupported syntax.
+        set original {if { [ string toupper $mysql_storage_engine ] eq "INNODB" && $history_pk }}
+        append original " \{"
+        set start [string first $original $script]
+        set end [string first {    set sql(1)} $script $start]
+        if {$start < 0 || $end < 0} {error "Cannot locate MySQL HISTORY primary-key capability gate"}
+        return [string replace $script $start [expr {$end - 1}] {}]
     }
 }
