@@ -3,7 +3,7 @@
 #
 # Behaviour matches maria_tprocc_run_profile.tcl:
 #   PROFILEID=0   => single run at VUs=vcpu, jobs profileid 0
-#   PROFILEID>1   => profile sweep, jobs profileid, VU list: 1 then 4..(cpus+8) step 4
+#   PROFILEID>1   => profile sweep, jobs profileid, adaptive VU steps based on CPU count
 #   otherwise     => error
 #
 # Output:
@@ -108,8 +108,18 @@ if profileid == 0:
     sys.exit(0)
 
 # PROFILEID > 1 => sweep, append jobids
-end_vu = (os.cpu_count() or 1) + 8
-vu_list = [1] + list(range(4, end_vu + 1, 4))
+cpus = int(tclpy.eval('numberOfCPUs'))
+if cpus <= 64:
+    vu_step = 4
+elif cpus <= 128:
+    vu_step = 8
+elif cpus <= 256:
+    vu_step = 16
+else:
+    vu_step = 24
+
+end_vu = cpus + vu_step
+vu_list = [1] + list(range(vu_step, end_vu + 1, vu_step))
 
 metstart()
 tcstart()

@@ -9,8 +9,14 @@ diset connection vsql_host localhost
 diset connection vsql_port 3306
 diset connection vsql_socket /tmp/villagesql.sock
 
-set vu [ numberOfCPUs ]
 set warehouse [ numberOfWHs ]
+set vu [ numberOfCPUs ]
+if { $warehouse > 2000 } {
+    set max_build_vu [ expr { int($warehouse / 10) } ]
+    if { $vu > $max_build_vu } {
+        set vu $max_build_vu
+    }
+}
 diset tpcc vsql_count_ware $warehouse
 diset tpcc vsql_num_vu $vu
 diset tpcc vsql_user root

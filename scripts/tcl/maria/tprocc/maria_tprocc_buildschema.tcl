@@ -9,8 +9,14 @@ diset connection maria_host localhost
 diset connection maria_port 3306
 diset connection maria_socket /tmp/mariadb.sock
 
-set vu [ numberOfCPUs ]
 set warehouse [ numberOfWHs ]
+set vu [ numberOfCPUs ]
+if { $warehouse > 2000 } {
+    set max_build_vu [ expr { int($warehouse / 10) } ]
+    if { $vu > $max_build_vu } {
+        set vu $max_build_vu
+    }
+}
 diset tpcc maria_count_ware $warehouse
 diset tpcc maria_num_vu $vu
 diset tpcc maria_user root
