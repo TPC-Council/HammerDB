@@ -55,8 +55,8 @@ set UserDefaultDir [ file dirname [ info script ] ]
 lappend auto_path "[zipfs root]app/lib"
 package require comm
 namespace import comm::*
-#Enable report for more than 122 CPUs
-interp recursionlimit {} 3000
+#Allow metrics reporting on very high CPU-count systems
+interp recursionlimit {} 10000
 global agentlist S iswin
 set iswin "false"
 set version 6.1
@@ -470,7 +470,7 @@ set connectestablished 1
 }
 Agent hook lost {
 global agentlist S connectestablished restart
-set todel [ lsearch $agentlist $id ]
+set todel [ lsearch -exact $agentlist $id ]
 if { $todel != -1 } {
 puts "Connection to display $id lost: $reason"
 unset -nocomplain connectestablished

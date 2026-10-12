@@ -401,36 +401,18 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
 
 proc wapp-page-help {} {
     set B [wapp-param BASE_URL]
-    wapp-subst {<link href="%url([wapp-param BASE_URL]/style.css)" rel="stylesheet">}
-    wapp-trim {
-        <html>
-        <head>
-        <meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type">
-        <title>HammerDB Web Service</title>
-        </head>
-        <body>
-        <h3>HammerDB Web Service</h3>
-        <br>
-
-        <b>GET jobs</b>: Show job ids, configuration, output, status and benchmark results for executed jobs.
-        <br><br>
-        get http://localhost:8080/jobs<br>
-
-        <br>
-
-        <b>GET pipelines</b>: Show CI pipeline runs including database, reference, pipeline type and status. The Pipelines page can also start configured CI pipeline runs.
-        <br><br>
-        get http://localhost:8080/pipelines<br>
-
-        <br>
-
-        <b>GET ci</b>: Show detailed CI pipeline information including build, install and associated jobs.
-        <br><br>
-        get http://localhost:8080/ci?ci_id=INTEGER<br>
-
-        <br>
-        </body>
-        </html>
+    hdb_info_header "Help"
+    wapp-unsafe {<p>Browse saved benchmarks, inspect pipeline runs, and check the web service.</p><div class="hdb-help-grid">}
+    foreach {title route description example} {
+        Jobs jobs {Browse saved jobs, benchmark reports, output, configuration and system information.} {/jobs}
+        Pipelines pipelines {Browse pipeline runs and start configured benchmarks using the run form.} {/pipelines}
+        Environment env {Inspect request and runtime diagnostics for this web service.} {/env}
+    } {
+        wapp-subst {<section class="hdb-info-card"><h2>%html($title)</h2><p>%html($description)</p><p><code>GET %html($example)</code></p>}
+        if {$route ne "ci"} {wapp-subst {<a class="hdb-action-link" href="%url($B/$route)">Open %html($title)</a>}}
+        wapp-unsafe {</section>}
     }
+    wapp-unsafe {</div>}
+    hdb_info_footer
 }
 
