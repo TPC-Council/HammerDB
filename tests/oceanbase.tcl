@@ -70,12 +70,18 @@ test login-direct {A direct tenant login has no cluster suffix} -body {
 } -result root@hammerdb
 test login-proxy {An OBProxy login includes the configured cluster} -body {
     oceanbase::mysql::username root hammerdb ob_hammerdb
-} -result ob_hammerdb:hammerdb:root
+} -result root@hammerdb#ob_hammerdb
 test login-qualified {Reject double qualification instead of inventing a login} -body {
     oceanbase::mysql::username root@hammerdb hammerdb {}
 } -returnCodes error -match glob -result {Use separate*}
-test login-empty {Tenant selection is explicit} -body {
+test login-cloud {An OB Cloud endpoint identifies the tenant, so a bare user is valid} -body {
     oceanbase::mysql::username root {} {}
+} -result root
+test login-cluster-tenant {A cluster login still requires its tenant} -body {
+    oceanbase::mysql::username root {} ob_hammerdb
+} -returnCodes error -match glob -result {*required*}
+test login-nouser {A user is always required} -body {
+    oceanbase::mysql::username {} hammerdb {}
 } -returnCodes error -match glob -result {*required*}
 
 source [file join $root modules xml-1.1.tm]

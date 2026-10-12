@@ -365,7 +365,7 @@ test workload-usernames {Real C/H headers preserve accepted Tcl metacharacters i
                     proc injected {} {set ::executed true; return unwanted}
                 }
                 $worker eval [generated_assignment $::_ED(package) user]
-                set expected [expr {$cluster eq "" ? "$user@tenant\[injected\]" : "$cluster:tenant\[injected\]:$user"}]
+                set expected [expr {$cluster eq "" ? "$user@tenant\[injected\]" : "$user@tenant\[injected\]#$cluster"}]
                 lappend results [expr {[$worker eval {set user}] eq $expected && ![$worker eval {set executed}]}]
                 interp delete $worker
             }

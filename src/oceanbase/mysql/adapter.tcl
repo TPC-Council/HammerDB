@@ -8,8 +8,13 @@ namespace eval oceanbase::mysql {
         foreach part [list $user $tenant $cluster] {
             if {[regexp {[@#:\s]} $part]} {error "Use separate user, tenant and cluster fields without @, #, : or whitespace"}
         }
-        if {$user eq "" || $tenant eq ""} {error "OceanBase user and tenant are required"}
-        if {$cluster ne ""} {return "$cluster:$tenant:$user"}
+        if {$user eq ""} {error "OceanBase user is required"}
+        if {$cluster ne ""} {
+            if {$tenant eq ""} {error "OceanBase tenant is required with a cluster"}
+            return "$user@$tenant#$cluster"
+        }
+        # OB Cloud endpoints already identify the tenant, so a bare user is valid.
+        if {$tenant eq ""} {return $user}
         return "$user@$tenant"
     }
 

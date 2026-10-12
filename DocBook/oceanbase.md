@@ -38,6 +38,17 @@ for user `a`, tenant `b`, cluster `c`, and service `d`, set the user to `a`,
 and cluster, without Service Name routing or automatic routing to a new primary
 tenant after a tenant switchover.
 
+OB Cloud (oceanbase.cloud) endpoints do not expose a cluster or tenant name, so
+leave `ob_tenant` and `ob_cluster` empty there. The login is then the bare
+username, and the endpoint itself selects the tenant:
+
+```tcl
+diset connection ob_host privatelink-example.aws-ap-southeast-1.oceanbase.cloud
+diset connection ob_port 3306
+diset connection ob_tenant {}
+diset connection ob_cluster {}
+```
+
 `ob_query_timeout` is in seconds and only changes the current database session.
 The default is 120 seconds, including schema statistics collection. It does not
 change the tenant's global timeout or SQL mode.
