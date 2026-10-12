@@ -1247,6 +1247,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Fix MariaDB 13 pipeline tag selection and increase dropdown limit to 120 #954
 Scale TPROC-C profile VU steps, cap large schema build VUs, and add VillageSQL Python scripts #953
 Fix metrics callbacks for numeric hostnames and agent disconnect cleanup #952
 Modernize Web Service UI and improve dark-theme benchmark report logo contrast #951

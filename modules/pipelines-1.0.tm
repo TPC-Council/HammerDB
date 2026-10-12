@@ -244,13 +244,13 @@ proc __github_tags {repo_url} {
         }
 
         # filter rules
-        # MariaDB: mariadb-12.* mariadb-11.*
+        # MariaDB: mariadb-<major>.*
         # PostgreSQL: REL_*
         # MySQL: mysql-*
         set filtered {}
         if {[string match "*github.com/MariaDB/server*" $repo_url]} {
             foreach t $tags {
-                if {[regexp {^mariadb-(1[012])\..+} $t]} {
+                if {[regexp {^mariadb-([0-9]+)\..+} $t]} {
                     lappend filtered $t
                 }
             }
@@ -326,8 +326,8 @@ proc __github_tags {repo_url} {
         }
 
         # cap list size
-        if {[llength $sorted] > 60} {
-            set sorted [lrange $sorted 0 59]
+        if {[llength $sorted] > 120} {
+            set sorted [lrange $sorted 0 119]
         }
 
         dict set __tag_cache_ts $key $now
