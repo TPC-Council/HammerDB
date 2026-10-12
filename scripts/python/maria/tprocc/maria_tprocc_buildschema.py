@@ -9,8 +9,12 @@ diset('connection','maria_host','localhost')
 diset('connection','maria_port','3306')
 diset('connection','maria_socket','/tmp/mariadb.sock')
 
-vu = tclpy.eval('numberOfCPUs')
 warehouse = int(tclpy.eval('numberOfWHs'))
+vu = int(tclpy.eval('numberOfCPUs'))
+if warehouse > 2000:
+    max_build_vu = warehouse // 10
+    if vu > max_build_vu:
+        vu = max_build_vu
 diset('tpcc','maria_count_ware',warehouse)
 diset('tpcc','maria_num_vu',vu)
 diset('tpcc','maria_user','root')

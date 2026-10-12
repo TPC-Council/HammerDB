@@ -9,8 +9,12 @@ diset('connection','pg_host','localhost')
 diset('connection','pg_port','5432')
 diset('connection','pg_sslmode','prefer')
 
-vu = tclpy.eval('numberOfCPUs')
 warehouse = int(tclpy.eval('numberOfWHs'))
+vu = int(tclpy.eval('numberOfCPUs'))
+if warehouse > 2000:
+    max_build_vu = warehouse // 10
+    if vu > max_build_vu:
+        vu = max_build_vu
 diset('tpcc','pg_count_ware',warehouse)
 diset('tpcc','pg_num_vu',vu)
 diset('tpcc','pg_superuser','postgres')

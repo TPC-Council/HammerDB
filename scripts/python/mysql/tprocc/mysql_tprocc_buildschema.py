@@ -9,8 +9,12 @@ diset('connection','mysql_host','localhost')
 diset('connection','mysql_port','3306')
 diset('connection','mysql_socket','/tmp/mysql.sock')
 
-vu = tclpy.eval('numberOfCPUs')
 warehouse = int(tclpy.eval('numberOfWHs'))
+vu = int(tclpy.eval('numberOfCPUs'))
+if warehouse > 2000:
+    max_build_vu = warehouse // 10
+    if vu > max_build_vu:
+        vu = max_build_vu
 diset('tpcc','mysql_count_ware',warehouse)
 diset('tpcc','mysql_num_vu',vu)
 diset('tpcc','mysql_user','root')
