@@ -185,20 +185,12 @@ namespace eval oceanbase::mysql {
             option_row $frame [incr row] $group $key $label $kind
         }
         grid columnconfigure $frame 1 -weight 1
-        # Settings follow MySQL's ordering and controls; scrolling keeps the full
-        # schema+driver dialog usable on a standard 900-pixel remote desktop.
+        # Match native MySQL: size the settings frame to its controls rather
+        # than placing every dialog in a fixed-height scrolling canvas.
         set parent .oboptions.tabs.settings
-        set background [ttk::style lookup TFrame -background]
-        if {$background eq ""} {set background [option get . background Background]}
-        canvas $parent.canvas -highlightthickness 0 -width 470 -height 480 -background $background
-        ttk::scrollbar $parent.scroll -orient vertical -command [list $parent.canvas yview]
-        $parent.canvas configure -yscrollcommand [list $parent.scroll set]
-        ttk::frame $parent.canvas.fields -padding 4
-        $parent.canvas create window 0 0 -anchor nw -window $parent.canvas.fields
-        bind $parent.canvas.fields <Configure> [list ::oceanbase::mysql::resize_settings $parent.canvas]
-        pack $parent.scroll -side right -fill y
-        pack $parent.canvas -side left -fill both -expand 1
-        set frame $parent.canvas.fields
+        ttk::frame $parent.fields -padding 4
+        pack $parent.fields -fill both -expand 1
+        set frame $parent.fields
         set row 0
         foreach field [option_fields $group $option] {
             lassign $field key label kind
@@ -224,6 +216,5 @@ namespace eval oceanbase::mysql {
         wm geometry .oboptions +50+50
     }
 
-    proc resize_settings {canvas} {$canvas configure -scrollregion [$canvas bbox all]}
     proc counter_options {bm} {show_options [expr {$bm eq "TPC-C" ? "tpcc" : "tpch"}] counter}
 }
