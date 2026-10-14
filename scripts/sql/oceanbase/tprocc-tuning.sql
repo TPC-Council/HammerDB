@@ -97,3 +97,72 @@ SET GLOBAL auto_increment_cache_size = 10000000;
 -- Diagnostic references:
 -- https://www.oceanbase.com/docs/common-oceanbase-database-standalone-1000000002701711
 -- https://oceanbase.github.io/docs/user_manual/quick_starts/en-US/chapter_07_diagnosis_and_tuning/troubleshooting_sql_performance_issues
+
+-- 5. OPTIONAL STOCK-LEVEL OUTLINE (DISABLED BY DEFAULT)
+-- Apply only when the SLEV stock-level join regresses to a large STOCK scan.
+-- First compare actual executions with identical warehouse/district/threshold
+-- values and verify identical counts; EXPLAIN alone does not prove a benefit.
+-- OceanBase 4.4.2.1 testing of the unmodified stored procedure on a fresh
+-- four-warehouse, column-store copy found the nested-loop path faster than
+-- default, hash and merge paths. On already-compacted data, merge can be faster;
+-- recheck after changing data, storage, warehouse scale or OceanBase version.
+-- This fixes the join order/method and primary-key access paths, not every
+-- operator or physical storage condition. It does not change transaction SQL.
+-- All statements below are commented: sourcing this file creates no outline.
+-- Copy only the optional SQL statements you need, remove their leading "-- ",
+-- and execute as the SAME benchmark user in EACH configured TPROC-C database,
+-- before VU warm-up. Keep the explanatory prose commented.
+-- An outline is database-scoped; a new benchmark database needs its own copy.
+-- Replace tpcc below with the configured database. Do not source the whole file
+-- just to apply this outline: the earlier sections change other tenant settings.
+--
+-- USE tpcc;
+-- SHOW INDEX FROM order_line WHERE Key_name = 'PRIMARY';
+-- SHOW INDEX FROM stock WHERE Key_name = 'PRIMARY';
+-- The intended path scans the last 20 orders for one warehouse/district, then
+-- gets each STOCK row by BOTH s_w_id and s_i_id, rather than scanning a warehouse.
+-- Confirm order_line's primary-key prefix is (ol_w_id, ol_d_id, ol_o_id).
+-- Run an unmodified SLEV call first, then confirm its INTERNAL SELECT SQL_ID:
+-- CALL SLEV(1, 1, 10, @stock_count);
+-- SELECT @stock_count;
+-- SELECT DISTINCT p.SQL_ID, p.STATEMENT, p.PLAN_HASH
+-- FROM oceanbase.GV$OB_PLAN_CACHE_PLAN_STAT p
+-- WHERE p.DB_ID IN (SELECT DISTINCT DB_ID FROM oceanbase.GV$OB_SQL_AUDIT
+--                   WHERE DB_NAME = DATABASE())
+--   AND p.SQL_ID = '74AF455B28BEDB63AFA6CAFC08C54A2C';
+-- This ID was verified for the current native HammerDB SLEV internal SELECT,
+-- including Danny 943fc46 and OceanBase Preview 4 d5b642d2. Different SQL text,
+-- whitespace or Client SQL drivers can require a different ID; never bind the
+-- outer CALL's SQL_ID. Inspect existing outlines before adding one; SQL_ID
+-- outlines override SQL hints. Do not replace an existing outline blindly.
+-- SELECT OUTLINE_NAME, SQL_ID, OUTLINE_ID
+-- FROM oceanbase.DBA_OB_OUTLINES
+-- WHERE DATABASE_NAME = DATABASE();
+-- CREATE OUTLINE hdb_tpcc_slev_plan
+--   ON '74AF455B28BEDB63AFA6CAFC08C54A2C'
+--   USING HINT /*+ LEADING(order_line stock) USE_NL(stock)
+--                  INDEX(order_line PRIMARY) INDEX(stock PRIMARY) */;
+--
+-- Reconnect and run SLEV WITHOUT adding hints to the CALL or procedure body.
+-- CALL SLEV(1, 1, 10, @stock_count);
+-- SELECT @stock_count;
+-- Verify actual execution: the internal SELECT must use this OUTLINE_ID and
+-- a nested-loop join with a STOCK primary-key get, not a broad STOCK range scan.
+-- SELECT p.SVR_IP, p.PLAN_ID, p.SQL_ID, p.PLAN_HASH,
+--        p.OUTLINE_ID, p.OUTLINE_DATA, p.HINTS_ALL_WORKED
+-- FROM oceanbase.GV$OB_PLAN_CACHE_PLAN_STAT p
+-- JOIN oceanbase.DBA_OB_OUTLINES o
+--   ON p.TENANT_ID = o.TENANT_ID AND p.DB_ID = o.DATABASE_ID
+--  AND p.OUTLINE_ID = o.OUTLINE_ID
+-- WHERE o.DATABASE_NAME = DATABASE()
+--   AND o.OUTLINE_NAME = 'hdb_tpcc_slev_plan';
+-- Inspect those PLAN_IDs in GV$OB_PLAN_CACHE_PLAN_EXPLAIN and compare server
+-- ELAPSED_TIME in GV$OB_SQL_AUDIT for the internal SELECT on the same inputs.
+-- Do this before the benchmark; keep VUs, seeds, timings and other settings fixed.
+--
+-- Rollback: remove only this optional outline from the configured database,
+-- reconnect, rerun SLEV and verify the new plan is no longer outline-bound.
+-- DROP OUTLINE hdb_tpcc_slev_plan;
+-- References (OceanBase 4.4.2 outline binding and join/index hints):
+-- https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000005287850
+-- https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000005287286
