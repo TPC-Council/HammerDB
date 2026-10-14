@@ -1,6 +1,34 @@
 # OceanBase-specific TPROC-C schema generation. Keep this separate from the
 # native MySQL implementation so MySQL DDL and behavior remain unchanged.
 namespace eval oceanbase::mysql {
+    proc rewrite_tprocc_schema {script} {
+        # OceanBase treats prefix keys differently from full-column keys even
+        # when the prefix spans the declared VARCHAR length.
+        set prefix_index {KEY c_w_id (`c_w_id`,`c_d_id`,`c_last`(16),`c_first`(16))}
+        set full_index {KEY c_w_id (`c_w_id`,`c_d_id`,`c_last`,`c_first`)}
+        set marker {    puts "CREATING TPCC STORED PROCEDURES"}
+        foreach anchor [list $prefix_index $marker] {
+            if {[string first $anchor $script] < 0} {
+                error "Cannot locate the OceanBase TPROC-C schema anchor: $anchor"
+            }
+        }
+        # Procedure string parameters inherit the creation session's collation.
+        # Match the actual columns, including builds into an existing database,
+        # so name predicates can use the customer index without conversion.
+        set charset_setup {
+    set name_columns [mysql::sel $mysql_handler {SELECT COLUMN_NAME, CHARACTER_SET_NAME, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customer' AND COLUMN_NAME IN ('c_first', 'c_last') ORDER BY COLUMN_NAME} -list]
+    if {[llength $name_columns] != 2 || [lindex $name_columns 0 0] ne "c_first" || [lindex $name_columns 1 0] ne "c_last"} {
+        error "Cannot determine the OceanBase customer name character set"
+    }
+    lassign [lindex $name_columns 0] column_name name_charset name_collation
+    if {[lrange [lindex $name_columns 1] 1 end] ne [list $name_charset $name_collation] || ![regexp {^[a-zA-Z0-9_]+$} $name_charset] || ![regexp {^[a-zA-Z0-9_]+$} $name_collation]} {
+        error "OceanBase customer name columns must have matching character sets and collations"
+    }
+    mysql::exec $mysql_handler "SET NAMES $name_charset COLLATE $name_collation"
+}
+        return [string map [list $prefix_index $full_index $marker "$marker$charset_setup"] $script]
+    }
+
     variable distributed_tprocc_procedure {
 proc CreateOceanBaseTables {mysql_handler mysql_storage_engine database partition_count host port socket ssl_options user password} {
     puts "CREATING DISTRIBUTED OCEANBASE TPROC-C TABLES"

@@ -95,6 +95,65 @@ test mysql-after-ob {A native MySQL script has no OceanBase runtime dependency} 
 # Generate schema scripts without allocating loader threads or connecting to a database.
 rename load_virtual original_load_virtual
 proc load_virtual {} {}
+set schema_saved_ob $::configoceanbase
+foreach database {mysql ob ob mysql} distributed {false false true false} label {mysql-before-ob oceanbase-single oceanbase-distributed mysql-after-ob} expected {{1 0 0} {0 1 1} {0 2 1} {1 0 0}} {
+    dbset db $database
+    dbset bm TPROC-C
+    if {$database eq "ob"} {diset tpcc ob_distributed_schema $distributed}
+    test customer-index-$label {Only OceanBase builds use full customer name columns and creation-session alignment} -body {
+        if {$database eq "ob"} {build_obtpcc} else {build_mysqltpcc}
+        list [regexp -all {KEY c_w_id \(`c_w_id`,`c_d_id`,`c_last`\(16\),`c_first`\(16\)\)} $::_ED(package)] \
+             [regexp -all {KEY c_w_id \(`c_w_id`,`c_d_id`,`c_last`,`c_first`\)} $::_ED(package)] \
+             [regexp -all {SET NAMES \$name_charset COLLATE \$name_collation} $::_ED(package)]
+    } -result $expected
+    if {$database eq "ob"} {set customer_schema_proc [generated_proc CreateStoredProcs $::_ED(package)]}
+}
+foreach charset {latin1 utf8mb4} collation {latin1_bin utf8mb4_bin} {
+    test customer-procedure-charset-$charset {Procedure creation uses the table's actual charset and collation first} -setup {
+        set worker [interp create]
+        $worker eval $customer_schema_proc
+        $worker eval {
+            set statements {}
+            proc puts {args} {}
+            proc mysqlexec {handle sql} {lappend ::statements $sql}
+            namespace eval mysql {
+                proc sel {handle sql mode} {
+                    if {![string match {*TABLE_SCHEMA = DATABASE()*} $sql] || $mode ne "-list"} {error "Wrong metadata lookup"}
+                    return $::name_columns
+                }
+                proc exec {handle sql} {lappend ::statements $sql}
+            }
+        }
+        $worker eval [list set name_columns [list [list c_first $charset $collation] [list c_last $charset $collation]]]
+    } -body {
+        $worker eval {CreateStoredProcs handle}
+        set statements [$worker eval {set statements}]
+        expr {[lindex $statements 0] eq "SET NAMES $charset COLLATE $collation" && [llength $statements] == 6 && [string match {*CREATE PROCEDURE `NEWORD`*} [lindex $statements 1]]}
+    } -cleanup {
+        interp delete $worker
+    } -result 1
+}
+foreach label {missing mismatched invalid} columns {{} {{c_first latin1 latin1_bin} {c_last utf8mb4 utf8mb4_bin}} {{c_first {latin1; unsafe} latin1_bin} {c_last {latin1; unsafe} latin1_bin}}} {
+    test customer-procedure-charset-$label {Invalid metadata stops before any stored procedure is created} -setup {
+        set worker [interp create]
+        $worker eval $customer_schema_proc
+        $worker eval {
+            set statements {}
+            proc puts {args} {}
+            proc mysqlexec {handle sql} {lappend ::statements $sql}
+            namespace eval mysql {
+                proc sel {args} {return $::name_columns}
+                proc exec {args} {error "Unexpected charset command"}
+            }
+        }
+        $worker eval [list set name_columns $columns]
+    } -body {
+        list [$worker eval {catch {CreateStoredProcs handle}}] [$worker eval {llength $statements}]
+    } -cleanup {
+        interp delete $worker
+    } -result {1 0}
+}
+set ::configoceanbase $schema_saved_ob
 proc tpch_date_formats {script} {
     list [regexp -all {str_to_date\('[^']*','%Y-%M-%d'\)} $script] \
          [regexp -all {str_to_date\('[^']*','%Y-%b-%d'\)} $script]

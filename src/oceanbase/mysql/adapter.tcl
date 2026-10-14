@@ -179,6 +179,9 @@ namespace eval oceanbase::mysql {
                 }
                 set _ED(package) [rewrite_distributed_tprocc_queries $_ED(package)]
             }
+            if {$workload eq "tpcc" && $action eq "build"} {
+                set _ED(package) [rewrite_tprocc_schema $_ED(package)]
+            }
             if {$workload eq "tpcc" && $action eq "build" && [dict get $normalized tpcc ob_history_pk] eq "true"} {
                 set _ED(package) [rewrite_history_pk $_ED(package) [dict get $normalized tpcc ob_distributed_schema]]
             }
