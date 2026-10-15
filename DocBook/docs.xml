@@ -22,149 +22,89 @@
     <section>
       <title>Release Notes</title>
 
-      <para>The following are the release notes for HammerDB v6.0.</para>
+      <para>The following release notes describe the changes in HammerDB
+      v6.1.</para>
 
-      <section>
-        <title>HammerDB v6.0 Overview</title>
+      <section xml:id="release-notes-v61">
+        <title>HammerDB v6.1 Overview</title>
 
-        <para>HammerDB v6.0 is a major release that updates the HammerDB
-        runtime, packaging, automation, metrics and result sharing
-        capabilities. The release includes new CI and pipeline automation
-        functionality, enhanced database and operating system metrics, Active
-        Session History support for MySQL and MariaDB, improved performance
-        profile comparison, extended percentile reporting and richer metadata
-        capture for benchmark results.</para>
+        <para>HammerDB v6.1 adds VillageSQL as a separate MySQL-compatible
+        database engine for TPROC-C and TPROC-H, native Linux ARM64 (aarch64)
+        support, modernised Web Service Jobs and Pipelines interfaces, and
+        further CI automation and workload improvements. It also adds TLS
+        connection improvements for MySQL, MariaDB and VillageSQL, and new
+        MariaDB TPROC-C stored procedure implementations.</para>
 
-        <para>HammerDB v6.0 supports both interactive benchmark use and more
-        repeatable automated benchmark workflows. Users can continue to run
-        HammerDB manually from the graphical interface, command line interface
-        or web service, while advanced users can also use the new automation
-        features to support database build, install, schema creation, workload
-        execution and result capture pipelines.</para>
+        <para>Linux ARM64 support extends HammerDB to native Arm systems in
+        addition to x86-64. The multi-architecture Docker packaging introduced
+        alongside the 6.0 builds supports linux/amd64 and linux/arm64.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis>Database engines:</emphasis> VillageSQL TPROC-C
+            and TPROC-H workloads and VillageSQL CI provider; Azure
+            Citus/Elastic Cluster connection and load-balancer port support
+            for PostgreSQL TPROC-C.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Connections and transactions:</emphasis>
+            MySQL-family one-way TLS without explicit CA files; set-based
+            MariaDB New Order and Delivery with automatic fallback;
+            conditional MariaDB UPDATE RETURNING INTO support; Percona Server
+            for MySQL identification in results.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Builds and automation:</emphasis> native ARM64
+            Bawt builds; external CI configuration discovery and override
+            persistence; CPU-scaled profile virtual-user increments and capped
+            virtual users for very large schema builds; VillageSQL Tcl and
+            Python automation scripts.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Web Service and usability:</emphasis> redesigned
+            light/dark Jobs, Pipelines, Help and benchmark report pages; more
+            consistent pipeline navigation and job deletion; flat desktop GUI
+            menus on Linux and Windows.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Defaults and correctness:</emphasis> increased
+            TPROC-C total iterations default to 2147483647 and fixes for
+            PostgreSQL rollback/vacuum, MySQL-family generated errors and
+            connection pools, Windows BCP certificate handling, Active Session
+            History wait attribution, I/O metric aggregation, CPU reporting,
+            job timing, graph clipping, pipeline profile IDs, and metrics
+            agent disconnects.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Individual changes and implementation details are recorded in
+        the <link
+        xlink:href="https://github.com/TPC-Council/HammerDB/pulls">HammerDB
+        pull request history</link>. The following chapters describe new
+        user-facing functionality; maintenance fixes do not each require a
+        separate procedure or screenshot.</para>
       </section>
 
       <section>
-        <title>CI and Pipeline Automation</title>
+        <title>Upgrading Directly from HammerDB v5.0</title>
 
-        <para>HammerDB v6.0 adds CI and pipeline automation capabilities for
-        repeatable database build and benchmark workflows. These features are
-        intended for users who want to automate the process of building a
-        database from source, installing or preparing the database, creating a
-        HammerDB schema, running a workload and collecting the resulting
-        performance data.</para>
-
-        <para>The v6.0 release adds CI and pipeline capabilities for MariaDB,
-        MySQL and PostgreSQL. The automation functionality includes
-        database-specific pipeline execution, automated schema sizing,
-        workload execution, result capture and fixes to ensure that virtual
-        user state is handled correctly across mixed automated, graphical and
-        command line runs.</para>
-
-        <para>CI and pipeline automation is an advanced capability and is not
-        required for normal HammerDB use. Users who want to install HammerDB
-        and run workloads manually from the graphical interface or command
-        line interface can continue to use HammerDB in the same way as
-        previous releases.</para>
-      </section>
-
-      <section>
-        <title>Metrics, I/O Metrics and Active Session History</title>
-
-        <para>HammerDB v6.0 extends the Metrics functionality with additional
-        database and operating system measurements. The release adds I/O
-        metrics including IOPS and MB/s, improves messages when operating
-        system metrics collection cannot start because required tools such as
-        sysstat are not installed, and adds database metrics options for MySQL
-        and MariaDB.</para>
-
-        <para>HammerDB v6.0 also adds an Active Session History metrics viewer
-        for MySQL and MariaDB. This viewer is designed to help correlate
-        benchmark activity with database activity during a workload run. It
-        provides a database-focused view of active sessions so that users can
-        better understand what the database is doing while HammerDB is driving
-        load.</para>
-
-        <para>PostgreSQL metrics are also updated in v6.0, including
-        PostgreSQL 18 Active Session History support and improvements to
-        pgsentinel discovery. MariaDB TPROC-H adds support for engine
-        independent statistics, and MariaDB/MySQL pre-created database builds
-        can disable foreign key checks during loading where
-        appropriate.</para>
-      </section>
-
-      <section>
-        <title>Result Upload, Sharing and Metadata Capture</title>
-
-        <para>HammerDB v6.0 improves support for sharing benchmark results and
-        capturing the metadata needed to make those results easier to
-        interpret. TPROC-H result sharing now includes database version and
-        metrics information, and submitted results can include more detailed
-        system, hardware and software fields.</para>
-
-        <para>HammerDB v6.0 supports uploading benchmark result artifacts for
-        publication or review. This allows a locally generated HammerDB result
-        to be shared as hosted benchmark evidence rather than remaining only
-        as a local result file. Uploaded results can include the workload
-        result, database version, metrics and system metadata needed to make
-        the result easier to understand and compare.</para>
-
-        <para>The purpose of this additional metadata is to make benchmark
-        results more useful as evidence. A result is easier to compare and
-        reproduce when it includes information about the database version,
-        system configuration, hardware, software, workload settings and
-        metrics collected during the run.</para>
-
-        <para>HammerDB v6.0 also simplifies the artifact submit process. This
-        improves the workflow for users who want to publish, archive or review
-        benchmark evidence from a HammerDB run.</para>
-      </section>
-
-      <section>
-        <title>Performance Profiles and Timing Percentiles</title>
-
-        <para>HammerDB v6.0 improves performance profile comparison and
-        response time reporting. Timing profiles now support reservoir
-        sampling and extended percentile reporting, making it easier to
-        compare latency distributions as well as headline throughput.</para>
-
-        <para>These improvements are intended to make performance profiles
-        more useful for repeatable testing, regression detection and
-        evidence-based comparison of database configurations. HammerDB can
-        show not only whether one run achieved a higher throughput, but also
-        whether response time behaviour changed across the run.</para>
-      </section>
-
-      <section>
-        <title>Web Service and SCGI Support</title>
-
-        <para>HammerDB v6.0 enables the HammerDB web service to run as an SCGI
-        application. The release also improves web service jobs and pipelines
-        HTML formatting and fixes web form handling for proxy
-        environments.</para>
-
-        <para>These changes make the HammerDB web service more suitable for
-        deployment behind a web server or automation gateway and support the
-        broader direction of HammerDB as a tool that can be used both
-        interactively and as part of automated benchmark
-        infrastructure.</para>
-      </section>
-
-      <section>
-        <title>Remove HammerDB v5.0 Persistent Configuration Files Before
-        Installation</title>
-
-        <para>HammerDB v6.0 is a major release and users upgrading from
-        HammerDB v5.0 should remove any existing HammerDB persistent
-        configuration database files before starting HammerDB v6.0 for the
-        first time.</para>
+        <para>When upgrading directly from HammerDB v5.0 to v6.1, remove or
+        back up the old HammerDB persistent configuration database files
+        before starting the newer version for the first time. This legacy
+        migration step is not a requirement to delete job history when
+        upgrading from HammerDB v6.0 to v6.1.</para>
 
         <para>HammerDB stores persistent configuration and job information in
         SQLite database files. These files commonly use the .db and .DB file
         extensions and are stored by default in the operating system temporary
         directory, unless the location has been changed in the HammerDB
-        configuration. Removing these files before starting HammerDB v6.0
-        ensures that the new release creates fresh configuration databases
-        using the v6.0 defaults.</para>
+        configuration. For a direct v5.0 upgrade, removing the old
+        configuration files enables v6.1 to create configuration databases
+        with current defaults.</para>
 
         <para>On Linux, the default temporary directory is usually /tmp. On
         Windows, the temporary directory is usually the directory referenced
@@ -178,7 +118,7 @@
         copy the files to a safe backup location before removing them from the
         active HammerDB temporary directory.</para>
 
-        <para>After the old files have been removed, start HammerDB v6.0.
+        <para>After the old files have been removed, start HammerDB v6.1.
         HammerDB will create new persistent configuration and jobs database
         files automatically.</para>
       </section>
@@ -278,16 +218,7 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
         Build</title>
 
         <para>When running the HammerDB Docker image, drivers for all
-        databases are pre-installed except for Db2. This is because the
-        required redistributable IBM Data Server Driver for ODBC and CLI is
-        not available to be pulled automatically within the build and the IBM
-        documentation lacks clarity on the conditions for whether a copy of
-        the redistributable package can be made available by HammerDB
-        royalty-free. Therefore any user of Db2 must download and install
-        their own Db2 client after installing Docker. This issue is tracked in
-        <link
-        xlink:href="https://github.com/TPC-Council/HammerDB/issues/404">Issue
-        #404</link> and continues to await resolution from IBM.</para>
+        databases are pre-installed except for Db2.</para>
       </section>
     </section>
 
@@ -346,342 +277,311 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       GitHub repository.</para>
     </section>
 
-    <section>
-      <title>HammerDB v6.0 New Features</title>
+    <section xml:id="new-features-v61">
+      <title>HammerDB v6.1 New Features</title>
 
       <section>
-        <title>Overview</title>
+        <title>Native Linux ARM64 (aarch64) Support</title>
 
-        <para>HammerDB v6.0 extends HammerDB beyond interactive database
-        benchmarking into automated build, benchmark, metrics capture and
-        result sharing workflows. The release includes new CI and pipeline
-        automation capabilities for MariaDB, MySQL and PostgreSQL, enhanced
-        database and operating system metrics, Active Session History support
-        for MySQL and MariaDB, improved performance profile comparison,
-        extended percentile reporting and richer metadata capture for
-        submitted benchmark results.</para>
-
-        <para>The release also includes packaging and runtime changes,
-        including single-file executables for the HammerDB graphical
-        interface, command line interface and web service. HammerDB remains
-        fully open source under the GNU General Public License v3.0, and the
-        move to single-file executable binary releases does not change the
-        HammerDB license or the availability of the source code.</para>
+        <para>HammerDB 6.1 supports native Linux ARM64 builds using the Bawt
+        build system. ARM64 uses its own Tcl bootstrap, build setup and native
+        client dependencies; it is not an x86-64 binary run under emulation.
+        The ARM64 build command and requirements are documented under <link
+        linkend="arm64-build-v61">Building HammerDB Natively on Linux
+        ARM64</link>. The published Docker workflow supports multi-platform
+        linux/amd64 and linux/arm64 manifests; availability of HammerDB 6.1
+        images is subject to their separate release and validation.</para>
       </section>
 
       <section>
-        <title>CI and Pipeline Automation</title>
+        <title>VillageSQL TPROC-C, TPROC-H and CI</title>
 
-        <para>HammerDB v6.0 introduces CI and pipeline automation capabilities
-        for repeatable database build and benchmark workflows. These
-        capabilities are intended for users who want to automate the process
-        of building a database from source, installing or preparing the
-        database, creating a HammerDB schema, running a workload and
-        collecting the resulting performance data.</para>
-
-        <para>The v6.0 release adds CI and pipeline capabilities for MariaDB,
-        MySQL and PostgreSQL. This includes database-specific automation for
-        pipeline execution, schema sizing, workload execution and result
-        capture. The automation functionality also includes fixes to ensure
-        that virtual user state is handled correctly across mixed automated,
-        graphical and command line runs.</para>
-
-        <para>Automated workflows require more environment preparation than
-        standard HammerDB use. In addition to the HammerDB package itself, the
-        target system must have the compiler, database build dependencies,
-        database client libraries, runtime libraries and operating system
-        tools required by the selected database and workload. For this reason,
-        the CI and pipeline features should be treated as an advanced
-        capability rather than as a required installation step.</para>
+        <para>VillageSQL is supported as an independent HammerDB database
+        selection built on MySQL compatibility. Its benchmark workflow is
+        described in <link linkend="villagesql-tprocc-v61">VillageSQL
+        TPROC-C</link> and <link linkend="villagesql-tproch-v61">VillageSQL
+        TPROC-H</link>. Most procedures and screenshots are shared with the
+        existing MySQL documentation; only engine-specific configuration and
+        choices are documented separately. VillageSQL also has a CI pipeline
+        provider.</para>
       </section>
 
       <section>
-        <title>Metrics and Active Session History</title>
+        <title>MySQL-Family TLS Connections</title>
 
-        <para>HammerDB v6.0 extends the Metrics functionality with additional
-        database and system measurements. The release adds I/O metrics
-        including IOPS and MB/s, improves messages when operating system
-        metrics collection cannot start because required tools such as sysstat
-        are not installed, and adds database metrics options for MySQL and
-        MariaDB.</para>
-
-        <para>HammerDB v6.0 also adds an Active Session History metrics viewer
-        for MySQL and MariaDB. This viewer is designed to help correlate
-        benchmark activity with database activity during a workload run. It
-        provides a database-focused view of active sessions so that users can
-        better understand what the database is doing while HammerDB is driving
-        load.</para>
-
-        <para>PostgreSQL metrics are also updated in v6.0, including
-        PostgreSQL 18 Active Session History support and improvements to
-        pgsentinel discovery. MariaDB TPROC-H adds support for engine
-        independent statistics, and MariaDB/MySQL pre-created database builds
-        can disable foreign key checks during loading where
-        appropriate.</para>
+        <para>MySQL, MariaDB and VillageSQL can request one-way TLS in
+        HammerDB 6.1 without entering explicit CA, client certificate or key
+        files. Existing explicit certificate configuration remains available.
+        See <link linkend="mysql-family-tls-v61">SSL/TLS Connections for
+        MySQL, MariaDB and VillageSQL</link> for the details and the
+        distinction between TLS encryption and server verification.</para>
       </section>
 
       <section>
-        <title>Result Upload, Sharing and Metadata Capture</title>
+        <title>MariaDB Transactional Workload Improvements</title>
 
-        <para>HammerDB v6.0 adds further support for sharing benchmark results
-        and capturing the metadata needed to make those results easier to
-        interpret. TPROC-H result sharing now includes database version and
-        metrics information, and submitted results can include more detailed
-        system, hardware and software fields.</para>
-
-        <para>HammerDB v6.0 supports uploading benchmark result artifacts for
-        publication or review. This allows a locally generated HammerDB result
-        to be shared as hosted benchmark evidence rather than remaining only
-        as a local result file. Uploaded results can include the workload
-        result, database version, metrics and system metadata needed to make
-        the result easier to understand and compare.</para>
-
-        <para>The purpose of this additional metadata is to make benchmark
-        results more useful as evidence. A result is easier to compare and
-        reproduce when it includes information about the database version,
-        system configuration, hardware, software, workload settings and
-        metrics collected during the run.</para>
-
-        <para>HammerDB v6.0 also simplifies the artifact submit process. This
-        improves the workflow for users who want to publish or archive
-        benchmark evidence from a HammerDB run.</para>
+        <para>MariaDB TPROC-C gains set-based New Order and Delivery
+        procedures when JSON_TABLE is supported, while unsupported servers use
+        the previous row-by-row logic. UPDATE RETURNING INTO is also detected
+        at schema creation and used only when supported. See <link
+        linkend="mariadb-transactions-v61">MariaDB Set-Based New Order and
+        Delivery</link>.</para>
       </section>
 
       <section>
-        <title>Performance Profiles and Timing Percentiles</title>
+        <title>Web Service, CI and Benchmark Profiles</title>
 
-        <para>HammerDB v6.0 improves performance profile comparison and
-        response time reporting. Timing profiles now support reservoir
-        sampling and extended percentile reporting, making it easier to
-        compare latency distributions as well as headline throughput.</para>
-
-        <para>These improvements are intended to make performance profiles
-        more useful for repeatable testing, regression detection and
-        evidence-based comparison of database configurations. HammerDB can
-        show not only whether one run achieved a higher throughput, but also
-        whether response time behaviour changed across the run.</para>
+        <para>The Web Service has new light and dark presentation, revised
+        Jobs and Pipelines navigation, direct access to pipeline activity and
+        improved completed-job deletion. CI loads its base settings from
+        ci.xml and keeps only explicit ciset overrides in ci.db. Profile
+        automation selects CPU-dependent virtual-user step sizes.</para>
       </section>
 
       <section>
-        <title>Web Service and Automation Improvements</title>
+        <title>PostgreSQL Azure Citus and Other Compatibility Changes</title>
 
-        <para>HammerDB v6.0 enables the HammerDB web service to run as an SCGI
-        application, improves web service jobs and pipelines HTML formatting,
-        and fixes web form handling for proxy environments. These changes make
-        the web service more suitable for deployment behind a web server or
-        automation gateway.</para>
-
-        <para>The release also includes AWS cloud metadata detection fixes,
-        automated schema sizing updates and improvements to pipeline result
-        handling. These changes support the broader direction of HammerDB as a
-        tool that can be used both interactively and as part of automated
-        benchmark infrastructure.</para>
+        <para>Azure Citus/Elastic Cluster supports use of an existing database
+        and an optional load-balancer port for data population and benchmark
+        connections, while administrative operations retain the coordinator
+        port. TPROC-C also increases the default total transactions per
+        virtual user, and Percona Server for MySQL can be identified from its
+        server version comment in result metadata.</para>
       </section>
 
-      <section>
+      <section xml:id="pull-request-summary-v61">
         <title>Pull Request Summary</title>
 
-        <para>HammerDB v6.0 New Features are all referenced to <link
-        xlink:href="https://github.com/TPC-Council/HammerDB/pulls?q=is%3Apr+is%3Aclosed">GitHub
-        Pull Requests</link>, where more details for each new feature and
-        related pull requests can be found here:</para>
+        <para>HammerDB v6.1 changes are listed below with links to the
+        corresponding GitHub pull requests.</para>
+
+        <bridgehead>New databases and functionality</bridgehead>
 
         <itemizedlist>
           <listitem>
-            <para>[TPC-Council#897] Fix NULL Oracle Version reported for
-            TPROC-H</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/920">#920</link>
+            Add VillageSQL database engine for TPROC-C and TPROC-H.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#894] Fix SQL Server GUI Scale Factor
-            Option</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/930">#930</link>
+            Add VillageSQL CI provider.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#893] Fix AWS cloud metadata detection</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/895">#895</link>
+            Add Azure Citus and Citus Load Balancer support for
+            PostgreSQL.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#892] Fix virtual user state across mixed
-            automated, GUI and CLI runs</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/945">#945</link>
+            MariaDB set-based New Order and Delivery using JSON arrays.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#891] Simplify artifact submit process</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/935">#935</link>
+            MariaDB UPDATE RETURNING INTO with feature detection.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#889] Update TPROC-C automated schema
-            sizing</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/937">#937</link>
+            Enable MySQL, MariaDB and VillageSQL TLS without explicit CA
+            files.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#888] Add TPROC-H version and metrics to result
-            sharing</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/899">#899</link>
+            Native ARM64 (aarch64) support in the Bawt build system.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#885] Add database metrics options for MySQL and
-            MariaDB</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/902">#902</link>
+            Multi-architecture Docker images introduced with the HammerDB 6.0
+            image series.</para>
+          </listitem>
+        </itemizedlist>
+
+        <bridgehead>Automation, UI and usability</bridgehead>
+
+        <itemizedlist>
+          <listitem>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/951">#951</link>
+            Modernise Web Service UI and dark-theme report logo.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#884] Fix Web Service Jobs and Pipelines HTML
-            Formatting</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/955">#955</link>
+            Align pipeline activity navigation and Run Benchmark
+            action.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#880] Add I/O Metrics (IOPS/MB/s) to
-            Metrics</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/953">#953</link>
+            Scale TPROC-C profile VUs, cap schema-build VUs and add VillageSQL
+            Python scripts.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#879] Fix arithmetic in PostgreSQL stock
-            update</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/922">#922</link>
+            Fix CI configuration discovery and persistent overrides.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#878] Fix profile compare form and hide
-            unsupported from automation</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/940">#940</link>
+            Increase default TPROC-C total iterations.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#877] Fix form warnings for proxy</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/939">#939</link>
+            Flatten GUI menus on Linux and Windows.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#876] Add CI/Pipeline Automation for
-            MySQL</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/954">#954</link>
+            Support additional MariaDB tags and increase pipeline dropdown
+            limit.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#875] Add PostgreSQL CI/Pipeline
-            automation</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/942">#942</link>
+            Handle multi-segment CI branch and tag references.</para>
+          </listitem>
+        </itemizedlist>
+
+        <bridgehead>Compatibility, metrics and correctness</bridgehead>
+
+        <itemizedlist>
+          <listitem>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/904">#904</link>
+            Fix PostgreSQL vacuum ordering and virtual-user shutdown
+            reporting.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#870] Fix pgsentinel discovery for PostgreSQL
-            metrics</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/906">#906</link>
+            Fix MySQL and MariaDB ASH completed-wait attribution.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#868] Improve performance profile comparison,
-            response time reporting, and CI bug fixes</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/907">#907</link>
+            Update pgtcl to 2.1.1.2.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#867] Auto fix PostgreSQL choice of functions or
-            stored procedures</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/912">#912</link>
+            Fix Windows BCP trusted-certificate handling.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#866] Fix Windows clearline in default
-            COLOR</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/913">#913</link>
+            Fix Linux I/O metric partition double counting.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#865] Standardise Cluster Connect Pool
-            terminology</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/923">#923</link>
+            Fix JOBTIMING upgrade and TPROC-H timing message.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#864] Add reservoir sampling, extended
-            percentile support to timing profiles and boxplots</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/924">#924</link>
+            Fix transaction counter graph clipping.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#863] Add Active Session History (ASH) metrics
-            viewer for MySQL and MariaDB</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/925">#925</link>
+            Prevent single pipelines inheriting a previous profile ID.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#861] Remove arbitrary upper limit on num_vu for
-            schema build</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/936">#936</link>
+            Fix PostgreSQL New Order invalid-item rollback.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#860] Add CI/Pipeline capabilities for
-            MariaDB</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/938">#938</link>
+            Fix CPU count from reused system details.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#859] Add Detailed System, Hardware, and
-            Software Fields to Results</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/941">#941</link>
+            Centralise schema loader worker-state handling.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#856] Fix PostgreSQL vacuum running on wrong
-            database</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/943">#943</link>
+            Fix MySQL and VillageSQL asynchronous connection-pool
+            arguments.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#854] Update ASH metrics for PostgreSQL
-            18</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/926">#926</link>
+            Fix MySQL-family generated transactions and schema-check
+            errors.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#835] Update TPROC-H GUI Options for all Scale
-            Factors</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/946">#946</link>
+            Fix VillageSQL New Order deadlock and amount rounding.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#830] Improve message if metstart fails because
-            sysstat is not installed</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/944">#944</link>
+            Detect Percona Server for MySQL from version comment.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#829] Add engine independent statistics to
-            MariaDB TPROC-H</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/952">#952</link>
+            Fix metrics callback hostnames and agent disconnect
+            clean-up.</para>
+          </listitem>
+        </itemizedlist>
+
+        <bridgehead>Release and documentation updates</bridgehead>
+
+        <itemizedlist>
+          <listitem>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/898">#898</link>
+            Update the 6.0 DocBook documentation baseline.</para>
           </listitem>
 
           <listitem>
-            <para>[TPC-Council#825] Disable FK checks for MariaDB/MySQL
-            pre-created database builds</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#818] Fix invalid command wapp-url</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#810] Update Tcl/Tk and TkPath versions</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#808] Enable Web Service to run as SCGI
-            application</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#805] Update ticklecharts package</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#797] Add handling of innodb_snapshot_isolation
-            to MariaDB</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#796] Add catch to CLI stty command on
-            Linux</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#795] Fix permission denied on loading database
-            libraries on Windows</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#794] Copyright message UTF-8</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#789] Docker Updates related to version
-            5.0</para>
-          </listitem>
-
-          <listitem>
-            <para>[TPC-Council#787] Fix steprun replica timing</para>
+            <para><link
+            xlink:href="https://github.com/TPC-Council/HammerDB/pull/934">#934</link>
+            Bump version and ChangeLog for HammerDB 6.1.</para>
           </listitem>
         </itemizedlist>
       </section>
@@ -690,20 +590,15 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
     <section>
       <title>Test Matrix</title>
 
-      <para>The following test matrix is provided as a guide based on the
-      operating system and database releases that HammerDB has been built and
-      tested against. The matrix is not an exclusive support or configuration
-      matrix and HammerDB has been designed to be compatible with the
-      supported databases running on different architectures and operating
-      systems. The HammerDB release files are built for the x86-64
-      architecture on Linux and Windows. To support other database versions
-      HammerDB supports building from source as described further in this
-      documentation. Where the database is not running on either Linux or
-      Windows on x86-64 HammerDB can be run on Linux or Windows and connect to
-      the target database on another architecture over a network.</para>
+      <para>The following tables list database versions and operating system
+      releases supported or documented for HammerDB 6.1. These are not
+      exhaustive certification lists; database client libraries and platform
+      compatibility must also be checked for the target system.</para>
 
-      <para>HammerDB has been built and tested on the following x86 64-bit
-      Linux and Windows releases.</para>
+      <para>Native Linux ARM64 builds were validated on Ubuntu 24.04.4 LTS
+      (aarch64), with MySQL 8.0.46, MariaDB 11.8.6 and PostgreSQL 18.4
+      workloads. Source build support and published binary/package
+      availability are separate considerations.</para>
 
       <table>
         <title>OS Test Matrix</title>
@@ -721,11 +616,17 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>Linux</entry>
 
-              <entry>Ubuntu 24.X / RHEL 9.X</entry>
+              <entry>Ubuntu 24.04 LTS (x86-64) / RHEL 9.x (x86-64)</entry>
             </row>
 
             <row>
-              <entry>Windows</entry>
+              <entry>Linux ARM64 (aarch64)</entry>
+
+              <entry>Ubuntu 24.04.4 LTS (aarch64) / RHEL 9.x (aarch64)</entry>
+            </row>
+
+            <row>
+              <entry>Windows x86-64</entry>
 
               <entry>Windows 11</entry>
             </row>
@@ -733,8 +634,9 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
         </tgroup>
       </table>
 
-      <para>HammerDB has been built and tested on the following x86-64
-      databases.</para>
+      <para>The versions below document HammerDB 6.1 database compatibility
+      based on the prior test matrix and new release validation. The specific
+      ARM64 functional-test versions are listed above.</para>
 
       <table>
         <title>Database Test Matrix</title>
@@ -770,20 +672,27 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
             <row>
               <entry>MySQL and compatible</entry>
 
-              <entry>5.7 / 8.0 / 9.0</entry>
+              <entry>5.7 / 8.0 / 8.4 / 9.0 (ARM64 tested: 8.0.46)</entry>
             </row>
 
             <row>
               <entry>MariaDB and compatible</entry>
 
-              <entry>10 / 11 / 12 / 13</entry>
+              <entry>10.x / 11.x / 12.x / 13.x (ARM64 tested: 11.8.6)</entry>
+            </row>
+
+            <row>
+              <entry>VillageSQL (MySQL 8.4-based)</entry>
+
+              <entry>0.0.7</entry>
             </row>
 
             <row>
               <entry>PostgreSQL (EnterpriseDB) (Amazon Redshift)
               (Greenplum)</entry>
 
-              <entry>10 / 11 / 12 / 13 / 14 / 15 / 16 / 17 / 18</entry>
+              <entry>10 / 11 / 12 / 13 / 14 / 15 / 16 / 17 / 18 (ARM64 tested:
+              18.4)</entry>
             </row>
           </tbody>
         </tgroup>
@@ -810,12 +719,77 @@ DIAG_DDE_ENABLED=FALSE</programlisting>
       which can be downloaded at no cost from Microsoft and run as
       follows:</para>
 
-      <programlisting>fciv -both HammerDB-6.0-Prod-Win.tar.gz</programlisting>
+      <programlisting>fciv -both HammerDB-6.1-Prod-Win.tar.gz</programlisting>
 
       <para>and on Linux with md5sum and sha1sum as shown:</para>
 
-      <programlisting>md5sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz
-sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
+      <programlisting>md5sum HammerDB-6.1-Prod-Lin-RHEL9.tar.gz
+sha1sum HammerDB-6.1-Prod-Lin-RHEL9.tar.gz</programlisting>
+    </section>
+
+    <section>
+      <title>HammerDB Interfaces: Web Service, Desktop GUI &amp; CLI</title>
+
+      <para>HammerDB provides 3 interfaces to configure, run and browse
+      database benchmark results running on Linux and Windows systems,
+      benchmarking databases on any platform enabling the user to configure
+      and run benchmarks most applicable to their needs with the underlying
+      high performance benchmarking engine common across all interfaces. It
+      also enables the user to seamlessly switch from local laptop and desktop
+      test platforms to enterprise server test and validation whil maintaining
+      identical an repeatable test platform for the worlds most popular
+      relational databases.</para>
+
+      <para>The Web Service provides detailed views and benchmark reports on
+      all of the tests run by HammerDB whether run by the web service, desktop
+      or CLI. It also provides Pipeline functionality on Linux to install,
+      configure and run benchmarks against open source databases.</para>
+
+      <figure>
+        <title>Web Service Interface</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata contentwidth="993" fileref="docs/images/ch1-10-1.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The CLI enables the user to access full HammerDB benchmark
+      functionality at a text prompt. The CLI can run in Python or TCL mode
+      accepting customised scripting in these languages for advanced testing.
+      Example Python and TCL scripts are included with HammerDB to be able to
+      run fully automated workloads from within this console
+      environment.</para>
+
+      <figure>
+        <title>CLI Interface</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata contentwidth="795" fileref="docs/images/ch1-10-2.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The Desktop runs natively on both Linux and Windows providing the
+      user with a graphical display to configure and run database benchmarks.
+      It also includes advanced system and database metrics for observing
+      database performance metrics in real time.</para>
+
+      <figure>
+        <title>Desktop Interface</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="docs/images/ch1-10-3.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>This section details the installation of HammerDB after which the
+      hammerdbws, hammerdbcli and hammerdb executables are available to run
+      the web service, command line and desktop GUI respectively.</para>
     </section>
 
     <section>
@@ -839,7 +813,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/CH1-4a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-4a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -851,7 +825,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-4.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-4.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -863,7 +837,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-5.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-5.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -875,7 +849,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-6.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-6.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -887,7 +861,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-7.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-7.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -900,7 +874,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-8.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-8.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -914,7 +888,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-8a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-8a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -940,7 +914,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-9.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-9.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -950,7 +924,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
         <title>tar.gz File</title>
 
         <para>As an alternative to the self-extracting installer you can
-        download and extract the .tar.gz file HammerDB-6.0-Prod-Win.tar.gz
+        download and extract the .tar.gz file HammerDB-6.1-Prod-Win.tar.gz
         into a directory of your choice using a utility such as <link
         xlink:href="https://www.7-zip.org/">7-zip</link>.</para>
       </section>
@@ -966,7 +940,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-11.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-11.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -984,7 +958,7 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-12.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1000,14 +974,14 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
         this file with the HammerDB web service.</para>
 
         <para>If there are SQLite files from a previous v5.0 release
-        installation, they should be removed before installing v6.0.</para>
+        installation, they should be removed before installing v6.1.</para>
 
         <figure>
           <title>Uninstall Database Files</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12aa.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-12aa.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1031,22 +1005,22 @@ sha1sum HammerDB-6.0-Prod-Lin-RHEL9.tar.gz</programlisting>
         <para>To install the .rpm file for your operating system, use the
         following command.</para>
 
-        <programlisting>[root@localhost Downloads]# rpm -ivh ./HammerDB-6.0-1.el9.x86_64.rpm
+        <programlisting>[root@localhost Downloads]# rpm -ivh ./HammerDB-6.1-1.el9.x86_64.rpm
 Verifying...                          ################################# [100%]
 Preparing...                          ################################# [100%]
 Updating / installing...
-   1:HammerDB-6.0-1.el9               ################################# [100%]
+   1:HammerDB-6.1-1.el9               ################################# [100%]
 </programlisting>
 
         <para>This will install HammerDB into the /opt directory.</para>
 
-        <programlisting>[root@localhost HammerDB-6.0]# pwd
-/opt/HammerDB-6.0
+        <programlisting>[root@localhost HammerDB-6.1]# pwd
+/opt/HammerDB-6.1
 </programlisting>
 
         <para>By default ownership is to the root user.</para>
 
-        <programlisting>root@localhost HammerDB-6.0]# ls -l
+        <programlisting>root@localhost HammerDB-6.1]# ls -l
 total 31124
 drwxr-xr-x. 2 root root       19 Apr  9 14:28 agent
 drwxr-xr-x. 3 root root     4096 Apr  9 14:28 config
@@ -1061,8 +1035,8 @@ drwxr-xr-x. 4 root root       31 Apr  9 14:28 scripts
 
         <para>You can change the ownership to any OS user.</para>
 
-        <programlisting>[root@localhost opt]# chown -R redhat:redhat HammerDB-6.0/
-[root@localhost opt]# ls -l HammerDB-6.0/
+        <programlisting>[root@localhost opt]# chown -R redhat:redhat HammerDB-6.1/
+[root@localhost opt]# ls -l HammerDB-6.1/
 total 31124
 drwxr-xr-x. 2 redhat redhat       19 Apr  9 14:36 agent
 drwxr-xr-x. 3 redhat redhat     4096 Apr  9 14:36 config
@@ -1107,7 +1081,7 @@ Do you want to continue? [Y/n] Y
 
         <para>To uninstall use apt-get remove.</para>
 
-        <programlisting>ubuntu@ubuntu24:~/HammerDB-6.0$ sudo apt-get remove hammerdb
+        <programlisting>ubuntu@ubuntu24:~/HammerDB-6.1$ sudo apt-get remove hammerdb
 Reading package lists... Done
 Building dependency tree... Done
 Reading state information... Done
@@ -1136,12 +1110,12 @@ Removing hammerdb (6.0-1) ...
         manage the dependencies manually. Run the following command to extract
         the correct package for your release.</para>
 
-        <programlisting>tar -zxvf HammerDB-6.0-Prod-RHEL9.tar.gz</programlisting>
+        <programlisting>tar -zxvf HammerDB-6.1-Prod-RHEL9.tar.gz</programlisting>
 
-        <para>To delete the installation, remove the HammerDB-6.0
+        <para>To delete the installation, remove the HammerDB-6.1
         directory.</para>
 
-        <programlisting>rm -rf HammerDB-6.0</programlisting>
+        <programlisting>rm -rf HammerDB-6.1</programlisting>
 
         <para>You can also remove the .db and .DB persistent configuration
         database files that are by default stored in the /tmp directory or
@@ -1158,189 +1132,75 @@ Removing hammerdb (6.0-1) ...
       </section>
     </section>
 
-    <section>
-      <title>HammerDB Docker Container Build &amp; Run</title>
+    <section xml:id="docker-multiarch-v61">
+      <title>HammerDB Multi-Architecture Docker Images</title>
 
-      <para>Containers are lightweight prebuilt environments that are easy to
-      distribute and deploy. HammerDB v6.0 includes both a pre-built Docker
-      image and a Dockerfile that can be used to create HammerDB Docker
-      containers. This container is based on an Ubuntu 24.04 base image and
-      provides a ready-to-use environment to run HammerDB. HammerDB has a
-      dependency on third-party driver libraries to connect to the target
-      databases. This Docker container installs the required client libraries
-      and sets up the environment that enables connections to the target
-      databases.</para>
+      <para>HammerDB uses multi-architecture Docker images to run on
+      linux/amd64 and linux/arm64 hosts. Docker chooses the appropriate
+      platform image from a published multi-platform manifest. The
+      architecture-aware build and publishing workflow was introduced with the
+      HammerDB 6.0 images and remains the basis for the 6.1 release. Check the
+      <link xlink:href="https://hub.docker.com/u/tpcorg">TPC-Council Docker
+      Hub repository</link> for the latest release available.</para>
+
+      <para>The image family consists of a base image, database-specific
+      client images for MySQL, MariaDB, PostgreSQL, Oracle and SQL Server, and
+      a combined image containing those five database clients. IBM Db2 is not
+      included in the combined published image. VillageSQL is a
+      MySQL-compatible database engine and uses the corresponding MySQL client
+      library within HammerDB; the published image catalog should be checked
+      for any additional engine-specific image tags.</para>
 
       <section>
-        <title>Docker Image</title>
+        <title>Pulling and Running a Published Image</title>
 
-        <para>A pre-built Docker image is provided on the official TPC site on
-        Docker Hub at <link
-        xlink:href="https://hub.docker.com/u/tpcorg">https://hub.docker.com/u/tpcorg</link>
-        that can be downloaded with the docker pull command either for a
-        complete image for all databases but also database-specific
-        images.</para>
+        <para>The Docker image tags are versioned. For example, the published
+        HammerDB 6.0 multi-architecture image may be pulled as follows;</para>
 
-        <programlisting>docker pull tpcorg/hammerdb
-docker pull tpcorg/hammerdb:mysql
-docker pull tpcorg/hammerdb:maria
-docker pull tpcorg/hammerdb:oracle
-docker pull tpcorg/hammerdb:postgres
-docker pull tpcorg/hammerdb:mssqls
+        <programlisting>docker pull tpcorg/hammerdb:v6.1-mysql
 </programlisting>
 
-        <para>The official HammerDB Docker images are hosted by the
-        TPC-Council.</para>
+        <para>To start a container with a known published tag, specify that
+        exact tag in docker run. Ensure that networking, database connection
+        settings and client libraries are appropriate to the host and SUT. On
+        Linux, --network host may be appropriate for local test deployments
+        where host networking is required.</para>
 
-        <figure>
-          <title>HammerDB Docker Hub</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12aaa.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <para>It is only necessary to follow the Dockerfile build instructions
-        if you wish to build your own Docker images from source.</para>
+        <programlisting>docker run --rm -it --network host tpcorg/hammerdb:v6.1-mysql bash</programlisting>
       </section>
 
       <section>
-        <title>Dockerfile Download and Installation</title>
+        <title>Building and Publishing Images</title>
 
-        <para>A Dockerfile is a shell script that automates the docker
-        container build. It makes it easier to spawn multiple containers with
-        ease. HammerDB source on GitHub is packaged with a folder “Docker”,
-        that contains all the Docker related files and folders. This folder
-        contains a Dockerfile for building a HammerDB client container that
-        supports all the databases that HammerDB supports, i.e. Oracle,
-        Microsoft SQL Server, IBM Db2, MySQL, PostgreSQL and MariaDB. The
-        Dockerfile is easy to customise for individual requirements.</para>
-
-        <para>The HammerDB Dockerfile is stored within the <link
-        xlink:href="https://github.com/TPC-Council/HammerDB">HammerDB GitHub
-        repository</link>. To download the Dockerfile either clone or download
-        the ZIP file of the HammerDB source and navigate to the Docker
-        directory.</para>
-
-        <figure>
-          <title>Docker File Download</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12a.PNG"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
-      </section>
-
-      <section>
-        <title>Building the HammerDB Container</title>
-
-        <para>The Docker container built from this Dockerfile installs the
-        required third-party driver libraries for all databases supported in
-        HammerDB except for IBM Db2. As IBM Db2 client libraries are not free
-        to redistribute they must be independently downloaded and added if
-        required. For the build to include IBM Db2, IBM Data Server Driver for
-        ODBC and CLI can be downloaded locally and placed in the same location
-        as Dockerfile.</para>
-
-        <para>To create an image: Change to the directory containing the
-        Dockerfile and run the docker build command.</para>
-
-        <programlisting>docker build -t hammerdb-v6.0 . </programlisting>
-
-        <figure>
-          <title>Docker Build</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12b.png"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <figure>
-          <title>Successfully built</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12c.png"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
-      </section>
-
-      <section>
-        <title>Running the Container</title>
-
-        <para>To create and start a container named "hammerdb" with the image
-        built in the previous section, run the following command. The
-        container build is successful, but the client libraries for IBM are
-        not installed.</para>
-
-        <programlisting>	docker run -it --name hammerdb hammerdb-v6.0 bash</programlisting>
-
-        <figure>
-          <title>Docker Run</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12d.png"/>
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <para>If IBM client libraries are manually downloaded and placed
-        alongside the Dockerfile, the container builds successfully and the
-        output looks as follows.</para>
-
-        <section>
-          <title>IBM Client Install</title>
-
-          <para>If IBM client libraries are manually downloaded and placed
-          alongside the Dockerfile, the container builds successfully and the
-          output looks as follows.</para>
-
-          <figure>
-            <title>IBM Client</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata align="center" fileref="docs/images/ch1-12e.png"/>
-              </imageobject>
-            </mediaobject>
-          </figure>
-        </section>
-      </section>
-
-      <section>
-        <title>Connecting the Container to the Network</title>
-
-        <para>The Docker container needs to be connected to the network to
-        communicate with remote databases. The following is an example of
-        adding host network to the container.</para>
-
-        <programlisting> docker run --network=host -it --name hammerdb hammerdb-v6.0 bash</programlisting>
+        <para>The Docker folder in the HammerDB source repository contains
+        Dockerfiles, database-specific client setup, automated tests and
+        multi-architecture build scripts. The official container packages the
+        corresponding published HammerDB release archive plus
+        architecture-matched database client libraries. It builds linux/amd64
+        and linux/arm64 variants using Docker Buildx and publishes manifest
+        lists after testing.</para>
       </section>
     </section>
 
     <section>
       <title>HammerDB CI and Pipeline Automation</title>
 
-      <para>HammerDB v6.0 includes CI and pipeline automation for repeatable
-      database build and benchmark workflows. This functionality is intended
-      for both beginners and advanced users who want HammerDB to clone, build,
-      install and test a database branch, tag or commit in a controlled
-      environment.</para>
+      <para>HammerDB introduced CI and pipeline automation in v6.0 for
+      repeatable database build and benchmark workflows. Version 6.1 extends
+      this with a VillageSQL provider. The CI system can clone, build, install
+      and test a database branch, tag or commit in a controlled environment.
+      You do not need to have a database installed or configured before
+      running a pipeline, HammerDB will do this automatically.</para>
 
-      <para>The CI and pipeline functionality is currently focused on MariaDB,
-      MySQL and PostgreSQL. The workflow can be used to test a database
-      branch, tag or commit, build and install the database software, create
-      the HammerDB benchmark schema, run a benchmark workload and generate a
-      detailed benchmark report with profiling and statistics enabled
-      automatically.</para>
+      <para>CI providers are included for MariaDB, MySQL, PostgreSQL and
+      VillageSQL. The workflow can test a database branch, tag or commit,
+      build and install the database software, create the HammerDB benchmark
+      schema, run a benchmark workload and generate a detailed report with
+      profiling and statistics enabled automatically. VillageSQL uses the
+      MySQL-compatible build pattern and a separate VillageSQL provider block
+      in config/ci.xml; check the source repository, build prerequisites and
+      release tag conventions on the intended CI host before running compare
+      pipelines.</para>
 
       <section>
         <title>CI Test Environment Layout</title>
@@ -1352,9 +1212,9 @@ docker pull tpcorg/hammerdb:mssqls
 
         <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci$ ls
 
-HammerDB-6.0  TMP
+HammerDB-6.1  TMP
 
-ubuntu@ubuntu24:/opt/hammerdb-ci$ ls HammerDB-6.0
+ubuntu@ubuntu24:/opt/hammerdb-ci$ ls HammerDB-6.1
 agent   hammerdb     hammerdbws  pylib      scripts
 config  hammerdbcli  LICENSE     README.md</programlisting>
 
@@ -1375,7 +1235,7 @@ Filesystem      Size  Used Avail Use% Mounted on
         directory. This ensures that the HammerDB jobs database and CI state
         are written to the intended location.</para>
 
-        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ export TMP=/opt/hammerdb-ci/TMP</programlisting>
+        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ export TMP=/opt/hammerdb-ci/TMP</programlisting>
       </section>
 
       <section>
@@ -1521,9 +1381,9 @@ Filesystem      Size  Used Avail Use% Mounted on
         When TMP has been set to /opt/hammerdb-ci/TMP, HammerDB creates or
         opens the jobs database in that location.</para>
 
-        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ ./hammerdbcli
+        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ ./hammerdbcli
 
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized new Jobs on-disk database /opt/hammerdb-ci/TMP/hammer.DB</programlisting>
@@ -1533,13 +1393,17 @@ Initialized new Jobs on-disk database /opt/hammerdb-ci/TMP/hammer.DB</programlis
         directories, downloads database configuration files and validates the
         setup.</para>
 
-        <programlisting>hammerdb&gt;cifix
-
+        <programlisting>HammerDB CLI v6.1
+Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
+Type "help" for a list of commands
+Initialized Jobs on-disk database /opt/hammerdb-ci/TMP/hammer.DB using existing tables (85,131,264 bytes)
+hammerdb&gt;cifix
 Running cifix...
 CI FIX: starting
 CI FIX: provider MariaDB
 CI FIX: provider PostgreSQL
 CI FIX: provider MySQL
+CI FIX: provider VillageSQL
 CI FIX: directory exists /opt/hammerdb-ci
 CI FIX: directory exists /opt/hammerdb-ci/TMP
 CI FIX: creating directory /opt/hammerdb-ci/providers/mariadb
@@ -1554,11 +1418,49 @@ CI FIX: creating directory /opt/hammerdb-ci/providers/postgresql
 CI FIX: creating directory /opt/hammerdb-ci/providers/postgresql/builds
 CI FIX: creating directory /opt/hammerdb-ci/providers/postgresql/config
 CI FIX: creating directory /opt/hammerdb-ci/providers/postgresql/installs
-CI FIX WARNING: less than 100GB free under /opt/hammerdb-ci (92GB)
-CI FIX: downloading and validating provider configuration files
+CI FIX: creating directory /opt/hammerdb-ci/providers/villagesql
+CI FIX: creating directory /opt/hammerdb-ci/providers/villagesql/builds
+CI FIX: creating directory /opt/hammerdb-ci/providers/villagesql/config
+CI FIX: creating directory /opt/hammerdb-ci/providers/villagesql/installs
+CI FIX WARNING: less than 100GB free under /opt/hammerdb-ci (88GB)
+CI FIX: fetching maria.cnf.timestamp
+CI FIX: fetching maria.cnf.checksum
+CI FIX: downloading maria.cnf
+CI FIX: downloaded and verified maria.cnf
+CI FIX: fetching mariaio.cnf.timestamp
+CI FIX: fetching mariaio.cnf.checksum
+CI FIX: downloading mariaio.cnf
+CI FIX: downloaded and verified mariaio.cnf
+CI FIX: fetching my.cnf.timestamp
+CI FIX: fetching my.cnf.checksum
+CI FIX: downloading my.cnf
+CI FIX: downloaded and verified my.cnf
+CI FIX: fetching myio.cnf.timestamp
+CI FIX: fetching myio.cnf.checksum
+CI FIX: downloading myio.cnf
+CI FIX: downloaded and verified myio.cnf
+CI FIX: fetching postgresql.conf.timestamp
+CI FIX: fetching postgresql.conf.checksum
+CI FIX: downloading postgresql.conf
+CI FIX: downloaded and verified postgresql.conf
+CI FIX: fetching postgresqlio.conf.timestamp
+CI FIX: fetching postgresqlio.conf.checksum
+CI FIX: downloading postgresqlio.conf
+CI FIX: downloaded and verified postgresqlio.conf
+CI FIX: fetching vsql.cnf.timestamp
+CI FIX: fetching vsql.cnf.checksum
+CI FIX: downloading vsql.cnf
+CI FIX: downloaded and verified vsql.cnf
+CI FIX: fetching vsqlio.cnf.timestamp
+CI FIX: fetching vsqlio.cnf.checksum
+CI FIX: downloading vsqlio.cnf
+CI FIX: downloaded and verified vsqlio.cnf
+CI FIX: validating
+CI VALIDATE: starting
 CI VALIDATE: provider MariaDB
 CI VALIDATE: provider PostgreSQL
 CI VALIDATE: provider MySQL
+CI VALIDATE: provider VillageSQL
 CI VALIDATE: PASSED
 CI FIX: COMPLETE</programlisting>
 
@@ -1568,7 +1470,7 @@ CI FIX: COMPLETE</programlisting>
 
         <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci$ ls
 
-HammerDB-6.0  providers  TMP</programlisting>
+HammerDB-6.1  providers  TMP</programlisting>
       </section>
 
       <section>
@@ -1579,6 +1481,13 @@ HammerDB-6.0  providers  TMP</programlisting>
         configuration controls the source repository, clone command, build
         command, install location, database configuration files and workload
         profile.</para>
+
+        <para>In HammerDB 6.1 the external config/ci.xml is the base CI
+        configuration; ci.db persists only explicitly changed ciset overrides.
+        Editing ci.xml therefore takes effect unless a matching ciset override
+        exists. Legacy 6.0 snapshot-style ci.db entries are ignored instead of
+        hiding changes to ci.xml; a subsequent ciset writes the updated
+        override-only format.</para>
 
         <para>The ciset command can be used to update CI configuration values
         from the HammerDB CLI. For example, the repository URL for a provider
@@ -1601,9 +1510,9 @@ hammerdb&gt;ciset common listen_port 5000</programlisting>
         CI setup, resets any stale blocking rows, reports the TMP directory
         and listener port, and starts the CI watcher.</para>
 
-        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ ./hammerdbcli
+        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ ./hammerdbcli
 
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database /opt/hammerdb-ci/TMP/hammer.DB using existing tables (86,016 bytes)
@@ -1632,10 +1541,10 @@ hammerdb&gt;cistop</programlisting>
         hammer.DB jobs database and provides browser views for jobs, pipeline
         activity and CI output.</para>
 
-        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ export TMP=/opt/hammerdb-ci/TMP
+        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ export TMP=/opt/hammerdb-ci/TMP
 
-ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ ./hammerdbws
-HammerDB Web Service v6.0
+ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ ./hammerdbws
+HammerDB Web Service v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Web Service using /opt/hammerdb-ci/TMP/hammer.DB database
@@ -1655,7 +1564,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-1.png"/>
+              <imagedata align="center" contentwidth="1070"
+                         fileref="docs/images/ci-1.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1668,7 +1578,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-2.png"/>
+              <imagedata align="center" contentwidth="1069"
+                         fileref="docs/images/ci-2.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1702,7 +1613,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-3.png"/>
+              <imagedata align="center" contentwidth="1059"
+                         fileref="docs/images/ci-3.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1716,7 +1628,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-4.png"/>
+              <imagedata align="center" contentwidth="1065"
+                         fileref="docs/images/ci-4.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1726,7 +1639,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-5.png"/>
+              <imagedata align="center" contentwidth="1048"
+                         fileref="docs/images/ci-5.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1746,7 +1660,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-6.png"/>
+              <imagedata align="center" contentwidth="1046"
+                         fileref="docs/images/ci-6.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1756,7 +1671,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-7.png"/>
+              <imagedata align="center" contentwidth="1047"
+                         fileref="docs/images/ci-7.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1766,7 +1682,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-8.png"/>
+              <imagedata align="center" contentwidth="1049"
+                         fileref="docs/images/ci-8.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1776,7 +1693,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-9.png"/>
+              <imagedata align="center" contentwidth="1045"
+                         fileref="docs/images/ci-9.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1786,7 +1704,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-10.png"/>
+              <imagedata align="center" contentwidth="1048"
+                         fileref="docs/images/ci-10.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1796,7 +1715,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-11.png"/>
+              <imagedata align="center" contentwidth="1039"
+                         fileref="docs/images/ci-11.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1806,7 +1726,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-12.png"/>
+              <imagedata align="center" contentwidth="1024"
+                         fileref="docs/images/ci-12.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1821,12 +1742,22 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
         comparison. This allows you to monitor new open source database builds
         for performance and stability.</para>
 
+        <para>In HammerDB 6.1, automated TPROC-C profile virtual-user step
+        sizes scale with detected CPU count: 4 for up to 64 CPUs, 8 for up to
+        128, 16 for up to 256, and 24 above 256. The profile extends to the
+        first full step beyond the detected CPU count. For schema sizes above
+        2000 warehouses, schema-build virtual users are capped at one tenth of
+        the warehouse count to avoid excessive concurrency on high-core-count
+        hosts. This behaviour applies to the MariaDB, MySQL, PostgreSQL and
+        VillageSQL profile automation.</para>
+
         <figure>
           <title>Profile and Compare Pipeline Completion</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ci-13.png"/>
+              <imagedata align="center" contentwidth="1028"
+                         fileref="docs/images/ci-13.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -1846,8 +1777,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
         cilisten. If cipush is used before the listener is running, HammerDB
         will attempt to start the listener automatically.</para>
 
-        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ export TMP=/opt/hammerdb-ci/TMP
-ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.0$ ./hammerdbcli
+        <programlisting>ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ export TMP=/opt/hammerdb-ci/TMP
+ubuntu@ubuntu24:/opt/hammerdb-ci/HammerDB-6.1$ ./hammerdbcli
 
 hammerdb&gt;cifix
 hammerdb&gt;citmp
@@ -1861,16 +1792,18 @@ hammerdb&gt;cistatus</programlisting>
 
         <para>The refname must identify a branch, tag or commit SHA. Branches
         use refs/heads/name, tags use refs/tags/name, and commit references
-        can be supplied as a 7 to 40 character SHA. The pipeline is normally
-        single, profile or compare. The workload is C for TPROC-C or H for
-        TPROC-H. The dbprefix selects the database provider, for example
-        maria, mysql or pg. The final io_intensive argument is 0 for the
-        standard CPU-intensive profile or 1 for an I/O-intensive
-        profile.</para>
+        can be supplied as a 7 to 40 character SHA. HammerDB 6.1 also handles
+        multi-segment branch and tag references such as
+        refs/heads/feature/performance. The pipeline is normally single,
+        profile or compare. The workload is C for TPROC-C or H for TPROC-H.
+        The dbprefix selects the database provider, for example maria, mysql
+        or pg. The final io_intensive argument is 0 for the standard
+        CPU-intensive profile or 1 for an I/O-intensive profile.</para>
 
         <para>The following examples show typical manual pipeline requests for
         MariaDB. The same pattern can be used for MySQL by using mysql as the
-        dbprefix, or for PostgreSQL by using pg.</para>
+        dbprefix, for PostgreSQL by using pg, or for VillageSQL by using vsql
+        after configuring its CI provider.</para>
 
         <programlisting>hammerdb&gt;cipush refs/heads/11.8 single C maria 0
 hammerdb&gt;cipush refs/tags/mariadb-12.3.2 profile C maria 0
@@ -2015,8 +1948,8 @@ OK</programlisting>
 
       <para>and type librarycheck, with the following example on Linux</para>
 
-      <programlisting>ubuntu@ubuntu24:/opt/HammerDB-6.0$ ./hammerdbcli 
-HammerDB CLI v6.0
+      <programlisting>ubuntu@ubuntu24:/opt/HammerDB-6.1$ ./hammerdbcli 
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database /tmp/hammer.DB using existing tables (69,632 bytes)
@@ -2040,8 +1973,8 @@ hammerdb&gt;
 
       <para>and the following example on Windows</para>
 
-      <programlisting>C:\Program Files\HammerDB-6.0&gt;hammerdbcli
-HammerDB CLI v6.0
+      <programlisting>C:\Program Files\HammerDB-6.1&gt;hammerdbcli
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/Temp/hammer.DB using existing tables (2,048,000 bytes)
@@ -2078,7 +2011,7 @@ Ensure that MySQL client libraries are installed and the location in the LD_LIBR
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-15.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-15.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2091,7 +2024,7 @@ Ensure that MySQL client libraries are installed and the location in the LD_LIBR
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-16.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-16.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2107,14 +2040,15 @@ fi
 export LD_LIBRARY_PATH=/opt/mariadb-11.4.4/lib:/opt/postgresql-17.2/lib:/opt/mysql-8.4.4-linux-glibc2.28-x86_64/lib:$LD_LIBRARY_PATH
 </programlisting>
 
-      <para>The following table shows the libraries that are required for each
-      database version and the versions that HammerDB v6.0 have been built
-      against. All libraries are 64-bit. Note that some databases are
-      considerably more flexible than others in library versions and therefore
-      the following section is important to ensure that you install the
-      correct library for your needs. If you need to change a required client
-      library than you may do so by building from source against a client
-      library of your choosing.</para>
+      <para>The following table gives examples of the libraries and versions
+      used by the HammerDB v6.0 packages. For HammerDB 6.1 and ARM64 builds,
+      verify the architecture and client library versions in the corresponding
+      release package or source-build configuration. All libraries are 64-bit.
+      Note that some databases are considerably more flexible than others in
+      library versions and therefore the following section is important to
+      ensure that you install the correct library for your needs. If you need
+      to change a required client library than you may do so by building from
+      source against a client library of your choosing.</para>
 
       <table>
         <title>third-party libraries</title>
@@ -2256,7 +2190,7 @@ export LD_LIBRARY_PATH=/opt/mariadb-11.4.4/lib:/opt/postgresql-17.2/lib:/opt/mys
         <para>It will contain libclntsh links and a library file such as
         follows:</para>
 
-        <programlisting>ubuntu@ubuntu22:/opt/HammerDB-6.0/lib$ ls -l libclntsh.so*
+        <programlisting>ubuntu@ubuntu22:/opt/HammerDB-6.1/lib$ ls -l libclntsh.so*
 lrwxrwxrwx 1 ubuntu ubuntu       17 Apr  9 16:10 libclntsh.so -&gt; libclntsh.so.21.1
 lrwxrwxrwx 1 ubuntu ubuntu       17 Apr  9 16:10 libclntsh.so.10.1 -&gt; libclntsh.so.21.1
 lrwxrwxrwx 1 ubuntu ubuntu       17 Apr  9 16:10 libclntsh.so.11.1 -&gt; libclntsh.so.21.1
@@ -2269,9 +2203,9 @@ lrwxrwxrwx 1 ubuntu ubuntu       17 Apr  9 16:10 libclntsh.so.20.1 -&gt; libclnt
         <para>In your .profile file set the LD_LIBRARY_PATH, ORACLE_HOME and
         ORACLE_LIB to this location.</para>
 
-        <programlisting>export LD_LIBRARY_PATH=/opt/HammerDB-6.0/lib
-export ORACLE_HOME=/opt/HammerDB-6.0/lib
-export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
+        <programlisting>export LD_LIBRARY_PATH=/opt/HammerDB-6.1/lib
+export ORACLE_HOME=/opt/HammerDB-6.1/lib
+export ORACLE_LIBRARY=/opt/HammerDB-6.1/lib/libclntsh.so
 </programlisting>
       </section>
 
@@ -2321,6 +2255,16 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
       </section>
 
       <section>
+        <title>VillageSQL</title>
+
+        <para>VillageSQL is MySQL 8.4-compatible and uses the mysqltcl
+        interface and corresponding MySQL client library. Configure the client
+        libraries as described for MySQL, using the VillageSQL database
+        selection and its separate config/villagesql.xml configuration.
+        Architecture-matched libraries are required for Linux ARM64.</para>
+      </section>
+
+      <section>
         <title>PostgreSQL</title>
 
         <para>For PostgreSQL the client library is called libpq.dll on Windows
@@ -2335,6 +2279,40 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
       </section>
     </section>
 
+    <section xml:id="mysql-family-tls-v61">
+      <title>SSL/TLS Connections for MySQL, MariaDB and VillageSQL in
+      6.1</title>
+
+      <para>MySQL, MariaDB and VillageSQL support the same HammerDB 6.1
+      connection behaviour for TPROC-C and TPROC-H. To request a one-way
+      encrypted connection when no CA file or client certificates are
+      supplied, enable SSL and leave SSL CApath, SSL CA, SSL Cert and SSL Key
+      empty. HammerDB passes -ssl true to the client library rather than
+      requiring certificate file names.</para>
+
+      <programlisting># Client library option when one-way TLS is enabled with no file paths
+-ssl true</programlisting>
+
+      <para>This requests TLS encryption but does not, by itself, establish
+      that the server certificate or hostname has been verified. For
+      connections requiring authenticated server identity or mutual TLS,
+      configure the appropriate CA and certificate options and validate the
+      resulting security policy of the chosen database client.</para>
+
+      <para>When explicit SSL CApath, CA, certificate or key settings are
+      supplied, HammerDB continues to pass the configured values. Invalid
+      certificate paths now produce a connection/configuration error instead
+      of silently disabling SSL. SSL settings may be changed between
+      connections in the same HammerDB session; changed options are rebuilt,
+      while refreshscript with unchanged settings reuses existing
+      options.</para>
+
+      <para>The virtual-user output reports the negotiated SSL cipher when a
+      TLS connection is established. In the GUI use the same SSL connection
+      options during TPROC-C/TPROC-H schema build and driver execution for
+      MySQL, MariaDB or VillageSQL.</para>
+    </section>
+
     <section>
       <title>XML &amp; Persistent Configuration</title>
 
@@ -2346,7 +2324,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-17.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-17.png"/>
           </imageobject>
         </mediaobject>
 
@@ -2378,7 +2356,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-17aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-17aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2394,7 +2372,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-17a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-17a.png"/>
           </imageobject>
         </mediaobject>
 
@@ -2442,7 +2420,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-18.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-18.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2456,7 +2434,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-19.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-19.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2466,7 +2444,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-9.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-9.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2480,7 +2458,7 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch1-9aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch1-9aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2516,14 +2494,49 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.0/lib/libclntsh.so
       package by Paul Obermeier . BAWT is copyrighted by Paul Obermeier and
       distributed under the 3-clause BSD license.</para>
 
+      <section xml:id="arm64-build-v61">
+        <title>Building HammerDB Natively on Linux ARM64 (aarch64)</title>
+
+        <para>New in HammerDB 6.1, the Bawt build system accepts arm64 as a
+        native Linux architecture alongside x64 and x86. Build on a Linux
+        ARM64/aarch64 system with a compiler, development packages, Tcl/Tk
+        build prerequisites and native versions of the required database
+        client libraries. Check the host architecture with uname -m; an
+        aarch64 result identifies a native ARM64 Linux host.</para>
+
+        <para>From the HammerDB source checkout, use the ARM64 setup file and
+        native ARM64 Tcl bootstrap supplied with Bawt:</para>
+
+        <programlisting>uname -m
+cd Build/Bawt-2.1.0
+./Build-Linux.sh arm64 Setup/HammerDB-LinuxArm64.bawt update</programlisting>
+
+        <para>The script selects tclkit-LinuxArm64 rather than the x86-64
+        bootstrap interpreter and builds against the ARM64 Bawt setup file.
+        Database client dependencies must match ARM64: the x86-64 example
+        library paths shown in the generic Linux instructions are not valid on
+        an aarch64 host. The ARM64 setup does not enable the Db2 Tcl client by
+        default; verify client support individually before enabling other
+        database drivers. This is a native build capability, not a guarantee
+        that every third-party database client is available for every ARM64
+        distribution.</para>
+
+        <para>Multi-architecture Docker images are described in the Docker
+        section. Native Bawt compilation and Docker image packaging are
+        separate workflows.</para>
+      </section>
+
       <section>
         <title>Compiler &amp; Dependency Install on Linux</title>
 
         <para>Install a development environment using the gcc compiler for
         Linux. You will also need the p7zip tool as well as the Xft font
-        library and Cairo graphics development packages.  The build has been
-        tested on x64 Red Hat 9.X and Ubuntu 24.X Linux, with the following
-        example from Red Hat Linux.</para>
+        library and Cairo graphics development packages. The x64 build has
+        been tested on Red Hat 9.X and Ubuntu 24.X Linux; for native ARM64
+        builds consult <link linkend="arm64-build-v61">Building HammerDB
+        Natively on Linux ARM64</link> and use the corresponding
+        architecture-specific development packages. The following example is
+        from Red Hat Linux on x64.</para>
 
         <programlisting>yum install p7zip-16.02-20.el8.x86_64.rpm
 sudo yum install libXft-devel
@@ -2625,7 +2638,7 @@ set PYTHONHOME=C:\Users\smsha\AppData\Local\Programs\Python\Python312</programli
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch1-12a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch1-12a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -2654,7 +2667,9 @@ Resolving deltas: 100% (2564/2564), done.
         command line you are running the build make sure that you have
         correctly set all the MARIADB_CONFIG, MYSQL_CONFIG, PG_CONFIG, and
         IBM_DB_DIR environment variables used during the build and run the
-        Build-Linux.sh command for Linux.</para>
+        Build-Linux.sh command for Linux x64. For Linux ARM64/aarch64 use the
+        ARM64 setup and command in <link linkend="arm64-build-v61">Building
+        HammerDB Natively on Linux ARM64</link>.</para>
 
         <programlisting>./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update</programlisting>
 
@@ -2771,16 +2786,16 @@ Build-Windows.bat x64 vs2022+gcc Setup\HammerDB-Windows.bawt update</programlist
 
         <programlisting>[redhat@localhost Distribution]$ ls -l
 total 41648
--rw-r--r--. 1 redhat redhat  7613679 Apr 10 14:51 HammerDB-6.0-Dev-Linux.tar.gz
--rw-r--r--. 1 redhat redhat 35026672 Apr 10 14:51 HammerDB-6.0-Prod-Linux.tar.gz
--rw-r--r--. 1 redhat redhat      290 Apr 10 14:51 HammerDB-6.0-Prod-Passwds.txt</programlisting>
+-rw-r--r--. 1 redhat redhat  7613679 Apr 10 14:51 HammerDB-6.1-Dev-Linux.tar.gz
+-rw-r--r--. 1 redhat redhat 35026672 Apr 10 14:51 HammerDB-6.1-Prod-Linux.tar.gz
+-rw-r--r--. 1 redhat redhat      290 Apr 10 14:51 HammerDB-6.1-Prod-Passwds.txt</programlisting>
 
         <para>On Windows the builds are also generated as tar.gz files</para>
 
-        <programlisting>Directory of E:\HammerDB-6.0\Build\BawtBuild\vs2022\x64\Release\Distribution
-10/04/2025  15:21        11,507,893 HammerDB-6.0-Dev-Win.tar.gz
-10/04/2025  15:22               360 HammerDB-6.0-Prod-Passwds.txt
-10/04/2025  15:22        40,429,380 HammerDB-6.0-Prod-Win.tar.gz
+        <programlisting>Directory of E:\HammerDB-6.1\Build\BawtBuild\vs2022\x64\Release\Distribution
+10/04/2025  15:21        11,507,893 HammerDB-6.1-Dev-Win.tar.gz
+10/04/2025  15:22               360 HammerDB-6.1-Prod-Passwds.txt
+10/04/2025  15:22        40,429,380 HammerDB-6.1-Prod-Win.tar.gz
                3 File(s)     51,937,633 bytes
 </programlisting>
 
@@ -2835,7 +2850,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-1.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2853,7 +2868,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2863,7 +2878,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-2a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-2a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2876,7 +2891,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2889,7 +2904,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2902,7 +2917,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2920,7 +2935,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-2aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-2aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2940,7 +2955,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2953,7 +2968,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-7.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-7.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2966,7 +2981,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2980,7 +2995,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-9.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-9.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -2994,7 +3009,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3013,7 +3028,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-11.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-11.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3025,7 +3040,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-12.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-12.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3040,7 +3055,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-13.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-13.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3055,7 +3070,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-14.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-14.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3076,7 +3091,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-15.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-15.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3094,7 +3109,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3112,7 +3127,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3124,7 +3139,8 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16aaa.PNG"/>
+            <imagedata align="center" contentwidth="997"
+                       fileref="docs/images/ch2-16aaa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3139,7 +3155,8 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16aaaa.PNG"/>
+            <imagedata align="center" contentwidth="991"
+                       fileref="docs/images/ch2-16aaaa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3156,7 +3173,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3168,7 +3185,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16b.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16b.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3181,7 +3198,7 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16c.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16c.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3279,7 +3296,8 @@ total 41648
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch3-1.PNG"/>
+            <imagedata align="center" contentwidth="1012"
+                       fileref="docs/images/ch3-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -3779,7 +3797,7 @@ OK (30 msec)
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-1.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-1.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -3950,7 +3968,7 @@ DB20000I  The SQL command completed successfully.
 </programlisting>
       </section>
 
-      <section>
+      <section xml:id="mysql-tprocc-install">
         <title>MySQL</title>
 
         <para>You should have the MySQL database software installed and
@@ -3983,6 +4001,12 @@ Query OK, 0 rows affected (0.00 sec)
 
         <programlisting>mysql&gt; grant all on tpcc.* to root@'hummingbird.home' identified by 'mysql';</programlisting>
 
+        <para>From HammerDB 6.1, Percona Server for MySQL is recognised from
+        @@version_comment during benchmark execution, so result metadata can
+        identify Percona Server and preserve its full server release rather
+        than labelling it generically as MySQL. The benchmark is still
+        selected as MySQL.</para>
+
         <para>When choosing a MySQL Server to test note that HammerDB load
         testing can drive your system utilization to maximum levels and
         therefore testing an active production system is not recommended. When
@@ -4002,6 +4026,34 @@ owners.
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 mysql&gt; 
 </programlisting>
+      </section>
+
+      <section xml:id="villagesql-tprocc-v61">
+        <title>VillageSQL TPROC-C (MySQL-Compatible)</title>
+
+        <para>HammerDB 6.1 includes VillageSQL as a separate database engine.
+        VillageSQL is based on MySQL 8.4 and uses the mysqltcl database
+        client. The installation, permissions, schema build, configuration and
+        run workflow follows <link linkend="mysql-tprocc-install">MySQL
+        installation instructions</link> and <link
+        linkend="mysql-tprocc-build-options">MySQL TPROC-C schema build
+        options</link>; the existing MySQL screenshots illustrate the shared
+        steps. Select VillageSQL rather than MySQL in the HammerDB database
+        selector.</para>
+
+        <para>VillageSQL has its own config/villagesql.xml file and vsql_
+        configuration prefix. The default TCP/IP port is 3306 and the default
+        Linux socket path is /tmp/villagesql.sock (not the MySQL default).
+        When using a network connection, enter the appropriate host, port and
+        credentials for the VillageSQL server.</para>
+
+        <programlisting>dbset db vsql
+dbset bm TPC-C</programlisting>
+
+        <para>VillageSQL supports the same HammerDB 6.1 one-way TLS without
+        explicit CA files as MySQL and MariaDB. See <link
+        linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL, MariaDB
+        and VillageSQL</link>.</para>
       </section>
 
       <section>
@@ -4053,21 +4105,20 @@ MariaDB [(none)]&gt; </programlisting>
         PL/SQL and additional Postgres Plus Advanced Server features (such as
         DRITA snapshots) that will only operate against Enterprise DB Postgres
         Plus Advanced Server. Secondly Citus compatible mode supports
-        distributed PostgreSQL with the Citus Data extension. Azure Elastic
-        Cluster support is enabled explicitly within Citus compatible mode.
-        In this mode HammerDB uses a pre-provisioned database and can route
-        schema population workers and benchmark virtual users through an
-        optional Citus load-balancer port. DDL, schema checking, metrics,
-        transaction counter, and administrative connections continue to use
-        the configured PostgreSQL port. Finally by not selecting Citus
-        or Oracle compatibility HammerDB can continue to operate against a
-        regular PostgreSQL build using native PostgreSQL features. You must
-        ensure before proceeding with OLTP that you are aware of the version
-        of PostgreSQL you have installed and the features available, if you
-        wish to test Oracle compatibility then you must use Postgres Plus
-        Advanced Server from EnterpriseDB and install in Oracle compatible
-        mode, if you wish to use Citus Data you must be running against a Citus
-        enabled installation either installed or in the cloud.</para>
+        distributed PostgreSQL with the Citus Data extension. HammerDB 6.1
+        also supports Azure Citus/Elastic Cluster with an existing database
+        and an optional load-balancer port for schema population workers and
+        benchmark virtual users. Coordinator operations such as DDL, schema
+        checking and metrics use the standard PostgreSQL port. Finally by not
+        selecting Citus or Oracle compatibility HammerDB can continue to
+        operate against a regular PostgreSQL build using native PostgreSQL
+        features. You must ensure before proceeding with OLTP that you are
+        aware of the version of PostgreSQL you have installed and the features
+        available, if you wish to test Oracle compatibility then you must use
+        Postgres Plus Advanced Server from EnterpriseDB and install in Oracle
+        compatible mode, if you wish to use Citus Data you must be running
+        against a Citus enabled installation either installed or in the
+        cloud.</para>
 
         <para>During the installation make a note of your postgres superuser
         password, you will need it for the test schema creation. You must be
@@ -4115,7 +4166,7 @@ host  all  all  192.168.1.67/32 md5
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -4129,7 +4180,7 @@ host  all  all  192.168.1.67/32 md5
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -4150,7 +4201,7 @@ host  all  all  192.168.1.67/32 md5
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-4.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-4.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4160,7 +4211,7 @@ host  all  all  192.168.1.67/32 md5
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-4a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-4a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4423,7 +4474,7 @@ GO
 
             <mediaobject>
               <imageobject>
-                <imagedata align="center" fileref="docs/images/ch4-5.PNG"/>
+                <imagedata align="center" fileref="docs/images/ch4-5.png"/>
               </imageobject>
             </mediaobject>
           </figure>
@@ -4433,7 +4484,7 @@ GO
 
             <mediaobject>
               <imageobject>
-                <imagedata align="center" fileref="docs/images/ch4-5a.PNG"/>
+                <imagedata align="center" fileref="docs/images/ch4-5a.png"/>
               </imageobject>
             </mediaobject>
           </figure>
@@ -4651,7 +4702,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-6.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-6.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4661,7 +4712,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-6a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-6a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4767,7 +4818,7 @@ GO
         </table>
       </section>
 
-      <section>
+      <section xml:id="mysql-tprocc-build-options">
         <title>MySQL Schema Build Options</title>
 
         <figure>
@@ -4775,7 +4826,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-7.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-7.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4785,7 +4836,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-7aa.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-7aa.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4834,20 +4885,24 @@ GO
               <row>
                 <entry>Enable SSL</entry>
 
-                <entry>Enable SSL permits SSL/TLS encryption on the network
-                connection to MySQL with the option of choosing One-Way or
-                Two-Way encryption.</entry>
+                <entry>Enable SSL requests an SSL/TLS connection to MySQL.
+                HammerDB 6.1 also supports one-way TLS with empty CApath, CA,
+                Cert and Key fields. See <link
+                linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL,
+                MariaDB and VillageSQL</link>.</entry>
               </row>
 
               <row>
                 <entry>SSL CApath</entry>
 
-                <entry>If the SSL CA, SSL Cert and SSL Key entries are empty
-                HammerDB will pass the value in SSL CApath as the SSL capath
-                option. If the SSL CA, SSL Cert and SSL Key entries contain
-                the names of .pem files then the SSL CApath path option will
-                be appended to these file names and used to locate these
-                files.</entry>
+                <entry>When a CApath is specified and no individual files are
+                supplied, HammerDB passes the configured CApath. When named
+                CA, Cert or Key files are supplied, HammerDB resolves them
+                using the configured path. In 6.1, if SSL is enabled for
+                one-way TLS and all four fields are empty, an encrypted
+                connection can be requested with no explicit files; see <link
+                linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL,
+                MariaDB and VillageSQL</link>.</entry>
               </row>
 
               <row>
@@ -4961,6 +5016,27 @@ GO
         </table>
       </section>
 
+      <section xml:id="villagesql-tprocc-build-v61">
+        <title>VillageSQL Schema Build Options</title>
+
+        <para>Choose VillageSQL in the benchmark database selection and open
+        TPROC-C Schema Build Options. The options and overall procedure are
+        MySQL-compatible: follow <link
+        linkend="mysql-tprocc-build-options">MySQL TPROC-C schema build
+        options</link> and use the existing MySQL screenshots for the common
+        steps. The VillageSQL-specific connection entries are read from
+        config/villagesql.xml (vsql_host, vsql_port, vsql_socket, vsql_user,
+        vsql_pass and vsql_dbase). The default Linux socket is
+        /tmp/villagesql.sock.</para>
+
+        <para>Build, Check Schema, Delete Schema and Driver Script operations
+        follow the MySQL-compatible workflow. VillageSQL supports both TPROC-C
+        and TPROC-H and uses the same TLS guidance described in <link
+        linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL, MariaDB
+        and VillageSQL</link>. Some MySQL-only compatibility options (such as
+        OceanBase settings) are not VillageSQL options.</para>
+      </section>
+
       <section>
         <title>MariaDB Schema Build Options</title>
 
@@ -4969,7 +5045,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-7a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-7a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -4979,7 +5055,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-7aaa.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-7aaa.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -5028,21 +5104,24 @@ GO
               <row>
                 <entry>Enable SSL</entry>
 
-                <entry>Enable SSL permits SSL/TLS encryption on the network
-                connection to MariaDB with the option of choosing One-Way or
-                Two-Way encryption.</entry>
+                <entry>Enable SSL requests an SSL/TLS connection to MariaDB.
+                HammerDB 6.1 also supports one-way TLS with empty CApath, CA,
+                Cert and Key fields. See <link
+                linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL,
+                MariaDB and VillageSQL</link>.</entry>
               </row>
 
               <row>
                 <entry>SSL CApath</entry>
 
-                <entry>If the SSL CA, SSL Cert and SSL Key entries are empty
-                HammerDB will pass the value in SSL CApath as the SSL capath
-                option. If the SSL CA, SSL Cert and SSL Key entries contain
-                the names of .pem files then the SSL CApath path option will
-                be appended to these file names and used to locate these
-                files. If the SSL CApath is an empty string then the SSL Cert
-                and SSL Key entries will be used only.</entry>
+                <entry>When a CApath is specified and no individual files are
+                supplied, HammerDB passes the configured CApath. Named
+                certificate files can also be used with the configured path.
+                In 6.1, when SSL is enabled for one-way TLS and CApath, CA,
+                Cert and Key are all empty, a TLS connection can be requested
+                without certificate files; see <link
+                linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL,
+                MariaDB and VillageSQL</link>.</entry>
               </row>
 
               <row>
@@ -5168,7 +5247,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-8.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-8.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -5178,7 +5257,7 @@ GO
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-8a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-8a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -5207,13 +5286,10 @@ GO
               <row>
                 <entry>PostgreSQL Port</entry>
 
-                <entry>The pg_port setting specifies the port of the
-                PostgreSQL service. By default this will be 5432 for a
-                standard PostgreSQL installation or 5444 for EnterpriseDB.
-                When Citus Compatible is enabled, HammerDB uses pg_port to
-                connect to the Citus coordinator for DDL, schema checking,
-                metrics, transaction counting, and administrative
-                operations.</entry>
+                <entry>The port of the PostgreSQL service. By default this
+                will be 5432 for a standard PostgreSQL installation or 5444
+                for EnterpriseDB. For Citus this port is used for coordinator,
+                schema checking, DDL and administrative connections.</entry>
               </row>
 
               <row>
@@ -5267,8 +5343,8 @@ GO
                 not already exist will be created and owned by the PostgreSQL
                 User that contains the TPROC-C schema. If the named database
                 has already been created and is empty then that database will
-                be used to create the schema. Azure Elastic Cluster requires
-                this database to be created before the schema build.</entry>
+                be used to create the schema. For Azure Citus/Elastic Cluster,
+                create the database before the schema build.</entry>
               </row>
 
               <row>
@@ -5298,35 +5374,30 @@ GO
               <row>
                 <entry>Citus Compatible</entry>
 
-                <entry>The pg_cituscompat setting installs a schema into a
-                PostgreSQL database with the Citus Data Distributed PostgreSQL
-                extension.</entry>
+                <entry>Installs a schema into a PostgreSQL database with the
+                Citus Data Distributed PostgreSQL extension.</entry>
               </row>
 
               <row>
                 <entry>Citus Azure Elastic Cluster</entry>
 
-                <entry>The pg_citus_azure_elastic_cluster setting enables Azure
-                Elastic Cluster behavior when Citus
-                Compatible is selected. It has no effect unless Citus
-                Compatible is enabled. The configured TPROC-C database must
-                already exist, and database create, alter, and drop operations
-                are not performed. Deleting the schema removes objects owned
-                by the TPROC-C user while retaining the database and role.</entry>
+                <entry>When selected with Citus Compatible, enables managed
+                Azure Elastic Cluster behaviour. The database must already
+                exist. Database CREATE, ALTER and DROP operations are not
+                performed; schema deletion retains the database and role. The
+                XML setting is pg_citus_azure_elastic_cluster.</entry>
               </row>
 
               <row>
                 <entry>Citus Load Balancer Port</entry>
 
-                <entry>The pg_citus_loadbalancer setting specifies an optional
-                port for TPROC-C schema population workers and benchmark
-                virtual users, including Cluster Connect Pool connections. A
-                value of 0 uses the PostgreSQL Port for these data
-                connections. Connections to the Citus coordinator for DDL,
-                schema checking, metrics, transaction counting, and
-                administrative operations always use the PostgreSQL Port.
-                This option has no effect unless both Citus Compatible and
-                Azure Elastic Cluster are enabled.</entry>
+                <entry>Optional worker connection port for Azure Citus schema
+                data loading and TPROC-C benchmark virtual users, including
+                Cluster Connect Pool connections. A value of 0 uses the
+                standard PostgreSQL Port. The coordinator remains on the
+                standard port for DDL and administrative tasks. The setting
+                has an effect only when both Citus Compatible and Azure
+                Elastic Cluster are enabled (pg_citus_loadbalancer).</entry>
               </row>
 
               <row>
@@ -5381,7 +5452,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5393,7 +5464,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-11.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-11.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5415,7 +5486,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-12.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-12.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5434,7 +5505,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-13.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-13.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5457,7 +5528,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-13a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-13a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5471,7 +5542,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-13aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-13aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5561,7 +5632,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5573,7 +5644,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16b.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16b.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -5585,7 +5656,7 @@ GO
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch2-16c.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch2-16c.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -6026,7 +6097,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-14.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-14.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -6041,7 +6112,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-15.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-15.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -6105,7 +6176,11 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
               to a suitably high vale to ensure that the virtual users do not
               complete their tests before the timed test is complete, doing so
               will mean the you will be timing idle virtual users and the
-              results will be invalid.</entry>
+              results will be invalid. Starting with HammerDB 6.1,
+              total_iterations defaults to 2147483647 rather than 10000000,
+              reducing the risk of high-throughput virtual users exhausting
+              their iterations before a long timed workload finishes. Users
+              may still override this value in the driver settings.</entry>
             </row>
 
             <row>
@@ -6352,7 +6427,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15l.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15l.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6365,7 +6440,7 @@ tpcc=# select relname, n_tup_ins - n_tup_del as rowcount from pg_stat_user_table
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15k.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15k.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6403,7 +6478,7 @@ Vuser 4:Processing 10000000 transactions with output suppressed...</programlisti
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15o.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15o.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6658,7 +6733,8 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch10ws-1i.PNG"/>
+              <imagedata align="center" contentwidth="1054"
+                         fileref="docs/images/ch10ws-1i.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6704,7 +6780,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15e.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15e.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6720,7 +6796,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15g.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15g.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6733,7 +6809,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15f.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15f.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -6746,7 +6822,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15h.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15h.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7025,7 +7101,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15i.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15i.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7041,7 +7117,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15j.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15j.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7196,7 +7272,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15m.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15m.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7209,7 +7285,7 @@ P99: 0.255ms    P95: 0.209ms    P75: 0.166ms    P50: 0.142ms    P25: 0.122ms    
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15n.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15n.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7300,7 +7376,7 @@ Vuser 3:VU3 processed neworder 272901 payment 273475 delivery 27493 stocklevel 2
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-16a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-16a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7375,7 +7451,7 @@ steprun</programlisting>
         at the specified time intervals, with an example from the default
         shown.</para>
 
-        <programlisting>HammerDB CLI v6.0
+        <programlisting>HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/Users/smsha/AppData/Local/Temp/hammer.DB using existing tables (110,592 bytes)
@@ -7487,18 +7563,18 @@ Starting 1 replica HammerDB instance
 Starting 2 replica HammerDB instance
 Starting 3 replica HammerDB instance
 Starting 4 replica HammerDB instance
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Doing wait to connect ....
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Primary waiting for all replicas to connect .... 0 out of 4 are connected
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/Users/smsha/AppData/Local/Temp/hammer.DB using existing tables (110,592 bytes)
@@ -7637,7 +7713,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-16b.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-16b.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7679,6 +7755,32 @@ Vuser 1:Rampup 1 minutes complete ...
         feature.</para>
       </section>
 
+      <section xml:id="mariadb-transactions-v61">
+        <title>MariaDB Set-Based New Order and Delivery in 6.1</title>
+
+        <para>HammerDB 6.1 generates set-based New Order and Delivery stored
+        procedures when the MariaDB server supports JSON_TABLE (MariaDB 10.6
+        and later). JSON arrays allow each transaction to operate on multiple
+        rows with fewer SQL statements. On servers without this feature,
+        HammerDB retains the previous row-by-row procedures. The selection is
+        automatic when building the TPROC-C schema and does not require a new
+        GUI option.</para>
+
+        <para>The New Order implementation preserves the TPROC-C invalid-item
+        rollback and stock rules; Delivery processes the ten districts in
+        sets. On supported servers, the number of SQL statements per New Order
+        and Delivery transaction is reduced, which may materially affect
+        benchmark performance relative to older HammerDB versions. Record the
+        HammerDB and MariaDB versions when comparing results.</para>
+
+        <para>HammerDB 6.1 also probes for MariaDB UPDATE RETURNING INTO
+        during schema creation. If the server supports the exact syntax, the
+        generated New Order procedure uses it for district and stock updates;
+        otherwise HammerDB uses the existing compatible approach. Do not
+        assume that this syntax is available solely from the MariaDB server
+        version: availability is determined by the feature probe.</para>
+      </section>
+
       <section>
         <title>No Stored Procedures Option for MySQL and MariaDB</title>
 
@@ -7697,7 +7799,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch4-15p.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch4-15p.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -7761,7 +7863,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-16.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-16.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7777,7 +7879,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-17.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-17.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7789,7 +7891,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-18.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-18.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7900,7 +8002,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-19.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-19.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7913,7 +8015,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-20.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-20.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7929,7 +8031,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch4-21.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch4-21.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7974,7 +8076,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-1.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -7986,7 +8088,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8077,7 +8179,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8090,7 +8192,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8104,7 +8206,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8118,7 +8220,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8133,7 +8235,8 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-6aa.PNG"/>
+            <imagedata align="center" contentwidth="1079"
+                       fileref="docs/images/ch5-6aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8146,7 +8249,8 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-6aaa.png"/>
+            <imagedata align="center" contentwidth="1098"
+                       fileref="docs/images/ch5-6aaa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8170,7 +8274,7 @@ Vuser 1:Rampup 1 minutes complete ...
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch5-7.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch5-7.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8246,7 +8350,7 @@ done
 
       <mediaobject>
         <imageobject>
-          <imagedata align="center" fileref="docs/images/ch6-1.PNG"/>
+          <imagedata align="center" fileref="docs/images/ch6-1.png"/>
         </imageobject>
       </mediaobject>
     </figure>
@@ -8264,7 +8368,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8297,7 +8401,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8320,7 +8424,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8341,7 +8445,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8366,7 +8470,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-5a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-5a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8388,7 +8492,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8408,7 +8512,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8421,7 +8525,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-9.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-9.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8440,7 +8544,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8456,7 +8560,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-11.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-11.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8470,7 +8574,7 @@ done
         <mediaobject>
           <imageobject>
             <imagedata align="center" contentwidth="896"
-                       fileref="docs/images/ch6-11a.PNG"/>
+                       fileref="docs/images/ch6-11a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8494,7 +8598,7 @@ done
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch6-12.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch6-12.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8580,7 +8684,7 @@ sysstat version 12.5.2
       directory.</para>
 
       <programlisting>$./agent 
-Initializing HammerDB Metric Agent 6.0
+Initializing HammerDB Metric Agent 6.1
 HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</programlisting>
 
       <para>On Windows double-click on agent.exe in the agent
@@ -8591,7 +8695,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-1.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8608,7 +8712,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8624,7 +8728,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8637,7 +8741,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8649,7 +8753,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8662,7 +8766,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-7.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-7.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8675,7 +8779,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8694,7 +8798,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-9a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-9a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8707,7 +8811,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-9aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-9aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8736,7 +8840,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8813,7 +8917,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-11.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-11.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8861,7 +8965,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
         <mediaobject>
           <imageobject>
             <imagedata align="center" contentwidth="922"
-                       fileref="docs/images/ch7-14.PNG"/>
+                       fileref="docs/images/ch7-14.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8877,7 +8981,7 @@ HammerDB Metric Agent active @ id 15224 hostname ubuntu24 (Ctrl-C to Exit)</prog
         <mediaobject>
           <imageobject>
             <imagedata align="center" contentwidth="918"
-                       fileref="docs/images/ch7-15.PNG"/>
+                       fileref="docs/images/ch7-15.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8909,7 +9013,7 @@ pgsentinel_ash.max_entries = 1000000</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch7-16.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch7-16.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8960,7 +9064,7 @@ pgsentinel_ash.max_entries = 1000000</programlisting>
         <mediaobject>
           <imageobject>
             <imagedata align="center" contentwidth="944"
-                       fileref="docs/images/ch7-19.PNG"/>
+                       fileref="docs/images/ch7-19.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -8974,11 +9078,12 @@ pgsentinel_ash.max_entries = 1000000</programlisting>
     <section>
       <title>MySQL and MariaDB Database Metrics</title>
 
-      <para>HammerDB v6.0 adds database metrics options for MySQL and MariaDB.
-      These metrics are designed to help correlate HammerDB workload activity
-      with database activity while a benchmark is running. The MySQL and
-      MariaDB metrics viewer can be used to observe active sessions, wait
-      activity and SQL activity during a workload run.</para>
+      <para>HammerDB v6.0 adds database metrics options for MySQL and MariaDB,
+      with HammerDB 6.1 correcting wait attribution so that only currently
+      active waits are sampled rather than a previously completed wait. These
+      metrics help correlate workload activity with database activity. The
+      MySQL and MariaDB metrics viewer can be used to observe active sessions,
+      wait activity and SQL activity during a workload run.</para>
 
       <para>For MySQL and MariaDB Active Session History diagnostics,
       configure the database with the following options before starting the
@@ -9051,7 +9156,7 @@ event_scheduler=OFF</programlisting>
 
       <mediaobject>
         <imageobject>
-          <imagedata align="center" fileref="docs/images/ch11-1.PNG"/>
+          <imagedata align="center" fileref="docs/images/ch11-1.png"/>
         </imageobject>
       </mediaobject>
     </figure>
@@ -9066,7 +9171,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9079,7 +9184,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9091,7 +9196,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9103,7 +9208,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9116,7 +9221,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9139,7 +9244,7 @@ event_scheduler=OFF</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-7.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-7.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9169,7 +9274,7 @@ New replica joined : {23096 raven}</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9215,7 +9320,7 @@ New replica joined : {23096 raven}</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-9.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-9.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9229,7 +9334,7 @@ New replica joined : {23096 raven}</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch11-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch11-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9288,8 +9393,8 @@ New replica joined : {23096 raven}</programlisting>
 
       <para>To start the command line in interactive mode on Linux run:</para>
 
-      <programlisting>ubuntu@ubuntu24:/opt/HammerDB-6.0$ ./hammerdbcli 
-HammerDB CLI v6.0
+      <programlisting>ubuntu@ubuntu24:/opt/HammerDB-6.1$ ./hammerdbcli 
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized new Jobs on-disk database /tmp/hammer.DB
@@ -9302,7 +9407,7 @@ hammerdb&gt;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch8-1.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch8-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9316,7 +9421,7 @@ hammerdb&gt;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch8-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch8-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -9379,12 +9484,12 @@ hammerdb&gt;</programlisting>
 
       <para>To learn CLI commands type "help".</para>
 
-      <programlisting>HammerDB CLI v6.0
+      <programlisting>HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/Temp/hammer.DB using existing tables (69,632 bytes)
 hammerdb&gt;help
-HammerDB v6.0 CLI Help Index
+HammerDB v6.1 CLI Help Index
 
 Type "help command" for more details on specific commands below
 
@@ -9986,12 +10091,12 @@ hammerdb&gt;</programlisting>
         <para>Type help() to show the Python-mode command index. Type
         help('command') to show help for a specific command.</para>
 
-        <programlisting>HammerDB CLI v6.0
+        <programlisting>HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help()" for a list of commands
 Initialized Jobs on-disk database C:/Temp/hammer.DB using existing tables (69,632 bytes)
 hammerdb&gt;help()
-HammerDB v6.0 CLI Help Index
+HammerDB v6.1 CLI Help Index
 
 Type "help('command')" for more details on specific commands below
 
@@ -10635,7 +10740,7 @@ hammerdb&gt;0 MSSQLServer tpm
 hammerdb&gt;metstart
 Starting Local Metrics Agent on raven
 after#244
-hammerdb&gt;Initializing HammerDB Metric Agent 6.0
+hammerdb&gt;Initializing HammerDB Metric Agent 6.1
 HammerDB Metric Agent active @ id 27768 hostname raven (Ctrl-C to Exit)
 Connecting to Agent to Display CPU Metrics
 Metric receive port open @ 15748 on raven
@@ -10756,7 +10861,7 @@ Stopping Metrics Agent and Display on raven:27768</programlisting>
       "The Tcl Programming Language: A Comprehensive Guide by Ashok P.
       Nadkarni (ISBN: 9781548679644)". Note that HammerDB v6.0 supports TCL 9
       and an updated guide of this book for TCL 9 is expected and would be
-      recommended for HammerDB v6.0.</para>
+      recommended for HammerDB v6.X.</para>
 
       <para>The following example shows an automated test script for a
       Microsoft SQL Server database that has previously been created. In this
@@ -10788,8 +10893,8 @@ puts "TEST SEQUENCE COMPLETE"
       name of the script. The following output is produced without further
       intervention whilst also writing the output to the logfile.</para>
 
-      <programlisting>C:\Program Files\HammerDB-6.0&gt;hammerdbcli.exe
-HammerDB CLI v6.0
+      <programlisting>C:\Program Files\HammerDB-6.1&gt;hammerdbcli.exe
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/temp/hammer.DB using existing tables (258,048 bytes)
@@ -10920,8 +11025,8 @@ print("TEST SEQUENCE COMPLETE")
 
       <para>and run with output as follows:</para>
 
-      <programlisting>C:\Program Files\HammerDB-6.0&gt;hammerdbcli.exe py
-HammerDB CLI v6.0
+      <programlisting>C:\Program Files\HammerDB-6.1&gt;hammerdbcli.exe py
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help()" for a list of commands
 hammerdb&gt;&gt;&gt;source('cliexample.py')
@@ -11026,6 +11131,13 @@ hammerdb&gt;&gt;&gt;</programlisting>
     <section>
       <title>CLI Example Scripts Driven by Bash and PowerShell</title>
 
+      <para>HammerDB 6.1 includes VillageSQL Tcl and Python TPROC-C and
+      TPROC-H example scripts under scripts/tcl/villagesql and
+      scripts/python/villagesql respectively. Select the vsql database prefix
+      for VillageSQL. The VillageSQL examples follow the shared
+      MySQL-compatible procedures rather than requiring a separate set of
+      screenshots.</para>
+
       <para>The default HammerDB installation includes a scripts directory
       that contains example scripts for both TPROC-C and TPROC-H workloads for
       all databases in both Tcl and Python format to provide a template for
@@ -11056,10 +11168,10 @@ hammerdb&gt;&gt;&gt;</programlisting>
       <programlisting>./scripts/tcl/maria/tprocc/maria_tprocc.sh 
 BUILD HAMMERDB SCHEMA
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-Initialized Jobs on-disk database /opt/HammerDB-6.0/TMP/hammer.DB using existing tables (1,449,984 bytes)
+Initialized Jobs on-disk database /opt/HammerDB-6.1/TMP/hammer.DB using existing tables (1,449,984 bytes)
 SETTING CONFIGURATION
 Database set to MariaDB
 Benchmark set to TPC-C for MariaDB
@@ -11122,10 +11234,10 @@ SCHEMA BUILD COMPLETED
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 CHECK HAMMERDB SCHEMA
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-Initialized Jobs on-disk database /opt/HammerDB-6.0/TMP/hammer.DB using existing tables (1,404,928 bytes)
+Initialized Jobs on-disk database /opt/HammerDB-6.1/TMP/hammer.DB using existing tables (1,404,928 bytes)
 SETTING CONFIGURATION
 Database set to MariaDB
 Benchmark set to TPC-C for MariaDB
@@ -11159,10 +11271,10 @@ CHECK SCHEMA COMPLETED
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 RUN HAMMERDB TEST
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-Initialized Jobs on-disk database /opt/HammerDB-6.0/TMP/hammer.DB using existing tables (1,409,024 bytes)
+Initialized Jobs on-disk database /opt/HammerDB-6.1/TMP/hammer.DB using existing tables (1,409,024 bytes)
 SETTING CONFIGURATION
 Database set to MariaDB
 Benchmark set to TPC-C for MariaDB
@@ -11413,7 +11525,7 @@ Vuser 21:FINISHED SUCCESS
 Vuser 14:FINISHED SUCCESS
 Vuser 23:FINISHED SUCCESS
 Vuser 1:Calculating timings...
-Vuser 1:Writing timing data to /opt/HammerDB-6.0/TMP/hdbxtprofile.log
+Vuser 1:Writing timing data to /opt/HammerDB-6.1/TMP/hdbxtprofile.log
 Vuser 1:FINISHED SUCCESS
 ALL VIRTUAL USERS COMPLETE
 vudestroy success
@@ -11422,10 +11534,10 @@ Stopping Transaction Counter
 TEST COMPLETE
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 DROP HAMMERDB SCHEMA
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-Initialized Jobs on-disk database /opt/HammerDB-6.0/TMP/hammer.DB using existing tables (1,449,984 bytes)
+Initialized Jobs on-disk database /opt/HammerDB-6.1/TMP/hammer.DB using existing tables (1,449,984 bytes)
 SETTING CONFIGURATION
 Database set to MariaDB
 Benchmark set to TPC-C for MariaDB
@@ -11450,10 +11562,10 @@ ALL VIRTUAL USERS COMPLETE
 DROP SCHEMA COMPLETED
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 HAMMERDB RESULT
-HammerDB CLI v6.0
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
-Initialized Jobs on-disk database /opt/HammerDB-6.0/TMP/hammer.DB using existing tables (1,449,984 bytes)
+Initialized Jobs on-disk database /opt/HammerDB-6.1/TMP/hammer.DB using existing tables (1,449,984 bytes)
 TRANSACTION RESPONSE TIMES
 {
   "NEWORD": {
@@ -11608,9 +11720,9 @@ HAMMERDB RESULT
       you want the jobs repository to be created in a specific
       location.</para>
 
-      <programlisting>C:\Program Files\HammerDB-6.0&gt;set TEMP=C:\temp
-C:\Program Files\HammerDB-6.0&gt;hammerdbcli.exe
-HammerDB CLI v6.0
+      <programlisting>C:\Program Files\HammerDB-6.1&gt;set TEMP=C:\temp
+C:\Program Files\HammerDB-6.1&gt;hammerdbcli.exe
+HammerDB CLI v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Initialized Jobs on-disk database C:/temp/hammer.DB using existing tables (274,432 bytes)
@@ -11809,10 +11921,13 @@ hammerdb&gt;jobs 20260624101534 getchart diff:20260624110321</programlisting>
     and CLI, so jobs created by interactive runs, command line runs and CI
     pipelines can all be reviewed from the same web interface.</para>
 
-    <para>In HammerDB v6.0 the Web Service is no longer just a simple job
-    output viewer. It provides job index pages, job detail pages, benchmark
-    report pages, downloadable result artifacts, profile views, chart views,
-    pipeline pages and JSON endpoints for automation.</para>
+    <para>The Web Service provides job index pages, job detail pages,
+    benchmark reports, downloadable result artifacts, performance profiles,
+    charts, pipeline pages and JSON endpoints for automation. HammerDB 6.1
+    modernises the browser interface with light/dark presentation, clearer
+    navigation and status displays, improved Help and completed-job deletion,
+    and a pipeline Activity navigation link. Screen appearance depends on the
+    selected theme and current HammerDB version.</para>
 
     <section>
       <title>Web Service Configuration</title>
@@ -11847,7 +11962,7 @@ hammerdb&gt;jobs 20260624101534 getchart diff:20260624110321</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10ws-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11857,7 +11972,7 @@ hammerdb&gt;jobs 20260624101534 getchart diff:20260624110321</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10ws-1a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11875,7 +11990,7 @@ hammerdb&gt;jobs 20260624101534 getchart diff:20260624110321</programlisting>
 Web Service Port set to 8080
 
 hammerdb&gt;wsstart
-HammerDB Web Service v6.0
+HammerDB Web Service v6.1
 Copyright © HammerDB Ltd hosted by tpc.org 2019-2026
 Type "help" for a list of commands
 Starting HammerDB Web Service on port 8080
@@ -11907,6 +12022,14 @@ Stopping HammerDB Web Service on port 8080</programlisting>
     <section>
       <title>Jobs Home Page</title>
 
+      <para>In HammerDB 6.1 the Jobs interface presents benchmark runs with
+      clearer summary status and light/dark navigation. Completed jobs can be
+      deleted using a confirmation step, with formatted success and error
+      feedback. A non-running job can be removed immediately; do not apply the
+      old 24-hour deletion restriction to HammerDB 6.1. Job deletion does not
+      change or remove a result artifact already downloaded or published
+      separately.</para>
+
       <para>The Jobs home page is the main browser view for the jobs
       repository. It lists recorded TPROC-C and TPROC-H jobs, status icons,
       timestamps, database names, workload type and headline result values
@@ -11918,7 +12041,8 @@ Stopping HammerDB Web Service on port 8080</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1c.PNG"/>
+            <imagedata align="center" contentwidth="1060"
+                       fileref="docs/images/ch10ws-1c.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11933,7 +12057,8 @@ Stopping HammerDB Web Service on port 8080</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1d.PNG"/>
+            <imagedata align="center" contentwidth="978"
+                       fileref="docs/images/ch10ws-1d.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11971,7 +12096,8 @@ http://localhost:8080/jobs?jobid=JOBID&amp;vu=N</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1e.PNG"/>
+            <imagedata align="center" contentwidth="1326"
+                       fileref="docs/images/ch10ws-1e.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -11980,28 +12106,17 @@ http://localhost:8080/jobs?jobid=JOBID&amp;vu=N</programlisting>
       and sharing the result. Save HammerDB result artifact downloads a JSON
       result artifact for the job. Share HammerDB result artifact opens the
       configured result submission workflow. Save to PDF opens the browser
-      print dialog so the report can be saved as a PDF.</para>
-
-      <figure>
-        <title>Benchmark Report Save and Share Links</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1k.png"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>The downloadable result artifact is available directly from the
-      summaryjson endpoint. This returns the structured job report JSON and
-      can also be used by external tools.</para>
+      print dialog so the report can be saved as a PDF. The downloadable
+      result artifact is available directly from the summaryjson endpoint.
+      This returns the structured job report JSON and can also be used by
+      external tools.</para>
 
       <programlisting>http://localhost:8080/jobs?jobid=JOBID&amp;summaryjson</programlisting>
 
       <para>For example, to save the result artifact from the command
       line:</para>
 
-      <programlisting>curl -o hammerdb-result-JOBID.json \
+      <programlisting>url -o hammerdb-result-JOBID.json \
   "http://localhost:8080/jobs?jobid=JOBID&amp;summaryjson"</programlisting>
     </section>
 
@@ -12027,7 +12142,7 @@ http://localhost:8080/jobs?jobid=JOBID&amp;vu=N</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/share-1.png"/>
+            <imagedata align="center" fileref="docs/images/ch10ws-1k.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12162,7 +12277,8 @@ http://localhost:8080/jobs?jobid=JOBID&amp;vu=N</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1g.PNG"/>
+            <imagedata align="center" contentwidth="1000"
+                       fileref="docs/images/ch10ws-1g.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12185,7 +12301,8 @@ http://localhost:8080/jobs?profileid=PROFILEID&amp;profiledata</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1ee.png"/>
+            <imagedata align="center" contentwidth="1148"
+                       fileref="docs/images/ch10ws-1ee.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12193,6 +12310,12 @@ http://localhost:8080/jobs?profileid=PROFILEID&amp;profiledata</programlisting>
 
     <section>
       <title>Pipelines from the Web Service</title>
+
+      <para>The 6.1 Pipelines sidebar includes a PIPE VIEWS group with an
+      Activity link to the pipeline activity section. Run Benchmark is
+      displayed above Pipeline Activity, while pipeline configuration,
+      execution and log output remain available. Use the Pipelines page to
+      review the status and output of CI-triggered tests.</para>
 
       <para>The Web Service also provides browser access to CI pipeline
       automation on Linux. The Pipelines link on the Jobs page opens the
@@ -12209,7 +12332,8 @@ http://localhost:8080/ci?ci_id=INTEGER</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ci-2.png"/>
+            <imagedata align="center" contentwidth="1025"
+                       fileref="docs/images/ci-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12354,7 +12478,7 @@ order by
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10ws-1j.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10ws-1j.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12533,7 +12657,7 @@ order by
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch9-9.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch9-9.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -12551,7 +12675,7 @@ order by
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch9-10.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch9-10.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -12575,13 +12699,13 @@ order by
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch9-11.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch9-11.png"/>
             </imageobject>
           </mediaobject>
         </figure>
       </section>
 
-      <section>
+      <section xml:id="mysql-tproch-overview">
         <title>MySQL</title>
 
         <para>A standard install of MySQL with the innodb storage engine does
@@ -12596,10 +12720,32 @@ order by
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch9-12.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch9-12.png"/>
             </imageobject>
           </mediaobject>
         </figure>
+      </section>
+
+      <section xml:id="villagesql-tproch-v61">
+        <title>VillageSQL TPROC-H (MySQL-Compatible)</title>
+
+        <para>HammerDB 6.1 supports VillageSQL for the TPROC-H analytic
+        workload. VillageSQL is MySQL 8.4-compatible and follows the
+        installation, schema build and workload procedures for MySQL described
+        in <link linkend="mysql-tproch-overview">MySQL TPROC-H</link> and
+        <link linkend="mysql-tproch-build-options">MySQL TPROC-H schema build
+        options</link>. The existing MySQL screenshots illustrate the common
+        workflow; choose VillageSQL as the database instead of MySQL. For the
+        VillageSQL selection in the GUI, see <link
+        linkend="villagesql-tprocc-build-v61">VillageSQL TPROC-C schema build
+        options</link>.</para>
+
+        <para>VillageSQL uses config/villagesql.xml, the vsql_ option prefix
+        and the mysqltcl client library. Database performance and available
+        analytics capabilities depend on the server configuration. See <link
+        linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL, MariaDB
+        and VillageSQL</link> for encrypted connections without explicit CA
+        files.</para>
       </section>
 
       <section>
@@ -12615,7 +12761,7 @@ order by
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch9-12a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch9-12a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -12878,7 +13024,7 @@ TPCHTAB                   ENABLED
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-1.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-1.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -12977,14 +13123,18 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
       select benchmark from under the Options menu or under the benchmark
       tree-view. The initial settings are determined by the values in your XML
       configuration files. The following example shows the selection of SQL
-      Server however the process is the same for all databases.</para>
+      Server however the process is the same for all databases. HammerDB 6.1
+      also supports VillageSQL using the MySQL-compatible procedure; for
+      MySQL, MariaDB and VillageSQL SSL/TLS settings see <link
+      linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL, MariaDB
+      and VillageSQL</link>.</para>
 
       <figure>
         <title>Benchmark Options</title>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -12998,7 +13148,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -13023,7 +13173,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-4.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-4.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13033,7 +13183,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-4a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-4a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13156,7 +13306,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-5.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-5.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13166,7 +13316,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-5a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-5a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13377,7 +13527,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-6.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-6.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13387,7 +13537,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-6a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-6a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13478,7 +13628,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
         </table>
       </section>
 
-      <section>
+      <section xml:id="mysql-tproch-build-options">
         <title>MySQL Schema Build Options</title>
 
         <figure>
@@ -13486,7 +13636,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-8.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-8.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13496,7 +13646,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-8aa.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-8aa.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13608,6 +13758,25 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
         </table>
       </section>
 
+      <section xml:id="villagesql-tproch-build-v61">
+        <title>VillageSQL TPROC-H Schema Build Options</title>
+
+        <para>Choose VillageSQL from the HammerDB database selector for
+        TPROC-H. Follow the MySQL schema-build and driver instructions in
+        <link linkend="mysql-tproch-build-options">MySQL TPROC-H schema build
+        options</link>. The VillageSQL settings use the vsql_ prefix,
+        including vsql_tpch_user, vsql_tpch_pass, vsql_tpch_dbase,
+        vsql_scale_fact and vsql_num_tpch_threads. Default networking settings
+        are vsql_port 3306 and vsql_socket /tmp/villagesql.sock on Linux.
+        Existing MySQL screenshots cover the shared operation; no duplicate
+        screenshots are required.</para>
+
+        <para>The same MySQL-family TLS connection behaviour described in
+        <link linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL,
+        MariaDB and VillageSQL</link> applies to VillageSQL TPROC-H schema
+        builds and query runs.</para>
+      </section>
+
       <section>
         <title>MariaDB Schema Build Options</title>
 
@@ -13616,7 +13785,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-8a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-8a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13626,7 +13795,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-8aaa.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-8aaa.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13729,7 +13898,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-7.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-7.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13739,7 +13908,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-7a.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-7a.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -13896,7 +14065,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-9.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-9.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -13908,7 +14077,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -13933,7 +14102,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-11.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-11.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -13949,7 +14118,7 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-12.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-12.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14194,7 +14363,7 @@ orders
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-13.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-13.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -14206,7 +14375,7 @@ orders
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-14.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-14.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -14218,7 +14387,7 @@ orders
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-15.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-15.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -14230,7 +14399,7 @@ orders
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-16.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-16.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -14510,7 +14679,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-16a.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-16a.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14523,7 +14692,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-16aa.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-16aa.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14584,7 +14753,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-17.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-17.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14598,7 +14767,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-18.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-18.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14762,7 +14931,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-19.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-19.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14778,7 +14947,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-20.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-20.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14794,7 +14963,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-21.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-21.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14902,7 +15071,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-23.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-23.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14916,7 +15085,7 @@ SET
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-25.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-25.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14969,7 +15138,7 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-26.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-26.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14983,7 +15152,7 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-27.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-27.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -14995,7 +15164,7 @@ if { $myposition &gt; 40 } { set myposition [ expr $myposition % 40 ] }
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-29.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-29.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15034,7 +15203,7 @@ Cannot insert duplicate key in object 'dbo.orders'. The duplicate key value is (
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-30.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-30.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15053,7 +15222,7 @@ Cannot insert duplicate key in object 'dbo.orders'. The duplicate key value is (
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-31.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-31.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -15074,7 +15243,7 @@ Cannot insert duplicate key in object 'dbo.orders'. The duplicate key value is (
 
           <mediaobject>
             <imageobject>
-              <imagedata align="center" fileref="docs/images/ch13-33.PNG"/>
+              <imagedata align="center" fileref="docs/images/ch13-33.png"/>
             </imageobject>
           </mediaobject>
         </figure>
@@ -15177,7 +15346,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch13-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch13-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15190,7 +15359,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15206,7 +15375,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15234,7 +15403,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15247,7 +15416,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-6.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-6.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15259,7 +15428,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-7.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-7.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15272,7 +15441,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-8.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -15285,7 +15454,7 @@ GEOMEAN 4.011822724
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch10-10.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch10-10.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16045,7 +16214,7 @@ end;</programlisting>
         <mediaobject>
           <imageobject>
             <imagedata align="center" contentwidth="925"
-                       fileref="docs/images/ch12-1.PNG"/>
+                       fileref="docs/images/ch12-1.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16066,7 +16235,7 @@ end;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch12-2.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch12-2.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16081,7 +16250,7 @@ end;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch12-3.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch12-3.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16094,7 +16263,7 @@ end;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch12-4.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch12-4.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16107,7 +16276,7 @@ end;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch12-5.PNG"/>
+            <imagedata align="center" fileref="docs/images/ch12-5.png"/>
           </imageobject>
         </mediaobject>
       </figure>
@@ -16138,7 +16307,7 @@ end;</programlisting>
 
         <mediaobject>
           <imageobject>
-            <imagedata align="center" fileref="docs/images/ch12-8.pnG"/>
+            <imagedata align="center" fileref="docs/images/ch12-8.png"/>
           </imageobject>
         </mediaobject>
       </figure>
