@@ -3803,7 +3803,7 @@ if {$rawmode} {
   proc getchart { jobid vuid chart } {
     set chartcolors [ list MariaDB { color1 "#42ADB6" color2 "#9fd7dc" } PostgreSQL { color1 "#062671" color2 "#457af5" } \
 	Db2 { color1 "#00CC00" color2 "#66ff66" } MSSQLServer { color1 "#F2C811" color2 "#FFE066" } \
-	Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } \
+	OceanBase {color1 "#0066CC" color2 "#80BFFF" } Oracle { color1 "#D00000" color2 "#ff6868" } MySQL {color1 "#FF7900" color2 "#ffbc80" } \
 	VillageSQL { color1 "#6B4FBB" color2 "#b3a3e0" } ]
     set color1 "#808080"
     set color2 "#bfbfbf"

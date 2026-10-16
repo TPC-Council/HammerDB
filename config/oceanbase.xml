@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<oceanbase>
+    <connection>
+        <ob_compatibility_mode>mysql</ob_compatibility_mode>
+        <ob_host>127.0.0.1</ob_host>
+        <ob_port>2881</ob_port>
+        <ob_socket>null</ob_socket>
+        <ob_ssl>false</ob_ssl>
+        <ob_ssl_two_way>false</ob_ssl_two_way>
+        <ob_ssl_linux_capath>/etc/mysql/certs</ob_ssl_linux_capath>
+        <ob_ssl_windows_capath>C:\mysql\certs</ob_ssl_windows_capath>
+        <ob_ssl_ca>ca-cert.pem</ob_ssl_ca>
+        <ob_ssl_cert>client-cert.pem</ob_ssl_cert>
+        <ob_ssl_key>client-key.pem</ob_ssl_key>
+        <ob_ssl_cipher>server</ob_ssl_cipher>
+        <ob_tenant>hammerdb</ob_tenant>
+        <ob_cluster />
+        <ob_query_timeout>120</ob_query_timeout>
+    </connection>
+    <tpcc>
+        <schema>
+            <ob_count_ware>1</ob_count_ware>
+            <ob_num_vu>1</ob_num_vu>
+            <ob_user>root</ob_user>
+            <ob_pass />
+            <ob_dbase>tpcc</ob_dbase>
+            <ob_storage_engine>innodb</ob_storage_engine>
+            <ob_partition>false</ob_partition>
+            <ob_distributed_schema>false</ob_distributed_schema>
+            <ob_partition_count>24</ob_partition_count>
+            <ob_prepared>false</ob_prepared>
+            <ob_no_stored_procs>false</ob_no_stored_procs>
+            <ob_history_pk>false</ob_history_pk>
+        </schema>
+        <driver>
+            <ob_total_iterations>10000000</ob_total_iterations>
+            <ob_raiseerror>true</ob_raiseerror>
+            <ob_keyandthink>false</ob_keyandthink>
+            <ob_driver>timed</ob_driver>
+            <ob_rampup>2</ob_rampup>
+            <ob_duration>5</ob_duration>
+            <ob_allwarehouse>false</ob_allwarehouse>
+            <ob_timeprofile>false</ob_timeprofile>
+            <ob_async_scale>false</ob_async_scale>
+            <ob_async_client>10</ob_async_client>
+            <ob_async_verbose>false</ob_async_verbose>
+            <ob_async_delay>1000</ob_async_delay>
+            <ob_connect_pool>false</ob_connect_pool>
+        </driver>
+    </tpcc>
+    <tpch>
+        <schema>
+            <ob_scale_fact>1</ob_scale_fact>
+            <ob_tpch_user>root</ob_tpch_user>
+            <ob_tpch_pass />
+            <ob_tpch_dbase>tpch</ob_tpch_dbase>
+            <ob_num_tpch_threads>1</ob_num_tpch_threads>
+            <ob_tpch_storage_engine>innodb</ob_tpch_storage_engine>
+            <ob_tpch_optimized_schema>false</ob_tpch_optimized_schema>
+            <ob_tpch_partition_count>24</ob_tpch_partition_count>
+        </schema>
+        <driver>
+            <ob_total_querysets>1</ob_total_querysets>
+            <ob_raise_query_error>true</ob_raise_query_error>
+            <ob_verbose>false</ob_verbose>
+            <ob_refresh_on>false</ob_refresh_on>
+            <ob_update_sets>1</ob_update_sets>
+            <ob_trickle_refresh>1000</ob_trickle_refresh>
+            <ob_refresh_verbose>false</ob_refresh_verbose>
+            <ob_cloud_query>false</ob_cloud_query>
+        </driver>
+    </tpch>
+</oceanbase>
