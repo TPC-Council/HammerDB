@@ -82,7 +82,7 @@ jobs:
           ORACLE_FILE_MACHINE: ${{ matrix.oracle_machine }}
           TAG_PREFIX: localhost:5000/hammerdb-${{ strategy.job-index }}
         run: |
-          for name in base mysql maria postgres oracle mssqls villagesql villagesql; do IMAGE="$TAG_PREFIX-$name" "Docker/tests/test-$name.sh"; done
+          for name in base mysql maria postgres oracle mssqls villagesql; do IMAGE="$TAG_PREFIX-$name" "Docker/tests/test-$name.sh"; done
           IMAGE="$TAG_PREFIX" Docker/tests/test-combined.sh
 
   push-test:
@@ -150,6 +150,7 @@ jobs:
           docker buildx build --platform "$platforms" --push -t "$base" --build-arg HAMMERDB_AMD64_SHA256="$HAMD" --build-arg HAMMERDB_ARM64_SHA256="$HARM" Docker/base
           for name in mysql maria postgres oracle mssqls villagesql; do
             tag="$root-$name-$short"; args=(--build-arg "BASE_IMAGE=$base")
+            [[ $name == villagesql ]] && args=(--build-arg "MYSQL_IMAGE=$root-mysql-$short")
             require_test_tag "$tag"
             [[ $name == mysql || $name == villagesql ]] && args+=(--build-arg "MYSQL_AMD64_SHA256=$MAMD" --build-arg "MYSQL_ARM64_SHA256=$MARM")
             [[ $name == oracle ]] && args+=(--build-arg "ORACLE_AMD64_SHA256=$OAMD" --build-arg "ORACLE_ARM64_SHA256=$OARM")
@@ -176,7 +177,7 @@ jobs:
             if [[ $platform == linux/amd64 ]]; then machine=x86_64; mysql_machine=x86-64; oracle_machine=x86-64
             else machine=aarch64; mysql_machine='ARM aarch64'; oracle_machine='ARM aarch64'
             fi
-            for name in base mysql maria postgres oracle mssqls villagesql villagesql; do
+            for name in base mysql maria postgres oracle mssqls villagesql; do
               tag="$root-$name-$short"; digest=$(platform_digest "$tag" "$platform"); image="${tag%@*}@$digest"
               docker pull --platform "$platform" "$image"
               PLATFORM="$platform" EXPECTED_MACHINE="$machine" MYSQL_FILE_MACHINE="$mysql_machine" ORACLE_FILE_MACHINE="$oracle_machine" IMAGE="$image" "Docker/tests/test-$name.sh"
@@ -222,7 +223,7 @@ jobs:
         run: |
           set -euo pipefail
           short=${TESTED_SHA:0:12}
-          suffixes=(base mysql maria postgres oracle mssqls villagesql villagesql combined)
+          suffixes=(base mysql maria postgres oracle mssqls villagesql combined)
           IFS=, read -r -a tested_digests <<< "$TESTED_MANIFEST_DIGESTS"
           [[ ${#tested_digests[@]} -eq 8 ]] || { echo 'BLOCKED: exactly eight tested digests are required' >&2; exit 1; }
           sources=(); digests=(); versions=(); aliases=()
