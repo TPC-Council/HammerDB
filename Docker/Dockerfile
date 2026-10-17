@@ -1,13 +1,15 @@
-ARG MYSQL_IMAGE=docker.io/tpcorg/hammerdb:v6.0-mysql
-ARG MARIA_IMAGE=docker.io/tpcorg/hammerdb:v6.0-maria
-ARG POSTGRES_IMAGE=docker.io/tpcorg/hammerdb:v6.0-postgres
-ARG ORACLE_IMAGE=docker.io/tpcorg/hammerdb:v6.0-oracle
-ARG MSSQLS_IMAGE=docker.io/tpcorg/hammerdb:v6.0-mssqls
+ARG MYSQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-mysql
+ARG MARIA_IMAGE=docker.io/tpcorg/hammerdb:v6.1-maria
+ARG POSTGRES_IMAGE=docker.io/tpcorg/hammerdb:v6.1-postgres
+ARG ORACLE_IMAGE=docker.io/tpcorg/hammerdb:v6.1-oracle
+ARG MSSQLS_IMAGE=docker.io/tpcorg/hammerdb:v6.1-mssqls
 FROM ${MYSQL_IMAGE} AS mysql
 FROM ${MARIA_IMAGE} AS maria
 FROM ${POSTGRES_IMAGE} AS postgres
 FROM ${ORACLE_IMAGE} AS oracle
-FROM ${MSSQLS_IMAGE} AS final
+FROM ${MSSQLS_IMAGE} AS mssqls
+ARG VILLAGESQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-villagesql
+FROM ${VILLAGESQL_IMAGE} AS final
 
 # Buildx resolves every stage for the target platform. Copy the complete runtime
 # trees so transitive dependencies and architecture-specific loader paths follow.
