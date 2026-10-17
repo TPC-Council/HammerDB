@@ -11,7 +11,8 @@ docker_args=(--build-arg HAMMERDB_AMD64_SHA256 --build-arg HAMMERDB_ARM64_SHA256
 "${build[@]}" "${docker_args[@]}" -t "$TAG_PREFIX-base" Docker/base
 for name in mysql maria postgres oracle mssqls villagesql; do
   extra=(--build-arg "BASE_IMAGE=$TAG_PREFIX-base")
-  [[ $name == mysql || $name == villagesql ]] && extra+=(--build-arg MYSQL_AMD64_SHA256 --build-arg MYSQL_ARM64_SHA256)
+  [[ $name == villagesql ]] && extra=(--build-arg "MYSQL_IMAGE=$TAG_PREFIX-mysql")
+  [[ $name == mysql ]] && extra+=(--build-arg MYSQL_AMD64_SHA256 --build-arg MYSQL_ARM64_SHA256)
   [[ $name == oracle ]] && extra+=(--build-arg ORACLE_AMD64_SHA256 --build-arg ORACLE_ARM64_SHA256)
   "${build[@]}" "${extra[@]}" -t "$TAG_PREFIX-$name" "Docker/$name"
 done
