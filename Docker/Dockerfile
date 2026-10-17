@@ -1,3 +1,4 @@
+ARG VILLAGESQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-villagesql
 ARG MYSQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-mysql
 ARG MARIA_IMAGE=docker.io/tpcorg/hammerdb:v6.1-maria
 ARG POSTGRES_IMAGE=docker.io/tpcorg/hammerdb:v6.1-postgres
@@ -8,7 +9,6 @@ FROM ${MARIA_IMAGE} AS maria
 FROM ${POSTGRES_IMAGE} AS postgres
 FROM ${ORACLE_IMAGE} AS oracle
 FROM ${MSSQLS_IMAGE} AS mssqls
-ARG VILLAGESQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-villagesql
 FROM ${VILLAGESQL_IMAGE} AS final
 
 # Buildx resolves every stage for the target platform. Copy the complete runtime
