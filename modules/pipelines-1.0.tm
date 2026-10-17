@@ -4,6 +4,24 @@ package provide pipelines 1.0
 namespace eval pipelines {
     namespace export wapp-page-pipelines
 
+    # Encode values directly, including single-quoted HTML attributes.
+    proc __html {value} {
+        return [string map {' &#39;} [wappInt-enc-html $value]]
+    }
+
+    # Restrict pipeline refs to portable tag/branch names or commit IDs.
+    # Do not pass shell/Tcl syntax, revision expressions or option-like values on.
+    proc __valid_ref {ref} {
+        if {[string length $ref] < 1 || [string length $ref] > 255} {return 0}
+        if {![regexp {^[A-Za-z0-9][A-Za-z0-9._/-]*$} $ref]} {return 0}
+        if {[string first {..} $ref] >= 0 || [string first {//} $ref] >= 0} {return 0}
+        foreach part [split $ref /] {
+            if {$part eq "" || [string index $part 0] eq "." ||
+                [string index $part end] eq "." || [string match *.lock $part]} {return 0}
+        }
+        return 1
+    }
+
     proc __is_sha1 {s} {
         expr {[regexp {^[0-9a-fA-F]{7,40}$} [string trim $s]]}
     }
@@ -107,7 +125,7 @@ namespace eval pipelines {
 </div>
 }
         } else {
-            wapp-subst "<h3 class='title'>%html($title)</h3>\n"
+            wapp-unsafe "<h3 class='title'>[__html $title]</h3>\n"
         }
 
         # page styles
@@ -366,6 +384,19 @@ proc __render_last_if_any {} {
         variable __last_err
 
         if {$__last_msg eq ""} { return }
+        # Reconcile a stored blocked warning with live state on every visit.
+        if {!$__last_ok && ([string match "*pipeline already*" [string tolower $__last_msg]] ||
+            [string match "*pipeline is already*" [string tolower $__last_err]])} {
+            if {![catch {set active [hdbjobs eval {
+                SELECT COUNT(*) FROM JOBCI
+                WHERE upper(status) IN ('PENDING','INIT','BUILDING','RUNNING')
+            }]}] && $active eq "0"} {
+                __store_last 0 0 "" "" "" ""
+                return
+            }
+        }
+
+
     
         set cls "aut-banner"
         if {$__last_ok} { append cls " aut-ok" } else { append cls " aut-fail" }
@@ -379,18 +410,18 @@ proc __render_last_if_any {} {
             return "<pre>$s</pre>"
         }
 
-        wapp-subst "<div class='%html($cls)' id='runresult'>"
-        wapp-subst "<b>%html($__last_msg)</b>"
+        wapp-unsafe "<div class='[__html $cls]' id='runresult'>"
+        wapp-unsafe "<b>[__html $__last_msg]</b>"
 if {!$__last_ok && [string match "*connection refused*" $__last_err]} {
     wapp-subst "<div class='aut-mini' style='margin-top:6px;'>Start the listener: <code>hammerdbcli</code> → <code>cilisten maria</code></div>"
 } elseif {!$__last_ok && [string match "*connect failed*" $__last_err]} {
     wapp-subst "<div class='aut-mini' style='margin-top:6px;'>Start the listener: <code>hammerdbcli</code> → <code>cilisten maria</code></div>"
 } elseif {!$__last_ok && ([string match "*pipeline already*" [string tolower $__last_msg]] || [string match "*pipeline is already*" [string tolower $__last_err]])} {
     set reset_url "[wapp-param BASE_URL]/jobs?cireset=1"
-    wapp-subst "<div class='aut-mini' style='margin-top:8px;'><a href='%html($reset_url)'>Clear blocked CI pipeline</a></div>"
+    wapp-unsafe "<div class='aut-mini' style='margin-top:8px;'><a href='[__html $reset_url]'>Clear blocked CI pipeline</a></div>"
 }
         if {$__last_code ne 0} {
-            wapp-subst " <span class='aut-mini'>(HTTP %html($__last_code))</span>"
+            wapp-unsafe " <span class='aut-mini'>(HTTP [__html $__last_code])</span>"
         }
 
         if {$__last_err ne "" || $__last_payload ne "" || $__last_body ne ""} {
@@ -632,6 +663,15 @@ proc __url_encode {s} {
         set ref_custom [string trim [__qget $__qsdict ref_custom ""]]
         if {$ref_custom eq ""} { set ref_custom [string trim [__qget $__qsdict ref_cust ""]] }
 
+        # Validate both the editable field and forged dropdown values before
+        # fetching refs, rendering submitted data or contacting the CI listener.
+        if {($ref_custom ne "" && ![__valid_ref $ref_custom]) ||
+            ($tag_sel ni {"" "__custom__"} && ![__valid_ref $tag_sel])} {
+            __store_last 0 0 "Invalid reference." "" "" "Use a tag, branch or commit SHA containing letters, numbers, dots, underscores, slashes or hyphens. Code and revision expressions are not accepted."
+            wapp-redirect "$B/pipelines?db=$dbprefix#runresult"
+            return
+        }
+
         # typed tag => Custom
         if {[string trim $ref_custom] ne ""} {
             set tag_sel "__custom__"
@@ -789,6 +829,9 @@ return
         # render page
         __page_head $B "HammerDB Pipelines"
         __auto_refresh_js 120000
+        wapp-reply-extra Cache-Control {no-store}
+        wapp-unsafe {<script>window.addEventListener('pageshow',function(event){if(event.persisted){window.location.reload();}});</script>}
+
         wapp-subst "<!-- pipelines-module:1.5 -->"
         # Pipeline-only navigation; leave the Jobs page unchanged.
         wapp-subst {
@@ -902,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
                     if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
-                    wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>%html([__db_label $row_dbprefix])</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
+                    wapp-unsafe "<tr><td><a href=\"[__html $url]\">[__html $ci_id]</a></td><td>[__html [__db_label $row_dbprefix]]</td><td>[__html $refname]</td><td>[__html $plabel]</td><td>[__html $row_timestamp]</td><td>[__html $row_status]</td></tr>"
                 }
             } else {
                 hdbjobs eval "SELECT ci_id,
@@ -917,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     set url "$B/ci?ci_id=$ci_id"
                     set plabel [ci_pipeline_label $row_pipeline]
                     if {$row_pipeline eq "profile" && $row_io_intensive} { set plabel "Profile IO" }
-                    wapp-subst "<tr><td><a href=\"%html($url)\">%html($ci_id)</a></td><td>-</td><td>%html($refname)</td><td>%html($plabel)</td><td>%html($row_timestamp)</td><td>%html($row_status)</td></tr>"
+                    wapp-unsafe "<tr><td><a href=\"[__html $url]\">[__html $ci_id]</a></td><td>-</td><td>[__html $refname]</td><td>[__html $plabel]</td><td>[__html $row_timestamp]</td><td>[__html $row_status]</td></tr>"
                 }
             }
         }
@@ -929,28 +972,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
         # database chooser
         wapp-subst {<p><b>Database</b></p>}
-        wapp-subst "<select class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' name='db' onchange=\"window.location='%html($B)/pipelines?db=' + encodeURIComponent(this.value)\">"
+        wapp-unsafe "<select class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' name='db' onchange=\"window.location='[__html $B]/pipelines?db=' + encodeURIComponent(this.value)\">"
         foreach {pfx label} [ list ora Oracle mssqls "SQL Server" db2 Db2 mysql MySQL pg PostgreSQL maria MariaDB vsql VillageSQL ] {
             # Hide DBs until support is enabled
             if {$pfx in {ora mssqls db2}} continue
             set sel ""
             if {$dbprefix eq $pfx} { set sel " selected" }
-            wapp-subst "<option value='%html($pfx)'$sel>%html($label)</option>"
+            wapp-unsafe "<option value='[__html $pfx]'$sel>[__html $label]</option>"
         }
         wapp-subst {</select>}
 
         # DB header
-        wapp-subst "<h4 style='margin:14px 0 8px 0;'>%html([__db_label $dbprefix])</h4>"
+        wapp-unsafe "<h4 style='margin:14px 0 8px 0;'>[__html [__db_label $dbprefix]]</h4>"
 
         # info line
         wapp-subst "<p class='aut-mini' style='margin-top:10px;'>"
-        wapp-subst "<b>Endpoint:</b> %html($cilisten_url) &nbsp;·&nbsp; <b>Valid ref:</b> tag, branch, or commit SHA"
+        wapp-unsafe "<b>Endpoint:</b> [__html $cilisten_url] &nbsp;·&nbsp; <b>Valid ref:</b> tag, branch, or commit SHA"
         wapp-subst "</p>"
 
         # run form
             if {$dbprefix in {ora mssqls db2}} {
             wapp-subst "<div class='aut-banner aut-fail' style='margin-top:10px;'>"
-            wapp-subst "<b>%html([__db_label $dbprefix]) pipelines are not yet enabled.</b><br>"
+            wapp-unsafe "<b>[__html [__db_label $dbprefix]] pipelines are not yet enabled.</b><br>"
             wapp-subst "Support for already-running Oracle, SQL Server, and Db2 instances is planned for a future release."
             wapp-subst "</div>"
         } elseif {$windows_host} {
@@ -960,9 +1003,9 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 }
         } else {
-wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
+wapp-unsafe "<form method='GET' action='[__html $B]/pipelines' id='runform'>"
         wapp-subst {<input type='hidden' name='action' value='run'>}
-        wapp-subst "<input type='hidden' name='db' value='%html($dbprefix)'>"
+        wapp-unsafe "<input type='hidden' name='db' value='[__html $dbprefix]'>"
 
         wapp-subst {<p style='margin-top:12px;'><b>Ref</b></p>}
         wapp-subst {<select class="aut-ctl" style="width:100%; max-width:980px; box-sizing:border-box;" name="tag_sel" form="runform">}
@@ -972,7 +1015,7 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         foreach t $tags {
             set sel ""
             if {$tag_sel eq $t} { set sel " selected" }
-            wapp-subst "<option value='%html($t)'$sel>%html($t)</option>"
+            wapp-unsafe "<option value='[__html $t]'$sel>[__html $t]</option>"
         }
         set sel ""
         if {$tag_sel eq "__custom__"} { set sel " selected" }
@@ -984,7 +1027,7 @@ wapp-subst "<form method='GET' action='%html($B)/pipelines' id='runform'>"
         if {$ref_custom eq ""} {
             wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' placeholder='refs/tags/... or refs/heads/... or a1b2c3d4e5f6...'>"
         } else {
-            wapp-subst "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' value='%html($ref_custom)' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
+            wapp-unsafe "<input class='aut-ctl' style='width:100%; max-width:980px; box-sizing:border-box;' type='text' name='ref_custom' form='runform' value='[__html $ref_custom]' placeholder='refs/tags/... or refs/heads/... or 144dead8826f...'>"
         }
         wapp-subst {</div>}
 
@@ -1009,8 +1052,8 @@ if {$workload_ui eq "H"} {
     }
 }
 
-wapp-subst "<input type='hidden' name='workload' id='workload_hidden' form='runform' value='%html($workload_ui)'>"
-wapp-subst "<input type='hidden' name='pipeline'  id='pipeline_hidden'  form='runform' value='%html($pipeline_ui)'>"
+wapp-unsafe "<input type='hidden' name='workload' id='workload_hidden' form='runform' value='[__html $workload_ui]'>"
+wapp-unsafe "<input type='hidden' name='pipeline'  id='pipeline_hidden'  form='runform' value='[__html $pipeline_ui]'>"
 
 wapp-subst {<div style='margin-top:18px;'>}
 wapp-subst {<div style='font-weight:600; margin-bottom:6px;'>Benchmark</div>}

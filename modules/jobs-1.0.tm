@@ -1800,19 +1800,18 @@ proc wapp-page-jobs {} {
 
     if {[dict exists $paramdict cireset]} {
         set msg [cireset]
-        common-header
+        wapp-reply-extra Cache-Control {no-store}
+        hdb_info_header "Clear blocked pipeline"
         if {[string match "Error:*" $msg]} {
-            set boxstyle "margin:16px; padding:12px; background:#fdecea; color:#b00020; border-left:6px solid #e74c3c; font-weight:600;"
+            hdb_empty_card "Unable to clear pipeline state" $msg
         } else {
-            set boxstyle "margin:16px; padding:12px; background:#e6f4ea; color:#1e7e34; border-left:6px solid #2ecc71; font-weight:600;"
+            if {[info commands ::pipelines::__store_last] ne ""} {
+                ::pipelines::__store_last 0 0 "" "" "" ""
+            }
+            hdb_empty_card "Pipeline state cleared" $msg
         }
-        wapp-subst {<div style="%html($boxstyle)">%html($msg)</div>
-}
-        set pipelines_url "$B/pipelines"
-        set jobs_url "$B/jobs"
-        wapp-subst {<p style="margin:16px;"><a href="%html($pipelines_url)">Back to Pipelines</a> | <a href="%html($jobs_url)">Back to Jobs</a></p>
-}
-        common-footer
+        wapp-subst {<p><a class="hdb-action-link" href="%url($B/pipelines)">Back to Pipelines</a> <a class="hdb-action-link" href="%url($B/jobs)">Back to Jobs</a></p>}
+        hdb_info_footer
         return
     }
 
