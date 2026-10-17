@@ -1,0 +1,246 @@
+name: HammerDB 6.1 multi-architecture images
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Operation (build-only, push-test, or promote-production)
+        required: true
+        type: choice
+        options: [build-only, push-test, promote-production]
+      tested_sha:
+        description: Commit SHA whose immutable test manifests are promoted
+        required: false
+        type: string
+      confirm_production:
+        description: Type PROMOTE-V6.1 to promote without rebuilding
+        required: false
+        type: string
+      tested_manifest_digests:
+        description: Eight comma-separated tested digests (base,mysql,maria,postgres,oracle,mssqls,villagesql,combined)
+        required: false
+        type: string
+      hammerdb_amd64_sha256: {description: Published AMD64 HammerDB archive SHA-256, required: false, type: string}
+      hammerdb_arm64_sha256: {description: Published ARM64 HammerDB archive SHA-256, required: false, type: string}
+      mysql_amd64_sha256: {description: AMD64 MySQL client SHA-256, required: false, type: string}
+      mysql_arm64_sha256: {description: ARM64 MySQL client SHA-256, required: false, type: string}
+      oracle_amd64_sha256: {description: AMD64 Oracle archive SHA-256, required: false, type: string}
+      oracle_arm64_sha256: {description: ARM64 Oracle archive SHA-256, required: false, type: string}
+
+env:
+  REGISTRY_IMAGE: docker.io/tpcorg/hammerdb
+
+jobs:
+  build-only:
+    if: inputs.mode == 'build-only'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            machine: x86_64
+            mysql_machine: x86-64
+            oracle_machine: x86-64
+          - platform: linux/arm64
+            machine: aarch64
+            mysql_machine: ARM aarch64
+            oracle_machine: ARM aarch64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - name: Start temporary dependency registry
+        run: docker run -d --restart always -p 5000:5000 --name registry registry:2
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+      - name: Validate required build checksums
+        env:
+          HAMMERDB_AMD64_SHA256: ${{ inputs.hammerdb_amd64_sha256 }}
+          HAMMERDB_ARM64_SHA256: ${{ inputs.hammerdb_arm64_sha256 }}
+          MYSQL_AMD64_SHA256: ${{ inputs.mysql_amd64_sha256 }}
+          MYSQL_ARM64_SHA256: ${{ inputs.mysql_arm64_sha256 }}
+          ORACLE_AMD64_SHA256: ${{ inputs.oracle_amd64_sha256 }}
+          ORACLE_ARM64_SHA256: ${{ inputs.oracle_arm64_sha256 }}
+        run: Docker/tests/validate-downloads.sh
+      - name: Build in dependency order
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          TAG_PREFIX: localhost:5000/hammerdb-${{ strategy.job-index }}
+          HAMMERDB_AMD64_SHA256: ${{ inputs.hammerdb_amd64_sha256 }}
+          HAMMERDB_ARM64_SHA256: ${{ inputs.hammerdb_arm64_sha256 }}
+          MYSQL_AMD64_SHA256: ${{ inputs.mysql_amd64_sha256 }}
+          MYSQL_ARM64_SHA256: ${{ inputs.mysql_arm64_sha256 }}
+          ORACLE_AMD64_SHA256: ${{ inputs.oracle_amd64_sha256 }}
+          ORACLE_ARM64_SHA256: ${{ inputs.oracle_arm64_sha256 }}
+        run: Docker/tests/build-images.sh
+      - name: Architecture-specific smoke tests
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          EXPECTED_MACHINE: ${{ matrix.machine }}
+          MYSQL_FILE_MACHINE: ${{ matrix.mysql_machine }}
+          ORACLE_FILE_MACHINE: ${{ matrix.oracle_machine }}
+          TAG_PREFIX: localhost:5000/hammerdb-${{ strategy.job-index }}
+        run: |
+          for name in base mysql maria postgres oracle mssqls villagesql villagesql; do IMAGE="$TAG_PREFIX-$name" "Docker/tests/test-$name.sh"; done
+          IMAGE="$TAG_PREFIX" Docker/tests/test-combined.sh
+
+  push-test:
+    if: inputs.mode == 'push-test'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate required build checksums
+        env:
+          HAMMERDB_AMD64_SHA256: ${{ inputs.hammerdb_amd64_sha256 }}
+          HAMMERDB_ARM64_SHA256: ${{ inputs.hammerdb_arm64_sha256 }}
+          MYSQL_AMD64_SHA256: ${{ inputs.mysql_amd64_sha256 }}
+          MYSQL_ARM64_SHA256: ${{ inputs.mysql_arm64_sha256 }}
+          ORACLE_AMD64_SHA256: ${{ inputs.oracle_amd64_sha256 }}
+          ORACLE_ARM64_SHA256: ${{ inputs.oracle_arm64_sha256 }}
+        run: Docker/tests/validate-downloads.sh
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push immutable test manifests in dependency order
+        env:
+          SHA: ${{ github.sha }}
+          HAMD: ${{ inputs.hammerdb_amd64_sha256 }}
+          HARM: ${{ inputs.hammerdb_arm64_sha256 }}
+          MAMD: ${{ inputs.mysql_amd64_sha256 }}
+          MARM: ${{ inputs.mysql_arm64_sha256 }}
+          OAMD: ${{ inputs.oracle_amd64_sha256 }}
+          OARM: ${{ inputs.oracle_arm64_sha256 }}
+        run: |
+          set -euo pipefail
+          short=${SHA:0:12}; root="$REGISTRY_IMAGE:v6.1-test"; platforms=linux/amd64,linux/arm64
+          require_test_tag() {
+            [[ $1 == "$REGISTRY_IMAGE:v6.1-test-"*"-$short" || $1 == "$REGISTRY_IMAGE:v6.1-test-$short" ]] || {
+              echo "FAIL: refusing non-immutable test tag: $1" >&2
+              exit 1
+            }
+          }
+          candidate_tags=("$root-base-$short" "$root-mysql-$short" "$root-maria-$short" "$root-postgres-$short" "$root-oracle-$short" "$root-mssqls-$short" "$root-villagesql-$short" "$root-$short")
+          existing_tags=()
+          inspection_errors=()
+          for tag in "${candidate_tags[@]}"; do
+            require_test_tag "$tag"
+            inspect_error=$(mktemp)
+            if docker buildx imagetools inspect "$tag" >/dev/null 2>"$inspect_error"; then
+              existing_tags+=("$tag")
+            elif ! grep -Eiq 'manifest unknown|no such manifest|not found' "$inspect_error"; then
+              inspection_errors+=("$tag: $(tr '\n' ' ' < "$inspect_error")")
+            fi
+            rm -f "$inspect_error"
+          done
+          if (( ${#inspection_errors[@]} )); then
+            printf 'FAIL: could not determine whether test tag exists: %s\n' "${inspection_errors[@]}" >&2
+            exit 1
+          fi
+          if (( ${#existing_tags[@]} )); then
+            printf 'FAIL: refusing to overwrite immutable test tag: %s\n' "${existing_tags[@]}" >&2
+            exit 1
+          fi
+          # No build or push occurs above this line: the complete eight-tag set
+          # has been proven absent before the first Docker Hub modification.
+          base="$root-base-$short"
+          docker buildx build --platform "$platforms" --push -t "$base" --build-arg HAMMERDB_AMD64_SHA256="$HAMD" --build-arg HAMMERDB_ARM64_SHA256="$HARM" Docker/base
+          for name in mysql maria postgres oracle mssqls villagesql; do
+            tag="$root-$name-$short"; args=(--build-arg "BASE_IMAGE=$base")
+            require_test_tag "$tag"
+            [[ $name == mysql || $name == villagesql ]] && args+=(--build-arg "MYSQL_AMD64_SHA256=$MAMD" --build-arg "MYSQL_ARM64_SHA256=$MARM")
+            [[ $name == oracle ]] && args+=(--build-arg "ORACLE_AMD64_SHA256=$OAMD" --build-arg "ORACLE_ARM64_SHA256=$OARM")
+            docker buildx build --platform "$platforms" --push -t "$tag" "${args[@]}" "Docker/$name"
+          done
+          combined_args=()
+          for name in mysql maria postgres oracle mssqls villagesql; do
+            combined_args+=(--build-arg "${name^^}_IMAGE=$root-$name-$short")
+          done
+          require_test_tag "$root-$short"
+          docker buildx build --platform "$platforms" --push -t "$root-$short" "${combined_args[@]}" Docker
+          tags=("$root-base-$short" "$root-mysql-$short" "$root-maria-$short" "$root-postgres-$short" "$root-oracle-$short" "$root-mssqls-$short" "$root-villagesql-$short" "$root-$short")
+          : > test-manifests.env
+          for tag in "${tags[@]}"; do
+            IMAGE="$tag" Docker/tests/test-manifest.sh
+            digest=$(docker buildx imagetools inspect "$tag" | awk '/^Digest:/{digest=$2} END{print digest}')
+            [[ $digest =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "FAIL: cannot resolve manifest digest for $tag" >&2; exit 1; }
+            printf '%s=%s@%s\n' "${tag##*:}" "$tag" "$digest" >> test-manifests.env
+          done
+          platform_digest() {
+            docker buildx imagetools inspect --raw "$1" | python3 -c 'import json,sys; a=sys.argv[1].split("/",1)[1]; d=json.load(sys.stdin); print(next(m["digest"] for m in d["manifests"] if m["platform"]["os"]=="linux" and m["platform"]["architecture"]==a))' "$2"
+          }
+          for platform in linux/amd64 linux/arm64; do
+            if [[ $platform == linux/amd64 ]]; then machine=x86_64; mysql_machine=x86-64; oracle_machine=x86-64
+            else machine=aarch64; mysql_machine='ARM aarch64'; oracle_machine='ARM aarch64'
+            fi
+            for name in base mysql maria postgres oracle mssqls villagesql villagesql; do
+              tag="$root-$name-$short"; digest=$(platform_digest "$tag" "$platform"); image="${tag%@*}@$digest"
+              docker pull --platform "$platform" "$image"
+              PLATFORM="$platform" EXPECTED_MACHINE="$machine" MYSQL_FILE_MACHINE="$mysql_machine" ORACLE_FILE_MACHINE="$oracle_machine" IMAGE="$image" "Docker/tests/test-$name.sh"
+            done
+            tag="$root-$short"; digest=$(platform_digest "$tag" "$platform"); image="${tag%@*}@$digest"
+            docker pull --platform "$platform" "$image"
+            PLATFORM="$platform" EXPECTED_MACHINE="$machine" MYSQL_FILE_MACHINE="$mysql_machine" ORACLE_FILE_MACHINE="$oracle_machine" IMAGE="$image" Docker/tests/test-combined.sh
+          done
+          {
+            printf '## Tested HammerDB 6.1 manifests\n\n'
+            printf 'Both linux/amd64 and linux/arm64 platform digests passed their smoke tests.\n\n'
+            printf '| Test tag | Verified manifest identity |\n|---|---|\n'
+            while IFS='=' read -r tag identity; do printf '| `%s` | `%s` |\n' "$tag" "$identity"; done < test-manifests.env
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Record tested manifest digests
+        uses: actions/upload-artifact@v4
+        with:
+          name: hammerdb-v6.1-tested-manifests-${{ github.sha }}
+          path: test-manifests.env
+          if-no-files-found: error
+
+  promote-production:
+    if: inputs.mode == 'promote-production'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce upstream-only explicit promotion
+        run: |
+          set -euo pipefail
+          [[ '${{ github.repository }}' == 'TPC-Council/HammerDB' ]] || { echo 'BLOCKED: production promotion is upstream-only'; exit 1; }
+          [[ '${{ inputs.confirm_production }}' == 'PROMOTE-V6.1' ]] || { echo 'BLOCKED: confirmation mismatch'; exit 1; }
+          [[ '${{ inputs.tested_sha }}' =~ ^[0-9a-f]{7,40}$ ]] || { echo 'BLOCKED: tested_sha is required'; exit 1; }
+          [[ -n '${{ inputs.tested_manifest_digests }}' ]] || { echo 'BLOCKED: tested manifest digests are required'; exit 1; }
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Copy tested manifests to production tags (no rebuild)
+        env:
+          TESTED_SHA: ${{ inputs.tested_sha }}
+          TESTED_MANIFEST_DIGESTS: ${{ inputs.tested_manifest_digests }}
+        run: |
+          set -euo pipefail
+          short=${TESTED_SHA:0:12}
+          suffixes=(base mysql maria postgres oracle mssqls villagesql villagesql combined)
+          IFS=, read -r -a tested_digests <<< "$TESTED_MANIFEST_DIGESTS"
+          [[ ${#tested_digests[@]} -eq 8 ]] || { echo 'BLOCKED: exactly eight tested digests are required' >&2; exit 1; }
+          sources=(); digests=(); versions=(); aliases=()
+          for suffix in "${suffixes[@]}"; do
+            if [[ $suffix == combined ]]; then source="$REGISTRY_IMAGE:v6.1-test-$short"; version=v6.1; alias=latest
+            else source="$REGISTRY_IMAGE:v6.1-test-$suffix-$short"; version="v6.1-$suffix"; alias=$suffix
+            fi
+            IMAGE="$source" Docker/tests/test-manifest.sh
+            digest=$(docker buildx imagetools inspect "$source" | awk '/^Digest:/{digest=$2} END{print digest}')
+            [[ $digest =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "BLOCKED: cannot resolve $source" >&2; exit 1; }
+            expected=${tested_digests[${#digests[@]}]}
+            [[ $digest == "$expected" ]] || { echo "BLOCKED: $source does not match its tested digest" >&2; exit 1; }
+            sources+=("$source"); digests+=("$digest"); versions+=("$version"); aliases+=("$alias")
+            printf 'Preflight: %s@%s contains linux/amd64 and linux/arm64\n' "$source" "$digest"
+          done
+          # All eight sources have passed preflight. Apply tags from the exact
+          # resolved digests so a later tag change cannot alter this promotion.
+          for i in "${!sources[@]}"; do
+            immutable="$REGISTRY_IMAGE@${digests[$i]}"
+            docker buildx imagetools create -t "$REGISTRY_IMAGE:${versions[$i]}" -t "$REGISTRY_IMAGE:${aliases[$i]}" "$immutable"
+          done
