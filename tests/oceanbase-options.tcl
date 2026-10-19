@@ -52,6 +52,30 @@ test options-layout {Independent OB dialog follows native Connection/Settings la
         [winfo class $::oceanbase::mysql::option_widgets(ob_count_ware)]
 } -cleanup {destroy .oboptions} -result {Connection Settings TEntry TSpinbox}
 
+test options-global-tenant-mode {Tenant Mode stays above every tab in all OB dialogs} -setup {
+    wm deiconify .ed_mainFrame
+    update
+} -body {
+    set result {}
+    foreach group {tpcc tpch} {
+        foreach option {all build drive counter} {
+            oceanbase::mysql::show_options $group $option
+            update idletasks
+            set selector $::oceanbase::mysql::option_widgets(ob_compatibility_mode)
+            lappend result [expr {[winfo parent $selector] eq {.oboptions.mode}}] \
+                [expr {[lsearch -exact [pack slaves .oboptions] .oboptions.mode] < [lsearch -exact [pack slaves .oboptions] .oboptions.tabs]}] \
+                [expr {[$selector cget -values] eq [oceanbase::supported_modes]}]
+            foreach tab {.oboptions.tabs.connection .oboptions.tabs.settings} {
+                .oboptions.tabs select $tab
+                update idletasks
+                lappend result [winfo ismapped $selector]
+            }
+            destroy .oboptions
+        }
+    }
+    lsort -unique $result
+} -cleanup {catch {destroy .oboptions}; wm withdraw .ed_mainFrame} -result 1
+
 test options-pool-dependencies {Pool requires prepared stored procedures and disables conflicting choices} -body {
     oceanbase::mysql::show_options tpcc drive
     set ::oceanbase::mysql::options(tpcc,ob_no_stored_procs) true

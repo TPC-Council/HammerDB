@@ -162,6 +162,10 @@ namespace eval oceanbase::mysql {
         set workload [expr {$group eq "tpcc" ? "TPROC-C" : "TPROC-H"}]
         set caption [dict get {all Schema build Build drive Driver counter {Transaction Counter}} $option]
         wm title .oboptions "OceanBase $workload $caption Options"
+        ttk::frame .oboptions.mode -padding 8
+        option_row .oboptions.mode 1 connection ob_compatibility_mode {Tenant Mode} mode
+        grid columnconfigure .oboptions.mode 1 -weight 1
+        pack .oboptions.mode -fill x -padx 5
         ttk::notebook .oboptions.tabs
         ttk::frame .oboptions.tabs.connection -padding 8
         ttk::frame .oboptions.tabs.settings -padding 8
@@ -169,7 +173,7 @@ namespace eval oceanbase::mysql {
         .oboptions.tabs add .oboptions.tabs.settings -text Settings
         pack .oboptions.tabs -fill both -expand 1 -padx 5 -pady 5
         set frame .oboptions.tabs.connection
-        set fields {{ob_compatibility_mode {Tenant Mode} mode} {ob_host {OceanBase Host} entry} {ob_port {OceanBase Port} entry}
+        set fields {{ob_host {OceanBase Host} entry} {ob_port {OceanBase Port} entry}
             {ob_ssl {SSL} boolean} {ob_ssl_two_way {SSL Mode} sslmode}}
         set capath [expr {$::tcl_platform(platform) eq "windows" ? "ob_ssl_windows_capath" : "ob_ssl_linux_capath"}]
         lappend fields [list $capath {SSL CApath} entry]
