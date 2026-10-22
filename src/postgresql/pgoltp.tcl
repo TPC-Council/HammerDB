@@ -1285,9 +1285,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
 
                 RETURN no_s_quantity;
 
-                EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
-                THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
             }
@@ -1354,9 +1351,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
 
                 RETURN 1;
 
-                EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
-                THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
             }
@@ -1480,9 +1474,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
 
                 RETURN p_c_id;
 
-                EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
-                THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
             }
@@ -1545,9 +1536,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 LOOP
                 RETURN NEXT os_ol;
                 END LOOP;
-                EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
-                THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
             }
@@ -1571,9 +1559,6 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 AND s_quantity < threshold;
 
                 RETURN stock_count;
-                EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
-                THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
             }
