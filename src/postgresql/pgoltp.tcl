@@ -2722,7 +2722,14 @@ proc neword { lda no_w_id w_id_input RAISEERROR ora_compatible pg_storedprocs } 
         }
     }
     if {[pg_result $result -status] != "PGRES_TUPLES_OK"} {
-        if { $RAISEERROR } {
+        if { [pg_result $result -errorField sqlstate] eq "P0002" } {
+            #2.4.1.5: ~1% of New-Order transactions use an unused item number and
+            #must roll back the whole order. In the pg_storedprocs=false (function)
+            #path this is signalled by an uncaught no_data_found, which aborts the
+            #statement and rolls back the order - that's correct, expected
+            #behavior, not a driver error, so don't kill the VU over it.
+            puts "New Order: rolled back (unused item number per 2.4.1.5)"
+        } elseif { $RAISEERROR } {
             error "[pg_result $result -error]"
         } else {
             puts "New Order Procedure Error set RAISEERROR for Details"
