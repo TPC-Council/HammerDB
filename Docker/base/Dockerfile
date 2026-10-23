@@ -21,7 +21,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     rm -rf /var/lib/apt/lists/*
 RUN set -eux; \
     case "$TARGETARCH" in \
-      amd64) archive="HammerDB-${HAMMERDB_VERSION}-Prod-Lin-UBU24.tar.gz"; checksum="$HAMMERDB_AMD64_SHA256" ;; \
+      amd64) archive="HammerDB-${HAMMERDB_VERSION}-Prod-Lin-UBU24-x64.tar.gz"; checksum="$HAMMERDB_AMD64_SHA256" ;; \
       arm64) archive="HammerDB-${HAMMERDB_VERSION}-Prod-Lin-UBU24-ARM64.tar.gz"; checksum="$HAMMERDB_ARM64_SHA256" ;; \
       *) echo "Unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
     esac; \

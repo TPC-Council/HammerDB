@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.0-base
+ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.1-base
 FROM ${BASE_IMAGE}
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
     install -d -m 0755 /etc/apt/keyrings && curl --fail --location --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg && \

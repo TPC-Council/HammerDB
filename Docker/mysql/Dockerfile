@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.0-base
+ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.1-base
 FROM ${BASE_IMAGE}
 ARG TARGETARCH
 ARG MYSQL_AMD64_SHA256
