@@ -203,7 +203,11 @@ proc mysql_build {cidict refname} {
     }
     # build command
     set cmd_full [string trim "$raw_cmd $raw_args"]
-    set shell_cmd "cd \"$local_dir\" && $cmd_full 2>&1"
+    # Do not let HammerDB runtime libraries leak into MySQL-family source builds.
+    # An existing libmysqlclient on LD_LIBRARY_PATH can otherwise be loaded by
+    # build-time executables instead of the library just compiled from this tree.
+    # Scope the unset to this child shell so HammerDB itself keeps its runtime path.
+    set shell_cmd "cd \"$local_dir\" && unset LD_LIBRARY_PATH && $cmd_full 2>&1"
 
     # save command
     if {[catch {
