@@ -8,8 +8,8 @@ FROM ${MYSQL_IMAGE} AS mysql
 FROM ${MARIA_IMAGE} AS maria
 FROM ${POSTGRES_IMAGE} AS postgres
 FROM ${ORACLE_IMAGE} AS oracle
-FROM ${MSSQLS_IMAGE} AS mssqls
-FROM ${VILLAGESQL_IMAGE} AS final
+FROM ${VILLAGESQL_IMAGE} AS villagesql
+FROM ${MSSQLS_IMAGE} AS final
 
 # Buildx resolves every stage for the target platform. Copy the complete runtime
 # trees so transitive dependencies and architecture-specific loader paths follow.
