@@ -1935,7 +1935,7 @@ proc wapp-page-hdb-theme.js {} {
     const primary=document.createElement('div');primary.className='hdb-primary-navigation';
     const items=[['Jobs','/jobs'],['Pipelines','/pipelines'],['Help','/help']];
     if(route==='/env')items.push(['Environment','/env']);
-    const active=route==='/ci'?'/pipelines':route;
+    const active=(route==='/ci'||(route==='/jobs'&&query.has('cireset')))?'/pipelines':route;
     items.forEach(([label,path])=>{
       const a=document.createElement('a');a.href=base+path;a.textContent=label;
       if(path===active)a.setAttribute('aria-current','page');
@@ -1948,7 +1948,7 @@ proc wapp-page-hdb-theme.js {} {
     }
     let title;
     if(route==='/jobs'){
-      title=query.has('jobid')?'Job: '+query.get('jobid'):query.has('profileid')?'Performance profile: '+query.get('profileid'):query.get('cmd')==='profilediff'?'Performance profile comparison':'Jobs';
+      title=query.has('cireset')?'Clear blocked pipeline':query.has('jobid')?'Job: '+query.get('jobid'):query.has('profileid')?'Performance profile: '+query.get('profileid'):query.get('cmd')==='profilediff'?'Performance profile comparison':'Jobs';
     }else if(route==='/pipelines')title='Pipelines';
     else if(route==='/help')title='Help';
     else if(route==='/env')title='Environment';
