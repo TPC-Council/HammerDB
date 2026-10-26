@@ -1287,6 +1287,7 @@ Version 6.1.1 October 2026
 
 Pull Requests & Issues
 
+Fix schema builds inheriting loader state after a failed or stopped build #965
 Revert PostgreSQL function invalid-item raise #963
 Fix MySQL 26.10 CI build regressions and VillageSQL Arm64 build #960
 HammerDB 6.1 multi-architecture Docker images with VillageSQL support #959

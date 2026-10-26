@@ -3357,6 +3357,11 @@ proc build_schema {} {
         return 1
     }
 
+    #Schema loader coordination state is shared between VUs and persists for the process.
+    #Reset it before creating schema build VUs so a previous failed or stopped build cannot poison the next build.
+    if {[tsv::exists common thrdlst]} { tsv::unset common thrdlst }
+    if {[tsv::exists application load]} { tsv::unset application load }
+
     set jobid [guid]
     if { [jobmain $jobid build] eq 1 } {
         dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
