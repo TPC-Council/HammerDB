@@ -1247,6 +1247,7 @@ Version 6.1 October 2026
 
 Pull Requests & Issues
 
+Align pipeline activity navigation and move Run Benchmark above activity #955
 Fix MariaDB 13 pipeline tag selection and increase dropdown limit to 120 #954
 Scale TPROC-C profile VU steps, cap large schema build VUs, and add VillageSQL Python scripts #953
 Fix metrics callbacks for numeric hostnames and agent disconnect cleanup #952
@@ -1260,6 +1261,7 @@ Increase TPROC-C total iterations default to 2147483647 #940 (#910)
 Fix MariaDB and PostgreSQL CI multi-segment branch and tag refs #942
 Flatten GUI menus on Linux and Windows #939
 Fix benchmark report CPU count when reusing system details #938
+Allow MySQL-family TLS without explicit CA files #937
 Fix PostgreSQL New Order invalid-item rollback #936
 Add MariaDB UPDATE RETURNING INTO support with feature detection #935 (#933)
 Add MariaDB set-based New Order and Delivery with JSON arrays #945
@@ -1277,3 +1279,17 @@ Fix MySQL and MariaDB ASH completed wait attribution #906 (#905)
 Fix pg_vacuum end-of-run ordering and false VU-shutdown-timeout report #904
 Add HammerDB 6.0 multi-architecture Docker images #902
 Add arm64 (aarch64) build support to Bawt build system #899
+Update v6.0 documentation #898
+
+---------------------------------------------------------------------
+
+Version 6.1.1 October 2026
+
+Pull Requests & Issues
+
+Revert PostgreSQL function invalid-item raise #963
+Fix MySQL 26.10 CI build regressions and VillageSQL Arm64 build #960
+HammerDB 6.1 multi-architecture Docker images with VillageSQL support #959
+Document VillageSQL support in README #958
+Update pipeline UI and reference handling #957
+Update documentation for HammerDB 6.1 #956
