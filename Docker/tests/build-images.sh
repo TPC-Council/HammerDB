@@ -2,7 +2,7 @@
 set -euo pipefail
 : "${PLATFORM:?set PLATFORM (linux/amd64 or linux/arm64)}"
 : "${LOCAL_REGISTRY:=localhost:5000}"
-: "${TAG_PREFIX:=$LOCAL_REGISTRY/hammerdb-v6.1-test}"
+: "${TAG_PREFIX:=$LOCAL_REGISTRY/hammerdb-v6.1.1-test}"
 for v in HAMMERDB_AMD64_SHA256 HAMMERDB_ARM64_SHA256 MYSQL_AMD64_SHA256 MYSQL_ARM64_SHA256 ORACLE_AMD64_SHA256 ORACLE_ARM64_SHA256; do
   [[ ${!v:-} =~ ^[0-9a-fA-F]{64}$ ]] || { echo "FAIL: $v must be a 64-character SHA-256" >&2; exit 1; }
 done

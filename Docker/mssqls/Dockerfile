@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.1-base
+ARG BASE_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-base
 FROM ${BASE_IMAGE}
 ARG UNIXODBC_VERSION=2.3.12
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl gnupg gcc make libc6-dev && \

@@ -1,9 +1,9 @@
-ARG VILLAGESQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-villagesql
-ARG MYSQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1-mysql
-ARG MARIA_IMAGE=docker.io/tpcorg/hammerdb:v6.1-maria
-ARG POSTGRES_IMAGE=docker.io/tpcorg/hammerdb:v6.1-postgres
-ARG ORACLE_IMAGE=docker.io/tpcorg/hammerdb:v6.1-oracle
-ARG MSSQLS_IMAGE=docker.io/tpcorg/hammerdb:v6.1-mssqls
+ARG VILLAGESQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-villagesql
+ARG MYSQL_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-mysql
+ARG MARIA_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-maria
+ARG POSTGRES_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-postgres
+ARG ORACLE_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-oracle
+ARG MSSQLS_IMAGE=docker.io/tpcorg/hammerdb:v6.1.1-mssqls
 FROM ${MYSQL_IMAGE} AS mysql
 FROM ${MARIA_IMAGE} AS maria
 FROM ${POSTGRES_IMAGE} AS postgres
