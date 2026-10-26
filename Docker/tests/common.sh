@@ -6,7 +6,7 @@ require_image() { [[ -n "${IMAGE:-}" ]] || fail 'set IMAGE to the image under te
 run() { docker run --rm --platform "${PLATFORM:?set PLATFORM}" "$IMAGE" "$@"; }
 validate_common() {
   require_image
-  run bash -euc 'grep -qx "VERSION_ID=\"24.04\"" /etc/os-release; test "$(uname -m)" = "'"${EXPECTED_MACHINE:?set EXPECTED_MACHINE}"'"; test -x /home/hammerdb/hammerdbcli; test "$(readlink -f /home/hammerdb)" = /home/HammerDB-6.1; printf "exit\n" | timeout 30 /home/hammerdb/hammerdbcli'
+  run bash -euc 'grep -qx "VERSION_ID=\"24.04\"" /etc/os-release; test "$(uname -m)" = "'"${EXPECTED_MACHINE:?set EXPECTED_MACHINE}"'"; test -x /home/hammerdb/hammerdbcli; test "$(readlink -f /home/hammerdb)" = /home/HammerDB-6.1.1; printf "exit\n" | timeout 30 /home/hammerdb/hammerdbcli'
 }
 librarycheck() {
   local pattern=$1

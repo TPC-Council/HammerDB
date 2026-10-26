@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 LABEL maintainer="HammerDB Project"
 
 ARG TARGETARCH
-ARG HAMMERDB_VERSION=6.1
+ARG HAMMERDB_VERSION=6.1.1
 # SHA256 values are mandatory inputs. They are deliberately not given unsafe placeholders.
 ARG HAMMERDB_AMD64_SHA256
 ARG HAMMERDB_ARM64_SHA256
