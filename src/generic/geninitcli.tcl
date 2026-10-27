@@ -45,7 +45,7 @@ if { $genericdictdb eq "" } {
         if { [catch {hdb close} message]} {
                 puts "Failed to close SQLite: $message"
         }
-        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oracle postgresql villagesql } {
+        foreach { dbname } { generic database db2 mariadb mssqlserver mysql oceanbase oracle postgresql villagesql } {
             set dbfile [ CheckSQLiteDB $dbname ]
             #Remove SQLite file
 	    if { [catch {file delete $dbfile} message]} {
@@ -73,6 +73,9 @@ if { $dbdict eq "" } {
     Dict2SQLite "database" $dbdict
 }
 
+package require oceanbaseconfig
+set dbdict [oceanbaseconfig::merge_registry $dbdict [::XML::To_Dict $dirname/database.xml]]
+
 #Load database details in dict named configdbname
 foreach { key } [ dict keys $dbdict ] {
     set dictname config$key
@@ -80,6 +83,10 @@ foreach { key } [ dict keys $dbdict ] {
     if { $dbconfdict eq "" } {
         set dbconfdict [ ::XML::To_Dict $dirname/$key.xml ]
         Dict2SQLite $key $dbconfdict
+    }
+    if {$key eq "oceanbase"} {
+        package require oceanbaseconfig
+        set dbconfdict [oceanbaseconfig::initialize $dbconfdict]
     }
     set $dictname $dbconfdict
     set prefix [ dict get $dbdict $key prefix ]
