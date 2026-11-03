@@ -2,8 +2,19 @@
 
 Select **OceanBase** in Benchmark Options, or use `dbset db ob` in
 the CLI. This category reuses HammerDB's MySQL TPROC-C and TPROC-H workloads.
-The existing OceanBase option under MySQL remains available for compatibility.
+OceanBase-specific settings and behavior have been removed from the MySQL category.
+Users of the former MySQL option must select OceanBase and enter their connection
+and credentials again; those settings are not copied automatically. This does not
+move or delete existing schema data. Select the existing database and matching
+warehouse count or scale factor when checking an existing schema.
 Oracle-compatible tenants are not supported by this category yet.
+
+OceanBase is treated as an independently deployed database. This contribution
+does not add an OceanBase engine source-build pipeline or a HammerDB-maintained
+OceanBase Docker image. Functional testing against an available installation is
+supported. OceanBase-specific ASH/SQL Audit metrics are intentionally outside
+this contribution and may be added separately; generic host CPU metrics remain
+available.
 
 ## Connection
 
@@ -52,6 +63,34 @@ diset connection ob_cluster {}
 `ob_query_timeout` is in seconds and only changes the current database session.
 The default is 120 seconds, including schema statistics collection. It does not
 change the tenant's global timeout or SQL mode.
+
+### Client and authentication requirements
+
+Use a HammerDB build containing this category and install the matching database
+client dependency. Ordinary HammerDB packages dynamically load third-party
+client libraries; the official HammerDB Docker images preinstall them. See
+[Verifying the Installation of Database Client Libraries](https://www.hammerdb.com/docs6.1/ch01s15.html).
+Start with the supplied launcher from the HammerDB directory. Loading `mysqltcl`
+verifies that the driver can be loaded, not that the selected client can
+authenticate to OceanBase.
+
+Reference testing on Ubuntu 24.04 used the official HammerDB 6.1.1 Linux x86-64
+runtime with MySQL client library 8.4.5 downloaded from HammerDB's website and
+installed as `libmysqlclient.so.24` under `/usr/local/lib`, together with this
+contribution's source. The client library was an installed external dependency,
+not bundled inside the ordinary runtime package. Connections to OceanBase CE
+4.4.2.1 succeeded without a separately obtained `mysql_native_password` plugin or
+`LIBMYSQL_PLUGIN_DIR`. This establishes the tested client combination, not all
+possible system-client overrides. If authentication reports a missing plugin,
+record the HammerDB package version and actual loaded MySQL client library before
+changing the installation.
+
+Character-set diagnostics remain a known compatibility issue with this tested
+combination. C execution can repeatedly report character set `255`; C schema
+finalization and H statistics collection have also reported `8` or `45`.
+Functional checks completed in the reference tests, but the warnings are not
+resolved by this contribution. No silent suppression or server-wide character-set
+change is applied.
 
 ## Workloads and results
 
@@ -177,43 +216,143 @@ tenant counters above.
 
 ## Reproducible CLI runs
 
-Set `OB_HOST`, `OB_TENANT`, `OB_USER`, `OB_PASSWORD`, and a **new** `OB_DATABASE` in
-the environment, then run either script:
+The Tcl and Python examples each provide build, check, run, delete and result
+phases under `scripts/{tcl,python}/oceanbase/{tprocc,tproch}/`. Every database
+operation selects the standalone `ob` category. The old `mysql/` combined examples
+and the older MySQL-category H examples have been retired.
+
+From the HammerDB root, supply a **new** database name for a build:
 
 ```sh
-./hammerdbcli auto scripts/tcl/oceanbase/mysql/tprocc.tcl
-./hammerdbcli auto scripts/tcl/oceanbase/mysql/tproch.tcl
+export OB_HOST=127.0.0.1 OB_PORT=2881 OB_TENANT=test OB_USER=root
+export OB_PASSWORD='' OB_DATABASE=tpch_ob_trial
+export OB_SCALE_FACTOR=1 OB_BUILD_USERS=1 OB_QUERY_TIMEOUT=120
+./scripts/tcl/oceanbase/run.sh tcl tproch all
 ```
 
-On Windows use `hammerdbcli.bat` from a source/development installation (or the
-packaged `hammerdbcli.exe`). The Tcl scripts use platform-neutral paths.
-Optional environment settings include `OB_PORT`, `OB_CLUSTER`, `OB_QUERY_TIMEOUT`,
-`OB_BUILD_USERS`, and the workload's `OB_WAREHOUSES`, `OB_USERS`, `OB_RAMPUP`,
-`OB_DURATION`, or `OB_SCALE_FACTOR`. The scripts fail when a virtual user fails,
-check data before and after execution, and retain the test database.
+`OB_HOST`, `OB_USER` and `OB_DATABASE` must be nonempty. `OB_PASSWORD`, `OB_TENANT`
+and `OB_CLUSTER` may be empty or omitted; an empty tenant and cluster select the
+bare-username login used by the documented Cloud connection. Enter environment
+values literally, without Tcl escaping. Both languages preserve empty passwords,
+spaces, quotes and Tcl metacharacters.
 
-Runtime helper tests can be run with Tcl 8.6 or newer:
+The runner accepts `tcl` or `python`, `tprocc` or `tproch`, and one phase or `all`.
+For example, reuse the schema above through the real Python CLI:
 
 ```sh
-tclsh tests/oceanbase.tcl
+./scripts/tcl/oceanbase/run.sh python tproch check
+./scripts/tcl/oceanbase/run.sh python tproch run
+./scripts/tcl/oceanbase/run.sh python tproch result
 ```
 
-Generated-driver regression tests run inside the CLI. The suite uses disposable
-copies of the configuration databases and removes them on success or failure;
-saved passwords and benchmark settings are retained.
+`all` runs build, check, run and result in separate CLI processes. It stops if a
+phase fails and **retains the database**. Neither the runner nor a build deletes
+an existing schema automatically. Deletion is a separate, explicit invocation:
 
 ```sh
-./hammerdbcli auto tests/oceanbase-generated.tcl
-./hammerdbcli auto tests/oceanbase-feature-validation.tcl
+./scripts/tcl/oceanbase/run.sh tcl tproch delete
 ```
 
-The real Tk dialog suite runs in the packaged CLI with a working X display and
-the matching `hammerdb` GUI executable in the current directory. It uses
-disposable configuration copies and retains saved credentials and preferences:
+The individual files follow the existing HammerDB example names:
 
-```sh
-./hammerdbcli auto tests/oceanbase-options.tcl
-```
+| Phase | TPROC-H filename (replace `tproch` with `tprocc` for C) |
+| --- | --- |
+| Build | `ob_tproch_buildschema.tcl` / `ob_tproch_buildschema.py` |
+| Check | `ob_tproch_checkschema.tcl` / `ob_tproch_checkschema.py` |
+| Run | `ob_tproch_run.tcl` / `ob_tproch_run.py` |
+| Delete | `ob_tproch_deleteschema.tcl` / `ob_tproch_deleteschema.py` |
+| Result | `ob_tproch_result.tcl` / `ob_tproch_result.py` |
+
+For direct execution, run `./hammerdbcli auto scripts/tcl/oceanbase/tproch/ob_tproch_buildschema.tcl`
+or `./hammerdbcli py auto scripts/python/oceanbase/tproch/ob_tproch_buildschema.py`
+from the HammerDB root. Python requires the interpreter version supported by the
+HammerDB package; the reference Ubuntu 24.04 run used Python 3.12. On Windows,
+invoke the individual files with `hammerdbcli.bat` or the packaged
+`hammerdbcli.exe`; the shell runner is for Unix-like systems. Windows execution
+has not been validated.
+
+These examples use ordinary schemas, stored-procedure C and the standard H
+queries. C defaults to one warehouse, one build VU, and a timed run with one
+minute of ramp-up and one minute of measurement. Its default `OB_USERS=2` runs two workload VUs; HammerDB adds a separate monitor
+VU. H defaults to SF1, one loader, one query VU and
+one query set, with refresh functions disabled. Optional numeric overrides are
+`OB_PORT`, `OB_QUERY_TIMEOUT`, `OB_BUILD_USERS`, `OB_WAREHOUSES`, `OB_USERS`,
+`OB_RAMPUP`, `OB_DURATION`, `OB_SCALE_FACTOR` and `OB_QUERYSETS`. The examples do
+not override saved TLS settings; configure the appropriate `ob_ssl_*` settings
+when TLS is required. Use the CLI directly for distributed layouts and other
+advanced workload options described above.
+
+The Jobs repository must be enabled before `run`; if disabled, issue
+`jobs disable 0` and restart HammerDB. The runner uses `TMP` (or `TMPDIR`, then
+`<HammerDB>/TMP`) consistently across phases. Keep the same temporary directory
+and Jobs repository for result retrieval. A successful run saves its job ID in
+`ob_tprocc.jobid` or `ob_tproch.jobid` there. The result phase reads the latest
+successful job, or `OB_JOB_ID` if supplied, prints the framework's result data
+and saves the same labeled text output as the existing generic examples in
+`ob_tprocc_<jobid>.out` or `ob_tproch_<jobid>.out`. Result retrieval does not
+need database credentials. Phase logs are also retained in the temporary
+directory.
+
+### Reference Docker configuration and pre-review validation (2026-11-03)
+
+The reference installation used the official
+`oceanbase/oceanbase-ce:4.4.2.1-101000022026050611` image with `MODE=mini`,
+`--ulimit nofile=65536:65536` and port 2881 bound to loopback. The Ubuntu 24.04
+host had 8 vCPUs and 32 GiB memory; the mini business tenant used its default
+3 GiB allocation. The database-engine image is supplied by OceanBase, not built
+by this contribution.
+
+With `ob_scale_fact=1`, `ob_num_tpch_threads=1`,
+`ob_tpch_optimized_schema=false` and `ob_query_timeout=120`, pre-review revision
+`89d33fe7` completed H build and check, followed by a Python CLI check and
+all 22 queries. Build took 1,628 seconds and the query set 165 seconds in that
+environment; these are functional-test observations, not performance targets.
+The H build emitted one character-set `45` warning during statistics collection.
+
+C build/check, 1,000 stored-procedure test iterations and post-run check also
+completed. Python CLI check/run/postcheck completed separately. Repeated
+character-set `255` warnings were reproduced even in a fresh CLI process whose
+first operation was a workload run.
+
+A separate four-loader H test, in a tenant retaining the preceding C schema,
+completed PART and PARTSUPP (200,000 and 800,000 rows). Sampled statements had no
+timeout; the longest sampled PARTSUPP insert was 18.862 seconds. Subsequent
+LINEITEM inserts experienced `memstore memory page alloc wait`, with a sampled
+maximum of 79.371 seconds. That run was stopped deliberately before ORDERS and
+LINEITEM finished; it is **not** a complete four-loader validation and did not
+reproduce the reported 120-second PART/PARTSUPP timeout. The original reported
+failure remains under investigation. Start mini installations with one loader
+and inspect tenant resources and waits before increasing concurrency; increasing
+the timeout alone does not establish the cause of a slow build.
+
+### Review follow-up validation (2026-11-03)
+
+The revised Tcl and Python C examples each completed build, check, timed run,
+result retrieval and explicit deletion on a fresh one-warehouse ordinary schema.
+The runs used two active VUs plus the monitor, zero ramp-up and one minute of
+measurement. Both saved job reports contained nonempty transaction timings,
+transaction-counter samples and NOPM/TPM results. The Tcl run used an empty
+password; the Python run used a dedicated username containing a dollar sign and
+a password containing spaces, quotes, dollar signs, brackets and braces. The
+Python credentials were read back in a new CLI process and used for a successful
+schema check without reconfiguration. Both temporary schemas and the dedicated
+user were removed after validation. The character-set warnings described above
+still occurred; these results establish functionality, not warning-free operation
+or benchmark performance.
+
+The revised H examples were checked against the same installation. The Tcl
+check and all 22 queries used the existing SF1 dataset; the query set completed
+in 180 seconds. Python check and both languages' result phases exited normally.
+Both result files contained all 22 query records from the saved job. A separate
+fresh-schema test executed the revised eight-table DDL, loaded 1,000 PART and
+4,000 PARTSUPP rows, and deleted that test schema. This follow-up did not rebuild
+the complete SF1 dataset.
+
+A separate native MySQL 8.4.13 smoke test passed a one-warehouse C build, check,
+100 stored-procedure test iterations and post-check. Its H test exercised the
+native eight-table DDL, a partial dataset with 20 PART and 80 PARTSUPP rows,
+ANALYZE, RF1 and RF2. It did not perform a full native MySQL H SF1 build or all
+22 analytical queries. Windows execution remains unverified.
 
 ## Validation status (2026-09-14)
 
@@ -277,8 +416,8 @@ timestamped unique logs and removal of the worker thread after shutdown.
 
 TLS-requested connections succeeded through both OBProxy and a direct OBServer.
 This connection test did not establish mutual TLS or certificate verification.
-Windows execution and native MySQL server regression remain unverified. These
-tests establish functional compatibility on the stated environment, not a
+At that date, Windows execution and native MySQL server regression remained
+unverified. These tests establish functional compatibility on the stated environment, not a
 performance improvement or a certified benchmark result.
 
 ## Tenant-mode extension boundary

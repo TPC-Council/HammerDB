@@ -87,6 +87,8 @@ foreach { key } [ dict keys $dbdict ] {
     if {$key eq "oceanbase"} {
         package require oceanbaseconfig
         set dbconfdict [oceanbaseconfig::initialize $dbconfdict]
+    } elseif {$key eq "mysql"} {
+        set dbconfdict [oceanbaseconfig::remove_legacy_mysql_options $dbconfdict]
     }
     set $dictname $dbconfdict
     set prefix [ dict get $dbdict $key prefix ]

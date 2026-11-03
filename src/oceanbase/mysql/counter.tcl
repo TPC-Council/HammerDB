@@ -1,6 +1,5 @@
-# OceanBase tenant counter; native MySQL counter code stays unchanged.
+# OceanBase tenant counter, independent of the native MySQL counter.
 proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
-    set database OceanBase
     global tc_threadID mysql_ssl_options
     upvar #0 dbdict dbdict
     if {[dict exists $dbdict mysql library ]} {
@@ -8,28 +7,10 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
     } else { set library "mysqltcl" }
     #Setup Transaction Counter Thread
     set tc_threadID [thread::create {
-        proc chk_socket { host socket } {
-            if { ![string match windows $::tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") && [ string tolower $socket ] != "null" } {
-                return "TRUE"
-            } else {
-                return "FALSE"
-            }
-        }
-
-        proc ConnectToMySQL { MASTER host port socket ssl_options user password is_oceanbase ob_tenant_name} {
+        proc ConnectToMySQL { MASTER host port ssl_options user password} {
             global mysqlstatus
             #ssl_options is variable length so build a connectstring
-            if { ($is_oceanbase == "false" ) && ([ chk_socket $host $socket ] eq "TRUE") } {
-                set use_socket "true"
-                append connectstring " -socket $socket"
-            } else {
-                set use_socket "false"
-                lappend connectstring -host $host -port $port
-		#if is_oceanbase is false and chk_socket is false we don't want to change the username
-            if { $is_oceanbase == "true" } {
-                set user "$user@$ob_tenant_name"
-	        }
-            }
+            set connectstring [list -host $host -port $port]
 
             foreach key [ dict keys $ssl_options ] {
                 lappend connectstring $key [dict get $ssl_options $key]
@@ -53,14 +34,14 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
             }
         }
 
-        proc read_more { MASTER library mysql_host mysql_port mysql_socket mysql_ssl_options mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm mysql_tpch_obcompat ob_tenant_name database query_timeout} {
+        proc read_more { MASTER library mysql_host mysql_port mysql_ssl_options mysql_user mysql_pass mysql_tpch_user mysql_tpch_pass interval old tce bm query_timeout} {
             package require oceanbasecommon
             oceanbasecommon::configure $query_timeout
             set counter_reads 0
             set timeout 0
             set iconflag 0
             if { $interval <= 0 } { set interval 10 }
-            set gcol "orange"
+            set gcol "#0066CC"
             if { ![ info exists tcdata ] } { set tcdata {} }
             if { ![ info exists timedata ] } { set timedata {} }
             if { $bm eq "TPC-C" } {
@@ -69,13 +50,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                 set tmp_mysql_pass $mysql_pass
                 set tval 60
             } else {
-                if {$database eq "OceanBase"} {
-                    set sqc {SELECT 'Queries', SUM(VALUE) FROM oceanbase.GV$SYSSTAT WHERE NAME = 'sql select count'}
-                } elseif {$mysql_tpch_obcompat eq "true"} {
-                    set sqc "select 'Queries' as Variable_name, count(*) as Value FROM oceanbase.GV\$OB_SQL_AUDIT where TENANT_NAME='$ob_tenant_name'"
-                } else {
-                    set sqc "show global status where Variable_name = 'Queries' or Variable_name = 'Com_show_status'"
-                }
+                set sqc {SELECT 'Queries', SUM(VALUE) FROM oceanbase.GV$SYSSTAT WHERE NAME = 'sql select count'}
                 set tmp_mysql_user $mysql_tpch_user
                 set tmp_mysql_pass $mysql_tpch_pass
                 set tval 3600
@@ -95,7 +70,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
             } else {
                 namespace import tcountcommon::*
             }
-            set mysql_handler [ ConnectToMySQL $MASTER $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass $mysql_tpch_obcompat $ob_tenant_name]
+            set mysql_handler [ ConnectToMySQL $MASTER $mysql_host $mysql_port $mysql_ssl_options $tmp_mysql_user $tmp_mysql_pass]
             #Enter loop until stop button pressed
             while { $timeout eq 0 } {
                 set timeout [ tsv::get application timeout ]
@@ -115,25 +90,16 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                             break
                         }
                     } else {
-                        if {$database eq "OceanBase"} {
-                            set outc [lindex $handler_stat 0 0 1]
-                            if {![string is entier -strict $outc]} {
-                                tsv::set application tc_errmsg "OceanBase SQL select counter unavailable"
-                                thread::send $MASTER show_tc_errmsg
-                                catch {mysqlclose $mysql_handler}
-                                break
-                            }
-                            # Exclude the counter's own SELECT requests from its delta.
-                            incr counter_reads
-                            incr outc -$counter_reads
-                        } elseif {$mysql_tpch_obcompat eq "true"} {
-                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all queries show_stat
-                            set outc [ expr $queries - 1]
-                        } else {
-                            regexp {\{\{Com_show_status\ ([0-9]+)\}\ \{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            regexp {\{\{Queries\ ([0-9]+)\}\}} $handler_stat all show_stat queries
-                            set outc [ expr $queries - $show_stat ]
+                        set outc [lindex $handler_stat 0 0 1]
+                        if {![string is entier -strict $outc]} {
+                            tsv::set application tc_errmsg "OceanBase SQL select counter unavailable"
+                            thread::send $MASTER show_tc_errmsg
+                            catch {mysqlclose $mysql_handler}
+                            break
                         }
+                        # Exclude the counter's own SELECT requests from its delta.
+                        incr counter_reads
+                        incr outc -$counter_reads
 
                     }
                 }
@@ -205,7 +171,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
     #Call Transaction Counter to start read_more loop
     # Keep empty passwords and values containing Tcl syntax as single arguments.
     thread::send -async $tc_threadID [list read_more $masterthread $library \
-        $mysql_host $mysql_port $mysql_socket $mysql_ssl_options $mysql_user $mysql_pass \
+        $mysql_host $mysql_port $mysql_ssl_options $mysql_user $mysql_pass \
         $mysql_tpch_user $mysql_tpch_pass $interval $old tce $bm \
-        $mysql_tpch_obcompat $mysql_ob_tenant_name $database $query_timeout]
+        $query_timeout]
 }

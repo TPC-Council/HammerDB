@@ -70,11 +70,12 @@ namespace eval oceanbase::mysql {
         foreach {group key} {tpcc user tpch tpch_user} {
             dict set mapped $group mysql_$key [username [dict get $config $group ob_$key] $tenant $cluster]
         }
-        foreach {group key} {tpcc storage_engine tpch tpch_storage_engine} {
-            if {[string tolower [dict get $mapped $group mysql_$key]] ne "innodb"} {
-                error "OceanBase MySQL workloads require the innodb-compatible schema"
-            }
-        }
+        # These are backend constants, independent of native MySQL defaults or
+        # values retained in configurations from older OceanBase integrations.
+        dict set mapped connection mysql_socket null
+        dict set mapped tpcc mysql_storage_engine innodb
+        dict set mapped tpch mysql_tpch_storage_engine innodb
+        dict set mapped tpcc mysql_partition false
         set distributed [dict get $config tpcc ob_distributed_schema]
         set optimized [dict get $config tpch ob_tpch_optimized_schema]
         if {$optimized ni {true false}} {error "OceanBase TPROC-H optimized schema must be true or false"}
@@ -89,11 +90,6 @@ namespace eval oceanbase::mysql {
         if {![string is integer -strict $partition_count] || $partition_count < 1 || $partition_count > 8192} {
             error "OceanBase TPROC-C partition count must be an integer from 1 to 8192"
         }
-        if {$distributed eq "true"} {
-            # The native MySQL option partitions only ORDER_LINE. OceanBase
-            # replaces the full table DDL instead.
-            dict set mapped tpcc mysql_partition false
-        }
         foreach {key minimum} {ob_async_client 1 ob_async_delay 0} {
             set value [dict get $config tpcc $key]
             if {![string is integer -strict $value] || $value < $minimum} {error "$key must be an integer >= $minimum"}
@@ -103,10 +99,6 @@ namespace eval oceanbase::mysql {
             dict set mapped tpcc mysql_prepared true
         }
         if {[dict get $config tpcc ob_async_scale] eq "true"} {dict set mapped tpcc mysql_keyandthink true}
-        # The legacy OceanBase option under MySQL prepares sys settings and uses
-        # different DDL. The new category needs only the business tenant login.
-        dict set mapped tpch mysql_tpch_obcompat false
-        dict set mapped connection mysql_socket null
         return $mapped
     }
 
@@ -200,7 +192,7 @@ namespace eval oceanbase::mysql {
         global configoceanbase
         variable options
         variable options_context
-        set updated $configoceanbase
+        set updated [::oceanbaseconfig::normalize $configoceanbase]
         foreach entry [array names options] {
             lassign [split $entry ,] group key
             if {$group eq "counter"} {continue}
@@ -258,7 +250,7 @@ namespace eval oceanbase::mysql {
     }
 
     proc boolean_option {key} {
-        expr {$key in {ob_ssl ob_ssl_two_way ob_partition ob_distributed_schema
+        expr {$key in {ob_ssl ob_ssl_two_way ob_distributed_schema
             ob_prepared ob_no_stored_procs ob_raiseerror ob_keyandthink
             ob_allwarehouse ob_timeprofile ob_tpch_optimized_schema
             ob_raise_query_error ob_verbose ob_refresh_on ob_refresh_verbose

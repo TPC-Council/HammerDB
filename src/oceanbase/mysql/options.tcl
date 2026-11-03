@@ -11,7 +11,7 @@ namespace eval oceanbase::mysql {
         }
         if {$group eq "tpcc"} {
             set schema {{ob_count_ware {Warehouses} warehouse} {ob_num_vu {Virtual Users to Build Schema} spin}
-                {ob_storage_engine {Data Warehouse Storage Engine} engine} {ob_history_pk {History Primary Key} boolean}
+                {ob_history_pk {History Primary Key} boolean}
                 {ob_distributed_schema {Distributed schema} boolean} {ob_partition_count {Partition count} entry}}
             set driver {{ob_driver {Driver Script} driver} {ob_total_iterations {Total Transactions per User} entry}
                 {ob_raiseerror {Exit on OceanBase Error} boolean} {ob_keyandthink {Keying and Thinking Time} boolean}
@@ -22,7 +22,7 @@ namespace eval oceanbase::mysql {
                 {ob_async_delay {Asynch Client Login Delay (ms)} entry} {ob_async_verbose {Asynchronous Verbose} boolean}
                 {ob_connect_pool {Cluster Connect Pool} boolean}}
         } else {
-            set schema {{ob_tpch_storage_engine {Data Warehouse Storage Engine} engine} {ob_scale_fact {Scale Factor} scale}
+            set schema {{ob_scale_fact {Scale Factor} scale}
                 {ob_num_tpch_threads {Virtual Users to Build Schema} spin}
                 {ob_tpch_optimized_schema {Distributed schema} boolean} {ob_tpch_partition_count {Partition count} entry}}
             set driver {{ob_total_querysets {Total Query Sets per User} entry} {ob_raise_query_error {Exit on OceanBase Error} boolean}
@@ -61,7 +61,6 @@ namespace eval oceanbase::mysql {
                     pack $widget.$value -side left -padx 2
                 }
             }
-            engine {ttk::combobox $widget -textvariable $valuevar -values {innodb} -state readonly -width 28}
             scale {ttk::combobox $widget -textvariable $valuevar -values {1 10 30 100 300 1000 3000 10000 30000 100000} -width 28}
             warehouse {ttk::spinbox $widget -textvariable $valuevar -values [get_warehouse_list_for_spinbox] -width 28}
             spin {ttk::spinbox $widget -textvariable $valuevar -from 1 -to 512 -width 28}

@@ -32,6 +32,7 @@ namespace eval oceanbaseconfig {
     }
 
     proc save {configuration {counter {}}} {
+        set configuration [normalize $configuration]
         package require sqlite3
         sqlite3 ::oceanbaseconfig::savedb [CheckSQLiteDB oceanbase]
         try {
@@ -65,28 +66,54 @@ namespace eval oceanbaseconfig {
     proc initialize {configuration} {
         set normalized [normalize $configuration]
         if {$normalized ne $configuration} {
-            package require sqlite3
-            sqlite3 ::oceanbaseconfig::defaultsdb [CheckSQLiteDB oceanbase]
-            try {
-                defaultsdb transaction {
-                    dict for {group values} $normalized {
-                        dict for {key value} $values {
-                            if {![dict exists $configuration $group $key]} {
-                                # Groups are the fixed connection/tpcc/tpch defaults.
-                                defaultsdb eval "CREATE TABLE IF NOT EXISTS ${group}(key TEXT, val TEXT)"
-                                defaultsdb eval "INSERT INTO ${group}(key,val) VALUES(\$key,\$value)"
-                            }
-                        }
-                    }
-                }
-            } finally {
-                defaultsdb close
-            }
+            # Persist additions and removals together so XML, GUI and CLI see
+            # the same configuration after the next SQLite-backed startup.
+            save $normalized
         }
         return $normalized
     }
 
+    proc remove_legacy_mysql_options {configuration} {
+        set removed {}
+        foreach {group key} {
+            connection mysql_oceanbase_port
+            tpch mysql_ob_tenant_name
+            tpch mysql_tpch_obcompat
+            tpch mysql_ob_partition_num
+        } {
+            if {[dict exists $configuration $group $key]} {
+                dict unset configuration $group $key
+                lappend removed $group $key
+            }
+        }
+        if {[llength $removed]} {
+            package require sqlite3
+            sqlite3 ::oceanbaseconfig::legacydb [CheckSQLiteDB mysql]
+            try {
+                legacydb timeout 30000
+                legacydb transaction {
+                    foreach {group key} $removed {
+                        if {[legacydb onecolumn {SELECT count(*) FROM sqlite_master WHERE type='table' AND name=$group}]} {
+                            legacydb eval "DELETE FROM ${group} WHERE key=\$key"
+                        }
+                    }
+                }
+            } finally {
+                legacydb close
+            }
+        }
+        return $configuration
+    }
+
     proc normalize {configuration} {
+        foreach {group key} {
+            connection ob_socket
+            tpcc ob_partition
+            tpcc ob_storage_engine
+            tpch ob_tpch_storage_engine
+        } {
+            if {[dict exists $configuration $group $key]} {dict unset configuration $group $key}
+        }
         set defaults {connection {ob_compatibility_mode mysql ob_cluster {}}}
         set mode mysql
         if {[dict exists $configuration connection ob_compatibility_mode]} {

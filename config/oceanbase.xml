@@ -4,7 +4,6 @@
         <ob_compatibility_mode>mysql</ob_compatibility_mode>
         <ob_host>127.0.0.1</ob_host>
         <ob_port>2881</ob_port>
-        <ob_socket>null</ob_socket>
         <ob_ssl>false</ob_ssl>
         <ob_ssl_two_way>false</ob_ssl_two_way>
         <ob_ssl_linux_capath>/etc/mysql/certs</ob_ssl_linux_capath>
@@ -24,8 +23,6 @@
             <ob_user>root</ob_user>
             <ob_pass />
             <ob_dbase>tpcc</ob_dbase>
-            <ob_storage_engine>innodb</ob_storage_engine>
-            <ob_partition>false</ob_partition>
             <ob_distributed_schema>false</ob_distributed_schema>
             <ob_partition_count>24</ob_partition_count>
             <ob_prepared>false</ob_prepared>
@@ -55,7 +52,6 @@
             <ob_tpch_pass />
             <ob_tpch_dbase>tpch</ob_tpch_dbase>
             <ob_num_tpch_threads>1</ob_num_tpch_threads>
-            <ob_tpch_storage_engine>innodb</ob_tpch_storage_engine>
             <ob_tpch_optimized_schema>false</ob_tpch_optimized_schema>
             <ob_tpch_partition_count>24</ob_tpch_partition_count>
         </schema>
