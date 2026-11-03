@@ -2,6 +2,12 @@
 namespace eval oceanbasecommon {
     variable query_timeout 0
 
+    proc load_client {} {
+        if {[catch {package require obmysqltcl 0.1} message options]} {
+            return -options $options "OceanBase driver could not load: $message. Use a HammerDB build containing obmysqltcl and install the matching OceanBase Connector/C (libobclient) runtime. See DocBook/oceanbase.md for installation and library-path settings."
+        }
+    }
+
     proc configure {timeout} {
         variable query_timeout
         if {![string is integer -strict $timeout] || $timeout < 0} {
@@ -13,7 +19,7 @@ namespace eval oceanbasecommon {
     proc configure_session {handle} {
         variable query_timeout
         if {$query_timeout > 0} {
-            mysql::exec $handle "SET SESSION ob_query_timeout = [expr {wide($query_timeout) * 1000000}]"
+            obmysql::exec $handle "SET SESSION ob_query_timeout = [expr {wide($query_timeout) * 1000000}]"
         }
     }
 
@@ -76,7 +82,7 @@ namespace eval oceanbasecommon {
     }
 
     proc transaction_count {handle} {
-        return [parse_transaction_count [mysql::sel $handle [counter_sql] -list]]
+        return [parse_transaction_count [obmysql::sel $handle [counter_sql] -list]]
     }
 
     proc parse_transaction_count {rows} {

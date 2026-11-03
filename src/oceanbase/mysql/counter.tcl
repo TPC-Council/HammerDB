@@ -2,13 +2,11 @@
 proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
     global tc_threadID mysql_ssl_options
     upvar #0 dbdict dbdict
-    if {[dict exists $dbdict mysql library ]} {
-        set library [ dict get $dbdict mysql library ]
-    } else { set library "mysqltcl" }
+    set library obmysqltcl
     #Setup Transaction Counter Thread
     set tc_threadID [thread::create {
         proc ConnectToMySQL { MASTER host port ssl_options user password} {
-            global mysqlstatus
+            global obmysqlstatus
             #ssl_options is variable length so build a connectstring
             set connectstring [list -host $host -port $port]
 
@@ -16,7 +14,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                 lappend connectstring $key [dict get $ssl_options $key]
             }
             lappend connectstring -user $user -password $password
-            set login_command [linsert $connectstring 0 mysqlconnect]
+            set login_command [linsert $connectstring 0 obmysqlconnect]
             #eval the login command
             if [catch {set mysql_handler [eval $login_command]} message ] {
                 set connected "false"
@@ -56,7 +54,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                 set tval 3600
             }
             set mplier [ expr {double($tval) / $interval} ]
-            if {[catch {package require $library} message]} {
+            if {[catch {oceanbasecommon::load_client} message]} {
                 tsv::set application tc_errmsg "failed to load library $message"
                 eval [subst {thread::send $MASTER show_tc_errmsg}]
                 thread::release
@@ -76,17 +74,17 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                 set timeout [ tsv::get application timeout ]
                 if { $timeout != 0 } { break }
 
-                if {[catch {set handler_stat [ list [ mysql::sel $mysql_handler $sqc -list ] ]} message]} {
+                if {[catch {set handler_stat [ list [ obmysql::sel $mysql_handler $sqc -list ] ]} message]} {
                     tsv::set application tc_errmsg "sql failed $message"
                     eval [subst {thread::send $MASTER show_tc_errmsg}]
-                    catch { mysqlclose $mysql_handler }
+                    catch { obmysqlclose $mysql_handler }
                     break
                 } else {
                     if { $bm eq "TPC-C" } {
                         if {[catch {set outc [oceanbasecommon::parse_transaction_count [lindex $handler_stat 0]]} message]} {
                             tsv::set application tc_errmsg $message
                             thread::send $MASTER show_tc_errmsg
-                            catch {mysqlclose $mysql_handler}
+                            catch {obmysqlclose $mysql_handler}
                             break
                         }
                     } else {
@@ -94,7 +92,7 @@ proc tcount_oceanbase_mysql {bm interval masterthread query_timeout} {
                         if {![string is entier -strict $outc]} {
                             tsv::set application tc_errmsg "OceanBase SQL select counter unavailable"
                             thread::send $MASTER show_tc_errmsg
-                            catch {mysqlclose $mysql_handler}
+                            catch {obmysqlclose $mysql_handler}
                             break
                         }
                         # Exclude the counter's own SELECT requests from its delta.

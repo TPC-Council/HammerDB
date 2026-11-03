@@ -2,7 +2,7 @@
 # parser deliberately retains its existing handling of empty elements.
 namespace eval oceanbaseconfig {
     proc merge_registry {saved defaults} {
-        # Keep saved categories intact; add only categories introduced by XML.
+        # Preserve saved categories, add new ones and migrate the old OB binding.
         set defaults [regsub -all {(TP)(RO)(C-[CH])} $defaults {\1\3}]
         set missing {}
         dict for {name values} $defaults {
@@ -10,7 +10,18 @@ namespace eval oceanbaseconfig {
                 dict set missing $name $values
             }
         }
-        if {[dict size $missing]} {
+        set binding_update {}
+        if {[dict exists $saved oceanbase library] &&
+            [dict get $saved oceanbase library] eq "mysqltcl" &&
+            [dict exists $defaults oceanbase library] &&
+            [dict get $defaults oceanbase library] eq "obmysqltcl"} {
+            foreach key {library commands} {
+                if {[dict exists $defaults oceanbase $key]} {
+                    dict set binding_update $key [dict get $defaults oceanbase $key]
+                }
+            }
+        }
+        if {[dict size $missing] || [dict size $binding_update]} {
             package require sqlite3
             sqlite3 ::oceanbaseconfig::registrydb [CheckSQLiteDB database]
             try {
@@ -23,11 +34,16 @@ namespace eval oceanbaseconfig {
                             registrydb eval "INSERT INTO ${name}(key,val) VALUES(\$key,\$value)"
                         }
                     }
+                    dict for {key value} $binding_update {
+                        registrydb eval {DELETE FROM oceanbase WHERE key=$key}
+                        registrydb eval {INSERT INTO oceanbase(key,val) VALUES($key,$value)}
+                    }
                 }
             } finally {
                 registrydb close
             }
         }
+        dict for {key value} $binding_update {dict set saved oceanbase $key $value}
         return [dict merge $saved $missing]
     }
 

@@ -53,9 +53,9 @@
     <name>OceanBase</name>
     <description>OceanBase</description>
     <prefix>ob</prefix>
-    <library>mysqltcl</library>
+    <library>obmysqltcl</library>
     <workloads>TPROC-C TPROC-H</workloads>
-    <commands>mysql::sel mysqluse mysqlexec mysqlclose mysql::commit mysql::rollback</commands>
+    <commands>obmysql::sel obmysqluse obmysqlexec obmysqlclose obmysql::commit obmysql::rollback</commands>
 </oceanbase>
 <villagesql>
         <name>VillageSQL</name>

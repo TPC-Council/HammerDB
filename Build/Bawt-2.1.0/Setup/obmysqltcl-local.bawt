@@ -1,0 +1,15 @@
+# This binding and its recipe live in the HammerDB checkout.  Do not download
+# or replace either one from the BAWT InputLibs repository.
+set obmysqltclOnlineRepository [UseOnlineRepository]
+UseOnlineRepository false
+set obmysqltclSetupStatus [catch {
+    Setup obmysqltcl \
+        [file normalize [file join [GetInputRootDir] .. obmysqltcl]] \
+        [file join [GetInputRootDir] Setup obmysqltcl.bawt] Version=0.1
+} obmysqltclSetupResult obmysqltclSetupOptions]
+UseOnlineRepository $obmysqltclOnlineRepository
+unset obmysqltclOnlineRepository
+if {$obmysqltclSetupStatus} {
+    return -options $obmysqltclSetupOptions $obmysqltclSetupResult
+}
+unset obmysqltclSetupStatus obmysqltclSetupResult obmysqltclSetupOptions

@@ -17,10 +17,9 @@ History (ASH) and tenant plan cache. Generic host CPU metrics remain available.
 
 ## Connection
 
-For OceanBase CE 4.4.2.1 with libmysqlclient 8.4.5, use an OBProxy endpoint
-to avoid the direct-connection character-set diagnostics described below.
-The example uses an OBProxy configured for `obcluster`; replace the host,
-tenant and cluster with those of your installation.
+Install the client library as described below, then connect directly to an
+OBServer or through OBProxy. The example uses a direct business-tenant
+connection; replace the host and tenant with those of your installation.
 
 Use the business tenant's credentials. Set `ob_user` (TPROC-C) or `ob_tpch_user`
 (TPROC-H) to the unqualified user, and set the connection fields separately:
@@ -30,9 +29,9 @@ dbset db ob
 dbset bm TPROC-C
 diset connection ob_compatibility_mode mysql
 diset connection ob_host 127.0.0.1
-diset connection ob_port 2883
+diset connection ob_port 2881
 diset connection ob_tenant hammerdb
-diset connection ob_cluster obcluster
+diset connection ob_cluster {}
 diset connection ob_query_timeout 120
 diset tpcc ob_user root
 diset tpcc ob_pass $::env(OB_PASSWORD)
@@ -44,7 +43,12 @@ and the login `user@tenant`. For OBProxy, set its port (normally 2883) and
 `ob_cluster`; the login becomes `user@tenant#cluster`. A sys tenant account,
 shared administrative password, SQL extension, and cluster parameter changes
 are not required. TLS settings are available in the connection configuration
-on Linux and Windows; enabling OceanBase does not disable TLS.
+on Linux. With `ob_ssl=true`, the OB binding requires TLS and validates the
+server certificate and hostname. Configure trust with the CA file/directory
+settings (`ob_ssl_ca` and `ob_ssl_linux_capath`). An untrusted certificate,
+hostname mismatch or server without TLS is an error rather than a plaintext
+fallback. This contribution currently builds
+the OceanBase binding for Linux; a Windows OceanBase binding is not supplied.
 
 OBProxy Service Name connections (`user@SERVICE:service_name`) are not supported
 by this category. The user fields accept only an unqualified username; tenant
@@ -69,104 +73,110 @@ diset connection ob_cluster {}
 The default is 120 seconds, including schema statistics collection. It does not
 change the tenant's global timeout or SQL mode.
 
-### Client and authentication requirements
+### Install OceanBase Connector/C (libobclient)
 
-Use a HammerDB build containing this category and install the matching database
-client dependency. Ordinary HammerDB packages dynamically load third-party
-client libraries; the official HammerDB Docker images preinstall them. See
-[Verifying the Installation of Database Client Libraries](https://www.hammerdb.com/docs6.1/ch01s15.html).
-Start with the supplied launcher from the HammerDB directory. Loading `mysqltcl`
-verifies that the driver can be loaded, not that the selected client can
-authenticate to OceanBase.
+Use a HammerDB build containing this contribution's **obmysqltcl** binding.
+The unmodified HammerDB 6.1.1 distribution does not contain it. The binding is
+compiled and included by the HammerDB build; ordinary users do not compile it.
+The OceanBase backend uses `obmysqltcl`, while MySQL and VillageSQL continue to
+use `mysqltcl`. Existing saved OceanBase registry entries are migrated when the
+new build starts; native MySQL entries are preserved.
 
-Reference testing on Ubuntu 24.04 used the official HammerDB 6.1.1 Linux x86-64
-runtime with MySQL client library 8.4.5 downloaded from HammerDB's website and
-installed as `libmysqlclient.so.24` under `/usr/local/lib`, together with this
-contribution's source. The client library was an installed external dependency,
-not bundled inside the ordinary runtime package. Connections to OceanBase CE
-4.4.2.1 succeeded without a separately obtained `mysql_native_password` plugin or
-`LIBMYSQL_PLUGIN_DIR`. This establishes the tested client combination, not all
-possible system-client overrides. If authentication reports a missing plugin,
-record the HammerDB package version and actual loaded MySQL client library before
-changing the installation.
+Install [OceanBase Connector/C (LibobClient)](https://github.com/oceanbase/obconnector-c/releases/tag/v2.2.14)
+from OceanBase's official release. The vendor library is **not bundled** with
+HammerDB or copied into this source repository. It is an open-source LGPL
+library supporting OceanBase MySQL and Oracle compatibility modes; this
+HammerDB category still supports only MySQL tenants. Community Edition provides
+MySQL mode, while Enterprise Edition provides both modes.
 
-These checks explicitly loaded the PR source into that runtime; they did not
-test a newly built and installed PR package.
-
-Direct OBServer connections with this tested client/server combination can
-repeatedly report character set `255` during C execution, and `8` or `45` during
-schema finalization or H statistics collection. The server sends numeric
-character-set values in session-state notifications where the MySQL client
-expects names. Changing `SET NAMES` or clearing `session_track_system_variables`
-did not remove these diagnostics in the direct-connection tests.
-
-The same MySQL client can avoid this issue through OBProxy. A controlled test
-with OBProxy 4.3.5.0-3, the same tenant/schema and identical `CALL SLEV` statements
-received the numeric value and warning on every direct call; the proxy calls
-received no character-set tracking item and produced no warning. This uses the
-standard MySQL client dependency; it does not require rebuilding `mysqltcl`
-against OBConnector/C. Use the proxy connection settings above. Direct
-connections remain available, but their protocol issue is not fixed by this
-contribution. No client-log filtering or server-wide character-set change is
-applied.
-
-For the tested OBProxy 4.3.5.0-3 deployment, configure
-`client_session_id_version=2` and a unique `proxy_id` (`1` for the single proxy
-in the reference installation), then establish new client connections. The
-Docker image accepts these as `ODP_CLIENT_SESSION_ID_VERSION=2` and
-`ODP_PROXY_ID=1`. The V2 client-session-ID capability is required by OceanBase
-4.4.2.1 for the temporary tables used by C schema checking when connecting
-through OBProxy. With the proxy's default V1 setting, this check failed with
-`obproxy version is too old or config not right, create temporary table not supported`;
-the same check passed with V2. Configure these on the proxy, not as HammerDB
-`diset` options.
-
-### OceanBase Connector/C for direct connections
-
-[OceanBase Connector/C (LibobClient)](https://github.com/oceanbase/obconnector-c)
-is an open-source LGPL client library with publicly downloadable
-[release packages](https://github.com/oceanbase/obconnector-c/releases/tag/v2.2.14).
-It supports OceanBase MySQL and Oracle compatibility modes; Community Edition
-provides MySQL mode, while Enterprise Edition provides both. This contribution
-still implements only MySQL tenants. In the tested Linux 2.2.14 package, the
-shared library is named `libobclnt.so.2`.
-
-Use a `mysqltcl` binding compiled against the matching LibobClient SDK headers
-and library, and the Tcl runtime used by HammerDB. The official HammerDB 6.1.1
-Linux binding requires MySQL's `libmysqlclient_24.0` versioned symbols and cannot
-load LibobClient merely by renaming or symlinking the library. The client APIs
-also have different prepared-statement structure layouts.
-
-The direct-connection validation used LibobClient 2.2.14, Tcl 9.0.2 and the
-official HammerDB `mysqltcl` 3.052.1 source, rebuilt in an isolated runtime.
-Two MySQL-8-only SSL compile guards additionally exclude `MARIADB_BASE_VERSION`:
-the OB SDK's MySQL compatibility version number otherwise selects SSL enums
-that it does not define. This is a rebuilt binding, not the unmodified standard
-HammerDB binary. The MySQL-compatible client API reports version `10.5.5`;
-retain the downloaded package version separately when reporting an issue.
-
-Select the rebuilt package and its library privately for the HammerDB process,
-leaving the ordinary installation intact. `TCLLIBPATH` names the directory
-containing the rebuilt `mysqltcl3.052.1` package directory and its `pkgIndex.tcl`:
+For the verified Ubuntu 24.04 x86-64 configuration, download
+`libobclient-2.2.14-2.el7.x86_64.rpm` from the linked official release and extract
+it into a private directory. Extraction does not install an RPM into Ubuntu:
 
 ```sh
-TCLLIBPATH=/path/to/ob-tcl-packages \
-LD_LIBRARY_PATH=/path/to/obclient/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} \
+sudo apt-get install libarchive-tools
+printf '%s  %s\n' \
+  707338260d5d9c14556407b45c99844c5ac7bed4de68da793d33c0483225630d \
+  libobclient-2.2.14-2.el7.x86_64.rpm | sha256sum --check
+mkdir -p "$HOME/.local/oceanbase-client"
+bsdtar -xf libobclient-2.2.14-2.el7.x86_64.rpm \
+  -C "$HOME/.local/oceanbase-client"
+export LD_LIBRARY_PATH="$HOME/.local/oceanbase-client/u01/obclient/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+cd /path/to/HammerDB
 ./hammerdbcli
 ```
 
-The tested launcher and its VU/counter threads selected this package without
-changing the embedded package index. Check the actual loaded library as well
-as `mysql::baseinfo clientversion` when diagnosing a client selection problem.
+Use the same environment to start `./hammerdb`, `./hammerdbcli py` or
+`./hammerdbws`. The library in this release is named `libobclnt.so.2`, despite
+the product/package name LibobClient. On another Linux installation, use its
+matching architecture/OS package and add the installed library directory to
+`LD_LIBRARY_PATH`. The Linux ARM64 build recipe is provided, but the validation
+record below is for x86-64. Do not use an x86-64 library on ARM64.
 
-With this binding, direct stored-procedure calls did not emit the character-set
-diagnostics seen with libmysqlclient 8.4.5. Nonempty-password authentication
-worked without `LIBMYSQL_PLUGIN_DIR` or an extra authentication plugin, and
-native prepared-statement bindings and UTF-8 text round trips passed. The
-Unicode checks explicitly selected `utf8mb4`; do not infer the connection's
-default encoding from them. These results establish the tested client path,
-not a correction to the server's numeric session-state values or validation of
-all client/server combinations. TLS was not revalidated with this binding.
+In the CLI, run:
+
+```tcl
+librarycheck
+puts [obmysql::baseinfo clientversion]
+```
+
+The OceanBase result should be `Success ... loaded library obmysqltcl for
+OceanBase`. Other databases may report missing libraries if their separate
+clients are not installed. The OB 2.2.14 client API identifies itself as
+`10.5.5`; this compatibility string is not the downloaded package version.
+Library loading checks dependencies, not the database login; configure the
+business-tenant connection above and run schema check/build next.
+
+No `TCLLIBPATH` override, MySQL client installation or manually obtained
+`mysql_native_password` plugin is needed for this OceanBase driver. Do not
+rename `libobclnt` to `libmysqlclient`: the stock MySQL binding requires different
+versioned symbols and prepared-statement layouts. If the error says
+`can't find package obmysqltcl`, install a HammerDB build containing this
+binding. If it names `libobclnt.so.2` or another shared library, check the client
+installation, CPU architecture and loader path. Authentication errors still
+require valid credentials and tenant access.
+
+### Building the binding (HammerDB maintainers)
+
+The in-tree source and license are in `Build/obmysqltcl`. Linux BAWT builds the
+package against its own Tcl runtime, copies the resulting binding into the
+normal application library tree, and embeds it in the GUI, CLI and Web Service
+executables. `OBCLIENT_ROOT` must point to an externally installed Connector/C
+SDK containing `include/mysql.h` and `lib/libobclnt.so` (or
+`lib64/libobclnt.so`). For example:
+
+```sh
+export OBCLIENT_ROOT=/path/to/oceanbase-client/u01/obclient
+cd Build/Bawt-2.1.0
+./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update
+```
+
+The other database SDK prerequisites in the
+[HammerDB source-build guide](https://www.hammerdb.com/docs/ch01s19.html)
+still apply. For native Linux ARM64 use the `arm64` architecture and
+`Setup/HammerDB-LinuxArm64.bawt` with a matching SDK. Windows builds retain the
+other database bindings but do not include `obmysqltcl` in this contribution.
+A missing OB SDK is a build error on an enabled Linux build; it never silently
+substitutes the MySQL client. See `Build/obmysqltcl/README.md` for the isolated
+binding build command and provenance. Neither the SDK nor the vendor runtime
+is copied into the HammerDB distribution.
+
+### OBProxy connection notes
+
+OBProxy remains an optional routing endpoint. Earlier tests of the MySQL client
+reported numeric character-set diagnostics on direct OBServer connections,
+while OBProxy removed the problematic tracking item. The current OceanBase
+backend uses its own Connector/C binding, so a proxy is not required solely to
+avoid those MySQL-client diagnostics. The historical client comparisons are
+recorded below; they do not establish a server protocol fix.
+
+In the earlier OBProxy 4.3.5.0-3 / CE 4.4.2.1 deployment, C schema checking with
+temporary tables required `client_session_id_version=2` and a unique `proxy_id`
+(`1` for the single test proxy). The Docker image accepts these as
+`ODP_CLIENT_SESSION_ID_VERSION=2` and `ODP_PROXY_ID=1`. If a proxy reports
+`obproxy version is too old or config not right, create temporary table not supported`,
+check these proxy settings and establish new connections. These are proxy
+settings, not HammerDB `diset` options.
 
 ## Database metrics (ASH)
 
@@ -377,10 +387,9 @@ The individual files follow the existing HammerDB example names:
 For direct execution, run `./hammerdbcli auto scripts/tcl/oceanbase/tproch/ob_tproch_buildschema.tcl`
 or `./hammerdbcli py auto scripts/python/oceanbase/tproch/ob_tproch_buildschema.py`
 from the HammerDB root. Python requires the interpreter version supported by the
-HammerDB package; the reference Ubuntu 24.04 run used Python 3.12. On Windows,
-invoke the individual files with `hammerdbcli.bat` or the packaged
-`hammerdbcli.exe`; the shell runner is for Unix-like systems. Windows execution
-has not been validated.
+HammerDB package; the reference Ubuntu 24.04 run used Python 3.12. The current
+OceanBase backend cannot run on Windows until a matching `obmysqltcl` binding is
+provided. The example shell runner is for Unix-like systems.
 
 These examples use ordinary schemas, stored-procedure C and the standard H
 queries. C defaults to one warehouse, one build VU, and a timed run with one
@@ -403,6 +412,49 @@ and saves the same labeled text output as the existing generic examples in
 `ob_tprocc_<jobid>.out` or `ob_tproch_<jobid>.out`. Result retrieval does not
 need database credentials. Phase logs are also retained in the temporary
 directory.
+
+### Independent binding and packaged runtime validation (2026-11-03)
+
+The independent `obmysqltcl` binding was compiled through the native BAWT
+component build on Ubuntu 24.04 x86-64 against official LibobClient 2.2.14.
+CLI and Web Service test executables were assembled from the official HammerDB
+6.1.1 runtime with the current contribution's source and compiled binding.
+This verified embedded package discovery, but was not a full native rebuild of
+all HammerDB dependencies. Both executables loaded the embedded binding with
+`TCLLIBPATH` unset; removing the external vendor library produced an explicit
+dependency error without falling back to the MySQL driver.
+
+The documented `bsdtar` installation procedure was used to extract the official
+client RPM. With that external library and the assembled CLI, direct connections
+to CE 4.4.2.1 completed a fresh one-warehouse C build and statistics, schema
+checks before and after 1,000 prepared stored-procedure iterations covering all
+five transaction types, and transaction-counter polling. The retained SF1 H
+schema completed check, statistics and all 22 queries in 165 seconds with the
+120-second session timeout unchanged. These C/H runs emitted no character-set
+diagnostics. The Python CLI H schema check also passed. The temporary C schema
+was deleted; the existing H dataset was preserved. This run did not rebuild the
+complete H dataset or repeat H refresh functions, and is not a performance
+comparison.
+
+Both binding load orders passed 50 isolation checks in total, including
+nonempty-password authentication, Unicode, independent handles and error state,
+and interpreter cleanup. In the same interpreter, the original MySQL binding
+passed queries and SQL PREPARE/EXECUTE against native MySQL 8.4.13 while the OB
+binding connected to OceanBase. Real OceanBase TLS checks accepted a matching
+certificate signed by the configured CA and rejected an untrusted CA, a
+nonexistent CA file and a hostname mismatch. Requesting TLS against a server
+without TLS was rejected rather than silently using plaintext.
+
+The revised source passed 118 external regression assertions and 55 ASH provider
+checks. Another 33 real Tk/ASH checks exercised SQL, cached plans/statistics,
+aged-out entries, VU lifecycle and reconnection using the independent binding.
+These GUI checks loaded the source into the official runtime; acceptance of a
+newly packaged GUI executable remains unverified. The Linux ARM64 recipe is
+untested, and this contribution does not supply a Windows OB binding.
+
+The following records describe earlier revisions and client arrangements; their
+remaining character-set warnings do not describe the independent-binding runs
+above.
 
 ### Reference Docker configuration and pre-review validation (2026-11-03)
 
@@ -486,8 +538,9 @@ than a new multi-node deployment.
 
 ### LibobClient direct-connection validation (2026-11-03)
 
-Using source revision `9f598829`, the rebuilt binding described above connected
-directly to the same CE 4.4.2.1 tenant. A fresh one-warehouse C schema completed
+Before the independent `obmysqltcl` binding, source revision `9f598829` was
+tested with an isolated rebuild of `mysqltcl` against LibobClient 2.2.14,
+connecting directly to the same CE 4.4.2.1 tenant. A fresh one-warehouse C schema completed
 build/statistics, check, 1,000 prepared stored-procedure test iterations covering
 all five transaction types, counter polling and postcheck. The retained SF1 H
 schema completed check, statistics and all 22 queries in 172 seconds, with the

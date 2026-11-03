@@ -1,5 +1,7 @@
 # Native, read-only OceanBase ASH provider for the shared metrics presentation.
 # This module also loads in the collector thread, where no Tk commands run.
+# All database calls use the isolated OBConnector/C binding; mysqlmet is reused
+# only for presentation, without replacing the native MySQL client commands.
 namespace eval oceanbaseash {
     variable module_file [file normalize [info script]]
     variable last_provider {}
@@ -96,19 +98,20 @@ namespace eval oceanbaseash {
     }
 
     proc columns {handle view} {
-        mysql::sel $handle "SELECT * FROM $view WHERE 1=0"
-        return [string toupper [mysql::col $handle -current name]]
+        ::obmysql::sel $handle "SELECT * FROM $view WHERE 1=0"
+        return [string toupper [::obmysql::col $handle -current name]]
     }
 
     proc worker_connect {parent config} {
         variable profile
         set handle {}
         if {[catch {
-            package require mysqltcl
-            set handle [mysqlconnect {*}[dict get $config options]]
-            mysql::exec $handle "SET SESSION ob_query_timeout = [expr {[dict get $config timeout] * 1000000}]"
-            mysql::exec $handle {SET SESSION time_zone = '+00:00'}
-            set tenant [lindex [mysql::sel $handle {SELECT effective_tenant_id()} -flatlist] 0]
+            package require oceanbasecommon
+            oceanbasecommon::load_client
+            set handle [::obmysql::connect {*}[dict get $config options]]
+            ::obmysql::exec $handle "SET SESSION ob_query_timeout = [expr {[dict get $config timeout] * 1000000}]"
+            ::obmysql::exec $handle {SET SESSION time_zone = '+00:00'}
+            set tenant [lindex [::obmysql::sel $handle {SELECT effective_tenant_id()} -flatlist] 0]
             integer $tenant 2
             set fields [columns $handle {oceanbase.GV$OB_ACTIVE_SESSION_HISTORY}]
             foreach required {SAMPLE_TIME CON_ID SESSION_TYPE SESSION_STATE SESSION_ID SVR_IP SVR_PORT USER_ID SQL_ID WAIT_CLASS EVENT} {
@@ -120,7 +123,7 @@ namespace eval oceanbaseash {
                 dict set profile $name $cols
             }
         } message]} {
-            if {$handle ne ""} {catch {mysqlclose $handle}}
+            if {$handle ne ""} {catch {::obmysql::close $handle}}
             thread::send -async $parent [list ::oceanbaseash::connection_failed [thread::id] $message]
             thread::release
             return
@@ -200,7 +203,7 @@ namespace eval oceanbaseash {
     }
 
     proc worker_close {handle} {
-        catch {mysqlclose $handle}
+        catch {::obmysql::close $handle}
         thread::release
     }
 
@@ -292,7 +295,7 @@ namespace eval oceanbaseash {
         set message {}
         if {[catch {
             if {$cursor in {ash sqlovertime sqlio}} {
-                set now [lindex [mysql::sel $handle {SELECT FLOOR(UNIX_TIMESTAMP(NOW()))} -flatlist] 0]
+                set now [lindex [::obmysql::sel $handle {SELECT FLOOR(UNIX_TIMESTAMP(NOW()))} -flatlist] 0]
                 set end [expr {wide($now) / 15 * 15}]
                 if {$cursor eq "sqlio" || [dict get $request begin] == 0} {
                     set earliest [expr {$end-7200}]
@@ -300,7 +303,7 @@ namespace eval oceanbaseash {
                         # Do not paint evicted history as idle. Start with the
                         # oldest retained sample, or one empty bucket on an idle tenant.
                         set tenant [integer [dict get $profile tenant] 2]
-                        set retained [lindex [mysql::sel $handle "SELECT FLOOR(UNIX_TIMESTAMP(MIN(SAMPLE_TIME))) FROM oceanbase.GV\$OB_ACTIVE_SESSION_HISTORY WHERE CON_ID=$tenant AND SAMPLE_TIME>=FROM_UNIXTIME($earliest)" -flatlist] 0]
+                        set retained [lindex [::obmysql::sel $handle "SELECT FLOOR(UNIX_TIMESTAMP(MIN(SAMPLE_TIME))) FROM oceanbase.GV\$OB_ACTIVE_SESSION_HISTORY WHERE CON_ID=$tenant AND SAMPLE_TIME>=FROM_UNIXTIME($earliest)" -flatlist] 0]
                         if {[string is wideinteger -strict $retained]} {
                             set earliest [expr {max($earliest,wide($retained)/15*15)}]
                         } else {set earliest [expr {$end-15}]}
@@ -313,7 +316,7 @@ namespace eval oceanbaseash {
                 lassign [cached_detail $handle $cursor [dict get $request selected] $profile] names rows
             } else {
                 set sql [query $cursor $request $profile]
-                set rows [mysql::sel $handle $sql -list]
+                set rows [::obmysql::sel $handle $sql -list]
             }
         } message]} {
             set rows {}
@@ -333,7 +336,7 @@ namespace eval oceanbaseash {
             if {"STATEMENT" ni $fields} {error "SQL text is unavailable in the plan cache"}
             set text STATEMENT
             if {"QUERY_SQL" in $fields} {set text {COALESCE(NULLIF(QUERY_SQL,''),STATEMENT)}}
-            return [list {STATEMENT} [mysql::sel $handle "SELECT $text FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 1" -list]]
+            return [list {STATEMENT} [::obmysql::sel $handle "SELECT $text FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 1" -list]]
         }
         if {$cursor eq "ash_sqlstats"} {
             set names {}
@@ -341,13 +344,13 @@ namespace eval oceanbaseash {
                 if {$name in $fields} {lappend names $name}
             }
             if {"EXECUTIONS" ni $names} {error "Execution statistics are unavailable in the plan cache"}
-            return [list $names [mysql::sel $handle "SELECT `[join $names {`,`}]` FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 20" -list]]
+            return [list $names [::obmysql::sel $handle "SELECT `[join $names {`,`}]` FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 20" -list]]
         }
         set explain [dict get $capabilities explain]
         foreach name {SVR_IP SVR_PORT PLAN_ID} {
             if {$name ni $fields || $name ni $explain} {error "Cached plan details are unavailable (view or permission)"}
         }
-        set keys [mysql::sel $handle "SELECT SVR_IP,SVR_PORT,PLAN_ID FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 1" -list]
+        set keys [::obmysql::sel $handle "SELECT SVR_IP,SVR_PORT,PLAN_ID FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_STAT WHERE $where LIMIT 1" -list]
         if {![llength $keys]} {return [list {} {}]}
         lassign [lindex $keys 0] ip port plan
         set names {}
@@ -357,7 +360,7 @@ namespace eval oceanbaseash {
         set filter "SVR_IP=[literal $ip] AND SVR_PORT=[integer $port 1] AND PLAN_ID=[integer $plan]"
         if {"TENANT_ID" in $explain} {append filter " AND TENANT_ID=$tenant"}
         set order [expr {"PLAN_LINE_ID" in $explain ? "ORDER BY PLAN_LINE_ID" : ""}]
-        return [list $names [mysql::sel $handle "SELECT `[join $names {`,`}]` FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_EXPLAIN WHERE $filter $order" -list]]
+        return [list $names [::obmysql::sel $handle "SELECT `[join $names {`,`}]` FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_EXPLAIN WHERE $filter $order" -list]]
     }
 
     proc graph_rows {rows begin end bucket} {

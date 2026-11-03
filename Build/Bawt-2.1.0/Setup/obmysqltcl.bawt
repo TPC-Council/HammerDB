@@ -1,0 +1,74 @@
+# Build the independent OceanBase Tcl binding from this checkout.
+# OBCLIENT_ROOT points to an external OceanBase Connector/C SDK.  The vendor
+# runtime remains an external dependency and is not copied into HammerDB.
+
+proc Init_obmysqltcl {libName libVersion} {
+    SetLibHomepage $libName "https://github.com/TPC-Council/HammerDB"
+    SetLibDependencies $libName "Tcl"
+    SetPlatforms $libName "Linux"
+}
+
+proc Env_obmysqltcl {libName libVersion buildDir instDir devDir distDir} {
+    # Editing a file in a local source tree need not update the directory mtime.
+    # Rebuild this small binding on update instead of reusing a stale copy.
+    if {[UseStage "Update" $libName]} {
+        UpdateLib $libName "Build binding from current local source and client SDK"
+    }
+}
+
+proc Build_obmysqltcl {libName libVersion buildDir instDir devDir distDir} {
+    if {[UseStage "Extract" $libName]} {
+        ExtractLibrary $libName $buildDir
+    }
+
+    if {[UseStage "Configure" $libName] || [UseStage "Compile" $libName]} {
+        if {![info exists ::env(OBCLIENT_ROOT)] ||
+                ![file isdirectory $::env(OBCLIENT_ROOT)]} {
+            ErrorAppend "obmysqltcl: set OBCLIENT_ROOT to the OceanBase Connector/C SDK directory (headers and libobclnt); a MySQL SDK cannot be used" "FATAL"
+            return false
+        }
+        set tclConfig [file join [GetOutputInstDir] Tcl lib tclConfig.sh]
+        if {![file isfile $tclConfig]} {
+            ErrorAppend "obmysqltcl: Tcl must be built and installed first; missing $tclConfig" "FATAL"
+            return false
+        }
+        set buildScript [file join $buildDir build.sh]
+        if {![file isfile $buildScript]} {
+            ErrorAppend "obmysqltcl: missing $buildScript; run the Extract stage first" "FATAL"
+            return false
+        }
+    }
+
+    set packageDir [file join $instDir lib ${libName}${libVersion}]
+    if {[UseStage "Compile" $libName]} {
+        set command [list bash $buildScript --tcl-config $tclConfig \
+            --sdk [file normalize $::env(OBCLIENT_ROOT)] --output $packageDir]
+        WriteBuildLog $libName true "Running: $command"
+        if {[catch {exec {*}$command 2>@1} output]} {
+            WriteBuildLog $libName true $output
+            ErrorAppend "obmysqltcl build failed: $output" "FATAL"
+            return false
+        }
+        WriteBuildLog $libName true $output
+        Log $output 2 false
+    }
+
+    if {[UseStage "Distribute" $libName]} {
+        foreach filename [list pkgIndex.tcl libobmysqltcl${libVersion}.so BUILDINFO] {
+            if {![file isfile [file join $packageDir $filename]]} {
+                ErrorAppend "obmysqltcl: cannot distribute incomplete binding; missing $filename in $packageDir" "FATAL"
+                return false
+            }
+        }
+        # Copy only the binding package; never copy the external SDK directory.
+        set packageName ${libName}${libVersion}
+        if {![UseTclPkgVersion]} {
+            set packageName $libName
+        }
+        foreach destination [list $devDir $distDir] {
+            set target [file join $destination [GetTclLibDir] $packageName]
+            MultiFileCopy $packageDir $target "*" true
+        }
+    }
+    return true
+}

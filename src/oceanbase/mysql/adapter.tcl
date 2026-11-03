@@ -180,6 +180,11 @@ namespace eval oceanbase::mysql {
             if {$workload eq "tpcc" && $action in {test timed} && [dict get $normalized tpcc ob_connect_pool] eq "true"} {
                 set _ED(package) [rewrite_connect_pool $_ED(package)]
             }
+            set entry {}
+            if {$action in {build check delete}} {
+                set entry [dict get [dict create build do_$workload check check_$workload delete drop_schema] $action]
+            }
+            set _ED(package) [rewrite_binding $_ED(package) $entry]
             if {$graphical} {
                 .ed_mainFrame.mainwin.textFrame.left.text fastdelete 1.0 end
                 .ed_mainFrame.mainwin.textFrame.left.text fastinsert end $_ED(package)
