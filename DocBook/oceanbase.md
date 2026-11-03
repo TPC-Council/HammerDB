@@ -18,6 +18,11 @@ available.
 
 ## Connection
 
+For OceanBase CE 4.4.2.1 with libmysqlclient 8.4.5, use an OBProxy endpoint
+to avoid the direct-connection character-set diagnostics described below.
+The example uses an OBProxy configured for `obcluster`; replace the host,
+tenant and cluster with those of your installation.
+
 Use the business tenant's credentials. Set `ob_user` (TPROC-C) or `ob_tpch_user`
 (TPROC-H) to the unqualified user, and set the connection fields separately:
 
@@ -26,17 +31,18 @@ dbset db ob
 dbset bm TPROC-C
 diset connection ob_compatibility_mode mysql
 diset connection ob_host 127.0.0.1
-diset connection ob_port 2881
+diset connection ob_port 2883
 diset connection ob_tenant hammerdb
-diset connection ob_cluster {}
+diset connection ob_cluster obcluster
 diset connection ob_query_timeout 120
 diset tpcc ob_user root
 diset tpcc ob_pass $::env(OB_PASSWORD)
 diset tpcc ob_dbase tpcc_ob
 ```
 
-Direct connections use `user@tenant`. For OBProxy, set its port (normally 2883)
-and `ob_cluster`; the login becomes `user@tenant#cluster`. A sys tenant account,
+Direct connections use the OBServer port (normally 2881), an empty `ob_cluster`,
+and the login `user@tenant`. For OBProxy, set its port (normally 2883) and
+`ob_cluster`; the login becomes `user@tenant#cluster`. A sys tenant account,
 shared administrative password, SQL extension, and cluster parameter changes
 are not required. TLS settings are available in the connection configuration
 on Linux and Windows; enabling OceanBase does not disable TLS.
@@ -85,12 +91,36 @@ possible system-client overrides. If authentication reports a missing plugin,
 record the HammerDB package version and actual loaded MySQL client library before
 changing the installation.
 
-Character-set diagnostics remain a known compatibility issue with this tested
-combination. C execution can repeatedly report character set `255`; C schema
-finalization and H statistics collection have also reported `8` or `45`.
-Functional checks completed in the reference tests, but the warnings are not
-resolved by this contribution. No silent suppression or server-wide character-set
-change is applied.
+These checks explicitly loaded the PR source into that runtime; they did not
+test a newly built and installed PR package.
+
+Direct OBServer connections with this tested client/server combination can
+repeatedly report character set `255` during C execution, and `8` or `45` during
+schema finalization or H statistics collection. The server sends numeric
+character-set values in session-state notifications where the MySQL client
+expects names. Changing `SET NAMES` or clearing `session_track_system_variables`
+did not remove these diagnostics in the direct-connection tests.
+
+The same MySQL client can avoid this issue through OBProxy. A controlled test
+with OBProxy 4.3.5.0-3, the same tenant/schema and identical `CALL SLEV` statements
+received the numeric value and warning on every direct call; the proxy calls
+received no character-set tracking item and produced no warning. This uses the
+standard MySQL client dependency; it does not require rebuilding `mysqltcl`
+against OBConnector/C. Use the proxy connection settings above. Direct
+connections remain available, but their protocol issue is not fixed by this
+contribution. No client-log filtering or server-wide character-set change is
+applied.
+
+For the tested OBProxy 4.3.5.0-3 deployment, configure
+`client_session_id_version=2` and a unique `proxy_id` (`1` for the single proxy
+in the reference installation), then establish new client connections. The
+Docker image accepts these as `ODP_CLIENT_SESSION_ID_VERSION=2` and
+`ODP_PROXY_ID=1`. The V2 client-session-ID capability is required by OceanBase
+4.4.2.1 for the temporary tables used by C schema checking when connecting
+through OBProxy. With the proxy's default V1 setting, this check failed with
+`obproxy version is too old or config not right, create temporary table not supported`;
+the same check passed with V2. Configure these on the proxy, not as HammerDB
+`diset` options.
 
 ## Workloads and results
 
@@ -224,7 +254,7 @@ and the older MySQL-category H examples have been retired.
 From the HammerDB root, supply a **new** database name for a build:
 
 ```sh
-export OB_HOST=127.0.0.1 OB_PORT=2881 OB_TENANT=test OB_USER=root
+export OB_HOST=127.0.0.1 OB_PORT=2883 OB_TENANT=test OB_CLUSTER=obcluster OB_USER=root
 export OB_PASSWORD='' OB_DATABASE=tpch_ob_trial
 export OB_SCALE_FACTOR=1 OB_BUILD_USERS=1 OB_QUERY_TIMEOUT=120
 ./scripts/tcl/oceanbase/run.sh tcl tproch all
@@ -329,6 +359,7 @@ the timeout alone does not establish the cause of a slow build.
 
 The revised Tcl and Python C examples each completed build, check, timed run,
 result retrieval and explicit deletion on a fresh one-warehouse ordinary schema.
+These runs connected directly to OBServer.
 The runs used two active VUs plus the monitor, zero ramp-up and one minute of
 measurement. Both saved job reports contained nonempty transaction timings,
 transaction-counter samples and NOPM/TPM results. The Tcl run used an empty
@@ -353,6 +384,32 @@ A separate native MySQL 8.4.13 smoke test passed a one-warehouse C build, check,
 native eight-table DDL, a partial dataset with 20 PART and 80 PARTSUPP rows,
 ANALYZE, RF1 and RF2. It did not perform a full native MySQL H SF1 build or all
 22 analytical queries. Windows execution remains unverified.
+
+### OBProxy follow-up validation (2026-11-03)
+
+PR source revision `62d4449f` was loaded into the same official HammerDB 6.1.1
+Ubuntu 24.04 x86-64 runtime, with the same external libmysqlclient 8.4.5 and
+OceanBase CE 4.4.2.1 installation. The proxy image was
+`oceanbase/obproxy-ce:4.3.5.0-3`, digest
+`sha256:c173d61281b1658e9cd8fe031c7216f036a5850658009c2484f2fd039c017564`.
+Three identical `CALL SLEV(1,1,10,@x)` calls per route used the same tenant and
+schema: all three direct calls returned numeric character-set tracking and a
+`255` warning; all three proxy calls returned no such tracking item or warning.
+
+Through the proxy, a fresh one-warehouse C schema completed build and statistics.
+After enabling the V2 session-ID setting described above, schema check, 1,000
+stored-procedure test iterations covering all five transaction types, post-run
+check, counter polling and deletion passed. H schema check, statistics collection
+and all 22 queries passed on the retained SF1 dataset; the query set completed
+in 169 seconds with the unchanged 120-second session timeout. None of these
+proxy workloads emitted character-set warnings. Raw logs were retained without
+filtering; later C invocations also contain startup notices from the official
+runtime's embedded source before the initializer loads this PR's source.
+
+This establishes a proxy workaround for the tested combination, not a fix for
+direct OBServer connections or a newly built PR package. This follow-up did not
+repeat the complete H data load, refresh functions, prepared calls or TLS checks,
+and does not establish a performance comparison.
 
 ## Validation status (2026-09-14)
 
