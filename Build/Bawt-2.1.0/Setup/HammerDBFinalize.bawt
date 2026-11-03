@@ -32,6 +32,19 @@ proc grep0 {prefix pattern handle} {
     }
 }
 
+proc HammerDBVerifyOceanBaseBinding {distributionDir} {
+    set packageName obmysqltcl0.1
+    if {![UseTclPkgVersion]} { set packageName obmysqltcl }
+    set packageDir [file join $distributionDir HammerDB lib $packageName]
+    foreach filename {pkgIndex.tcl libobmysqltcl0.1.so BUILDINFO} {
+        if {![file isfile [file join $packageDir $filename]]} {
+            ErrorAppend "Finalize: OceanBase binding is missing $filename; build obmysqltcl with OBCLIENT_ROOT set before packaging a Linux release" "FATAL"
+            return false
+        }
+    }
+    return true
+}
+
 proc Finalize {} {
     Log "Finalize HammerDB Build"
 
@@ -82,6 +95,13 @@ if { !$bli } {
 MultiFileCopy [ file join [GetOutputDevDir] HammerDB include ] [ file join [file nativename [GetOutputDistDir]] HammerDB include ] "*"  true
 MultiFileCopy [ file join [GetOutputDevDir] HammerDB bin ] [ file join [file nativename [GetOutputDistDir]] HammerDB bin ] "*"  true
 MultiFileCopy [ file join [GetOutputDevDir] HammerDB lib ] [ file join [file nativename [GetOutputDistDir]] HammerDB lib ] "*"  true
+}
+# Linux releases include the independent OceanBase binding in the same lib
+# tree as the other database bindings.  The SFE steps below embed this tree;
+# libobclnt remains an external, user-installed runtime dependency.
+if {[IsLinux] && [GetLibIndex obmysqltcl] >= 0 &&
+        ![HammerDBVerifyOceanBaseBinding [GetOutputDistDir]]} {
+    return
 }
 FileRename [ file join [file nativename [GetOutputDistDir]] HammerDB ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
 if {![IsWindows]} {

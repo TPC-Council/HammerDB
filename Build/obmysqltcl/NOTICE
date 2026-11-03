@@ -1,0 +1,20 @@
+obmysqltcl 0.1 is derived from the mysqltcl 3.052.1 source distributed by
+HammerDB at:
+https://www.hammerdb.com/build5/InputLibs/mysqltcl-3.052.1.7z
+Source archive SHA256:
+7c0f58334e9d5603e09970297b92664af760e75aff22d82ee68a66df0304e8b3
+
+The original authors and modification credits are preserved in the C source.
+Changes made for this binding isolate its Tcl package, commands, status array,
+handle prefixes and object types, and use OceanBase Connector/C TLS options
+to require certificate and host verification without plaintext fallback.
+Only the Tcl
+loading entry points are exported from the shared object.
+
+This directory does not contain OceanBase Connector/C or a copy of its source.
+It builds against an independently installed SDK and dynamically links
+libobclnt. That library and its dependencies retain their own licenses.
+Redistributing them requires their corresponding licenses, notices and source
+arrangements; this binding's COPYING file does not replace those materials.
+
+Tcl 9 stubs are linked into the binding. The Tcl license is included in COPYING.

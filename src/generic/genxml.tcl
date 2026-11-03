@@ -173,7 +173,7 @@ proc SQLiteUpdateKeyValue {dbname table keyname value} {
     } else {
         catch {hdb timeout 30000}
         if { $sqlitedb ne "" } {
-            set sqlcmd "UPDATE $table SET val = \'$value\' WHERE key = \'$keyname\'"
+            set sqlcmd "UPDATE $table SET val = \$value WHERE key = \$keyname"
             if [catch {hdb eval $sqlcmd} message ] {
                 puts "Error creating $table table in $sqlitedb : $message"
                 return

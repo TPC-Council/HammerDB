@@ -2871,7 +2871,7 @@ proc job_options {} {
 
 proc metricsopts {} {
     # Database metrics based on Active Session History:
-    # Oracle, PostgreSQL, MySQL and MariaDB
+    # Oracle, PostgreSQL, MySQL, MariaDB, VillageSQL and OceanBase
     global rdbms
 
     if { $rdbms eq "Oracle" } {
@@ -2884,6 +2884,8 @@ proc metricsopts {} {
         metmariaopts
     } elseif { $rdbms eq "VillageSQL" } {
         metvsqlopts
+    } elseif { $rdbms eq "OceanBase" } {
+        metobopts
     } else {
         metgenopts
     }
@@ -3306,7 +3308,8 @@ proc select_rdbms { preselect } {
             #Dict2SQLite "database" $dbdict
         }
     } -text OK
-    grid $Parent.f1.ok -column 2 -row 8 -padx 3 -pady 3 -sticky e
+    set buttonrow [expr {max($rowind, 2) + 1}]
+    grid $Parent.f1.ok -column 2 -row $buttonrow -padx 3 -pady 3 -sticky e
 
     set Name $Parent.f1.cancel
     ttk::button $Name -command {
@@ -3314,7 +3317,7 @@ proc select_rdbms { preselect } {
         set bm $oldbm
         set rdbms $oldrdbms
     } -text Cancel
-    grid $Parent.f1.cancel -column 3 -row 8 -padx 3 -pady 3 -sticky w
+    grid $Parent.f1.cancel -column 3 -row $buttonrow -padx 3 -pady 3 -sticky w
     wm geometry .rdbms +50+50
     wm deiconify .rdbms
     raise .rdbms

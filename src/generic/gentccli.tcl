@@ -100,13 +100,13 @@ proc show_tc_errmsg {} {
 }
 
 proc threadnames_without_tcthread {} {
-    global tc_threadID
+    global tc_threadID dbmon_threadID
     set thlist [ thread::names ]
-    if { [ info exists tc_threadID ] } {
-        set idx [ lsearch $thlist $tc_threadID ]
-        if { $idx != -1 } {
-            set thlist [ lreplace $thlist $idx $idx ]
-            return $thlist
+    # Database metrics can remain active while VUs are created or destroyed.
+    foreach monitor {tc_threadID dbmon_threadID} {
+        if {[info exists $monitor]} {
+            set idx [lsearch -exact $thlist [set $monitor]]
+            if {$idx != -1} {set thlist [lreplace $thlist $idx $idx]}
         }
     }
     return $thlist

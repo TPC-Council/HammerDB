@@ -22,6 +22,9 @@ Setup tclpyS            tclpyS-0.4.1.7z                tclpyS_NMake.bawt
 Setup oratcl            oratcl-4.6.1.7z                 oratcl_NMake.bawt
 Setup mariatcl          mariatcl-0.1.1.7z             mariatcl_NMake.bawt
 Setup mysqltcl          mysqltcl-3.052.1.7z             mysqltcl_NMake.bawt
+# OceanBase's obmysqltcl binding is currently built on Linux only.
+# Windows distributions do not provide it; OceanBase must report the missing
+# binding instead of using the independent MySQL binding.
 Setup pgtcl             pgtcl-2.1.1.2.7z                pgtcl_NMake.bawt
 Setup db2tcl            db2tcl-2.0.1.1.7z               db2tcl_NMake.bawt
 # Compiled Tcl packages.
