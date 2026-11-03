@@ -121,6 +121,53 @@ through OBProxy. With the proxy's default V1 setting, this check failed with
 the same check passed with V2. Configure these on the proxy, not as HammerDB
 `diset` options.
 
+### OceanBase Connector/C for direct connections
+
+[OceanBase Connector/C (LibobClient)](https://github.com/oceanbase/obconnector-c)
+is an open-source LGPL client library with publicly downloadable
+[release packages](https://github.com/oceanbase/obconnector-c/releases/tag/v2.2.14).
+It supports OceanBase MySQL and Oracle compatibility modes; Community Edition
+provides MySQL mode, while Enterprise Edition provides both. This contribution
+still implements only MySQL tenants. In the tested Linux 2.2.14 package, the
+shared library is named `libobclnt.so.2`.
+
+Use a `mysqltcl` binding compiled against the matching LibobClient SDK headers
+and library, and the Tcl runtime used by HammerDB. The official HammerDB 6.1.1
+Linux binding requires MySQL's `libmysqlclient_24.0` versioned symbols and cannot
+load LibobClient merely by renaming or symlinking the library. The client APIs
+also have different prepared-statement structure layouts.
+
+The direct-connection validation used LibobClient 2.2.14, Tcl 9.0.2 and the
+official HammerDB `mysqltcl` 3.052.1 source, rebuilt in an isolated runtime.
+Two MySQL-8-only SSL compile guards additionally exclude `MARIADB_BASE_VERSION`:
+the OB SDK's MySQL compatibility version number otherwise selects SSL enums
+that it does not define. This is a rebuilt binding, not the unmodified standard
+HammerDB binary. The MySQL-compatible client API reports version `10.5.5`;
+retain the downloaded package version separately when reporting an issue.
+
+Select the rebuilt package and its library privately for the HammerDB process,
+leaving the ordinary installation intact. `TCLLIBPATH` names the directory
+containing the rebuilt `mysqltcl3.052.1` package directory and its `pkgIndex.tcl`:
+
+```sh
+TCLLIBPATH=/path/to/ob-tcl-packages \
+LD_LIBRARY_PATH=/path/to/obclient/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} \
+./hammerdbcli
+```
+
+The tested launcher and its VU/counter threads selected this package without
+changing the embedded package index. Check the actual loaded library as well
+as `mysql::baseinfo clientversion` when diagnosing a client selection problem.
+
+With this binding, direct stored-procedure calls did not emit the character-set
+diagnostics seen with libmysqlclient 8.4.5. Nonempty-password authentication
+worked without `LIBMYSQL_PLUGIN_DIR` or an extra authentication plugin, and
+native prepared-statement bindings and UTF-8 text round trips passed. The
+Unicode checks explicitly selected `utf8mb4`; do not infer the connection's
+default encoding from them. These results establish the tested client path,
+not a correction to the server's numeric session-state values or validation of
+all client/server combinations. TLS was not revalidated with this binding.
+
 ## Database metrics (ASH)
 
 Select OceanBase, configure the connection and credentials for the selected
@@ -139,7 +186,8 @@ installing an event, or changing global database parameters.
 
 The activity chart uses completed 15-second buckets and native sample weights
 to calculate average active sessions. Empty retained intervals contribute zero
-activity; missing older history is not presented as retained idle history.
+activity. On initial load, the chart starts at the earliest retained sample's
+bucket rather than presenting older missing history as idle activity.
 SQL and wait-event breakdowns use the selected interval. Session identities
 include the OBServer address and port so equal session IDs on different nodes
 are not merged. Sampling can miss short operations and is not an exact execution
@@ -435,6 +483,26 @@ authentication failure also released its thread. An aged-out/missing SQL ID
 displayed an unavailable message without stopping ASH. The live environment had
 one OBServer; multi-node identity aggregation was checked with fixtures rather
 than a new multi-node deployment.
+
+### LibobClient direct-connection validation (2026-11-03)
+
+Using source revision `9f598829`, the rebuilt binding described above connected
+directly to the same CE 4.4.2.1 tenant. A fresh one-warehouse C schema completed
+build/statistics, check, 1,000 prepared stored-procedure test iterations covering
+all five transaction types, counter polling and postcheck. The retained SF1 H
+schema completed check, statistics and all 22 queries in 172 seconds, with the
+120-second session timeout unchanged. These workloads emitted no character-set
+diagnostics. The C schema was temporary; the existing H data was preserved.
+
+Additional checks covered native C API prepared parameter/result bindings, a
+57-byte UTF-8 string containing Chinese, emoji, quotes and a newline through both
+the C API and `mysqltcl`, and nonempty-password authentication without loading an
+external authentication plugin. A controlled comparison explicitly selected
+`utf8mb4`/`utf8mb4_bin` for both clients: the same direct SLEV calls still emitted
+diagnostics with libmysqlclient 8.4.5 and none with LibobClient 2.2.14. The process
+library mappings confirmed that workload VUs and the counter used the rebuilt
+binding and OB library. This did not rebuild the complete H dataset, test H
+refresh functions, validate Enterprise Edition/Oracle tenants, or revalidate TLS.
 
 ### OBProxy follow-up validation (2026-11-03)
 
