@@ -12,9 +12,8 @@ Oracle-compatible tenants are not supported by this category yet.
 OceanBase is treated as an independently deployed database. This contribution
 does not add an OceanBase engine source-build pipeline or a HammerDB-maintained
 OceanBase Docker image. Functional testing against an available installation is
-supported. OceanBase-specific ASH/SQL Audit metrics are intentionally outside
-this contribution and may be added separately; generic host CPU metrics remain
-available.
+supported. Desktop database metrics read OceanBase's native Active Session
+History (ASH) and tenant plan cache. Generic host CPU metrics remain available.
 
 ## Connection
 
@@ -121,6 +120,40 @@ through OBProxy. With the proxy's default V1 setting, this check failed with
 `obproxy version is too old or config not right, create temporary table not supported`;
 the same check passed with V2. Configure these on the proxy, not as HammerDB
 `diset` options.
+
+## Database metrics (ASH)
+
+Select OceanBase, configure the connection and credentials for the selected
+TPROC-C or TPROC-H workload, and open **Metrics > Options**. Leave **CPU Metrics
+Only** unchecked, then select **Metrics > Display**. ASH uses that workload's
+business-tenant connection, including tenant/cluster routing, TLS and session
+timeout settings. The agent settings in the options dialog apply to host CPU
+metrics. The existing CLI `metstart` command remains a host CPU metrics command.
+
+The monitor reads `oceanbase.GV$OB_ACTIVE_SESSION_HISTORY` across the current
+tenant's OBServer nodes. It includes foreground CPU activity and non-idle waits
+from all workloads in that tenant, not only the configured benchmark database.
+It refuses the sys tenant. The account must be able to read this view; an absent
+view or insufficient permission is reported without creating a sampling schema,
+installing an event, or changing global database parameters.
+
+The activity chart uses completed 15-second buckets and native sample weights
+to calculate average active sessions. Empty retained intervals contribute zero
+activity; missing older history is not presented as retained idle history.
+SQL and wait-event breakdowns use the selected interval. Session identities
+include the OBServer address and port so equal session IDs on different nodes
+are not merged. Sampling can miss short operations and is not an exact execution
+count or a transaction-performance result.
+
+SQL text and execution statistics come from
+`oceanbase.GV$OB_PLAN_CACHE_PLAN_STAT`. Statistics are labelled as plan-cache
+lifetime totals, not totals for the selected ASH interval. Cached-plan details
+read `oceanbase.GV$OB_PLAN_CACHE_PLAN_EXPLAIN` for a matching node and plan ID.
+When multiple plans exist for an SQL ID, the display selects one currently
+cached plan; it is not a reconstruction of the plan at a historical sample.
+Missing permissions or aged-out cache entries produce an unavailable message,
+while ASH monitoring continues. The monitor does not execute the sampled SQL
+or run `EXPLAIN` against it.
 
 ## Workloads and results
 
@@ -384,6 +417,24 @@ A separate native MySQL 8.4.13 smoke test passed a one-warehouse C build, check,
 native eight-table DDL, a partial dataset with 20 PART and 80 PARTSUPP rows,
 ANALYZE, RF1 and RF2. It did not perform a full native MySQL H SF1 build or all
 22 analytical queries. Windows execution remains unverified.
+
+### Native ASH validation (2026-11-03)
+
+The native ASH provider was tested with current source loaded into the official
+HammerDB 6.1.1 Ubuntu 24.04 x86-64 runtime against the same CE 4.4.2.1 tenant.
+The 46 provider checks cover weighted averages, empty intervals, midnight
+boundaries, SQL time-series gaps, node-qualified sessions, special credentials
+and query validation. Six real Tk/dispatch checks cover provider switching and
+metrics options. The existing 116 external regression checks also passed.
+
+Live checks displayed workload samples, Top SQL, sessions, events, SQL text,
+actual plan-cache statistics and a cached execution plan. VU creation, execution
+and destruction left the ASH collector running and excluded from the VU count.
+Stopping and reconnecting released and recreated the collector correctly; an
+authentication failure also released its thread. An aged-out/missing SQL ID
+displayed an unavailable message without stopping ASH. The live environment had
+one OBServer; multi-node identity aggregation was checked with fixtures rather
+than a new multi-node deployment.
 
 ### OBProxy follow-up validation (2026-11-03)
 

@@ -2871,7 +2871,7 @@ proc job_options {} {
 
 proc metricsopts {} {
     # Database metrics based on Active Session History:
-    # Oracle, PostgreSQL, MySQL and MariaDB
+    # Oracle, PostgreSQL, MySQL, MariaDB, VillageSQL and OceanBase
     global rdbms
 
     if { $rdbms eq "Oracle" } {
@@ -2884,6 +2884,8 @@ proc metricsopts {} {
         metmariaopts
     } elseif { $rdbms eq "VillageSQL" } {
         metvsqlopts
+    } elseif { $rdbms eq "OceanBase" } {
+        metobopts
     } else {
         metgenopts
     }

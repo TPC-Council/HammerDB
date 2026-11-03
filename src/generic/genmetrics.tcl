@@ -328,6 +328,7 @@ proc metrics {} {
         puts "Metrics error loading comm and blt packages"
         return
     }
+    if {[namespace exists ::obmet]} {namespace forget obmet::*}
     if { $rdbms eq "Oracle" } {
         namespace forget pgmet::*
         namespace forget mysqlmet::*
@@ -383,6 +384,18 @@ proc metrics {} {
 	} else {
 		vsqlmetrics
 	}
+    } elseif { $rdbms eq "OceanBase" } {
+        namespace forget oramet::*
+        namespace forget pgmet::*
+        namespace forget mysqlmet::*
+        namespace forget mariamet::*
+        namespace forget vsqlmet::*
+        namespace import obmet::*
+        if { $cpu_only } {
+            genmetrics
+        } else {
+            obmetrics
+        }
     } else {
         genmetrics
     }
@@ -458,6 +471,8 @@ proc ed_kill_metrics {args} {
         catch { maria_post_kill_dbmon_cleanup }
     } elseif { $rdbms == "VillageSQL" } {
         catch { vsql_post_kill_dbmon_cleanup }
+    } elseif { $rdbms == "OceanBase" } {
+        catch { ob_post_kill_dbmon_cleanup }
     }
     }
     ed_status_message -show "... Stopping Metrics ..."
