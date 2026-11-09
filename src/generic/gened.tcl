@@ -577,6 +577,11 @@ proc populate_tree {rdbms bm icons iconalt} {
 
 proc ed_stop_gui {} {
     ed_wait_if_blocked
+    # Flush the manual ASH archive before terminating the infrastructure
+    # workers. Otherwise the Web Service could see a permanently RUNNING Job.
+    if {[llength [info commands ::ashcmd::manual_active]] && [::ashcmd::manual_active]} {
+        if {[catch {ashstop} message]} {puts stderr "ASH finalization failed: $message"}
+    }
     #close outstanding threads
     set thlist [ thread::names ]
     foreach ij $thlist {
@@ -1647,11 +1652,20 @@ proc ed_stop_autopilot {} {
 
 proc vurun {} {
     global _ED opmode jobid
-
-    set jobid [guid]
-    if { [jobmain $jobid run] eq 1 } {
-        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
-        #return
+    if {[info exists ::ashcmd::starting] && $::ashcmd::starting} {
+        tk_messageBox -icon warning -message "ASH is still starting. Run the benchmark after ASH is ready."
+        return
+    }
+    if {[llength [info commands ::ashcmd::manual_active]] && [::ashcmd::manual_active]} {
+        # Use the ASH Job already registered by the GUI Start action. The
+        # selected benchmark and its archive must be the SAME Job in hammerdbws.
+        set jobid [::ashcmd::current_job]
+    } else {
+        set jobid [guid]
+        if { [jobmain $jobid run] eq 1 } {
+            dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+            #return
+        }
     }
 
     #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run

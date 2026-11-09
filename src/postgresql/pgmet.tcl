@@ -189,7 +189,9 @@ namespace eval pgmet {
         } err ] } { ; }
     }
 
-    option add *Tablelist.labelCommand tablelist::sortByColumn
+    if {[llength [info commands option]]} {
+        option add *Tablelist.labelCommand tablelist::sortByColumn
+    }
 
     proc ash_init { { display  0 } } {
         upvar #0 env e
@@ -689,7 +691,8 @@ namespace eval pgmet {
                     set total [ expr $total - $sz ]
                 }
                 set total [$tbl cellcget $row,activity -text]
-                set act [ format "%3.0f" [ expr ceil(100 *  $total  / ($delta)) ] ]
+                package require ashreplay 1.0
+                set act [::ashreplay::percent session $total $delta]
                 label $w.t$row -text $act -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -717,7 +720,8 @@ namespace eval pgmet {
                     catch {set total [ expr $total - $sz ]}
                 }
                 set total [$tbl cellcget $row,activity -text]
-                set aas [ format "%0.0f" [ expr 100 * ($total+0.0) / $public(sqltbl,maxActivity) ] ]
+                package require ashreplay 1.0
+                set aas [::ashreplay::percent sql $total $public(sqltbl,maxActivity)]
                 label $w.t$row -text $aas -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -740,7 +744,8 @@ namespace eval pgmet {
                 frame $w.w$i -width $width -background $public(ashgroup,$group) -borderwidth 0 -relief flat
                 place $w.w$i -relheight 1.0
                 set i 1
-                set width [ format "%3.1f" $width ] 
+                package require ashreplay 1.0
+                set width [::ashreplay::percent event $activity $total]
                 label $w.w$i -text $width -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -1049,11 +1054,11 @@ namespace eval pgmet {
                 set begsec [ expr [ set ash_sec($beg)] - 0 ]
                 set endday [ set ash_day($end)]
                 set endsec [ expr [ set ash_sec($end)] + 0 ]
-                set public(ash,beg) [ format "%06.0f %05.0f" $begday $begsec ]
-                set public(ash,end) [ format "%06.0f %05.0f" $endday $endsec ]
-                set public(ash,begcnt) [ format "%06.0f%05.0f" $begday $begsec ]
-                set public(ash,endcnt) [ format "%06.0f%05.0f" $endday $endsec ]
-                set public(ash,sesdelta)  [ expr [set public(ash,endcnt) ] - [ set public(ash,begcnt) ] ]
+                package require ashreplay 1.0
+                set bounds [::ashreplay::window pg $public(ash,begid) $public(ash,endid) $begday $begsec $endday $endsec ""]
+                foreach {source target} {native_begin ash,beg native_end ash,end begcnt ash,begcnt endcnt ash,endcnt sesdelta ash,sesdelta} {
+                    set public($target) [dict get $bounds $source]
+                }
                 #puts "call $cur_proc, begday:$begday, begsec:$begsec, endday:$endday, endsec:$endsec, public(ash,beg):$public(ash,beg), public(ash,end):$public(ash,end), sesdelta:$public(ash,sesdelta)"
                 mon_execute ash_sqldetails
         } err] } { puts "call $cur_proc, err:$err"; } 
@@ -1069,10 +1074,8 @@ namespace eval pgmet {
                 $public(ash,evttbl) delete 0 end 
                 $public(ash,sestbl) delete 0 end
                 #$public(ash,output) insert  insert "   working ... "
-                set public(ashtbl,delta) [ expr $public(ash,endid) - $public(ash,begid) ]
-                if { $public(ashtbl,delta) == 0 } {
-                    set public(ashtbl,delta) $public(ash,bucket_secs)
-                }
+                package require ashreplay 1.0
+                set public(ashtbl,delta) [::ashreplay::delta $public(ash,begid) $public(ash,endid) $public(ash,bucket_secs)]
                 set sqlid "" 
                 set sum 0
                 update idletasks
@@ -2017,6 +2020,19 @@ namespace eval pgmet {
                     return
                 }
 
+                # Activate the preloaded desktop prerequisites in the configured
+                # monitoring database before checking the existing ASH relation.
+                if {[info exists ::tpublic(ashcapture)]} {
+                    if {[catch {
+                        package require ashcapture 1.0
+                        ::ashcapture::pg_setup $handle
+                    } err]} {
+                        catch {pg_disconnect $handle}
+                        thread::send -async $parent [list ::callback_err "PostgreSQL ASH extension activation failed"]
+                        just_disconnect $parent
+                        return
+                    }
+                }
                 # Check if pgsentinel is installed
                 if { $db_type == "default" } {
                     set pgsentinel_found 0
@@ -2059,11 +2075,16 @@ namespace eval pgmet {
             #POSTGRES CONNECTION
             proc ConnectToPostgres { parent host port sslmode user password dbname } {
                 global tcl_platform public masterthread dbmon_threadID
-                if {[catch {set handle [pg_connect -conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname ]]} err]} {
+                set conninfo [list host = $host port = $port sslmode = $sslmode user = $user password = $password dbname = $dbname]
+                if {[info exists ::tpublic(ashcapture)]} {
+                    package require ashcapture 1.0
+                    set conninfo [::ashcapture::pg_conninfo $host $port $sslmode $user $password $dbname]
+                }
+                if {[catch {set handle [pg_connect -conninfo $conninfo]} err]} {
                     set handle "Failed" 
                     thread::send -async $parent "::callback_err [ join $err ]"
                 } else {
-                    pg_notice_handler $handle puts
+                    if {[llength [info commands pg_notice_handler]]} {pg_notice_handler $handle puts}
                     set result [ pg_exec $handle "set CLIENT_MIN_MESSAGES TO 'ERROR'" ]
                     pg_result $result -clear
                 }
@@ -2096,6 +2117,16 @@ namespace eval pgmet {
 
                 if {[catch {
                         pg_select $handle $sql var {
+                            if {[info exists tpublic(ashcapture)]} {
+                                set captured [dict create]
+                                foreach index [array names var] {
+                                    if {$index ni {.tupno .headers .numcols}} {
+                                        dict set captured $index $var($index)
+                                    }
+                                }
+                                $result append " [list $captured]"
+                                continue
+                            }
                             set rowcount [ expr $var(.tupno) ]
                             set namelist ""
                             set collist ""
@@ -2114,14 +2145,20 @@ namespace eval pgmet {
                     #set f [open "/tmp/hm.log" w]
                     #puts $f "Query Failed, sql:$sql err:$message"
                     #close $f
+                    if {[info exists tpublic(ashcapture)]} {
+                        tsv::set fetched error,$cursor "ASH persistence query failed"
+                    } else {
                     thread::send $parent "putsm \"call pg_all Query Failed, sql:$sql err:$message \""
+                    }
                 }
 
                 thread::send -async $parent " ::callback_fetch $cursor $fetch"
             }
 
             thread::wait
-            tsv::set application themonitor "QUIT"
+            if {![info exists tpublic(ashcapture)]} {
+                tsv::set application themonitor "QUIT"
+            }
         }]
     }
 
@@ -2385,7 +2422,11 @@ namespace eval pgmet {
     proc mon_loop { } {
         global public 
         set cur_proc mon_loop 
-        set monstatus [ tsv::get application themonitor ]
+        if {[info exists public(ashcapture)] && $public(ashcapture)} {
+            set monstatus [expr {$public(run) ? "RUNNING" : "QUIT"}]
+        } else {
+            set monstatus [ tsv::get application themonitor ]
+        }
         if { $monstatus eq "QUIT" || $monstatus eq "NOWVUSER" } {
             after cancel mon_loop
         }
@@ -2398,10 +2439,16 @@ namespace eval pgmet {
                 if { $public(cursor,$i) == "slow" } { set slow "$slow $i" }
                 if { $public(cursor,$i) == "fast" } { set fast "$fast $i" }
             }
+            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                ::ashcapture::before_poll
+            }
             foreach i "secs $fast " { mon_execute $i }
             if { $public(slow_cur) >= $public(sleep,slow) } {
                 set public(slow_cur) [ expr  $public(slow_cur) - $public(sleep,slow) ]
                 foreach i $slow { mon_execute $i }
+            }
+            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                ::ashcapture::after_poll
             } 
             update idletasks
             after [ expr $public(sleep,fast) * 1000 ]  mon_loop 
@@ -2427,7 +2474,11 @@ namespace eval pgmet {
                         #if { $i == "ash_sqlplan" } {
                             #  thread::send -async $dbmon_threadID "pg_all $public(parent) $public(tproc_handle) $crsr \"$sql\" $fetch"
                         #} else {
-                            thread::send -async $dbmon_threadID "pg_all $public(parent) $public(handle) $crsr \"$sql\" $fetch"
+                            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                                thread::send -async $dbmon_threadID [list pg_all $public(parent) $public(handle) $crsr $sql $fetch]
+                            } else {
+                                thread::send -async $dbmon_threadID "pg_all $public(parent) $public(handle) $crsr \"$sql\" $fetch"
+                            }
                         #}
                     } err ] } { 
                     puts "call mon_execute error:$err"
@@ -3207,6 +3258,8 @@ namespace eval pgmet {
       ceil(extract(epoch from sample_time)) as sample_id 
     from ( select max(ash_time) sample_time from pg_active_session_history) as st;"
 
+        # One-second sampling: include the last observation in the elapsed
+        # span, also for a partial or single-sample refresh.
         set public(sql,ash) "with ash as (select ash_time, 
         (case when wait_event_type='CPU' then 
           (case when backend_type='autovacuum launcher' then 'BCPU'
@@ -3219,12 +3272,12 @@ namespace eval pgmet {
                 when backend_type='walsender'    then 'BCPU'
                 when backend_type='walwriter'    then 'BCPU'
                 else 'CPU' end) else wait_event_type end), wait_event, 
-        ceil(extract(epoch from max(ash_time)over()-min(ash_time)over()))::numeric samples, 
+        extract(epoch from max(ash_time)over()-min(ash_time)over())::numeric samples, 
         ceil(extract(epoch from ash_time)) as sample_id, \$public(ash,bucket_secs) bucket 
       from pg_active_session_history where \$public(ash,where) and 
       ash_time >= current_timestamp - interval '\$public(ash,bucket_secs) seconds') 
     select max(to_char(ash_time,'SSSS')) as secs, sample_id, wait_event_type, 
-      round(count(*)::numeric/(case when samples=0 then bucket else samples end),3) as AAS,
+      round(count(*)::numeric/(samples+1),3) as AAS,
       CAST(to_char(ash_time,'SSSS') as INTEGER)/bucket*bucket as beg_secs, 
       (CAST(to_char(ash_time,'SSSS') as INTEGER)/bucket+1)*bucket as end_secs, 
       to_char(current_timestamp,'J') as last_day, to_char(min(ash_time),'J') as first_day 

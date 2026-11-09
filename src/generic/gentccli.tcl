@@ -101,13 +101,17 @@ proc show_tc_errmsg {} {
 
 proc threadnames_without_tcthread {} {
     global tc_threadID
-    set thlist [ thread::names ]
-    if { [ info exists tc_threadID ] } {
-        set idx [ lsearch $thlist $tc_threadID ]
-        if { $idx != -1 } {
-            set thlist [ lreplace $thlist $idx $idx ]
-            return $thlist
-        }
+    set thlist [thread::names]
+    set excluded {}
+    if {[info exists tc_threadID]} {lappend excluded $tc_threadID}
+    # ASH monitor connections are not benchmark virtual users. The capture
+    # package owns their lifecycle; VU destruction must never adopt them.
+    if {[llength [info commands ::ashcapture::threads]]} {
+        set excluded [concat $excluded [::ashcapture::threads]]
+    }
+    foreach tid $excluded {
+        set idx [lsearch -exact $thlist $tid]
+        if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
     }
     return $thlist
 }

@@ -981,6 +981,13 @@ proc vucreate {} {
 
 proc vudestroy {} {
     global threadscreated threadsbytid vustatus AVUC opmode
+    set ash_cancelling [expr {[info commands ::ashcapture::active] ne "" && [::ashcapture::active]}]
+    if {[llength [info commands ::ashcmd::manual_active]] && [::ashcmd::manual_active]} {
+        # An explicitly started ASH session outlives VUs until ashstop.
+        set ash_cancelling 0
+    }
+    if {$ash_cancelling && [info exists ::jobid]} {set ::ash_cancelled_job $::jobid}
+    try {
     if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
         tsv::set application abort 1
         if { [catch {ed_kill_vusers} message]} {
@@ -1014,6 +1021,9 @@ proc vudestroy {} {
         } else {
             putscli "No Virtual Users found to destroy"
         }
+    }
+    } finally {
+        if {$ash_cancelling} {::ashcapture::stop cancelled}
     }
 }
 
@@ -1470,39 +1480,119 @@ proc deleteschema {} {
     }
 }
 
+# Automatic ASH capture is opt-in only; the desktop metrics path is unchanged.
+proc cli_ash_requested {} {
+    if {![info exists ::env(HAMMERDB_ASH)]} {return 0}
+    if {$::env(HAMMERDB_ASH) ni {0 1}} {
+        error "HAMMERDB_ASH must be 0 or 1"
+    }
+    return $::env(HAMMERDB_ASH)
+}
+
 proc vurun {} {
     global threadscreated
+    set ash_requested [cli_ash_requested]
+    set manual_ash 0
+    if {[llength [info commands ::ashcmd::manual_active]]} {
+        set manual_ash [::ashcmd::manual_active]
+    }
+    if {$manual_ash && $ash_requested} {
+        error "ASH was started manually; do not enable HAMMERDB_ASH automatic capture for the same benchmark"
+    }
+    if {[info exists ::ashcmd::starting] && $::ashcmd::starting} {
+        error "ASH is still starting; retry vurun once ashstatus reports running"
+    }
     if { ![ info exists threadscreated ] && [expr [ llength [ threadnames_without_tcthread ] ] - 1 ] > 0} {
+        if {$ash_requested} {error "Cannot start ASH-enabled benchmark with Virtual Users already active"}
         putscli "Error: Cannot call vurun with Virtual Users already active"
         return
     }
     global _ED opmode jobid
-
-    set jobid [guid]
-    if { [jobmain $jobid run] eq 1 } {
-        dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
-        #return
+    if {$ash_requested && [job_disable_check]} {
+        error "ASH collection requires enabled persistent Jobs storage"
     }
 
-    #If calling vurun and virtual users not created, create them now
+    if {$manual_ash} {
+        set jobid [::ashcmd::current_job]
+    } else {
+        set jobid [guid]
+        if { [jobmain $jobid run] eq 1 } {
+            dict set jsondict error message "Jobid already exists or error in creating jobid in JOBMAIN table"
+            if {$ash_requested} {error "ASH collection cannot start without a valid benchmark Job ID"}
+        }
+    }
+
+    # Creating VUs only prepares idle workers; ASH readiness precedes execution.
     if {[expr [ llength [ threadnames_without_tcthread ] ] - 1 ] eq 0} {
         vucreate
     }
-    #In turn if script is not already loaded vucreate should call loadscript meaning following should not return no workload to run
     if { [ string length $_ED(package) ] > 0 } {
-        remote_command [ concat vurun ]
-        if { [ catch {run_virtual} message ] } {
-            putscli "Error: $message"
-            unset -nocomplain jobid
-        } else {
-            #Deprecated runtimer replaced with automated keepalive
-            keepalive
+        set ash_job $jobid
+        set ash_started 0
+        set ash_state failed
+        unset -nocomplain ::ash_cancelled_job
+        try {
+            if {$ash_requested} {
+                package require ashcapture 1.0
+                putscli "ASH: starting native capture for Job $ash_job"
+                ::ashcapture::start $ash_job
+                set ash_started 1
+                putscli "ASH: native collector ready; benchmark workload can begin"
+            }
+            remote_command [ concat vurun ]
+            if { [ catch {run_virtual} message options ] } {
+                putscli "Error: $message"
+                if {$ash_requested} {return -options $options $message}
+                unset -nocomplain jobid
+            } else {
+                # Existing keepalive and VU completion semantics are retained.
+                keepalive
+                if {$ash_requested} {
+                    # TPROC-C keepalive is a wall-clock margin, not evidence that
+                    # per-VU timing/profile collection has finished. The original
+                    # workload finishes only when all VUs report completion.
+                    # Keep the ASH worker alive until then, with a bounded
+                    # failure path for a genuinely wedged worker.
+                    if {![vucomplete]} {
+                        putscli "ASH: benchmark duration elapsed; waiting for virtual users to finish collecting timing data"
+                        set ash_finish_deadline [expr {[clock milliseconds] + 900000}]
+                        while {![vucomplete]} {
+                            if {[info exists ::ash_cancelled_job] && $::ash_cancelled_job eq $ash_job} {
+                                error "ASH-enabled benchmark was cancelled during timing collection"
+                            }
+                            if {[clock milliseconds] >= $ash_finish_deadline} {
+                                error "ASH-enabled benchmark timing collection did not complete within 15 minutes after keepalive"
+                            }
+                            after 250
+                            update
+                        }
+                    }
+                    if {[info exists ::ash_cancelled_job] && $::ash_cancelled_job eq $ash_job} {
+                        error "ASH-enabled benchmark was cancelled"
+                    }
+                    if {[info exists ::vustatus]} {
+                        dict for {vu state} $::vustatus {
+                            if {$state ne "FINISH SUCCESS"} {error "ASH-enabled benchmark has an unsuccessful virtual user"}
+                        }
+                    }
+                    set ash_state complete
+                }
+            }
+        } on error {message options} {
+            if {$ash_requested} {
+                putscli "ERROR: ASH-enabled benchmark job $ash_job failed: $message"
+                catch {hdbjobs eval {INSERT INTO JOBOUTPUT VALUES($ash_job, 0, $message)}}
+            }
+            return -options $options $message
+        } finally {
+            if {$ash_started} {::ashcapture::stop $ash_state}
         }
     } else {
         putscli "Error: There is no workload to run because the Script is empty"
         unset -nocomplain jobid
+        if {$ash_requested} {error "ASH-enabled benchmark has no workload to execute"}
     }
-     if { [ info exists jobid ] && ![ job_disable_check ] } {
+    if { [ info exists jobid ] && ![ job_disable_check ] } {
         return "Benchmark Run jobid=$jobid"
     } else {
         unset -nocomplain jobid
@@ -1769,6 +1859,9 @@ proc switchmode {{assignmode "current"} {assignid 0} {assignhost "localhost"} ar
 }
 
 proc quit {} {
+    if {[llength [info commands ::ashcmd::manual_active]] && [::ashcmd::manual_active]} {
+        if {[catch {ashstop} message]} {puts stderr "ASH finalization failed: $message"}
+    }
     puts "Shutting down HammerDB CLI"
     if [expr {[llength [info procs TclReadLine::doExit]] > 0}] {
     #in Tcl TclReadLine is loaded call exit
