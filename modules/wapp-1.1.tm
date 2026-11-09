@@ -455,7 +455,14 @@ proc wappInt-close-channel {chan} {
 #
 proc wappInt-http-readable {chan} {
   if {[catch [list wappInt-http-readable-unsafe $chan] msg]} {
-    puts stderr "$msg\n$::errorInfo"
+    upvar #0 wappInt-$chan W
+    if {[info exists W] && [dict exists $W .header] &&
+        ![regexp {^(GET|HEAD|POST) } [dict get $W .header]] &&
+        [regexp {[^\x09\x0a\x0d\x20-\x7e]} [dict get $W .header]]} {
+      puts stderr "Ignoring malformed HTTP request (possible HTTPS connection)"
+    } else {
+      puts stderr "$msg\n$::errorInfo"
+    }
     wappInt-close-channel $chan
   }
 }
