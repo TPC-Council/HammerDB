@@ -1,6 +1,12 @@
 proc check_ap_threads {} {
     global tc_threadID
     set thlist [ thread::names ]
+    if {[llength [info commands ::ashcapture::threads]]} {
+        foreach ashthread [::ashcapture::threads] {
+            set idx [lsearch -exact $thlist $ashthread]
+            if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
+        }
+    }
     if { [ info exists tc_threadID ] } {
 	set thlist [lsearch -inline -all -not -exact $thlist $tc_threadID]
     }

@@ -1,4 +1,12 @@
 #!/bin/tclsh
+# ASH opt-in: Web Service Pipelines passes collect_ash=1 and scopes
+# HAMMERDB_ASH=1 to this benchmark process. The CLI's "vurun" starts and
+# stops the native ASH collector automatically, saving it under this Job ID.
+# Do NOT add manual ashstart/ashstop calls in this Pipeline script: doing so
+# would launch a second collector. Ordinary TPROC-C scripts stay unchanged.
+# For a separately controlled Tcl CLI run, explicitly use:
+#   ashstart; ashstatus; vurun; ashstop; ashstatus
+#
 # maintainer: Pooja Jain
 
 if {![info exists ::env(TMP)] || $::env(TMP) eq ""} {

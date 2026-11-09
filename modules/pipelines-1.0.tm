@@ -525,7 +525,7 @@ proc __url_encode {s} {
         return $s
     }
 
-    proc __make_payload_json {ref dbprefix pipeline_ui workload_ui io_intensive} {
+    proc __make_payload_json {ref dbprefix pipeline_ui workload_ui io_intensive {collect_ash 0}} {
     set pl ""
     if {$pipeline_ui eq "single"} {
         if {$workload_ui eq "H"} {
@@ -552,13 +552,14 @@ proc __url_encode {s} {
     }
 
     set io_flag [expr {$io_intensive eq "1" ? 1 : 0}]
+    set ash_flag [expr {$collect_ash eq "1" ? 1 : 0}]
 
     set j_ref [__json_escape [string trim $ref]]
     set j_db  [__json_escape [string tolower [string trim $dbprefix]]]
     set j_pl  [__json_escape $pl]
     set j_wl  [__json_escape [string toupper [string trim $workload_ui]]]
 
-    return "{\"ref\":\"$j_ref\",\"database\":\"$j_db\",\"pipeline\":\"$j_pl\",\"workload\":\"$j_wl\",\"io_intensive\":$io_flag}"
+    return "{\"ref\":\"$j_ref\",\"database\":\"$j_db\",\"pipeline\":\"$j_pl\",\"workload\":\"$j_wl\",\"io_intensive\":$io_flag,\"collect_ash\":$ash_flag}"
     }
 
     proc _tail_ci_log_file {filename {maxbytes 65536}} {
@@ -658,6 +659,10 @@ proc __url_encode {s} {
         if {$io_intensive ne "1"} { set io_intensive "" }
         set io_intensive_checked [expr {$io_intensive eq "1" ? " checked" : ""}]
 
+        set collect_ash [string trim [__qget $__qsdict collect_ash ""]]
+        if {$collect_ash ne "1"} {set collect_ash ""}
+        set collect_ash_checked [expr {$collect_ash eq "1" ? " checked" : ""}]
+
         # tag selection
         set tag_sel [string trim [__qget $__qsdict tag_sel ""]]
         set ref_custom [string trim [__qget $__qsdict ref_custom ""]]
@@ -687,6 +692,7 @@ if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 wapp-redirect "$B/pipelines?$q#runresult"
         return
     }
@@ -721,6 +727,7 @@ wapp-redirect "$B/pipelines?$q#runresult"
                 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
                 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
                 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
                 wapp-redirect "$B/pipelines?$q#runresult"
                 return
             }
@@ -733,6 +740,7 @@ if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 wapp-redirect "$B/pipelines?$q#runresult"
                 return
             }
@@ -745,6 +753,7 @@ if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 wapp-redirect "$B/pipelines?$q#runresult"
                 return
             }
@@ -758,6 +767,7 @@ if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 wapp-redirect "$B/pipelines?$q#runresult"
                     return
                 }
@@ -780,13 +790,14 @@ if {$active_ci_count > 0} {
     if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
     if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
     if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 
     wapp-redirect "$B/pipelines?$q#runresult"
     return
 }
 
 # request payload
-set payload_json [__make_payload_json $ref_trim $dbprefix $pipeline_ui $workload_ui $io_intensive]
+set payload_json [__make_payload_json $ref_trim $dbprefix $pipeline_ui $workload_ui $io_intensive $collect_ash]
 
 # banner text
 set bench "TPROC-$workload_ui"
@@ -797,9 +808,9 @@ if {[regexp {^refs/tags/(.+)$} $ref_trim -> r]} { set ref_short $r }
 set summary "$bench · $ptxt · $ref_short"
 
 # request text
-#set payload_pretty "Request\n-------\nref:      $ref_trim\ndatabase: $dbprefix\npipeline: $pipeline_ui\nworkload: $workload_ui\nio:       $io_intensive\nqs:       $__qs\n\n(JSON)\n------\n$payload_json"
+#set payload_pretty "Request\n-------\nref:      $ref_trim\ndatabase: $dbprefix\npipeline: $pipeline_ui\nworkload: $workload_ui\nio:       $io_intensive\nASH:      [expr {$collect_ash eq "1" ? "enabled" : "disabled"}]\nqs:       $__qs\n\n(JSON)\n------\n$payload_json"
 #without query string
-set payload_pretty "Request\n-------\nref:      $ref_trim\ndatabase: $dbprefix\npipeline: $pipeline_ui\nworkload: $workload_ui\nio:       $io_intensive\n       \n(JSON)\n------\n$payload_json"
+set payload_pretty "Request\n-------\nref:      $ref_trim\ndatabase: $dbprefix\npipeline: $pipeline_ui\nworkload: $workload_ui\nio:       $io_intensive\nASH:      [expr {$collect_ash eq "1" ? "enabled" : "disabled"}]\n       \n(JSON)\n------\n$payload_json"
 
 # try POST
 set resp [__post_json $cilisten_url $payload_json]
@@ -822,6 +833,7 @@ if {$ref_custom ne ""} { append q "&ref_custom=[__url_encode $ref_custom]" }
 if {$pipeline_ui ne ""} { append q "&pipeline=[__url_encode $pipeline_ui]" }
 if {$workload_ui ne ""} { append q "&workload=[__url_encode $workload_ui]" }
 if {$io_intensive ne ""} { append q "&io_intensive=[__url_encode $io_intensive]" }
+if {$collect_ash ne ""} { append q "&collect_ash=1" }
 wapp-redirect "$B/pipelines?$q#runresult"
 return
         }
@@ -1059,12 +1071,13 @@ wapp-subst {<div style='margin-top:18px;'>}
 wapp-subst {<div style='font-weight:600; margin-bottom:6px;'>Benchmark</div>}
 
 # TPROC-C
-wapp-subst {<div style='display:flex; gap:18px; align-items:center; margin-top:6px;'>}
+wapp-subst {<div style='display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-top:6px;'>}
 wapp-subst {<div style='min-width:82px; font-weight:600;'>TPROC-C</div>}
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_single'$bench_c_single onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='single';\"> Single</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_profile'$bench_c_profile onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='profile';\"> Profile</label>"
 wapp-subst "<label style='cursor:pointer;'><input type='radio' name='bench' value='c_compare'$bench_c_compare onchange=\"document.getElementById('workload_hidden').value='C';document.getElementById('pipeline_hidden').value='compare';\"> Compare</label>"
-wapp-subst "<label style='cursor:pointer; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive_checked> Full Durability + I/O intensive</label>"
+wapp-subst "<label style='cursor:pointer; white-space:nowrap; margin-left:14px;'><input type='checkbox' name='io_intensive' value='1'$io_intensive_checked> Full Durability + I/O intensive</label>"
+wapp-subst "<label style='cursor:pointer; white-space:nowrap;'><input type='checkbox' name='collect_ash' value='1'$collect_ash_checked> ASH Metrics</label>"
 wapp-subst {</div>}
 
 # TPROC-H

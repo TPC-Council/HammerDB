@@ -444,6 +444,19 @@ proc citmp {} {
     }
 }
 
+# ASH is a per-pipeline opt-in; never silently downgrade a stored request.
+proc ci_collect_ash_for_ref {refname} {
+    set ci_id [ci_latest_id $refname]
+    if {$ci_id eq ""} {return 0}
+    if {[catch {set enabled [hdbjobs eval {
+        SELECT collect_ash FROM JOBCI WHERE ci_id=$ci_id
+    }]}]} {
+        error "Cannot read pipeline ASH selection; reopen the Jobs database to apply migrations"
+    }
+    if {$enabled ni {0 1}} {error "Invalid stored pipeline ASH selection"}
+    return $enabled
+}
+
 proc ci_latest_id {refname} {
     set ci_id ""
     if {[catch {
@@ -1118,6 +1131,19 @@ proc cilisten {args} {
             set io_intensive 0
         }
 
+        set collect_ash 0
+        if {[dict exists $json_data collect_ash]} {
+            set collect_ash [dict get $json_data collect_ash]
+        }
+        if {$collect_ash ni {0 1}} {
+            http_reply $sock "400 Bad Request" "collect_ash must be 0 or 1"
+            return
+        }
+        if {$collect_ash && $dbprefix ni {pg mysql maria vsql}} {
+            http_reply $sock "400 Bad Request" "ASH is supported only for PostgreSQL, MySQL, MariaDB and VillageSQL"
+            return
+        }
+
         if {$pipeline eq "single"} {
             if {$workload eq "H"} {
                 set pipeline "single_h"
@@ -1177,8 +1203,8 @@ proc cilisten {args} {
         }
 
         if {[catch {
-            hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,pipeline,io_intensive,cidict)
-                          VALUES ($name,$dbprefix,$pipeline,$io_intensive,$cidict)}
+            hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,pipeline,io_intensive,collect_ash,cidict)
+                          VALUES ($name,$dbprefix,$pipeline,$io_intensive,$collect_ash,$cidict)}
         } err]} {
             putscli "Error inserting JOBCI row: $err"
             http_reply $sock "500 Internal Server Error" "Insert failed"
@@ -1295,7 +1321,7 @@ proc putsci {output} {
     }
 }
 
-proc cipush {refname {pipeline single} {workload C} {dbprefix ""} {io_intensive 0}} {
+proc cipush {refname {pipeline single} {workload C} {dbprefix ""} {io_intensive 0} {collect_ash 0}} {
     global rdbms cidict
 
     if {$dbprefix eq ""} {
@@ -1347,14 +1373,19 @@ proc cipush {refname {pipeline single} {workload C} {dbprefix ""} {io_intensive 
         return
     }
 
-    set body "{\"ref\":\"$refname\",\"database\":\"$dbprefix\",\"pipeline\":\"$pipeline\",\"workload\":\"$workload\",\"io_intensive\":$io_intensive}"
+    if {$collect_ash ni {0 1}} {
+        putscli "Error: collect_ash must be 0 or 1"
+        return
+    }
+
+    set body "{\"ref\":\"$refname\",\"database\":\"$dbprefix\",\"pipeline\":\"$pipeline\",\"workload\":\"$workload\",\"io_intensive\":$io_intensive,\"collect_ash\":$collect_ash}"
 
     set headers [dict create X-GitHub-Event "create"]
 
     # dispatch
     process_request dummy_sock $headers $body $cidict
 
-    putscli "Simulated webhook for $refname db=$dbprefix pipeline=$pipeline workload=$workload io_intensive=$io_intensive"
+    putscli "Simulated webhook for $refname db=$dbprefix pipeline=$pipeline workload=$workload io_intensive=$io_intensive collect_ash=$collect_ash"
 }
 
 # line reader
@@ -1590,6 +1621,10 @@ proc run_next_pending_job {} {
 # run pipeline
 proc cisteps {cidict refname pipeline_name io_intensive} {
     global rdbms
+    set ash_env_existed [info exists ::env(HAMMERDB_ASH)]
+    if {$ash_env_existed} {set previous_ash_env $::env(HAMMERDB_ASH)}
+    set ::env(HAMMERDB_ASH) [ci_collect_ash_for_ref $refname]
+    try {
     set r [string tolower $rdbms]
 
     if {![dict exists $cidict $rdbms pipeline $pipeline_name]} {
@@ -1686,6 +1721,13 @@ proc cisteps {cidict refname pipeline_name io_intensive} {
     }
 
     putsci "CI: pipeline '$pipeline_name' completed"
+    } finally {
+        if {$ash_env_existed} {
+            set ::env(HAMMERDB_ASH) $previous_ash_env
+        } else {
+            unset -nocomplain ::env(HAMMERDB_ASH)
+        }
+    }
 }
 
 proc _pipes_db_label {dbprefix} {
