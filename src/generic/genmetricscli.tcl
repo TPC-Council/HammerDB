@@ -108,8 +108,22 @@ proc metstart {} {
                         set ::metrics_start_ready -1
                     }
                 }]
-                vwait ::metrics_start_ready
-                after cancel $metrics_start_timeout
+                # Prevent the nested event loop from re-entering the CLI input handler.
+                # Preserve any existing handler for interactive sessions; non-interactive
+                # runs may not have an stdin fileevent registered.
+                set stdin_handler ""
+                if {![catch {fileevent stdin readable} handler] && $handler ne ""} {
+                    set stdin_handler $handler
+                    fileevent stdin readable {}
+                }
+                try {
+                    vwait ::metrics_start_ready
+                } finally {
+                    after cancel $metrics_start_timeout
+                    if {$stdin_handler ne ""} {
+                        fileevent stdin readable $stdin_handler
+                    }
+                }
                 if {$::metrics_start_ready < 0} {
                     putscli "CPU metrics failed to start on [ info hostname ]"
                     catch { DisplayMetrics destroy }
