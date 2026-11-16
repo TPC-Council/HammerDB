@@ -138,14 +138,23 @@ require valid credentials and tenant access.
 
 ### Building the binding (HammerDB maintainers)
 
-The in-tree source and license are in `Build/obmysqltcl`. Linux BAWT builds the
-package against its own Tcl runtime, copies the resulting binding into the
-normal application library tree, and embeds it in the GUI, CLI and Web Service
-executables. `OBCLIENT_ROOT` must point to an externally installed Connector/C
-SDK containing `include/mysql.h` and `lib/libobclnt.so` (or
-`lib64/libobclnt.so`). For example:
+The binding source, license and standalone build instructions are maintained in
+[oceanbase/obmysqltcl](https://github.com/oceanbase/obmysqltcl). On Linux, set
+`OBCLIENT_ROOT` to enable the binding in BAWT. The directory must contain the
+Connector/C SDK's `include/mysql.h` and `lib/libobclnt.so` (or
+`lib64/libobclnt.so`). BAWT builds the package against HammerDB's Tcl runtime
+and embeds it in the GUI, CLI and Web Service executables.
+
+BAWT expects `obmysqltcl-0.1.zip` in its `InputLibs` repository or in a local
+`Build/Bawt-2.1.0/InputLibs` directory. To test with a local archive before
+it is available for download, select a source revision from the standalone
+repository and run this from the HammerDB checkout:
 
 ```sh
+mkdir -p Build/Bawt-2.1.0/InputLibs
+binding_revision=HEAD
+git -C /path/to/obmysqltcl archive --format=zip --prefix=obmysqltcl-0.1/ \
+  -o "$PWD/Build/Bawt-2.1.0/InputLibs/obmysqltcl-0.1.zip" "$binding_revision"
 export OBCLIENT_ROOT=/path/to/oceanbase-client/u01/obclient
 cd Build/Bawt-2.1.0
 ./Build-Linux.sh x64 Setup/HammerDB-Linux.bawt update
@@ -154,12 +163,9 @@ cd Build/Bawt-2.1.0
 The other database SDK prerequisites in the
 [HammerDB source-build guide](https://www.hammerdb.com/docs/ch01s19.html)
 still apply. For native Linux ARM64 use the `arm64` architecture and
-`Setup/HammerDB-LinuxArm64.bawt` with a matching SDK. Windows builds retain the
-other database bindings but do not include `obmysqltcl` in this contribution.
-A missing OB SDK is a build error on an enabled Linux build; it never silently
-substitutes the MySQL client. See `Build/obmysqltcl/README.md` for the isolated
-binding build command and provenance. Neither the SDK nor the vendor runtime
-is copied into the HammerDB distribution.
+`Setup/HammerDB-LinuxArm64.bawt` with a matching SDK. The binding is available
+only on Linux. The distribution includes the compiled Tcl binding. Users
+install the Connector/C runtime separately.
 
 ### OBProxy connection notes
 

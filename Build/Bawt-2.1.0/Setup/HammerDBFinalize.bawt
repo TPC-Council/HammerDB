@@ -96,12 +96,18 @@ MultiFileCopy [ file join [GetOutputDevDir] HammerDB include ] [ file join [file
 MultiFileCopy [ file join [GetOutputDevDir] HammerDB bin ] [ file join [file nativename [GetOutputDistDir]] HammerDB bin ] "*"  true
 MultiFileCopy [ file join [GetOutputDevDir] HammerDB lib ] [ file join [file nativename [GetOutputDistDir]] HammerDB lib ] "*"  true
 }
-# Linux releases include the independent OceanBase binding in the same lib
-# tree as the other database bindings.  The SFE steps below embed this tree;
-# libobclnt remains an external, user-installed runtime dependency.
-if {[IsLinux] && [GetLibIndex obmysqltcl] >= 0 &&
-        ![HammerDBVerifyOceanBaseBinding [GetOutputDistDir]]} {
-    return
+# The SFE steps below embed the staged lib tree. A reused build directory
+# can still contain the binding from a build with OBCLIENT_ROOT set.
+if {[IsLinux]} {
+    if {[GetLibIndex obmysqltcl] >= 0} {
+        if {![HammerDBVerifyOceanBaseBinding [GetOutputDistDir]]} {
+            return
+        }
+    } else {
+        set packageRoot [file join [GetOutputDistDir] HammerDB lib]
+        file delete -force -- [file join $packageRoot obmysqltcl0.1] \
+            [file join $packageRoot obmysqltcl]
+    }
 }
 FileRename [ file join [file nativename [GetOutputDistDir]] HammerDB ] [ file join [file nativename [GetOutputDistDir]] HammerDB-$version_number-Dev ]
 if {![IsWindows]} {

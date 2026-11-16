@@ -1,18 +1,17 @@
-# Build the independent OceanBase Tcl binding from this checkout.
+# Build the OceanBase Tcl binding from its standalone source archive.
 # OBCLIENT_ROOT points to an external OceanBase Connector/C SDK.  The vendor
 # runtime remains an external dependency and is not copied into HammerDB.
 
 proc Init_obmysqltcl {libName libVersion} {
-    SetLibHomepage $libName "https://github.com/TPC-Council/HammerDB"
+    SetLibHomepage $libName "https://github.com/oceanbase/obmysqltcl"
     SetLibDependencies $libName "Tcl"
     SetPlatforms $libName "Linux"
 }
 
 proc Env_obmysqltcl {libName libVersion buildDir instDir devDir distDir} {
-    # Editing a file in a local source tree need not update the directory mtime.
-    # Rebuild this small binding on update instead of reusing a stale copy.
+    # BAWT tracks the archive but not changes to the external client SDK.
     if {[UseStage "Update" $libName]} {
-        UpdateLib $libName "Build binding from current local source and client SDK"
+        UpdateLib $libName "Build binding against the current OceanBase client SDK"
     }
 }
 
