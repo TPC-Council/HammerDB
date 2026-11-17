@@ -140,10 +140,21 @@ proc stacktrace {} {
     return $stack
 }
 
+proc threads_without_oceanbase_monitor {} {
+    set thlist [thread::names]
+    if {[llength [info commands ::oceanbaseash::threads]]} {
+        foreach ashthread [::oceanbaseash::threads] {
+            set idx [lsearch -exact $thlist $ashthread]
+            if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
+        }
+    }
+    return $thlist
+}
+
 proc load_virtual {}  {
     global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm apmode
     set vuser_create_ok true
-    set thlist [ thread::names ]
+    set thlist [threads_without_oceanbase_monitor]
     # ASH owns two infrastructure threads, never virtual users. Without this
     # guard the GUI refuses to create VUs after ASH Start ("VUs still active").
     if {[llength [info commands ::ashcapture::threads]]} {
@@ -200,7 +211,7 @@ proc load_virtual {}  {
                     catch {thread::cancel $ij}
                 }
                 after 1000
-                set thlist [ thread::names ]
+                set thlist [threads_without_oceanbase_monitor]
                 set thlen [ llength $thlist ] 
                 if { $thlen <= 1 } { 
                     puts "Success Virtual Users terminated"

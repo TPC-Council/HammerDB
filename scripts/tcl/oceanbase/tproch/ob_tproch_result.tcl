@@ -1,3 +1,3 @@
-set tmpdir $::env(TMP)
-set ::outputfile $tmpdir/mysql_tproch
-source ./scripts/tcl/generic/generic_tproch_result.tcl 
+# Run with hammerdbcli auto from the HammerDB root.
+source [file join [file dirname [info script]] .. common.tcl]
+::ob_examples::main TPROC-H result

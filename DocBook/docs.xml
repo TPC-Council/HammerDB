@@ -1928,6 +1928,8 @@ OK</programlisting>
       connect and interact with the database. Note that if you use the
       official HammerDB Docker images this step has already been done for you
       and all of the third-party client libraries have been pre-installed.
+      For OceanBase, follow the separate client installation instructions
+      below.
       This client library will also typically be installed with database
       server software. HammerDB does not statically link the third-party
       libraries to minimise executable size and provide flexibility in the
@@ -2262,6 +2264,32 @@ export ORACLE_LIBRARY=/opt/HammerDB-6.1/lib/libclntsh.so
         libraries as described for MySQL, using the VillageSQL database
         selection and its separate config/villagesql.xml configuration.
         Architecture-matched libraries are required for Linux ARM64.</para>
+      </section>
+
+      <section xml:id="oceanbase-client">
+        <title>OceanBase</title>
+
+        <para>Use a Linux HammerDB build that includes the
+        <literal>obmysqltcl</literal> binding. Install
+        <link xlink:href="https://github.com/oceanbase/obconnector-c/releases">OceanBase
+        Connector/C</link> separately on the machine running HammerDB. Use
+        a client that matches the CPU architecture of the HammerDB build. If
+        needed, add the directory containing <literal>libobclnt.so.2</literal>
+        to <envar>LD_LIBRARY_PATH</envar> before starting HammerDB. Run
+        <command>librarycheck</command> in the HammerDB CLI to verify that the
+        OceanBase binding loads.</para>
+
+        <para>Select <guilabel>OceanBase</guilabel> in Benchmark Options or
+        run <command>dbset db ob</command> in the CLI. TPROC-C and TPROC-H use
+        an account in a MySQL-compatible business tenant. Enter the user,
+        host, port and tenant name in their separate connection fields. For
+        a direct OBServer connection, leave the cluster name empty. For an
+        OBProxy connection, enter the proxy host and port and the cluster
+        name for routing.</para>
+
+        <para>If you previously used OceanBase through the MySQL category,
+        select OceanBase and re-enter the connection settings for the
+        existing schema.</para>
       </section>
 
       <section>
@@ -5033,8 +5061,8 @@ GO
         follow the MySQL-compatible workflow. VillageSQL supports both TPROC-C
         and TPROC-H and uses the same TLS guidance described in <link
         linkend="mysql-family-tls-v61">SSL/TLS Connections for MySQL, MariaDB
-        and VillageSQL</link>. Some MySQL-only compatibility options (such as
-        OceanBase settings) are not VillageSQL options.</para>
+        and VillageSQL</link>. Some MySQL-only compatibility options are not
+        VillageSQL options.</para>
       </section>
 
       <section>
@@ -9119,6 +9147,22 @@ event_scheduler=OFF</programlisting>
       information. This makes it easier to identify whether a change in
       benchmark performance is associated with database wait activity, active
       sessions or SQL execution behaviour.</para>
+    </section>
+
+    <section xml:id="oceanbase-ash">
+      <title>OceanBase Database Metrics - Active Session History</title>
+
+      <para>In the desktop GUI, select OceanBase and configure the
+      <link linkend="oceanbase-client">connection</link> for the current
+      TPROC-C or TPROC-H workload. Open <guilabel>Metrics Options</guilabel>,
+      clear <guilabel>CPU Metrics Only</guilabel> and select
+      <guilabel>Metrics Display</guilabel>.</para>
+
+      <para>The workload account must be able to read
+      <literal>oceanbase.GV$OB_ACTIVE_SESSION_HISTORY</literal>. The chart
+      shows average active sessions for the tenant in completed 15-second
+      intervals. Select a time range to view its SQL, session and wait-event
+      breakdowns.</para>
     </section>
   </chapter>
 
@@ -13704,24 +13748,6 @@ infinidb_import_for_batchinsert_delimiter=7</programlisting>
                 <entry>The MySQL Database is the database that will be created
                 containing the TPROC-H schema creation. There must have
                 sufficient free space for the database to be created.</entry>
-              </row>
-
-              <row>
-                <entry>Oceanbase Compatible</entry>
-
-                <entry>Option for Oceanbase MySQL compatible database</entry>
-              </row>
-
-              <row>
-                <entry>Oceanbase Tenant Name</entry>
-
-                <entry>Oceanbase tenant name for connection string</entry>
-              </row>
-
-              <row>
-                <entry>Oceanbase Partitions</entry>
-
-                <entry>Number of Oceanbase Partitions</entry>
               </row>
 
               <row>

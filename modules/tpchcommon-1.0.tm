@@ -95,6 +95,12 @@ namespace eval tpchcommon {
         set allthreads [ lreplace $allthreads $idx $idx ]
       }
     }
+    if {![catch {set monitors [tsv::array names oceanbaseash_workers]}]} {
+      foreach monitor $monitors {
+        set idx [lsearch -exact $allthreads $monitor]
+        if {$idx >= 0} {set allthreads [lreplace $allthreads $idx $idx]}
+      }
+    }
     set totalvirtualusers  [llength $allthreads]
     set myposition [ expr $totalvirtualusers - [lsearch -exact $allthreads $mythread]]
     return [ list $myposition $totalvirtualusers ]

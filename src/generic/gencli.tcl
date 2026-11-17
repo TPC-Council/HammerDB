@@ -740,6 +740,9 @@ proc librarycheck {} {
         }
         if [catch {eval $cmd} message] {
             puts "Error: failed to load $library - $message"
+            if {$db eq "OceanBase"} {
+                puts "Use a Linux HammerDB build containing obmysqltcl and install OceanBase Connector/C (libobclient)."
+            }
             if {[string match windows $::tcl_platform(platform)]} {
                 puts "Ensure that $db client libraries are installed and the location in the PATH environment variable"
             } else {

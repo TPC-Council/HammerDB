@@ -1,0 +1,33 @@
+<connpool>
+    <!-- Configure endpoints for the SAME OceanBase business tenant and dataset.
+         User/tenant/cluster are separate. Never use sys credentials. -->
+    <connections>
+        <c1>
+            <ob_host>127.0.0.1</ob_host>
+            <ob_port>2883</ob_port>
+            <ob_ssl_options>-ssl false</ob_ssl_options>
+            <ob_user>root</ob_user>
+            <ob_pass></ob_pass>
+            <ob_tenant>hammerdb</ob_tenant>
+            <ob_cluster></ob_cluster>
+            <ob_dbase>tpcc</ob_dbase>
+        </c1>
+        <c2>
+            <ob_host>127.0.0.1</ob_host>
+            <ob_port>2883</ob_port>
+            <ob_ssl_options>-ssl false</ob_ssl_options>
+            <ob_user>root</ob_user>
+            <ob_pass></ob_pass>
+            <ob_tenant>hammerdb</ob_tenant>
+            <ob_cluster></ob_cluster>
+            <ob_dbase>tpcc</ob_dbase>
+        </c2>
+    </connections>
+    <sprocs>
+        <neworder><connections>c1 c2</connections><policy>round_robin</policy></neworder>
+        <payment><connections>c1 c2</connections><policy>round_robin</policy></payment>
+        <delivery><connections>c1 c2</connections><policy>round_robin</policy></delivery>
+        <stocklevel><connections>c1 c2</connections><policy>round_robin</policy></stocklevel>
+        <orderstatus><connections>c1 c2</connections><policy>round_robin</policy></orderstatus>
+    </sprocs>
+</connpool>

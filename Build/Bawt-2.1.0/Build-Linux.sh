@@ -52,4 +52,5 @@ BAWTOPTS="--rootdir ${OUTROOTDIR} --architecture ${ARCH} --numjobs ${NUMJOBS} --
 # Build all libraries as listed in Setup file.
 ${TCLKIT} Bawt.tcl ${BAWTOPTS} ${ACTION} ${SETUPFILE} ${TARGETS}
 
-exit 0
+# Preserve build failures (including a missing OceanBase client SDK).
+exit $?

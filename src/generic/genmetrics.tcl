@@ -321,6 +321,14 @@ proc AdjustBarHeight {cpu usr sys percent} {
 proc metrics {} {
     global rdbms cpu_only
     if {  ![ info exists cpu_only ] } { set cpu_only "false" }
+    if {[llength [info commands ::obmet::active]] && [::obmet::active] &&
+            ($rdbms ne "OceanBase" || $cpu_only)} {
+        ed_kill_metrics
+    }
+    if {$rdbms eq "OceanBase" && !$cpu_only} {
+        if {[interp exists metrics_interp]} {ed_kill_metrics}
+        return [::obmet::obmetrics]
+    }
     if { [catch {
             namespace import comm::*
             namespace import blt::*
@@ -447,7 +455,9 @@ proc cpumetrics { previous } {
 proc ed_kill_metrics {args} {
     global _ED rdbms cpu_only
     if {  [ info exists cpu_only ] } { ; } else { set cpu_only "false" }
-    if { $cpu_only eq "false" } {
+    if {[llength [info commands ::obmet::active]] && [::obmet::active]} {
+        catch {::obmet::ob_post_kill_dbmon_cleanup}
+    } elseif { $cpu_only eq "false" } {
     if { $rdbms == "Oracle" } {
         catch { post_kill_dbmon_cleanup }
     } elseif { $rdbms == "PostgreSQL" } {

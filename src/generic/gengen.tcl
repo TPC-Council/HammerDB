@@ -15,7 +15,10 @@ proc gendata_tpcc {} {
         "MariaDB" { set db "maria" }
         "VillageSQL" { set db "vsql" }
         "PostgreSQL" { set db "pg" }
+        "OceanBase" { set db "ob" }
     }
+    # OceanBase Oracle mode is not implemented; reject it before generating MySQL-compatible data.
+    if {$db eq "ob"} {oceanbase::backend $::configoceanbase}
     set install_message "Ready to generate the data for a $gen_count_ware Warehouse $rdbms TPROC-C schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
         if { $gen_num_vu eq 1 || $gen_count_ware eq 1 } {
@@ -468,7 +471,10 @@ proc gendata_tpch {} {
         "MariaDB" { set db "maria" }
         "VillageSQL" { set db "vsql" }
         "PostgreSQL" { set db "pg" }
+        "OceanBase" { set db "ob" }
     }
+    # OceanBase Oracle mode is not implemented; reject it before generating MySQL-compatible data.
+    if {$db eq "ob"} {oceanbase::backend $::configoceanbase}
     set install_message "Ready to generate the data for a $gen_scale_fact Scale Factor $rdbms TPROC-H schema\nin directory $gen_directory ?" 
     if {[ tk_messageBox -title "Generate Data" -icon question -message $install_message -type yesno ] == yes} { 
         if { $gen_num_vu eq 1 } {
