@@ -101,13 +101,18 @@ proc show_tc_errmsg {} {
 
 proc threadnames_without_tcthread {} {
     global tc_threadID dbmon_threadID
-    set thlist [ thread::names ]
-    # Database metrics can remain active while VUs are created or destroyed.
-    foreach monitor {tc_threadID dbmon_threadID} {
-        if {[info exists $monitor]} {
-            set idx [lsearch -exact $thlist [set $monitor]]
-            if {$idx != -1} {set thlist [lreplace $thlist $idx $idx]}
-        }
+    set thlist [thread::names]
+    set excluded {}
+    if {[info exists tc_threadID]} {lappend excluded $tc_threadID}
+    if {[info exists dbmon_threadID]} {lappend excluded $dbmon_threadID}
+    # ASH monitor connections are not benchmark virtual users. The capture
+    # package owns their lifecycle; VU destruction must never adopt them.
+    if {[llength [info commands ::ashcapture::threads]]} {
+        set excluded [concat $excluded [::ashcapture::threads]]
+    }
+    foreach tid $excluded {
+        set idx [lsearch -exact $thlist $tid]
+        if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
     }
     return $thlist
 }

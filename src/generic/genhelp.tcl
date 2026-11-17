@@ -54,6 +54,9 @@ proc helpws {} {
     putscli "GET /jobs?jobid=ID&tcountdata"
     putscli "  Show raw transaction count data."
     putscli ""
+    putscli "GET /jobs?jobid=ID&ash"
+    putscli "  Browse ASH data captured in this Job from Pipelines, Tcl, Python or Desktop."
+    putscli ""
     putscli "GET /jobs?jobid=ID&timing"
     putscli "  Show timing summary information."
     putscli ""
@@ -102,7 +105,7 @@ Type \"help command\" for more details on specific commands below\n"
 
     # Original command list + CI commands
     set helpcmds [ list \
-        buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset \
+        ashstart ashstop ashstatus buildschema checkschema deleteschema clearscript savescript customscript custommonitor datagenrun dbset dgset \
         diset distributescript giset jobs librarycheck loadscript metset metstart metstatus metstop print quit steprun switchmode tcset tcstart \
         tcstatus tcstop vucomplete vucreate vudestroy vurun vuset vustatus wsport wsstart wsstatus wsstop \
         pipe pipes ci citmp cilisten cireset cistop cistatus cipush ciset cifix\
@@ -122,6 +125,20 @@ Type \"help command\" for more details on specific commands below\n"
             return
         } else {
             switch  $option {
+                ashstart {
+                    putscli {ashstart - Usage: ashstart ?existing_jobid?}
+                    putscli "Start ASH for PostgreSQL, MariaDB, MySQL or VillageSQL. With no ID, create a new persistent Job; otherwise attach to a matching Job."
+                    putscli "When followed by vurun, the benchmark uses that same Job ID. Capture is accessible via the Web Service Jobs > ASH view."
+                    putscli "Requires a shared on-disk Jobs SQLite database and operational database-native ASH instrumentation."
+                }
+                ashstop {
+                    putscli "ashstop - Usage: ashstop"
+                    putscli "Flush native ASH samples and finish a capture started by ashstart. Automated Pipeline captures stop with their own benchmark."
+                }
+                ashstatus {
+                    putscli {ashstatus - Usage: ashstatus ?jobid?}
+                    putscli "Show the running or most recent ASH Job, its archived sample count and any collector error."
+                }
                 jobs {
                     putscli "jobs - Usage: jobs"
                     putscli "list all jobs.\n"
@@ -373,9 +390,12 @@ Changed commandline:keepalive_margin from 10 to 60 for generic"
                     putscli "Shows whether the CI listener and watcher are running."
                 }
                 cipush {
-                    putscli "cipush - Usage: cipush refname"
+                    putscli {cipush - Usage: cipush refname ?pipeline? ?workload? ?dbprefix? ?io_intensive? ?collect_ash?}
+                    putscli "Defaults: single C <current database> 0 0. collect_ash=1 enables ASH for each benchmark job."
+                    putscli "ASH supports pg, mysql, maria and vsql and requires persistent Jobs storage."
                     putscli "Simulates a GitHub webhook push for a ref, e.g.:"
                     putscli "  cipush refs/tags/mariadb-12.2.1"
+                    putscli "  cipush refs/tags/REL_18_1 profile C pg 0 1"
                 }
                 ciset {
                     putscli "ciset - Usage: ciset top section key value"

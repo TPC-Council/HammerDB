@@ -164,6 +164,15 @@ namespace eval tpcccommon {
         set allthreads [ lreplace $allthreads $idx $idx ]
       }
     }
+    # ASH creates two infrastructure threads. They are not TPROC-C workers
+    # and must never contribute to VU positions or the xtprof timing count.
+    # The key is absent when ASH is disabled, preserving existing behaviour.
+    if {![catch {set ashthreads [tsv::get application ashcapture_threads]}]} {
+      foreach ashthread $ashthreads {
+        set idx [lsearch -exact $allthreads $ashthread]
+        if {$idx >= 0} {set allthreads [lreplace $allthreads $idx $idx]}
+      }
+    }
     set totalvirtualusers  [llength $allthreads]
     set myposition [ expr $totalvirtualusers - [lsearch -exact $allthreads $mythread]]
     return [ list $myposition $totalvirtualusers ]

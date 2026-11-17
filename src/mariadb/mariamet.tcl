@@ -189,7 +189,9 @@ namespace eval mariamet {
         } err ] } { ; }
     }
 
-    option add *Tablelist.labelCommand tablelist::sortByColumn
+    if {[llength [info commands option]]} {
+        option add *Tablelist.labelCommand tablelist::sortByColumn
+    }
 
     proc ash_init { { display  0 } } {
         upvar #0 env e
@@ -691,7 +693,8 @@ namespace eval mariamet {
                     set total [ expr $total - $sz ]
                 }
                 set total [$tbl cellcget $row,activity -text]
-                set act [ format "%3.0f" [ expr ceil(100 *  $total  / ($delta)) ] ]
+                package require ashreplay 1.0
+                set act [::ashreplay::percent session $total $delta]
                 label $w.t$row -text $act -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -719,7 +722,8 @@ namespace eval mariamet {
                     catch {set total [ expr $total - $sz ]}
                 }
                 set total [$tbl cellcget $row,activity -text]
-                set aas [ format "%0.0f" [ expr 100 * ($total+0.0) / $public(sqltbl,maxActivity) ] ]
+                package require ashreplay 1.0
+                set aas [::ashreplay::percent sql $total $public(sqltbl,maxActivity)]
                 label $w.t$row -text $aas -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -742,7 +746,8 @@ namespace eval mariamet {
                 frame $w.w$i -width $width -background $public(ashgroup,$group) -borderwidth 0 -relief flat
                 place $w.w$i -relheight 1.0
                 set i 1
-                set width [ format "%3.1f" $width ]
+                package require ashreplay 1.0
+                set width [::ashreplay::percent event $activity $total]
                 label $w.w$i -text $width -font $public(medfont) -background $public(bg) -foreground $public(fg)
                 # cell is 140 wide, the bars should all be under 100
                 # put the activity value just above the bar
@@ -1052,11 +1057,11 @@ namespace eval mariamet {
                 # drill-down queries compares correctly regardless of session time_zone.
                 # sample_id is CEILING(UNIX_TIMESTAMP(ash_time)), so subtract 1 on the lower
                 # bound to keep the first selected bucket inclusive.
-                set public(ash,beg) [ expr {$public(ash,begid) - 1} ]
-                set public(ash,end) $public(ash,endid)
-                set public(ash,begcnt) [ format "%06.0f%05.0f" $begday $begsec ]
-                set public(ash,endcnt) [ format "%06.0f%05.0f" $endday $endsec ]
-                set public(ash,sesdelta)  [ expr [set public(ash,endcnt) ] - [ set public(ash,begcnt) ] ]
+                package require ashreplay 1.0
+                set bounds [::ashreplay::window maria $public(ash,begid) $public(ash,endid) $begday $begsec $endday $endsec ""]
+                foreach {source target} {native_begin ash,beg native_end ash,end begcnt ash,begcnt endcnt ash,endcnt sesdelta ash,sesdelta} {
+                    set public($target) [dict get $bounds $source]
+                }
                 #puts "call $cur_proc, begday:$begday, begsec:$begsec, endday:$endday, endsec:$endsec, public(ash,beg):$public(ash,beg), public(ash,end):$public(ash,end), sesdelta:$public(ash,sesdelta)"
                 mon_execute ash_sqldetails
         } err] } {
@@ -1080,10 +1085,8 @@ namespace eval mariamet {
                 $public(ash,evttbl) delete 0 end
                 $public(ash,sestbl) delete 0 end
                 #$public(ash,output) insert  insert "   working ... "
-                set public(ashtbl,delta) [ expr $public(ash,endid) - $public(ash,begid) ]
-                if { $public(ashtbl,delta) == 0 } {
-                    set public(ashtbl,delta) $public(ash,bucket_secs)
-                }
+                package require ashreplay 1.0
+                set public(ashtbl,delta) [::ashreplay::delta $public(ash,begid) $public(ash,endid) $public(ash,bucket_secs)]
                 set sqlid ""
                 set sum 0
                 update idletasks
@@ -1446,7 +1449,8 @@ namespace eval mariamet {
                             }
                         } ;# NEW POINT
                         # AAS
-                        set aas [ expr ( $cnt + 0.0 ) / $delta ]
+                        # Five-second observations must be weighted in SQL-over-time.
+                        set aas [ expr ( $cnt * 5.0 ) / max($delta, 5) ]
                         set aas [ format "%6.3f" $aas]
                         # AAS CURRENT
                         # Set current Vector
@@ -2032,85 +2036,12 @@ namespace eval mariamet {
                 }
 
                 if { $db_type == "default" } {
-                    set ps_enabled 0
-                    if { [ catch {
-                            #Verify performance_schema is enabled
-                            set ps_check [ maria::sel $handle "SELECT @@performance_schema" -flatlist ]
-                            if { [lindex $ps_check 0] == 1 } { set ps_enabled 1 }
-                        } err ] } {
+                    if {[catch {
+                        package require ashcapture 1.0
+                        ::ashcapture::mysql_setup $handle maria
+                    } err]} {
                         catch { maria::close $handle }
-                        thread::send -async $parent "::callback_err \"$err\""
-                        just_disconnect $parent
-                        return
-                    }
-                    if { !$ps_enabled } {
-                        catch { maria::close $handle }
-                        thread::send -async $parent "::callback_err \"performance_schema is not enabled on this MariaDB instance. Enable with performance_schema=ON in my.cnf/mariadb.cnf and restart the server.\""
-                        just_disconnect $parent
-                        return
-                    }
-                    if { [ catch {
-                            #Create ASH sampling schema and table if not exists
-                            maria::exec $handle "CREATE DATABASE IF NOT EXISTS hammerdb_ash"
-                            maria::exec $handle "CREATE TABLE IF NOT EXISTS hammerdb_ash.active_session_history (
-                                ash_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                ash_time DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                                thread_id BIGINT,
-                                processlist_id BIGINT,
-                                user VARCHAR(128),
-                                host VARCHAR(261),
-                                db VARCHAR(64),
-                                command VARCHAR(16),
-                                state VARCHAR(64),
-                                wait_event_type VARCHAR(64),
-                                wait_event VARCHAR(128),
-                                sql_text TEXT,
-                                digest_text TEXT,
-                                digest VARCHAR(64),
-                                INDEX idx_ash_time (ash_time),
-                                INDEX idx_wait_event_type (wait_event_type),
-                                INDEX idx_digest (digest)
-                            ) ENGINE=InnoDB"
-                            #Enable required performance_schema consumers for ASH data collection
-                            catch { maria::exec $handle "UPDATE performance_schema.setup_consumers SET ENABLED='YES' WHERE NAME IN ('events_waits_current', 'events_statements_current')" }
-                            catch { maria::exec $handle "UPDATE performance_schema.setup_instruments SET ENABLED='YES', TIMED='YES' WHERE NAME LIKE 'wait/%'" }
-                            catch { maria::exec $handle "UPDATE performance_schema.setup_instruments SET ENABLED='YES', TIMED='YES' WHERE NAME LIKE 'statement/%'" }
-                            #Drop and recreate sampling event so schedule/filter changes apply when upgrading an existing hammerdb_ash
-                            catch { maria::exec $handle "DROP EVENT IF EXISTS hammerdb_ash.ash_sampler" }
-                            maria::exec $handle "CREATE EVENT IF NOT EXISTS hammerdb_ash.ash_sampler
-                                ON SCHEDULE EVERY 5 SECOND
-                                DO
-                                INSERT INTO hammerdb_ash.active_session_history
-                                (thread_id, processlist_id, user, host, db, command, state,
-                                 wait_event_type, wait_event, sql_text, digest_text, digest)
-                                SELECT
-                                  t.THREAD_ID,
-                                  t.PROCESSLIST_ID,
-                                  t.PROCESSLIST_USER,
-                                  t.PROCESSLIST_HOST,
-                                  t.PROCESSLIST_DB,
-                                  t.PROCESSLIST_COMMAND,
-                                  t.PROCESSLIST_STATE,
-                                  COALESCE(w.EVENT_NAME, CASE WHEN t.PROCESSLIST_STATE IS NOT NULL AND t.PROCESSLIST_STATE != '' THEN 'CPU' ELSE 'idle' END),
-                                  COALESCE(w.EVENT_NAME, CASE WHEN t.PROCESSLIST_STATE IS NOT NULL AND t.PROCESSLIST_STATE != '' THEN 'CPU' ELSE 'idle/waiting' END),
-                                  LEFT(s.SQL_TEXT, 4096),
-                                  COALESCE(s.DIGEST_TEXT, LEFT(s.SQL_TEXT, 4096)),
-                                  s.DIGEST
-                                FROM performance_schema.threads t
-                                LEFT JOIN performance_schema.events_waits_current w
-                                  ON t.THREAD_ID = w.THREAD_ID AND w.EVENT_NAME != 'idle' AND w.END_EVENT_ID IS NULL
-                                LEFT JOIN performance_schema.events_statements_current s
-                                  ON t.THREAD_ID = s.THREAD_ID
-                                WHERE t.TYPE = 'FOREGROUND'
-                                  AND t.PROCESSLIST_COMMAND != 'Sleep'
-                                  AND t.PROCESSLIST_COMMAND != 'Daemon'
-                                  AND t.PROCESSLIST_ID IS NOT NULL
-                                  AND (s.SQL_TEXT IS NULL OR s.SQL_TEXT NOT LIKE '%hammerdb_ash%')"
-                            #Enable event scheduler
-                            catch { maria::exec $handle "SET GLOBAL event_scheduler = ON" }
-                        } err ] } {
-                        catch { maria::close $handle }
-                        thread::send -async $parent "::callback_err \"$err\""
+                        thread::send -async $parent [list ::callback_err $err]
                         just_disconnect $parent
                         return
                     }
@@ -2146,6 +2077,15 @@ namespace eval mariamet {
                 }
                 append connectstring " -user $user -password $password"
                 set login_command "mariaconnect $connectstring"
+                if {[info exists ::tpublic(ashcapture)]} {
+                    # Preserve empty values and literal credentials for headless Jobs.
+                    set login_command [list mariaconnect]
+                    if { [ string tolower $socket ] ne "null" && $socket ne "" && ![string match windows $tcl_platform(platform)] && ($host eq "127.0.0.1" || [ string tolower $host ] eq "localhost") } {
+                        lappend login_command -socket $socket
+                    } else {lappend login_command -host $host -port $port}
+                    dict for {key value} $ssl_options {lappend login_command $key $value}
+                    lappend login_command -user $user -password $password
+                }
                 if {[catch {set handle [eval $login_command]}]} {
                     set handle "Failed"
                     thread::send -async $parent "::callback_err \"MariaDB connection to $host:$port failed\""
@@ -2187,6 +2127,14 @@ namespace eval mariamet {
                             }
                             for {set r 0} {$r < $nrows} {incr r} {
                                 set row [maria::fetch $handle]
+                                if {[info exists tpublic(ashcapture)]} {
+                                    set captured [dict create]
+                                    foreach name $colnames value $row {
+                                        dict set captured $name $value
+                                    }
+                                    $result append " [list $captured]"
+                                    continue
+                                }
                                 set collist ""
                                 foreach hi $hashorder {
                                     set collist "$collist \"[lindex $row $hi]\" "
@@ -2196,14 +2144,20 @@ namespace eval mariamet {
                         }
                         thread::send -async $parent " ::callback_mesg \"sql parsed\""
                     } message]} {
+                    if {[info exists tpublic(ashcapture)]} {
+                        tsv::set fetched error,$cursor "ASH native $from query '$cursor' failed: $message"
+                    } else {
                     thread::send $parent "putsm \"call maria_all Query Failed, sql:$sql err:$message \""
+                    }
                 }
 
                 thread::send -async $parent " ::callback_fetch $cursor $fetch"
             }
 
             thread::wait
-            tsv::set application themonitor "QUIT"
+            if {![info exists tpublic(ashcapture)]} {
+                tsv::set application themonitor "QUIT"
+            }
         }]
     }
 
@@ -2467,7 +2421,11 @@ namespace eval mariamet {
     proc mon_loop { } {
         global public
         set cur_proc mon_loop
-        set monstatus [ tsv::get application themonitor ]
+        if {[info exists public(ashcapture)] && $public(ashcapture)} {
+            set monstatus [expr {$public(run) ? "RUNNING" : "QUIT"}]
+        } else {
+            set monstatus [ tsv::get application themonitor ]
+        }
         if { $monstatus eq "QUIT" || $monstatus eq "NOWVUSER" } {
             after cancel mon_loop
         }
@@ -2480,10 +2438,16 @@ namespace eval mariamet {
                 if { $public(cursor,$i) == "slow" } { set slow "$slow $i" }
                 if { $public(cursor,$i) == "fast" } { set fast "$fast $i" }
             }
+            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                ::ashcapture::before_poll
+            }
             foreach i "secs $fast " { mon_execute $i }
             if { $public(slow_cur) >= $public(sleep,slow) } {
                 set public(slow_cur) [ expr  $public(slow_cur) - $public(sleep,slow) ]
                 foreach i $slow { mon_execute $i }
+            }
+            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                ::ashcapture::after_poll
             }
             update idletasks
             after [ expr $public(sleep,fast) * 1000 ]  mon_loop
@@ -2509,7 +2473,11 @@ namespace eval mariamet {
                         #if { $i == "ash_sqlplan" } {
                             #  thread::send -async $dbmon_threadID "maria_all $public(parent) $public(tproc_handle) $crsr \"$sql\" $fetch"
                         #} else {
-                            thread::send -async $dbmon_threadID "maria_all $public(parent) $public(handle) $crsr \"$sql\" $fetch"
+                            if {[info exists public(ashcapture)] && $public(ashcapture)} {
+                                thread::send -async $dbmon_threadID [list maria_all $public(parent) $public(handle) $crsr $sql $fetch]
+                            } else {
+                                thread::send -async $dbmon_threadID "maria_all $public(parent) $public(handle) $crsr \"$sql\" $fetch"
+                            }
                         #}
                     } err ] } {
                     puts "call mon_execute error:$err"
@@ -2681,9 +2649,12 @@ namespace eval mariamet {
       CEILING(UNIX_TIMESTAMP(sample_time)) as sample_id
     FROM ( SELECT MAX(ash_time) as sample_time FROM hammerdb_ash.active_session_history) as st;"
 
+        # Keep five-second server sampling to reduce observer overhead. AAS
+        # counts each observation as five seconds and includes the final sample
+        # in the observed span; retain subsecond timestamp precision.
         set public(sql,ash) "SELECT MAX(TIME_TO_SEC(TIME(ash.ash_time))) as secs, ash.sample_id,
       ash.wait_event_type,
-      ROUND(COUNT(*)/GREATEST(ash.samples,1),3) as AAS,
+      ROUND(COUNT(*)*5.0/(ash.samples+5.0),3) as AAS,
       FLOOR(TIME_TO_SEC(TIME(ash.ash_time))/ash.bucket)*ash.bucket as beg_secs,
       (FLOOR(TIME_TO_SEC(TIME(ash.ash_time))/ash.bucket)+1)*ash.bucket as end_secs,
       TO_DAYS(NOW()) as last_day, TO_DAYS(MIN(ash.ash_time)) as first_day
@@ -2701,7 +2672,7 @@ namespace eval mariamet {
           WHEN wait_event_type = 'CPU' THEN 'CPU'
           ELSE 'Other'
         END as wait_event_type, wait_event,
-        CEILING(UNIX_TIMESTAMP(MAX(ash_time) OVER()) - UNIX_TIMESTAMP(MIN(ash_time) OVER())) as samples,
+        (UNIX_TIMESTAMP(MAX(ash_time) OVER()) - UNIX_TIMESTAMP(MIN(ash_time) OVER())) as samples,
         CEILING(UNIX_TIMESTAMP(ash_time)) as sample_id, \$public(ash,bucket_secs) as bucket
       FROM hammerdb_ash.active_session_history WHERE \$public(ash,where) AND
       ash_time >= DATE_SUB(NOW(), INTERVAL \$public(ash,bucket_secs) SECOND)) ash
@@ -2787,9 +2758,12 @@ namespace eval mariamet {
         ash_time <= FROM_UNIXTIME(\$public(ash,end))
         GROUP BY digest, command ORDER BY total DESC;"
 
-                    set public(sql,sqlovertimeload) "SELECT last_id,
-        TO_DAYS(last_time) as last_day, cnt,
-        TIME_TO_SEC(TIME(last_time)) as last_secs,
+                    # All wait classes in a 15-second bucket must use its last
+                    # sample ID/time, not each class's individual last event.
+                    # Otherwise delta changes within a bucket and inflates AAS.
+                    set public(sql,sqlovertimeload) "SELECT MAX(last_id) OVER (PARTITION BY modsecs) as last_id,
+        TO_DAYS(MAX(last_time) OVER (PARTITION BY modsecs)) as last_day, cnt,
+        TIME_TO_SEC(TIME(MAX(last_time) OVER (PARTITION BY modsecs))) as last_secs,
         wait_event_type
         FROM (
         SELECT wait_event_type,
@@ -2819,8 +2793,8 @@ namespace eval mariamet {
         WHERE ash_time > FROM_UNIXTIME(\$public(ash,starttime)) AND \$public(ashsql,sqlovertimeid)
         ) ash
         GROUP BY wait_event_type, modsecs
-        ORDER BY last_time, modsecs
-        ) as last;"
+        ) as last
+        ORDER BY last_id, wait_event_type;"
 
                     set public(sql,stat) ""
 

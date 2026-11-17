@@ -144,6 +144,14 @@ proc load_virtual {}  {
     global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm apmode
     set vuser_create_ok true
     set thlist [ thread::names ]
+    # ASH owns two infrastructure threads, never virtual users. Without this
+    # guard the GUI refuses to create VUs after ASH Start ("VUs still active").
+    if {[llength [info commands ::ashcapture::threads]]} {
+        foreach ashthread [::ashcapture::threads] {
+            set idx [lsearch -exact $thlist $ashthread]
+            if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
+        }
+    }
     if { [ info exists tc_threadID ] } {
         set idx [ lsearch $thlist $tc_threadID ]
         if { $idx != -1 } {

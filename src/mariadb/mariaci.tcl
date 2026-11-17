@@ -167,6 +167,18 @@ proc mariadb_build {cidict refname} {
 
     # build command
     set raw_cmd  [dict get $cidict $rdbms build build_cmd]
+    # ASH uses the existing Performance Schema collector. A requested source
+    # build must contain that engine; runtime checks remain in ashcapture.
+    if {[ci_collect_ash_for_ref $refname]} {
+        if {![regexp {(^|[;&]\s*)cmake\s+} $raw_cmd]} {
+            putsci "ASH prerequisite failed: source build must configure Performance Schema with CMake"
+            hdbjobs eval {UPDATE JOBCI SET status = 'BUILD FAILED' WHERE ci_id = $ci_id}
+            return "BUILD FAILED"
+        }
+        regsub -all -- {-DWITH_PERFSCHEMA_STORAGE_ENGINE(?::BOOL)?=[^\s;]+} $raw_cmd {} raw_cmd
+        regsub {cmake\s+} $raw_cmd {cmake -DWITH_PERFSCHEMA_STORAGE_ENGINE=ON } raw_cmd
+        regsub -all {;\s*cmake\s+--build} $raw_cmd { \&\& cmake --build} raw_cmd
+    }
     # build args
     set raw_args ""
     if {[dict exists $cidict $rdbms build build_cmd_args]} {
@@ -899,6 +911,12 @@ proc mariadb_start {cidict refname} {
         }
     }
 
+    if {[ci_collect_ash_for_ref $refname]} {
+        # The existing desktop event sampler requires both startup options.
+        # event_scheduler=DISABLED cannot be enabled later with SET GLOBAL.
+        lappend arglist "--performance-schema=ON" "--event-scheduler=ON"
+    }
+
     # start-time override
     set bp_mb 1000
     if {$bp_cfg eq "" || [string equal -nocase $bp_cfg "auto"]} {
@@ -1227,14 +1245,22 @@ proc mariadb_start_tests {cidict refname workload} {
             set sudo "sudo -n "
         }
     }
-    putsci "${sudo}bash -c \"$script_abs\""
+    # sudo may reset inherited variables. Carry the selected boolean after
+    # sudo so the benchmark CLI cannot silently lose requested ASH capture.
+    set test_prefix $sudo
+    if {[ci_collect_ash_for_ref $refname]} {
+        append test_prefix "env HAMMERDB_ASH=1 "
+    }
+    putsci "${test_prefix}bash -c \"$script_abs\""
     set doneVar "::pipe_done_tests_[clock milliseconds]"
     set $doneVar 0
     if {[catch {
-        set pipe [open "|${sudo}bash -c \"$script_abs 2>&1\"" "r"]
+        set pipe [open "|${test_prefix}bash -c \"$script_abs 2>&1\"" "r"]
         fconfigure $pipe -translation binary -buffering none -blocking 0
         fileevent $pipe readable [list handle_test_output $pipe $doneVar]
         vwait $doneVar
+        # EOF has arrived; blocking close must reap and report the runner exit status.
+        fconfigure $pipe -blocking 1
         close $pipe
     } err]} {
         putsci "Test failed: $err"
@@ -1375,9 +1401,15 @@ proc mariadb_profile {cidict refname} {
             fconfigure $pipe -translation binary -buffering none -blocking 0
             fileevent  $pipe readable [list handle_test_output $pipe $doneVar]
             vwait $doneVar
+            # EOF has arrived; blocking close must report a failed benchmark process.
+            fconfigure $pipe -blocking 1
             close $pipe
         } rerr]} {
             putsci "PROFILE FAILED: $rerr"
+            set failed_ci_id [ci_latest_id $tag]
+            if {$failed_ci_id ne ""} {
+                hdbjobs eval {UPDATE JOBCI SET status='PROFILE FAILED' WHERE ci_id=$failed_ci_id}
+            }
             return 0
         }
         set ci_id [ci_latest_id $tag]
@@ -1564,9 +1596,15 @@ proc mariadb_compare {cidict refname} {
             fconfigure $pipe -translation binary -buffering none -blocking 0
             fileevent  $pipe readable [list handle_test_output $pipe $doneVar]
             vwait $doneVar
+            # EOF has arrived; blocking close must report a failed benchmark process.
+            fconfigure $pipe -blocking 1
             close $pipe
         } rerr]} {
             putsci "COMPARE FAILED: $rerr"
+            set failed_ci_id [ci_latest_id $tag]
+            if {$failed_ci_id ne ""} {
+                hdbjobs eval {UPDATE JOBCI SET status='COMPARE FAILED' WHERE ci_id=$failed_ci_id}
+            }
             return 0
         }
         set ci_id [ci_latest_id $tag]
@@ -1686,7 +1724,8 @@ proc mariadb_compare {cidict refname} {
         return "COMPARE FAILED"
     }
 
-    hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,cidict,io_intensive) VALUES ($good_tag,$dbprefix,$cidict,$io_intensive)}
+    set collect_ash [ci_collect_ash_for_ref $bad_tag]
+    hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,cidict,io_intensive,collect_ash) VALUES ($good_tag,$dbprefix,$cidict,$io_intensive,$collect_ash)}
     set ci_id [hdbjobs eval {SELECT last_insert_rowid()}]
     if {$ci_id ne ""} {
         hdbjobs eval {UPDATE JOBCI SET status = 'BUILDING' WHERE ci_id = $ci_id}

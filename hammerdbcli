@@ -107,7 +107,7 @@ set cli_common_init {set UserDefaultDir [ file dirname [ info script ] ]
 	 set loaddirname $UserDefaultDir
   }
 
-  append loadlist { genvu.tcl genxml.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl genmetricscli.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genhelp.tcl genstep.tcl genci.tcl }
+  append loadlist { genvu.tcl genxml.tcl gentpcc.tcl gentpch.tcl gengen.tcl genmodes.tcl genmetricscli.tcl gentccmn.tcl gentccli.tcl geninitcli.tcl gencli.tcl genash.tcl genhelp.tcl genstep.tcl genci.tcl }
   for { set loadcount 0 } { $loadcount < [llength $loadlist] } { incr loadcount } {
     set f [lindex $loadlist $loadcount]
     set loadtext [ file rootname $f ]
@@ -369,6 +369,8 @@ sys.ps1 = '>>>'"
     expect ">>>"
     send "from hammerdb import *\x0D"
     expect ">>>"
+    # Use ASH wrappers from the installed libtclpy/hammerdb.py.
+    # Launcher-level lambdas would override its optional Job ID arguments.
     if { $autostart::autostartap == "true" } { send "runscript(1)\x0D" } else { send "runscript(0)\x0D" }
     send "sys.stdout.flush()\x0D"
     send "sys.ps1 = 'hammerdb>>>'\x0D"

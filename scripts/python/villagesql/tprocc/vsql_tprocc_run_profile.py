@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# ASH opt-in: Web Service Pipelines passes collect_ash=1 and scopes
+# HAMMERDB_ASH=1 to this benchmark process. Tcl's "vurun" starts and
+# stops the native ASH collector automatically, under this Job ID.
+# Do NOT add manual ashstart()/ashstop() calls in this Pipeline script:
+# doing so would launch a second collector. Ordinary scripts stay unchanged.
+# For a separately controlled Python CLI run, explicitly use:
+#   ashstart(); ashstatus(); vurun(); ashstop(); ashstatus()
+#
 # maintainer: Pooja Jain
 #
 # Behaviour matches vsql_tprocc_run_profile.tcl:

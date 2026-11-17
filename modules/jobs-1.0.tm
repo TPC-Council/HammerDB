@@ -1,8 +1,207 @@
 # Supporting job views v1
 package provide jobs 1.0
 namespace eval jobs {
-  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format cireset wapp-page-jobs wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
+  variable ash_assetdir [file join [file dirname [info script]] .. src webservice]
+  namespace export init_job_tables_gui init_job_tables init_job_tables_ws jobmain jobs job hdbjobs jobs_ws job_disable job_disable_check job_format cireset wapp-page-jobs wapp-page-job-ash.js wapp-page-job-ash.css wapp-page-logo.png wapp-page-logo-full.png wapp-page-tick.png wapp-page-cross.png wapp-page-star.png wapp-page-nostatus.png getjob savechart home-common-header common-header common-footer getdatabasefile
   interp alias {} job {} jobs
+
+  proc wapp-page-job-ash.js {} {
+    variable ash_assetdir
+    wapp-mimetype {text/javascript; charset=utf-8}
+    set channel [open [file join $ash_assetdir job-ash.js] r]
+    try {wapp-unsafe [read $channel]} finally {close $channel}
+  }
+
+  proc wapp-page-job-ash.css {} {
+    variable ash_assetdir
+    wapp-mimetype {text/css; charset=utf-8}
+    set channel [open [file join $ash_assetdir job-ash.css] r]
+    try {wapp-unsafe [read $channel]} finally {close $channel}
+  }
+
+  proc ash_report {jobid {options {}}} {
+    package require ashstore
+    # Capture initializes/migrates ASH storage. A historical web GET must not
+    # start a SQLite schema transaction or rebuild indexes on every click.
+    set db [namespace which hdbjobs]
+    if {![$db onecolumn {SELECT 1 FROM sqlite_master WHERE type='table' AND name='JOBASHINFO'}]} {
+      return [dict create available false jobid $jobid state not_collected \
+        message "ASH was not collected for this Job." limitations {}]
+    }
+    set metadata [::ashstore::metadata $db $jobid]
+    if {$metadata eq ""} {
+      return [dict create available false jobid $jobid state not_collected \
+        message "ASH was not collected for this Job." limitations {}]
+    }
+    foreach key {begin end pointer_begin pointer_end} {
+      if {[dict exists $options $key]} {
+        set value [dict get $options $key]
+        if {![string is double -strict $value] || [catch {expr {abs($value)<Inf}} finite] || !$finite} {
+          error "ASH window bounds must be finite Unix timestamps"
+        }
+      }
+    }
+    hdbjobs eval {SELECT min(sample_time) AS first,max(sample_time) AS last,
+                 count(*) AS total FROM JOBASH WHERE jobid=$jobid AND source='samples'} bounds {
+      set first $bounds(first)
+      set last $bounds(last)
+      set sample_count $bounds(total)
+    }
+    if {$sample_count == 0} {
+      set state [dict get $metadata state]
+      set message [expr {$state eq "running" ?
+        "ASH sampler is running; waiting for the first native sample transfer." :
+        "ASH finished without captured samples. Check the native sampler failure details."}]
+      return [dict create available true jobid $jobid state $state \
+        sample_count 0 message $message \
+        error [dict get $metadata error] chart {} sql {} sessions {} events {} \
+        sql_text "" sql_stats {} event_sqls {} sql_overtime {} limitations {}]
+    }
+    set detail_only [expr {[dict exists $options detail_only] && [dict get $options detail_only]}]
+    if {$detail_only} {
+      set selectors 0
+      foreach key {sql_id event_id session_id} {if {[dict exists $options $key]} {incr selectors}}
+      if {$selectors != 1} {error "ASH detail requests require exactly one SQL, event, or session identifier"}
+      # Historical detail fetches must not retrieve/recompute the timeline.
+      set chart_rows {}
+    } else {
+      set chart_rows [::ashstore::rows $db $jobid chart]
+    }
+    dict set metadata chart_rows $chart_rows
+    if {[dict exists $options pointer_begin] || [dict exists $options pointer_end]} {
+      if {![dict exists $options pointer_begin] || ![dict exists $options pointer_end] ||
+          [dict exists $options begin] || [dict exists $options end]} {
+        error "ASH chart selection requires two pointer bounds without manual time bounds"
+      }
+      package require ashreplay
+      set window [::ashreplay::selection [dict get $metadata database] $chart_rows \
+        [dict get $metadata server_timezone] [dict get $options pointer_begin] [dict get $options pointer_end]]
+      set options [dict merge $options $window]
+    }
+    # The Jobs archive is partitioned by jobid. By default, show the entire
+    # benchmark capture for this Job, not just its last 15-second bucket.
+    set run_begin [::ashstore::getfirst $metadata {run_start} $first]
+    set run_end [::ashstore::getfirst $metadata {run_end} $last]
+    if {![string is double -strict $run_begin]} {set run_begin $first}
+    if {![string is double -strict $run_end]} {set run_end $last}
+    set run_begin [expr {max($first,$run_begin)}]
+    set run_end [expr {min($last,$run_end)}]
+    if {$run_begin > $run_end} {set run_begin $first; set run_end $last}
+    set begin $run_begin
+    set end $run_end
+    if {[dict exists $options begin]} {set begin [dict get $options begin]}
+    if {[dict exists $options end]} {set end [dict get $options end]}
+    if {$begin > $end} {error "ASH window start must be no later than its end"}
+    set begin [expr {max($first,$begin)}]
+    set end [expr {min($last,$end)}]
+    if {$begin > $end} {error "ASH time selection is outside this benchmark Job's ASH capture"}
+    dict set options begin $begin
+    dict set options end $end
+    set count [hdbjobs onecolumn {SELECT count(*) FROM JOBASH WHERE jobid=$jobid
+        AND source='samples' AND sample_time >= $begin AND sample_time <= $end}]
+    if {$count > 250000} {error "ASH selection exceeds 250000 samples; choose a narrower window. All samples remain stored."}
+    if {$detail_only} {
+      foreach {kind key} {sql_id sql_id event_id event_name session_id session_id} {
+        if {[dict exists $options $kind]} {
+          set samples [::ashstore::rows_matching $db $jobid $begin $end $key [dict get $options $kind]]
+          break
+        }
+      }
+    } else {
+      set samples [::ashstore::rows $db $jobid samples $begin $end]
+    }
+    # Read only the most recent complete native statistics snapshot at/before
+    # the selected end, rather than concatenating every 60-second snapshot.
+    # The 15-second lookback also accommodates old PG rows whose clock-time
+    # metadata was recorded per native row instead of per polling cycle.
+    set latest_stat [hdbjobs onecolumn {
+      SELECT max(sample_time) FROM JOBASH
+      WHERE jobid=$jobid AND source='sqlstats' AND sample_time <= $end
+    }]
+    if {$latest_stat eq ""} {
+      set latest_stat [hdbjobs onecolumn {
+        SELECT max(sample_time) FROM JOBASH WHERE jobid=$jobid AND source='sqlstats'
+      }]
+    }
+    set stats {}
+    if {$latest_stat ne ""} {
+      set stats [::ashstore::rows $db $jobid sqlstats [expr {$latest_stat-15.0}] $latest_stat]
+      # Replay must compare the selected snapshot, not the final snapshot of
+      # the Job when the operator has dragged to an earlier time.
+      if {[llength $stats]} {
+        set stat_record [lindex $stats end]
+        dict set metadata stats_poll_epoch [::ashstore::getfirst $stat_record {_poll_epoch _epoch} $latest_stat]
+      }
+    }
+    package require ashreplay
+    set report [::ashreplay::report [dict get $metadata database] $samples $stats $metadata $options]
+    dict set report available true
+    dict set report jobid $jobid
+    dict set report state [dict get $metadata state]
+    dict set report error [dict get $metadata error]
+    dict set report sample_count $sample_count
+    dict set report selected_sample_count $count
+    dict set report captured_begin $run_begin
+    dict set report captured_end $run_end
+    dict set report detail_only $detail_only
+    # Desktop SQL text uses the latest matching statement in the history,
+    # independently of the dragged analysis window. Use ONE indexed row from
+    # this Job instead of reloading the entire SQL-ID history into SQLite.
+    if {[dict exists $options sql_id]} {
+      set sql_id [dict get $options sql_id]
+      set latest_sql [hdbjobs onecolumn {
+        SELECT payload FROM JOBASH
+        WHERE jobid=$jobid AND source='samples' AND sql_id=$sql_id
+        ORDER BY sample_time DESC LIMIT 1
+      }]
+      if {$latest_sql ne ""} {
+        set text [::ashstore::getfirst $latest_sql {query sql_text} ""]
+        if {$text ne ""} {dict set report sql_text $text}
+      }
+    }
+    if {$detail_only} {
+      # The browser keeps the full summary while loading a selected item.
+      # Never resend chart points, SQL/session/event lists or Desktop query
+      # definitions on every click.
+      foreach key {chart sql sessions events original_sql limitations} {
+        dict unset report $key
+      }
+    }
+    return $report
+  }
+
+  proc ash_report_json {report} {
+    set pairs {}
+    foreach {key value} $report {
+      if {$key in {chart sql sessions events sql_io sql_stats sql_statistics event_sqls sql_overtime session_details session_sql session_sql_stats}} {
+        set items {}
+        foreach row $value {
+          set fields {}
+          foreach {name cell} $row {
+            lappend fields [jobs_json_pair $name [jobs_json_quote $cell]]
+          }
+          lappend items [jobs_json_object $fields]
+        }
+        set encoded [jobs_json_array $items]
+      } elseif {$key eq "limitations"} {
+        set items {}
+        foreach limitation $value {lappend items [jobs_json_quote $limitation]}
+        set encoded [jobs_json_array $items]
+      } elseif {$key eq "original_sql"} {
+        set fields {}
+        foreach {name statement} $value {lappend fields [jobs_json_pair $name [jobs_json_quote $statement]]}
+        set encoded [jobs_json_object $fields]
+      } elseif {$key in {available}} {
+        set encoded [expr {$value ? "true" : "false"}]
+      } elseif {$key in {begin end captured_begin captured_end sample_count selected_sample_count}} {
+        set encoded [jobs_json_number_or_string $value]
+      } else {
+        set encoded [jobs_json_quote $value]
+      }
+      lappend pairs [jobs_json_pair $key $encoded]
+    }
+    return [jobs_json_object $pairs]
+  }
 
   proc commify {x} {
     set trailer ""
@@ -110,6 +309,8 @@ namespace eval jobs {
       catch {hdbjobs timeout 30000}
       #hdbjobs eval {PRAGMA foreign_keys=ON}
       if { $sqlite_db eq ":memory:" } {
+        catch {hdbjobs eval {DROP TABLE JOBASH}}
+        catch {hdbjobs eval {DROP TABLE JOBASHINFO}}
         catch {hdbjobs eval {DROP TABLE JOBMAIN}}
         catch {hdbjobs eval {DROP TABLE JOBTIMING}}
         catch {hdbjobs eval {DROP TABLE JOBTCOUNT}}
@@ -138,7 +339,7 @@ namespace eval jobs {
         } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCHART(jobid TEXT, chart TEXT, html TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
           puts "Error creating JOBCHART table in SQLite in-memory database : $message"
           return
-        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCI (ci_id INTEGER PRIMARY KEY AUTOINCREMENT, refname TEXT NOT NULL, dbprefix TEXT NOT NULL, pipeline TEXT NOT NULL DEFAULT 'TEST',  io_intensive INTEGER NOT NULL DEFAULT 0, profile_id INTEGER NULL, cidict TEXT, clone_cmd TEXT, clone_output TEXT, build_cmd TEXT, build_output TEXT, install_cmd TEXT, install_output TEXT, package_cmd TEXT, commit_msg TEXT, config_file TEXT, start_cmd TEXT, status TEXT NOT NULL DEFAULT 'PENDING', timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), end_timestamp DATETIME NULL)}} message ] {
+        } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCI (ci_id INTEGER PRIMARY KEY AUTOINCREMENT, refname TEXT NOT NULL, dbprefix TEXT NOT NULL, pipeline TEXT NOT NULL DEFAULT 'TEST',  io_intensive INTEGER NOT NULL DEFAULT 0, profile_id INTEGER NULL, collect_ash INTEGER NOT NULL DEFAULT 0, cidict TEXT, clone_cmd TEXT, clone_output TEXT, build_cmd TEXT, build_output TEXT, install_cmd TEXT, install_output TEXT, package_cmd TEXT, commit_msg TEXT, config_file TEXT, start_cmd TEXT, status TEXT NOT NULL DEFAULT 'PENDING', timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), end_timestamp DATETIME NULL)}} message ] {
           puts "Error creating JOBCI table in SQLite in-memory database : $message"
           return
         } else {
@@ -181,7 +382,7 @@ namespace eval jobs {
             } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCHART(jobid TEXT, chart TEXT, html TEXT, FOREIGN KEY(jobid) REFERENCES JOBMAIN(jobid))}} message ] {
               puts "Error creating JOBCHART table in SQLite on-disk database : $message"
               return
-            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCI (ci_id INTEGER PRIMARY KEY AUTOINCREMENT, refname TEXT NOT NULL, dbprefix TEXT NOT NULL, pipeline TEXT NOT NULL DEFAULT 'TEST', io_intensive INTEGER NOT NULL DEFAULT 0, profile_id INTEGER NULL, cidict TEXT, clone_cmd TEXT, clone_output TEXT, build_cmd TEXT, build_output TEXT, install_cmd TEXT, install_output TEXT, package_cmd TEXT, commit_msg TEXT, config_file TEXT, start_cmd TEXT, status TEXT NOT NULL DEFAULT 'PENDING', timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), end_timestamp DATETIME NULL)}} message ] {
+            } elseif [ catch {hdbjobs eval {CREATE TABLE JOBCI (ci_id INTEGER PRIMARY KEY AUTOINCREMENT, refname TEXT NOT NULL, dbprefix TEXT NOT NULL, pipeline TEXT NOT NULL DEFAULT 'TEST', io_intensive INTEGER NOT NULL DEFAULT 0, profile_id INTEGER NULL, collect_ash INTEGER NOT NULL DEFAULT 0, cidict TEXT, clone_cmd TEXT, clone_output TEXT, build_cmd TEXT, build_output TEXT, install_cmd TEXT, install_output TEXT, package_cmd TEXT, commit_msg TEXT, config_file TEXT, start_cmd TEXT, status TEXT NOT NULL DEFAULT 'PENDING', timestamp DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), end_timestamp DATETIME NULL)}} message ] {
               puts "Error creating JOBCI table in SQLite on-disk database : $message"
               return
             } else {
@@ -244,6 +445,8 @@ namespace eval jobs {
            }
            upgrade_job_timing $sqlite_db
 	   }}}}
+      package require ashstore
+      ::ashstore::init [namespace which hdbjobs]
       tsv::set commandline sqldb $sqlite_db
     }
   }
@@ -279,6 +482,8 @@ namespace eval jobs {
 	  }
       } else {
          upgrade_job_timing $sqlite_db
+         package require ashstore
+         ::ashstore::init [namespace which hdbjobs]
          puts "Web Service using $sqlite_db database"
        }
     }
@@ -2141,7 +2346,7 @@ proc wapp-page-jobs {} {
         set url "$B/jobs?jobid=$jobid"
         wapp-subst "<li><a href='%html($url)'>%html(Output)</a></li>\n"
 
-        foreach option "bm db dict result status tcount system metrics timestamp timing delete" {
+        foreach option "bm db dict result status tcount system metrics ash timestamp timing delete" {
             set url "$B/jobs?jobid=$jobid&$option"
             switch $option {
                 bm       { wapp-subst "<li><a href='%html($url)'>%html(Benchmark)</a></li>\n" }
@@ -2169,6 +2374,13 @@ proc wapp-page-jobs {} {
                     set jm [getjobmetrics $jobid]
                     if {![llength $jm] eq 2 || ![string match [lindex $jm 1] "Jobid has no metric data"]} {
                         wapp-subst "<li><a href='%html($url)'>%html(Metrics)</a></li>\n"
+                    }
+                }
+                ash {
+                    # Show ASH only for benchmark Jobs with a capture record.
+                    # Older Jobs, schema builds, and unrelated jobs have none.
+                    if {![catch {set ash_count [hdbjobs onecolumn {SELECT count(*) FROM JOBASHINFO WHERE jobid=$jobid}]}] && $ash_count > 0} {
+                        wapp-subst "<li><a href='%html($url)'>ASH</a></li>\n"
                     }
                 }
                 timing {
@@ -2672,6 +2884,62 @@ proc wapp-page-jobs {} {
         return
     }
 
+    if {[dict exists $paramdict ashdata]} {
+        wapp-mimetype {application/json; charset=utf-8}
+        wapp-reply-extra Cache-Control {no-store}
+        set options {}
+        foreach {parameter key} {begin begin end end pointerbegin pointer_begin pointerend pointer_end sqlid sql_id eventid event_id sessionid session_id} {
+            if {[wapp-param-exists $parameter]} {dict set options $key [wapp-param $parameter]}
+        }
+        if {[wapp-param-exists detailonly]} {dict set options detail_only 1}
+        if {[catch {ash_report $jobid $options} report]} {
+            wapp-reply-code {400 Bad Request}
+            wapp-unsafe [jobs_json_object [list [jobs_json_pair error [jobs_json_quote $report]]]]
+        } else {
+            wapp-unsafe [ash_report_json $report]
+        }
+        return
+    }
+    if {[dict exists $paramdict ash]} {
+        common-header
+        set ashurl "$B/jobs?jobid=$jobid&ashdata"
+        wapp-subst {<link rel="stylesheet" href="%url($B/job-ash.css)">
+<section class="hdb-ash" data-hdb-ash="true" data-source="%html($ashurl)">
+<header class="hdb-ash-heading"><div><h2>Active Session History</h2><p class="hdb-ash-status" role="status" aria-live="polite">Loading saved ASH samples…</p></div></header>
+<details class="hdb-ash-range" aria-label="Optional time selection">
+<summary>Custom time window</summary>
+<div class="hdb-ash-range-controls">
+<label>From <input type="datetime-local" step="0.001" data-ash-range-begin></label>
+<label>To <input type="datetime-local" step="0.001" data-ash-range-end></label>
+<button type="button" data-ash-range-apply>Apply time window</button>
+<button type="button" class="hdb-ash-range-reset" data-ash-range-reset>Full benchmark</button>
+</div><p class="hdb-ash-range-error" role="alert"></p>
+</details>
+<div class="hdb-ash-chart" role="img" aria-label="ASH activity by event category. Drag to select a time window."></div>
+<div class="hdb-ash-legend" aria-label="ASH wait-class colour key"></div><p class="hdb-ash-window" aria-live="polite"></p>
+<div class="hdb-ash-workspace">
+<div class="hdb-ash-summary">
+<section class="hdb-ash-pane" data-pane="sql"><h3>SQL activity</h3><div class="hdb-ash-pane-rows" data-rows="sql"></div></section>
+<section class="hdb-ash-pane" data-pane="events"><h3>Wait events</h3><div class="hdb-ash-pane-rows" data-rows="events"></div></section>
+<section class="hdb-ash-pane" data-pane="sessions"><h3>Session activity</h3><div class="hdb-ash-pane-rows" data-rows="sessions"></div></section>
+</div>
+<section class="hdb-ash-inspector" aria-label="ASH activity details">
+<h3 class="hdb-ash-inspector-title">Details</h3>
+<nav class="hdb-ash-tabs" aria-label="ASH detail views">
+<button type="button" data-ash-tab="sql-text">SQL text</button>
+<button type="button" data-ash-tab="sql-io">SQL I/O</button>
+<button type="button" data-ash-tab="sql-stats">SQL stats</button>
+<button type="button" data-ash-tab="cpu">CPU</button>
+</nav>
+<div class="hdb-ash-inspector-body" aria-live="polite"></div>
+</section>
+</div>
+<ul class="hdb-ash-limitations"></ul>
+</section><script defer src="%url($B/job-ash.js)"></script>}
+        common-footer
+        return
+    }
+
 if {$rawmode} {
 
     # JSON escape
@@ -2858,6 +3126,8 @@ if {$rawmode} {
         common-header
         wapp-trim {<div class='hammerdb' data-title='Job Delete'>}
         if {$jobstatus ne "RUNNING"} {
+            package require ashstore
+            ::ashstore::delete [namespace which hdbjobs] $jobid
             hdbjobs eval {DELETE FROM JOBMAIN   WHERE JOBID=$jobid}
             hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid}
             hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid}
@@ -4800,6 +5070,8 @@ proc getjob { query } {
 
         # jobid + delete
         if {[dict exists $paramdict delete]} {
+            package require ashstore
+            ::ashstore::delete [namespace which hdbjobs] $jobid
             hdbjobs eval {DELETE FROM JOBMAIN   WHERE JOBID=$jobid}
             hdbjobs eval {DELETE FROM JOBTIMING WHERE JOBID=$jobid}
             hdbjobs eval {DELETE FROM JOBTCOUNT WHERE JOBID=$jobid}

@@ -430,6 +430,84 @@ proc postgresql_commit_msg {cidict refname} {
 # ---------------------------------------------------------------------------
 # install — `make install` populates the --prefix from postgresql_build.
 # ---------------------------------------------------------------------------
+# Run build tools as argument lists rather than constructing another shell.
+proc postgresql_ash_exec {args} {
+    set output [exec {*}$args 2>@1]
+    if {$output ne ""} { putsci $output }
+    return $output
+}
+
+proc postgresql_install_ash {source_dir basedir} {
+    set pg_config [file join $basedir bin pg_config]
+    if {![file executable $pg_config]} {
+        error "matching installed pg_config is unavailable"
+    }
+    set pgss [file join $source_dir contrib pg_stat_statements]
+    if {![file exists [file join $pgss Makefile]]} {
+        error "matching PostgreSQL source lacks contrib/pg_stat_statements"
+    }
+    postgresql_ash_exec make -C $pgss PG_CONFIG=$pg_config
+    postgresql_ash_exec make -C $pgss PG_CONFIG=$pg_config install
+
+    # Immutable upstream revision, fetched through the normal verified HTTPS
+    # Git transport. Never disable TLS or replace the expected commit.
+    set revision 145e73f738821b1fe36575c728635dd7aba26a6a
+    set extension_dir [file join $source_dir .hammerdb-pgsentinel-$revision]
+    if {![file exists $extension_dir]} {
+        postgresql_ash_exec git init $extension_dir
+        postgresql_ash_exec git -C $extension_dir fetch --depth 1 https://github.com/pgsentinel/pgsentinel.git $revision
+        postgresql_ash_exec git -C $extension_dir checkout --detach FETCH_HEAD
+    }
+    if {[string trim [exec git -C $extension_dir rev-parse HEAD]] ne $revision} {
+        error "pgsentinel source revision does not match the pinned upstream commit"
+    }
+    if {[string trim [exec git -C $extension_dir status --porcelain --untracked-files=no]] ne ""} {
+        error "pgsentinel source has local changes; refusing an unverified build"
+    }
+    postgresql_ash_exec make -C $extension_dir PG_CONFIG=$pg_config clean
+    postgresql_ash_exec make -C $extension_dir PG_CONFIG=$pg_config
+    postgresql_ash_exec make -C $extension_dir PG_CONFIG=$pg_config install
+    set libdir [string trim [exec $pg_config --pkglibdir]]
+    set sharedir [string trim [exec $pg_config --sharedir]]
+    foreach extension {pg_stat_statements pgsentinel} {
+        if {![file readable [file join $libdir $extension.so]] ||
+            ![file readable [file join $sharedir extension $extension.control]]} {
+            error "required ASH extension $extension was not installed"
+        }
+    }
+}
+
+proc postgresql_configure_ash {basedir datadir} {
+    # Read PostgreSQL's resolved value so existing operator preload libraries
+    # survive. Keep the value in postgresql.conf, out of nested shell quoting.
+    set preload [string trim [exec [file join $basedir bin postgres] -D $datadir -C shared_preload_libraries]]
+    set loaded {}
+    foreach lib [split $preload ,] {
+        lappend loaded [string trim $lib " \t\r\n\"'"]
+    }
+    foreach required {pg_stat_statements pgsentinel} {
+        if {$required ni $loaded} {
+            if {$preload ne ""} { append preload , }
+            append preload $required
+        }
+    }
+    set fh [open [file join $datadir postgresql.conf] a]
+    try {
+        puts $fh "\n# HammerDB ASH: retain desktop pg_active_session_history semantics"
+        puts $fh "shared_preload_libraries = '[string map [list \\ \\\\ ' ''] $preload]'"
+        puts $fh "track_activity_query_size = 2048"
+        puts $fh "pg_stat_statements.track = 'all'"
+        puts $fh "pg_stat_statements.save = on"
+        puts $fh "pgsentinel_ash.sampling_period = 1"
+        # Retain the existing documented desktop ring capacity. The extension
+        # default (1000) can wrap before the existing 15-second refresh.
+        puts $fh "pgsentinel_ash.max_entries = 1000000"
+        puts $fh "pgsentinel_pgssh.enable = true"
+    } finally {
+        close $fh
+    }
+}
+
 proc postgresql_install {cidict refname} {
     global rdbms
     set build_dir [string map {\" {}} [dict get $cidict $rdbms build build_dir]]
@@ -502,6 +580,14 @@ proc postgresql_install {cidict refname} {
         return "INSTALL FAILED"
     }
 
+    if {[ci_collect_ash_for_ref $refname]} {
+        if {[catch {postgresql_install_ash $local_dir $basedir} ash_error]} {
+            putsci "ASH prerequisite failed: pg_stat_statements/pgsentinel installation: $ash_error"
+            append ::pipe_output "\nASH prerequisite failed: $ash_error"
+            hdbjobs eval {UPDATE JOBCI SET status = 'INSTALL FAILED', install_output = $::pipe_output WHERE ci_id = $ci_id}
+            return "INSTALL FAILED"
+        }
+    }
     catch {
         set ci_id [ci_latest_id $refname]
         if {$ci_id ne ""} {
@@ -729,6 +815,14 @@ proc postgresql_start {cidict refname} {
     if {[dict exists $install listen_addresses]} {
         set la [string trim [dict get $install listen_addresses]]
         if {$la ne ""} { set listen_addrs $la }
+    }
+
+    if {[ci_collect_ash_for_ref $refname]} {
+        if {[catch {postgresql_configure_ash $basedir $datadir_val} ash_error]} {
+            putsci "ASH prerequisite failed: PostgreSQL preload configuration: $ash_error"
+            hdbjobs eval {UPDATE JOBCI SET status = 'START FAILED' WHERE ci_id = $ci_id}
+            return "START FAILED"
+        }
     }
 
     set server_opts [list]
@@ -1064,14 +1158,22 @@ proc postgresql_start_tests {cidict refname workload} {
             set sudo "sudo -n "
         }
     }
-    putsci "${sudo}bash -c \"$script_abs\""
+    # sudo may reset inherited variables. Carry the selected boolean after
+    # sudo so the benchmark CLI cannot silently lose requested ASH capture.
+    set test_prefix $sudo
+    if {[ci_collect_ash_for_ref $refname]} {
+        append test_prefix "env HAMMERDB_ASH=1 "
+    }
+    putsci "${test_prefix}bash -c \"$script_abs\""
     set doneVar "::pipe_done_tests_[clock milliseconds]"
     set $doneVar 0
     if {[catch {
-        set pipe [open "|${sudo}bash -c \"$script_abs 2>&1\"" "r"]
+        set pipe [open "|${test_prefix}bash -c \"$script_abs 2>&1\"" "r"]
         fconfigure $pipe -translation binary -buffering none -blocking 0
         fileevent $pipe readable [list handle_test_output $pipe $doneVar]
         vwait $doneVar
+        # EOF has arrived; blocking close must reap and report the runner exit status.
+        fconfigure $pipe -blocking 1
         close $pipe
     } err]} {
         putsci "Test failed: $err"
@@ -1194,9 +1296,15 @@ proc postgresql_profile {cidict refname} {
             fconfigure $pipe -translation binary -buffering none -blocking 0
             fileevent  $pipe readable [list handle_test_output $pipe $doneVar]
             vwait $doneVar
+            # EOF has arrived; blocking close must report a failed benchmark process.
+            fconfigure $pipe -blocking 1
             close $pipe
         } rerr]} {
             putsci "PROFILE FAILED: $rerr"
+            set failed_ci_id [ci_latest_id $tag]
+            if {$failed_ci_id ne ""} {
+                hdbjobs eval {UPDATE JOBCI SET status='PROFILE FAILED' WHERE ci_id=$failed_ci_id}
+            }
             return 0
         }
         set ci_id [ci_latest_id $tag]
@@ -1342,9 +1450,15 @@ proc postgresql_compare {cidict refname} {
             fconfigure $pipe -translation binary -buffering none -blocking 0
             fileevent  $pipe readable [list handle_test_output $pipe $doneVar]
             vwait $doneVar
+            # EOF has arrived; blocking close must report a failed benchmark process.
+            fconfigure $pipe -blocking 1
             close $pipe
         } rerr]} {
             putsci "COMPARE FAILED: $rerr"
+            set failed_ci_id [ci_latest_id $tag]
+            if {$failed_ci_id ne ""} {
+                hdbjobs eval {UPDATE JOBCI SET status='COMPARE FAILED' WHERE ci_id=$failed_ci_id}
+            }
             return 0
         }
         set ci_id [ci_latest_id $tag]
@@ -1440,7 +1554,8 @@ proc postgresql_compare {cidict refname} {
     }
 
     # 3) Build+run baseline through its own JOBCI row.
-    hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,cidict,io_intensive) VALUES ($good_tag,$dbprefix,$cidict,$io_intensive)}
+    set collect_ash [ci_collect_ash_for_ref $bad_tag]
+    hdbjobs eval {INSERT INTO JOBCI (refname,dbprefix,cidict,io_intensive,collect_ash) VALUES ($good_tag,$dbprefix,$cidict,$io_intensive,$collect_ash)}
     set ci_id [hdbjobs eval {SELECT last_insert_rowid()}]
     if {$ci_id ne ""} {
         hdbjobs eval {UPDATE JOBCI SET status = 'BUILDING' WHERE ci_id = $ci_id}
