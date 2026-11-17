@@ -3301,6 +3301,14 @@ proc select_rdbms { preselect } {
         if { $oldbm eq $bm && $oldrdbms eq $rdbms } {
             tk_messageBox -title "Confirm Benchmark" -message "No Change Made : [ regsub -all {(TP)(C)(-[CH])} $bm {\1RO\2\3} ] for $rdbms"
         } else {
+            if {$oldrdbms ne $rdbms && "OceanBase" in [list $oldrdbms $rdbms] &&
+                    ([info exists ::dbmon_threadID] || [interp exists metrics_interp] ||
+                    ([llength [info commands ::obmet::active]] && [::obmet::active]))} {
+                # Cleanup uses the category that opened the current monitor.
+                set newrdbms $rdbms
+                set rdbms $oldrdbms
+                try {ed_kill_metrics} finally {set rdbms $newrdbms}
+            }
             .ed_mainFrame.buttons.pencil configure -state normal
             set oldbm $bm
             set oldrdbms $rdbms

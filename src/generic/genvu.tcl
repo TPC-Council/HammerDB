@@ -140,10 +140,21 @@ proc stacktrace {} {
     return $stack
 }
 
+proc threads_without_oceanbase_monitor {} {
+    set thlist [thread::names]
+    if {[llength [info commands ::oceanbaseash::threads]]} {
+        foreach ashthread [::oceanbaseash::threads] {
+            set idx [lsearch -exact $thlist $ashthread]
+            if {$idx >= 0} {set thlist [lreplace $thlist $idx $idx]}
+        }
+    }
+    return $thlist
+}
+
 proc load_virtual {}  {
     global _ED ed_loadsave argv argv0 argc embed_args threadscreated threadsbytid masterthread maxvuser virtual_users lprefix winterps suppo optlog table Parent ntimes tids tc_threadID dbmon_threadID opmode vuser_create_ok rdbms bm apmode
     set vuser_create_ok true
-    set thlist [ thread::names ]
+    set thlist [threads_without_oceanbase_monitor]
     # ASH owns two infrastructure threads, never virtual users. Without this
     # guard the GUI refuses to create VUs after ASH Start ("VUs still active").
     if {[llength [info commands ::ashcapture::threads]]} {
@@ -161,7 +172,7 @@ proc load_virtual {}  {
     #Additional thread for Database Metrics initially Oracle only
     #Additional thread for Database Metrics PostgreSQL added
     #Additional thread for Database Metrics MySQL and MariaDB added
-    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL" || $rdbms eq "OceanBase" } {
+    if { $rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL" } {
         if { [ info exists dbmon_threadID ] } {
             if { [ thread::exists $dbmon_threadID ] || [ tsv::get application themonitor ] eq "NOWVUSER" } {
                 set idx [ lsearch $thlist $dbmon_threadID ]
@@ -200,7 +211,7 @@ proc load_virtual {}  {
                     catch {thread::cancel $ij}
                 }
                 after 1000
-                set thlist [ thread::names ]
+                set thlist [threads_without_oceanbase_monitor]
                 set thlen [ llength $thlist ] 
                 if { $thlen <= 1 } { 
                     puts "Success Virtual Users terminated"
@@ -395,7 +406,7 @@ proc load_virtual {}  {
         if { [ info exists tc_threadID ] } { 
             if { $threadID eq $tc_threadID } { unset -nocomplain tc_threadID }
         }
-        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL" || $rdbms eq "OceanBase") && [ info exists dbmon_threadID ] } {
+        if { ($rdbms eq "Oracle" || $rdbms eq "PostgreSQL" || $rdbms eq "MySQL" || $rdbms eq "MariaDB" || $rdbms eq "VillageSQL") && [ info exists dbmon_threadID ] } {
             if { $threadID eq $dbmon_threadID } { 
                 tsv::set application themonitor "NOWVUSER"
                 unset -nocomplain dbmon_threadID

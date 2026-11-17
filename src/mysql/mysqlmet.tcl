@@ -3,13 +3,6 @@ namespace eval mysqlmet {
 
     variable firstconnect "true"
 
-    # Optional native-ASH provider. The default MySQL/VillageSQL path below is
-    # unchanged; OceanBase supplies connection and query semantics only.
-    proc native_ash_provider {} {
-        expr {[info exists ::rdbms] && $::rdbms eq "OceanBase" &&
-            [llength [info commands ::oceanbaseash::execute]] != 0}
-    }
-
     proc create_metrics_screen { } {
         global public metframe win_scale_fact defaultBackground
         upvar #0 env e
@@ -466,7 +459,6 @@ namespace eval mysqlmet {
         grid $vsb -row 0 -column 1 -sticky ns
         grid rowconfigure    . 0 -weight 1
         grid columnconfigure . 0 -weight 1
-        if {[native_ash_provider]} {::oceanbaseash::session_table $tbl}
     }
 
     proc sql_tbl { win ncols nrows cols } {
@@ -548,7 +540,6 @@ namespace eval mysqlmet {
         grid $vsb -row 0 -column 1 -sticky ns
         grid rowconfigure    . 0 -weight 1
         grid columnconfigure . 0 -weight 1
-        if {[native_ash_provider]} {$tbl columnconfigure sql_type -sortmode dictionary}
     } ;# sql_tbl
 
     proc emptyStr val { return "" }
@@ -1046,7 +1037,6 @@ namespace eval mysqlmet {
     }
 
     proc ash_details { beg end } {
-        if {[native_ash_provider]} {return [::oceanbaseash::details $beg $end]}
         global public
         global sample_id
         global x_w_ash
@@ -1182,7 +1172,6 @@ namespace eval mysqlmet {
     }
 
     proc ash_sqltxt { sqlid } {
-        if {[native_ash_provider]} {return [::oceanbaseash::select_sql $sqlid]}
         global public
         set cur_proc ash_sqltxt
         if { $sqlid == "{}" } { set sqlid "" }
@@ -1392,16 +1381,17 @@ namespace eval mysqlmet {
         unlock public(thread_actv) $cur_proc
     }
 
-    proc sqlovertime_fetch {_status rows {sample_seconds 5}} {
+    proc sqlovertime_fetch { args } {
         global public
         set cur_proc sqlovertime_fetch
+        #puts "call $cur_proc ======args:$args"
         if { [ catch {
                 set xvec x_ashsql
                 global $xvec
                 set pts 0
                 set maxid 0
                 set maxtime 0
-                foreach row $rows {
+                foreach row [ lindex $args 1 ] {
                     set id   [lindex $row 0]
                     set day  [lindex $row 1]
                     set cnt  [lindex $row 2]
@@ -1457,7 +1447,9 @@ namespace eval mysqlmet {
                                 set [set vec](++end) 0
                             }
                         } ;# NEW POINT
-                        set aas [expr {($cnt * double($sample_seconds)) / max($delta, $sample_seconds)}]
+                        # AAS
+                        # Five-second observations must be weighted in SQL-over-time.
+                        set aas [ expr ( $cnt * 5.0 ) / max($delta, 5) ]
                         set aas [ format "%6.3f" $aas]
                         # AAS CURRENT
                         # Set current Vector
@@ -1580,7 +1572,6 @@ namespace eval mysqlmet {
                     Idle
                     CPU
                 BCPU }
-                if {[native_ash_provider]} {set public(ash,groups) [::oceanbaseash::groups]}
                 # list of id# of the wait groups
                 set public(ashgroups) ""
                 #
@@ -1946,7 +1937,6 @@ namespace eval mysqlmet {
     }
 
     proc wait_analysis { id } {
-        if {[native_ash_provider]} {set ::public(ash,event_name) $id}
         global public
         set cur_proc wait_analysis
         if { [ catch {
@@ -1970,7 +1960,6 @@ namespace eval mysqlmet {
     }
 
     proc connect_to_mysql {} {
-        if {[native_ash_provider]} {return [::oceanbaseash::connect]}
         global public masterthread dbmon_threadID bm rdbms
         # Provider-aware: resolve the config dict (configmysql / configvillagesql)
         # and variable prefix (mysql / vsql) from the active $rdbms, so Database
@@ -2409,7 +2398,6 @@ namespace eval mysqlmet {
     }
 
     proc mon_init { } {
-        if {[native_ash_provider]} {return [::oceanbaseash::start_monitor]}
         global public
         set cur_proc mon_init
         set public(visible) ""
@@ -2482,7 +2470,6 @@ namespace eval mysqlmet {
     }
 
     proc mon_execute { i { backoff 1000 } } {
-        if {[native_ash_provider]} {return [::oceanbaseash::execute $i]}
         global public dbmon_threadID
         set cur_proc mon_execute
         #puts "call $cur_proc $i"
@@ -2607,7 +2594,6 @@ namespace eval mysqlmet {
     }
 
     proc get_event_type { event } {
-        if {[native_ash_provider]} {return [::oceanbaseash::event_group $event]}
         global public
         set event_type "N/A"
         #Direct match first
@@ -2634,7 +2620,6 @@ namespace eval mysqlmet {
     }
 
     proc get_event_desc { event } {
-        if {[native_ash_provider]} {return "OceanBase wait event: $event"}
         global public
         set event_desc "N/A"
         if {[info exists public(events,$event)]} {
@@ -2947,9 +2932,6 @@ namespace eval mysqlmet {
 
                 proc mysql_post_kill_dbmon_cleanup {} {
                     global public dbmon_threadID
-                    if {[info exists public(metrics_provider)] && $public(metrics_provider) eq "OceanBase"} {
-                        return [::oceanbaseash::stop]
-                    }
                     .ed_mainFrame.buttons.dashboard configure -state disabled
                     set public(connected) "err"
                     set public(run) 0
@@ -3004,9 +2986,6 @@ namespace eval mysqlmet {
                     } else {
     #dbmon_threadID doesn't exist
                         ;
-                    }
-                    if {[llength [info commands ::oceanbaseash::prepare_provider]]} {
-                        ::oceanbaseash::prepare_provider
                     }
                     ed_status_message -finish "... Starting Metrics ..."
                     ed_stop_metrics

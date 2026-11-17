@@ -321,6 +321,14 @@ proc AdjustBarHeight {cpu usr sys percent} {
 proc metrics {} {
     global rdbms cpu_only
     if {  ![ info exists cpu_only ] } { set cpu_only "false" }
+    if {[llength [info commands ::obmet::active]] && [::obmet::active] &&
+            ($rdbms ne "OceanBase" || $cpu_only)} {
+        ed_kill_metrics
+    }
+    if {$rdbms eq "OceanBase" && !$cpu_only} {
+        if {[interp exists metrics_interp]} {ed_kill_metrics}
+        return [::obmet::obmetrics]
+    }
     if { [catch {
             namespace import comm::*
             namespace import blt::*
@@ -328,7 +336,6 @@ proc metrics {} {
         puts "Metrics error loading comm and blt packages"
         return
     }
-    if {[namespace exists ::obmet]} {namespace forget obmet::*}
     if { $rdbms eq "Oracle" } {
         namespace forget pgmet::*
         namespace forget mysqlmet::*
@@ -384,18 +391,6 @@ proc metrics {} {
 	} else {
 		vsqlmetrics
 	}
-    } elseif { $rdbms eq "OceanBase" } {
-        namespace forget oramet::*
-        namespace forget pgmet::*
-        namespace forget mysqlmet::*
-        namespace forget mariamet::*
-        namespace forget vsqlmet::*
-        namespace import obmet::*
-        if { $cpu_only } {
-            genmetrics
-        } else {
-            obmetrics
-        }
     } else {
         genmetrics
     }
@@ -460,7 +455,9 @@ proc cpumetrics { previous } {
 proc ed_kill_metrics {args} {
     global _ED rdbms cpu_only
     if {  [ info exists cpu_only ] } { ; } else { set cpu_only "false" }
-    if { $cpu_only eq "false" } {
+    if {[llength [info commands ::obmet::active]] && [::obmet::active]} {
+        catch {::obmet::ob_post_kill_dbmon_cleanup}
+    } elseif { $cpu_only eq "false" } {
     if { $rdbms == "Oracle" } {
         catch { post_kill_dbmon_cleanup }
     } elseif { $rdbms == "PostgreSQL" } {
@@ -471,8 +468,6 @@ proc ed_kill_metrics {args} {
         catch { maria_post_kill_dbmon_cleanup }
     } elseif { $rdbms == "VillageSQL" } {
         catch { vsql_post_kill_dbmon_cleanup }
-    } elseif { $rdbms == "OceanBase" } {
-        catch { ob_post_kill_dbmon_cleanup }
     }
     }
     ed_status_message -show "... Stopping Metrics ..."

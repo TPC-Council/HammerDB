@@ -1,12 +1,15 @@
-# Native, read-only OceanBase ASH provider for the shared metrics presentation.
-# This module also loads in the collector thread, where no Tk commands run.
-# All database calls use the isolated OBConnector/C binding; mysqlmet is reused
-# only for presentation, without replacing the native MySQL client commands.
+# Read-only OceanBase ASH data and worker lifecycle.
+# Each worker owns its OceanBase Connector/C session and reports data by callback.
 namespace eval oceanbaseash {
     variable module_file [file normalize [info script]]
-    variable last_provider {}
+    variable worker {}
+    variable retiring {}
+    variable generation 0
+    variable ready 0
+    variable callback {}
+    variable next_request 0
+    variable handle {}
     variable profile {}
-    variable event_groups {}
 
     proc groups {} {
         return {Other Application Concurrency Configuration Commit Network User_IO System_IO Scheduler Cluster CPU}
@@ -17,13 +20,6 @@ namespace eval oceanbaseash {
         set key [string toupper [string map {{ } _} $waitclass]]
         set known {APPLICATION Application CONCURRENCY Concurrency CONFIGURATION Configuration COMMIT Commit NETWORK Network USER_IO User_IO SYSTEM_IO System_IO SCHEDULER Scheduler CLUSTER Cluster}
         if {[dict exists $known $key]} {return [dict get $known $key]}
-        return Other
-    }
-
-    proc event_group {event} {
-        variable event_groups
-        if {[dict exists $event_groups $event]} {return [dict get $event_groups $event]}
-        if {$event eq "ON CPU"} {return CPU}
         return Other
     }
 
@@ -56,45 +52,87 @@ namespace eval oceanbaseash {
         set prefix [expr {$workload eq "TPC-C" ? "ob_" : "ob_tpch_"}]
         set section [expr {$workload eq "TPC-C" ? "tpcc" : "tpch"}]
         set user [::oceanbase::mysql::username [dict get $configuration $section ${prefix}user] [dict get $c ob_tenant] [dict get $c ob_cluster]]
-        set options [list -host [dict get $c ob_host] -port $port -user $user -password [dict get $configuration $section ${prefix}pass]]
+        set password [::oceanbase::mysql::decode_password [dict get $configuration $section ${prefix}pass]]
+        set options [list -host [dict get $c ob_host] -port $port -user $user -password $password]
         lappend options {*}[::oceanbasecommon::ssl_options $configuration]
         return [dict create options $options timeout [integer [dict get $c ob_query_timeout] 1]]
     }
 
-    proc prepare_provider {} {
-        variable last_provider
-        global rdbms public
-        set current [expr {$rdbms eq "OceanBase" ? "OceanBase" : "MySQL"}]
-        if {$last_provider ne "" && ($last_provider ne $current || $current eq "OceanBase")} {
-            catch {destroy .ed_mainFrame.me.m}
-            foreach pattern {x_w_ash x_ashsql y_w_* y_ashsql_* ash_day ash_sec sample_id y_ash_maxcpu x_ash_maxcpu} {
-                foreach vector [::blt::vector names $pattern] {catch {::blt::vector destroy $vector}}
+    proc start {configuration workload callbackPrefix} {
+        variable module_file
+        variable worker
+        variable generation
+        variable callback
+        if {![llength $callbackPrefix]} {error "OceanBase ASH requires a callback"}
+        stop
+        set session [incr generation]
+        set callback $callbackPrefix
+        if {[catch {
+            package require Thread
+            set config [connection $configuration $workload]
+            set parent [thread::id]
+            set bootstrap [list apply {{module paths tm_paths parent session config} {
+                if {[catch {
+                    set ::auto_path $paths
+                    ::tcl::tm::path add {*}$tm_paths
+                    source $module
+                } message]} {
+                    catch {thread::send -async $parent [list ::oceanbaseash::connection_failed [thread::id] $session $message]}
+                    tsv::unset oceanbaseash_workers [thread::id]
+                    thread::release
+                    return
+                }
+                ::oceanbaseash::worker_connect $parent $session $config
+            }} $module_file $::auto_path [::tcl::tm::path list] $parent $session $config]
+            set worker [thread::create {thread::wait}]
+            # Benchmark interpreters can see the worker through Thread's registry.
+            tsv::set oceanbaseash_workers $worker 1
+            thread::send -async $worker $bootstrap
+        } message]} {
+            if {$worker ne {}} {
+                catch {tsv::unset oceanbaseash_workers $worker}
+                catch {thread::release $worker}
             }
-            array unset public
-            set ::mysqlmet::firstconnect true
+            after 0 [list ::oceanbaseash::connection_failed $worker $session $message]
         }
-        set last_provider $current
+        return
     }
 
-    proc connect {} {
-        variable module_file
-        global configoceanbase bm public dbmon_threadID masterthread
-        if {[catch {set config [connection $configoceanbase $bm]} message]} {
-            puts "OceanBase ASH: $message"
-            catch {.ed_mainFrame.buttons.dashboard configure -state normal}
-            return
+    proc threads {} {
+        variable worker
+        variable retiring
+        set live {}
+        foreach thread $retiring {
+            if {[thread::exists $thread]} {lappend live $thread}
         }
-        set public(connected) 0
-        set public(metrics_provider) OceanBase
-        set public(thread_actv) 0
-        set public(parent) $masterthread
-        set dbmon_threadID [thread::create {thread::wait}]
-        tsv::set application themonitor $dbmon_threadID
-        # Lists preserve credentials and paths; the worker never evals data.
-        thread::send $dbmon_threadID [list set auto_path $::auto_path]
-        thread::send $dbmon_threadID [list ::tcl::tm::path add {*}[::tcl::tm::path list]]
-        thread::send $dbmon_threadID [list source $module_file]
-        thread::send -async $dbmon_threadID [list ::oceanbaseash::worker_connect $masterthread $config]
+        set retiring $live
+        if {$worker ne {} && [thread::exists $worker]} {lappend live $worker}
+        return $live
+    }
+
+    proc stop {} {
+        variable worker
+        variable retiring
+        variable ready
+        variable callback
+        threads
+        set ready 0
+        set callback {}
+        if {$worker eq {}} {return}
+        set closing $worker
+        set worker {}
+        if {![thread::exists $closing]} {return}
+        lappend retiring $closing
+        # Queue closure ahead of obsolete work. If bootstrap has not run,
+        # there is no client session to close.
+        if {[catch {thread::send -async -head $closing {
+            if {[llength [info commands ::oceanbaseash::worker_close]]} {
+                ::oceanbaseash::worker_close
+            } else {
+                tsv::unset oceanbaseash_workers [thread::id]
+                thread::release
+            }
+        }}]} {catch {thread::release $closing}}
     }
 
     proc columns {handle view} {
@@ -102,9 +140,9 @@ namespace eval oceanbaseash {
         return [string toupper [::obmysql::col $handle -current name]]
     }
 
-    proc worker_connect {parent config} {
+    proc worker_connect {parent session config} {
+        variable handle
         variable profile
-        set handle {}
         if {[catch {
             package require oceanbasecommon
             oceanbasecommon::load_client
@@ -123,87 +161,43 @@ namespace eval oceanbaseash {
                 dict set profile $name $cols
             }
         } message]} {
-            if {$handle ne ""} {catch {::obmysql::close $handle}}
-            thread::send -async $parent [list ::oceanbaseash::connection_failed [thread::id] $message]
-            thread::release
+            catch {thread::send -async $parent [list ::oceanbaseash::connection_failed [thread::id] $session $message]}
+            worker_close
             return
         }
-        thread::send -async $parent [list ::oceanbaseash::connected [thread::id] $handle $profile]
+        if {[catch {thread::send -async $parent [list ::oceanbaseash::connected [thread::id] $session]}]} {worker_close}
     }
 
-    proc connection_failed {worker message} {
-        global public dbmon_threadID
-        if {![info exists dbmon_threadID] || $dbmon_threadID ne $worker} {return}
-        set public(connected) err
-        set public(run) 0
-        unset -nocomplain dbmon_threadID
-        tsv::set application themonitor READY
-        puts "OceanBase ASH unavailable: $message. Check the business tenant and permission to read oceanbase.GV\$OB_ACTIVE_SESSION_HISTORY."
-        catch {.ed_mainFrame.buttons.dashboard configure -state normal}
+    proc connection_failed {thread session message} {
+        variable worker
+        variable retiring
+        variable generation
+        variable ready
+        variable callback
+        if {$session != $generation || $thread ne $worker || $callback eq {}} {return}
+        if {$worker ne {} && [thread::exists $worker]} {lappend retiring $worker}
+        set worker {}
+        set ready 0
+        set failed_callback $callback
+        set callback {}
+        {*}$failed_callback error connect {} $message
     }
 
-    proc connected {worker handle capabilities} {
-        variable profile
-        global public dbmon_threadID
-        if {![info exists dbmon_threadID] || $dbmon_threadID ne $worker} {
-            catch {thread::send -async $worker [list ::oceanbaseash::worker_close $handle]}
-            return
-        }
-        set profile $capabilities
-        ::mysqlmet::colors
-        ::mysqlmet::init_publics
-        set public(connected) 1
-        set public(handle) $handle
-        set public(thread_actv) 0
-        set public(cpucount) 0
-        set public(ash,selected_sql) {}
-        set public(ash,last_end) 0
-        set public(ash,event_name) {}
-        set public(version) 8.0
-        ::mysqlmet::create_metrics_screen
-        start_monitor
-        catch {.ed_mainFrame.buttons.dashboard configure -state normal}
+    proc connected {thread session} {
+        variable worker
+        variable generation
+        variable ready
+        variable callback
+        if {$session != $generation || $thread ne $worker || $callback eq {}} {return}
+        set ready 1
+        {*}$callback connected
     }
 
-    proc start_monitor {} {
-        global public
-        set public(run) 1
-        set public(visible) {}
-        # An empty ASH view is valid: the monitor remains open for future work.
-        ::mysqlmet::ash_init 1
-        set public(cursor,ash) fast
-        set public(slow_cur) 0
-        set public(sql,sqlio) {OceanBase native ASH I/O samples}
-        catch {$public(ash,graph) axis configure y -title "Average active sessions"}
-        set buttons $public(ash,details_buttons).sql
-        $buttons.stats configure -command {::oceanbaseash::show_detail ash_sqlstats}
-        $buttons.sqlio configure -command {::oceanbaseash::show_detail sqlio}
-        ttk::button $buttons.plan -text "cached plan" -command {::oceanbaseash::show_detail ash_sqlplan}
-        pack $buttons.plan -side left
-        ::mysqlmet::mon_loop
-        puts "OceanBase ASH: current tenant foreground sessions across OBServers; completed time buckets, native sampling weights."
-    }
-
-    proc stop {} {
-        global public dbmon_threadID
-        set public(run) 0
-        set public(thread_actv) 0
-        after cancel mon_loop
-        after cancel ::mysqlmet::mon_loop
-        if {[info exists dbmon_threadID]} {
-            if {[thread::exists $dbmon_threadID]} {
-                if {[info exists public(handle)]} {
-                    catch {thread::send -async $dbmon_threadID [list ::oceanbaseash::worker_close $public(handle)]}
-                } else {catch {thread::release $dbmon_threadID}}
-            }
-            unset -nocomplain dbmon_threadID
-        }
-        tsv::set application themonitor READY
-        catch {.ed_mainFrame.buttons.dashboard configure -state normal}
-    }
-
-    proc worker_close {handle} {
-        catch {::obmysql::close $handle}
+    proc worker_close {} {
+        variable handle
+        if {$handle ne {}} {catch {::obmysql::close $handle}}
+        set handle {}
+        tsv::unset oceanbaseash_workers [thread::id]
         thread::release
     }
 
@@ -261,67 +255,94 @@ namespace eval oceanbaseash {
         }
     }
 
-    proc execute {cursor} {
-        global public dbmon_threadID
-        if {![info exists public(run)] || !$public(run) || ![info exists dbmon_threadID]} {return}
-        if {$cursor in {days version ashempty secs cpucount ashrpt}} {return}
-        if {$cursor eq "ashtime"} {set cursor ash}
-        if {$public(thread_actv)} {return}
-        set selected $public(ash,selected_sql)
-        if {$cursor eq "sqlovertime" && [info exists public(ashsql,sqlovertimeid)]} {
-            set selected {}
-            regexp {digest = '([[:xdigit:]]{32})'} $public(ashsql,sqlovertimeid) -> selected
+    proc request {cursor params} {
+        variable worker
+        variable ready
+        variable generation
+        variable next_request
+        if {!$ready || ![thread::exists $worker]} {return {}}
+        if {$cursor ni {ash sqlovertime ash_sqldetails ash_sqlsessions ash_sqlevents
+                sqlio ash_eventsqls ash_sqltxt ash_sqlstats ash_sqlplan}} {
+            error "Unsupported OceanBase ASH request $cursor"
         }
-        set begin [expr {[info exists public(ash,beg)] ? wide($public(ash,beg)) : 0}]
-        set end [expr {[info exists public(ash,end)] ? wide($public(ash,end)) : 0}]
-        set request [dict create begin $begin end $end selected $selected bucket 15 event $public(ash,event_name)]
-        if {$cursor eq "ash"} {dict set request begin $public(ash,last_end)}
-        if {$cursor eq "sqlovertime"} {dict set request begin $public(ash,starttime)}
-        set public(thread_actv) 1
-        if {[catch {
-            thread::send -async $dbmon_threadID [list ::oceanbaseash::worker_fetch [thread::id] $public(handle) $cursor $request]
-        } message]} {
-            set public(thread_actv) 0
-            puts "OceanBase ASH: $message"
-            return
+        set id [incr next_request]
+        set request [dict merge {begin 0 end 0 selected {} event {}} $params [list id $id bucket 15]]
+        if {[catch {thread::send -async $worker                 [list ::oceanbaseash::worker_fetch [thread::id] $generation $cursor $request]}]} {
+            return {}
         }
-        vwait public(thread_actv)
+        return $id
     }
 
-    proc worker_fetch {parent handle cursor request} {
+    proc worker_window {cursor request} {
+        variable handle
+        variable profile
+        set bucket [dict get $request bucket]
+        set begin [integer [dict get $request begin]]
+        set end [integer [dict get $request end]]
+        if {$end == 0} {
+            set now [integer [lindex [::obmysql::sel $handle {SELECT FLOOR(UNIX_TIMESTAMP(NOW()))} -flatlist] 0]]
+            set end [expr {$now / $bucket * $bucket}]
+            # A backward server-clock change invalidates the incremental
+            # cursor. Reload from retained history using the new endpoint.
+            if {$cursor eq "ash" && $begin > $end} {set begin 0}
+        }
+        if {$begin > $end} {error "Invalid OceanBase ASH time range"}
+        set initial [expr {$begin == 0}]
+        if {$cursor in {ash sqlovertime}} {
+            set begin [expr {$begin / $bucket * $bucket}]
+            set end [expr {$end / $bucket * $bucket}]
+        }
+        set earliest [expr {max($end - 7200, 0)}]
+        if {$cursor eq "ash" && $initial} {
+            # Initial history starts at the oldest retained sample, not at
+            # an assumed idle point. An idle tenant gets one empty bucket.
+            set tenant [dict get $profile tenant]
+            set retained [lindex [::obmysql::sel $handle "SELECT FLOOR(UNIX_TIMESTAMP(MIN(SAMPLE_TIME)))
+                FROM oceanbase.GV\$OB_ACTIVE_SESSION_HISTORY WHERE CON_ID=$tenant
+                AND SAMPLE_TIME>=FROM_UNIXTIME($earliest) AND SAMPLE_TIME<FROM_UNIXTIME($end)" -flatlist] 0]
+            if {[string is wideinteger -strict $retained]} {
+                set begin [expr {min($end, $retained / $bucket * $bucket)}]
+            } else {
+                set begin [expr {$end - $bucket}]
+            }
+        }
+        dict set request begin [expr {max($begin, $earliest)}]
+        dict set request end $end
+        return $request
+    }
+
+    proc worker_fetch {parent session cursor request} {
+        variable handle
         variable profile
         set rows {}
         set names {}
         set message {}
         if {[catch {
-            if {$cursor in {ash sqlovertime sqlio}} {
-                set now [lindex [::obmysql::sel $handle {SELECT FLOOR(UNIX_TIMESTAMP(NOW()))} -flatlist] 0]
-                set end [expr {wide($now) / 15 * 15}]
-                if {$cursor eq "sqlio" || [dict get $request begin] == 0} {
-                    set earliest [expr {$end-7200}]
-                    if {$cursor eq "ash"} {
-                        # Do not paint evicted history as idle. Start with the
-                        # oldest retained sample, or one empty bucket on an idle tenant.
-                        set tenant [integer [dict get $profile tenant] 2]
-                        set retained [lindex [::obmysql::sel $handle "SELECT FLOOR(UNIX_TIMESTAMP(MIN(SAMPLE_TIME))) FROM oceanbase.GV\$OB_ACTIVE_SESSION_HISTORY WHERE CON_ID=$tenant AND SAMPLE_TIME>=FROM_UNIXTIME($earliest)" -flatlist] 0]
-                        if {[string is wideinteger -strict $retained]} {
-                            set earliest [expr {max($earliest,wide($retained)/15*15)}]
-                        } else {set earliest [expr {$end-15}]}
-                    }
-                    dict set request begin $earliest
-                }
-                dict set request end $end
-            }
             if {$cursor in {ash_sqltxt ash_sqlstats ash_sqlplan}} {
                 lassign [cached_detail $handle $cursor [dict get $request selected] $profile] names rows
             } else {
-                set sql [query $cursor $request $profile]
-                set rows [::obmysql::sel $handle $sql -list]
+                set request [worker_window $cursor $request]
+                if {[dict get $request begin] < [dict get $request end]} {
+                    set rows [::obmysql::sel $handle [query $cursor $request $profile] -list]
+                }
             }
         } message]} {
-            set rows {}
-        } else {set message {}}
-        thread::send -async $parent [list ::oceanbaseash::fetched [thread::id] $cursor $request $names $rows $message]
+            set result [list error $cursor $request $message]
+        } else {
+            set result [list result $cursor $request $names $rows]
+        }
+        if {[catch {thread::send -async $parent                 [list ::oceanbaseash::received [thread::id] $session {*}$result]}]} {
+            worker_close
+        }
+    }
+
+    proc received {thread session args} {
+        variable worker
+        variable generation
+        variable ready
+        variable callback
+        if {!$ready || $session != $generation || $thread ne $worker || $callback eq {}} {return}
+        {*}$callback {*}$args
     }
 
     proc cached_detail {handle cursor selected capabilities} {
@@ -363,91 +384,6 @@ namespace eval oceanbaseash {
         return [list $names [::obmysql::sel $handle "SELECT `[join $names {`,`}]` FROM oceanbase.GV\$OB_PLAN_CACHE_PLAN_EXPLAIN WHERE $filter $order" -list]]
     }
 
-    proc graph_rows {rows begin end bucket} {
-        set counts {}
-        foreach row $rows {
-            lassign $row start state waitclass weight
-            set start [expr {wide($start)}]
-            set category [group $state $waitclass]
-            dict set counts $start $category [expr {[dict exists $counts $start $category] ? [dict get $counts $start $category]+$weight : $weight}]
-        }
-        set result {}
-        for {set start $begin} {$start < $end} {incr start $bucket} {
-            set finish [expr {$start+$bucket}]
-            set categories [expr {[dict exists $counts $start] ? [dict get $counts $start] : [dict create CPU 0]}]
-            dict for {category count} $categories {
-                # Positional contract of the existing graph callback.
-                lappend result [list [expr {$finish%86400}] [expr {$start/86400+719528}] [expr {$finish/86400+719528}] \
-                    [expr {double($count)/$bucket}] $finish [expr {$finish%86400}] [expr {$start%86400}] $category]
-            }
-        }
-        return $result
-    }
-
-    proc overtime_rows {rows begin end bucket} {
-        set result {}
-        # The shared SQL-over-time renderer divides by consecutive point
-        # distances. Include every bucket so an idle gap never dilutes the next
-        # active bucket's AAS. Preserve categories sharing the same timestamp.
-        foreach row [graph_rows $rows $begin $end $bucket] {
-            lappend result [list [lindex $row 4] [lindex $row 2] \
-                [expr {[lindex $row 3]*$bucket}] [lindex $row 0] [lindex $row 7]]
-        }
-        return $result
-    }
-
-    proc fetched {worker cursor request names rows message} {
-        global public dbmon_threadID
-        if {![info exists dbmon_threadID] || $dbmon_threadID ne $worker} {return}
-        set public(thread_actv) 0
-        if {![info exists public(run)] || !$public(run)} {return}
-        if {$message ne ""} {
-            if {$cursor in {ash_sqltxt ash_sqlstats ash_sqlplan}} {
-                display_text "Unavailable: $message"
-            } else {puts "OceanBase ASH $cursor unavailable: $message"}
-            return
-        }
-        switch -- $cursor {
-            ash {
-                set begin [dict get $request begin]
-                set end [dict get $request end]
-                if {$begin >= $end} {return}
-                set public(ash,last_end) $end
-                set public(ash,starttime) [expr {$end-7200}]
-                set public(today) [expr {$end/86400+719528}]
-                set public(secs) [expr {$end%86400}]
-                ::mysqlmet::ash_fetch 1 [graph_rows $rows $begin $end 15]
-            }
-            ash_sqldetails {render_activity sql $rows}
-            ash_sqlsessions {render_activity session $rows}
-            ash_sqlevents {render_events $rows}
-            sqlovertime {
-                # overtime_rows already returns weighted active-session seconds.
-                ::mysqlmet::sqlovertime_fetch 1 [overtime_rows $rows [dict get $request begin] [dict get $request end] 15] 1
-            }
-            ash_sqltxt - ash_sqlstats - ash_sqlplan {
-                if {![llength $rows]} {display_text "Unavailable: this SQL is no longer present in the tenant plan cache."; return}
-                set text {}
-                if {$cursor eq "ash_sqlstats"} {append text "Plan-cache lifetime totals, not totals for the selected ASH interval. Time columns are microseconds.\n\n"}
-                foreach row $rows {
-                    foreach name $names value $row {append text "$name: $value\n"}
-                    append text "\n"
-                }
-                display_text $text
-            }
-            sqlio {
-                set text "I/O ASH sample weights in the last two hours:\n"
-                foreach row $rows {lassign $row event state waitclass samples; append text "$event ($waitclass): $samples\n"}
-                display_text $text
-            }
-            ash_eventsqls {
-                set text "SQL IDs sampled for $public(ash,event_name):\n"
-                foreach row $rows {lassign $row id samples; append text "$id: $samples sample weight\n"}
-                display_text $text
-            }
-        }
-    }
-
     proc activity_rows {kind rows} {
         set aggregate {}
         foreach row $rows {
@@ -482,95 +418,5 @@ namespace eval oceanbaseash {
         return [lsort -real -decreasing -index 2 $result]
     }
 
-    proc render_activity {kind rows} {
-        global public
-        set key [expr {$kind eq "sql" ? "sqltbl" : "sestbl"}]
-        set table $public(ash,$key)
-        $table delete 0 end
-        set rendered [activity_rows $kind $rows]
-        set total 0
-        foreach row $rendered {set total [expr {$total+[lindex $row 2]}]}
-        if {$kind eq "sql"} {set public(sqltbl,maxActivity) [expr {max($total,1)}]}
-        set public(ashtbl,delta) [expr {max($public(ash,end)-$public(ash,beg),1)}]
-        foreach row $rendered {
-            set index [$table insert end $row]
-        }
-        for {set index 0} {$index < [$table size]} {incr index} {
-            $table cellconfigure $index,1 -window [expr {$kind eq "sql" ? "createSqlFrame" : "createSesFrame"}]
-        }
-        if {$kind eq "sql"} {
-            set id [expr {[llength $rendered] ? [lindex $rendered 0 0] : ""}]
-            select_sql $id
-        }
-    }
-
-    proc render_events {rows} {
-        variable event_groups
-        global public
-        $public(ash,evttbl) delete 0 end
-        set total 0
-        foreach row $rows {
-            lassign $row event state waitclass samples
-            set category [group $state $waitclass]
-            dict set event_groups $event $category
-            $public(ash,evttbl) insert end [list $event $samples $samples $category]
-            set total [expr {$total+$samples}]
-        }
-        set public(ashevt,total) [expr {max($total,1)}]
-        for {set i 0} {$i < [$public(ash,evttbl) size]} {incr i} {
-            $public(ash,evttbl) cellconfigure $i,1 -window createevtFrame
-        }
-    }
-
-    proc select_sql {selected} {
-        global public
-        set public(ash,selected_sql) [sql_id $selected]
-        set public(ash,realsqlid) $public(ash,selected_sql)
-        execute ash_sqltxt
-        execute ash_sqlevents
-        execute ash_sqlsessions
-    }
-
-    proc details {begin end} {
-        global public x_w_ash
-        set left [expr {wide($x_w_ash($begin))}]
-        set right [expr {wide($x_w_ash($end))}]
-        if {$left > $right} {lassign [list $right $left] left right}
-        if {$left == $right} {incr right 15}
-        set public(ash,beg) $left
-        set public(ash,end) $right
-        set public(ash,begid) $left
-        set public(ash,endid) $right
-        execute ash_sqldetails
-    }
-
-    proc display_text {text} {
-        global public
-        $public(ash,output) delete 0.0 end
-        $public(ash,output) insert end $text
-    }
-
-    proc show_detail {cursor} {
-        global public
-        catch {pack forget $public(ash,output_frame).stats}
-        pack $public(ash,output_frame).txt -side left -anchor nw
-        execute $cursor
-    }
-
-    proc session_table {table} {
-        $table columnconfigure sid -sortmode dictionary
-        bind [$table bodytag] <Button-1> {::oceanbaseash::session_click %W %x %y}
-    }
-
-    proc session_click {widget x y} {
-        global public
-        foreach {tablelist::W tablelist::x tablelist::y} [tablelist::convEventFields $widget $x $y] {}
-        set table $public(ash,sestbl)
-        set row [$table containing $tablelist::y]
-        if {$row < 0} {return}
-        set text "Session [$table cellcget $row,sid -text]\nASH sample weights in selected interval:\n"
-        foreach category [groups] {append text "$category: [$table cellcget $row,$category -text]\n"}
-        display_text $text
-    }
 }
 package provide oceanbaseash 1.0

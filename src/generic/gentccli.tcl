@@ -100,15 +100,14 @@ proc show_tc_errmsg {} {
 }
 
 proc threadnames_without_tcthread {} {
-    global tc_threadID dbmon_threadID
+    global tc_threadID
     set thlist [thread::names]
     set excluded {}
     if {[info exists tc_threadID]} {lappend excluded $tc_threadID}
-    if {[info exists dbmon_threadID]} {lappend excluded $dbmon_threadID}
     # ASH monitor connections are not benchmark virtual users. The capture
     # package owns their lifecycle; VU destruction must never adopt them.
-    if {[llength [info commands ::ashcapture::threads]]} {
-        set excluded [concat $excluded [::ashcapture::threads]]
+    foreach monitor {::ashcapture::threads ::oceanbaseash::threads} {
+        if {[llength [info commands $monitor]]} {lappend excluded {*}[$monitor]}
     }
     foreach tid $excluded {
         set idx [lsearch -exact $thlist $tid]
