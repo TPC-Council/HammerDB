@@ -1392,18 +1392,16 @@ namespace eval mysqlmet {
         unlock public(thread_actv) $cur_proc
     }
 
-    proc sqlovertime_fetch { args } {
+    proc sqlovertime_fetch {_status rows {sample_seconds 5}} {
         global public
         set cur_proc sqlovertime_fetch
-        #puts "call $cur_proc ======args:$args"
         if { [ catch {
                 set xvec x_ashsql
                 global $xvec
                 set pts 0
                 set maxid 0
                 set maxtime 0
-                set native_ash [native_ash_provider]
-                foreach row [ lindex $args 1 ] {
+                foreach row $rows {
                     set id   [lindex $row 0]
                     set day  [lindex $row 1]
                     set cnt  [lindex $row 2]
@@ -1459,13 +1457,7 @@ namespace eval mysqlmet {
                                 set [set vec](++end) 0
                             }
                         } ;# NEW POINT
-                        if {$native_ash} {
-                            # OceanBase already returns weighted active seconds.
-                            set aas [expr {double($cnt) / $delta}]
-                        } else {
-                            # MySQL and VillageSQL observations cover five seconds.
-                            set aas [expr {($cnt * 5.0) / max($delta, 5)}]
-                        }
+                        set aas [expr {($cnt * double($sample_seconds)) / max($delta, $sample_seconds)}]
                         set aas [ format "%6.3f" $aas]
                         # AAS CURRENT
                         # Set current Vector

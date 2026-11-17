@@ -422,7 +422,8 @@ namespace eval oceanbaseash {
             ash_sqlsessions {render_activity session $rows}
             ash_sqlevents {render_events $rows}
             sqlovertime {
-                ::mysqlmet::sqlovertime_fetch 1 [overtime_rows $rows [dict get $request begin] [dict get $request end] 15]
+                # overtime_rows already returns weighted active-session seconds.
+                ::mysqlmet::sqlovertime_fetch 1 [overtime_rows $rows [dict get $request begin] [dict get $request end] 15] 1
             }
             ash_sqltxt - ash_sqlstats - ash_sqlplan {
                 if {![llength $rows]} {display_text "Unavailable: this SQL is no longer present in the tenant plan cache."; return}
