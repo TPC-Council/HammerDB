@@ -4,7 +4,7 @@ namespace eval oceanbasecommon {
 
     proc load_client {} {
         if {[catch {package require obmysqltcl 0.1} message options]} {
-            return -options $options "OceanBase driver could not load: $message. Use a HammerDB build containing obmysqltcl and install the matching OceanBase Connector/C (libobclient) runtime. See DocBook/oceanbase.md for installation and library-path settings."
+            return -options $options "OceanBase driver could not load: $message. Use a Linux HammerDB build containing obmysqltcl, install OceanBase Connector/C (libobclient), and add its library directory to LD_LIBRARY_PATH."
         }
     }
 
