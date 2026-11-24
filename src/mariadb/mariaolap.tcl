@@ -42,6 +42,9 @@ proc GatherStatistics { maria_handler } {
     if {[catch {mariaexec $maria_handler "SET GLOBAL use_stat_tables='PREFERABLY'"} message]} {
         puts "Error: use_stat_tables not available - $message"
     }
+    if {[catch {mariaexec $maria_handler "SET SESSION analyze_sample_percentage=0"} message]} {
+        puts "Error: analyze_sample_percentage not available - $message"
+    }
     set analyze_persistent "ANALYZE TABLE ORDERS, PARTSUPP, CUSTOMER, PART, SUPPLIER, NATION, REGION, LINEITEM PERSISTENT FOR ALL"
     if {[catch {mariaexec $maria_handler $analyze_persistent} message]} {
         puts "Error: no persistent analyze, fall back to standard analyze - $message"
